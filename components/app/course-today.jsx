@@ -216,6 +216,8 @@ export default function CourseToday({locale='en'}){
   try {
     const result=await api(action,locale,body)
     hydrate(result)
+    if(['session','pause','resume','activate','review','new-cycle'].includes(action) &&
+       typeof window!=='undefined') window.dispatchEvent(new Event('hh-course-changed'))
     if(after)after()
     return result
   }catch(e){setError(e.message);return null}

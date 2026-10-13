@@ -1,0 +1,25 @@
+{
+  "name": "Holistic House — My Course",
+  "short_name": "Holistic House",
+  "description": "My Tests, Insights and personal 14-day courses",
+  "start_url": "/en/app/course",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4faf7",
+  "theme_color": "#163d38",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    }
+  ]
+}
