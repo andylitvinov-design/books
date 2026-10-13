@@ -5,5 +5,12 @@
       "path": "/api/internal/housekeeping",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/**": false,
+      "chatgpt/**": false,
+      "codex/public-book-library": true
+    }
+  }
 }
