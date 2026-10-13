@@ -982,3 +982,21 @@
   .consultation-report-notes-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .consultation-studio .consultation-report-note-card { padding: 14px; }
 }
+
+.consultation-distance-homeopathy-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 18px;
+  border: 1px solid #dccacc;
+  border-radius: 16px;
+  padding: 17px 18px;
+  background: #fffdfa;
+}
+.consultation-distance-homeopathy-choice[data-selected="true"] {
+  border-color: #894550;
+  background: #fcf5f4;
+}
+.consultation-distance-homeopathy-choice input { accent-color: #752d3f; margin-top: 4px; }
+.consultation-distance-homeopathy-choice strong { color: #612639; }
+.consultation-distance-homeopathy-choice small { display:block; line-height:1.5; margin-top:5px; }

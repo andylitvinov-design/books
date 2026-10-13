@@ -14,9 +14,12 @@ test('ordinary two-remedy recommendation keeps a bounded signed closing block in
   for (const locale of ['en', 'ru']) {
     const pdf = buildPrescriptionPdf(getDocumentSample('recommendation', locale), locale, origin)
     const streams = pageStreams(pdf)
-    assert.ok(streams.length <= 2, `${locale} sample must remain compact`)
-    assert.equal((streams.at(-1).match(/\/Signature Do/g) ?? []).length, 1, `${locale} final page must remain signed`)
-    assert.ok(streams.slice(0, -1).every((stream) => !/\/Signature Do/.test(stream)), `${locale} signature must stay on the final page`)
+    // The core document stays signed and bounded; the educational remedy
+    // appendix follows separately, without falsely signing each extra page.
+    const signaturePages = streams.flatMap((stream, index) => /\/Signature Do/.test(stream) ? [index] : [])
+    assert.equal(signaturePages.length, 1, `${locale} core document needs one signature`)
+    assert.ok(signaturePages[0] <= 1, `${locale} core document must remain compact before appendices`)
+    assert.ok(streams.slice(signaturePages[0] + 1).every(stream => !/\/Signature Do/.test(stream)))
   }
 })
 
