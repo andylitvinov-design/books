@@ -49,6 +49,54 @@ async function go(page, path) {
   await page.evaluate(() => document.fonts.ready)
   return response
 }
+
+async function verifyPublicHeaderMatrix(page, engine) {
+  const inViewport = async (locator, label) => {
+    await expect(locator).toBeVisible()
+    const box = await locator.boundingBox()
+    const width = page.viewportSize().width
+    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
+      for (const width of [374, 375, 390]) {
+        const label = engine + '/' + locale + '/' + surface + '/' + width
+        await page.setViewportSize({ width, height: 900 })
+        assert.equal((await go(page, path)).status(), 200, label)
+        await page.waitForLoadState('networkidle')
+        const header = page.locator('header.house-header--services')
+        const cabinet = header.locator('a.site-cabinet-entry')
+        const menu = header.locator('details.site-language-menu')
+        const trigger = menu.locator('summary')
+        await expect(trigger).toHaveText(locale.toUpperCase())
+        await expect(cabinet).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
+        await expect(menu).toHaveJSProperty('open', false)
+        await inViewport(cabinet, label + '/cabinet')
+        await inViewport(trigger, label + '/language')
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Closed menu overflow: ' + label)
+        // Use the real keyboard sequence; opening details alone does not test
+        // the React Escape handler or its focus-return behavior after hydration.
+        await cabinet.focus()
+        await cabinet.press('Tab')
+        await expect(trigger).toBeFocused()
+        await trigger.press('Enter')
+        await expect(menu).toHaveJSProperty('open', true)
+        const choices = menu.locator('.site-language-menu-list > a, .site-language-menu-list > button')
+        assert.deepEqual(await choices.evaluateAll(elements => elements.map(el => el.getAttribute('lang'))), ['ru', 'en', 'es'])
+        for (const choice of await choices.all()) await inViewport(choice, label + '/language-choice')
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Open menu overflow: ' + label)
+        await trigger.press('Tab')
+        await expect(choices.first()).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(menu).toHaveJSProperty('open', false)
+        await expect(trigger).toBeFocused()
+        await inViewport(trigger, label + '/language-after-escape')
+        await header.screenshot({ path: evidence + '/header-' + engine + '-' + locale + '-' + surface + '-' + width + '.png' })
+      }
+    }
+  }
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 374/375/390px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return')
+}
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
   bridge = createServer(certificate, async (request, response) => {
@@ -159,6 +207,7 @@ try {
     }
   }
   pass('Desktop hub entry and six-slot mobile navigation, Library EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  await verifyPublicHeaderMatrix(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)
   const sitemap = await (await fetch(origin + '/sitemap.xml')).text()
   for (const locale of ['en', 'ru', 'es']) assert.ok(sitemap.includes(`/${locale}/library`))
@@ -267,6 +316,8 @@ try {
   pass('Resume EN/RU/ES, application restart persistence, rotation/revocation invalidation and no private browser storage')
   secondBrowser = await webkit.launch()
   const safari = await secondBrowser.newContext({ ...common, viewport: { width: 390, height: 844 } }), sp = await safari.newPage()
+  sp.on('pageerror', error => errors.push(error.message))
+  await verifyPublicHeaderMatrix(sp, 'webkit')
   await go(sp, '/ru/library')
   await expect(sp.locator('.mobile-bottom-navigation [data-nav-item="cabinet"]')).toBeVisible()
   assert.ok(await sp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
