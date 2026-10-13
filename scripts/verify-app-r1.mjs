@@ -506,7 +506,7 @@ try {
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await screenshotEvidence(page,{path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')
  await page.goto(origin+'/en/app/portfolio');await ready();
- await expect(page.getByRole('heading',{name:'My completed tests',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'My results',exact:true})).toBeVisible()
  await expect(page.locator('[data-testid="completed-test-insights"]')).toBeVisible()
  await expect(page.locator('.hh-insights-test-card')).toHaveCount(1)
  await expect(page.getByRole('link',{name:/Open analysis & recommendations/}).first()).toBeVisible()
