@@ -274,17 +274,6 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <li><span>03</span>{labels.documentsHeading}</li>
     </ol>
 
-    <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
-      <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
-        <input type="checkbox" name="includeRecommendation" checked={includeRecommendation} onChange={(event) => { setIncludeRecommendation(event.target.checked); setError('') }} />
-        <span><strong>{labels.prescriptionChoice}</strong><small>{labels.prescriptionChoiceHint}</small></span>
-      </label>
-      <label className="consultation-studio-document-choice" data-selected={includeInvoice}>
-        <input type="checkbox" name="includeInvoice" checked={includeInvoice} onChange={(event) => { setIncludeInvoice(event.target.checked); setError('') }} />
-        <span><strong>{labels.invoiceChoice}</strong><small>{labels.invoiceChoiceHint}</small></span>
-      </label>
-    </div>
-
     <section className="consultation-studio-card" aria-labelledby="consultation-client-heading">
       <div className="consultation-studio-section-head">
         <span className="consultation-studio-section-index" aria-hidden="true">01</span>
@@ -412,6 +401,17 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </div>
 
       {includeRecommendation && <label className="consultation-note">{labels.note}<textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} /></label>}
+
+    <div className="consultation-studio-document-choices" role="group" aria-label={labels.documentsHeading}>
+      <label className="consultation-studio-document-choice" data-selected={includeRecommendation}>
+        <input type="checkbox" name="includeRecommendation" checked={includeRecommendation} onChange={(event) => { setIncludeRecommendation(event.target.checked); setError('') }} />
+        <span><strong>{labels.prescriptionChoice}</strong><small>{labels.prescriptionChoiceHint}</small></span>
+      </label>
+      <label className="consultation-studio-document-choice" data-selected={includeInvoice}>
+        <input type="checkbox" name="includeInvoice" checked={includeInvoice} onChange={(event) => { setIncludeInvoice(event.target.checked); setError('') }} />
+        <span><strong>{labels.invoiceChoice}</strong><small>{labels.invoiceChoiceHint}</small></span>
+      </label>
+    </div>
 
       {includeInvoice && <div className="consultation-studio-invoice-panel">
         <h3>{labels.invoiceDetails}</h3>
