@@ -75,3 +75,13 @@ test('explicit top-rated set respects current filtered input, availability, mini
 test('highest-rated mode does not relabel rating rank as a best clinical/topic match', () => {
   assert.match(source('components/app/test-explorer.jsx'), /sort === 'recommended' && index === 0/)
 })
+
+
+test('rating footer follows the current account and guest report without replacing its new structure', () => {
+  const account = source('components/app/app-workspace.jsx')
+  const guest = source('components/app/cabinet-landing.jsx')
+  assert.match(account, /<PersonalResultReport result=\{result\}[^\n]*\/>\s*<TestRating result=\{result\}/)
+  assert.match(guest, /<PersonalResultReport result=\{guestResult\}[^\n]*\/>\s*<TestRating result=\{guestResult\}[^\n]*\/>\s*<details className="cabinet-result-raw-details"/)
+  assert.equal((guest.match(/<PersonalResultReport result=\{guestResult\}/g) || []).length, 1)
+  assert.match(account, /<InsightTestScales/)
+})

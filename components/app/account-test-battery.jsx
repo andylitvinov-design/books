@@ -224,6 +224,21 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setNotice(c.added)
       setExploring(false)
       setShowList(true)
+      // When the person came from My Course, these are the EXACT tests they
+      // deliberately checked in the full Explorer. Explicitly bind them to
+      // that private course, not the default five or the account's entire
+      // (possibly much larger) historical test-plan selection.
+      if (fromCourse) {
+        const current = await api('course')
+        if (current.course?.stage !== 2) {
+          throw Object.assign(new Error('COURSE_STAGE_CHANGED'), { code: 'COURSE_STAGE_CHANGED' })
+        }
+        await api('course', {
+          action: 'confirm-tests',
+          expectedRevision: current.course.revision,
+          testKeys: valid,
+        })
+      }
       // Reconcile the saved account state before replacing the handoff URL.
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
@@ -503,4 +518,3 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       </section>}
   </>
 }
-

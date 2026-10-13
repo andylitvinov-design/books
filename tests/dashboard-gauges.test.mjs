@@ -5,7 +5,7 @@ import { gaugeModel, gaugeChange, periodWindow, resultsForPeriod, periodComparis
 
 const base = {
   accountId:'account',definitionId:'definition',definitionKey:'cbi-personal',definitionVersion:'v1',
-  contentHash:'hash',instrumentLocale:'en',scoringKey:'configured',scoringVersion:'v1',
+  contentHash:'hash',translationVersion:'en-v1',instrumentLocale:'en',scoringKey:'configured',scoringVersion:'v1',
   resultVersion:'v1',timeframe:'past-30-days',
 }
 const metric = value => ({ key:'symptoms.cbi_personal.total',min:0,max:100,value,unit:'points',timeframe:'past-30-days',
@@ -75,11 +75,12 @@ test('account report and Insights use the same measured dial with selectable tim
  const css=readFileSync(new URL('../app/[locale]/app/[[...path]]/assessment-dashboard.css',import.meta.url),'utf8')
  assert.match(account,/periodWindow\(period,\s*periodStart,\s*periodEnd\)/)
  assert.match(account,/resultsForPeriod\(group\.history,\s*period,\s*periodStart,\s*periodEnd\)/)
- assert.match(account,/<ScoreGauge dimension=\{displayMain\}/)
- assert.match(account,/<ScoreTrend current=\{latest\}/)
+ assert.match(account,/<InsightTestScales/)
  assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)
  assert.match(account,/onClick=\{repeatTest\}/)
- assert.match(report,/section\.steps\.slice\(0,\s*2\)/)
+ assert.match(report,/data-support-recommendation/)
  assert.match(css,/\.hh-insights-test-list/)
  assert.match(css,/grid-template-columns:repeat\(auto-fit/)
 })
+
+test('trend refuses a different translation revision',()=>{const a=result('a',40,'2026-09-01T12:00:00Z'),b={...result('b',30,'2026-10-01T12:00:00Z'),translationVersion:'en-v2'};assert.deepEqual(gaugeChange(b,a,metric(0).key),{state:'baseline',delta:null});assert.equal(periodComparison([a,b]).previous,null)})

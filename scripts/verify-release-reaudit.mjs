@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
 import { classifyCspNavigationCancellation } from './csp-navigation-diagnostics.mjs';
+import { verifyAboutPlayerHydration } from './about-player-hydration-probe.mjs';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
 const url = new URL(origin);
@@ -115,16 +116,79 @@ async function verifyCspBfcache() {
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [] };
+  let publicPhase = 'initial';
+  await context.addInitScript(() => {
+    if (window.top !== window) return;
+    window.__publicAuditProbe = crypto.randomUUID();
+    const record = (type, extra = {}) => {
+      const rows = JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]');
+      rows.push({ type, time: performance.timeOrigin + performance.now(), documentProbe: window.__publicAuditProbe,
+        url: location.href, readyState: document.readyState, ...extra });
+      sessionStorage.setItem('__publicAuditLifecycle', JSON.stringify(rows));
+    };
+    record('init');
+    addEventListener('pageshow', event => record('pageshow', { persisted: event.persisted }), true);
+    addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
+    addEventListener('load', () => record('load'), true);
+    document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
+    addEventListener('error', event => {
+      if (event instanceof ErrorEvent) record('window-error', { message: event.message, filename: event.filename, line: event.lineno });
+      else record('resource-error', { targetTag: event.target?.tagName, resourceUrl: event.target?.currentSrc || event.target?.src || event.target?.href });
+    }, true);
+    addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
+    window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+  });
   const page = await context.newPage();
   let errors = [];
-  page.on('pageerror', error => errors.push(String(error.message).slice(0, 300)));
+  page.on('pageerror', error => {
+    errors.push(String(error.message).slice(0, 300));
+    publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
+  });
+  const requestDetails = request => {
+    let frameUrl = null;
+    try { frameUrl = request.frame()?.url() ?? null; } catch { /* Service-worker requests do not have a frame. */ }
+    return { phase: publicPhase, time: Date.now(), url: request.url(), method: request.method(), resourceType: request.resourceType(), frameUrl };
+  };
+  const pendingPublicRequests = new Set();
+  let lastPublicRequestActivity = Date.now();
+  const finishPublicRequest = request => {
+    if (pendingPublicRequests.delete(request)) lastPublicRequestActivity = Date.now();
+  };
+  page.on('request', request => {
+    publicDiagnostics.requests.push(requestDetails(request));
+    if (new URL(request.url()).origin === origin) {
+      pendingPublicRequests.add(request);
+      lastPublicRequestActivity = Date.now();
+    }
+  });
+  page.on('requestfinished', request => {
+    publicDiagnostics.responses.push({ ...requestDetails(request), event: 'requestfinished' });
+    finishPublicRequest(request);
+  });
+  page.on('requestfailed', request => {
+    publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText });
+    finishPublicRequest(request);
+  });
+  const settlePublicDocument = async stage => {
+    // A previously reached Playwright networkidle state can precede hydration's
+    // queued Next prefetches. Observe their actual completion after hydration,
+    // including requests triggered by poster scrolling, before replacing a page.
+    await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect.poll(() => pendingPublicRequests.size === 0 && Date.now() - lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: pendingPublicRequests.size, lastRequestActivity: lastPublicRequestActivity });
+  };
   try {
     for (const [path, locale] of routes) {
       await check('public-page', { engine, width, path }, async () => {
+        publicPhase = path;
+        publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors = [];
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
+        await settlePublicDocument('before-assertions');
         const state = await page.evaluate(() => ({ lang: document.querySelector('main')?.lang, htmlLang: document.documentElement.lang, overflow: document.documentElement.scrollWidth - innerWidth, title: document.querySelector('h1')?.textContent, players: document.querySelectorAll('.site-video-player').length, iframesBeforeClick: document.querySelectorAll('.site-video-player iframe').length }));
         assert.equal(state.htmlLang, locale, 'Document language must match the visible page locale');
         assert.equal(state.lang || state.htmlLang, locale, 'Effective page language (including valid inheritance)');
@@ -135,7 +199,10 @@ async function exercise(engine, browserType, width) {
           assert.equal(await page.locator('[data-consultation-capture="personal"]').count(), 1, 'About must contain one accessible personal consultation selector');
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
         // React may swap a max-resolution YouTube poster for its HQ fallback
         // while WebKit scrolls or decodes. Re-query the current image and retry
         // only these transient source/DOM-change errors, never a genuinely broken image.
@@ -158,6 +225,10 @@ async function exercise(engine, browserType, width) {
           await page.evaluate(() => scrollTo(0, 0));
           await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
         }
+        await settlePublicDocument('before-next-navigation');
+        assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
+        publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
         return state;
       });
     }
@@ -508,7 +579,16 @@ async function exercise(engine, browserType, width) {
         }
       }
     }
-  } finally { await context.close(); await browser.close(); }
+  } finally {
+    publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
+    writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
+    await context.close(); await browser.close();
+  }
+}
+if (label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname)) {
+  for (const browserType of [chromium, webkit]) {
+    await check('about-player-hydration', { engine: browserType.name(), providerStubbed: true }, () => verifyAboutPlayerHydration(browserType, { origin, evidence, label }));
+  }
 }
 await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chromium, 1365), exercise('webkit', webkit, 390), exercise('webkit', webkit, 1365)]);
 const browser = await chromium.launch();
@@ -523,7 +603,7 @@ try {
         assert.ok(csp, 'Missing document policy');
         const directives = Object.fromEntries(csp.split(';').map(value => value.trim().split(/\s+/)).map(([name, ...values]) => [name, values]));
         assert.deepEqual(directives['frame-src'], policy === 'private' ? ["'none'"] : ['https://www.youtube-nocookie.com', 'https://app.heygen.com']);
-        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://www.psitrends.com'] : ["'self'"]);
+        assert.deepEqual(directives['media-src'], policy === 'tantra' ? ["'self'", 'https://psitrends.com'] : ["'self'"]);
         for (const directive of ['object-src', 'base-uri', 'frame-ancestors']) assert.deepEqual(directives[directive], ["'none'"]);
         return { exactAllowlist: true, nativeMediaScoped: true };
       });

@@ -8,8 +8,12 @@ import {ASSESSMENT_DEFINITIONS} from '../lib/assessments/definitions.js'
 import {scoreAssessment} from '../lib/assessments/scoring.js'
 import {canonicalJSON} from '../lib/assessments/contracts.js'
 import {buildAssessmentResultReport} from '../lib/assessments/result-report.js'
+import {STORED_INTERPRETATION_VERSION} from '../lib/assessments/stored-interpretation.js'
+import {buildAuthoredAssessmentResultReport} from '../lib/assessments/result-report-authoring.js'
+import {preparedFiveBlockReport} from '../scripts/prepare-five-block-content.mjs'
+import {monitoringCatalogItem} from '../data/assessments/catalog.js'
 import {withInterpretationFixture} from './helpers/interpretation-fixture.mjs'
-const records=JSON.parse(gunzipSync(readFileSync(new URL('../data/assessment-interpretations/2026-10-12.v1.json.gz',import.meta.url))).toString('utf8')).records
+const records=JSON.parse(gunzipSync(readFileSync(new URL('../data/assessment-interpretations/'+STORED_INTERPRETATION_VERSION+'.json.gz',import.meta.url))).toString('utf8')).records
 
 test('prepared content covers every registered instrument locale and both report languages with stable hashes',()=>{
  assert.equal(records.length,ASSESSMENT_DEFINITIONS.length*2)
@@ -55,7 +59,7 @@ test('PDF model exposes missing DB content and uses only prepared practical step
  assert.equal(missing.tests[0].interpretation.status,'unavailable')
  assert.match(missing.tests[0].conclusion,/Interpretation unavailable/)
  const ready=buildClientReport({results:[withInterpretationFixture(result)]})
- assert.ok(ready.recommendations.includes(ready.tests[0].interpretation.sections[0].steps[0]))
+ assert.ok(ready.recommendations.includes(ready.tests[0].interpretation.sections[0].compact.recommendation))
  const renderer=readFileSync(new URL('../lib/profile/client-report-pdf.js',import.meta.url),'utf8')
  assert.match(renderer,/test.interpretation\?\.status === 'unavailable'/)
  assert.match(renderer,/note\(test.interpretation.title,test.interpretation.note\)/)
@@ -68,7 +72,7 @@ test('history and next-test guidance use prepared steps only when the latest exa
  const result={...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,2]))),id:'synthetic-latest',measurementAt:'2026-10-12T00:00:00Z'}
  assert.equal(practicalReflection([result]),'')
  const ready=withInterpretationFixture(result)
- assert.equal(practicalReflection([ready]),buildAssessmentResultReport(ready).sections[0].steps[0])
+ assert.equal(practicalReflection([ready]),buildAssessmentResultReport(ready).sections[0].compact.recommendation)
 })
 
 
@@ -114,4 +118,60 @@ test('offline release SQL is exact, insert-only, hash-checked and has no client 
  assert.throws(()=>interpretationSeedSql([records[0],records[0]]),/DUPLICATE/)
  const altered=structuredClone(records[0]);altered.payload.report.title='Changed'
  assert.throws(()=>interpretationSeedSql([altered]),/INVALID_INTERPRETATION_RECORD/)
+})
+
+
+test('Bach prepared reports expose exact verified range bounds for course adapters',()=>{
+ for(const d of ASSESSMENT_DEFINITIONS.filter(row=>row.key==='hh-bach-flower-profile'))for(const value of [0,1]){
+  const answers=Object.fromEntries(d.questions.map(q=>[q.id,value?(q.max??d.answerScale.max):(q.min??d.answerScale.min)]))
+  const result=scoreAssessment(d,answers)
+  for(const locale of ['en','ru']){
+   const report=buildAssessmentResultReport(withInterpretationFixture(result),locale)
+   assert.equal(report.status,'available')
+   for(const section of report.sections){
+    const dimension=result.dimensions.find(row=>row.key===section.key)
+    assert.equal(section.min,dimension.min)
+    assert.equal(section.max,dimension.max)
+    assert.equal(section.value,dimension.value)
+   }
+  }
+ }
+})
+
+
+test('MHC-SF About purpose preserves initials and the complete reviewed explanation in preparation and runtime',()=>{
+ const d=ASSESSMENT_DEFINITIONS.find(row=>row.key==='mhc-sf')
+ const result=scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,0])))
+ for(const locale of ['en','ru']) {
+  const expected=monitoringCatalogItem('mhc-sf').description[locale]
+  const authored=buildAuthoredAssessmentResultReport(result,locale)
+  assert.equal(authored.purpose,expected)
+  assert.equal(preparedFiveBlockReport(d,authored,locale).about.purpose,expected)
+  assert.equal(buildAssessmentResultReport(withInterpretationFixture(result),locale).presentation.about.purpose,expected)
+  assert.match(expected,locale==='en'?/Corey L\. M\. Keyes.*14-item.*Past-month emotional, social and psychological wellbeing/:/Кори Л\. М\. Киза.*14 английских.*Эмоциональное, социальное и психологическое благополучие/)
+ }
+})
+
+test('new immutable content version preserves every v2 payload field except the two reviewed MHC purposes',()=>{
+ const bytes=readFileSync(new URL('../data/assessment-interpretations/2026-10-12.v2.json.gz',import.meta.url))
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),'2eb5622ba136dcb33f9110b3dbe87c2b7df4d89634b83aad4e95563ab9975796')
+ const previous=JSON.parse(gunzipSync(bytes)).records
+ assert.equal(STORED_INTERPRETATION_VERSION,'2026-10-13.v1')
+ assert.equal(previous.length,records.length)
+ let purposes=0
+ for(let i=0;i<records.length;i++) {
+  const row=records[i],old=previous[i],expected=structuredClone(old.payload)
+  assert.equal(row.definitionId,old.definitionId)
+  assert.equal(row.uiLocale,old.uiLocale)
+  assert.equal(row.interpretationVersion,STORED_INTERPRETATION_VERSION)
+  expected.interpretationVersion=STORED_INTERPRETATION_VERSION
+  if(expected.identity.definitionKey==='mhc-sf') {
+   assert.notEqual(expected.report.presentation.about.purpose,expected.report.purpose)
+   expected.report.presentation.about.purpose=expected.report.purpose
+   purposes++
+  }
+  assert.deepEqual(row.payload,expected,row.definitionId+'/'+row.uiLocale)
+  assert.equal(row.payloadHash,'sha256:'+createHash('sha256').update(canonicalJSON(row.payload)).digest('hex'))
+ }
+ assert.equal(purposes,2)
 })

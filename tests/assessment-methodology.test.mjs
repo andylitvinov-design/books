@@ -112,6 +112,6 @@ test('purpose/origin/evidence explanations render in public explorer, prelogin s
   assert.match(savedBattery,/assessmentMethodology/)
   assert.match(savedBattery,/row\.methodology/)
   assert.match(report,/report\.methodology/)
-  assert.match(pdf,/test\.interpretation\?\.methodology/)
+  assert.match(pdf,/p\.about\.evidence/)
   for(const file of [explorer,picker,workspace,report])assert.doesNotMatch(file,/consultancyScore\s*=|diagnosis\s*=\s*true/i)
 })

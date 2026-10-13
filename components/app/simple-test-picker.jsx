@@ -300,4 +300,3 @@ export function SimpleTestPicker({
     <p className={styles.privacy}>{c.privacy} {!accountMode && <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/app`} prefetch={false}>{c.saved} →</Link>}</p>
   </section>
 }
-

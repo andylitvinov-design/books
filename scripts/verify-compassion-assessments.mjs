@@ -45,9 +45,27 @@ async function fill(page,d,mode,guest,locale){
  await finish.click()
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.key==='scs-sf'?1:5)
+ await expect(report.locator('[data-report-block="1"] article')).toHaveCount(d.key==='scs-sf'?1:5)
  for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)')
+ // The compact status uses Score/Баллы; keep exact arithmetic/range and
+ // the author-specific mean/reversal/limitation claims in technical details.
+ await expect(report.locator('[data-report-block="1"] [data-score-reading]')).toHaveText(
+  Array(d.key==='scs-sf'?1:5).fill(locale==='ru'?'Баллы: 3 (1–5)':'Score: 3 (1–5)'))
+ const technical=report.locator('[data-technical-report-details]')
+ const rules=d.key==='scs-sf'
+  ? locale==='ru'?['среднее 12 ответов','1, 4, 8, 9, 11 и 12 (6 минус ответ)','Публикуется только общий балл','ненадёжности подшкал краткой формы']
+    :['mean of all 12 responses','1, 4, 8, 9, 11 and 12 (6 minus the response)','Only the total is reported','short-form subscale scores are unreliable']
+  : locale==='ru'?['среднее 16 ответов','3, 7, 11 и 15 (6 минус ответ)','МЕНЬШЕ безразличия и БОЛЬШЕ сострадания','Это не прямой балл безразличия']
+    :['mean of 16 responses','3, 7, 11 and 15 (6 minus the response)','LESS indifference and MORE compassion','This is not the raw indifference score']
+ for(const text of [...rules,...(locale==='ru'
+  ?['Диапазон 1–5','это не диагноз и не клиническая норма','Категории и пороги не присваиваются','не является валидированной русской адаптацией']
+  :['Range 1–5','this is not a diagnosis or clinical norm','No categories or cutoffs are assigned','not a validated Russian adaptation'])])await expect(technical).toContainText(text)
+ await expect(report.locator('[data-report-block="5"] [data-explanation-source]').first()).toHaveAttribute('href',
+  'https://self-compassion.org/wp-content/uploads/2021/03/'+(d.key==='scs-sf'?'SCS-SF':'CS')+'-information.pdf#page=3')
+ await expect(report.locator('[data-report-block="5"] [data-explanation-origin]')).toHaveText(locale==='ru'
+  ?'Текст — изложение Holistic House; практические шаги подготовлены Holistic House.'
+  :'Text is a Holistic House explanation; practical steps are authored by Holistic House.')
+ await expect(technical).toContainText('2026-10-13.v1')
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
  if(d.key==='scs-sf')await expect(report).toContainText(locale==='ru'?'ненадёжности':'unreliable')
  else await expect(report).toContainText(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference')

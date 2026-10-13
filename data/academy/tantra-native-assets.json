@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "downloadedAt": "2026-10-12",
+  "policy": "Posters are byte-identical first-party assets. Native MP4 files remain on the existing original provider until a supported large-file transfer is available. Originals retained.",
+  "assets": [
+    {
+      "source": "https://www.psitrends.com/images/Снимок экрана 2024-01-16 111348.png",
+      "path": "/images/tantra-reiki/participant-1-poster.png",
+      "bytes": 1333012,
+      "sha256": "73419cd4c6e9e22be772d5a07c894c94a5db68ca6701cad1f35499572b1d4d41",
+      "contentType": "image/png"
+    },
+    {
+      "source": "https://www.psitrends.com/images/Снимок экрана 2024-01-16 111728.png",
+      "path": "/images/tantra-reiki/participant-2-poster.png",
+      "bytes": 760336,
+      "sha256": "12335b305bd0594eff70ba68cfa9435533db6adf7736e8fb2916700228ecacdd",
+      "contentType": "image/png"
+    }
+  ],
+  "nativeVideos": [
+    {
+      "source": "https://www.psitrends.com/images/video_2024-01-16_11-06-01.mp4",
+      "url": "https://psitrends.com/images/video_2024-01-16_11-06-01.mp4",
+      "sourceBytes": 46940688,
+      "sourceSha256": "9d4439c9906662a3ad630df7fd5c5c1dc63c6d0089d215de3e46a5f4911484ee",
+      "firstPartyMigration": "blocked: GitHub MCP request body limit 16 MiB; original retained"
+    },
+    {
+      "source": "https://www.psitrends.com/images/video.mp4",
+      "url": "https://psitrends.com/images/video.mp4",
+      "sourceBytes": 75440108,
+      "sourceSha256": "b65b07c7963543f7b7937ecbba4c93cab1648b417e6a002385d1641841b59ba0",
+      "firstPartyMigration": "blocked: GitHub MCP request body limit 16 MiB; original retained"
+    }
+  ]
+}

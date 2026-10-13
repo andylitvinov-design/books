@@ -68,7 +68,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
     publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : "frame-src 'none'",
-    tantraReikiPage ? "media-src 'self' https://www.psitrends.com" : "media-src 'self'",
+    tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'",
     "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)

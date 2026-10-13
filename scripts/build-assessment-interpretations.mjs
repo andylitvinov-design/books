@@ -1,3 +1,4 @@
+import {preparedFiveBlockReport,preparedFiveBlockScale} from './prepare-five-block-content.mjs'
 import { gzipSync } from 'node:zlib'
 import { preparePersonalityRules } from './prepare-personality-interpretation-rules.mjs'
 // Offline compiler: prepared content only. Does not connect to a database.
@@ -34,7 +35,7 @@ function scores(definition, dimension) {
   }
   return [...values].sort((a,b)=>a-b)
 }
-function sectionContent(section, locale) {
+function sectionContent(section, locale, definition) {
   const content = clone(without(section, section.explanation ? ['value','meaning'] : ['value']))
   if (content.explanation) {
     const number = new Intl.NumberFormat(locale, {maximumFractionDigits:2}).format(section.value)
@@ -48,6 +49,10 @@ function sectionContent(section, locale) {
     for (const prefix of ['The mean of ', 'Средний балл ', 'so ', 'поэтому '])
       content.explanation.reading = content.explanation.reading.replace(prefix + number + ' ', prefix + '{score} ')
   }
+  content.compact=preparedFiveBlockScale(definition,section,locale)
+  const actual=new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(section.value)
+  for(const prefix of ['The mean of ', 'Средний балл ', 'so ', 'поэтому '])content.compact.status=content.compact.status.replace(prefix+actual+' ',prefix+'{score} ')
+  for(const field of ['status','meaning'])for(const prefix of [': ', '= ', 'result ', 'результат '])content.compact[field]=content.compact[field].replace(prefix+actual+'.',prefix+'{score}.')
   return content
 }
 function bachScores(definition, name) {
@@ -64,28 +69,28 @@ function compile(definition, locale) {
   const baseReport = author(sample,locale)
   if (baseReport.status==='unavailable' || baseReport.sections.length!==sample.dimensions.length) throw new Error('Authoring coverage missing '+definition.id)
   const common = {schemaVersion:1,interpretationVersion:version,identity:provenance(definition),uiLocale:locale,
-    report:{...without(baseReport,['sections','seekSupport','highlightedCount','personalityType']),scaleGuide:getTestScaleGuide(definition.key,locale)}}
+    report:{...without(baseReport,['sections','seekSupport','highlightedCount','personalityType']),scaleGuide:getTestScaleGuide(definition.key,locale),presentation:preparedFiveBlockReport(definition,baseReport,locale)}}
   if (definition.key==='hh-bach-flower-profile') {
     const maxResult=scoreAssessment(definition,Object.fromEntries(definition.questions.map(q=>[q.id,q.max??definition.answerScale.max])))
     const marked=author(maxResult,locale)
-    return {...common,kind:'bach',markedReport:{...without(marked,['sections','seekSupport','highlightedCount']),scaleGuide:common.report.scaleGuide},
+    return {...common,kind:'bach',markedReport:{...without(marked,['sections','seekSupport','highlightedCount']),scaleGuide:common.report.scaleGuide,presentation:common.report.presentation},
       zeroMeaning:baseReport.sections[0].meaning,
       endorsedMeaning:locale==='ru'
         ? 'Вы отметили {evidenceCount} утверждений из разделов: {sections}. Суммарный вес совпадений — {value}. Это относительная выраженность традиционной темы Баха, а не клиническая шкала или показание к лечению.'
         : 'You endorsed {evidenceCount} statements in: {sections}. Weighted match: {value}. This describes the relative presence of a traditional Bach theme, not clinical severity or an indication for treatment.',
       sectionLabels:locale==='ru'?{situation:'текущая ситуация',character:'повторяющиеся паттерны',control:'контрольный срез'}:{situation:'present situation',character:'recurring patterns',control:'cross-check'},
       supportKeys:maxResult.dimensions.filter(d=>['Sweet Chestnut','Rock Rose','Gorse'].includes(d.sourceConstruct)).map(d=>d.key),supportText:marked.seekSupport,
-      scales:baseReport.sections.map(section=>({key:section.key,base:without(section,['value','meaning','group']),scores:bachScores(definition,sample.dimensions.find(d=>d.key===section.key).sourceConstruct),maxEvidence:definition.questions.filter(q=>q.remedy===sample.dimensions.find(d=>d.key===section.key).sourceConstruct).length}))}
+      scales:baseReport.sections.map(section=>({key:section.key,base:without(section,['value','meaning','group']),compactZero:preparedFiveBlockScale(definition,section,locale,{marked:false}),compactMarked:preparedFiveBlockScale(definition,section,locale),scores:bachScores(definition,sample.dimensions.find(d=>d.key===section.key).sourceConstruct),maxEvidence:definition.questions.filter(q=>q.remedy===sample.dimensions.find(d=>d.key===section.key).sourceConstruct).length}))}
   }
   let supportText=baseReport.seekSupport
   const scales=sample.dimensions.map(dimension=>{
-    const base=sectionContent(baseReport.sections.find(section=>section.key===dimension.key),locale), groups=new Map()
+    const base=sectionContent(baseReport.sections.find(section=>section.key===dimension.key),locale,definition), groups=new Map()
     for(const value of scores(definition,dimension)) {
       const changed={...sample,dimensions:sample.dimensions.map(d=>d.key===dimension.key?{...d,value}:d)}
       const report=author(changed,locale)
       if(report.status==='unavailable')throw new Error('Invalid compiled score '+definition.key+'/'+dimension.key+'/'+value)
       if(report.seekSupport)supportText=report.seekSupport
-      const patch=delta(base,sectionContent(report.sections.find(section=>section.key===dimension.key),locale))
+      const patch=delta(base,sectionContent(report.sections.find(section=>section.key===dimension.key),locale,definition))
       const key=canonicalJSON(patch)
       if(!groups.has(key))groups.set(key,{scores:[],delta:patch})
       groups.get(key).scores.push(value)

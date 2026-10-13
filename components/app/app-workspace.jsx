@@ -15,7 +15,9 @@ import PsiMonitoring from '@/components/app/psi-monitoring'
 import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { TestRating } from '@/components/app/test-rating'
+import { InsightTestScales } from '@/components/app/insight-test-scales'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { validSupportGoal } from '@/lib/assessments/course-targets'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -56,7 +58,7 @@ function preparedScaleMeaning(result, key, locale) {
   const report = buildAssessmentResultReport(result, locale)
   if (report.status !== 'available') return report.note
   const section = report.sections.find(item => item.key === key)
-  return section?.explanation?.construct || section?.meaning || report.note
+  return section?.compact?.meaning || report.note
 }
 function dateLabel(value, locale) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -148,10 +150,21 @@ export default function AppWorkspace({ locale, path = [] }) {
       window.removeEventListener('pagehide', hide)
     }
   }, [load, router])
+  useEffect(() => {
+    if (state !== 'ready' || !data) return
+    try {
+      const goal = sessionStorage.getItem('hh-pending-course-goal')
+      if (goal) sessionStorage.removeItem('hh-pending-course-goal')
+      if (validSupportGoal(goal)) router.replace(`/${locale}/app/course?support=${encodeURIComponent(goal)}`)
+    } catch { /* The course remains available if session storage is disabled. */ }
+  }, [state, data, locale, router])
   async function signin() {
     setBusy(true)
     setError(null)
     try {
+      // Preserve only an explicitly requested, public course topic across sign-in.
+      const goal = page === 'course' ? searchParams.get('support') : null
+      if (validSupportGoal(goal)) { try { sessionStorage.setItem('hh-pending-course-goal', goal) } catch { /* Optional navigation context. */ } }
       const result = await appFetch('auth/start', {
         locale,
         serviceId: searchParams.get('service') || null,
@@ -249,6 +262,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           <h1>{state === 'unavailable' ? c.unavailable : c.welcome}</h1>
           <p>{state === 'unavailable' ? c.unavailableText : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
+          {page === 'course' && <p>{locale === 'ru' ? 'Бесплатный курс содержит готовые практики. Войдите, чтобы выбрать направление; запись начинается только после вашего согласия.' : 'The free course uses prepared practices. Sign in to choose a direction; enrolment starts only with your consent.'}</p>}
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
               {c.signin}
@@ -344,7 +358,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'course' && <MyCourse data={data} locale={locale} requestedSupport={searchParams.get('support')} />}
           {page === 'analysis' && <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} />}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
@@ -1868,30 +1882,9 @@ function PortfolioPage({ data, locale }) {
                 {categoryGroups.map(group => {
             const latest = group.latest
             const report = buildAssessmentResultReport(latest, locale)
-            const first = report.sections[0]
-            const main = report.status === 'unavailable' ? null : latest.dimensions?.[0]
-            const displayMain = first?.explanation?.mixed ? {...main, direction: 'non-normative'} : main
             return (
               <article className="hh-insights-test-card" key={group.key}>
-                <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={displayMain} locale={locale} compact /></div>
-                  <div className="hh-insights-test-body">
-                    <div className="hh-insights-test-meta">
-                      <time dateTime={latest.measurementAt}>{dateLabel(latest.measurementAt, locale)}</time>
-                    </div>
-                    <h2>{group.title}</h2>
-                    {first && <p className="hh-insights-test-summary">{first.construct}: <strong>{first.value}</strong> · {first.band}</p>}
-                    {main && !first?.explanation?.mixed && <ScoreTrend current={latest} previous={group.periodPrior} dimensionKey={main.key} locale={locale} />}
-                    {latest.dimensions?.length > 1 &&
-                      <p className="hh-insights-test-scores">+ {latest.dimensions.length - 1} {ru ? 'дополнительных шкал' : 'more scales'}</p>}
-                    <strong className="hh-insights-open">{ru ? 'Открыть отчёт и рекомендации' : 'Open analysis & recommendations'} <span aria-hidden="true">→</span></strong>
-                  </div>
-                </Link>
-                {first && <div className="hh-insights-explanation" data-insights-explanation={latest.definitionKey}>
-                  <p><strong>{ru ? 'Что означает шкала:' : 'What the scale means:'}</strong> {first.explanation?.construct || first.meaning}</p>
-                  {first.steps[0] && <p><strong>{ru ? 'Практический шаг:' : 'Practical next step:'}</strong> {first.steps[0]}</p>}
-                  <small>{ru ? 'Пояснения всех шкал, подсчёт и источники — в полном отчёте.' : 'All scale explanations, scoring and sources are in the full report.'}</small>
-                </div>}
+                <InsightTestScales result={latest} report={report} previous={group.periodPrior} title={group.title} date={dateLabel(latest.measurementAt,locale)} locale={locale}/>
                 {group.count > 1 && (
                   <details className="hh-insights-history">
                     <summary>{ru ? `История прохождений (${group.count})` : `Assessment history (${group.count})`}</summary>
@@ -2481,7 +2474,7 @@ function ResultPage({ id, locale, data }) {
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
           <p className="hh-result-intro">
-            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
+            {locale === 'ru' ? 'Ваш результат и поддержка по выбранной теме.' : 'Your result and support for the topic you choose.'}
           </p>
         </div>
         <div className="hh-result-meta">
@@ -3439,4 +3432,3 @@ function Privacy({ locale, logout, onDeleted }) {
     </section>
   )
 }
-

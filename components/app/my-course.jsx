@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, ClipboardList, Feather, LockKeyhole, Sparkles } from 'lucide-react'
-import { GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS, growthSuggestions, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
+import { ArrowRight, BookOpen, Check, Feather, LockKeyhole, Sparkles } from 'lucide-react'
+import { GROWTH_GOALS, COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import CourseToday from './course-today'
-import { MONITORING_CATALOG } from '@/data/assessments/catalog'
+import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
+
+const asLocale = (value, locale) => value?.[locale] || value?.en || ''
 
 const WORDS = {
   en: {
@@ -15,7 +16,7 @@ const WORDS = {
     intro: 'Explore your stress patterns, choose your own tests and build practical skills with short daily exercises.',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
     start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
-    how: 'How it works', detailTitle: 'Four steps to your personal course',
+    how: 'How it works', detailTitle: 'Six steps to your personal course',
     detailIntro: 'Start with what matters to you. You choose the tests and goals; then follow a personal daily practice plan.',
     consentTitle: 'Save your course privately?', consentHelp: 'Your choices and optional notes are stored in your private account only after your consent.',
     consentConfirm: 'Agree & start', cancel: 'Not now',
@@ -61,7 +62,7 @@ const WORDS = {
     intro: 'Узнайте больше о своих стрессовых зонах, выберите нужные тесты и развивайте полезные навыки с короткими ежедневными практиками.',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
     start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
-    how: 'Как проходит курс', detailTitle: 'Четыре шага личного курса',
+    how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
     detailIntro: 'Начните с важных для вас тем. Вы сами выбираете тесты и цели, затем получаете ежедневные практики.',
     consentTitle: 'Сохранить курс приватно?', consentHelp: 'Ваш выбор и необязательные заметки сохранятся только в личном кабинете после согласия.',
     consentConfirm: 'Согласен(на), начать', cancel: 'Не сейчас',
@@ -104,7 +105,6 @@ const WORDS = {
   },
 }
 
-const asLocale = (value, locale) => value?.[locale] || value?.en || ''
 async function request(body) {
   const response = await fetch('/api/app/course', {
     method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
@@ -127,35 +127,39 @@ function Journey({ stage, locale }) {
   </ol>
 }
 
-export function MyCourse({ data, locale = 'en' }) {
+export function MyCourse({ data, locale = 'en', requestedSupport = null }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
-  const router = useRouter()
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
+  const [informationRequested, setInformationRequested] = useState(false)
   const startDialogRef = useRef(null)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [concerns, setConcerns] = useState('')
-  const [focusTags, setFocusTags] = useState([])
-  const [goals, setGoals] = useState([])
-  const [goalsAccepted, setGoalsAccepted] = useState(false)
-  const [problemLabel, setProblemLabel] = useState('')
-  const [intention, setIntention] = useState('')
+  const courseInfoScrolled = useRef(false)
+  const requestedGoal = typeof requestedSupport === 'string' && Object.hasOwn(GROWTH_GOALS, requestedSupport) ? requestedSupport : null
 
   async function refresh() {
     setError('')
     try {
       const response = await request()
       setState(response)
-      setConcerns(response.course?.concerns || '')
-      setFocusTags(response.course?.focusTags || [])
-      setProblemLabel((previous)=>previous || (response.course?.concerns||'').trim().slice(0,160))
     } catch (e) { setError(e.message) }
   }
-  useEffect(() => { void refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (state && !courseInfoScrolled.current && window.location.hash === '#about-course') {
+      const target = document.getElementById('about-course')
+      if (target) {
+        target.scrollIntoView({ block: 'start' })
+        courseInfoScrolled.current = true
+      }
+    }
+  }, [state, informationRequested])
+  useEffect(() => {
+    setInformationRequested(window.location.hash === '#about-course')
+    void refresh()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function act(action, values = {}) {
     if (busy) return
@@ -174,37 +178,14 @@ export function MyCourse({ data, locale = 'en' }) {
     startDialogRef.current?.showModal()
   }
 
-  async function openTestFinder(recommendedKey = null) {
-    if (busy || suggestedTopics.urgent || !state?.course) return
-    setBusy(true)
-    setError('')
-    try {
-      const saved = await request({
-        action: 'intake', expectedRevision: state.course.revision, concerns, focusTags,
-      })
-      setState(saved)
-      const params = new URLSearchParams({ explore: '1', filters: 'topics', course: '1' })
-      if (recommendedKey) params.set('suggest', recommendedKey)
-      router.push(root + '/tests?' + params.toString())
-    } catch (e) { setError(e.message) }
-    finally { setBusy(false) }
+  async function courseCommand(action,values={}) {
+    if (!state?.course) throw new Error('COURSE_NOT_STARTED')
+    return request({ action, expectedRevision:state.course.revision, ...values })
   }
 
-  const stateCourse = state?.course
-  const stage = stateCourse?.stage || 0
-  const assessment = state?.assessments || {}
-  const suggested = useMemo(() => growthSuggestions(data.results || [], locale), [data.results, locale])
-  const suggestedTopics = useMemo(() => suggestedCourseTopics(concerns), [concerns])
-  const testCards = useMemo(() => {
-    const match = MONITORING_CATALOG.filter((item) => item.startable && item.starterEligible !== false && item.rightsStatus === 'cleared' &&
-      (item.instrumentLocale === locale || item.instrumentLocale === 'dynamic') &&
-      focusTags.some((tag) => item.topics?.includes(tag)))
-    return match.sort((a, b) => (a.durationMinutes || 60) - (b.durationMinutes || 60)).slice(0, 3)
-  }, [focusTags, locale])
-  const hasTestSelection = (assessment.plannedInSet > 0 && assessment.planStatus !== 'cancelled') ||
-    assessment.resultsCount > 0
-  const testsReady = assessment.resultsCount > 0 && (assessment.planStatus !== 'active' ||
-    (assessment.plannedInSet > 0 && assessment.completedInSet >= assessment.plannedInSet))
+  const stage = state?.course?.stage || 0
+  const visibleStep = stage === 1 ? 2 : stage === 2
+    ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
@@ -223,17 +204,18 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
       <div className={styles.heroMark} aria-hidden="true"><Feather size={55} strokeWidth={1.1}/></div>
     </header>}
-    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + stage + ' ' + t.of + ' 4'}>
-      <strong>{t.step} {stage} {t.of} 4</strong><progress max={4} value={stage}/>
+    {requestedGoal && <section className={'hh-panel ' + styles.chapter} data-requested-support-topic={requestedGoal}><h2>{ru ? 'Направление из вашего отчёта' : 'A direction from your report'}</h2><p>{asLocale(GROWTH_GOALS[requestedGoal].title, locale)} — {asLocale(GROWTH_GOALS[requestedGoal].description, locale)}</p><p>{ru ? 'Это общая практика по выбранной теме. Вы сами выбираете тесты и направления в шагах курса.' : 'This is general practice for the chosen topic. You choose tests and directions in the course steps.'}</p></section>}
+    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+      <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
 
-    {stage === 0 && <section className={'hh-panel ' + styles.details} id="course-details">
+    {(stage === 0 || informationRequested) && <section className={'hh-panel ' + styles.details} id="course-details" data-course-information>
       <p className="hh-kicker">{t.how}</p>
-      <h2>{t.detailTitle}</h2>
+      <h2 id="about-course">{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
-      <Journey stage={0} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+      <Journey stage={stage === 0 ? 1 : visibleStep} locale={locale}/>
+      {stage === 0 && <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>}
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
@@ -252,106 +234,11 @@ export function MyCourse({ data, locale = 'en' }) {
       </div>
     </dialog>}
 
-    {stage === 1 && <section className={'hh-panel ' + styles.chapter}>
-      <h2>{t.concernsTitle}</h2>
-      <p>{t.focusIntro}</p>
-      <div className={styles.themes}>
-        <strong>{t.themes}</strong>
-        <div className={styles.chips}>
-          {COURSE_TOPICS.map((tag) => <button key={tag.id} type="button" aria-pressed={focusTags.includes(tag.id)}
-            onClick={() => setFocusTags((tags) => tags.includes(tag.id) ? tags.filter((x) => x !== tag.id) : [...tags,tag.id])}>
-            {asLocale(tag.title,locale)}
-          </button>)}
-        </div>
-      </div>
-      <details className={styles.optionalDetails}>
-        <summary>{t.optionalSituation}</summary>
-        <label htmlFor="growth-concerns" className={styles.formLabel}>{t.concernsHint}</label>
-        <textarea id="growth-concerns" rows={3} maxLength={1000} value={concerns} placeholder={t.concernPlaceholder}
-          onChange={(e) => setConcerns(e.target.value)} />
-        {suggestedTopics.topics.length > 0 && !suggestedTopics.urgent &&
-          <button type="button" className={styles.suggestButton} onClick={() => setFocusTags(suggestedTopics.topics)}>
-            <Sparkles size={16} aria-hidden="true"/>{t.suggestTopics}
-          </button>}
-      </details>
-      {suggestedTopics.urgent && <p role="alert" className={styles.error}>{t.urgent}</p>}
-      <div className={styles.testChoices}>
-        <strong>{t.testChoiceTitle}</strong>
-        <p>{t.testChoiceHint}</p>
-        <button type="button" className="hh-primary" disabled={busy || suggestedTopics.urgent} onClick={() => openTestFinder()}>
-          {t.chooseMyTests}<ArrowRight size={17} aria-hidden="true"/>
-        </button>
-        <button type="button" className={styles.suggestionToggle} aria-expanded={showSuggestions}
-          aria-controls="course-test-suggestions" onClick={() => setShowSuggestions((v) => !v)}>
-          {showSuggestions ? t.hideSuggestions : t.seeSuggestions}
-        </button>
-        {showSuggestions && <div id="course-test-suggestions" className={styles.testMatches}>
-          <strong>{t.suggestions}</strong>
-          <p className={styles.small}>{t.suggestionsOptional}</p>
-          {testCards.length ? testCards.map((item) => <button type="button" key={item.key}
-            disabled={busy || suggestedTopics.urgent} className={styles.testMatch} onClick={() => openTestFinder(item.key)}>
-            <ClipboardList size={17} aria-hidden="true"/><span>{asLocale(item.title,locale)}</span>
-            <small>~{item.durationMinutes} min</small><ArrowRight size={16} aria-hidden="true"/>
-          </button>) : <p className={styles.small}>{t.testHint}</p>}
-        </div>}
-        <p className={styles.small}>{t.saveReturn}</p>
-      </div>
-      {hasTestSelection && <button type="button" disabled={busy || suggestedTopics.urgent}
-        onClick={async () => {
-          if (busy || suggestedTopics.urgent) return
-          setBusy(true); setError('')
-          try {
-            const saved = await request({ action:'intake', expectedRevision:stateCourse.revision, concerns, focusTags })
-            setState(await request({ action:'to-tests', expectedRevision:saved.course.revision }))
-          } catch (e) { setError(e.message) }
-          finally { setBusy(false) }
-        }}>{t.selectedReady}<ArrowRight size={17} aria-hidden="true"/></button>}
-    </section>}
-
-    {stage === 2 && <section className={'hh-panel ' + styles.chapter}>
-      <p className="hh-kicker">{t.step} 2 {t.of} 4</p>
-      <h2>{t.testTitle}</h2><p>{t.testText}</p>
-      <div className={styles.stats}><div><strong>{assessment.plannedInSet || 0}</strong><span>{t.selected}</span></div><div><strong>{assessment.completedInSet || 0}</strong><span>{t.done}</span></div><div><strong>{assessment.resultsCount || 0}</strong><span>{t.results}</span></div></div>
-      <Link href={root + '/tests'} className="hh-primary" prefetch={false}>{t.runTests}<ArrowRight size={17}/></Link>
-      <p className={styles.small}>{t.noTests}</p>
-      <button type="button" disabled={busy || !testsReady} onClick={() => act('review')}>{t.review}<ArrowRight size={17}/></button>
-    </section>}
-
-    {stage === 3 && <section className={'hh-panel ' + styles.chapter}>
-      <p className="hh-kicker">{t.step} 3 {t.of} 4</p>
-      <h2>{t.approveTitle}</h2><p>{t.approveText}</p>
-      <Link href={root + '/portfolio'} prefetch={false} className={styles.textLink}>{t.another}<ArrowRight size={16}/></Link>
-      <p className={styles.small}>{suggested.length ? t.basedOn : t.noDerived}</p>
-      <div className={styles.goals}>
-        {Object.entries(GROWTH_GOALS).map(([key, value]) => {
-          const evidence = suggested.find((r) => r.goal === key)
-          const selected = goals.includes(key)
-          return <label key={key} className={styles.goal} data-selected={selected}>
-            <input type="checkbox" checked={selected} disabled={!selected && goals.length >= 3}
-              onChange={(e) => setGoals((prev) => e.target.checked ? [...prev, key] : prev.filter((k) => k !== key))}/>
-            <span><strong>{asLocale(value.title,locale)}</strong><small>{asLocale(value.description,locale)}</small>
-              {evidence && <em>{t.interest}: {evidence.scaleKey} · {evidence.response}/10 · {new Date(evidence.measuredAt).toLocaleDateString(ru?'ru-RU':'en-CA')}</em>}
-            </span>
-          </label>
-        })}
-      </div>
-      <p className={styles.small}>{t.optional} · {t.notDiagnostic}</p>
-      <div className={styles.length}><strong>{t.duration}: {t.days14}</strong><p className={styles.small}>{t.nextCycleHint}</p></div>
-      <label className={styles.formLabel} htmlFor="growth-target">{t.targetPrompt}</label>
-      <input id="growth-target" maxLength={160} value={problemLabel}
-        onChange={e=>setProblemLabel(e.target.value)}
-        placeholder={ru?'Напряжение при общении':'Tension in conversations'} required/>
-      <p className={styles.small}>{t.targetHint}</p>
-      <label className={styles.formLabel} htmlFor="growth-intention">{t.intentionPrompt}</label>
-      <textarea id="growth-intention" rows={2} maxLength={300} value={intention}
-        onChange={e=>setIntention(e.target.value)}/>
-      <label className={styles.consent}><input type="checkbox" checked={goalsAccepted} onChange={(e)=>setGoalsAccepted(e.target.checked)}/><span>{t.consentGoals}</span></label>
-      <button type="button" className="hh-primary" disabled={busy || !goals.length || !goalsAccepted || problemLabel.trim().length<3}
-        onClick={() => act('choose-goals', { goals, durationDays:14, consent:true,
-          problemLabel:problemLabel.trim(),intention,
-          timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' })}>
-        {t.confirm}<ArrowRight size={17}/></button>
-    </section>}
+    {stage >= 1 && stage <= 3 && <CourseR3Steps
+      stage={stage} locale={locale} data={data} state={state} busy={busy}
+      onAct={act} onCourseCommand={courseCommand}
+      onState={setState} onError={setError} root={root}
+    />}
 
     {stage === 4 && <CourseToday locale={locale} />}
 

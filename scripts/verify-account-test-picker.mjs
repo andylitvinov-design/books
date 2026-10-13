@@ -111,6 +111,13 @@ try {
     // Wait for that actual completion before testing reload; do not race goto
     // against a legitimate in-flight post-save navigation in WebKit.
     await expect(page).toHaveURL(origin + '/' + locale + '/app/tests?plan=' + after.activeTestPlan.id)
+    // A confirmed plan revision resets pending choices before any page reload,
+    // while its saved filters remain available in the newly mounted picker.
+    await open.click(); await expect(picker).toBeVisible()
+    await expect(picker.locator('[data-selected-test-key]')).toHaveCount(0)
+    await expect(add).toBeDisabled()
+    await expect(picker.getByRole('button', { name: ru ? 'Сон' : 'Sleep', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await picker.getByRole('button', { name: ru ? '← Назад к моим тестам' : '← Back to My tests', exact: true }).click()
     await page.waitForLoadState('networkidle')
     await page.reload(); await page.waitForLoadState('networkidle')
     await open.click()

@@ -122,8 +122,8 @@ test('every Bach result has human-readable bilingual guidance and all-zero answe
       }
     }
   }
-  const ui = read('components/app/personal-result-report.jsx')
+  const ui = read('components/app/compact-assessment-report.jsx')
   assert.match(ui, /report\.highlightedCount/)
-  assert.match(ui, /<details className=\{styles\.more\}>/)
+  assert.match(ui, /<details className=\{styles\.details\}>/)
   assert.match(ui, /data-bach-profile/)
 })
