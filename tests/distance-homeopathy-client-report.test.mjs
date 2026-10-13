@@ -63,6 +63,37 @@ test('generated PDF contains an original remedy photo and optional complete arti
   assert.ok(withGuide.length > basic.length + 1000, 'optional article must add real text and pages')
   assert.ok((withGuide.toString('latin1').match(/\/Type \/Page \/Parent/g) ?? []).length >
     (basic.toString('latin1').match(/\/Type \/Page \/Parent/g) ?? []).length)
+  // The optional article must be fully embedded, not replaced by a link.
+  // Existing remedy-profile hyperlinks remain available in the core report.
+  for (const pdf of [basic, withGuide]) {
+    const source = pdf.toString('latin1')
+    assert.doesNotMatch(source, /\/library\/distance-homeopathy/)
+    assert.match(source, /\/URI \(https:\/\/holistichouse\.vercel\.app\/ru\/homeopathy\/remedies\/colchicum-autumnale\)/)
+  }
+  // The final appendix is a separate PDF page without outbound article links.
+  const pageObjects = [...withGuide.toString('latin1').matchAll(/\/Type \/Page \/Parent[^>]+>>/g)].map(m => m[0])
+  assert.ok(pageObjects.length >= 2)
+  assert.doesNotMatch(pageObjects.at(-1), /\/Annots \[/)
+})
+
+test('guide is an explicitly named final appendix in HTML and PDF, never an external article link', () => {
+  const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+  const html = source('components/prescription-document.jsx')
+  const guide = source('components/distance-homeopathy-guide.tsx')
+  const pdf = source('lib/prescriptions/pdf.js')
+  const service = source('components/core-service-detail.tsx')
+  assert.match(guide, /data-report-appendix=\{report \? "distance-homeopathy"/)
+  assert.match(guide, /Приложение · Дистанционная гомеопатия/)
+  assert.match(guide, /Appendix · Distance homeopathy/)
+  assert.match(guide, /!report && <nav/)
+  assert.ok(html.indexOf('document.includeDistanceHomeopathy && <DistanceHomeopathyGuide') >
+    html.indexOf('canonical-remedy-profiles'), 'the full article follows the remedy profiles as the last report appendix')
+  assert.match(pdf, /if \(document\.includeDistanceHomeopathy === true\) \{/)
+  assert.match(pdf, /distanceHomeopathyAppendixBlocks\(locale\)/)
+  assert.doesNotMatch(pdf, /\/library\/distance-homeopathy/)
+  assert.doesNotMatch(service, /href="#distance-homeopathy-guide"/)
+  assert.match(source('components/consultation-form.jsx'), /name="includeDistanceHomeopathy"/)
+  assert.match(source('components/prescription-form.jsx'), /name="includeDistanceHomeopathy"/)
 })
 
 test('service page, editor, preview and HTML report all reference the one optional guide', () => {

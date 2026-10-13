@@ -206,14 +206,9 @@ async function verifyPublicServiceConversionJourneys(){
      }))
      assert.ok(headingSize.scroll<=headingSize.client+1,
       'Distance-homeopathy heading must wrap inside its '+width+'px '+locale+' article: '+JSON.stringify(headingSize))
-     const articleLink=servicePage.locator('a[href="#distance-homeopathy-guide"]')
-     await expect(articleLink).toBeVisible()
-     const rect=await articleLink.evaluate(node=>{
-      const bounds=node.getBoundingClientRect()
-      return {left:bounds.left,right:bounds.right,viewport:window.innerWidth}
-     })
-     assert.ok(rect.left>=-1&&rect.right<=rect.viewport+1,
-      'Alchemy article link must remain within the '+width+'px viewport in '+locale+': '+JSON.stringify(rect))
+     // The article itself stays on the Alchemy page, but there is no
+     // navigation link to inject into client reports or service copy.
+     await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue

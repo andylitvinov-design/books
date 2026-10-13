@@ -109,7 +109,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       <label className="prescription-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input name="includeDistanceHomeopathy" type="checkbox" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span><strong>Distance homeopathy · Дистанционная гомеопатия</strong>
-          <small>Include the full illustrated guide as the final appendix of the client's report and PDF.</small>
+          <small>Include the full article text as the final appendix in the client report and PDF, without a website link.</small>
         </span>
       </label>
       <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>

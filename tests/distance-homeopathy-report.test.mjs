@@ -63,7 +63,7 @@ test('client PDF embeds each selected canonical original remedy text and photo',
   const pdf = buildPrescriptionPdf(client, 'en', origin)
   const source = pdf.toString('latin1')
   assert.match(source, /^%PDF-1\.7/)
-  assert.match(source, /SELECTED REMEDY PROFILES/)
+  assert.match(source, /APPENDIX/)
   assert.match(source, /Colchicum Autumnale/)
   assert.match(source, /Ambra Grisea/i)
   assert.match(source, /\/RemedyPhoto1 Do Q/)
@@ -80,10 +80,11 @@ test('selected full guide is appended after remedy profiles, and disabled guide 
   const marker = 'Distance homeopathy. How does the process work?'
   assert.equal(off.includes(marker), false)
   assert.equal(on.includes(marker), true)
-  assert.ok(on.indexOf(marker) > on.indexOf('SELECTED REMEDY PROFILES'))
-  // The visible link caption uses a Unicode arrow and is correctly CID-encoded in PDF.
-  // Check its real clickable URI instead of searching for an unencoded glyph stream.
-  assert.match(on, /\/URI \(https:\/\/example\.test\/en\/library\/distance-homeopathy\)/)
+  assert.ok(on.indexOf(marker) > on.indexOf('APPENDIX'))
+  // The complete appendix is now in the PDF itself: no external article URI.
+  // Hyperlinks to individual remedies remain part of the primary report.
+  assert.doesNotMatch(on, /\/URI \(https:\/\/example\.test\/en\/library\/distance-homeopathy\)/)
+  assert.match(on, /\/URI \(https:\/\/example\.test\/en\/homeopathy\/remedies\/colchicum-autumnale\)/)
   assert.ok(on.length > off.length)
 
   const noOrigin = buildPrescriptionPdf(clientDocument(true), 'en')
@@ -108,7 +109,7 @@ test('guide never leaks into an invoice and does not add unselected images', () 
     patientName, dateIssued: '2026-10-13', items: [{ displayName: 'Custom source-only text' }],
     includeDistanceHomeopathy: false,
   }, 'en', origin).toString('latin1')
-  assert.doesNotMatch(noSelected, /SELECTED REMEDY PROFILES/)
+  assert.doesNotMatch(noSelected, /APPENDIX/)
 })
 
 test('report and Alchemy page reuse the same article and private workflow safely', () => {
