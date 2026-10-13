@@ -25,13 +25,20 @@ test('consultation studio presents three bilingual steps without replacing the p
   assert.match(form, /disabled=\{pending\}/)
 })
 
-test('invoice required inputs stay visible outside collapsed payment settings', async () => {
+test('invoice inputs are required only after opting in, outside collapsed optional settings', async () => {
   const form = await read('components/consultation-form.jsx')
   const grid = form.indexOf('<div className="consultation-payment-row consultation-studio-payment-grid">')
   const details = form.indexOf('<details className="consultation-details consultation-payment-settings">')
   assert.ok(grid > 0 && details > grid)
   assert.ok(form.indexOf('name="service" required', grid) < details)
-  assert.ok(form.indexOf('name="amount" inputMode="decimal" required', grid) < details)
+  assert.ok(form.indexOf('name="amount" type="number"', grid) < details)
+  assert.match(form, /min="0.01" max="1000000" step="0.01" required/)
+  assert.match(form, /includeInvoice && <div className="consultation-studio-invoice-panel">/)
+  assert.match(form, /useState\(Boolean\(payment\)\)/)
+  assert.match(form, /useState\(true\)/)
+  assert.match(form, /name="includeRecommendation" checked=\{includeRecommendation\}/)
+  assert.match(form, /name="includeInvoice" checked=\{includeInvoice\}/)
+  assert.match(form, /includeRecommendation && !validateConsultationRows\(items\)/)
   for (const field of ['amount','currency','service','paymentStatus','paymentMethod','documentNumber','itemsJson']) {
     assert.equal((form.match(new RegExp('name="' + field + '"', 'g')) || []).length, 1, field)
   }
