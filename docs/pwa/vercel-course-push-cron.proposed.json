@@ -1,0 +1,4 @@
+{
+  "_status": "UNAPPLIED EXAMPLE ONLY. Requires explicit approval, capacity/cost review, secrets and database setup. Do not deploy this file as vercel.json.",
+  "crons": [{ "path": "/api/app/notifications/dispatch", "schedule": "*/5 * * * *" }]
+}

@@ -13,6 +13,7 @@ import {
   setGuestCookie,
 } from '@/lib/app/guest-session'
 import { consumeRate } from '@/lib/app/database'
+import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
   createGuestSaveIntent,
@@ -477,6 +478,7 @@ async function handle(request, { params }) {
     if (path[0] === 'context' && path.length === 2)
       return json(await repo.contextEvent(actor, path[1], body))
     if (joined === 'deletion') {
+      await createBillingService(config).guardAccountDeletion(actor)
       const result = await repo.requestDeletion(actor, body)
       await auth.client.auth.signOut({ scope: 'global' })
       return auth.clear(json(result, 202))
@@ -492,3 +494,4 @@ async function handle(request, { params }) {
   }
 }
 export { handle as GET, handle as POST }
+

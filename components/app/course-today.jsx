@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
+import { useLessonCompletionOffer } from './subscription-access'
 import styles from './course-today.module.css'
 
 const UI={
@@ -90,8 +91,9 @@ async function api(action,locale,body){
     headers:body?{'Content-Type':'application/json'}:undefined,
     body:body?JSON.stringify(body):undefined,
   })
-  const value=await response.json().catch(()=>({}))
-  if(!response.ok)throw new Error(value.error||'SERVICE_UNAVAILABLE')
+  const value=await response.json()
+  if(!response.ok||value?.error)throw new Error(value?.error||'SERVICE_UNAVAILABLE')
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('SERVICE_UNAVAILABLE')
   return value
 }
 const choices=[null,0,1,2,3,4,5,6,7,8,9,10]
@@ -118,6 +120,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
 }
 
 export default function CourseToday({locale='en'}){
+ const notifyLessonSaved=useLessonCompletionOffer()
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0)
@@ -150,6 +153,7 @@ export default function CourseToday({locale='en'}){
   setBusy(true);setError('')
   try {
     const result=await api(action,locale,body)
+    if(action==='session'&&result?.cycle?.id!==data?.cycle?.id)throw new Error('SERVICE_UNAVAILABLE')
     hydrate(result)
     if(after)after()
   }catch(e){setError(e.message)}
@@ -289,7 +293,10 @@ export default function CourseToday({locale='en'}){
       <button type="button" className="hh-primary" disabled={busy||paused} onClick={()=>submit('session',{
         operationId:crypto.randomUUID(),day:cycle.day,lessonId:lesson.id,feedback,
         beforeNow:beforeValue(beforeNow),afterNow:beforeValue(afterNow),reflection,
-      },()=>setExpanded(''))}>{t.finish}<Check size={17}/></button>}
+      },()=>{
+        setExpanded('')
+        notifyLessonSaved({cycleId:cycle.id,day:cycle.day,lessonId:lesson.id})
+      })}>{t.finish}<Check size={17}/></button>}
    </DailyCard>
   </>}
   <section className={styles.graph} aria-labelledby="course-problem-graph">
@@ -351,3 +358,4 @@ export default function CourseToday({locale='en'}){
   <p className={styles.footnote}><ShieldCheck size={16}/>{t.disclaimer}</p>
  </section>
 }
+

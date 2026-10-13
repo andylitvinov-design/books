@@ -37,6 +37,10 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
+import { SubscriptionProvider, SubscriptionSettings, SubscriptionHousePromo, useSubscription } from '@/components/app/subscription-access'
+import CrmManager from '@/components/app/crm-manager'
+import CommunicationPreferences from '@/components/app/communication-preferences'
+import CourseNotificationSettings from '@/components/pwa/course-notification-settings'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -309,6 +313,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
   ]
   return (
+    <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
     <main className="hh-app">
       <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
@@ -377,9 +382,9 @@ export default function AppWorkspace({ locale, path = [] }) {
             </>
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
-          {page === 'course' && <MyCourse data={data} locale={locale} />}
+          {page === 'course' && <><MyCourse data={data} locale={locale} /><SubscriptionHousePromo /></>}
           {page === 'analysis' && <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} />}
-          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
+          {page === 'practice' && <><PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />{data.practitioner && <CrmManager key={data.account.id} accountId={data.account.id} locale={locale} />}</>}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
@@ -431,6 +436,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              <SubscriptionSettings />
+              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <CourseNotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
@@ -456,6 +464,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мой курс' : 'My course'}</span></Link>
       </nav>}
     </main>
+    </SubscriptionProvider>
   )
 }
 
@@ -1068,6 +1077,7 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
 }
 
 function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode = false }) {
+  const { offerAfterCompletion } = useSubscription()
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -1200,6 +1210,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     setBusy(true)
     try {
       const result = await appFetch(`runs/${id}/submit`, { expectedRevision: saved.revision })
+      // The offer is queued only after server persistence. Course sequencing stays nonblocking.
+      if (result?.id) offerAfterCompletion(`test:${result.id}`)
       await onComplete(result, destination)
     } catch (e) {
       setError(e)

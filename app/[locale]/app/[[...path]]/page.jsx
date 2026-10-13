@@ -6,10 +6,14 @@ import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const metadata = {
+export async function generateMetadata({ params }) {
+  const { locale } = await params
+  return {
   title: 'My tests | Holistic House',
+  manifest: locale === 'ru' ? '/course-ru.webmanifest' : '/course.webmanifest',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
+  }
 }
 export default async function AppPage({ params }) {
   const { locale, path = [] } = await params

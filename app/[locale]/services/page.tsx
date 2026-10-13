@@ -6,6 +6,7 @@ import { PageVideo } from "@/components/page-video";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { ServiceCart } from "@/components/commerce/service-cart";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { FreeInsightsPaths } from "@/components/free-insights-paths";
 import solutionStyles from "@/components/services-solutions.module.css";
@@ -75,6 +76,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <FreeInsightsPaths locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
+      <ServiceCart locale={locale as Locale} />
 
       <details className={solutionStyles.extra} id="method-videos" open>
         <summary className={solutionStyles.extraSummary}>
@@ -262,3 +264,4 @@ export default async function ServicesPage({ params }: PageProps) {
     </main>
   );
 }
+

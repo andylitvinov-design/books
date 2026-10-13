@@ -23,9 +23,11 @@
     "native:android:debug": "cap sync android && cd android && ./gradlew assembleDebug --stacktrace",
     "verify:ia-v2": "node scripts/verify-ia-v2.mjs",
     "verify:seo": "node scripts/verify-seo.mjs",
-    "test:app": "node --conditions=react-server --test tests/app-client-fetch.test.mjs tests/app-assessments.test.mjs tests/personal-guidance.test.mjs tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs tests/app-http-security.test.mjs tests/app-timestamps.test.mjs tests/assessment-share.test.mjs tests/report-claim-flow.test.mjs tests/report-invitation-handoff.test.mjs tests/client-account-document-save.test.mjs tests/app-housekeeping-cron.test.mjs tests/master-network-r2.test.mjs tests/client-comprehensive-report.test.mjs tests/assessment-result-experience.test.mjs tests/bach-flower-profile.test.mjs tests/assessment-interpretation-registry.test.mjs tests/assessment-scale-guides.test.mjs tests/dashboard-gauges.test.mjs tests/compassion-assessments.test.mjs tests/relationships-intimacy.test.mjs tests/mhc-sf-assessment.test.mjs tests/personality-types-original-2026.test.mjs tests/assessment-methodology.test.mjs tests/my-course.test.mjs",
+    "test:app": "node --conditions=react-server --test tests/app-client-fetch.test.mjs tests/app-assessments.test.mjs tests/personal-guidance.test.mjs tests/app-migration-contract.test.mjs tests/app-guest-report-migration.test.mjs tests/app-http-security.test.mjs tests/app-timestamps.test.mjs tests/assessment-share.test.mjs tests/report-claim-flow.test.mjs tests/report-invitation-handoff.test.mjs tests/client-account-document-save.test.mjs tests/app-housekeeping-cron.test.mjs tests/master-network-r2.test.mjs tests/client-comprehensive-report.test.mjs tests/assessment-result-experience.test.mjs tests/bach-flower-profile.test.mjs tests/assessment-interpretation-registry.test.mjs tests/assessment-scale-guides.test.mjs tests/dashboard-gauges.test.mjs tests/compassion-assessments.test.mjs tests/relationships-intimacy.test.mjs tests/mhc-sf-assessment.test.mjs tests/personality-types-original-2026.test.mjs tests/assessment-methodology.test.mjs tests/my-course.test.mjs && npm run test:monetization",
     "test:app:db": "node --conditions=react-server --test --test-concurrency=1 tests/app-database.integration.mjs",
-    "app:housekeeping": "node --conditions=react-server scripts/run-app-housekeeping.mjs"
+    "app:housekeeping": "node --conditions=react-server scripts/run-app-housekeeping.mjs",
+    "test:monetization": "node --conditions=react-server --test tests/billing-*.test.mjs tests/subscription-ui.test.mjs tests/service-*.test.mjs tests/crm-*.test.mjs tests/notifications*.test.mjs tests/course-test-sequence.test.mjs",
+    "test:billing:db": "node --conditions=react-server --test --test-concurrency=1 tests/billing-database.integration.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",
@@ -40,17 +42,19 @@
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.114.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
     "next": "^15.5.21",
+    "pg": "8.16.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "server-only": "0.0.1",
+    "stripe": "^23.0.0",
     "tailwind-merge": "^3.3.0",
-    "@supabase/ssr": "0.12.7",
-    "@supabase/supabase-js": "2.114.0",
-    "pg": "8.16.3",
-    "server-only": "0.0.1"
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

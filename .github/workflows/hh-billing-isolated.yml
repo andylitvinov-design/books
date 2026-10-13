@@ -1,0 +1,38 @@
+name: Holistic House isolated billing database verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+permissions:
+  contents: read
+concurrency:
+  group: hh-billing-database-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  billing-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # This must be a fresh, dedicated service. Never reuse the app-R1 database.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_BILLING_TEST_APPLY_PROPOSALS: synthetic-only
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Billing, commerce, CRM and push SQL/RLS with real concurrent transactions
+        run: npm run test:billing:db
