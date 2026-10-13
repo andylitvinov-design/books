@@ -1,11 +1,11 @@
 /* Compact Holistic House Profile — shared by the Google and private-link cabinets. */
 .hh-profile-domains {
-  --domain-ink:#382e30;
-  --domain-muted:#756b69;
-  --domain-line:#e7dcd7;
-  --domain-accent:#762f49;
-  --domain-accent-dark:#612138;
-  --domain-paper:#fffdfb;
+  --domain-ink:#35443b;
+  --domain-muted:#68766d;
+  --domain-line:#d6e3da;
+  --domain-accent:#297667;
+  --domain-accent-dark:#205f52;
+  --domain-paper:#fffefa;
   color:var(--domain-ink);
   width:100%;
   max-width:1100px;
@@ -14,18 +14,18 @@
 .hh-profile-domains * { box-sizing:border-box; }
 .hh-domain-hero {
   display:grid;
-  grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  grid-template-columns:minmax(0,1fr);
   align-items:center;
   gap:clamp(16px,3vw,28px);
   padding:19px clamp(16px,2.5vw,24px);
   margin-bottom:13px;
   border:1px solid var(--domain-line);
   border-radius:18px;
-  background:linear-gradient(125deg,#fffdf9 45%,#f9f2ee);
+  background:linear-gradient(135deg,#f3f9f5 0%,#fcfaf4 100%);
 }
 .hh-domain-title { min-width:0; }
 .hh-domain-eyebrow {
-  color:#966a69;
+  color:#397668;
   font:750 10px/1.4 system-ui,sans-serif;
   text-transform:uppercase;
   letter-spacing:.11em;
@@ -34,23 +34,23 @@
 .hh-domain-hero h1 {
   font:400 clamp(28px,3.3vw,37px)/1.1 Georgia,serif;
   letter-spacing:-.035em;
-  color:#39272d;
+  color:#33352f;
   margin:0 0 5px!important;
 }
 .hh-domain-hero-subtitle {
   margin:0!important;
-  color:#786b65!important;
+  color:#6a796e!important;
   font:450 12px/1.5 system-ui,sans-serif!important;
 }
 .hh-domain-glance { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0;margin:0; }
 .hh-domain-glance > div {
   display:flex;flex-direction:column-reverse;justify-content:center;gap:3px;
   min-width:0;min-height:70px;padding:10px 12px;
-  border:1px solid #ece2dc;border-radius:12px;background:#fffdfa;
+  border:1px solid #dbe8de;border-radius:12px;background:#fffefa;
 }
-.hh-domain-glance dt { color:#85756e;font:600 10.5px/1.35 system-ui,sans-serif;overflow-wrap:anywhere; }
+.hh-domain-glance dt { color:#698075;font:600 10.5px/1.35 system-ui,sans-serif;overflow-wrap:anywhere; }
 .hh-domain-glance dd {
-  margin:0;color:#632b43;
+  margin:0;color:#2b6a57;
   font:650 clamp(15px,1.8vw,23px)/1.23 system-ui,sans-serif;
   letter-spacing:-.025em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
 }
@@ -63,39 +63,39 @@
   flex:1 0 auto;display:inline-flex;flex-direction:row;justify-content:center;align-items:center;
   gap:8px;min-width:max-content;min-height:45px!important;padding:9px 13px!important;
   border:1px solid var(--domain-line)!important;border-radius:12px!important;
-  background:var(--domain-paper)!important;color:#665a58!important;
+  background:var(--domain-paper)!important;color:#50695d!important;
   box-shadow:none!important;cursor:pointer;text-align:center;
   transition:background .15s ease,border-color .15s ease;
   white-space:nowrap;font:inherit;
 }
-.hh-domain-tabs button svg { flex:0 0 auto;color:#93767a; }
+.hh-domain-tabs button svg { flex:0 0 auto;color:#4f8273; }
 .hh-domain-tabs button strong { font:700 12px/1.25 system-ui,sans-serif;letter-spacing:0;color:inherit; }
 .hh-domain-tabs button small {
   display:inline-flex;justify-content:center;align-items:center;flex:0 0 auto;
   min-width:20px;min-height:20px;padding:2px 5px;border-radius:7px;
-  color:#8a7c7a;background:#f2efeb;
+  color:#647e72;background:#e9f1ea;
   font:700 10px/1 system-ui,sans-serif;
 }
-.hh-profile-domains .hh-domain-tabs button:hover { background:#f8f0ef!important;border-color:#d5b9c2!important; }
+.hh-profile-domains .hh-domain-tabs button:hover { background:#e8f2eb!important;border-color:#a5c8b6!important; }
 .hh-profile-domains .hh-domain-tabs button.is-current {
-  border-color:#762f49!important;background:#762f49!important;color:#fff!important;
+  border-color:#297667!important;background:#297667!important;color:#fff!important;
 }
 .hh-domain-tabs button.is-current svg,.hh-domain-tabs button.is-current strong { color:#fff; }
-.hh-domain-tabs button.is-current small { color:#702b45;background:#fff2f2; }
+.hh-domain-tabs button.is-current small { color:#702b45;background:#e4f1ea; }
 .hh-domain-tabs button:focus-visible,.hh-domain-panel a:focus-visible,
 .hh-domain-support summary:focus-visible,.hh-domain-discover summary:focus-visible {
-  outline:3px solid #aa6e87;outline-offset:2px;
+  outline:3px solid #438a78;outline-offset:2px;
 }
 .hh-domain-panel {
   padding:clamp(14px,2.3vw,23px);overflow-wrap:anywhere;
   border:1px solid var(--domain-line);border-radius:18px;
-  background:#fffdfa;
+  background:#fffefa;
 }
 .hh-domain-content { min-width:0; }
 .hh-domain-heading { margin:0 0 14px; }
 .hh-domain-heading h2 {
   margin:0 0 5px!important;
-  font:400 clamp(22px,2.8vw,29px)/1.2 Georgia,serif;color:#3c2d2e;
+  font:400 clamp(22px,2.8vw,29px)/1.2 Georgia,serif;color:#354a40;
 }
 .hh-domain-heading p:last-child {
   max-width:76ch;margin:0!important;color:var(--domain-muted);
@@ -104,22 +104,22 @@
 .hh-domain-link-row { display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 5px; }
 .hh-domain-link-row a,.hh-domain-latest > a,.hh-domain-secondary-link {
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  min-height:40px;padding:9px 12px;border:1px solid #d7c9c3;
-  border-radius:10px;background:#fffefa;color:#74354b!important;
+  min-height:40px;padding:9px 12px;border:1px solid #bfd6c7;
+  border-radius:10px;background:#fffefa;color:#286956!important;
   text-decoration:none!important;font:700 12px/1.3 system-ui,sans-serif;
 }
 .hh-domain-link-row a:hover,.hh-domain-latest > a:hover,.hh-domain-secondary-link:hover {
-  background:#f9f1ed;border-color:#bc9ca6;
+  background:#edf7ef;border-color:#a2c9b5;
 }
 .hh-domain-latest {
-  margin:0 0 12px;padding:15px 16px;background:#faf7f2;
-  border:1px solid #e7dad0;border-radius:13px;
+  margin:0 0 12px;padding:15px 16px;background:#f6faf6;
+  border:1px solid #dae7dd;border-radius:13px;
 }
-.hh-domain-latest-top { display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:7px;color:#634d4b;font:700 12px/1.4 system-ui,sans-serif; }
+.hh-domain-latest-top { display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:7px;color:#536b5c;font:700 12px/1.4 system-ui,sans-serif; }
 .hh-domain-latest-top time { font:500 11px/1.3 system-ui,sans-serif;color:#82736c; }
 .hh-domain-latest p { margin:9px 0!important;font:400 12px/1.5 system-ui,sans-serif;color:#746661; }
 .hh-domain-remedy-chips { display:flex;gap:6px;flex-wrap:wrap;list-style:none;padding:0;margin:11px 0 13px; }
-.hh-domain-remedy-chips li { border-radius:8px;border:1px solid #e4d5d0;background:#fffefa;padding:6px 10px;color:#5b3c43;font:650 12px/1.3 system-ui,sans-serif; }
+.hh-domain-remedy-chips li { border-radius:8px;border:1px solid #d0e0d4;background:#fffefa;padding:6px 10px;color:#3d6454;font:650 12px/1.3 system-ui,sans-serif; }
 .hh-domain-latest > a {
   background:var(--domain-accent);border-color:var(--domain-accent);color:#fff!important;
 }
@@ -136,7 +136,7 @@
 .hh-domain-history-row span { display:block;min-width:0; }
 .hh-domain-history-row strong,.hh-domain-history-row time { display:block;color:#463738;font:650 12.5px/1.35 system-ui,sans-serif; }
 .hh-domain-history-row small { display:block;margin:3px 0 0;color:#877b76;font:400 11px/1.4 system-ui,sans-serif; }
-.hh-domain-history-row svg { flex:none;color:#8a6670; }
+.hh-domain-history-row svg { flex:none;color:#3b7767; }
 .hh-domain-empty { border:1px dashed #dbcac1;border-radius:12px;background:#faf7f3;color:#756a65;padding:15px;font:400 13px/1.5 system-ui,sans-serif; }
 .hh-domain-secondary-link { width:fit-content;max-width:100%; }
 .hh-domain-loading,.hh-domain-caution { font:400 12px/1.5 system-ui,sans-serif;color:#886c58; }
@@ -144,7 +144,7 @@
 .hh-domain-elements > p { margin:0 0 9px!important;color:#847b75;font:550 11px/1.4 system-ui,sans-serif; }
 .hh-domain-element-grid { display:flex;flex-wrap:wrap;gap:5px; }
 .hh-domain-element { display:inline-flex;align-items:center;justify-content:center;min-height:29px;padding:5px 9px;border-radius:8px;font:650 11px/1.3 system-ui,sans-serif;border:1px solid #e2dfd8;color:#60615b;background:#fff; }
-.hh-domain-element-0 { background:#edf3ea;border-color:#cddacb; }
+.hh-domain-element-0 { background:#edf3ea;border-color:#caddcf; }
 .hh-domain-element-1 { background:#f8efec;border-color:#e6d0c8; }
 .hh-domain-element-2 { background:#fcf5e7;border-color:#ebe0c6; }
 .hh-domain-element-3 { background:#f4f5f4;border-color:#dce0dd; }
@@ -152,34 +152,34 @@
 .hh-domain-support { margin:15px 0 0;border-top:1px solid #ede5df; }
 .hh-domain-support > summary,.hh-domain-discover > summary {
   display:flex;align-items:center;gap:9px;min-height:44px;padding:10px 1px;list-style:none;
-  cursor:pointer;color:#784053;font:700 12px/1.35 system-ui,sans-serif;
+  cursor:pointer;color:#2b6957;font:700 12px/1.35 system-ui,sans-serif;
 }
 .hh-domain-support > summary::-webkit-details-marker,.hh-domain-discover > summary::-webkit-details-marker { display:none; }
 .hh-domain-support > summary svg:last-child,.hh-domain-discover > summary svg:last-child { margin-left:auto;transition:transform .15s ease; }
 .hh-domain-support[open] > summary svg:last-child,.hh-domain-discover[open] > summary svg:last-child { transform:rotate(180deg); }
 .hh-profile-domains .hh-domain-promo {
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
-  margin:4px 0 3px;padding:13px 14px;border:1px solid #e8d8d0;border-radius:12px;
-  background:#faf3f0;color:#503d3c;
+  margin:4px 0 3px;padding:13px 14px;border:1px solid #d2e5d6;border-radius:12px;
+  background:#f4faf4;color:#503d3c;
 }
 .hh-domain-promo-copy { display:flex;flex:1 1 240px;gap:10px;align-items:flex-start;min-width:0; }
-.hh-domain-promo-icon { display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:10px;background:#f1e4e3;color:#86566a; }
-.hh-domain-promo-copy strong { display:block;font:700 12.5px/1.4 system-ui,sans-serif;color:#51383e; }
+.hh-domain-promo-icon { display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:10px;background:#deece2;color:#397668; }
+.hh-domain-promo-copy strong { display:block;font:700 12.5px/1.4 system-ui,sans-serif;color:#355746; }
 .hh-domain-promo-copy p { max-width:475px;margin:3px 0 0!important;font:400 11.5px/1.5 system-ui,sans-serif;color:#786a67; }
 .hh-domain-promo-actions { display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;flex:0 1 auto;max-width:385px; }
 .hh-domain-promo-actions a {
   display:inline-flex;justify-content:center;align-items:center;gap:6px;min-height:40px;
-  padding:8px 12px;border:1px solid #762f49;border-radius:10px;background:#762f49;
+  padding:8px 12px;border:1px solid #297667;border-radius:10px;background:#297667;
   color:#fff!important;text-align:center;text-decoration:none!important;font:700 12px/1.25 system-ui,sans-serif;
 }
-.hh-domain-promo-actions a:hover { background:#612138; }
-.hh-domain-promo-actions a:nth-child(2) { border-color:transparent;color:#784053!important;background:transparent;padding-inline:5px;text-decoration:underline!important; }
-.hh-domain-promo-actions small { flex:1 1 100%;text-align:right;color:#8c7c73;font:400 10.5px/1.35 system-ui,sans-serif; }
+.hh-domain-promo-actions a:hover { background:#205f52; }
+.hh-domain-promo-actions a:nth-child(2) { border-color:transparent;color:#2b6957!important;background:transparent;padding-inline:5px;text-decoration:underline!important; }
+.hh-domain-promo-actions small { flex:1 1 100%;text-align:right;color:#637b70;font:400 10.5px/1.35 system-ui,sans-serif; }
 .hh-domain-promo a:focus-visible { outline:3px solid #a46c82;outline-offset:2px; }
 .hh-domain-private { display:flex;gap:8px;align-items:flex-start;margin:11px 2px;color:#8a807c;font:400 11px/1.55 system-ui,sans-serif; }
 .hh-domain-private svg { flex-shrink:0;margin-top:1px; }
-.hh-domain-discover { margin:7px 0 0;border:1px solid #eae0da;border-radius:12px;background:#fffcf8;padding:0 14px; }
-.hh-domain-discover > summary { color:#73565b; }
+.hh-domain-discover { margin:7px 0 0;border:1px solid #dbe8de;border-radius:12px;background:#fffefa;padding:0 14px; }
+.hh-domain-discover > summary { color:#477366; }
 .hh-domain-discover[open] { padding-bottom:12px; }
 .hh-domain-discover > [data-free-insights="cabinet"] { margin:3px 0 0; }
 .hh-app .hh-profile-domains .hh-domain-panel .hh-heading.hh-profile-heading { display:none; }
@@ -216,4 +216,31 @@
 @media(max-width:760px) {
   .client-cabinet .client-cabinet-sections { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px; }
   .client-cabinet .client-cabinet-sections a { min-width:0;width:100%;padding:9px 5px;text-align:center;font-size:11px;line-height:1.3;border-radius:11px;overflow-wrap:anywhere; }
+}
+
+/* A single, purposeful personal profile — overview / four areas / real report archive. */
+.hh-profile-domains { --domain-focus:#297667; }
+.hh-domain-hero { padding:15px clamp(15px,2.2vw,20px);border-radius:16px;margin-bottom:12px;background:linear-gradient(138deg,#f1f8f3,#fcfaf4); }
+.hh-domain-hero-subtitle { font-size:13px!important;color:#63766a!important;max-width:72ch; }
+.hh-domain-tabs { margin:13px 0 9px;scrollbar-color:#b9d8c8 transparent; }
+.hh-profile-domains .hh-domain-tabs button.is-current { box-shadow:0 3px 10px #1e675318!important; }
+.hh-domain-panel { background:#fffefa; }
+.hh-domain-report-archive { margin:14px 0 0;scroll-margin-top:90px; }
+.hh-domain-report-archive-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 3px 10px; }
+.hh-domain-report-archive-head h2 { margin:0 0 4px!important;color:#295f51;font:400 clamp(22px,2.8vw,29px)/1.19 Georgia,serif; }
+.hh-domain-report-archive-head p:last-child { margin:0!important;color:#6d7a71;font:400 12px/1.5 system-ui,sans-serif; }
+.hh-domain-report-archive-head>svg { flex:none;color:#397668; }
+.hh-domain-psych-details { background:#f5faf6;border:1px solid #d6e3da;border-radius:13px;margin:5px 0 11px;overflow:hidden; }
+.hh-domain-psych-details>summary { display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:48px;padding:12px 14px;color:#245d50;font:750 13px/1.4 system-ui,sans-serif;list-style:none; }
+.hh-domain-psych-details>summary::-webkit-details-marker {display:none}
+.hh-domain-psych-details[open]>summary{border-bottom:1px solid #d6e3da}
+.hh-domain-psych-details>[data-profile-page]{padding:11px}
+.hh-domain-psych-details:focus-within {outline-color:#297667}
+.hh-profile-domains .hh-domain-report-archive a:focus-visible,
+.hh-profile-domains .hh-domain-psych-details summary:focus-visible {outline:3px solid #297667;outline-offset:2px}
+@media(max-width:520px){
+  .hh-domain-tabs {padding-bottom:7px;}
+  .hh-domain-hero {padding:13px}
+  .hh-domain-report-archive-head h2{font-size:23px}
+  .hh-domain-psych-details>[data-profile-page]{padding:7px}
 }
