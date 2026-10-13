@@ -227,7 +227,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {stage === 4 && <CourseToday locale={locale} />}
 
-    <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>
+    {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 
