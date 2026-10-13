@@ -170,6 +170,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [paymentStatus, setPaymentStatus] = useState(payment?.paymentStatus ?? 'unpaid')
   const [includeRecommendation, setIncludeRecommendation] = useState(true)
   const [includeInvoice, setIncludeInvoice] = useState(Boolean(payment))
+  const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(consultation?.includeDistanceHomeopathy === true)
   const [dateIssued, setDateIssued] = useState(consultation?.dateIssued ?? new Date().toLocaleDateString('en-CA'))
   const [note, setNote] = useState(consultation?.generalInstructions ?? '')
   const [analysis, setAnalysis] = useState(consultation?.analysis ?? '')
@@ -451,6 +452,15 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       </label>}
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
+      </label>
+      <label className="consultation-studio-document-choice consultation-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
+        <input type="checkbox" name="includeDistanceHomeopathy" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
+        <span>
+          <strong>{uiLocale === 'ru' ? 'Дистанционная гомеопатия' : 'Distance homeopathy'}</strong>
+          <small>{uiLocale === 'ru'
+            ? 'Приложить полную иллюстрированную инструкцию по работе с препаратами в самый конец клиентского отчёта и PDF.'
+            : 'Append the full illustrated guide to working with remedies at the end of the client report and PDF.'}</small>
+        </span>
       </label>
     </section>}
 
