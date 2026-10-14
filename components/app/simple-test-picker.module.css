@@ -219,7 +219,7 @@
 .step{width:43px;height:43px;background:#ddf5f6;color:#07869c;font:700 1.4rem Georgia,serif}
 .sectionHeader h2{color:#15536a;font:700 clamp(1.21rem,2.55vw,1.63rem)/1.21 Georgia,serif!important;letter-spacing:-.025em}
 .sectionHeader p{color:#73909e;font-size:.85rem;line-height:1.46}
-#hh-simple-topic-title{scroll-margin-top:115px}
+.shell :global(#hh-simple-topic-title){scroll-margin-top:115px}
 .topicGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
 .topic{border-radius:14px;border:1px solid #c8e6eb;background:#fcffff;color:#195673;
   font-weight:650;font-size:.86rem;min-height:57px;padding:11px;gap:9px;box-shadow:0 2px 8px #167e8c05}
