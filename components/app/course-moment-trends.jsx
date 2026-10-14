@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Activity, ChartNoAxesCombined } from 'lucide-react'
-import { buildLessonFocusTrends, compareLessonMoments, focusTrendAria } from '@/lib/inner-growth/course-moment-trends'
+import { buildLessonFocusTrends, compareLessonMoments, focusTrendAria, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import styles from './course-moment-trends.module.css'
 
 const COPY = {
@@ -19,7 +19,7 @@ const COPY = {
     title: 'Моя динамика', note: 'Как меняется ощущение одной темы до и после практики',
     before: 'До', after: 'После', empty: 'Первый парный замер появится после сохранения занятия.',
     few: 'Динамика станет нагляднее после нескольких замеров одной темы.',
-    easier: 'балла меньше трудности после практики', harder: 'балла больше трудности после практики',
+    easier: 'меньше трудности после практики', harder: 'больше трудности после практики',
     same: 'оценка до и после совпала', point: 'балла',
     missing: 'нет оценки', disclaimer: 'Добровольные самооценки, не тест и не доказательство лечебного эффекта.',
     day: 'День', scale: 'Тема практики', measure: '0 = нет трудности · 10 = очень трудно',
@@ -52,7 +52,7 @@ export default function CourseMomentTrends({ locale = 'en', cycle = {}, progress
     <header className={styles.header}>
       <span className={styles.headingIcon}><ChartNoAxesCombined size={19} aria-hidden="true"/></span>
       <div><h3>{words.title}</h3><p>{words.note}</p></div>
-      <span className={styles.count}>{group.ratedDays}/14</span>
+      <span className={styles.count}>{group.ratedDays}/{group.dayCount}</span>
     </header>
     {series.length > 1 && <div className={styles.focusPicker} role="group" aria-label={words.scale}>
       {series.map(item => <button type="button" key={item.key}
@@ -62,7 +62,7 @@ export default function CourseMomentTrends({ locale = 'en', cycle = {}, progress
     <p className={styles.focusLabel}><Activity size={15} aria-hidden="true"/>{label}</p>
     {group.points.length ? <>
       <svg className={styles.graph} viewBox="0 0 520 151" role="img"
-        aria-label={label + ': ' + focusTrendAria(group, { before: words.before, after: words.after, missing: words.missing })}>
+        aria-label={label + ': ' + focusTrendAria(group, { before: words.before, after: words.after, missing: words.missing, day: words.day })}>
         {[0,5,10].map(level => <g key={level}>
           <line x1="34" x2="492" y1={Y(level)} y2={Y(level)} className={styles.gridline}/>
           <text x="23" y={Y(level) + 4} textAnchor="end" className={styles.axisText}>{level}</text>
@@ -86,7 +86,7 @@ export default function CourseMomentTrends({ locale = 'en', cycle = {}, progress
       {comparison && <p className={styles.comparison}>
         {words.day} {latest.day} · {comparison.before}/10 → {comparison.after}/10 · {comparison.change === 0
           ? words.same
-          : Math.abs(comparison.change) + ' ' + (comparison.change < 0 ? words.easier : words.harder)}
+          : changeAmount(comparison.change, locale) + ' ' + (comparison.change < 0 ? words.easier : words.harder)}
       </p>}
       {group.ratedDays < 2 && <p className={styles.context}>{words.few}</p>}
     </> : <p className={styles.empty}>{words.empty}</p>}
