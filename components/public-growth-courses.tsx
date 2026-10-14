@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CheckCircle2, CircleHelp, Clock3, ShieldCheck, SlidersHorizontal, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PublicCourseCabinet } from "@/components/public-course-cabinet";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-growth-courses.module.css";
 
@@ -8,14 +9,14 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ПРОГРАММЫ ПОДДЕРЖКИ",
     title: "Мои курсы",
-    lead: "Небольшие шаги, которые помогают лучше понимать себя и находить внутреннюю опору.",
-    intro: "Выберите важную для вас тему, начните с коротких тестов и проходите 14-дневный курс в своём темпе — по одному завершённому уроку за раз.",
+    lead: "Небольшие шаги к спокойствию и внутренней опоре.",
+    intro: "14 дней в вашем темпе. Один урок, одна практика и возможность замечать свои изменения.",
     start: "Начать бесплатно", learn: "Посмотреть программы",
     heroTag: "14 дней · личный темп", visualTitle: "Ваша точка опоры",
     visualText: "Один урок, одна практика, один небольшой шаг.",
     badge: "Первый курс бесплатно",
     eyebrowPrograms: "ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ",
-    programsTitle: "С чего хотите начать?", programsIntro: "Три готовые программы или индивидуальный маршрут под вашу цель.",
+    programsTitle: "Что важно для вас сейчас?", programsIntro: "Три готовые программы или персональный маршрут.",
     cardAction: "Выбрать программу", days: "14-дневная программа",
     stress: { title: "Антистресс", pain: "Трудно расслабиться и выключить напряжение", description: "Наблюдаем свои реакции, находим короткие паузы и способы восстановления.", result: "Спокойствие · устойчивость · восстановление" },
     confidence: { title: "Внутренняя уверенность", pain: "Сомнения и слишком строгий внутренний критик", description: "Работаем с внутренней поддержкой, личными границами и уверенностью в выборе.", result: "Опора · свой голос · границы" },
@@ -23,9 +24,9 @@ const copy = {
     personal: "Мой персональный курс", personalDesc: "Не нашли своё направление? Сформируйте программу вокруг ваших целей и актуальных вопросов.", personalAction: "Составить свой курс",
     eyebrowHow: "ПРОСТОЙ ПУТЬ", howTitle: "Как проходит курс",
     steps: [
-      { title: "Выберите тему", description: "Определите запрос или начните с готовой программы." },
-      { title: "Изучите свой профиль", description: "Пройдите предложенные тесты, чтобы увидеть исходную точку." },
-      { title: "Осваивайте по одному уроку", description: "Короткая практика и отметка о завершении. Следующий урок откроется, когда вы закончите текущий." },
+      { title: "Выберите тему", description: "Готовый курс или личное направление под вашу цель." },
+      { title: "Узнайте исходное состояние", description: "Короткий замер и подобранные тесты перед стартом." },
+      { title: "Замечайте изменения", description: "14 небольших уроков. Следующий — после завершения текущего; в конце можно повторить замер." },
     ],
     methodKicker: "НАША МЕТОДИКА", methodTitle: "Метод ОПОРА: как работают наши курсы", methodText: "Пять шагов от осознания до действия. Узнайте, как мы объединяем психологические подходы, короткие практики и персональный маршрут.", methodLink: "Узнать о методе ОПОРА",
     bottomTitle: "Готовы сделать первый шаг?",
@@ -36,14 +37,14 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · GUIDED LEARNING",
     title: "My courses",
-    lead: "Small, meaningful steps to understand yourself and build inner support.",
-    intro: "Choose what matters, start with brief assessments and follow a 14-day learning journey at your own pace — one completed lesson at a time.",
+    lead: "Small steps towards calm and inner support.",
+    intro: "Fourteen days at your own pace. One lesson, one practice, and room to notice how you feel.",
     start: "Start for free", learn: "Explore the programmes",
     heroTag: "14 days · your pace", visualTitle: "Find your footing",
     visualText: "One lesson, one practice, one small step.",
     badge: "Your first course is free",
     eyebrowPrograms: "FIND YOUR STARTING POINT",
-    programsTitle: "What would you like to work on?", programsIntro: "Choose one of three guided programmes or create a personal learning path.",
+    programsTitle: "What matters to you right now?", programsIntro: "Three ready-to-start programmes or a personal path.",
     cardAction: "Choose programme", days: "14-day programme",
     stress: { title: "Stress Relief", pain: "It's hard to switch off and unwind", description: "Notice reactions, practise small pauses and make space for recovery.", result: "Calm · steadiness · recovery" },
     confidence: { title: "Inner Confidence", pain: "Self-doubt and a harsh inner critic", description: "Explore self-support, boundaries and confidence in everyday decisions.", result: "Support · voice · boundaries" },
@@ -64,14 +65,14 @@ const copy = {
   es: {
     eyebrow: "HOLISTIC HOUSE · PROGRAMAS DE APOYO",
     title: "Mis cursos",
-    lead: "Pequeños pasos para conocerte mejor y cultivar tu apoyo interior.",
-    intro: "Elige un tema, comienza con pruebas breves y sigue un recorrido de 14 días a tu ritmo: una lección completada cada vez.",
+    lead: "Pequeños pasos hacia la calma y tu apoyo interior.",
+    intro: "Catorce días a tu ritmo. Una lección, una práctica y espacio para observar los cambios.",
     start: "Empezar gratis", learn: "Ver los programas",
     heroTag: "14 días · a tu ritmo", visualTitle: "Tu punto de apoyo",
     visualText: "Una lección, una práctica, un pequeño paso.",
     badge: "Tu primer curso es gratis",
     eyebrowPrograms: "ELIGE TU CAMINO",
-    programsTitle: "¿Por dónde quieres empezar?", programsIntro: "Tres programas guiados o una ruta personal según tus objetivos.",
+    programsTitle: "¿Qué te importa ahora?", programsIntro: "Tres programas preparados o un recorrido personal.",
     cardAction: "Elegir programa", days: "Programa de 14 días",
     stress: { title: "Menos estrés", pain: "Cuesta desconectar y relajarte", description: "Observa tus reacciones y encuentra pausas para recuperarte.", result: "Calma · estabilidad · recuperación" },
     confidence: { title: "Confianza interior", pain: "Dudas y autocrítica", description: "Explora el apoyo interior, los límites y tus decisiones.", result: "Apoyo · voz · límites" },
@@ -124,6 +125,8 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
       </div>
     </section>
 
+    <PublicCourseCabinet locale={appLocale} />
+
     <section className={styles.section} id="course-programmes" aria-labelledby="course-programmes-title">
       <p className={styles.sectionKicker}>{t.eyebrowPrograms}</p>
       <h2 id="course-programmes-title">{t.programsTitle}</h2>
@@ -156,7 +159,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
       <div className={styles.steps}>{t.steps.map((step, index) =>
         <div className={styles.step} key={step.title}>
           <span className={styles.stepNumber}>0{index + 1}</span>
-          <h3>{step.title}</h3><p>{step.description}</p>
+          <div className={styles.stepCopy}><h3>{step.title}</h3><p>{step.description}</p></div>
         </div>)}</div>
     </section>
 

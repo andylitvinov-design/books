@@ -369,3 +369,222 @@
 /* Three alternative methods must remain readable on 320px screens. */
 .thoughtChoices{display:grid;grid-template-columns:1fr;gap:8px}
 .thoughtChoices button{width:100%;min-width:0;white-space:normal;text-align:left;line-height:1.4;overflow-wrap:anywhere}
+
+/* OPORA v1.5: a voluntary immediate measurement sits INSIDE the existing
+   meditation slide, never as a removed/reordered slide. */
+.practiceRating{display:grid;gap:12px;padding:15px;border:1px solid #cae9ed;border-radius:16px;background:#f4fcfd}
+.practiceRating .prompt{margin:0;color:#28556b;font-weight:730}
+.practiceRating .numberGrid{margin:0}
+@media(max-width:540px){.practiceRating{padding:12px;gap:9px}}
+
+
+/* OPORA entry check-in: the approved scenic photograph is a fullscreen, uncropped
+   decorative background rather than a cropped card. A soft ambient layer fills the
+   remaining portrait viewport without stretching or clipping the actual picture. */
+.overlay .sceneFrame{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:#edf9f8;
+}
+.overlay .fullscreenScene{
+  position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:linear-gradient(165deg,#e7f9fa 0%,#e9f9f6 55%,#f5fcfa 100%);
+}
+.overlay .fullscreenScene::before{
+  content:"";position:absolute;inset:-65px;
+  background:url('/images/holistic-house/course-focus-mountain-boy.webp') center 35%/cover no-repeat;
+  filter:blur(38px);opacity:.22;
+}
+.overlay .fullscreenScenePhoto{
+  position:absolute;left:50%;
+  top:calc(env(safe-area-inset-top) + clamp(78px,12dvh,125px));
+  display:block;width:100%;height:auto;max-height:48dvh;
+  object-fit:contain;object-position:center top;transform:translateX(-50%);
+  opacity:.83;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 78%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 78%,transparent 100%);
+}
+.overlay .fullscreenScene::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    #eaf9fcbf 0%,#f1fcfc55 27%,#f3fcfacb 56%,#f5fcf9f0 80%,#f5fcf9fa 100%);
+}
+.overlay .sceneFrame > .header,
+.overlay .sceneFrame > .content,
+.overlay .sceneFrame > .footer{position:relative;z-index:1}
+.overlay .sceneFrame > .header{
+  background:#f0fcfadd!important;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.overlay .sceneFrame > .content{
+  background:none!important;
+}
+.overlay .sceneFrame > .footer{
+  background:linear-gradient(180deg,#f1fcfaf0,#eefaf8fc)!important;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.overlay .sceneFrame .slideTitle{
+  text-shadow:0 1px 15px #effefdf2,0 1px 3px #ffffff;
+}
+.overlay .sceneFrame .focusName{
+  padding:12px 15px;background:#f7fffde8;
+  border:1px solid #c2e7e6;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.overlay .sceneFrame [data-course-baseline-presence]{
+  padding:12px 15px;border-radius:16px;
+  background:#f9fffdeb;border:1px solid #d1ebe8;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+  font-weight:760;
+}
+.overlay .sceneFrame .numberGrid button{background:#fffefcf2!important}
+.overlay .sceneFrame .rangeCaption{
+  color:#2f5f6e;font-weight:710;
+}
+@media(max-width:540px){
+  .overlay .fullscreenScenePhoto{
+    top:calc(env(safe-area-inset-top) + 74px);
+    max-height:42dvh;
+  }
+  .overlay .sceneFrame .focusName,
+  .overlay .sceneFrame [data-course-baseline-presence]{padding:11px 13px}
+}
+@media(max-height:680px){
+  .overlay .fullscreenScenePhoto{top:calc(env(safe-area-inset-top) + 62px)}
+}
+
+/* OPORA arrival scene: the whole approved 705×411 photograph appears at its
+   natural aspect ratio as a background layer, never under object-fit:cover.
+   The rest of the screen continues the sea/mint palette without cropping the
+   person. Responses are optional and distinct from the 0–10 measurements. */
+.overlay .content[data-slide-kind=welcome]{
+  padding:0!important;gap:0;background:#f2fbfb;
+}
+.overlay .welcomeScreen{
+  position:relative;width:100%;min-height:100%;
+  padding:min(58.3vw,410px) clamp(17px,4vw,35px) 20px;
+  overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,#d5f3f5 0%,#eaf9f8 50%,#f8fdfd 100%);
+}
+.overlay .welcomeBackdrop{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,#d0f0f6 0%,#ecf9f7 52%,#f8fdfd 100%);
+}
+.overlay .welcomeBackgroundImage{
+  display:block;position:absolute;top:0;left:0;
+  width:100%;height:auto;max-width:100%;
+  object-fit:contain;object-position:center top;
+}
+.overlay .welcomeContent{
+  position:relative;z-index:1;display:grid;gap:12px;align-content:start;width:100%;
+  margin:0 auto;max-width:590px;
+}
+.overlay .welcomeKicker{
+  display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;
+  color:#0b8193;font-size:12px;font-weight:850;
+  letter-spacing:.045em;text-transform:uppercase;
+}
+.overlay .welcomeContent .slideTitle{
+  font-family:Georgia,'Times New Roman',serif;font-weight:750;
+  font-size:clamp(28px,5.4vw,39px);line-height:1.17;
+  letter-spacing:-.035em;max-width:580px;
+}
+.overlay .welcomePrompt{
+  margin:0;color:#355f72;font-size:clamp(15px,2.3vw,18px);
+  line-height:1.45;font-weight:660;
+}
+.overlay .welcomeChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.overlay .welcomeChoices button{
+  display:flex;align-items:center;gap:10px;min-width:0;min-height:67px;
+  border-radius:18px!important;border:2px solid #c9e5e9!important;
+  border-bottom:4px solid #b3d8de!important;background:#ffffffee!important;
+  padding:11px 13px!important;color:#204e64!important;
+  font-size:15px!important;line-height:1.33;font-weight:800!important;
+  text-align:left;cursor:pointer;box-shadow:0 4px 14px #11577f0b;
+  transition:border-color .16s,background .16s,transform .16s;
+}
+.overlay .welcomeChoices button:hover:not(:disabled){transform:translateY(-1px);border-color:#44afbc!important}
+.overlay .welcomeChoices button[aria-pressed=true]{
+  border-color:#079cab!important;border-bottom-color:#057889!important;
+  background:#e6f9f6!important;color:#076e84!important;
+}
+.overlay .welcomeChoices button>span:nth-child(2){flex:1;min-width:0}
+.overlay .welcomeChoices button>svg:last-child{flex:none;color:#1497a7}
+.overlay .welcomeChoiceIcon{
+  display:grid;place-items:center;flex:none;width:39px;height:39px;
+  border-radius:13px;background:#dcf6f7;color:#078aa1;
+}
+.overlay .welcomeChoices button[aria-pressed=true] .welcomeChoiceIcon{
+  background:#c5f3e9;color:#057e87;
+}
+.overlay .welcomeResponse{
+  margin:0;padding:10px 13px;border-left:3px solid #15a9ab;
+  border-radius:0 12px 12px 0;background:#e9f8f6;
+  color:#26596b;font-size:14px;line-height:1.48;font-weight:680;
+}
+.overlay .welcomeNote{margin:0;color:#587889;font-size:12px;line-height:1.5}
+.overlay .welcomeSkip{
+  justify-self:center;padding:6px 12px!important;border:0!important;
+  border-radius:10px;background:transparent!important;
+  color:#477c8c!important;text-decoration:underline;
+  text-underline-offset:3px;font-size:13px!important;font-weight:750!important;
+  cursor:pointer;
+}
+@media(max-width:540px){
+  .overlay .welcomeScreen{padding:58.3vw 17px 14px}
+  .overlay .welcomeContent{gap:10px}
+  .overlay .welcomeContent .slideTitle{font-size:clamp(27px,7vw,33px)}
+  .overlay .welcomeChoices{grid-template-columns:minmax(0,1fr);gap:8px}
+  .overlay .welcomeChoices button{min-height:58px;padding:8px 11px!important;font-size:14px!important}
+  .overlay .welcomeChoiceIcon{width:37px;height:37px}
+}
+@media(max-width:360px){
+  .overlay .welcomeChoices button{min-height:54px}
+  .overlay .welcomeContent .slideTitle{font-size:26px}
+}
+@media(prefers-reduced-motion:reduce){
+  .overlay .welcomeChoices button{transition:none!important}
+}
+
+/* OPORA: combined learning + arrival exercise; spoken guidance is opt-in. */
+.arrivalExercise{display:grid;gap:13px;padding:17px;border:1px solid #bde8e5;border-radius:22px;background:linear-gradient(145deg,#f8fffef2,#ecfbf9f0);box-shadow:0 10px 28px #1b84921a;backdrop-filter:blur(12px)}
+.arrivalKicker{display:flex;align-items:center;gap:7px;margin:0;color:#087e8f;font-size:10px;font-weight:850;letter-spacing:.065em}
+.arrivalFocus{display:grid;gap:5px;margin:0;padding:0 2px}
+.arrivalFocus span{font-size:12px;color:#628495;font-weight:700}
+.arrivalFocus strong{font-size:clamp(16px,3.8vw,21px);font-weight:840;line-height:1.28;color:#16465d}
+.practiceVoice{display:flex;align-items:center;gap:12px;width:100%;min-width:0;padding:12px;border-radius:18px;border:1px solid #b9e5e7;background:linear-gradient(115deg,#d5f8f2,#e9faff)}
+.practiceVoiceIcon{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:15px;background:#f7fffe;color:#078d9f}
+.practiceVoiceControl{display:flex;flex-wrap:wrap;align-items:center;gap:7px;flex:1;min-width:0}
+.practiceVoiceControl small{display:block;flex-basis:100%;color:#58788c;font-size:10px;line-height:1.4}
+.practiceListen{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:11px 14px!important;border:1px solid #077f99!important;border-bottom:3px solid #046b80!important;border-radius:13px!important;background:linear-gradient(110deg,#0aabb7,#0788a0)!important;color:#fff!important;font-size:13px!important;font-weight:830!important;cursor:pointer}
+.practiceStop{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:9px 11px!important;border:1px solid #b1d6d8!important;border-radius:12px!important;background:#fff!important;color:#406c7b!important;font-size:12px!important;font-weight:750!important;cursor:pointer}
+.practiceVoiceUnavailable{font-size:12px;line-height:1.5;color:#486d7b}
+.arrivalSteps{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.arrivalSteps li{display:flex;align-items:flex-start;gap:11px;margin:0;padding:9px 11px;border:1px solid #d7eeec;border-radius:14px;background:#ffffffd9}
+.arrivalSteps li>span{flex:none;display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#dcf5f2;color:#097d8e;font-size:12px;font-weight:850}
+.arrivalSteps li p{margin:0;color:#2a5366;font-size:13px;line-height:1.4;font-weight:620}
+.practiceTranscript{min-width:0;overflow:hidden;border:1px solid #d7e8ea;border-radius:14px;background:#fcffffef}
+.practiceTranscript summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 13px;cursor:pointer;list-style:none;color:#36788b;font-size:12px;font-weight:760}
+.practiceTranscript summary::-webkit-details-marker{display:none}
+.practiceTranscript summary svg{transition:transform .15s}
+.practiceTranscript[open] summary svg{transform:rotate(180deg)}
+.practiceTranscript>div{display:grid;gap:10px;padding:0 13px 13px}
+.practiceTranscript p{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;color:#315b6f}
+.overlay .content[data-slide-kind=guided]:has(.arrivalExercise){gap:12px}
+.overlay .sceneFrame .arrivalExercise{background:linear-gradient(135deg,#fafffff0,#effbf8e8)}
+@media(max-width:540px){
+  .arrivalExercise{padding:12px;gap:10px;border-radius:18px}
+  .arrivalKicker{font-size:9px}
+  .practiceVoice{padding:9px;gap:9px;border-radius:15px}
+  .practiceVoiceIcon{width:37px;height:37px;border-radius:12px}
+  .practiceListen{padding:10px 12px!important;font-size:12px!important}
+  .arrivalSteps{gap:6px}
+  .arrivalSteps li{padding:8px 9px;gap:8px}
+  .arrivalSteps li p{font-size:12px}
+  .practiceTranscript summary{padding:10px 12px}
+}
+@media(max-height:680px){
+  .arrivalExercise{gap:8px;padding:11px}
+  .arrivalSteps li{padding:7px 9px}
+  .arrivalSteps li p{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.practiceTranscript summary svg{transition:none!important}}

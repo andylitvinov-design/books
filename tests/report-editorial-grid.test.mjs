@@ -23,8 +23,8 @@ test('premium report uses distinct hero/artwork columns, aligned sections, origi
     assert.match(source,/^%PDF-1\.7/)
     assert.equal((source.match(/\/Lighthouse Do Q/g)??[]).length,2,
       'approved mark and larger illustrated lighthouse occur only on first cover')
-    assert.match(source,/0\.989 0\.977 0\.966 rg/,'ivory editorial hero')
-    assert.match(source,/0\.79 0\.88 0\.88 rg/,'coastal scenery integrates with the white lighthouse column')
+    assert.match(source,/0\.85 0\.91 0\.90 rg/,'unboxed watercolor-style coast on ivory paper')
+    assert.match(source,/0\.51 0\.72 0\.72 RG/,'coastal scenery integrates with the lighthouse')
     assert.match(source,/0\.965 0\.980 0\.969 rg/,'balanced two-ring progress dashboard')
     assert.match(source,/\/RemedyPhoto1 Do Q/,'original selected remedy artwork')
     assert.match(source,/\/Signature Do Q/,'original signature')

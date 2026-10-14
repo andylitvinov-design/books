@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
@@ -84,6 +85,27 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
   const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
   const dialogRef = useRef(null)
+  const searchParams = useSearchParams()
+  const requestedAdd = searchParams.get('add') === '1'
+  const addIntent = useRef(null)
+  if (!requestedAdd) addIntent.current = null
+  else if (!addIntent.current) addIntent.current = { accountId, courseId: course?.id, consumed: false, invalidated: false }
+  else if (addIntent.current.accountId !== accountId || addIntent.current.courseId !== course?.id) addIntent.current.invalidated = true
+
+  // A public link gets the same server-confirmed choice as the Add button,
+  // once for its original account/course. Opening the consent flow never writes.
+  useEffect(() => {
+    const intent = addIntent.current
+    if (!requestedAdd || !intent || intent.consumed) return
+    intent.consumed = true
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('add') !== '1') return
+    url.searchParams.delete('add')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    if (intent.invalidated || !hasCourse || !accountId || !course?.id ||
+        intent.accountId !== accountId || intent.courseId !== course.id) return
+    addCourse()
+  }, [requestedAdd, hasCourse, accountId, course?.id, canAdd, onAdd])
 
   useEffect(() => {
     setProgressError(false)

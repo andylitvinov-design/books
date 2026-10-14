@@ -32,7 +32,7 @@ test('compact PDF draws only start/end and preserves the complete authored analy
   }
   const pdf = buildPrescriptionPdf(document, 'en', 'https://example.test')
   const source = pdf.toString('latin1')
-  assert.match(source, /143 779 Tm/)
+  assert.match(source, /68 798 Tm/, 'large Holistic House masthead anchors editorial cover')
   assert.match(source, /\(SELF-RATED PROGRESS\)/)
   assert.match(source, /\(START\)/)
   assert.match(source, /\(END\)/)

@@ -1,44 +1,249 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCheck, Compass, HeartHandshake, Sparkles } from 'lucide-react'
-import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Sparkles } from 'lucide-react'
+import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
+import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
 
 type Language = 'en' | 'ru'
-type Item = { id: string; title: Record<Language,string>; detail: Record<Language,string>; focus: readonly string[] }
-type Journey = { id: string; title: Record<Language,string>; eyebrow: Record<Language,string>; summary: Record<Language,string>; introduction: Record<Language,string>; focus: readonly string[]; courseProgram: string; topics: readonly Item[] }
+type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
+type Journey = { id: string; title: Record<Language, string>; eyebrow: Record<Language, string>; summary: Record<Language, string>; introduction: Record<Language, string>; focus: readonly string[]; courseProgram: string; topics: readonly Item[] }
+type RecommendedTest = {
+  key: string
+  title: string
+  description: string
+  area: string
+  questionCount: number | null
+  durationMinutes: number | null
+  definition: { key: string; version: string; instrumentLocale: string }
+}
+
+const art: Record<string, string> = {
+  relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
+  business: '/images/holistic-house/course-focus-mountain-boy.webp',
+  stress: '/images/holistic-house/hero-olive-incense.webp',
+  energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+  effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+}
 const copy = {
   en: {
-    back:'All directions', eyebrow:'YOUR NEXT STEP', pickTitle:'Choose what you want to explore', pickHint:'Choose one or more themes. Your test selection will be filtered automatically; you can adjust it later.', chosen:'selected themes', default:'No theme selected yet — we will show tests for the whole direction.',
-    options:'How would you like to begin?', test:'Take tests', testDetail:'Open a short list of relevant questionnaires with your theme filters already applied.', course:'Free support course', courseDetail:'Begin with questionnaires, then continue in the existing self-guided daily course. One free course at a time.', review:'Personal situation review (constellation)', reviewDetail:'Send a short form and a hand-drawn ME–GOAL–PROBLEM diagram. Receive a personal written reply; no free live constellation is included.',
-    more:'About personal constellations', safety:'Tests and courses support self-reflection, not medical diagnosis or treatment.',
+    back: 'All directions', eyebrow: 'STEP 1 · CHOOSE A FOCUS', pickTitle: 'What would you like to explore?',
+    pickHint: 'Select one or more themes — your two starter tests will update instantly.',
+    recommended: 'STEP 2 · RECOMMENDED FOR YOU', recommendedTitle: 'Two tests to start with',
+    recommendedHint: 'Chosen from available questionnaires for your themes. Tap a test to see what it covers.',
+    questions: 'questions', minutes: 'min', details: 'About this test',
+    empty: 'No starter test is available for this selection. Choose different themes or browse the catalog.',
+    start: 'Take the two suggested tests', starting: 'Opening your tests…',
+    browse: 'Choose other tests from the 100+ test catalog',
+    options: 'How else would you like to continue?',
+    course: 'Free support course', courseDetail: 'Start with tests, then explore a self-guided daily programme. One free course at a time.',
+    review: 'Personal situation review', reviewDetail: 'A free written review of your form and ME–GOAL–PROBLEM drawing; no live session is included.',
+    safety: 'These questionnaires are for self-reflection, not medical diagnosis or treatment.',
+    error: 'Could not open your tests. Check your connection and try again.',
+    signinError: 'Google sign-in is currently unavailable. Please try again.',
   },
   ru: {
-    back:'Все направления', eyebrow:'С ЧЕГО НАЧАТЬ', pickTitle:'Выберите важные для себя темы', pickHint:'Отметьте одну или несколько тем. Подходящие тесты откроются с уже настроенным фильтром, который можно изменить.', chosen:'тем выбрано', default:'Пока темы не отмечены — предложим тесты по всему направлению.',
-    options:'Как хотите продолжить?', test:'Пройти тесты', testDetail:'Откроем подходящие опросники с настроенным тематическим фильтром.', course:'Бесплатный курс поддержки', courseDetail:'Начните с тестов и продолжите самостоятельную ежедневную программу. Бесплатно доступен один курс одновременно.', review:'Личная диагностика (расстановка)', reviewDetail:'Заполните анкету и пришлите рисунок «Я — цель — проблема». Вы получите письменный разбор; живая расстановка в бесплатный формат не входит.',
-    more:'О личных расстановках', safety:'Тесты и курсы предназначены для самонаблюдения, а не медицинской диагностики или лечения.',
+    back: 'Все направления', eyebrow: 'ШАГ 1 · ВЫБОР ТЕМЫ', pickTitle: 'Что хотите исследовать?',
+    pickHint: 'Отметьте одну или несколько тем — два стартовых теста подберутся автоматически.',
+    recommended: 'ШАГ 2 · РЕКОМЕНДУЕМ ВАМ', recommendedTitle: 'Два теста для начала',
+    recommendedHint: 'Из доступных опросников по вашему запросу. Раскройте тест, чтобы узнать подробности.',
+    questions: 'вопросов', minutes: 'мин', details: 'Описание теста',
+    empty: 'По этой теме пока нет подходящего стартового теста. Выберите другие темы или откройте каталог.',
+    start: 'Пройти предложенные тесты', starting: 'Открываем тесты…',
+    browse: 'Подобрать тесты из каталога 100+',
+    options: 'Как ещё хотите продолжить?',
+    course: 'Бесплатный курс поддержки', courseDetail: 'После тестов — самостоятельная ежедневная программа. Бесплатно доступен один курс одновременно.',
+    review: 'Личная диагностика (расстановка)', reviewDetail: 'Бесплатный письменный разбор; живая расстановка в бесплатный формат не входит. Заполните анкету и пришлите рисунок «Я — цель — проблема».',
+    safety: 'Опросники предназначены для самонаблюдения, не для медицинской диагностики или лечения.',
+    error: 'Не удалось открыть тесты. Проверьте соединение и повторите попытку.',
+    signinError: 'Вход через Google сейчас недоступен. Попробуйте позже.',
   },
 } as const
 
-export function TopicJourneySelector({ locale, journey }: { locale: Language; journey: Journey }) {
+type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
+
+function stopAttempt(attempt: StartAttempt | null) {
+  if (!attempt) return
+  attempt.controller.abort()
+  try {
+    if (attempt.intent && !attempt.handedOff && window.sessionStorage.getItem(PENDING_TEST_SELECTION_KEY) === attempt.intent) {
+      window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY)
+    }
+  } catch { /* Storage may be unavailable; cancellation must still finish. */ }
+}
+
+async function request(path: string, body?: unknown, method = 'POST', options: { accountId?: string; signal?: AbortSignal } = {}) {
+  const response = await fetch('/api/app/' + path, {
+    method, credentials: 'same-origin', cache: 'no-store',
+    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(options.accountId ? { 'X-HH-Account-ID': options.accountId } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+    signal: options.signal,
+  })
+  const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
+  if (!response.ok) throw Object.assign(new Error(value.error || 'SERVICE_UNAVAILABLE'), { status: response.status })
+  return value
+}
+
+export function TopicJourneySelector({ locale, journey, suggestions }: {
+  locale: Language
+  journey: Journey
+  suggestions: Record<string, RecommendedTest[]>
+}) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const c = copy[language]
+  const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState('')
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
-  const testHref = `/${language}/client/tests?focus=${encodeURIComponent(focus.join(','))}&journey=${journey.id}&topics=${encodeURIComponent(selected.join(','))}`
-  // Starting from the free-course option keeps the same filtered test battery,
-  // then activates the personal-course mode after the visitor reviews it.
+  const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
+  const recommended = suggestions[selected.slice().sort().join(',')] || []
+  const scope = JSON.stringify([language, journey.id, selected, recommended.map((item) => [item.key, item.definition])])
+  const scopeRef = useRef(scope)
+  scopeRef.current = scope
+  const activeRef = useRef(false)
+  const attemptRef = useRef<StartAttempt | null>(null)
+
+  function cancelStart() {
+    const attempt = attemptRef.current
+    attemptRef.current = null
+    stopAttempt(attempt)
+    setStarting(false)
+  }
+
+  useEffect(() => {
+    activeRef.current = true
+    const cancel = () => {
+      const attempt = attemptRef.current
+      attemptRef.current = null
+      stopAttempt(attempt)
+      setStarting(false)
+    }
+    const leave = () => { activeRef.current = false; cancel() }
+    const returnToPage = () => { activeRef.current = true }
+    const visibility = () => { if (document.visibilityState === 'hidden') cancel() }
+    let channel: BroadcastChannel | null = null
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel('hh-app-session')
+        channel.onmessage = (event) => { if (event.data === 'signed-out') cancel() }
+      }
+    } catch { /* Owner-bound requests remain authoritative without cross-tab hints. */ }
+    window.addEventListener('pagehide', leave)
+    window.addEventListener('pageshow', returnToPage)
+    window.addEventListener('popstate', cancel)
+    document.addEventListener('visibilitychange', visibility)
+    setStarting(false)
+    setError('')
+    return () => {
+      activeRef.current = false
+      const attempt = attemptRef.current
+      attemptRef.current = null
+      stopAttempt(attempt)
+      channel?.close()
+      window.removeEventListener('pagehide', leave)
+      window.removeEventListener('pageshow', returnToPage)
+      window.removeEventListener('popstate', cancel)
+      document.removeEventListener('visibilitychange', visibility)
+    }
+  }, [scope])
+
+  const testHref = '/' + language + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
+    '&journey=' + journey.id + '&topics=' + encodeURIComponent(selected.join(','))
   const courseHref = testHref + '&mode=course'
-  const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const browseHref = testHref + '&catalog=full'
+
+  const toggle = (id: string) => setSelected((current) =>
+    current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+
+  async function startRecommended() {
+    if (attemptRef.current || !activeRef.current || recommended.length === 0) return
+    const attempt: StartAttempt = { controller: new AbortController(), scope, href: window.location.href, handedOff: false }
+    attemptRef.current = attempt
+    const current = () => activeRef.current && attemptRef.current === attempt &&
+      !attempt.controller.signal.aborted && scopeRef.current === attempt.scope &&
+      window.location.href === attempt.href && document.visibilityState !== 'hidden'
+    const options = { signal: attempt.controller.signal }
+    setStarting(true)
+    setError('')
+    const preferences = { focus, problems }
+    try {
+      const intent = makeTestSelectionIntent(recommended.map((item) => item.key), Date.now(), preferences)
+      let accountId: string | null = null
+      try {
+        const session = await request('bootstrap', undefined, 'GET', options)
+        if (!current()) return
+        if (typeof session.account?.id !== 'string' || !session.account.id.trim()) throw new Error('INVALID_ACCOUNT')
+        accountId = session.account.id
+      } catch (cause) {
+        if (!current()) return
+        if (!(cause instanceof Error && 'status' in cause && cause.status === 401)) throw cause
+      }
+      if (!current()) return
+      if (accountId) {
+        const ownerOptions = { ...options, accountId }
+        const saved = await request('test-plans', {
+          items: recommended.map((item) => ({
+            definitionKey: item.definition.key,
+            definitionVersion: item.definition.version,
+            instrumentLocale: item.definition.instrumentLocale,
+          })),
+          operationId: crypto.randomUUID(),
+          appendActive: true,
+          selectionPreferences: preferences,
+        }, 'POST', ownerOptions)
+        if (!current()) return
+        if (typeof saved.id !== 'string' || !saved.id.trim()) throw new Error('MISSING_TEST_PLAN')
+        const session = await request('bootstrap', undefined, 'GET', ownerOptions)
+        if (!current()) return
+        if (session.account?.id !== accountId) throw new Error('ACCOUNT_CHANGED')
+        router.push('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
+        return
+      }
+      // Store only the editorial test identifiers, never personal answers.
+      attempt.intent = intent
+      window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
+      const auth = await request('auth/start', { locale: language, continueTo: 'tests' }, 'POST', options)
+      if (!current()) return
+      if (!auth.redirectUrl) throw new Error('SIGN_IN_UNAVAILABLE')
+      window.location.assign(auth.redirectUrl)
+      attempt.handedOff = true
+    } catch (cause) {
+      if (!current()) return
+      setError(cause instanceof Error && cause.message === 'SIGN_IN_UNAVAILABLE' ? c.signinError : c.error)
+      cancelStart()
+    } finally {
+      // A response can outlive a route/selection change even when fetch ignores abort.
+      if (!current()) {
+        stopAttempt(attempt)
+        if (attemptRef.current === attempt) {
+          attemptRef.current = null
+          if (activeRef.current) setStarting(false)
+        }
+      }
+    }
+  }
+
   return <div className={styles.root} data-topic-journey={journey.id}>
     <section className={styles.hero}>
-      <Link href={`/?lang=${language}#hh-topic-journeys`} className={styles.back}><ArrowLeft size={17} aria-hidden="true"/>{c.back}</Link>
-      <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
-      <h1>{journey.title[language]}</h1>
-      <p className={styles.introduction}>{journey.introduction[language]}</p>
+      <div className={styles.heroArt} aria-hidden="true">
+        <Image src={art[journey.id]} alt="" fill unoptimized priority
+          sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
+      </div>
+      <div className={styles.heroCopy}>
+        <Link onClick={cancelStart} href={'/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
+          <ArrowLeft size={16} aria-hidden="true" />{c.back}
+        </Link>
+        <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
+        <h1>{journey.title[language]}</h1>
+        <p className={styles.introduction}>{journey.introduction[language]}</p>
+      </div>
     </section>
+
     <section className={styles.selection} aria-labelledby="hh-topic-selection-heading">
       <div className={styles.sectionHead}>
         <p className={styles.eyebrow}>{c.eyebrow}</p>
@@ -48,40 +253,66 @@ export function TopicJourneySelector({ locale, journey }: { locale: Language; jo
       <div className={styles.topics} role="group" aria-label={c.pickTitle}>
         {journey.topics.map((topic) => <button key={topic.id} type="button" className={styles.topic}
           aria-pressed={selected.includes(topic.id)} data-topic-choice={topic.id} onClick={() => toggle(topic.id)}>
-          <span className={styles.check}><Check size={17} aria-hidden="true" /></span>
+          <span className={styles.check}><Check size={16} aria-hidden="true" /></span>
           <span><strong>{topic.title[language]}</strong><small>{topic.detail[language]}</small></span>
         </button>)}
       </div>
-      <p className={styles.selectionStatus} role="status" aria-live="polite">
-        {selected.length ? `${selected.length} ${c.chosen}` : c.default}
-      </p>
     </section>
+
+    <section className={styles.suggestions} aria-labelledby="hh-topic-recommended-tests">
+      <div className={styles.sectionHead}>
+        <p className={styles.eyebrow}>{c.recommended}</p>
+        <h2 id="hh-topic-recommended-tests">{c.recommendedTitle}</h2>
+        <p>{c.recommendedHint}</p>
+      </div>
+      <div className={styles.suggestionList} aria-live="polite">
+        {recommended.length ? recommended.map((item, index) => <details className={styles.test} key={item.key}
+          data-recommended-test={item.key}>
+          <summary>
+            <span className={styles.testNumber}>{String(index + 1).padStart(2, '0')}</span>
+            <span className={styles.testSummary}>
+              <strong>{item.title}</strong>
+              <small>{[item.durationMinutes ? '~' + item.durationMinutes + ' ' + c.minutes : null,
+                item.questionCount ? item.questionCount + ' ' + c.questions : null].filter(Boolean).join(' · ')}</small>
+            </span>
+            <ChevronDown className={styles.testChevron} size={19} aria-hidden="true" />
+          </summary>
+          <div className={styles.testDetail}>
+            <p>{item.description || item.area || c.details}</p>
+          </div>
+        </details>) : <p className={styles.noTests}>{c.empty}</p>}
+      </div>
+
+      <button type="button" className={styles.primaryAction} data-topic-action="tests"
+        disabled={!recommended.length || starting} aria-busy={starting} onClick={startRecommended}>
+        <span className={styles.primaryIcon}><ClipboardCheck size={23} aria-hidden="true" /></span>
+        <span>{starting ? c.starting : c.start}</span>
+        <ArrowRight size={22} aria-hidden="true" className={styles.primaryArrow} />
+      </button>
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      <Link onClick={cancelStart} href={browseHref} className={styles.browseLink} data-topic-action="browse">
+        <Search size={18} aria-hidden="true" />{c.browse}<ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </section>
+
     <section className={styles.actions} aria-labelledby="hh-topic-actions-heading">
       <div className={styles.sectionHead}>
         <p className={styles.eyebrow}>HOLISTIC HOUSE</p>
         <h2 id="hh-topic-actions-heading">{c.options}</h2>
       </div>
-      <Link href={testHref} className={styles.primaryAction} data-topic-action="tests">
-        <span className={styles.primaryIcon}><ClipboardCheck size={27} aria-hidden="true"/></span>
-        <span className={styles.primaryContent}><strong>{c.test}</strong><small>{c.testDetail}</small></span>
-        <ArrowRight size={28} aria-hidden="true" className={styles.primaryArrow}/>
-      </Link>
-      <div className={styles.secondaryActions} aria-label={language === 'ru' ? 'Другие варианты' : 'Other ways to begin'}>
-        <Link href={courseHref} className={styles.secondaryLink} data-topic-action="course">
-          <BookOpen size={20} aria-hidden="true"/>
+      <div className={styles.secondaryActions}>
+        <Link onClick={cancelStart} href={courseHref} className={styles.secondaryLink} data-topic-action="course">
+          <BookOpen size={21} aria-hidden="true" />
           <span><strong>{c.course}</strong><small>{c.courseDetail}</small></span>
-          <ArrowRight size={17} aria-hidden="true"/>
+          <ArrowRight size={18} aria-hidden="true" />
         </Link>
-        <Link href={`/${language}/services/free-situation-review`} className={styles.secondaryLink} data-topic-action="review">
-          <HeartHandshake size={20} aria-hidden="true"/>
+        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review'} className={styles.secondaryLink} data-topic-action="review">
+          <HeartHandshake size={21} aria-hidden="true" />
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
-          <ArrowRight size={17} aria-hidden="true"/>
+          <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </div>
-      <div className={styles.footnote}>
-        <span><Sparkles size={16} aria-hidden="true"/>{c.safety}</span>
-        <Link href={`/${language}/services/systemic-constellations`}><Compass size={16} aria-hidden="true"/>{c.more}<ArrowRight size={15} aria-hidden="true"/></Link>
-      </div>
+      <p className={styles.footnote}><Sparkles size={15} aria-hidden="true" />{c.safety}</p>
     </section>
   </div>
 }

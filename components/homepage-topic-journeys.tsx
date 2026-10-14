@@ -1,39 +1,58 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowUpRight, BriefcaseBusiness, HeartHandshake, Leaf, Target, Waves } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import type { Locale } from '@/data/remedies'
 import { TOPIC_JOURNEYS } from '@/lib/assessments/topic-journeys'
 import styles from './homepage-topic-journeys.module.css'
 
-const icons = { relationships: HeartHandshake, business: BriefcaseBusiness, stress: Waves, energy: Leaf, effectiveness: Target }
+// Reuse the site's approved photographic assets. Keep these static and
+// unoptimized to avoid consuming the exhausted Vercel image-transform quota.
+const photos: Record<string, string> = {
+  relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
+  business: '/images/holistic-house/course-focus-mountain-boy.webp',
+  stress: '/images/holistic-house/hero-olive-incense.webp',
+  energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+  effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+}
 const text = {
-  en: { kicker: 'FIND YOUR DIRECTION', title: 'What would you like to change?', intro: 'Start with a topic that matters to you. Choose a focus, then explore free tests, a support course or a personal written situation review.', action: 'Take a free test' },
-  ru: { kicker: 'ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ', title: 'Что сейчас для вас важно?', intro: 'Сначала выберите сферу и конкретную тему. Затем — бесплатные тесты, курс поддержки или персональный письменный разбор.', action: 'Пройти тест' },
+  en: {
+    kicker: 'FIND YOUR DIRECTION',
+    title: 'What matters to you right now?',
+    intro: 'Choose a direction, then a focus. We will suggest two free tests to begin with.',
+    action: 'Take a free test',
+  },
+  ru: {
+    kicker: 'ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ',
+    title: 'Что сейчас для вас важно?',
+    intro: 'Выберите направление и тему — предложим два бесплатных теста для начала.',
+    action: 'Пройти тест',
+  },
 } as const
 
 export function HomepageTopicJourneys({ locale }: { locale: Locale }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const c = text[language]
-  return <section className={styles.section} aria-labelledby="hh-topic-journeys" data-home-topic-journeys>
+  return <section className={styles.section} aria-labelledby="hh-topic-journeys" id="hh-topic-journeys" data-home-topic-journeys>
     <header className={styles.heading}>
       <p className={styles.kicker}>{c.kicker}</p>
-      <h2 id="hh-topic-journeys">{c.title}</h2>
+      <h2>{c.title}</h2>
       <p>{c.intro}</p>
     </header>
     <div className={styles.grid}>
-      {TOPIC_JOURNEYS.map((journey, index) => {
-        const Icon = icons[journey.id as keyof typeof icons] || Target
-        return <article key={journey.id} className={styles.tile} data-featured={index === 0} data-topic-id={journey.id}>
-          <Link href={`/${language}/explore/${journey.id}`} className={styles.tileLink}>
-            <span className={styles.icon}><Icon size={26} strokeWidth={1.65} aria-hidden="true" /></span>
-            <span className={styles.tileContent}>
-              <span className={styles.eyebrow}>{journey.eyebrow[language]}</span>
-              <strong>{journey.title[language]}</strong>
-              <span className={styles.description}>{journey.summary[language]}</span>
-              <span className={styles.action}>{c.action}<ArrowUpRight size={17} aria-hidden="true" /></span>
-            </span>
-          </Link>
-        </article>
-      })}
+      {TOPIC_JOURNEYS.map((journey) => <article key={journey.id} className={styles.tile} data-topic-id={journey.id}>
+        <Link href={`/${language}/explore/${journey.id}`} className={styles.tileLink}>
+          <span className={styles.photo}>
+            <Image src={photos[journey.id]} alt="" fill unoptimized loading="lazy"
+              sizes="(max-width: 720px) 116px, (max-width: 1024px) 145px, 185px" />
+          </span>
+          <span className={styles.tileContent}>
+            <span className={styles.eyebrow}>{journey.eyebrow[language]}</span>
+            <strong>{journey.title[language]}</strong>
+            <span className={styles.description}>{journey.summary[language]}</span>
+            <span className={styles.action}>{c.action}<ArrowUpRight size={17} aria-hidden="true" /></span>
+          </span>
+        </Link>
+      </article>)}
     </div>
   </section>
 }

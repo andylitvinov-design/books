@@ -6,7 +6,7 @@ import styles from './course-final-retest.module.css'
 
 const COPY = {
   en: {
-    eyebrow: 'DAY 14 · FINAL CHECK-IN', heading: 'See what changed in 14 days',
+    eyebrow: 'AFTER THE COURSE · OPTIONAL CHECK-IN', heading: 'Compare your starting and later state',
     intro: 'Repeat the same tests you selected before your course. We will compare only compatible original scores. You may take them at your own pace.',
     status: 'repeated', of: 'of', start: 'Repeat this test', done: 'Retest saved',
     baseline: 'Before the course', final: 'After the course', changed: 'Your comparable scores',
@@ -19,9 +19,12 @@ const COPY = {
     doneAll: 'You have repeated all available comparable tests. Review your results and reflections.',
     none: 'This cycle has no confirmed start-of-course test list. Your reports are still available in My Tests.',
     allTests: 'My Tests', pleaseWait: 'Opening your test…',
+    primary: 'Main state measure', supplementary: 'Supplementary questionnaire',
+    screening: 'Symptom screening · not a diagnosis',
+    stable: 'Stable profile · no short-course retest requested',
   },
   ru: {
-    eyebrow: 'ДЕНЬ 14 · ИТОГОВЫЙ ЗАМЕР', heading: 'Что изменилось за 14 дней?',
+    eyebrow: 'ПОСЛЕ КУРСА · НЕОБЯЗАТЕЛЬНЫЙ ЗАМЕР', heading: 'Сравните исходное и последующее состояние',
     intro: 'Предлагаем повторить те же тесты, которые вы выбрали перед курсом. Сравним только совместимые исходные шкалы. Тесты можно проходить в своём темпе.',
     status: 'повторено', of: 'из', start: 'Повторить тест', done: 'Повтор сохранён',
     baseline: 'До курса', final: 'После курса', changed: 'Сопоставимые показатели',
@@ -34,6 +37,9 @@ const COPY = {
     doneAll: 'Повторные тесты завершены. Можно посмотреть результаты и личные наблюдения.',
     none: 'У этого цикла нет подтверждённого стартового набора тестов. Отчёты доступны в «Моих тестах».',
     allTests: 'Мои тесты', pleaseWait: 'Открываем тест…',
+    primary: 'Основной показатель состояния', supplementary: 'Дополнительный опросник',
+    screening: 'Скрининг симптомов · не диагноз',
+    stable: 'Устойчивый профиль · повтор за короткий курс не требуется',
   },
 }
 
@@ -56,7 +62,12 @@ export default function CourseFinalRetest({ locale='en', plan, onStart, busyKey=
         {tests.map((item, i)=><article key={item.key} className={styles.item} data-test-retest={item.key}>
           <div className={styles.itemHeading}>
             <span className={styles.number}>{String(i+1).padStart(2,'0')}</span>
-            <h3>{item.title}</h3>
+            <div><h3>{item.title}</h3>
+              <small data-course-test-role={item.role||'supplementary'}>
+                {item.role==='primary_outcome'?t.primary:item.role==='stable_profile'?t.stable:
+                  item.role==='symptom_screening'?t.screening:t.supplementary}
+              </small>
+            </div>
             {item.completed && <CheckCircle2 size={21} aria-label={t.done} className={styles.check}/>}
           </div>
           <div className={styles.resultDates}>
@@ -71,10 +82,11 @@ export default function CourseFinalRetest({ locale='en', plan, onStart, busyKey=
           </div>}
           {item.versionChanged && <p className={styles.hint}>{t.version}</p>}
           {!item.baselineResultId && <p className={styles.hint}>{t.noBaseline}</p>}
-          {item.baselineResultId && !item.canRepeat && !item.completed &&
+          {item.baselineResultId && !item.canRepeat && !item.completed && item.role!=='stable_profile' &&
             <p className={styles.hint}>{t.unavailable}</p>}
           {item.repeatSuggestedLater && !item.completed && <p className={styles.hint}>
-            {t.suggested.replace('{days}',String(item.suggestedRepeatDays))}</p>}
+            {t.suggested.replace('{days}',String(item.suggestedRepeatDays))}
+            {item.nextSuggestedAt && <small> ({item.nextSuggestedAt.slice(0,10)})</small>}</p>}
           <div className={styles.actions}>
             {item.completed ? <span className={styles.saved}><CheckCircle2 size={17}/>{t.done}</span>
               : item.canRepeat && <button type="button" className={styles.start}

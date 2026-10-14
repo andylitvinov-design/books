@@ -4,6 +4,8 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import * as coursePrograms from '../../lib/inner-growth/course-programs.js'
 import * as momentTrends from '../../lib/inner-growth/course-moment-trends.js'
+import * as adaptation from '../../lib/inner-growth/course-adaptation.js'
+import * as welcome from '../../lib/inner-growth/course-welcome.js'
 import * as courseTestFlow from '../../lib/app/course-test-flow.js'
 import * as billingPlan from '../../lib/billing/public-plan.js'
 import * as coursePlans from '../../lib/inner-growth/course-plans.js'
@@ -54,14 +56,14 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     './course-entry-selector': moduleFor('CourseEntrySelector'), './my-courses-dashboard': moduleFor('MyCoursesDashboard'), './course-preset-catalog': moduleFor('CoursePresetCatalog'),
     './course-focus-entry': moduleFor('CourseFocusEntry'),
     './course-today': moduleFor('CourseToday'), './course-14-day-overview': moduleFor('Course14DayOverview'), './course-r3-steps': moduleFor('CourseR3Steps'),
-    '@/lib/inner-growth/course-moment-trends': momentTrends,
+    '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome,
     './course-moment-trends': moduleFor('CourseMomentTrends'), './course-final-retest': moduleFor('CourseFinalRetest'),
     './use-course-promotion': { useCoursePromotion: () => ({ show: false, checkoutReady: false, dismiss: () => {} }) },
     '@/lib/app/course-test-flow': courseTestFlow,
     '@/lib/app/client-fetch': { appFetch: async (path, body, method, options) => {
       calls.push({ path, body, options, method }); return fetcher(path, options, body)
     } },
-    './course-guided-timer': moduleFor('CourseGuidedTimer'), './course-slide-player': moduleFor('CourseSlidePlayer'), './subscription-access': { useSubscription: () => ({ status: null, phase: 'unavailable', busy: '' }), useLessonCompletionOffer: () => completion => notified.push(completion) },
+    './course-guided-timer': moduleFor('CourseGuidedTimer'), './course-practice-voice': moduleFor('CoursePracticeVoice'), './course-slide-player': moduleFor('CourseSlidePlayer'), './subscription-access': { useSubscription: () => ({ status: null, phase: 'unavailable', busy: '' }), useLessonCompletionOffer: () => completion => notified.push(completion) },
     './course-quest': { CourseQuestMap: stub('CourseQuestMap'), CourseQuestPlayer: stub('CourseQuestPlayer') },
     ...extraModules,
   }

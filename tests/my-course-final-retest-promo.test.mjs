@@ -262,3 +262,31 @@ test('Runner retest return checks scope after both awaits and preserves the sele
   assert.ok(f.calls.every(call=>call[3].accountId==='owner-a'))
  }
 })
+
+test('one selected primary state outcome is distinct from screeners and stable profiles',()=>{
+  const p=buildFinalCourseRetest({...period,
+    testKeys:['hh-weekly-pulse','ipip-50','gad-7'],primaryTestKey:'hh-weekly-pulse',
+    metadata:[...meta,{key:'ipip-50',version:'v1',startable:true,rightsStatus:'cleared'},
+      {key:'gad-7',version:'v1',startable:true,rightsStatus:'cleared'}],
+    results:[
+      result('p','2026-10-13T11:00:00Z',5),
+      result('s','2026-10-13T11:00:00Z',5,{definitionKey:'ipip-50'}),
+      result('g','2026-10-13T11:00:00Z',5,{definitionKey:'gad-7'}),
+    ]})
+  assert.equal(p.tests[0].role,'primary_outcome')
+  assert.equal(p.tests[1].role,'stable_profile')
+  assert.equal(p.tests[1].canRepeat,false)
+  assert.equal(p.tests[2].role,'symptom_screening')
+  assert.equal(p.totalCount,2)
+})
+
+test('a suggested retest date is calculated from actual as-of time, not a frozen final-day interval',()=>{
+  const args={...period,metadata:[{...meta[0],suggestedRepeatDays:30}],
+    results:[result('a','2026-10-13T11:00:00Z',6)]}
+  const early=buildFinalCourseRetest({...args,now:'2026-10-27T10:00:00Z'})
+  assert.equal(early.tests[0].repeatSuggestedLater,true)
+  assert.equal(early.tests[0].nextSuggestedAt,'2026-11-12T11:00:00.000Z')
+  assert.equal(early.tests[0].canRepeat,true)
+  const later=buildFinalCourseRetest({...args,now:'2026-11-20T11:00:00Z'})
+  assert.equal(later.tests[0].repeatSuggestedLater,false)
+})

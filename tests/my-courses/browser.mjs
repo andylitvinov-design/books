@@ -28,6 +28,7 @@ const goals = {
   calm_regulation: { title:{ru:'Спокойствие и заземление',en:'Calm & grounding'} },
 }
 const CourseEntrySelector = loadComponent('components/app/course-entry-selector.jsx', {
+  'next/navigation':{useSearchParams:()=>new URLSearchParams()},
   '@/lib/billing/public-plan':publicPlans,
   '@/lib/app/client-fetch':{appFetch:()=>{throw new Error('Synthetic layout fixture must not request account data')}},
   '@/lib/inner-growth/course-model':{GROWTH_GOALS:goals,COURSE_TOPICS:[]},
