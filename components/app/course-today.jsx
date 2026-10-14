@@ -6,6 +6,7 @@ import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
 
 const UI={
@@ -306,6 +307,8 @@ export default function CourseToday({locale='en'}){
       </div>
     </div>
   </header>
+  <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
+    progress={progress} roadmap={data.roadmap||[]}/>
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
