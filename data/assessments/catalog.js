@@ -12,6 +12,7 @@ import { PERSONALITY_TYPE_CATALOG } from './personality-types-original-2026.js'
 import { COMPASSION_CATALOG } from './compassion-2026.js'
 import { MHC_SF_CATALOG } from './mhc-sf-adult-dec2011.js'
 import { OPEN_PROFESSIONAL_2026_CATALOG } from './open-professional-2026.js'
+import { IPIP_VIA_R_COMPLETION_CATALOG } from './ipip-via-r-completion-2026.js'
 
 export const MONITORING_AXES = deepFreeze([
   'state',
@@ -702,6 +703,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...IPIP_BIG_FIVE_50_CATALOG,
   ...PERSONALITY_TYPE_CATALOG,
   ...OPEN_PROFESSIONAL_2026_CATALOG,
+  ...IPIP_VIA_R_COMPLETION_CATALOG,
   {
     key: 'mspss',
     version: 'v1',
