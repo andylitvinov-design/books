@@ -45,7 +45,7 @@ const copy = {
 // Match artwork to the exact approved video, never to a language alone. A future
 // replacement must not inherit another video's poster. No expiring CDN URLs here.
 const approvedAndyPosters: Readonly<Record<string, string>> = {
-  fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/andy-about.png",
+  fd5fcead9b067f9a0649862675a38771: "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
   "2c251709aba74fd96ae8be43257a080b": "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   d4e55c984e54b40fbeb8a21f81d27694: "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
   ed202847a43a96b918308aa972177b34: "/images/holistic-house/video-posters/home-en-v2.webp",
@@ -69,6 +69,11 @@ const existingYouTubeMirrors: Readonly<Record<string, string>> = {
   "79c2845577865979cd95ac40a08fc01a": "Cz6SxXJNZbw",
   "0f984780d06948b1e78166e6e553e4e9": "Q9NvYECKWuc",
 };
+
+// Honor a user Play gesture after an in-flight locale RSC response remounts
+// its exact player. Kept only in the current browser module, never persisted.
+const recentUserPlayIntent = new Map<string, number>();
+const USER_PLAY_INTENT_WINDOW_MS = 10_000;
 
 const minimalPageVideoIds = new Set([
   "ed202847a43a96b918308aa972177b34",
@@ -107,6 +112,12 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
 function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
+  const playIdentity = `${locale}:${video.heygenId ?? video.youtubeId ?? ""}`;
+  const rememberPlayIntent = () => recentUserPlayIntent.set(playIdentity, Date.now());
+  useEffect(() => {
+    const time = recentUserPlayIntent.get(playIdentity);
+    if (time && Date.now() - time < USER_PLAY_INTENT_WINDOW_MS) setPlaying(true);
+  }, [playIdentity]);
   // SSR may appear before React attaches handlers on a slow connection.
   const [interactive, setInteractive] = useState(false);
   useEffect(() => { setInteractive(true); }, []);
@@ -145,7 +156,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         {playing ? (
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
-          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
+          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onPointerDown={rememberPlayIntent} onClickCapture={rememberPlayIntent} onClick={() => setPlaying(true)}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
@@ -154,7 +165,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster && (!fallbackPoster || localPosterFailed) ? (
-              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={poster === "direct"} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
+              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={true} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
                 <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />

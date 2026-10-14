@@ -231,9 +231,12 @@ try {
         const mobileIds = ['home', 'library', 'services', 'academy', 'about', 'cabinet']
         const expectedItems = selector === '.mobile-bottom-navigation'
           ? expected.filter(item => mobileIds.includes(item.id))
-          : expected.map(item => item.id === 'cabinet'
-              ? { ...item, href: `/${locale === 'es' ? 'en' : locale}/app` }
-              : item)
+          : expected.flatMap(item => item.id === 'cabinet'
+              ? [
+                  { id: 'consultation', href: `/${locale === 'es' ? 'en' : locale}/services#consultation` },
+                  { ...item, href: `/${locale === 'es' ? 'en' : locale}/app` },
+                ]
+              : [item])
         assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
         if (selector === '.mobile-bottom-navigation') await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
         await expect(nav.locator('[data-nav-item="library"]')).toHaveAttribute('aria-current', 'page')
