@@ -2377,7 +2377,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.pa",
+          "key": "trait.ipipipc.short.pa",
           "method": "mean",
           "items": [
             "ipc.pa.06",
@@ -2418,7 +2418,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:99654beb91c3c1d4a1fb11fdff8a4b4d22fecdc56c3251631690f437318afe6a"
+    "contentHash": "sha256:dca630906295ecc7183aeb1ce8f76c8896b8906c68293e87c31ddcb3191b606e"
   },
   {
     "id": "c6c3a352-05b7-5c12-a836-a0d06051d537",
@@ -2455,7 +2455,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.bc",
+          "key": "trait.ipipipc.short.bc",
           "method": "mean",
           "items": [
             "ipc.bc.07",
@@ -2496,7 +2496,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:07d25aa641e115e98f139cdd7304219131831264eecded6356b6e28b671eba40"
+    "contentHash": "sha256:2e3a1f6ea803bd2f262540d6f1f4ec858643399167a36869510ea41948ed9c1c"
   },
   {
     "id": "ccbc11bb-a206-5414-acdf-ebe7645d9a40",
@@ -2533,7 +2533,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.de",
+          "key": "trait.ipipipc.short.de",
           "method": "mean",
           "items": [
             "ipc.de.08",
@@ -2574,7 +2574,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:3b25ae0ecbf2f2b561fa2b1c7f0779e48b87a75a0611e02aa40c30fcb5a22490"
+    "contentHash": "sha256:dfa7d9bd837d098750cc47fcbf41eac61bd8aff66363ceceaa2c668e00eb8050"
   },
   {
     "id": "8cc6258c-c24e-513e-b43b-f218bc58e02d",
@@ -2611,7 +2611,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.fg",
+          "key": "trait.ipipipc.short.fg",
           "method": "mean",
           "items": [
             "ipc.fg.01",
@@ -2652,7 +2652,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:0d07c61410afca059c75b649234a46ec611fe7b8ba91d2b527f063b9fed2b59d"
+    "contentHash": "sha256:80e4cdf86129b241500b2c802ae69e097a8621d1b82df6547875298b28e53633"
   },
   {
     "id": "e86c9411-5188-5084-ba77-f78c25c883d9",
@@ -2689,7 +2689,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.hi",
+          "key": "trait.ipipipc.short.hi",
           "method": "mean",
           "items": [
             "ipc.hi.02",
@@ -2730,7 +2730,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:1028ade7ec083d8a84728ae9d1fe1b8826012149a80872fdee42971b440df21c"
+    "contentHash": "sha256:af65160ec6e3198ea4dd7de16c32e75ef5563b3849ee28ace7807317a324e5bf"
   },
   {
     "id": "d1a989a5-ce0f-583f-83f8-0c945900d9be",
@@ -2767,7 +2767,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.jk",
+          "key": "trait.ipipipc.short.jk",
           "method": "mean",
           "items": [
             "ipc.jk.03",
@@ -2808,7 +2808,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:bfa78c7163553275c7768f1b9d4b9c0534458fa18415c743fb7234169b53d7f5"
+    "contentHash": "sha256:32dd42ee8508e411521c172ad9fedd63aebef47885e339f7897dda19ca66ee51"
   },
   {
     "id": "9e7e7e9d-9df2-53d4-8017-f8a9bd86b709",
@@ -2845,7 +2845,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.lm",
+          "key": "trait.ipipipc.short.lm",
           "method": "mean",
           "items": [
             "ipc.lm.04",
@@ -2886,7 +2886,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:8deb7ed818d0ba2e5ac6a92a271d5c8351db36ef96a84c2279fdd72b91cb7303"
+    "contentHash": "sha256:2ed582e0662dcc87dc87a016abad34fbdd9d107660061924dea8f7d6eeaaacc8"
   },
   {
     "id": "1738d0e7-c23a-5948-bb64-e8cbbcab8b7c",
@@ -2923,7 +2923,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     "scoring": {
       "dimensions": [
         {
-          "key": "trait.ipipipc.no",
+          "key": "trait.ipipipc.short.no",
           "method": "mean",
           "items": [
             "ipc.no.05",
@@ -2964,7 +2964,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DEFINITIONS = deepFreeze([
     ],
     "optionalContext": [],
     "suggestedRepeatDays": null,
-    "contentHash": "sha256:26da336f543bef0257c8e644d5b7c1f0ca7b7f1177f5e2a690af14c560db0904"
+    "contentHash": "sha256:21f44f8015c5d1cc66edfeb5e6decb5b8fbc28ec53f15ef3dc157626369e3062"
   },
   {
     "id": "7b4be9f3-7473-59e1-9d82-39aff2d669ac",
@@ -5549,7 +5549,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-pa-4",
-    "trait.ipipipc.pa",
+    "trait.ipipipc.short.pa",
     "personality",
     "Assertive-leading style",
     "Уверенно-ведущий стиль",
@@ -5567,7 +5567,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-bc-4",
-    "trait.ipipipc.bc",
+    "trait.ipipipc.short.bc",
     "personality",
     "Confrontational style",
     "Спорящий стиль общения",
@@ -5585,7 +5585,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-de-4",
-    "trait.ipipipc.de",
+    "trait.ipipipc.short.de",
     "personality",
     "Interpersonal distance",
     "Межличностная дистанция",
@@ -5603,7 +5603,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-fg-4",
-    "trait.ipipipc.fg",
+    "trait.ipipipc.short.fg",
     "personality",
     "Reserved style",
     "Сдержанный стиль общения",
@@ -5621,7 +5621,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-hi-4",
-    "trait.ipipipc.hi",
+    "trait.ipipipc.short.hi",
     "personality",
     "Yielding style",
     "Уступчивый стиль общения",
@@ -5639,7 +5639,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-jk-4",
-    "trait.ipipipc.jk",
+    "trait.ipipipc.short.jk",
     "personality",
     "Unassuming-supportive style",
     "Ненавязчиво-поддерживающий стиль",
@@ -5657,7 +5657,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-lm-4",
-    "trait.ipipipc.lm",
+    "trait.ipipipc.short.lm",
     "personality",
     "Warm and agreeable style",
     "Тёплый и доброжелательный стиль",
@@ -5675,7 +5675,7 @@ export const NEW_PROFESSIONAL_NEOPIC_DIMENSION_ROWS = deepFreeze([
   ],
   [
     "ipip-ipc-no-4",
-    "trait.ipipipc.no",
+    "trait.ipipipc.short.no",
     "personality",
     "Sociable-engaging style",
     "Общительный инициативный стиль",
