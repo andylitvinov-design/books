@@ -17,7 +17,7 @@ const result = (id,at,value,over={}) => ({
 const meta=[{key:'hh-weekly-pulse',version:'v1',title:'Weekly Pulse',startable:true,
   rightsStatus:'cleared',suggestedRepeatDays:7,scaleLabels:{'weekly.tension':'Tension'}}]
 const period={testKeys:['hh-weekly-pulse'],metadata:meta,
-  startedAt:'2026-10-13T12:00:00Z',completedAt:'2026-10-26T18:00:00Z'}
+  startedAt:'2026-10-13T12:00:00Z',completedAt:'2026-10-26T18:00:00Z',now:'2026-10-28T20:00:00Z'}
 
 test('exact original selected test is re-offered after day 14, using a fixed before-cycle result',()=>{
   const results=[
@@ -136,4 +136,46 @@ test('a suggested retest date is calculated from actual as-of time, not a frozen
   assert.equal(early.tests[0].canRepeat,true)
   const later=buildFinalCourseRetest({...args,now:'2026-11-20T11:00:00Z'})
   assert.equal(later.tests[0].repeatSuggestedLater,false)
+})
+
+test('GAD-7 cannot be repeated early to manufacture a two-week symptom change',()=>{
+  const baseline=result('gad-before','2026-10-13T11:00:00Z',8,{definitionKey:'gad-7'})
+  const gadMeta={key:'gad-7',version:'v1',title:'GAD-7',startable:true,
+    rightsStatus:'cleared',suggestedRepeatDays:14,scaleLabels:{}}
+  const early=buildFinalCourseRetest({...period,testKeys:['gad-7'],metadata:[gadMeta],
+    now:'2026-10-26T20:00:00Z',results:[baseline]})
+  assert.equal(early.tests[0].hardBlocked,true)
+  assert.equal(early.tests[0].canRepeat,false)
+  assert.equal(early.tests[0].hardDueAt,'2026-10-27T11:00:00.000Z')
+  const allowed=buildFinalCourseRetest({...period,testKeys:['gad-7'],metadata:[gadMeta],
+    now:'2026-10-27T12:00:00Z',results:[baseline]})
+  assert.equal(allowed.tests[0].canRepeat,true)
+})
+
+test('all eight original weekly dimensions remain visible in an honest after-course comparison',()=>{
+  const dims8=['weekly.load','weekly.tension','weekly.recovery','weekly.functioning',
+    'weekly.connection','weekly.mood','weekly.energy','weekly.clarity']
+  const make=(id,at,shift)=>result(id,at,5,{dimensions:dims8.map((key,i)=>({
+    key,value:5+shift,min:0,max:10,direction:i<2?'lower-reported-load':'higher-reported-resource',
+  }))})
+  const out=buildFinalCourseRetest({...period,
+    results:[make('before','2026-10-13T11:00:00Z',0),make('after','2026-10-27T13:00:00Z',-1)]})
+  assert.equal(out.tests[0].comparison.length,8)
+  assert.ok(out.tests[0].comparison.some(row=>row.key==='weekly.load'))
+  assert.ok(out.tests[0].comparison.some(row=>row.key==='weekly.clarity'))
+})
+
+test('identical values from different language, translation or content versions are not equivalent',()=>{
+  const before=result('a','2026-10-13T11:00:00Z',5,{
+    timeframe:'past-2-weeks',translationVersion:'validated-en-v1',contentHash:'sha256:a',
+  })
+  for(const patch of [
+    {instrumentLocale:'ru'}, {translationVersion:'hh-ru-v1'},
+    {contentHash:'sha256:b'}, {timeframe:'right-now'},
+  ]){
+    const after=result('b','2026-10-27T13:00:00Z',5,{
+      timeframe:'past-2-weeks',translationVersion:'validated-en-v1',contentHash:'sha256:a',...patch,
+    })
+    assert.equal(compareFinalCourseTests(before,after),null)
+  }
 })
