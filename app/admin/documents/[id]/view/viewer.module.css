@@ -1,0 +1,55 @@
+.reader {
+  min-height: 100vh;
+  background: radial-gradient(circle at 96% 0%, #e7f4f0 0, transparent 37%), #f5f3ee;
+  padding: 17px 14px 56px;
+}
+.toolbar, .headline {
+  max-width: 950px;
+  margin: 0 auto;
+}
+.toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding: 5px 0 13px;
+  border-bottom: 1px solid #d8e0da;
+}
+.toolbar a {
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:44px;
+  border-radius:11px;
+  font:700 13px/1.35 system-ui,sans-serif;
+}
+.back {color:#285766; padding:10px 6px;}
+.controls {display:flex;flex-wrap:wrap;gap:7px;}
+.control, .edit {padding:9px 13px; border:1px solid #cedfdd; background:#fff; color:#285766;}
+.edit {background:#642d45;color:#fff;border-color:#642d45;}
+.toolbar a:hover {filter:brightness(.97);}
+.toolbar a:focus-visible {outline:3px solid #168a8a;outline-offset:3px;}
+.headline {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;padding:15px 2px;}
+.headline span {font:750 11px/1.4 system-ui,sans-serif;letter-spacing:.12em;color:#367b79;}
+.headline p {font:400 12px/1.4 system-ui,sans-serif;color:#63747a;margin:0;}
+.reader :global(.prescription-shell.canonical-shell) {max-width:950px;padding:0;margin:0 auto;}
+.reader :global(.canonical-shell .canonical-document) {max-width:900px;box-shadow:0 24px 60px #24424a16;border-radius:18px;}
+@media(max-width:600px) {
+ .reader{padding:9px 8px 30px;}
+ .toolbar{gap:5px;}
+ .back{width:100%;justify-content:flex-start!important;padding:5px 3px;}
+ .controls{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;}
+ .control,.edit{font-size:12px!important;padding:7px 5px!important;gap:4px!important;}
+ .control svg,.edit svg {width:14px;height:14px;}
+ .headline{padding:11px 4px;}
+ .headline p{font-size:11px;}
+ .reader :global(.canonical-shell .canonical-document){padding:17px 13px;border-radius:12px;}
+}
+@media print {
+ .reader{padding:0;background:#fff;}
+ .toolbar,.headline{display:none!important;}
+ .reader :global(.prescription-shell.canonical-shell),.reader :global(.canonical-shell .canonical-document){max-width:none;padding:0;border:0;box-shadow:none;}
+}

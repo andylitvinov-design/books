@@ -240,7 +240,7 @@ test('generates a download-safe PDF without internal notes or IDs and keeps reme
   const source = pdf.toString('latin1')
 
   assert.match(source, /^%PDF-1\.7/)
-  assert.match(source, /HOMEOPATHIC RECOMMENDATION/)
+  assert.match(source, /Homeopathic recommendation/)
   assert.match(source, /\/URI \(https:\/\/books\.example\.test\/en\/homeopathy\/remedies\/arsenicum-album\)/)
   assert.equal(source.includes('Never show this note.'), false)
   assert.equal(source.includes(record.id), false)

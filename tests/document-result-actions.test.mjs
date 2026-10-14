@@ -6,9 +6,9 @@ import { documentActionUrls, remedyCountLabel, resultLocale, createDocumentLinkC
 test('all admin actions explicitly carry selected locale for either document',()=>{
  for(const id of ['receipt-id','recommendation-id'])for(const locale of ['en','ru']){
   const urls=documentActionUrls(id,locale)
-  assert.equal(urls.open,`/admin/documents/${id}?locale=${locale}`)
+  assert.equal(urls.open,`/admin/documents/${id}/view?locale=${locale}`)
   assert.equal(urls.pdf,`/admin/api/documents/${id}/pdf?locale=${locale}`)
-  assert.equal(urls.print,`/admin/documents/${id}?locale=${locale}&print=1`)
+  assert.equal(urls.print,`/admin/documents/${id}/view?locale=${locale}&print=1`)
  }
 })
 test('preference defaults and remedy grammar',()=>{
