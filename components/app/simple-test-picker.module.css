@@ -136,3 +136,11 @@
 .testInfo .testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;border-color:#e5d7ec;color:#776088}
 .testInfo .testKindBadge svg{flex:0 0 auto}
 @media(max-width:620px){.kindChoices{display:grid;grid-template-columns:1fr}.kindChoice{width:100%}}
+
+/* Editable chips make finer URL-driven topic filters visible on narrow screens. */
+.themeRefinements{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0 0}
+.themeRefinements strong{font-size:.78rem;color:#507c72;line-height:1.5}
+.themeRefinements button{display:inline-flex;align-items:center;gap:7px;min-height:37px;padding:7px 10px;background:#e4f2ee;border:1px solid #a7cfc3;border-radius:99px;color:#246a5c;font-size:.78rem!important;font-weight:650;cursor:pointer}
+.themeRefinements button:hover{background:#d7eae4}
+.themeRefinements button:focus-visible{outline:3px solid #347d9a;outline-offset:2px}
+.themeRefinements button span{font-size:1.15rem;line-height:.9}
