@@ -97,7 +97,7 @@ test('private daily read, server day lock and final-test link are required',()=>
  assert.match(player,/promotion\.show && earned/)
  assert.match(workspace,/searchParams\.get\('course'\) === 'retest'/)
  assert.match(flow,/startOrResumeCourseFinalRetest/)
- assert.match(flow,/if\(!today\?\.finalRetest\?\.ready \|\| !item\?\.canRepeat\)/)
+ assert.match(flow,/if \(!today\?\.finalRetest\?\.ready \|\| !item\?\.canRepeat\)/)
  assert.doesNotMatch(player + today + flow,/localStorage|sessionStorage|sendBeacon|dangerouslySetInnerHTML/)
 })
 
