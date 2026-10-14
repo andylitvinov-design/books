@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import { COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
-import { COURSE_ENTRY_INTENT_KEY, parseCourseEntryIntent, courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
+import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
+import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
 import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
@@ -153,13 +154,9 @@ export function MyCourse({ data, locale = 'en' }) {
   const [courseEntry, setCourseEntry] = useState(null)
   const startDialogRef = useRef(null)
   useEffect(() => {
-    // OAuth returns to /app/course without the marketing page's query string.
-    // Restore only allowlisted, short-lived topic and test identifiers.
-    try {
-      const intent = parseCourseEntryIntent(window.sessionStorage.getItem(COURSE_ENTRY_INTENT_KEY))
-      if (intent) setCourseEntry(intent)
-      else window.sessionStorage.removeItem(COURSE_ENTRY_INTENT_KEY)
-    } catch { /* Consent and manual course setup still work without storage. */ }
+    // OAuth may return without a programme query. A separate navigation helper
+    // restores validated public choices, never stored course state.
+    setCourseEntry(readCourseEntryIntent())
   }, [])
 
   async function refresh() {
@@ -232,8 +229,9 @@ export function MyCourse({ data, locale = 'en' }) {
   // Returning from a test or following a programme link must keep the learner
   // inside the existing course onboarding flow.
   const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
-  const programmeEntry = stage === 0 && (Boolean(requestedProgram) || Boolean(courseEntry) || searchParams.get('entry') === 'personal')
-  if (!showCourse && !testReturn && !programmeEntry) return <CourseEntrySelector
+  const programmeEntry = stage === 0 && Boolean(requestedProgram)
+  const personalEntry = stage === 0 && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
+  if (!showCourse && !testReturn && !programmeEntry && !personalEntry) return <CourseEntrySelector
     course={state.course} locale={locale} onOpen={() => setShowCourse(true)}/>
 
   return <div className={styles.root} data-my-course>
