@@ -23,6 +23,7 @@ const TEXT = {
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
+    modeLabel:'Choose your next step', modeTests:'Tests', modeCourse:'Tests + support course', courseHint:'A personal, self-guided 14-day support course. Review your selected tests and explicitly consent before saving.', courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
@@ -44,6 +45,7 @@ const TEXT = {
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
+    modeLabel:'Как хотите продолжить', modeTests:'Тесты', modeCourse:'Тесты + коррекция', courseHint:'Персональный курс поддержки на 14 дней с ежедневными упражнениями. Перед сохранением вы подтвердите выбор и согласие.', courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
@@ -65,6 +67,7 @@ const TEXT = {
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
+    modeLabel:'Elige cómo continuar', modeTests:'Pruebas', modeCourse:'Pruebas + apoyo', courseHint:'Curso personal de apoyo de 14 días. Revisa las pruebas y da tu consentimiento antes de guardar.', courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
@@ -104,18 +107,19 @@ function iconFor(entry) {
 }
 
 export function SimpleTestPicker({
-  locale = 'en',
+  locale = 'en', initialMode = 'tests',
   focus, onToggleFocus,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onBrowseFull, onBrowseCore,
+  matchCount, onStart, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const c = TEXT[locale] || TEXT.en
   const [visibleCount, setVisibleCount] = useState(5)
+  const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
@@ -179,7 +183,8 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">2</span>
         <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
       </div>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
+      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
+        {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
           {visibleProblems.map((problem) => {
             const checked = problems.includes(problem.key)
@@ -189,7 +194,7 @@ export function SimpleTestPicker({
               <span>{problem.label[locale] || problem.label.en}</span>
             </button>
           })}
-        </div>}
+        </div></>}
       {focus.length > 0 && <div className={styles.problemActions}>
         {allProblems.length > 8 && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
@@ -247,11 +252,16 @@ export function SimpleTestPicker({
     </details>
 
 
-    <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
+    <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      {onStartCourse && <div className={styles.modeSwitch} role="group" aria-label={c.modeLabel} data-test-course-switch>
+        <button type="button" aria-pressed={journeyMode === 'tests'} onClick={() => setJourneyMode('tests')}>{c.modeTests}</button>
+        <button type="button" aria-pressed={journeyMode === 'course'} onClick={() => setJourneyMode('course')}>{c.modeCourse}</button>
+      </div>}
+      {journeyMode === 'course' && <p className={styles.modeHint}>{c.courseHint}</p>}
       <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
       <details className={styles.why}>
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
@@ -304,9 +314,9 @@ export function SimpleTestPicker({
       <p className={styles.fitNote} data-public-selected-tests>
         {activeBattery.map((entry, index) => <span key={entry.key} data-selected-test-key={entry.key}>{index > 0 ? ' · ' : ''}{entry.title}</span>)}
       </p>
-      <button type="button" className={styles.cta} disabled={!activeBattery.length || starting} onClick={onStart}>
+      <button type="button" className={styles.cta} disabled={!activeBattery.length || starting} onClick={journeyMode === 'course' ? onStartCourse : onStart} data-test-start-mode={journeyMode}>
         <Play size={22} fill="currentColor" aria-hidden="true" />
-        <span><strong>{starting ? '…' : c.build}</strong><small>{c.buildHelp}</small></span>
+        <span><strong>{starting ? '…' : journeyMode === 'course' ? c.courseCta : c.build}</strong><small>{journeyMode === 'course' ? c.courseCtaHint : c.buildHelp}</small></span>
         <ArrowRight size={23} aria-hidden="true"/>
       </button>
       {actionError && <p className={styles.error} role="alert">{actionError.code || actionError.message || String(actionError)}</p>}
