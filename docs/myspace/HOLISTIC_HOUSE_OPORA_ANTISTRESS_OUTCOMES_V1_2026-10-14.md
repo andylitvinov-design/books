@@ -115,3 +115,8 @@ https://www.ptsd.va.gov/professional/assessment/adult-sr/ptsd-checklist.asp
 - NICE PTSD trauma-informed boundaries: https://www.nice.org.uk/guidance/ng116/chapter/recommendations
 
 **ОПОРА и её авторские шкалы не валидированы клинически и не одобрены авторами перечисленных инструментов.**
+
+
+## Редакционное уточнение 2026-10-14 — комплект тестов пересмотрен
+
+**Этот ранний документ остаётся как история выбора шкал, но НЕ является действующей спецификацией тестовой батареи.** Канонический выбор для будущей реализации: [AS-BATTERY-2.0 — оптимальный комплект тестов и шкал](./HOLISTIC_HOUSE_OPORA_ANTISTRESS_MEASUREMENT_BATTERY_CANONICAL_V2_2026-10-14.md). Вместо шести новых дублирующих авторских шкал использовать уже существующий HH Weekly Pulse v1 (8 вопросов, ключи weekly.load/tension/recovery/functioning и др.), GAD-7 (7 вопросов, пока только EN в реестре, опционально при запросе на тревогу), HH Resource Pulse (6 right-now вопросов по желанию); семь навыков проверять в занятиях. Права/периоды/совместимость и статус NOT LIVE см. в AS-BATTERY-2.0.
