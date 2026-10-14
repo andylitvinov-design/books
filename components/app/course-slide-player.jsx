@@ -50,6 +50,10 @@ const WORDS = {
     nextDayNotice: 'One new lesson per day. Tomorrow brings a new skill step.',
     retestInvitation: 'Day 14: repeat the original course tests to compare your starting and finishing scores.',
     retestButton: 'Compare my starting tests',
+    celebrationLabel: 'Lesson completed', rewardIntro: 'You showed up for yourself today.',
+    rewardMeaning: 'XP rewards saved practice, not how you feel or your scores.',
+    rewardTotal: 'Total XP', rewardStreak: 'Practice streak', rewardStreakUnit: 'days',
+    rewardPath: 'My 14-lesson journey', rewardPathNote: 'Tomorrow, or whenever you return, your next lesson will be waiting.',
     promoContinue: 'See the Pro options', promoBrand: 'PRO FEATURES · ADVANCED PLAN',
     promoTitle: 'Grow in five directions', promoText: 'With Advanced you can run up to five courses in parallel, without advertising.',
     promoPrice: 'Advanced · €20 / month', promoCta: 'Explore subscription options',
@@ -98,6 +102,10 @@ const WORDS = {
     nextDayNotice: 'Не более одного нового урока в день. Завтра — следующий шаг.',
     retestInvitation: 'День 14: повторите стартовые тесты и сравните исходные и итоговые показатели.',
     retestButton: 'Сравнить мои стартовые тесты',
+    celebrationLabel: 'Урок завершён', rewardIntro: 'Сегодня вы уделили время себе.',
+    rewardMeaning: 'XP начисляются за сохранённую практику, не за самочувствие или оценки.',
+    rewardTotal: 'Всего XP', rewardStreak: 'Серия практик', rewardStreakUnit: 'дн.',
+    rewardPath: 'Мой путь из 14 уроков', rewardPathNote: 'Следующий урок будет ждать вас в другой день — без спешки.',
     promoContinue: 'Возможности Pro', promoBrand: 'PRO-ВОЗМОЖНОСТИ · ТАРИФ ADVANCED',
     promoTitle: 'Развивайтесь в пяти направлениях', promoText: 'С тарифом Advanced можно вести до пяти курсов одновременно, без рекламы.',
     promoPrice: 'Advanced · 20 € / месяц', promoCta: 'Посмотреть варианты подписки',
@@ -185,6 +193,7 @@ export default function CourseSlidePlayer({
   const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
     ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
+  const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
   const [promoOpen, setPromoOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -226,7 +235,7 @@ export default function CourseSlidePlayer({
   useEffect(() => {
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index])
+  }, [index, rewardStep, promoOpen])
 
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
@@ -301,6 +310,8 @@ export default function CourseSlidePlayer({
   const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
+  const lessonsSaved = Number(data.progress?.practiceCount) || 0
+  const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
@@ -333,10 +344,38 @@ export default function CourseSlidePlayer({
           {promotion.checkoutReady ? <a className={styles.promoLink} href={'/'+locale+'/app/settings#subscriptions'}>{words.promoCta}<ArrowRight size={17}/></a>
             : <p className={styles.promoSoon}>{words.promoSoon}</p>}
           <p className={styles.promoLegal}>{words.promoDisclaimer}</p>
+        </div> : finished && earned && rewardStep===0 ? <div className={styles.finished}
+          data-course-slide-completion data-course-reward-stage="celebration" aria-live="polite">
+          <IllustratedMoment variant="celebration"/>
+          <p className={styles.rewardKicker}><CheckCircle2 size={17}/>{words.day} {cycle.day} · {words.celebrationLabel}</p>
+          <h2 tabIndex={-1} ref={headingRef}>{words.finished}</h2>
+          {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
+            <p className={styles.resultFocus}>{focusLabel}</p>
+            <h3>{words.pairTitle}</h3>
+            <div className={styles.resultPair}>
+              <div><span>{words.before}</span><strong>{paired.before}<small>/10</small></strong></div>
+              <ArrowRight size={24} aria-hidden="true"/>
+              <div><span>{words.after}</span><strong>{paired.after}<small>/10</small></strong></div>
+            </div>
+            <p className={styles.resultMeaning}>{paired.change===0 ? words.sameResult :
+              changeAmount(paired.change,locale)+' '+(paired.change<0 ? words.easierResult : words.harderResult)}</p>
+          </section> : <p className={styles.helper}>{words.noPair}</p>}
+          <p>{words.rewardIntro}</p>
+        </div> : finished && earned && rewardStep===1 ? <div className={styles.rewardStage}
+          data-course-slide-completion data-course-reward-stage="xp" aria-live="polite">
+          <div className={styles.rewardMedal}><Star size={74} fill="currentColor" aria-hidden="true"/></div>
+          <h2 tabIndex={-1} ref={headingRef}>{words.earned}</h2>
+          <p>{words.rewardMeaning}</p>
+          <div className={styles.rewardStats}>
+            <div><Sparkles size={24} aria-hidden="true"/><strong>{20*lessonsSaved}</strong><span>{words.rewardTotal}</span></div>
+            <div><Trophy size={24} aria-hidden="true"/><strong>{lessonsSaved}/{cycle.durationDays}</strong><span>{words.rewardPath}</span></div>
+            {practiceStreak>0 && <div><Waves size={24} aria-hidden="true"/><strong>{practiceStreak}</strong>
+              <span>{words.rewardStreak} · {words.rewardStreakUnit}</span></div>}
+          </div>
         </div> : finished ? <div className={styles.finished} data-course-slide-completion>
           <IllustratedMoment variant="celebration"/>
           <h2 tabIndex={-1} ref={headingRef}>{alreadyDone && !earned ? words.completed : words.finished}</h2>
-          {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
+          {!earned && (paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
             <p className={styles.resultFocus}>{focusLabel}</p>
             <h3>{words.pairTitle}</h3>
             <div className={styles.resultPair}>
@@ -346,8 +385,8 @@ export default function CourseSlidePlayer({
             </div>
             <p className={styles.resultMeaning}>{paired.change === 0 ? words.sameResult :
               changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
-          </section> : <p className={styles.helper}>{words.noPair}</p>}
-          <p>{words.celebration}</p>
+          </section> : <p className={styles.helper}>{words.noPair}</p>)}
+          <p>{earned ? words.rewardPathNote : words.celebration}</p>
           {finalRetestReady && <div className={styles.finalRetestCue}>
             <p>{words.retestInvitation}</p>
             <button type="button" onClick={onOpenRetest} disabled={locked||typeof onOpenRetest!=='function'}>
@@ -355,7 +394,7 @@ export default function CourseSlidePlayer({
             </button>
           </div>}
           {!finalRetestReady && <p className={styles.nextDayCue}>{words.nextDayNotice}</p>}
-          {earned && <div className={styles.xpReward}><Star size={21} fill="currentColor"/>{words.earned}</div>}
+          {!earned && <div className={styles.xpReward}><CheckCircle2 size={21}/>{words.completed}</div>}
           <div className={styles.finalTiles}>
             <span><CheckCircle2 size={22}/>{words.completed}</span>
             <span><Target size={22}/>{words.todaySkill}</span>
@@ -535,12 +574,14 @@ export default function CourseSlidePlayer({
         </div>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
-            : finished ? (promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
+            : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
+              : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
             : slide.kind === 'pace' ? () => void savePace()
             : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
-          <span>{promoOpen ? words.seeMap : finished ? (promotion.show && earned ? words.promoContinue : words.seeMap)
+          <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
+              : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
             : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
