@@ -293,7 +293,15 @@ try {
   await expect(admin.locator('.canonical-report-analysis')).toContainText('Synthetic analysis')
   await expect(admin.locator('.canonical-remedy-profiles')).toContainText('Colchicum')
   assert.ok(!(await admin.content()).includes('DO NOT DISPLAY — PRIVATE SYNTHETIC'))
-  assert.ok(await admin.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '390px preview must not overflow')
+  const mobileBounds = await admin.evaluate(() => ({
+    innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    offenders: [...document.querySelectorAll('body *')].map((node) => {
+      const rect = node.getBoundingClientRect()
+      return { tag: node.tagName, className: typeof node.className === 'string' ? node.className.slice(0, 95) : '', right: Math.round(rect.right), left: Math.round(rect.left), scrollWidth: node.scrollWidth }
+    }).filter((item) => item.right > innerWidth + 2 || item.left < -2).slice(0, 12),
+  }))
+  assert.ok(mobileBounds.scrollWidth <= mobileBounds.innerWidth + 1, '390px preview must not overflow: ' + JSON.stringify(mobileBounds))
   await admin.screenshot({ path: `${evidence}/report-premium-mobile-ru.png`, fullPage: false })
   await go(admin, `/admin/documents/${previewId}/view?locale=en`)
   await expect(admin.getByRole('heading', { name: 'Homeopathic recommendation' })).toBeVisible()
