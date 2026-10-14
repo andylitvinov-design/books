@@ -42,7 +42,7 @@ test('one meaningful lesson unit becomes one slide; guided sections each get a s
   assert.match(slides, /idea: Leaf/)
   assert.doesNotMatch(slides, /\bFeather\b/)
   assert.match(slides, /guided\.map\(\(section, index\) => \(\{ key: 'guided-' \+ index, kind: 'guided', section \}\)\)/)
-  for (const kind of ['checkin','idea','recall','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
+  for (const kind of ['idea','recall','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
     assert.match(slides, new RegExp("kind: '" + kind + "'"))
   }
   assert.match(slides, /data-course-slide-player/)
@@ -57,15 +57,15 @@ test('one meaningful lesson unit becomes one slide; guided sections each get a s
 })
 
 test('clinical questionnaire scoring and private storage are unchanged, rewards are only for server saved lessons', () => {
-  assert.match(slides, /onCheckin\(\{/)
-  assert.match(slides, /severity, interference: today\?\.interference \?\? null/)
-  assert.match(slides, /expectedRevision:today\.revision/)
+  assert.doesNotMatch(slides, /onCheckin\(\{/)
+  assert.match(slides, /data-course-measured-scale-choice/)
+  assert.match(slides, /data-course-aphorism-reaction/)
   assert.match(slides, /onSession\(\{/)
   assert.match(slides, /day:cycle\.day,lessonId:lesson\.id,operationId:sessionOp\.current/)
   assert.match(slides, /if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(slides, /alreadyDone = Boolean\(session\)/)
   assert.match(slides, /if \(alreadyDone\) \{ setIndex\(slides\.length\); return \}/)
-  assert.match(slides, /if \(!Number\.isInteger\(severity\)/)
+  assert.doesNotMatch(slides, /key: 'checkin', kind: 'checkin'/)
   assert.match(slides, /preferNot: 'Prefer not to say'/)
   assert.doesNotMatch(slides, /localStorage|sessionStorage|dangerouslySetInnerHTML|sendBeacon|leaderboard|correctAnswer|wrongAnswer/)
   assert.match(slideCss, /\.error\{/)
