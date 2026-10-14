@@ -9,7 +9,8 @@ const css = read('components/app/course-entry-selector.module.css')
 
 test('My Course first renders the selection slide and keeps the existing course wizard', () => {
   assert.match(wrapper, /<CourseEntrySelector/)
-  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry\) return/)
+  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry\) return/)
+  assert.match(wrapper, /personalEntry = stage === 0 &&/)
   assert.match(wrapper, /onOpen=\{\(\) => setShowCourse\(true\)\}/)
   assert.match(wrapper, /stage === 0 && <header/)
   assert.match(wrapper, /programmeEntry = stage === 0 && Boolean\(requestedProgram\)/)
@@ -139,5 +140,65 @@ test('entry plan cards use the existing EUR catalogue and keep checkout unavaila
   assert.ok(textOf(cards[2]).includes('1 personal 60-minute session per month'))
   assert.ok(textOf(h.tree).includes('Subscription checkout is not available yet'))
   assert.equal(h.calls.length, 0)
+  h.unmount()
+})
+
+test('public personal choices stay consent-gated, owner-bound and continue into the created wizard', async () => {
+  let state={course:null,courses:[],assessments:{},access:{...access,activeCourseCount:0}}
+  const entry={focus:['stress'],problems:[],testKeys:['hh-weekly-pulse']}
+  const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},search:'?entry=personal',
+    extraModules:{'@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>entry}},
+    fetcher:(_path,options,body)=>{
+      if(!body)return state
+      assert.equal(options.headers['X-HH-Account-ID'],'owner-a')
+      if(body.action==='start')state={...state,course:course(body.courseId,1),courses:[course(body.courseId,1)]}
+      if(body.action==='intake')state={...state,course:{...state.course,stage:2,revision:2,focusTags:body.focusTags}}
+      return state
+    }})
+  await h.settle()
+  assert.equal(findPart(h.tree,'CourseEntrySelector'),undefined)
+  assert.equal(h.calls.filter(x=>x.body).length,0)
+  findButton(h.tree,'Start').props.onClick();await h.settle()
+  assert.equal(findButton(h.tree,'Agree & start').props.disabled,true)
+  nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}})
+  await h.settle();await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
+  assert.deepEqual(h.calls.filter(x=>x.body).map(x=>x.body.action),['start','intake'])
+  assert.deepEqual([...h.calls.find(x=>x.body?.action==='intake').body.focusTags],['stress'])
+  assert.ok(findPart(h.tree,'CourseR3Steps'))
+  assert.equal(findPart(h.tree,'CourseEntrySelector'),undefined)
+  h.unmount()
+})
+
+test('back from a public personal entry dismisses the intent and returns to the selector without writes',async()=>{
+  const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},search:'?entry=personal',
+    extraModules:{'@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>({focus:['stress'],problems:[],testKeys:[]})}},
+    fetcher:()=>({course:null,courses:[],assessments:{},access:{...access,activeCourseCount:0}})})
+  await h.settle();findButton(h.tree,'My courses').props.onClick();await h.settle()
+  assert.ok(findPart(h.tree,'CourseEntrySelector'))
+  assert.equal(h.calls.filter(x=>x.body).length,0)
+  assert.ok(h.navigations.includes('/en/app/course'))
+  h.unmount()
+})
+
+test('a consumed personal entry cannot populate a second separately consented course',async()=>{
+  let current=null,entry={focus:['stress'],problems:[],testKeys:['hh-weekly-pulse']},courses=[]
+  const h=mount('my-course',{props:{data:account('owner-a'),locale:'en'},search:'?entry=personal',
+    extraModules:{'@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>entry}},
+    fetcher:(_path,_options,body)=>{
+      if(body?.action==='start'){current={...course(body.courseId,1),status:'draft'};courses.push(current)}
+      if(body?.action==='intake')current={...current,stage:2,focusTags:body.focusTags,concerns:body.concerns,revision:2}
+      return {course:current,courses,assessments:{},access:{...access,activeCourseCount:courses.length}}
+    }})
+  async function agree(){
+    await h.settle();nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}})
+    await h.settle();await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
+  }
+  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await agree()
+  entry=null
+  findButton(h.tree,'Start another course').props.onClick();await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
+  const starts=h.calls.filter(c=>c.body?.action==='start'),intakes=h.calls.filter(c=>c.body?.action==='intake')
+  assert.equal(starts.length,2);assert.equal(intakes.length,1)
+  assert.notEqual(starts[0].body.courseId,starts[1].body.courseId)
+  assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,1)
   h.unmount()
 })

@@ -131,7 +131,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -327,6 +327,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale}
+      initialMode={initialMode}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
@@ -351,6 +352,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, activ
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       matchCount={simpleRecommendations.length}
       onStart={start}
+      onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus, problems }) : null}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {
         // Carry the three implicit selections into the full catalog editor.

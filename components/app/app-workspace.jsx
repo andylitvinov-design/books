@@ -19,6 +19,7 @@ import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
+import { TestDynamics } from '@/components/app/test-dynamics'
 import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
@@ -1922,6 +1923,79 @@ const INSIGHTS_CATEGORY_ICONS = {
 
 function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const requestedTab = searchParams.get('tab') === 'dynamics' ? 'dynamics' : 'values'
+  const [activeTab, setActiveTab] = useState(requestedTab)
+  const [retakeBusy, setRetakeBusy] = useState(false)
+  const [retakeError, setRetakeError] = useState('')
+  const accountId = data.account?.id
+  const retakeScope = useRef(null), retakeOperation = useRef(null)
+  const retakeLifetime = useRef({ mounted: false, epoch: 0 })
+  if (!retakeScope.current || retakeScope.current.accountId !== accountId ||
+      retakeScope.current.tab !== activeTab || retakeScope.current.locale !== locale) {
+    retakeScope.current = { accountId, tab: activeTab, locale }
+    retakeOperation.current = null
+  }
+  const renderedRetakeScope = retakeScope.current
+  useEffect(() => {
+    retakeLifetime.current.mounted = true
+    return () => { retakeLifetime.current.mounted = false; retakeLifetime.current.epoch += 1; retakeOperation.current = null }
+  }, [])
+  useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
+  useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
+  const retakeDefinitions = useMemo(() => {
+    const definitions = new Map()
+    for (const result of data.results || []) {
+      if (!result.definitionId || definitions.has(result.definitionId)) continue
+      try {
+        const definition = getDefinitionById(result.definitionId)
+        if (definition) definitions.set(result.definitionId, definition)
+      } catch { /* Old or retired assessments remain readable but cannot be retaken. */ }
+    }
+    return definitions
+  }, [data.results])
+  function chooseView(next) {
+    if (next === activeTab) return
+    retakeScope.current = null; retakeOperation.current = null
+    setActiveTab(next)
+    setRetakeError('')
+    const query = new URLSearchParams(searchParams.toString())
+    if (next === 'dynamics') query.set('tab', 'dynamics')
+    else query.delete('tab')
+    router.replace('/' + locale + '/app/portfolio' + (query.toString() ? '?' + query.toString() : ''), { scroll: false })
+  }
+  async function retakeTest(definitionId) {
+    const definition = retakeDefinitions.get(definitionId)
+    const scope = renderedRetakeScope, epoch = retakeLifetime.current.epoch
+    const isCurrent = () => retakeLifetime.current.mounted && retakeLifetime.current.epoch === epoch &&
+      retakeScope.current === scope && scope.accountId === accountId
+    if (!definition || !accountId || !isCurrent() || retakeOperation.current) return
+    const operation = {}; retakeOperation.current = operation
+    setRetakeBusy(true)
+    setRetakeError('')
+    try {
+      const draft = (data.runs || []).find(run =>
+        run.definitionId === definitionId && ['draft', 'in_progress'].includes(run.status))
+      const run = draft || await appFetch('runs', {
+        definitionKey: definition.key,
+        definitionVersion: definition.version,
+        instrumentLocale: definition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      }, 'POST', { accountId })
+      if (!isCurrent() || retakeOperation.current !== operation) return
+      const plan = data.activeTestPlan
+      const planSuffix = plan?.status === 'active' && plan.definitionIds?.includes(definitionId)
+        ? '&plan=' + encodeURIComponent(plan.id) : ''
+      router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick' + planSuffix)
+    } catch (cause) {
+      if (!isCurrent() || retakeOperation.current !== operation) return
+      retakeOperation.current = null
+      setRetakeError((ru ? 'Не удалось открыть тест повторно.' : 'Could not open the retake.') +
+        ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
+      setRetakeBusy(false)
+    }
+  }
   const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
   const summary = buildInsightsSummary(allGroups)
   const [selectedCategories, setSelectedCategories] = useState([])
@@ -1946,7 +2020,39 @@ function PortfolioPage({ data, locale }) {
   const [selected, setSelected] = useState(null)
 
   return (
-    <section className="hh-insights-page" aria-labelledby="hh-insights-title" data-testid="completed-test-insights">
+    <section className="hh-insights-page"
+      aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
+      data-testid="completed-test-insights">
+      <nav className="hh-insights-view-tabs" role="tablist"
+        aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
+        {[
+          ['values', ru ? 'Значения' : 'Values'],
+          ['dynamics', ru ? 'Динамика' : 'Dynamics'],
+        ].map(([key, label]) => <button key={key} type="button"
+          id={'hh-results-tab-' + key} role="tab"
+          aria-selected={activeTab === key} aria-controls={'hh-results-panel-' + key}
+          tabIndex={activeTab === key ? 0 : -1}
+          onClick={() => chooseView(key)}
+          onKeyDown={event => {
+            if (!['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) return
+            event.preventDefault()
+            const next = event.key === 'Home' ? 'values' : event.key === 'End' ? 'dynamics'
+              : key === 'values' ? 'dynamics' : 'values'
+            chooseView(next)
+            event.currentTarget.parentElement?.querySelector('#hh-results-tab-' + next)?.focus()
+          }}>
+          {key === 'values' ? <ClipboardList size={18} aria-hidden="true" /> : <Activity size={18} aria-hidden="true" />}
+          {label}
+        </button>)}
+      </nav>
+      {activeTab === 'dynamics'
+        ? <div role="tabpanel" id="hh-results-panel-dynamics" aria-labelledby="hh-results-tab-dynamics">
+            <TestDynamics results={data.results || []} locale={locale}
+              busy={retakeBusy} canRetake={id => retakeDefinitions.has(id)}
+              onRetake={retakeTest} />
+            {retakeError && <p role="alert" className="hh-insights-retake-error">{retakeError}</p>}
+          </div>
+        : <div role="tabpanel" id="hh-results-panel-values" aria-labelledby="hh-results-tab-values">
       <header className="hh-insights-intro">
         <p className="hh-kicker">{ru ? 'Кабинет · Insights' : 'Dashboard · Insights'}</p>
         <h1 id="hh-insights-title">{ru ? 'Мои результаты' : 'My results'}</h1>
@@ -2078,7 +2184,7 @@ function PortfolioPage({ data, locale }) {
         </details>
       )}
       <div className="hh-insights-links">
-        <Link href={`/${locale}/app/tests?tab=dynamics`} prefetch={false}>{ru ? 'Динамика тестов' : 'Test dynamics'}</Link>
+        <Link href={`/${locale}/app/portfolio?tab=dynamics`} prefetch={false}>{ru ? 'Динамика тестов' : 'Test dynamics'}</Link>
         <Link href={`/${locale}/app/tests?explore=1&filters=topics`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
@@ -2106,6 +2212,7 @@ function PortfolioPage({ data, locale }) {
           )}
         </details>
       )}
+        </div>}
     </section>
   )
 }

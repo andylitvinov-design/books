@@ -10,6 +10,8 @@ import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CoursePresetCatalog from './course-preset-catalog'
 import MyCoursesDashboard from './my-courses-dashboard'
 import { useSubscription } from './subscription-access'
+import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
+import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
 import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
@@ -186,6 +188,9 @@ export function MyCourse({ data, locale = 'en' }) {
   const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
   const newCourseId = useRef(null)
   currentAccount.current = accountId
+  const [courseEntry, setCourseEntry] = useState(null)
+  const [personalEntryDismissed, setPersonalEntryDismissed] = useState(false)
+  useEffect(() => { setCourseEntry(readCourseEntryIntent()) }, [])
 
   const refresh = useCallback(async (courseId = selectedCourse.current, { background = false, updateUrl = true, openPrimaryToday = false } = {}) => {
     const epoch = generation.current, version = ++readVersion.current
@@ -313,6 +318,7 @@ export function MyCourse({ data, locale = 'en' }) {
       return
     }
     const programme=getCourseProgram(values.programId)
+    const entry=courseEntry
     if (values.consent !== true || (values.presetId && !getCoursePreset(values.presetId)) ||
         (values.programId && !programme) || (values.presetId && programme)) return
     let targetCourseId=selectedCourse.current
@@ -331,7 +337,8 @@ export function MyCourse({ data, locale = 'en' }) {
       readVersion.current += 1; readController.current?.abort()
       selectedCourse.current = targetCourseId = started.course.id
       setSnapshot({ accountId, value: started }); replaceCourseUrl(started.course.id)
-      newCourseId.current = null; setView('detail')
+      newCourseId.current = null; setView('detail'); setShowCourse(true)
+      setCourseEntry(null) // Consume this mounted entry once; R3 retains its temporary test handoff.
       if ((started.course.presetId || null) !== (values.presetId || null)) throw new Error('COURSE_START_SELECTION_CHANGED')
       if (programme) {
         if (started.course.presetId) throw new Error('COURSE_PRESET_TESTS_FIXED')
@@ -341,6 +348,17 @@ export function MyCourse({ data, locale = 'en' }) {
         if (!isSelected(targetCourseId,epoch)) return
         readVersion.current+=1;readController.current?.abort()
         setSnapshot({accountId,value:withTopics});clearPendingProgram(targetCourseId)
+      } else if (!started.course.presetId && started.course.stage === 1) {
+        const focusTags = courseTagsForExplorerFocus(entry?.focus)
+        const concerns = courseConcernsFromIntent(entry, locale)
+        // Apply public choices only after this owner explicitly consents.
+        if (focusTags.length || concerns) {
+          const withTopics = await request(accountId, { action: 'intake', courseId: targetCourseId,
+            expectedRevision: started.course.revision, concerns, focusTags: [...focusTags] })
+          if (!isSelected(targetCourseId,epoch) || withTopics.course?.id !== targetCourseId) throw new Error('COURSE_SELECTION_CHANGED')
+          readVersion.current+=1;readController.current?.abort()
+          setSnapshot({accountId,value:withTopics})
+        }
       }
     } catch (e) { if (isSelected(targetCourseId,epoch)) setError(e.message) }
     finally { if (actionLock.current === token) { actionLock.current = null; if (mounted.current && currentAccount.current === accountId && generation.current === epoch) setBusy(false) } }
@@ -430,7 +448,8 @@ export function MyCourse({ data, locale = 'en' }) {
   // inside the existing course onboarding flow.
   const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
   const programmeEntry = stage === 0 && Boolean(requestedProgram)
-  if (!showCourse && !testReturn && !programmeEntry) return <CourseEntrySelector
+  const personalEntry = stage === 0 && !personalEntryDismissed && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
+  if (!showCourse && !testReturn && !programmeEntry && !personalEntry) return <CourseEntrySelector
     key={accountId + ':' + (state.course?.id || '')}
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
@@ -461,8 +480,8 @@ export function MyCourse({ data, locale = 'en' }) {
       <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
     </section>}
     {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses} onClick={() => {
-      changeView('list'); setShowCourse(false)
-      if (testReturn || programmeEntry) router.replace(root + '/course')
+      changeView('list'); setShowCourse(false); setPersonalEntryDismissed(true); setCourseEntry(null)
+      if (testReturn || programmeEntry || personalEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button> : null}
     {!showDashboard && stage === 0 && <header className={styles.hero}>
       <div>
