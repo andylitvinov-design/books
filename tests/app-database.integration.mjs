@@ -1,4 +1,5 @@
 import test, { before, after } from 'node:test'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
@@ -1103,11 +1104,31 @@ test('every published monitoring test completes through the repository and retur
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
     })
+    const context = syntheticTraumaContext(definition)
+    let ready = run
+    if (Object.keys(context).length) {
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context: {},
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context,
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      ready = await repo.saveRun(a, run.id, {
+        answers: {}, context, progress: 0, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      })
+      assert.deepEqual(ready.context, context)
+      assert.deepEqual(ready.answers, {})
+    }
     const saved = await repo.saveRun(a, run.id, {
       answers: minimumMonitoringAnswers(definition),
-      context: {},
+      context,
       progress: definition.questions.length,
-      expectedRevision: run.revision,
+      expectedRevision: ready.revision,
       operationId: randomUUID(),
     })
     const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
