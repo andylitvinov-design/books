@@ -227,7 +227,7 @@
  .progressTrack{height:7px}
  .courseActions{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;justify-items:stretch;gap:4px}
  .openButton{min-width:0;min-height:51px;padding:9px 14px!important;border-radius:14px;font-size:15px;line-height:1.2;text-wrap:balance}
- .planButton{justify-self:end;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;min-height:34px;padding:5px 9px!important;border:1px solid transparent!important;border-radius:10px;background:transparent!important;color:#117c93!important;font-size:12px;line-height:1.2;white-space:nowrap}
+ .planButton{justify-self:end;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;min-height:44px;padding:5px 9px!important;border:1px solid transparent!important;border-radius:10px;background:transparent!important;color:#117c93!important;font-size:12px;line-height:1.2;white-space:nowrap}
  .planButton:hover{border-color:#bbe2ea!important;background:#eafbfd!important}
  .planButton svg{width:17px;height:17px}
  .addTile{grid-template-columns:43px minmax(0,1fr) 17px;min-height:79px;padding:12px 13px;gap:11px;border-radius:18px;align-items:center}
