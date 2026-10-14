@@ -46,14 +46,15 @@ test("homepage keeps genuine paid consultation navigation while free services li
   assert.ok(firstScreen < book && book < belowFold, "Paid CTA must stay inside the hero");
 });
 
-test("bypass paid transformation for owned ready-compressed WebP images only", () => {
+test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {
   const player = read("components/site-video-player.tsx");
   const services = read("components/services-solutions.tsx");
   assert.match(player, /unoptimized=\{approvedPoster\.endsWith\("\.webp"\)\}/);
   assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
-  assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\)\}/);
+  assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
-  // Portrait PNG and third-party YouTube stills keep their original optimized flow.
+  // The verified portrait uses its static component; third-party YouTube stills keep optimization.
+  assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
   assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
 });
