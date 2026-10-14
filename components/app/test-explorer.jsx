@@ -352,7 +352,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       matchCount={simpleRecommendations.length}
       onStart={start}
-      onStartCourse={() => onStartCourse?.(activeBattery, { focus, problems })}
+      onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus, problems }) : null}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {
         // Carry the three implicit selections into the full catalog editor.
