@@ -136,3 +136,42 @@
 .testInfo .testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;border-color:#e5d7ec;color:#776088}
 .testInfo .testKindBadge svg{flex:0 0 auto}
 @media(max-width:620px){.kindChoices{display:grid;grid-template-columns:1fr}.kindChoice{width:100%}}
+
+/* Editable chips make finer URL-driven topic filters visible on narrow screens. */
+.themeRefinements{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0 0}
+.themeRefinements strong{font-size:.78rem;color:#507c72;line-height:1.5}
+.themeRefinements button{display:inline-flex;align-items:center;gap:7px;min-height:37px;padding:7px 10px;background:#e4f2ee;border:1px solid #a7cfc3;border-radius:99px;color:#246a5c;font-size:.78rem!important;font-weight:650;cursor:pointer}
+.themeRefinements button:hover{background:#d7eae4}
+.themeRefinements button:focus-visible{outline:3px solid #347d9a;outline-offset:2px}
+.themeRefinements button span{font-size:1.15rem;line-height:.9}
+
+
+/* iPhone layout: keep optional filters and test cards within the picker. */
+.shell {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+.shell :is(.hero, .section, .advanced, .advancedBody, .kindFilters, .kindChoices, .testList, .testEntry, .testRow, .testInfo, .testMeta, .selectedSummary) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.testInfo, .kindChoice { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .kindChoices { grid-template-columns: minmax(0, 1fr); }
+  .testRow { width: 100%; }
+}
+
+/* Guided topic choices immediately populate Step 2; the visitor may amend them. */
+.syncedConcernNote{margin:0 0 11px;padding:9px 11px;border-radius:11px;background:#e9f5ef;border:1px solid #c3dfd2;color:#287366;font-size:.8rem;line-height:1.5}
+/* Step 3 offers a choice of journey without duplicating the recommendations. */
+.modeSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:5px;border:1px solid #badbd4;border-radius:16px;background:#eaf5f2;margin:1px 0 12px}
+.modeSwitch button{min-width:0;min-height:48px;padding:9px 11px;border:0;border-radius:12px;background:transparent;color:#477b73;font-size:.92rem;font-weight:750;cursor:pointer;text-align:center}
+.modeSwitch button[aria-pressed=true]{background:#fff;color:#226d63;box-shadow:0 2px 10px #1a736021}
+.modeSwitch button:focus-visible{outline:3px solid #216d8d;outline-offset:1px}
+.modeHint{padding:10px 13px;border:1px solid #cbe2d9;border-radius:13px;background:#f4faf7;color:#48766f;font-size:.84rem;line-height:1.5;margin:0 0 12px}
+.section[data-recommendation-mode='course'] .cta{background:#2e8377;box-shadow:0 10px 25px #22756828}
+.section[data-recommendation-mode='course'] .cta:hover:not(:disabled){background:#246f64}
+@media(max-width:600px){.modeSwitch{gap:3px;padding:4px;border-radius:13px}.modeSwitch button{min-height:46px;padding:9px 6px;font-size:.82rem}.modeHint,.syncedConcernNote{font-size:.76rem}}

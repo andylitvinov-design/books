@@ -252,3 +252,12 @@
   .personalTrack strong{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){.programCard{transition:none}.programCard:hover{transform:none}}
+
+/* A topic-page recommendation highlights an existing track; it never enrols automatically. */
+.programCard[data-recommended='true']{border-color:#4f9690!important;box-shadow:0 0 0 2px #a9d6d1,0 12px 28px #477b751a}
+.preselectedProgram{margin:10px 0 0;color:#356f68;font-size:.93rem;line-height:1.45}
+.preselectedProgram strong{font-weight:780}
+
+
+/* Return to the compact My Courses selection slide. */
+.backToCourses{display:inline-flex;align-items:center;gap:7px;justify-self:start;padding:8px 10px;background:#ecfafb!important;border:1px solid #bbdfe8!important;border-radius:11px;font-size:13px;font-weight:800;color:#157e94!important;cursor:pointer}.backToCourses:focus-visible{outline:3px solid #11617a;outline-offset:3px}

@@ -119,6 +119,11 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Old saved deep links continue to reach dynamics in its new Results home.
+  const legacyDynamics = searchParams.get('tab') === 'dynamics'
+  useEffect(() => {
+    if (legacyDynamics) router.replace('/' + locale + '/app/portfolio?tab=dynamics', { scroll: false })
+  }, [legacyDynamics, locale, router])
   const openFromInsights = searchParams.get('explore') === '1'
   const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')

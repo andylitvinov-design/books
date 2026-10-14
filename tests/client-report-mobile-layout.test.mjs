@@ -20,8 +20,8 @@ test('large-text client PDF uses a compact continuation header and preserves pri
   const source = buildPrescriptionPdf(sample, 'en', origin).toString('latin1')
   const pages = source.split('/Type /Page /Parent').length - 1
   assert.ok(pages >= 2, 'long report should exercise continuation pages')
-  assert.equal(source.split('/Lighthouse Do Q').length - 1, 1,
-    'repeat only the compact text header, not the full-size letterhead')
+  assert.equal(source.split('/Lighthouse Do Q').length - 1, 2,
+    'both approved lighthouse images belong to the first-page identity and illustrated hero only')
   assert.ok(source.includes('143 779 Tm'), 'recommendation has the condensed lighthouse letterhead')
   assert.ok(source.includes('68 797 Tm'), 'continuation has an uncluttered running header')
   assert.ok(source.includes('11.7 Tf'), 'state analysis uses larger A4 text')

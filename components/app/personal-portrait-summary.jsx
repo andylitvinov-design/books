@@ -65,7 +65,7 @@ export function PersonalPortraitSummary({ data, locale = 'en' }) {
       note:t.growthNote,
     },
     {
-      id:'progress', icon:TrendingUp, title:t.progress, href:root+'/portfolio',
+      id:'progress', icon:TrendingUp, title:t.progress, href:root+'/tests?tab=dynamics',
       value:summary.comparableAxes ? summary.comparableAxes + ' ' + t.comparison : t.noComparisons,
       note:t.progressNote,
     },

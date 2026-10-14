@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
+import { COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent } from '@/lib/inner-growth/course-entry-intent'
 
 async function request(path, body, method = 'POST') {
   const response = await fetch('/api/app/' + path, {
@@ -21,7 +22,8 @@ async function request(path, body, method = 'POST') {
   return value
 }
 
-export function PublicTestExplorer({ locale, embedded = false }) {
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course' }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests' }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
@@ -66,8 +68,18 @@ export function PublicTestExplorer({ locale, embedded = false }) {
       throw cause
     }
   }
+  const launchCourse = (entries, selectionPreferences) => {
+    // Same-tab, short-lived editorial selection only; an explicit course
+    // consent screen controls any eventual server-side saving.
+    try {
+      window.sessionStorage.setItem(COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent(entries, selectionPreferences))
+    } catch { /* Private mode may block session storage; the course still opens. */ }
+    router.push('/' + effectiveLocale + '/app/course?entry=personal')
+  }
   return <>
-    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} onStart={submit} />
+    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded}
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode}
+      initialPreferences={initialPreferences} initialMode={initialMode} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }

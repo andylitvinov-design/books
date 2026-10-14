@@ -13,6 +13,7 @@ import {
   axisOverview,
 } from '../lib/assessments/monitoring.js'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '../data/assessments/catalog.js'
+import { IPIP_VIA_R_COMPLETION_CATALOG } from '../data/assessments/ipip-via-r-completion-2026.js'
 import { RELATIONSHIPS_INTIMACY_KEYS } from '../data/assessments/relationships-intimacy-v1.js'
 import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
 import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
@@ -40,7 +41,8 @@ const result = (def, value, day) => ({
 })
 
 test('monitoring catalog exposes the cleared active checks and keeps uncleared measures metadata-only', () => {
-  const active = MONITORING_CATALOG.filter((item) => item.startable).map((item) => item.key).sort()
+  const newViaKeys = new Set(IPIP_VIA_R_COMPLETION_CATALOG.map(item=>item.key))
+  const active = MONITORING_CATALOG.filter((item) => item.startable&&!newViaKeys.has(item.key)).map((item) => item.key).sort()
   assert.deepEqual(active, [
     'asrs-6',
     'mhc-sf',

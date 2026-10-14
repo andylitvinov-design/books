@@ -33,7 +33,7 @@ test('first screen presents course identity and one focused CTA with approved or
 
 test('game map zigzags without overlapping absolute labels, with honest locked future state',()=>{
   assert.match(map,/data-side=\{index % 2 === 0 \? 'left' : 'right'\}/)
-  assert.match(map,/item\.status === 'planned' \? <LockKeyhole/)
+  assert.match(map,/\(item\.status === 'planned' \|\| item\.status === 'upcoming'\) \? <LockKeyhole/)
   assert.match(map,/roadmap\.map/)
   assert.match(map,/<ol className=\{styles\.path\}>/)
   assert.match(map,/<img className=\{styles\.journeyScene\}/)

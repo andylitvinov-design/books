@@ -108,3 +108,13 @@
  .courseGroup .row{grid-template-columns:35px minmax(0,1fr) auto}
 }
 @media(max-width:370px){.courseGroupHeader{flex-wrap:wrap}.groupActions{justify-content:flex-start}.courseGroup .row{grid-template-columns:30px minmax(0,1fr) auto}}
+
+
+/* My Tests: Values / Dynamics views, matching the turquoise account design. */
+.viewTabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:1120px;margin:5px auto 13px;padding:5px;border:1px solid #c8e4e9;border-radius:16px;background:#eaf6f8;box-sizing:border-box}
+.viewTabs button{display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;min-width:0;min-height:47px!important;padding:10px 15px!important;border:1px solid transparent!important;border-radius:12px!important;background:transparent!important;color:#486e78!important;font:750 14px/1.3 system-ui,-apple-system,sans-serif!important;cursor:pointer;transition:background .16s ease,color .16s ease}
+.viewTabs button:hover:not(.activeTab){background:#d6eff2!important}
+.viewTabs button.activeTab{color:#fff!important;background:#147f8b!important;border-color:#0f7582!important;box-shadow:0 4px 12px #0b637626}
+.viewTabs button:focus-visible{outline:3px solid #06acbc!important;outline-offset:3px}
+@media(max-width:480px){.viewTabs{gap:5px;padding:4px;margin:2px 0 10px;border-radius:13px}.viewTabs button{font-size:13px!important;min-height:45px!important;padding:9px!important;gap:7px!important}}
+@media(prefers-reduced-motion:reduce){.viewTabs button{transition:none}}

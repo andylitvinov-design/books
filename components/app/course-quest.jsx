@@ -14,7 +14,7 @@ const COPY = {
     map: 'Your learning path', pathIntro: 'Four chapters · fourteen small steps',
     today: 'Today', done: 'Completed', missed: 'Earlier day', later: 'Coming up',
     launch: 'Start today’s quest', revisit: 'See my completed day',
-    locked: 'This day opens on your local course date. You can explore the theme now.',
+    locked: 'Finish the previous lesson first. Your next lesson unlocks on a new local day; nothing is lost if you take a break.',
     past: 'This day has passed. Missing practice is not counted as zero.',
     reward: 'Learning XP', rewardNote: 'For saved participation only, never for how you feel or answer.',
     progress: 'Lessons saved', chapter1: 'Discover your patterns', chapter2: 'Make room for choice',
@@ -58,7 +58,7 @@ const COPY = {
     map: 'Мой путь обучения', pathIntro: 'Четыре главы · четырнадцать маленьких шагов',
     today: 'Сегодня', done: 'Завершено', missed: 'Прошлый день', later: 'Впереди',
     launch: 'Начать задание дня', revisit: 'Посмотреть пройденный день',
-    locked: 'Урок откроется в свой день по часовому поясу курса. Тему можно посмотреть сейчас.',
+    locked: 'Завершите предыдущий урок. Следующий откроется в новый календарный день; во время перерыва уроки не пропадают.',
     past: 'Этот день прошёл. Пропуски не считаются нулевыми результатами.',
     reward: 'Баллы участия', rewardNote: 'Только за сохранённые действия, не за самочувствие и ответы.',
     progress: 'Сохранено уроков', chapter1: 'Замечаем свои реакции', chapter2: 'Находим свободу выбора',
@@ -105,7 +105,7 @@ const ICONS = [Compass, Eye, Shield, Wind, Lightbulb, Sprout, Star, Target, Flag
 const STARTS = {
   1: 'chapter1', 4: 'chapter2', 8: 'chapter3', 12: 'chapter4',
 }
-const STATES = { completed: 'done', today: 'today', past: 'missed', planned: 'later' }
+const STATES = { completed: 'done', today: 'today', past: 'missed', upcoming: 'later', planned: 'later' }
 
 function NumericGrid({ value, onChange, label }) {
   return <fieldset className={styles.numberField}>
@@ -161,7 +161,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
             aria-current={active ? 'step' : undefined}
             aria-label={t.lesson + ' ' + item.day + ': ' + (item.programmeDay?.title || item.title) + '. ' + (complete ? t.done : active ? t.today : item.status === 'past' ? t.missed : t.later)}
             onClick={() => setSelected(expanded ? null : item.day)}>
-            {complete ? <Check size={29} strokeWidth={3} aria-hidden="true"/> : item.status === 'planned' ? <LockKeyhole size={26} strokeWidth={2.2} aria-hidden="true"/> : <Icon size={31} strokeWidth={2.4} aria-hidden="true"/>}
+            {complete ? <Check size={29} strokeWidth={3} aria-hidden="true"/> : (item.status === 'planned' || item.status === 'upcoming') ? <LockKeyhole size={26} strokeWidth={2.2} aria-hidden="true"/> : <Icon size={31} strokeWidth={2.4} aria-hidden="true"/>}
           </button>
           <span className={styles.pathLabel}>
             <small>{t.lesson} {String(item.day).padStart(2, '0')}</small>
