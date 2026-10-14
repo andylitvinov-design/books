@@ -193,6 +193,11 @@ export default function AppWorkspace({ locale, path = [] }) {
     }
   }
   async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === 'retest') {
+      await load()
+      router.push(root + '/course?retest=updated')
+      return
+    }
     if (searchParams.get('course') === '1') {
       const courseState = await appFetch('course')
       // Validate membership against the server-owned confirmed set, not only
@@ -434,7 +439,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
                 await load()
-                router.push(searchParams.get('course') === '1' ? root + '/course' : root + '/tests')
+                router.push(['1', 'retest'].includes(searchParams.get('course')) ? root + '/course' : root + '/tests')
               }}
               onComplete={async (result, destination) => {
                 await completePlan(result, destination)

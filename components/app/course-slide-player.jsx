@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookmarkCheck, Check, CheckCircle2, ChevronDown,
-  Clock3, Compass, Heart, Leaf, LockKeyhole, ShieldCheck,
+  Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, ShieldCheck,
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
@@ -44,6 +44,14 @@ const WORDS = {
     pictureCredit: 'An invitation to slow down', todaySkill: 'My focus for today',
     needSave: 'Saved only when the server confirms your lesson.',
     noLesson: 'This part is optional. You can continue whenever you wish.',
+    nextDayNotice: 'One new lesson per day. Tomorrow brings a new skill step.',
+    retestInvitation: 'Day 14: repeat the original course tests to compare your starting and finishing scores.',
+    retestButton: 'Compare my starting tests',
+    promoContinue: 'See the Pro options', promoBrand: 'PRO FEATURES · ADVANCED PLAN',
+    promoTitle: 'Grow in five directions', promoText: 'With Advanced you can run up to five courses in parallel, without advertising.',
+    promoPrice: 'Advanced · €20 / month', promoCta: 'Explore subscription options',
+    promoSoon: 'Checkout is not active yet. Your free course stays available.',
+    promoSkip: 'No thanks, back to my course', promoDisclaimer: 'Optional monthly membership. Your lessons and results stay yours.',
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
@@ -81,6 +89,14 @@ const WORDS = {
     pictureCredit: 'Время для небольшой паузы', todaySkill: 'Мой навык сегодня',
     needSave: 'Практика отмечается завершённой только после подтверждения сервера.',
     noLesson: 'Этот шаг необязателен. Можно продолжать в своём темпе.',
+    nextDayNotice: 'Не более одного нового урока в день. Завтра — следующий шаг.',
+    retestInvitation: 'День 14: повторите стартовые тесты и сравните исходные и итоговые показатели.',
+    retestButton: 'Сравнить мои стартовые тесты',
+    promoContinue: 'Возможности Pro', promoBrand: 'PRO-ВОЗМОЖНОСТИ · ТАРИФ ADVANCED',
+    promoTitle: 'Развивайтесь в пяти направлениях', promoText: 'С тарифом Advanced можно вести до пяти курсов одновременно, без рекламы.',
+    promoPrice: 'Advanced · 20 € / месяц', promoCta: 'Посмотреть варианты подписки',
+    promoSoon: 'Оплата пока не подключена. Бесплатный курс остаётся доступным.',
+    promoSkip: 'Не сейчас, вернуться в курс', promoDisclaimer: 'Необязательная ежемесячная подписка. Уроки и результаты сохраняются.',
   },
 }
 
@@ -139,7 +155,7 @@ function IllustratedMoment({ variant = 'calm', photo = false }) {
 }
 
 export default function CourseSlidePlayer({
-  locale = 'en', data, busy = false, onClose, onCheckin, onSession, onPreferences,
+  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
   const cycle = data.cycle || {}
@@ -157,6 +173,7 @@ export default function CourseSlidePlayer({
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
   const [earned, setEarned] = useState(false)
+  const [promoOpen, setPromoOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const checkinOp = useRef(null)
@@ -168,6 +185,7 @@ export default function CourseSlidePlayer({
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
   const finished = index >= slides.length
+  const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
 
   useEffect(() => {
@@ -178,7 +196,7 @@ export default function CourseSlidePlayer({
     const trap = event => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
       if (event.key !== 'Tab') return
-      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
+      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), a[href]:not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
         .filter(node => node.getClientRects().length)
       if (!nodes.length) return
       const first = nodes[0], last = nodes[nodes.length - 1]
@@ -248,7 +266,7 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  const title = finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
+  const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
@@ -270,7 +288,20 @@ export default function CourseSlidePlayer({
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
       <main className={styles.content} data-slide-scroller>
-        {finished ? <div className={styles.finished} data-course-slide-completion>
+        {promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
+          <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
+          <p className={styles.promoBrand}>{words.promoBrand}</p>
+          <h2 tabIndex={-1} ref={headingRef}>{words.promoTitle}</h2>
+          <p className={styles.promoLead}>{words.promoText}</p>
+          <div className={styles.promoBenefits}>
+            <div><CheckCircle2 size={21}/><span>5 {locale==='ru'?'параллельных курсов':'parallel courses'}</span></div>
+            <div><CheckCircle2 size={21}/><span>{locale==='ru'?'Без рекламы':'No advertising'}</span></div>
+          </div>
+          <strong className={styles.promoPrice}>{words.promoPrice}</strong>
+          {promotion.checkoutReady ? <a className={styles.promoLink} href={'/'+locale+'/app/settings#subscriptions'}>{words.promoCta}<ArrowRight size={17}/></a>
+            : <p className={styles.promoSoon}>{words.promoSoon}</p>}
+          <p className={styles.promoLegal}>{words.promoDisclaimer}</p>
+        </div> : finished ? <div className={styles.finished} data-course-slide-completion>
           <IllustratedMoment variant="celebration"/>
           <h2 tabIndex={-1} ref={headingRef}>{alreadyDone && !earned ? words.completed : words.finished}</h2>
           {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
@@ -285,6 +316,13 @@ export default function CourseSlidePlayer({
               changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>}
           <p>{words.celebration}</p>
+          {finalRetestReady && <div className={styles.finalRetestCue}>
+            <p>{words.retestInvitation}</p>
+            <button type="button" onClick={onOpenRetest} disabled={locked||typeof onOpenRetest!=='function'}>
+              {words.retestButton}<ArrowRight size={16}/>
+            </button>
+          </div>}
+          {!finalRetestReady && <p className={styles.nextDayCue}>{words.nextDayNotice}</p>}
           {earned && <div className={styles.xpReward}><Star size={21} fill="currentColor"/>{words.earned}</div>}
           <div className={styles.finalTiles}>
             <span><CheckCircle2 size={22}/>{words.completed}</span>
@@ -429,6 +467,9 @@ export default function CourseSlidePlayer({
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>
+        {promoOpen && promotion.show && <div className={styles.subactions}>
+          <button type="button" className={styles.skip} onClick={onClose}>{words.promoSkip}<SkipForward size={14}/></button>
+        </div>}
         {!finished && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
@@ -437,11 +478,12 @@ export default function CourseSlidePlayer({
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={finished ? onClose
+          onClick={promoOpen ? onClose
+            : finished ? (promotion.show && earned ? () => setPromoOpen(true) : onClose)
             : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
-          <span>{finished ? words.seeMap
+          <span>{promoOpen ? words.seeMap : finished ? (promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
             : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}

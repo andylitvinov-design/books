@@ -225,7 +225,7 @@ export function MyCourse({ data, locale = 'en' }) {
       onState={setState} onError={setError} root={root}
     />}
 
-    {stage === 4 && <CourseToday locale={locale} />}
+    {stage === 4 && <CourseToday locale={locale} accountId={data?.account?.id||null} />}
 
     {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>

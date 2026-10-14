@@ -89,3 +89,23 @@
 .resultMeaning{margin:0;color:#246878;font-size:13px;line-height:1.4;font-weight:760}
 .finished:has([data-course-moment-result]) .illustration{height:clamp(100px,15vh,155px)}
 @media(max-width:540px){.momentResult{padding:11px 13px;gap:8px}.resultPair{gap:12px}.resultPair>div{min-width:86px}.resultPair strong{font-size:29px}.resultMeaning{font-size:12px}}
+
+/* Optional first-party membership offer AFTER server-confirmed completion. */
+.finalRetestCue{display:grid;gap:7px;width:100%;max-width:440px;padding:13px;border-radius:15px;border:1px solid #bfe8e6;background:#edfdfb}
+.finalRetestCue p{font-size:13px;line-height:1.48;color:#366c7b;margin:0}
+.finalRetestCue button{display:flex;justify-content:center;gap:8px;align-items:center;min-height:43px;background:#087f9e;color:#fff;border:1px solid #04768d;border-radius:11px;font-weight:800;font-size:13px;cursor:pointer}
+.finalRetestCue button:disabled{opacity:.5}
+.nextDayCue{font-size:12px;color:#558195;margin:0}
+.promoSlide{display:grid;align-content:center;justify-items:center;gap:13px;flex:1;width:100%;text-align:center;padding:20px 5px;color:#173b55}
+.promoIcon{display:grid;place-items:center;width:90px;height:90px;border-radius:29px;color:#fff;background:linear-gradient(140deg,#0eb5c7,#097eb3);box-shadow:0 14px 30px #0b8daa3a}
+.promoBrand{color:#0b91ac;font-size:12px;font-weight:850;letter-spacing:.1em;margin:0}
+.promoSlide h2{font-size:clamp(26px,5vw,38px);line-height:1.13;max-width:450px;letter-spacing:-.04em;margin:0}
+.promoLead{max-width:415px;color:#4c7487;font-size:16px;line-height:1.5;margin:0}
+.promoBenefits{display:grid;gap:9px;width:min(100%,330px)}
+.promoBenefits>div{display:flex;align-items:center;gap:10px;padding:13px 16px;border:1px solid #c1e6ea;border-radius:13px;color:#186b85;text-align:left;background:#f1fbfc;font-weight:770}
+.promoBenefits svg{flex:none;color:#0fada8}
+.promoPrice{font-size:18px;color:#0a7498}
+.promoLink{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:12px 18px;border-radius:14px;background:#0a8ead;color:#fff;text-decoration:none;font-weight:810;font-size:14px}
+.promoSoon{margin:0;padding:9px 13px;border:1px solid #d7e9ec;border-radius:10px;color:#567b87;background:#f5fafb;font-size:12px}
+.promoLegal{font-size:11px;line-height:1.45;color:#7594a2;margin:0}
+@media(max-width:540px){.promoSlide{gap:11px;padding:10px 0}.promoIcon{width:72px;height:72px;border-radius:23px}.promoIcon svg{width:35px;height:35px}.promoLead{font-size:14px}.promoBenefits>div{padding:10px 13px}.promoSlide h2{font-size:27px}}
