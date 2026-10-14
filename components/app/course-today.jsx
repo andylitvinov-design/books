@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
 import { CourseQuestMap } from './course-quest'
@@ -271,6 +271,12 @@ export default function CourseToday({locale='en'}){
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course data-course-view={view}>
+  {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
+    <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
+    <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
+      <Sparkles size={20} aria-hidden="true"/>{20*(Number(progress.practiceCount)||0)} XP
+    </span>
+  </div>}
   <div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
     {[
       ['today',ru?'Сегодня':'Today'],
@@ -282,9 +288,11 @@ export default function CourseToday({locale='en'}){
   {view==='today'&&<>
   <header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
+    <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
+      alt="" aria-hidden="true" decoding="async"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
-        <span className={styles.heroBrand}>{ru?'Практика сегодня':'Today’s practice'}</span>
+        <span className={styles.heroBrand}>{ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP'}</span>
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
       <h2>{lesson?.title||lesson?.journey?.heading}</h2>
@@ -307,8 +315,12 @@ export default function CourseToday({locale='en'}){
       </div>
     </div>
   </header>
-  <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
-    progress={progress} roadmap={data.roadmap||[]}/>
+  <details className={styles.momentPeek} data-course-today-trends>
+    <summary><span><Sparkles size={16} aria-hidden="true"/>{ru?'Моя динамика':'My progress over time'}</span>
+      <ChevronDown size={18} aria-hidden="true"/></summary>
+    <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
+      progress={progress} roadmap={data.roadmap||[]}/>
+  </details>
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
