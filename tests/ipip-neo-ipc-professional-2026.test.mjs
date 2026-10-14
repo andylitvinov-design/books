@@ -105,6 +105,8 @@ test('original IPIP IPC 32 item order and eight positive-keyed four-item octants
     assert.deepEqual(short.questions.map(q=>q.text),numbers.map(n=>full.questions[n-1].text))
     assert.deepEqual(dimension.reverseItems,[])
     assert.deepEqual(short.scoring.dimensions[0].reverseItems,[])
+    assert.equal(short.scoring.dimensions[0].key,'trait.ipipipc.short.'+code)
+    assert.notEqual(short.scoring.dimensions[0].key,dimension.key,'The full IPC and brief IPC scores need globally distinct IDs in combined client PDFs')
   }
   assert.equal(full.questions[0].text,'Am quiet around strangers')
   assert.equal(full.questions[31].text,"Am not interested in other people's problems")
