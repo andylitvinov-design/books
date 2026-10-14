@@ -1539,21 +1539,42 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       let value = await dailyRepo.command(who,'activate',{problemLabel:'Synthetic everyday concern',timeZone:'UTC'},locale)
       await db.query("update app_private.growth_cycles set start_local_date=(now() at time zone 'UTC')::date-1 where id=$1",[value.cycle.id])
       value = await dailyRepo.command(who,'preferences',{expectedRevision:value.cycle.revision,length:'quick',imagery:'optional',checkinFrequency:'daily'},locale)
-      assert.equal(value.cycle.day,2)
+      // Advancing the original calendar start must not skip an unfinished first lesson.
+      assert.equal(value.cycle.day,1)
       assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.equal(value.cycle.contentVersion,COURSE_CONTENT_V4)
       assert.ok(value.lesson.practiceV4?.symbol)
+      assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
+      assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
+      const originalLessonId = value.lesson.id
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      const firstSaved = await dailyRepo.command(who,'session',first,locale)
+      assert.equal(firstSaved.cycle.day,1)
+      assert.ok(firstSaved.currentSession.completedAt)
+      await dailyRepo.command(who,'session',first,locale)
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID()},locale),{code:'COURSE_NEXT_DAY_ONLY'})
+      // Simulate a local date rollover on synthetic private data without waiting
+      // until tomorrow; the next lesson must now open from the saved day number.
+      await db.query("update app_private.growth_sessions set local_date=(now() at time zone 'UTC')::date-1 where account_id=$1 and cycle_id=$2 and day_number=1",
+        [who.id,value.cycle.id])
+      value = await dailyRepo.read(who,locale)
+      assert.equal(value.cycle.day,2)
+      assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
-      const operationId = randomUUID(), request = {operationId,day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
-      await assert.rejects(dailyRepo.command(who,'session',{...request,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
-      const saved = await dailyRepo.command(who,'session',request,locale)
-      assert.ok(saved.currentSession.completedAt)
-      await dailyRepo.command(who,'session',request,locale)
-      const rows = (await db.query('select lesson_id,content_version from app_private.growth_sessions where account_id=$1 and cycle_id=$2',[who.id,value.cycle.id])).rows
-      assert.equal(rows.length,1)
-      assert.equal(rows[0].lesson_id,value.lesson.id)
-      assert.equal(rows[0].content_version,COURSE_CONTENT_V4)
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
+      const secondSaved = await dailyRepo.command(who,'session',second,locale)
+      assert.equal(secondSaved.cycle.day,2)
+      assert.ok(secondSaved.currentSession.completedAt)
+      await dailyRepo.command(who,'session',second,locale)
+      const rows = (await db.query('select day_number,lesson_id,content_version from app_private.growth_sessions where account_id=$1 and cycle_id=$2 order by day_number',[who.id,value.cycle.id])).rows
+      assert.equal(rows.length,2)
+      assert.deepEqual(rows.map(row=>row.day_number),[1,2])
+      assert.equal(rows[0].lesson_id,originalLessonId)
+      assert.equal(rows[1].lesson_id,value.lesson.id)
+      assert.ok(rows.every(row=>row.content_version===COURSE_CONTENT_V4))
       assert.equal((await dailyRepo.read(who,locale)).lesson.id,value.lesson.id)
     } finally { await db.end() }
   }
