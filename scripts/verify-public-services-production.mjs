@@ -92,21 +92,41 @@ try {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
         await page.goto(origin + "/" + locale + "/services/" + slug, { waitUntil: "networkidle" });
-        const main = page.locator('main[data-core-service-detail="' + kind + '"]');
+        const main = kind === "alchemy"
+          ? page.locator('main[data-alchemy-soul-landing]')
+          : page.locator('main[data-core-service-detail="' + kind + '"]');
         await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
         await assertViewport(page, locale + "/" + slug + "/" + width);
         if (width === 390 || width === 1188) {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
+        if (kind === "alchemy") {
+          const forms = main.locator('form[data-alchemy-lead-form]');
+          assert.equal(await forms.count(), 2, "Alchemy must expose a visible lead form at the top and bottom");
+          await visible(main.locator('#alchemy-video'));
+          assert.equal(await main.locator('[data-testimonial-video-id]').count(), 3, "Use 3 previously published video reviews");
+          await visible(forms.first().locator('input[name="name"]'));
+          await visible(forms.first().locator('textarea[name="topic"]'));
+          assert.equal(await main.locator('input[name="contact"]').count(), 2);
+          assert.equal(await main.locator('select[name="duration"]').count(), 2);
+          assert.equal(await page.locator('[data-core-service-capture="alchemy"]').count(), 0, "Old global CTA must not duplicate the new forms");
+        }
         if (width === 390) {
-          const footerCta = main.locator('a[data-contact-channel="whatsapp"]').last();
-          await footerCta.scrollIntoViewIfNeeded();
-          const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
-          assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
-          await alternative.locator("summary").click();
-          await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
-          await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false });
+          if (kind === "alchemy") {
+            const bottomForm = main.locator('form[data-alchemy-lead-form="final"]');
+            await bottomForm.scrollIntoViewIfNeeded();
+            await visible(bottomForm.locator('button[type="submit"]'));
+            await page.screenshot({ path: output + "/alchemy-" + locale + "-bottom-form-390.png", fullPage: false });
+          } else {
+            const footerCta = main.locator('a[data-contact-channel="whatsapp"]').last();
+            await footerCta.scrollIntoViewIfNeeded();
+            const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
+            assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
+            await alternative.locator("summary").click();
+            await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
+            await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false });
+          }
         }
         await page.close();
       }
