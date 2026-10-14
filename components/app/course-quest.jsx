@@ -180,7 +180,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         </li>
       })}
     </ol>
-    <img className={styles.journeyScene} src="/images/holistic-house/course-journey-landscape.svg" alt=""
+    <img className={styles.journeyScene} src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
       width={860} height={245} loading="lazy" aria-hidden="true"/>
     <p className={styles.mapFootnote}><LockKeyhole size={14} aria-hidden="true"/>{t.rewardNote}</p>
   </section>

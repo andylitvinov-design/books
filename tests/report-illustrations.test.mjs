@@ -83,3 +83,54 @@ test('invoice and receipt retain separately approved neutral geometry',()=>{
   assert.doesNotMatch(pdf,/0\.924 0\.960 0\.964 rg/)
   assert.doesNotMatch(pdf,/SELF-RATED PROGRESS/)
 })
+
+
+test('editorial A4 cover enlarges the identity art and keeps exactly two actual ratings',()=>{
+  const pdf=buildPrescriptionPdf(sample('en'),'en',origin).toString('latin1')
+  assert.match(readFileSync('lib/prescriptions/pdf.js','utf8'),/PEOPLE  ·  INSIGHT  ·  HARMONY/,
+    'running identity includes the brand motto')
+  assert.match(pdf,/A GENTLER PATH TO INNER BALANCE/,'approved editorial subtitle is printed')
+  const lighthousePlacements=[...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 [\d.]+ [\d.]+ [\d.]+ cm \/Lighthouse Do Q/g)]
+  assert.ok(lighthousePlacements.length>=2 && Number(lighthousePlacements[1][1])>=96,
+    'hero lighthouse occupies a larger integrated illustration area')
+  assert.match(pdf,/\(START\)/)
+  assert.match(pdf,/\(END\)/)
+  assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal must not become a third reading')
+  assert.match(pdf,/\/RemedyPhoto1 Do Q/,'approved original library photo remains present')
+  assert.match(pdf,/\/Signature Do Q/,'signed core report is preserved')
+})
+
+test('wide white signature is a report-body closing, not the legal footer (RU and EN)',()=>{
+  const generator=readFileSync('lib/prescriptions/pdf.js','utf8')
+  const component=readFileSync('components/document-letterhead.jsx','utf8')
+  const css=readFileSync('components/consultation-report.css','utf8')
+  assert.match(generator,/const signatureWidth = 207/)
+  assert.match(generator,/const signatureHeight = 81\.5/)
+  assert.match(generator,/if \(y < 203\) startPage\(\)/,
+    'signature is kept safely above the reserved footer')
+  assert.doesNotMatch(generator,/fill\(A4\.left, top - 63, A4\.contentWidth, 63, palette\.paper\)/,
+    'the former small tinted signature plaque was removed')
+  assert.match(component,/<section className="canonical-signature canonical-signature--compact canonical-signature--wide"/)
+  assert.match(component,/<time dateTime=\{date\}>\{date\}<\/time>/)
+  assert.match(css,/\.canonical-document--editorial \.canonical-signature--wide\s*\{/)
+  assert.match(css,/background:#fff;/)
+  assert.match(css,/@media print \{/)
+  for (const locale of ['en','ru']){
+    const pdf=buildPrescriptionPdf(sample(locale,{
+      followUpDate:'2026-10-25',
+      internalNotes:'SENSITIVE-INTERNAL-NEVER-EXPORT',
+    }),locale,origin).toString('latin1')
+    assert.match(pdf,/q 207 0 0 81\.5 83 [\d.]+ cm \/Signature Do Q/,
+      locale+': exact wide approved signature is embedded')
+    assert.equal((pdf.match(/\/Signature Do Q/g)??[]).length,1)
+    assert.doesNotMatch(pdf,/SENSITIVE-INTERNAL-NEVER-EXPORT/)
+    assert.match(pdf,/\/RemedyPhoto1 Do Q/)
+  }
+  const invoice=buildPaymentPdf({
+    patientName:'Synthetic Payer',dateIssued:'2026-10-14',
+    dateOfService:'2026-10-14',service:'Synthetic session',
+    currency:'EUR',amount:10000,paymentStatus:'unpaid',
+  },'en',origin).toString('latin1')
+  assert.doesNotMatch(invoice,/q 207 0 0 81\.5 83 /,
+    'the approved invoice signature remains unchanged')
+})

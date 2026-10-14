@@ -25,7 +25,7 @@ test('approved blue-turquoise design is scoped only to My Course and uses actual
   assert.match(css, /data-course-teal-hero|\.heroPhoto/)
   assert.match(css, /hero-olive-incense\.webp/)
   assert.match(css, /linear-gradient\(100deg,#087d89,#03778c\)/)
-  assert.match(map, /course-journey-landscape\.svg/)
+  assert.match(map, /course-focus-mountain-boy\.webp/)
   assert.match(mapCss, /\.pathLabel\{position:static!important/)
   assert.match(mapCss, /\.pathPreview\{grid-column:2/)
   assert.match(quizCss, /background:linear-gradient\(100deg,#17bcc8,#038dab\)/)

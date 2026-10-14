@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, Crown, LockKeyhole, Plus, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
+import Course14DayOverview from './course-14-day-overview'
 import styles from './course-entry-selector.module.css'
 
 const COPY = {
   en: {
     eyebrow: 'MY COURSES · HOLISTIC HOUSE',
-    title: 'My courses', intro: 'Your personal path, at your own pace.',
+    title: 'My courses', intro: 'Knowledge. Practice. Your own meaningful changes.',
+    motto: 'The best in you is already here', plan: 'Plan',
+    benefitsTitle: 'What you will find in your courses', progressBenefit: 'Track your progress', practiceBenefit: 'Daily small practices', focusBenefit: 'A personal direction', rhythmBenefit: 'Your own pace',
+    quote: 'Small steps each day make room for lasting habits',
     count: 'active course', current: 'CURRENT COURSE', defaultCourse: 'My personal course',
     setup: 'Setting up your course', programme: '14-day learning journey', focus: 'My development directions',
     lesson: 'Day', of: 'of', completed: 'Lessons completed', finished: 'Course completed', loading: 'Loading progress…', progressUnavailable: 'Progress temporarily unavailable',
@@ -18,7 +22,7 @@ const COPY = {
     addNote: 'A new topic and its own 14-day journey', firstNote: 'Choose a topic or create your personal plan',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
     upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
-    plans: 'Membership plans', start: 'Start', advanced: 'Advanced', premium: 'Premium',
+    plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
     one: '1 active course', five: 'Up to 5 active courses', noAds: 'No ads',
     tests: 'Included tests', session: '1 personal session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
@@ -28,7 +32,10 @@ const COPY = {
   },
   ru: {
     eyebrow: 'МОИ КУРСЫ · HOLISTIC HOUSE',
-    title: 'Мои курсы', intro: 'Ваш путь развития — в собственном темпе.',
+    title: 'Мои курсы', intro: 'Знания. Практика. Ваши собственные изменения.',
+    motto: 'Лучшее в тебе уже здесь', plan: 'План',
+    benefitsTitle: 'Что вы найдёте в наших курсах', progressBenefit: 'Наблюдение за прогрессом', practiceBenefit: 'Практики на каждый день', focusBenefit: 'Личное направление', rhythmBenefit: 'Удобный темп',
+    quote: 'Маленькие шаги каждый день создают новые привычки',
     count: 'активный курс', current: 'ТЕКУЩИЙ КУРС', defaultCourse: 'Мой персональный курс',
     setup: 'Настройка курса', programme: '14-дневный курс развития', focus: 'Направления моей работы',
     lesson: 'День', of: 'из', completed: 'Уроков завершено', finished: 'Курс завершён', loading: 'Загружаем прогресс…', progressUnavailable: 'Прогресс временно недоступен',
@@ -37,7 +44,7 @@ const COPY = {
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: 'Выберите тему или создайте персональный курс',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
     upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
-    plans: 'Тарифы подписки', start: 'Start', advanced: 'Advanced', premium: 'Premium',
+    plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
     one: '1 активный курс', five: 'До 5 активных курсов', noAds: 'Без рекламы',
     tests: 'Тесты включены', session: '1 персональная сессия в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
@@ -57,6 +64,7 @@ function courseTitle(course, locale, t) {
 }
 
 const PLANS = [
+  { id: 'free', price: 0, spots: 'one', items: ['ads'] },
   { id: 'start', price: 10, spots: 'one', items: ['noAds'] },
   { id: 'advanced', price: 20, spots: 'five', items: ['noAds'] },
   { id: 'premium', price: 100, spots: 'five', items: ['noAds', 'tests', 'session'] },
@@ -66,6 +74,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
   const t = COPY[locale] || COPY.en
   const hasCourse = Boolean(course?.stage > 0)
   const [daily, setDaily] = useState(null)
+  const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
   const dialogRef = useRef(null)
 
@@ -98,6 +107,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
     // Never grant paid entitlements or create parallel courses in the browser.
     // The existing server currently supports only one course per account.
     dialogRef.current?.showModal()
+    dialogRef.current?.scrollTo({ top: 0 })
   }
 
   return <div className={styles.page} data-my-course data-course-selector>
@@ -105,7 +115,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
       <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true"/>{t.eyebrow}</span>
       <div className={styles.headline}>
         <h1>{t.title}</h1>
-        <span className={styles.limitPill}><BookOpen size={16} aria-hidden="true"/>{hasCourse ? '1 / 1' : '0 / 1'}</span>
+        <span className={styles.headerMotto} aria-hidden="true">{t.motto}<Heart size={19} strokeWidth={1.7}/></span>
       </div>
       <p>{t.intro}</p>
     </header>
@@ -113,16 +123,20 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
     <section className={styles.tiles} aria-label={t.title}>
       {hasCourse && <article className={styles.current} data-current-course-card>
         <div className={styles.currentTop}>
-          <span className={styles.currentIcon} aria-hidden="true"><ShieldCheck size={27} strokeWidth={1.8}/></span>
+          <div className={styles.currentPhoto} aria-hidden="true">
+            <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
+              width={240} height={280} loading="lazy" decoding="async"/>
+            <span className={styles.currentIcon}><ShieldCheck size={21} strokeWidth={1.9}/></span>
+          </div>
           <div className={styles.currentText}>
             <span className={styles.overline}>{t.current}</span>
             <h2>{name}</h2>
             <p>{t.programme}</p>
+            {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
+              {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
+            </div>}
           </div>
         </div>
-        {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
-          {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
-        </div>}
         <div className={styles.progressInfo}>
           <span>{course.stage === 4 && nextLesson !== null
             ? completed === 14 ? t.finished : t.lesson + ' ' + nextLesson + ' ' + t.of + ' 14'
@@ -135,17 +149,43 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
           <span style={{ width: completed === null ? '0%' : (completed / 14 * 100) + '%' }}/>
         </div>
         {course.stage === 4 && completed === null && !progressError && <small className={styles.loading}>{t.loading}</small>}
-        <button type="button" className={styles.openButton} onClick={onOpen}>
-          {course.stage !== 4 ? t.completeSetup : completed === 14 ? t.review : t.continue}
-          <ArrowRight size={19} aria-hidden="true"/>
-        </button>
+        <div className={styles.courseActions}>
+          <button type="button" className={styles.openButton} onClick={onOpen}>
+            {course.stage !== 4 ? t.completeSetup : completed === 14 ? t.review : t.continue}
+            <ArrowRight size={19} aria-hidden="true"/>
+          </button>
+          <button type="button" className={styles.planButton} onClick={() => setShowPlan(value => !value)}
+            aria-expanded={showPlan} aria-controls="my-course-plan">
+            <BookOpen size={20} aria-hidden="true"/><span>{t.plan}</span>
+          </button>
+        </div>
+        {showPlan && <div className={styles.planDetails} id="my-course-plan">
+          <Course14DayOverview locale={locale}/>
+        </div>}
       </article>}
 
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
-        <span className={styles.plusIcon}><Plus size={27} strokeWidth={1.8} aria-hidden="true"/></span>
-        <strong>{hasCourse ? t.add : t.first}</strong>
-        <small>{hasCourse ? t.addNote : t.firstNote}</small>
+        <span className={styles.plusIcon}><Plus size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+        <span className={styles.addTileText}>
+          <strong>{hasCourse ? t.add : t.first}</strong>
+          <small>{hasCourse ? t.addNote : t.firstNote}</small>
+        </span>
+        <ArrowRight className={styles.addArrow} size={19} aria-hidden="true"/>
       </button>
+    </section>
+
+    <section className={styles.benefits} aria-labelledby="course-benefits-title">
+      <div className={styles.benefitHeading}>
+        <span className={styles.benefitMark}><Leaf size={23} strokeWidth={1.7} aria-hidden="true"/></span>
+        <h2 id="course-benefits-title">{t.benefitsTitle}</h2>
+      </div>
+      <div className={styles.benefitGrid}>
+        <div><span><TrendingUp size={22} aria-hidden="true"/></span><p>{t.progressBenefit}</p></div>
+        <div><span><Heart size={22} aria-hidden="true"/></span><p>{t.practiceBenefit}</p></div>
+        <div><span><Leaf size={22} aria-hidden="true"/></span><p>{t.focusBenefit}</p></div>
+        <div><span><UsersRound size={22} aria-hidden="true"/></span><p>{t.rhythmBenefit}</p></div>
+      </div>
+      <p className={styles.benefitQuote}>«{t.quote}» <span>Holistic House</span></p>
     </section>
 
     <p className={styles.footnote}><LockKeyhole size={15} aria-hidden="true"/>
@@ -164,7 +204,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
       <h3>{t.plans}</h3>
       <div className={styles.planGrid}>
         {PLANS.map(plan => <article className={styles.planCard} key={plan.id}
-          data-recommended={plan.id === 'advanced'}>
+          data-plan={plan.id} data-recommended={plan.id === 'advanced'}>
           {plan.id === 'advanced' && <span className={styles.recommended}>{t.recommended}</span>}
           <strong>{t[plan.id]}</strong>
           <div className={styles.price}>€{plan.price}<small>{t.perMonth}</small></div>

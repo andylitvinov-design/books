@@ -268,3 +268,20 @@
 @media(prefers-reduced-motion:reduce){
  .mapShell .pathNode{transition:none!important}
 }
+
+
+/* Match the chapter map to the same scenic photography and course palette. */
+.mapShell .journeyScene{
+  object-fit:cover;object-position:50% 52%;
+  border:1px solid #c7e8e8;
+  box-shadow:0 8px 22px #1a728a13;
+}
+.mapShell .mapHeader h3{color:#123d55}
+.mapShell .mapHeader p:not(.eyebrow){color:#50788a}
+.mapShell .pointBox{
+  border-color:#c7e9e8;background:#eafaf8;color:#0b8fa4;
+}
+.mapShell .mapProgress progress{accent-color:#08a5b6}
+@media(max-width:620px){
+  .mapShell .journeyScene{height:133px;border-radius:17px}
+}

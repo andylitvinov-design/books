@@ -250,7 +250,7 @@ export function MyCourse({ data, locale = 'en' }) {
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/hero-olive-incense.webp" alt="" width={320} height={220} loading="lazy" /></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" width={320} height={220} loading="lazy" /></div>
     </header>}
     {stage === 0 && <section className={styles.programSelection} data-course-program-selection aria-label={t.chooseCourse}>
       <div className={styles.programHeading}>
@@ -317,7 +317,7 @@ export function MyCourse({ data, locale = 'en' }) {
       onState={setState} onError={setError} root={root}
     />}
 
-    {stage === 4 && <CourseToday locale={locale} accountId={data?.account?.id||null} />}
+    {stage === 4 && <CourseToday locale={locale} accountId={data?.account?.id||null} onExit={() => setShowCourse(false)} />}
 
     {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>

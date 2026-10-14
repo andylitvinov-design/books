@@ -16,7 +16,7 @@ test('locale counterpart paths preserve the current localized route', async () =
 
 test('public navigation includes the relationship hub on EN/RU and never exposes administration', async () => {
   const { getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'about', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.length, locale === 'es' ? 6 : 7)
@@ -25,6 +25,8 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
     assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
     assert.equal(items.find(item => item.id === 'academy').external, false)
+    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
+    assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
@@ -59,6 +61,7 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
 
   assert.match(mobile, /getSiteNavigation/)
   assert.match(mobile, /CircleUserRound/)
+  assert.match(mobile, /NotebookPen/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)

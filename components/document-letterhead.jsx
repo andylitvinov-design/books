@@ -14,12 +14,30 @@ export function DocumentLetterhead({ compact = false }) {
 }
 
 export function DocumentSignature({ date, locale, payment = false, compact = false }) {
-  return <footer className={`canonical-signature${payment ? ' payment-signature' : ''}${compact ? ' canonical-signature--compact' : ''}`}>
-    <p>{compact ? date : `${locale === 'ru' ? 'Одесса, Украина' : 'Odesa, Ukraine'}, ${date}.`}</p>
-    <Image className="canonical-signature-art" src={signatureDataUri()} width={DOCUMENT_TEMPLATE.signature.pixelsWide} height={DOCUMENT_TEMPLATE.signature.pixelsHigh} alt={locale === 'ru' ? 'Подпись Андрея Литвинова' : 'Andrii Litvinov signature'} unoptimized style={{ width: `${DOCUMENT_TEMPLATE.signature.width}pt`, maxWidth: '100%', height: 'auto', marginLeft: `${DOCUMENT_TEMPLATE.signature.offsetX}pt`, marginBottom: `${DOCUMENT_TEMPLATE.signature.gap}pt` }} />
+  const signatureAlt = locale === 'ru' ? 'Подпись Андрея Литвинова' : 'Andrii Litvinov signature'
+
+  // The signed report closing is meaningful document CONTENT. It is not a
+  // footer, and its original alpha-masked ink must sit directly on white.
+  if (compact && !payment) {
+    return <section className="canonical-signature canonical-signature--compact canonical-signature--wide" aria-label={signatureAlt}>
+      <div className="canonical-signature-mark">
+        <Image className="canonical-signature-art" src={signatureDataUri()} width={DOCUMENT_TEMPLATE.signature.pixelsWide} height={DOCUMENT_TEMPLATE.signature.pixelsHigh} alt={signatureAlt} unoptimized />
+      </div>
+      <div className="canonical-signature-identity">
+        <strong>{LETTERHEAD.signatureName}</strong>
+        <p>{LETTERHEAD.role}</p>
+        <time dateTime={date}>{date}</time>
+      </div>
+    </section>
+  }
+
+  // Invoice and receipt signatures retain their separately approved layout.
+  return <footer className={`canonical-signature${payment ? ' payment-signature' : ''}`}>
+    <p>{`${locale === 'ru' ? 'Одесса, Украина' : 'Odesa, Ukraine'}, ${date}.`}</p>
+    <Image className="canonical-signature-art" src={signatureDataUri()} width={DOCUMENT_TEMPLATE.signature.pixelsWide} height={DOCUMENT_TEMPLATE.signature.pixelsHigh} alt={signatureAlt} unoptimized style={{ width: `${DOCUMENT_TEMPLATE.signature.width}pt`, maxWidth: '100%', height: 'auto', marginLeft: `${DOCUMENT_TEMPLATE.signature.offsetX}pt`, marginBottom: `${DOCUMENT_TEMPLATE.signature.gap}pt` }} />
     <div className="canonical-signature-line" style={{ width: `${DOCUMENT_TEMPLATE.signature.lineWidth}pt`, maxWidth: '100%' }} />
     <strong>{LETTERHEAD.signatureName}</strong>
     <p>{LETTERHEAD.role}<br />{LETTERHEAD.background}</p>
-    {!compact && <p>{LETTERHEAD.address} · {LETTERHEAD.city}<br />{LETTERHEAD.phone}</p>}
+    <p>{LETTERHEAD.address} · {LETTERHEAD.city}<br />{LETTERHEAD.phone}</p>
   </footer>
 }

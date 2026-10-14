@@ -1,3 +1,191 @@
 .page{display:grid;gap:16px;max-width:960px;margin:0 auto 28px;color:#174663}.header{display:grid;gap:5px}.eyebrow{display:flex;align-items:center;gap:7px;color:#078b9d;font-size:11px;font-weight:800;letter-spacing:.1em}.headline{display:flex;align-items:center;justify-content:space-between;gap:12px}.headline h1{font-size:clamp(30px,5vw,42px);color:#173f59;margin:2px 0;line-height:1.1}.header p{margin:2px 0 0;font-size:14px;color:#608395}.limitPill{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:9px 13px;border-radius:99px;background:#e9fafb;border:1px solid #aedfe7;color:#0b8299;font-weight:800}.tiles{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.85fr);gap:15px}.current{display:grid;gap:12px;min-width:0;padding:24px;border-radius:23px;border:1px solid #a9dce6;background:linear-gradient(135deg,#f4feff,#ddf6fa);box-shadow:0 12px 30px #227e9815}.currentTop{display:flex;gap:13px;align-items:center}.currentIcon,.plusIcon{display:grid;place-items:center;flex:none;width:53px;height:53px;border-radius:16px;background:#d7f4f7;border:1px solid #b6e2eb;color:#088ca6}.currentText{min-width:0}.overline{font-size:10px;color:#0b8599;font-weight:900;letter-spacing:.1em}.current h2{font-size:clamp(20px,3vw,26px);color:#184d6a;margin:4px 0;line-height:1.15}.currentText p{margin:0;font-size:12px;color:#65879a}.axes{display:flex;gap:6px;flex-wrap:wrap}.axes span{display:flex;gap:5px;align-items:center;font-size:11px;padding:6px 9px;border-radius:99px;background:#fff;border:1px solid #cae5ec;color:#436e7d}.axes svg{color:#0998a7}.progressInfo{display:flex;justify-content:space-between;gap:8px;color:#4b7788;font-size:12px;font-weight:750}.progressTrack{height:8px;border-radius:99px;background:#d3e9ed;overflow:hidden}.progressTrack span{display:block;height:100%;background:linear-gradient(90deg,#11b3c4,#0289aa);border-radius:inherit}.loading{font-size:11px;color:#65879a}.openButton{display:flex;align-items:center;justify-content:center;gap:12px;min-height:48px;width:100%;border-radius:14px;border:1px solid #087d99!important;border-bottom:4px solid #0a728b!important;background:linear-gradient(100deg,#12bac8,#048eab)!important;color:#fff!important;font-size:15px;font-weight:850;cursor:pointer}
 .addTile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;width:100%;min-height:176px;padding:22px;border:2px dashed #86c5d3!important;border-radius:22px;background:#f4fdfe!important;color:#1a6680!important;cursor:pointer}.addTile:hover{border-color:#069bb1!important;background:#def6f8!important}.plusIcon{border-radius:50%}.addTile strong{font-size:17px;color:#1a5975}.addTile small{font-size:12px;color:#678998;line-height:1.4}.footnote{display:flex;gap:7px;align-items:flex-start;font-size:11px;color:#658698;margin:0}.footnote svg{flex:none}.dialog{width:min(760px,calc(100% - 24px));max-height:86dvh;overflow:auto;border:1px solid #c4e4e9;border-radius:25px;padding:24px;background:#fcffff;color:#184865;box-shadow:0 25px 80px #0c394666}.dialog::backdrop{background:#0c3649a8;backdrop-filter:blur(3px)}.dialogHead{display:flex;justify-content:space-between;align-items:center}.crown{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:#e3f6f9;color:#0d8ea3}.closeIcon{border:0!important;background:transparent!important;color:#507789!important;cursor:pointer}.dialog h2{font-size:clamp(23px,4vw,32px);letter-spacing:-.035em;line-height:1.12;color:#184865;margin:8px 0}.dialog h3{font-size:15px;color:#235774;margin:18px 0 11px}.dialogIntro{font-size:14px;line-height:1.5;color:#597e90}.planGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.planCard{display:flex;flex-direction:column;gap:8px;min-width:0;padding:17px 14px;border:1px solid #cce7eb;border-radius:16px;background:#f4fcfd}.planCard[data-recommended=true]{border:2px solid #0d9fb1;background:#e9f9f9}.planCard>strong{font-size:17px;color:#164d6b}.price{font-size:27px;font-weight:850;color:#0b8299}.price small{font-size:11px;color:#5d8393}.planCard p{display:flex;align-items:flex-start;gap:6px;margin:0;font-size:12px;line-height:1.4;color:#4b7284}.planCard p svg{flex:none;color:#0b9aaa}.recommended{color:#078da4;font-size:9px;font-weight:850;letter-spacing:.06em}.unavailable{margin:14px 0 0;border-left:3px solid #daa66f;padding:10px 12px;background:#fff7e9;font-size:12px;color:#795a37}.conditions{font-size:11px;color:#6e8a99;line-height:1.4}.closeButton{margin-top:15px;min-height:43px;padding:10px 22px;border-radius:13px;border:1px solid #bee0e7!important;background:#ecf9fb!important;color:#1a6780!important;font-weight:800;cursor:pointer}.openButton:focus-visible,.addTile:focus-visible,.dialog button:focus-visible{outline:3px solid #074f76;outline-offset:3px}
 @media(max-width:690px){.tiles{grid-template-columns:1fr}.addTile{min-height:106px;padding:15px;gap:5px}.plusIcon{height:40px;width:40px}.addTile small{max-width:none}.planGrid{grid-template-columns:1fr}.planCard{gap:5px}.price{font-size:23px}}@media(max-width:420px){.page{gap:14px}.current{padding:17px}.currentTop{gap:11px}.currentIcon{width:48px;height:48px}.current h2{font-size:20px}.headline h1{font-size:31px}.dialog{border-radius:18px;padding:17px}.axes span{font-size:10px;padding:5px 7px}}@media(prefers-reduced-motion:reduce){.progressTrack span{transition:none}}
+
+/* Course card + membership refinement (Oct 14): photo-led, breathable and mobile-first. */
+.page{width:100%;min-width:0;gap:clamp(12px,2vw,18px)}
+.header{gap:6px}
+.header .eyebrow{line-height:1.35;letter-spacing:.075em}
+.headline h1{line-height:1.08;letter-spacing:-.035em}
+.header p{line-height:1.5}
+.current{display:flex;flex-direction:column;gap:13px;padding:clamp(16px,2.4vw,23px);background:linear-gradient(135deg,#f8ffff 0%,#e1f7f9 100%);box-shadow:0 12px 30px #1a819514}
+.currentTop{display:grid;grid-template-columns:clamp(110px,20vw,155px) minmax(0,1fr);align-items:stretch;gap:clamp(13px,2.2vw,20px)}
+.currentPhoto{position:relative;align-self:stretch;min-height:145px;border:1px solid #abdfe3;border-radius:17px;overflow:hidden;background:#cfefee}
+.currentPhoto img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.currentPhoto::after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(0deg,#164c5d55,transparent);pointer-events:none}
+.currentPhoto .currentIcon{position:absolute;z-index:1;bottom:8px;right:8px;width:36px;height:36px;border-radius:12px;background:#f4ffffeb;border-color:#d4f5f6;box-shadow:0 2px 10px #164c5d24}
+.currentText{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:5px;min-width:0}
+.overline{font-size:10px;letter-spacing:.1em;line-height:1.3}
+.current h2{font:780 clamp(21px,3vw,28px)/1.17 Georgia,serif;letter-spacing:-.024em;margin:0;color:#174966;overflow-wrap:break-word;text-wrap:balance}
+.currentText p{font-size:12px;line-height:1.45;color:#67889a}
+.axes{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.axes span{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;font-size:11px;line-height:1.32;padding:6px 8px;border:1px solid #c5e5e8;border-radius:99px;color:#37728a;background:#fffefa}
+.axes svg{flex:none}
+.progressInfo{margin-top:1px;font-size:12px;line-height:1.4}
+.progressTrack{height:7px;background:#cee8e9}
+.openButton{min-height:48px;border-bottom-width:3px!important;box-shadow:0 6px 15px #0c99ae1b;transition:filter .16s ease}
+.openButton:hover{filter:brightness(1.045)}
+.addTile{min-height:190px;gap:11px;border-color:#9acdd9!important;background:linear-gradient(160deg,#f8ffff,#effafb)!important}
+.addTileText{display:flex;flex-direction:column;gap:6px;min-width:0}
+.addTileText strong{font-size:18px;line-height:1.22}
+.addTileText small{max-width:235px;line-height:1.48}
+.addArrow{display:none;color:#1490a7}
+.footnote{line-height:1.4}
+
+/* Modal keeps the close control reachable and Free is the first comparison tier. */
+.dialog{width:min(700px,calc(100vw - 26px));max-height:min(82dvh,740px);padding:20px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border-radius:24px;box-shadow:0 24px 70px #0a344967}
+.dialogHead{position:sticky;top:-20px;z-index:3;display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:9px 0;background:#fcffffef;backdrop-filter:blur(10px)}
+.crown{width:38px;height:38px;border-radius:12px}
+.closeIcon{display:grid!important;place-items:center;flex:none;width:44px;height:44px;padding:0!important;border:1px solid #cae6ec!important;border-radius:13px!important;background:#f5fdff!important;color:#50798c!important}
+.dialog h2{font-size:clamp(23px,3vw,29px);line-height:1.17;letter-spacing:-.025em;margin:5px 0 9px}
+.dialogIntro{margin:0;color:#577d8d;font-size:13px;line-height:1.5}
+.dialog h3{font-size:15px;margin:18px 0 12px}
+.planGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.planCard{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:7px 9px;min-width:0;min-height:135px;padding:15px;border:1px solid #cce7eb;border-radius:17px;background:#f6fcfd}
+.planCard[data-plan=free]{background:#fbfefd;border-color:#cbdfe4}
+.planCard[data-recommended=true]{border:2px solid #10a3b4;background:linear-gradient(130deg,#eafafb,#f4fffc)}
+.planCard>strong{grid-column:1;font-size:18px;line-height:1.25}
+.price{grid-column:2;font-size:25px;line-height:1.2;white-space:nowrap}
+.price small{font-size:11px;font-weight:700}
+.planCard p{grid-column:1/-1;display:flex;align-items:center;gap:8px;line-height:1.35;font-size:12px}
+.planCard p svg{flex:none}
+.recommended{grid-column:1/-1;font-size:10px;line-height:1.3;letter-spacing:.06em}
+.unavailable{line-height:1.5;border-radius:0 9px 9px 0}
+.closeButton{display:block;margin:16px 0 0 auto}
+@media(max-width:690px){
+ .tiles{grid-template-columns:minmax(0,1fr);gap:12px}
+ .currentTop{grid-template-columns:112px minmax(0,1fr);gap:13px}
+ .currentPhoto{min-height:137px}
+ .addTile{display:grid;grid-template-columns:42px minmax(0,1fr) 19px;align-items:center;justify-items:start;text-align:left;min-height:87px;padding:13px 15px;gap:12px;border-radius:19px}
+ .plusIcon{width:42px;height:42px}
+ .addTileText strong{font-size:16px}
+ .addTileText small{font-size:11px;max-width:none}
+ .addArrow{display:block}
+ .planGrid{grid-template-columns:minmax(0,1fr);gap:9px}
+ .planCard{min-height:0;padding:13px 14px;gap:5px 8px}
+ .planCard>strong{font-size:17px}
+ .price{font-size:23px}
+ .dialog{max-height:min(80dvh,770px);padding:16px 17px 19px;border-radius:21px}
+ .dialogHead{top:-16px}
+ .dialog h3{margin-top:14px}
+}
+@media(max-width:420px){
+ .page{gap:13px}
+ .headline{gap:8px}
+ .headline h1{font-size:clamp(29px,8.1vw,34px)}
+ .limitPill{font-size:12px;padding:8px 10px}
+ .current{padding:14px;border-radius:20px;gap:11px}
+ .currentTop{grid-template-columns:clamp(86px,29vw,108px) minmax(0,1fr);gap:12px}
+ .currentPhoto{min-height:136px;border-radius:14px}
+ .current h2{font-size:clamp(19px,5.7vw,23px);line-height:1.15}
+ .currentText p{font-size:11px}
+ .axes{margin-top:5px;gap:4px}
+ .axes span{font-size:10px;padding:5px 7px}
+ .openButton{font-size:14px;min-height:48px}
+ .dialog h2{font-size:24px}
+ .dialogIntro{font-size:12px}
+ .planCard p{font-size:12px}
+}
+@media(max-width:340px){
+ .currentTop{grid-template-columns:82px minmax(0,1fr);gap:9px}
+ .current h2{font-size:18px}
+ .axes span{padding:4px 6px}
+ .addTile{grid-template-columns:36px minmax(0,1fr) 16px;padding:11px}
+ .plusIcon{width:36px;height:36px}
+}
+@media(prefers-reduced-motion:reduce){.openButton{transition:none}}
+
+
+/* Approved My Courses visual refresh — 2026-10-14.
+   Presentation only: existing server-owned course, progress and membership gates are unchanged. */
+.page{max-width:900px;gap:20px;padding:clamp(4px,1.4vw,15px) 0 24px;color:#154968}
+.header{gap:8px;padding:0 8px}
+.header .eyebrow{display:none}
+.headline{align-items:center;gap:22px}
+.headline h1{font:700 clamp(34px,4.8vw,49px)/1.08 Georgia,serif;letter-spacing:-.045em;color:#07536b;margin:0}
+.header p{font-size:clamp(13px,1.6vw,16px);line-height:1.5;color:#668fa1;margin:0}
+.headerMotto{display:flex;align-items:flex-end;gap:5px;max-width:185px;font:italic 18px/1.18 "Brush Script MT","Segoe Script",cursive;color:#099cb4;transform:rotate(-6deg);text-align:center}
+.headerMotto svg{flex:none;margin-bottom:-7px}
+.tiles{grid-template-columns:minmax(0,1fr);gap:18px}
+.current{position:relative;gap:19px;padding:clamp(18px,3vw,29px);border:1.5px solid #a5e0e9;border-radius:29px;background:linear-gradient(130deg,#fcffff 12%,#e9fafb 100%);box-shadow:0 10px 28px #1c8a9d0e}
+.currentTop{grid-template-columns:clamp(165px,25vw,238px) minmax(0,1fr);gap:clamp(18px,3vw,32px);min-height:225px}
+.currentPhoto{min-height:215px;border:1.5px solid #a5e0e9;border-radius:24px;background:#e6f4f3}
+.currentPhoto img{object-position:50% 50%}
+.currentPhoto .currentIcon{width:55px;height:55px;border-radius:17px;bottom:11px;right:11px;background:#ffffffed}
+.currentText{gap:10px}
+.overline{display:inline-flex;padding:6px 13px;border-radius:99px;background:#ddf7f8;color:#0a93a4;font-size:12px;letter-spacing:.1em}
+.current h2{font:700 clamp(29px,4.3vw,45px)/1.08 Georgia,serif;letter-spacing:-.04em;color:#104e6b;text-wrap:balance}
+.currentText p{font-size:clamp(13px,1.8vw,16px);color:#6b90a0}
+.axes{gap:8px;margin-top:6px}
+.axes span{font-size:clamp(11px,1.35vw,14px);color:#286f86;padding:7px 12px;border:1px solid #bce4e9;background:#fffefa}
+.axes svg{color:#03a5b8}
+.progressInfo{margin-top:3px;font-size:clamp(13px,1.8vw,17px);color:#537f8f}
+.progressInfo strong{font-weight:850;color:#557e90}
+.progressTrack{height:9px;background:#d4ecee}
+.courseActions{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:12px;align-items:stretch}
+.openButton{width:100%;min-width:0;min-height:64px;border-radius:18px;font-size:clamp(16px,2.2vw,20px);gap:16px;box-shadow:none}
+.planButton{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:64px;padding:8px;border:1px solid #c5e8ee!important;border-radius:18px;background:#fcffff!important;color:#17768d!important;font-size:13px;font-weight:800;cursor:pointer}
+.planButton:hover{background:#e8fbfd!important}
+.planButton:focus-visible{outline:3px solid #074f76;outline-offset:3px}
+.planDetails{max-width:100%;overflow:hidden;border-top:1px solid #cee7ea;padding-top:16px}
+.planDetails :global([data-course-14-day-overview]){margin:0;max-width:100%}
+.addTile{display:grid;grid-template-columns:105px minmax(0,1fr) 28px;align-items:center;justify-items:start;gap:26px;min-height:150px;padding:23px 29px;border:2px dashed #a0d3de!important;border-radius:26px;text-align:left;background:linear-gradient(130deg,#fbffff,#f2fcfc)!important}
+.plusIcon{width:86px;height:86px;border-radius:23px}
+.addTileText{gap:8px}
+.addTileText strong{font-size:clamp(20px,2.6vw,26px);font-weight:850;color:#155674}
+.addTileText small{font-size:clamp(13px,1.6vw,15px);max-width:none;color:#688d9c}
+.addArrow{display:block;color:#0896ae}
+.benefits{display:grid;gap:20px;border:1px solid #d5eff1;border-radius:25px;background:linear-gradient(150deg,#fcffff,#f0fbfa);padding:clamp(20px,3vw,29px);box-shadow:0 12px 28px #1c89980b}
+.benefitHeading{display:flex;align-items:center;gap:13px}
+.benefitHeading h2{font:700 clamp(22px,3vw,30px)/1.2 Georgia,serif;color:#135570;margin:0}
+.benefitMark{display:grid;place-items:center;flex:none;width:52px;height:52px;background:#dff5f7;border-radius:50%;color:#079eb3}
+.benefitGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.benefitGrid>div{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-width:0}
+.benefitGrid>div>span{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#e0f8fa;border:1px solid #ceecf2;color:#049eb4}
+.benefitGrid p{font-size:13px;line-height:1.35;color:#5c8597;margin:0;max-width:160px}
+.benefitQuote{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:8px 0 0;color:#276b84;font:italic clamp(15px,2vw,19px)/1.45 Georgia,serif}
+.benefitQuote span{align-self:flex-end;font:italic 17px "Brush Script MT","Segoe Script",cursive;color:#91aeba}
+.footnote{align-items:center;font-size:12px;line-height:1.5;padding:0 4px;color:#7394a3}
+@media(max-width:690px){
+ .page{gap:16px;padding:4px 0 22px}
+ .header{padding:0 3px}
+ .headerMotto{max-width:115px;font-size:13px}
+ .headline h1{font-size:clamp(30px,8vw,42px)}
+ .tiles{gap:13px}
+ .current{gap:14px;padding:17px;border-radius:23px}
+ .currentTop{grid-template-columns:clamp(108px,30vw,148px) minmax(0,1fr);gap:14px;min-height:0}
+ .currentPhoto{min-height:150px;border-radius:17px}
+ .currentPhoto .currentIcon{width:40px;height:40px;border-radius:13px;bottom:7px;right:7px}
+ .current h2{font-size:clamp(23px,6.5vw,32px);line-height:1.1}
+ .overline{font-size:10px;padding:5px 9px}
+ .currentText{gap:6px}
+ .currentText p{font-size:12px}
+ .axes{margin-top:4px;gap:5px}
+ .axes span{font-size:11px;padding:6px 8px;line-height:1.22}
+ .progressInfo{font-size:13px}
+ .courseActions{grid-template-columns:minmax(0,1fr) 78px;gap:8px}
+ .openButton,.planButton{min-height:52px;border-radius:14px}
+ .openButton{font-size:16px}
+ .planButton{font-size:12px}
+ .addTile{grid-template-columns:67px minmax(0,1fr) 20px;gap:13px;min-height:109px;padding:16px;border-radius:21px}
+ .plusIcon{width:64px;height:64px;border-radius:18px}
+ .addTileText strong{font-size:18px}
+ .addTileText small{font-size:12px}
+ .benefits{gap:16px;border-radius:22px;padding:20px}
+ .benefitHeading h2{font-size:23px}
+ .benefitGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+ .benefitGrid p{font-size:12px}
+}
+@media(max-width:380px){
+ .headline h1{font-size:29px}
+ .headerMotto{max-width:100px;font-size:11px}
+ .currentTop{grid-template-columns:96px minmax(0,1fr);gap:11px}
+ .currentPhoto{min-height:152px}
+ .current h2{font-size:21px}
+ .axes span{font-size:10px;padding:5px 7px}
+ .openButton{font-size:14px}
+ .addTile{grid-template-columns:56px minmax(0,1fr) 18px;gap:10px}
+ .plusIcon{width:54px;height:54px}
+ .addTileText strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.openButton{transition:none}}

@@ -69,7 +69,8 @@ test('PDF keeps custom analysis, notes and general instructions separated, inclu
     }
     assert.doesNotMatch(source, /PRIVATE-SYNTHETIC-000/)
     assert.match(source, /HOLISTIC HOUSE/)
-    assert.match(source, /0\.984 0\.961 0\.941 rg/)
+    assert.match(source, /0\.989 0\.977 0\.966 rg/, 'approved ivory lighthouse hero remains')
+    assert.match(source, /q 207 0 0 81\.5 83 /, 'wide ink signature rests on white report paper')
     assert.equal(getClientPrescription(record, locale).internalNotes, undefined)
   }
   assert.equal(recommendationCopy('ru').analysis, 'АНАЛИЗ СОСТОЯНИЯ')
@@ -111,7 +112,8 @@ test('preview PDF uses admin-only route and never issues a client share link', a
   assert.match(route, /no-store/)
   assert.match(route, /preview.*=== '1' \? 'inline' : 'attachment'/)
   assert.match(actions, /href=\{urls\.previewPdf\}/)
-  assert.match(actions, /target="_blank"/)
+  assert.match(actions, /href=\{urls\.open\}/)
+  assert.doesNotMatch(actions, /target="_blank"/, 'iOS preview navigation must stay in the same tab')
   assert.match(result, /consultation-report-review-hint/)
   assert.ok(result.indexOf('consultation-result-documents') < result.lastIndexOf('<CabinetLinkActions'))
 })
