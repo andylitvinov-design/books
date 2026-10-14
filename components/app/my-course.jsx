@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import { COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
@@ -138,6 +139,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
+  const searchParams = useSearchParams()
+  const requestedProgram = getCourseProgram(searchParams.get('program'))
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -216,7 +219,7 @@ export function MyCourse({ data, locale = 'en' }) {
         <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(requestedProgram?.id || null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
@@ -226,12 +229,13 @@ export function MyCourse({ data, locale = 'en' }) {
       <div className={styles.programHeading}>
         <h2>{t.chooseCourse}</h2>
         <p>{t.simpleSteps}</p>
+        {requestedProgram && <p className={styles.preselectedProgram} data-course-preselected-program={requestedProgram.id}>{ru ? 'По вашему направлению подойдёт курс:' : 'Suggested for your chosen direction:'} <strong>{requestedProgram.title[ru ? 'ru' : 'en']}</strong></p>}
       </div>
       <div className={styles.programGrid}>
         {COURSE_PROGRAMS.map((program, index) => {
           const Icon = [Waves, ShieldCheck, Target][index]
           return <button className={styles.programCard} key={program.id} type="button"
-            data-course-program-id={program.id} disabled={busy}
+            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id} disabled={busy}
             onClick={() => openStartDialog(program.id)}>
             <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
             <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>

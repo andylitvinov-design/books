@@ -162,6 +162,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         locale,
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
+        ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
