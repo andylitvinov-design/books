@@ -91,6 +91,24 @@ async function chooseVisibleTest(testPage,name){
  await expect(card()).toBeVisible({timeout:15000})
  await card().getByRole('checkbox',{name,exact:true}).check()
 }
+// Public routes start in the easy picker. Exercise the real catalog transition,
+// then explicitly clear its carried suggestions for the exact-one-test checks.
+async function chooseSinglePublicTest(target,name){
+ await expect(target.getByRole('heading',{name:'Choose your tests',level:1,exact:true})).toBeVisible()
+ await target.getByRole('button',{name:'Browse full database',exact:true}).click()
+ await expect(target.getByRole('heading',{name:'Start with a simple check-in',level:1,exact:true})).toBeVisible()
+ await expect(target.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
+ const checked=target.locator('article input[type="checkbox"]:checked')
+ const suggestedNames=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
+ for(const [index,selectedName] of suggestedNames.entries()){
+  await target.getByRole('checkbox',{name:selectedName,exact:true}).click()
+  await expect(checked).toHaveCount(suggestedNames.length-index-1)
+ }
+ await expect(checked).toHaveCount(0)
+ await chooseVisibleTest(target,name)
+ await expect(checked).toHaveCount(1)
+ await expect(checked).toHaveAttribute('aria-label',name)
+}
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
  if(await page.locator('[data-saved-test]').count()){
@@ -447,7 +465,7 @@ try {
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
- await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Your profile',exact:true})).toBeVisible();await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await page.locator('[data-profile-deep-dive] > summary').click();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible();await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await page.locator('[data-profile-deep-dive] > summary').click();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
@@ -662,7 +680,7 @@ try {
  await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
  passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
- await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Мой профиль',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
+ await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Ваш профиль',level:1,exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await screenshotEvidence(page,{path:output+'/consultation-request.png',fullPage:true})
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
@@ -753,7 +771,7 @@ try {
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible({timeout:20000})
   await expect(clientPage.getByRole('link',{name:/Reiki study guide/})).toHaveAttribute('href','https://holistichouse.vercel.app/en/academy/reiki')
   await clientPage.getByRole('link',{name:'My profile (Reports)'}).click()
-  await expect(clientPage.getByRole('heading',{name:'My profile',exact:true})).toBeVisible()
+  await expect(clientPage.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible()
   await verifyProfileServiceOffers(clientPage)
   await screenshotEvidence(clientPage,{path:output+'/private-client-profile-cta.png',fullPage:false})
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
@@ -763,7 +781,7 @@ try {
   const formerAnalysisUrl=new URL(clientLink)
   formerAnalysisUrl.searchParams.set('view','analysis')
   await clientPage.goto(formerAnalysisUrl.toString())
-  await expect(clientPage.getByRole('heading',{name:'My profile',exact:true})).toBeVisible()
+  await expect(clientPage.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible()
   await expect(clientPage.locator('[data-personal-reports]')).toBeVisible()
   await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
   await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(0)
@@ -812,9 +830,7 @@ try {
  const selectionWrites=[]
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
- await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
- await chooseVisibleTest(selectionPage,'Personality Baseline')
+ await chooseSinglePublicTest(selectionPage,'Personality Baseline')
  const selectionGuided=selectionPage.locator('#hh-test-customizer')
  if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
@@ -837,8 +853,7 @@ try {
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
- await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
- await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
+ await chooseSinglePublicTest(repeatSelectionPage,'Personality Baseline')
  await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)

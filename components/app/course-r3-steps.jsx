@@ -8,6 +8,7 @@ import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales } from '@/lib/inner-growth/course-programs'
+import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
@@ -244,7 +245,15 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   useEffect(()=>{
     if(stage!==2 || testsTouched) return
-    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : ranked.slice(0,5).map(item=>item.key))
+    // A personal course entered from the public test selector reuses only
+    // rights-cleared items that the course's server-backed list allows.
+    let preferred = []
+    const intent = readCourseEntryIntent()
+    if (intent) {
+      const available = new Set(ranked.map(item=>item.key))
+      preferred = intent.testKeys.filter(key=>available.has(key))
+    }
+    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : ranked.slice(0,5).map(item=>item.key))
   },[stage,testsTouched,current.testKeys,ranked])
   function toggleTest(key) {
     setTestsTouched(true)
@@ -272,6 +281,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       // Server validates these keys against the actual private My Tests plan.
       const saved=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
       onState(saved)
+      // Saved authoritative course state now replaces the temporary visitor intent.
+      discardCourseEntryIntent()
       setTestsTouched(false)
       setShowCompletedOptions(false)
     } catch(error){onError(error.message||'COURSE_TEST_SELECTION_UNAVAILABLE')}
