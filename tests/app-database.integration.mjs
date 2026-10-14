@@ -1730,15 +1730,31 @@ test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and al
 test('push subscriptions and preferences are account-owned, RLS-protected and removable', async () => {
   const {createECDH,randomBytes} = await import('node:crypto')
   const {createNotificationRepository} = await import('../lib/app/notification-repository.js')
+  const {pushConfig} = await import('../lib/app/web-push.js')
+  // OpenSSL may omit leading zero bytes from a valid synthetic scalar.
+  const fixedPrivateKey = key => {
+    const scalar=key.getPrivateKey(),padded=Buffer.alloc(32)
+    scalar.copy(padded,padded.length-scalar.length)
+    return padded.toString('base64url')
+  }
+  const short=createECDH('prime256v1');short.setPrivateKey(Buffer.from([1]))
+  const shortEnv={HH_PUSH_PUBLIC_KEY:short.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:short.getPrivateKey().toString('base64url'),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  assert.equal(short.getPrivateKey().length,1,'deterministic leading-zero regression fixture')
+  assert.equal(pushConfig(shortEnv).supported,false,'production still rejects non-32-byte encoding')
+  assert.equal(pushConfig({...shortEnv,HH_PUSH_PRIVATE_KEY:fixedPrivateKey(short)}).supported,true)
   const vapid=createECDH('prime256v1');vapid.generateKeys()
   const env={HH_PUSH_PUBLIC_KEY:vapid.getPublicKey().toString('base64url'),
-    HH_PUSH_PRIVATE_KEY:vapid.getPrivateKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:fixedPrivateKey(vapid),
     HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
   const push=createNotificationRepository(config,env)
   const key=createECDH('prime256v1');key.generateKeys()
   const subscription={endpoint:'https://web.push.apple.com/synthetic-test-'+randomUUID(),keys:{
     p256dh:key.getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}}
-  assert.equal((await push.state(a)).enabled,false)
+  const initial=await push.state(a)
+  assert.equal(initial.ready,true,'synthetic VAPID fixture must be valid')
+  assert.equal(initial.enabled,false)
   const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
   assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
   const changed=await push.preferences(a,{enabled:true,courseReminders:false,
