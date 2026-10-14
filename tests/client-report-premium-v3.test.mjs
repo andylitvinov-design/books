@@ -47,7 +47,7 @@ test('new adaptive premium report keeps two factual measurements, full authored 
   assert.equal(clientReportHeading('ru', 'homeopathy'), 'Гомеопатическая рекомендация')
   assert.equal(clientReportHeading('en', 'homeopathy'), 'Homeopathic recommendation')
   assert.equal(clientReportHeading('ru', 'bach'), 'Рекомендация по эссенциям Баха')
-  assert.equal(clientReportHeading('en', 'mixed'), 'Personal recommendations')
+  assert.equal(clientReportHeading('en', 'mixed'), 'Integrated recommendation')
   assert.match(jsx, /<h1>\{reportHeading\}<\/h1>/)
   assert.match(jsx, /canonical-report-brandline/)
   assert.match(jsx, /canonical-report-progress|canonical-progress/)
