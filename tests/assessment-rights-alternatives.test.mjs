@@ -24,6 +24,7 @@ test('copyright-gated originals remain non-startable while topic-related cleared
     assert.ok(byKey.get('bdi-ii').relatedAvailable.some((x) => x.key === 'phq-8'))
     assert.ok(byKey.get('who-5').relatedAvailable.some((x) => x.key === 'mhc-sf'))
     assert.ok(byKey.get('iip-32').relatedAvailable.some((x) => x.key === 'hh-relationship-balance'))
+    assert.ok(byKey.get('wai-sr-12').relatedAvailable.some((x) => x.key === 'hh-session-clarity'))
   }
 })
 
