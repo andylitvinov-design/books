@@ -27,7 +27,7 @@ test('fourteen outcome-aligned RU/EN lessons contain seven exact skill pairs',()
         assert.equal(new Set(entry.probe.choices.map(c=>c.value)).size,3)
         assert.ok(entry.probe.hint.length>20)
       }
-      for(const key of entry.scales)assert.match(key,/^(weekly\\.|resource\\.|gad-7)/)
+      for(const key of entry.scales)assert.match(key,/^(weekly\.|resource\.|gad-7)/)
     }
   }
 })
@@ -61,21 +61,21 @@ test('existing spaced measured-focus routing is retained for new content version
 
 test('server limits new version to newly created stress cycles and validates saved skill choice',()=>{
   const server=read('lib/app/growth-daily.js')
-  assert.match(server,/courseProgramFromTopics\\(course\\.focus_tags\\|\\|\\[\\]\\)\\?\\.id==='stress'/)
-  assert.match(server,/count\\+1,goal,nextContentVersion,local,zone/)
+  assert.match(server,/courseProgramFromTopics\(course\.focus_tags\|\|\[\]\)\?\.id==='stress'/)
+  assert.match(server,/count\+1,goal,nextContentVersion,local,zone/)
   assert.match(server,/resolveCycleVersion.*COURSE_ANTISTRESS_OUTCOME_V3/)
   assert.match(server,/INVALID_ANTISTRESS_PROBE/)
   assert.match(server,/skillProbeChoice:probeChoice/)
   assert.match(server,/learningSkills=contentVersion===COURSE_ANTISTRESS_OUTCOME_V3/)
-  assert.match(server,/last\\?\\.signals\\?\\.skillProbeChoice/)
+  assert.match(server,/last\?\.signals\?\.skillProbeChoice/)
 })
 
 test('course UI offers an optional skill-choice card and a separate qualitative practice focus',()=>{
   const player=read('components/app/course-slide-player.jsx')
   const journey=read('components/app/course-today.jsx')
   assert.match(player,/data-antistress-skill-probe/)
-  assert.match(player,/lesson\\.antiStress \\? <>/)
-  assert.match(player,/skillProbeChoice:skillProbeChoice\\|\\|null/)
+  assert.match(player,/lesson\.antiStress \? <>/)
+  assert.match(player,/skillProbeChoice:skillProbeChoice\|\|null/)
   assert.match(player,/skillProbeHintUsed/)
   assert.match(journey,/data-antistress-seven-skill-progress/)
 })
@@ -86,5 +86,5 @@ test('do not expose fabricated diagnostic outcomes or full trauma processing',()
   for(const phrase of forbidden)assert.doesNotMatch(source,phrase)
   const server=read('lib/app/growth-daily.js')
   assert.match(server,/skillProbeChoice/)
-  assert.doesNotMatch(server,/GAD7\\s*\\+\\s*weekly/)
+  assert.doesNotMatch(server,/GAD7\s*\+\s*weekly/)
 })
