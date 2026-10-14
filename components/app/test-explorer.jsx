@@ -315,10 +315,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     })
     setSimpleSelectionChanged(true)
   }
-  const start = async () => {
-    if (!activeBattery.length || !onStart || starting) return
+  const start = async (battery = activeBattery) => {
+    if (!battery?.length || !onStart || starting) return
     setStarting(true); setActionError(null)
-    try { await onStart(activeBattery, {
+    try { await onStart(battery, {
       focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
@@ -351,7 +351,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onToggleTest={toggleSimpleSelected}
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       matchCount={simpleRecommendations.length}
-      onStart={start}
+      onStart={() => start()}
+      onStartSingle={(entry) => start([entry])}
       onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus, problems }) : null}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {
