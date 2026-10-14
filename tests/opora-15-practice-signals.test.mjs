@@ -16,7 +16,7 @@ test('pre/post ratings sit around one actual guided practice while retaining eve
   assert.match(source,/slide.kind === 'feedback'/)
   assert.match(source,/data-course-global-discomfort/)
   assert.match(source,/practiceWindow:'practice_v15'/)
-  assert.match(source,/feedback,beforeNow,afterNow,reflection/)
+  assert.match(source,/feedback:legacyFeedback,beforeNow,afterNow,reflection/)
 })
 
 test('comfort, benefit, choice and transfer are separate optional owner-scoped signals', () => {

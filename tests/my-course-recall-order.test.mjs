@@ -49,7 +49,7 @@ test('full text keeps recall before teaching and player retains server-confirmed
   assert.ok(full.indexOf('data-course-active-recall') < full.indexOf('className={styles.aphorism}'))
   assert.match(source, /const \[index, setIndex\] = useState\(alreadyDone \? slides.length : 0\)/)
   assert.match(source, /day:cycle.day,lessonId:lesson.id,operationId:sessionOp.current/)
-  assert.match(source, /feedback,beforeNow,afterNow,reflection/)
+  assert.match(source, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)
   assert.match(source, /if \(response\) \{ sessionOp.current = null; setEarned\(true\); setIndex\(slides.length\) \}/)
   assert.doesNotMatch(source, /localStorage|sessionStorage/)
 })
