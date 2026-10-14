@@ -29,8 +29,8 @@ test('17 new legal professional IPIP-VIA-R forms complete the existing 24 streng
   assert.equal(new Set(definitions.map(d=>d.key)).size,17)
   const existing = ASSESSMENT_DEFINITIONS.filter(d=>d.key.startsWith('ipip-via-r-'))
   assert.equal(new Set(existing.map(d=>d.key)).size,27,'24 strength scales and three global core composites')
-  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,127)
-  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:127,registered:127,uncovered:[],obsolete:[]})
+  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,165)
+  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:165,registered:165,uncovered:[],obsolete:[]})
 })
 
 test('published verbatim EN items, source names, key signs and immutable hashes remain consistent', () => {
