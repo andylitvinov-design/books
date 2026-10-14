@@ -161,14 +161,19 @@ function MomentScale({ value, onChange, words, label, disabled }) {
   </div>
 }
 
-function IllustratedMoment({ variant = 'calm', photo = false }) {
-  if (photo) return <div className={styles.photoMoment} data-photo={variant} aria-hidden="true">
-    <span className={styles.photoSparkle}><Sparkles size={21}/></span>
+function IllustratedMoment({ variant = 'calm', photo = false, kind = 'idea' }) {
+  const SceneIcon = SCENE[kind] || Leaf
+  if (variant === 'celebration') return <div className={styles.illustration}
+    data-art="celebration" aria-hidden="true">
+    <img src="/images/holistic-house/course-celebration.svg" alt=""
+      width={280} height={200} loading="lazy"/>
   </div>
-  return <div className={styles.illustration} data-art={variant} aria-hidden="true">
-    <img src={variant === 'celebration'
-      ? '/images/holistic-house/course-celebration.svg'
-      : '/images/holistic-house/course-calm-illustration.svg'} alt="" width={280} height={200} loading="lazy"/>
+  return <div className={photo ? styles.photoMoment : styles.illustration}
+    data-art="scenic" data-scene-kind={kind} aria-hidden="true">
+    <img className={styles.scenicImage}
+      src="/images/holistic-house/course-focus-mountain-boy.webp"
+      alt="" width={705} height={411} loading="eager" decoding="async"/>
+    <span className={styles.photoSparkle}><SceneIcon size={23} strokeWidth={1.8}/></span>
   </div>
 }
 
@@ -330,7 +335,7 @@ export default function CourseSlidePlayer({
         </div>
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
-      <main className={styles.content} data-slide-scroller>
+      <main className={styles.content} data-slide-scroller data-slide-kind={promoOpen ? "offer" : finished ? "completion" : slide.kind}>
         {promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
           <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
           <p className={styles.promoBrand}>{words.promoBrand}</p>
@@ -414,7 +419,7 @@ export default function CourseSlidePlayer({
           <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
 
           {slide.kind === 'pace' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{words.pacePrompt}</p>
             <div className={styles.paceChoices} role="group" aria-label={words.pacePrompt}>
               {[
@@ -432,7 +437,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'baseline' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
             <p className={styles.prompt}>{words.baselineQuestion}</p>
             <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
@@ -441,7 +446,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'checkin' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
             <p className={styles.instruction}>{words.checkinQuestion}</p>
             <div className={styles.numberGrid} role="group" aria-label={words.checkinQuestion}>
@@ -454,28 +459,28 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'idea' && <>
-            <IllustratedMoment photo/>
+            <IllustratedMoment photo kind={slide.kind}/>
             <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
           </>}
           {slide.kind === 'understand' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
           </>}
 
           {slide.kind === 'recall' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
             <p className={styles.helper}>{words.recallHint}</p>
           </>}
 
           {slide.kind === 'phrase' && <>
-            <IllustratedMoment photo variant="books"/>
+            <IllustratedMoment photo variant="books" kind={slide.kind}/>
             <blockquote className={styles.quote}>{lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
           </>}
 
           {slide.kind === 'guided' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{slide.section.text}</p>
             <p className={styles.helper}>{words.gentle}</p>
             <details className={styles.timerDetails}>
@@ -499,19 +504,19 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'ritual' && <>
-            <div className={styles.bigIcon}><Leaf size={63} strokeWidth={1.35}/></div>
+            <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
           </>}
 
           {slide.kind === 'transfer' && <>
-            <div className={styles.bigIcon}><ArrowRight size={59} strokeWidth={1.5}/></div>
+            <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
           </>}
 
           {slide.kind === 'symbol' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <div className={styles.modeTabs} role="group" aria-label={words.symbol}>
               <button type="button" aria-pressed={symbolMode === 'words' || cycle.preferences?.imagery === 'no_imagery'}
                 onClick={() => setSymbolMode('words')}>{words.words}</button>
@@ -525,7 +530,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'reflection' && <>
-            <div className={styles.bigIcon}><BookmarkCheck size={61} strokeWidth={1.35}/></div>
+            <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.question || lesson.reflection}</p>
             <label className={styles.noteField}><span>{words.note}</span>
               <textarea maxLength={500} rows={4} value={reflection}
@@ -536,7 +541,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'moment' && <>
-            <div className={styles.bigIcon}><Waves size={61} strokeWidth={1.4}/></div>
+            <IllustratedMoment kind={slide.kind}/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
             <p className={styles.prompt}>{words.momentQuestion}</p>
             <MomentScale value={afterNow} onChange={setAfterNow} words={words}
@@ -545,7 +550,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'feedback' && <>
-            <IllustratedMoment variant="calm"/>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.helper}>{words.feedbackHint}</p>
             <div className={styles.feedbackOptions} role="group" aria-label={words.feedback}>
               {[

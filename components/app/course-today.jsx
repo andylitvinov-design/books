@@ -409,7 +409,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
           (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
         </div>
         <div className={styles.todayVisual} aria-hidden="true">
-          <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
+          <img className={styles.heroPerson} src="/images/holistic-house/course-focus-mountain-boy.webp" width={705} height={411}
       alt="" aria-hidden="true" decoding="async"/>
         </div>
       </div>

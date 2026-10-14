@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./client-teal.css";
 import { notFound } from "next/navigation";
 
 import { CabinetLanding } from "@/components/app/cabinet-landing";

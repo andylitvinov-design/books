@@ -27,6 +27,7 @@ const copy = {
       { title: "Изучите свой профиль", description: "Пройдите предложенные тесты, чтобы увидеть исходную точку." },
       { title: "Осваивайте по одному уроку", description: "Короткая практика и отметка о завершении. Следующий урок откроется, когда вы закончите текущий." },
     ],
+    methodKicker: "НАША МЕТОДИКА", methodTitle: "Метод ОПОРА: как работают наши курсы", methodText: "Пять шагов от осознания до действия. Узнайте, как мы объединяем психологические подходы, короткие практики и персональный маршрут.", methodLink: "Узнать о методе ОПОРА",
     bottomTitle: "Готовы сделать первый шаг?",
     bottomText: "Начните бесплатно. Вы сможете возвращаться к урокам, отмечать наблюдения и видеть изменения в личном кабинете.",
     bottomAction: "Записаться на курс бесплатно", ask: "Узнать о личной поддержке",
@@ -54,6 +55,7 @@ const copy = {
       { title: "Explore your starting point", description: "Complete suggested assessments to better understand your current experience." },
       { title: "One lesson at a time", description: "Try a short practice and mark it complete. The next lesson follows when you're ready." },
     ],
+    methodKicker: "OUR APPROACH", methodTitle: "The OPORA Method: how our courses work", methodText: "Five steps from awareness to action. Discover the psychology-informed principles behind your personal learning journey.", methodLink: "Explore the OPORA Method",
     bottomTitle: "Ready for a first step?",
     bottomText: "Start for free. Return to your lessons, write observations and review your changes from your personal cabinet.",
     bottomAction: "Join a free course", ask: "Explore personal support",
@@ -81,6 +83,7 @@ const copy = {
       { title: "Conoce tu punto de partida", description: "Completa las pruebas sugeridas para reflexionar sobre tu situación actual." },
       { title: "Una lección a la vez", description: "Practica, marca la lección como terminada y después sigue con la siguiente." },
     ],
+    methodKicker: "NUESTRA METODOLOGÍA", methodTitle: "Método OPORA: cómo funcionan los cursos", methodText: "Cinco pasos de la conciencia a la acción, basados en enfoques psicológicos y adaptados a tu recorrido personal.", methodLink: "Conocer el método OPORA",
     bottomTitle: "¿Listo/a para empezar?",
     bottomText: "Empieza gratis. Vuelve a tus lecciones, anota observaciones y revisa los cambios desde tu espacio personal.",
     bottomAction: "Inscribirme gratis", ask: "Conocer el apoyo personal",
@@ -155,6 +158,11 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
           <span className={styles.stepNumber}>0{index + 1}</span>
           <h3>{step.title}</h3><p>{step.description}</p>
         </div>)}</div>
+    </section>
+
+    <section className={styles.methodSection} aria-labelledby="courses-method-title">
+      <div><p className={styles.sectionKicker}>{t.methodKicker}</p><h2 id="courses-method-title">{t.methodTitle}</h2><p>{t.methodText}</p></div>
+      <Link href={`/${locale}/courses/methodology`} className={styles.methodLink}>{t.methodLink}<ArrowRight size={18} aria-hidden="true" /></Link>
     </section>
 
     <section className={styles.final} aria-labelledby="courses-final-title">

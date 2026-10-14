@@ -132,7 +132,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       {hasCourse && <article className={styles.current} data-current-course-card>
         <div className={styles.currentTop}>
           <div className={styles.currentPhoto} aria-hidden="true">
-            <img src="/images/holistic-house/hero-olive-incense.webp" alt=""
+            <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
               width={240} height={280} loading="lazy" decoding="async"/>
             <span className={styles.currentIcon}><ShieldCheck size={21} strokeWidth={1.9}/></span>
           </div>

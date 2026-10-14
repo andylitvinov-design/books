@@ -21,9 +21,9 @@ export default function CourseFocusEntry({
   const completedCount = Math.min(duration, Math.max(0, Number(progress?.practiceCount) || 0))
   const currentTitle = lesson?.title || lesson?.journey?.heading ||
     (ru ? 'Мой сегодняшний шаг' : 'My step for today')
-  const courseTitle = programme?.title || (ru ? 'Мой ритм энергии' : 'My rhythm of energy')
+  const courseTitle = programme?.title || (ru ? 'Мой личный курс' : 'My personal course')
   const savedDay = completed || finished
-  const title = isFirstVisit
+  const title = isFirstVisit && currentDay === 1 && completedCount === 0
     ? (ru ? 'Добро пожаловать на курс!' : 'Welcome to your course!')
     : savedDay
       ? (ru ? 'Ваш шаг завершён' : 'Your step is complete')
@@ -32,7 +32,7 @@ export default function CourseFocusEntry({
     ? (ru ? 'Посмотреть итоги курса' : 'Review my course')
     : completed
       ? (ru ? 'Посмотреть мой путь' : 'See my journey')
-      : isFirstVisit
+      : isFirstVisit && currentDay === 1 && completedCount === 0
         ? (ru ? 'Начать первый урок' : 'Start my first lesson')
         : (ru ? 'Продолжить урок' : 'Continue my lesson')
   const storageKey = 'hh-course-focus-welcomed-v2:' + String(cycle?.id || 'unknown')

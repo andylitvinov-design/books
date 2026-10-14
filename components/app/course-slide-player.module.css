@@ -19,7 +19,7 @@
 .helper svg{flex:none;margin-top:1px}
 .illustration{align-self:center;width:min(290px,100%);height:clamp(150px,27vh,228px);display:grid;place-items:center;margin:2px 0 0;background:radial-gradient(circle,#e4faff 10%,#e9fbf9 61%,transparent 75%);border-radius:26px}
 .illustration img{display:block;width:100%;max-width:290px;height:100%;object-fit:contain}
-.photoMoment{position:relative;flex:none;width:100%;height:clamp(145px,23vh,220px);border-radius:22px;background:linear-gradient(90deg,#e7fafe 4%,#dbf7f68c 45%,#ffffff00 100%),url('/images/holistic-house/hero-olive-incense.webp') center 52%/cover no-repeat;box-shadow:0 9px 25px #2a7e9217;border:1px solid #d4f0f0}
+.photoMoment{position:relative;flex:none;width:100%;height:clamp(145px,23vh,220px);border-radius:22px;background:linear-gradient(90deg,#e7fafe 4%,#dbf7f68c 45%,#ffffff00 100%);box-shadow:0 9px 25px #2a7e9217;border:1px solid #d4f0f0}
 .photoSparkle{position:absolute;right:17px;top:17px;display:grid;place-items:center;width:45px;height:45px;border-radius:16px;background:#e6faffd9;color:#009aae}
 .bigIcon{align-self:center;display:grid;place-items:center;width:128px;height:128px;margin:14px 0 9px;border:1px solid #c7eff0;border-bottom:6px solid #8ddfe2;border-radius:35px;background:linear-gradient(145deg,#effdfe,#d3f6f3);color:#0799a9;box-shadow:0 15px 35px #299ba21b}
 .quote{margin:0;padding:17px 18px;border-left:4px solid #13b8c2;background:linear-gradient(105deg,#ebfcfd,#f6fffc);border-radius:0 18px 18px 0;color:#28677f;font:italic 20px/1.55 Georgia,serif;white-space:pre-wrap}
@@ -72,7 +72,7 @@
 @media(prefers-reduced-motion:reduce){.overlay *, .overlay *:before, .overlay *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{.overlay{display:none!important}}
 
-.photoMoment[data-photo="books"]{background:linear-gradient(100deg,#effeffeb,#ddf7f278 55%,#ffffff00),url('/images/holistic-house/books-library.webp') center/cover no-repeat}
+.photoMoment[data-photo="books"]{background:linear-gradient(100deg,#effeffeb,#ddf7f278 55%,#ffffff00)}
 
 /* Daily skill measurement and the two-point completion comparison. */
 .focusName{margin:0;padding:10px 13px;border:1px solid #cfebed;border-radius:12px;background:#edfafb;font-size:13px;line-height:1.45;color:#507e8f}
@@ -188,3 +188,158 @@
 .rewardStats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:350px}
 .rewardStats>div:nth-child(2){color:#b88925;background:#fff8e4;border-color:#f2e2a9}
 @media(max-width:540px){.journeyRewardIcon{width:105px;height:105px;border-radius:28px}.journeyRewardIcon svg{width:54px;height:54px}.completionPath{padding:13px}}
+
+
+/* Course Focus 2.1 — one continuous scene language across all lesson types.
+   Scenic artwork is decorative; real text, controls and progress remain DOM UI.
+   Do not conflate participation or moment ratings with clinical change. */
+.overlay{
+  --course-navy:#123d55;--course-cyan:#079eae;--course-blue:#45bace;
+  --course-mint:#e4f8f4;--course-line:#cfe9eb;--course-ink:#274f64;
+  background:linear-gradient(165deg,#e4f8fc,#f4fdfb);
+}
+.overlay .frame{
+  background:linear-gradient(180deg,#eaf9fd 0%,#f8fefe 50%,#f0fbf9 100%);
+}
+.overlay .header{
+  background:#f2fcfceb!important;border-color:#cfe9eb;
+}
+.overlay .close{
+  min-width:44px!important;min-height:44px!important;
+  border:1px solid #c0e5e9!important;border-radius:50%!important;
+  background:#f8ffff!important;color:#276f85!important;
+}
+.overlay .dayPill{
+  border-color:#bce5e7;background:#e5f9f7;color:#087d91;
+}
+.overlay .content{
+  background-image:radial-gradient(ellipse at 50% -25%,#cdf2f2a8,transparent 50%);
+}
+.overlay .slideIdentity{align-items:flex-start}
+.overlay .identityTag{
+  background:#e2f8f6;color:#087e93;border:1px solid #c2e9e8;
+  min-height:32px;padding:7px 12px;font-weight:850;
+}
+.overlay .identityLabel{color:#567e92;white-space:normal;text-align:right;line-height:1.4}
+.overlay .slideTitle{
+  color:#153e56!important;font-size:clamp(24px,4.6vw,34px);
+  line-height:1.16;letter-spacing:-.04em;text-wrap:balance;
+}
+.overlay .prompt{color:#244d63;font-weight:690;line-height:1.55}
+.overlay .instruction{color:#426d7f}
+.overlay .illustration[data-art=scenic], .overlay .photoMoment{
+  position:relative;display:block;align-self:stretch;flex:none;
+  width:100%;max-width:none;height:clamp(128px,22vh,215px);
+  margin:3px 0 1px;overflow:hidden;border-radius:22px;
+  border:1px solid #b7e4e7;
+  background:linear-gradient(120deg,#e0f6f9,#d7f3f0);
+  box-shadow:0 10px 26px #207a8b1c;
+  isolation:isolate;
+}
+.overlay .illustration[data-art=scenic]::after,.overlay .photoMoment::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,#e0f8fa1c 0%,transparent 52%,#f0ffff14 100%);
+  z-index:1;
+}
+.overlay .scenicImage{
+  display:block;width:100%;max-width:none;height:100%;
+  object-fit:cover;object-position:center 48%;
+}
+.overlay [data-scene-kind=guided] .scenicImage,
+.overlay [data-scene-kind=reflection] .scenicImage,
+.overlay [data-scene-kind=moment] .scenicImage{object-position:center 60%}
+.overlay .photoSparkle{
+  z-index:2;right:15px;top:14px;width:46px;height:46px;
+  border-radius:15px;background:#f4ffffe8;color:#078b9d;
+  border:1px solid #ddf3f3;
+  box-shadow:0 6px 14px #1a677e18;
+}
+.overlay .content[data-slide-kind=pace] .illustration{height:clamp(155px,25vh,235px)}
+.overlay .content[data-slide-kind=guided] .illustration,
+.overlay .content[data-slide-kind=reflection] .illustration,
+.overlay .content[data-slide-kind=feedback] .illustration,
+.overlay .content[data-slide-kind=checkin] .illustration,
+.overlay .content[data-slide-kind=baseline] .illustration,
+.overlay .content[data-slide-kind=moment] .illustration{height:clamp(105px,17vh,155px)}
+.overlay .quote{
+  border-radius:18px;background:#f1fffc!important;
+  border:1px solid #cae9e8!important;padding:20px!important;
+  color:#28556b!important;line-height:1.58;box-shadow:none!important;
+}
+.overlay .focusName{
+  border-color:#cde9e6;background:#eefaf8;color:#3c7084;
+  border-radius:15px;
+}
+.overlay .numberGrid button{
+  background:#fffefd!important;border-color:#d0e8e9!important;
+  border-bottom-color:#b5d9dc!important;color:#255a72!important;
+  min-height:49px;
+}
+.overlay .numberGrid button[aria-pressed=true]{
+  border-color:#079eae!important;border-bottom-color:#047d90!important;
+  background:#e0f9f4!important;color:#057a8b!important;
+}
+.overlay .noteField textarea{
+  border-color:#c2e3e8;background:#fff;min-height:105px;
+}
+.overlay .paceChoices button,.overlay .feedbackOptions button{
+  box-shadow:0 4px 10px #0b71860a;border-radius:17px!important;
+}
+.overlay .timerDetails,.overlay .modeTabs button{
+  background:#f8ffff;border-color:#d2eaec;
+}
+.overlay .footer{
+  border-top:1px solid #cfe9eb;
+  background:linear-gradient(180deg,#f5fdfc,#ecf9fa);
+}
+.overlay .primary{
+  min-height:56px;border-radius:17px!important;
+  background:linear-gradient(105deg,#11b9c4,#078fa8)!important;
+  border-color:#078ca0!important;border-bottom-color:#086f86!important;
+  font-weight:850!important;font-size:16px!important;
+  box-shadow:0 10px 24px #058da52e;
+}
+.overlay .illustration[data-art=celebration]{
+  width:min(370px,100%);height:clamp(145px,23vh,225px);
+  border-radius:23px;
+  background:radial-gradient(ellipse at center,#ffffff 3%,#dff7f3 55%,#c5edf2 100%);
+  border:1px solid #c6e8e9;
+}
+.overlay .illustration[data-art=celebration] img{
+  width:100%;height:100%;max-width:none;object-fit:contain;
+}
+.overlay .finished,.overlay .rewardStage{
+  background:radial-gradient(ellipse at 50% 19%,#e1f7f4 0%,transparent 72%);
+}
+.overlay .completionPath,.overlay .momentResult,.overlay .rewardStats>div{
+  border-color:#c5e5e8;background:#f2fcfb;
+}
+@media(max-width:540px){
+  .overlay .close{width:44px;height:44px}
+  .overlay .content{padding:13px 16px 12px;gap:11px}
+  .overlay .slideTitle{font-size:clamp(23px,6.1vw,27px)}
+  .overlay .illustration[data-art=scenic],.overlay .photoMoment{
+    height:clamp(112px,19vh,160px);border-radius:17px;
+  }
+  .overlay .content[data-slide-kind=pace] .illustration{height:clamp(140px,23vh,180px)}
+  .overlay .content[data-slide-kind=guided] .illustration,
+  .overlay .content[data-slide-kind=reflection] .illustration,
+  .overlay .content[data-slide-kind=feedback] .illustration,
+  .overlay .content[data-slide-kind=checkin] .illustration,
+  .overlay .content[data-slide-kind=baseline] .illustration,
+  .overlay .content[data-slide-kind=moment] .illustration{height:clamp(96px,15vh,135px)}
+  .overlay .photoSparkle{right:11px;top:11px;width:39px;height:39px}
+  .overlay .quote{padding:15px!important;font-size:18px}
+  .overlay .numberGrid{gap:6px}
+  .overlay .footer{padding:9px 16px calc(9px + env(safe-area-inset-bottom))}
+  .overlay .primary{min-height:54px}
+}
+@media(max-height:680px){
+  .overlay .content[data-slide-kind] .illustration[data-art=scenic],
+  .overlay .content[data-slide-kind] .photoMoment{height:clamp(86px,15vh,125px)}
+  .overlay .content{gap:9px}
+  .overlay .slideTitle{font-size:23px}
+}
+@media(prefers-reduced-motion:reduce){
+  .overlay .primary,.overlay .paceChoices button{animation:none!important;transition:none!important}
+}
