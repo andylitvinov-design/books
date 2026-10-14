@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
-  momentScore, compareLessonMoments, buildLessonFocusTrends, focusTrendAria,
+  momentScore, compareLessonMoments, buildLessonFocusTrends, focusTrendAria, changeAmount,
 } from '../lib/inner-growth/course-moment-trends.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -17,6 +17,11 @@ test('0 is a real rating; missing, invalid and skipped scores are never fabricat
   assert.deepEqual(compareLessonMoments(2, 7), { before: 2, after: 7, change: 5 })
   assert.equal(compareLessonMoments(null, 7), null)
   assert.equal(compareLessonMoments(7, null), null)
+  assert.equal(changeAmount(-1, 'ru'), '1 балл')
+  assert.equal(changeAmount(2, 'ru'), '2 балла')
+  assert.equal(changeAmount(-5, 'ru'), '5 баллов')
+  assert.equal(changeAmount(1, 'en'), '1 point')
+  assert.equal(changeAmount(-3, 'en'), '3 points')
 })
 
 test('each chosen scale retains its own non-consecutive day trajectory', () => {
