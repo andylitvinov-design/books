@@ -156,35 +156,40 @@ function ContentBlocks({ blocks, locale, sourceUrl }: { blocks: string[]; locale
 function CompleteSourceDescription({
   description, locale, sourceUrl, variant,
 }: { description: string; locale: Locale; sourceUrl?: string; variant: RemedyContentProps["variant"] }) {
-  const chunks = description.replace(/\r\n?/g, "\n").split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
-  const Heading = variant === "book" ? "h3" : "h2";
-  const rendered: ReactNode[] = [];
-  let paragraphBuffer: string[] = [];
-
-  const flush = () => {
-    if (!paragraphBuffer.length) return;
-    rendered.push(<div className="remedy-source-paragraphs" key={"source-" + rendered.length}>
-      <ContentBlocks blocks={paragraphBuffer} locale={locale} sourceUrl={sourceUrl} />
-    </div>);
-    paragraphBuffer = [];
-  };
-
-  chunks.forEach((block) => {
-    const plain = block.replace(/^#{1,6}\s+/, "").replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, "").trim();
-    const markdownHeading = /^#{1,6}\s+\S/u.test(block) && !block.includes("\n");
-    const capsHeading = !block.includes("\n") && plain.length <= 65 &&
-      /\p{L}/u.test(plain) && plain === plain.toLocaleUpperCase(locale);
-    if (markdownHeading || capsHeading) {
-      flush();
-      rendered.push(<Heading className="remedy-source-heading" key={"heading-" + rendered.length}>{plain}</Heading>);
-    } else {
-      paragraphBuffer.push(block);
+  // No filtering, rewriting or sorting: the entire library source survives.
+  const chunks = description.replace(/\r\n?/g, "\n").split(/\n{2,}/).map(part=>part.trim()).filter(Boolean);
+  const Heading=variant==="book"?"h3":"h2";
+  const renderChunks=(parts:string[]):ReactNode[]=>{
+    const output:ReactNode[]=[];
+    let buffer:string[]=[];
+    const flush=()=>{
+      if(!buffer.length)return;
+      output.push(<div className="remedy-source-paragraphs" key={"source-"+output.length}>
+        <ContentBlocks blocks={buffer} locale={locale} sourceUrl={sourceUrl} />
+      </div>);
+      buffer=[];
+    };
+    for(const block of parts){
+      const plain=block.replace(/^#{1,6}\s+/,"")
+        .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u,"").trim();
+      const mdHeading=/^#{1,6}\s+\S/u.test(block)&&!block.includes("\n");
+      const capsHeading=!block.includes("\n")&&plain.length<=65&&
+        /\p{L}/u.test(plain)&&plain===plain.toLocaleUpperCase(locale);
+      if(mdHeading||capsHeading){
+        flush();
+        output.push(<Heading className="remedy-source-heading" key={"heading-"+output.length}>{plain}</Heading>);
+      }else buffer.push(block);
     }
-  });
-  flush();
-  return <div className="remedy-source-full">{rendered}</div>;
+    flush();
+    return output;
+  };
+  // Only four opening source paragraphs/chunks sit beside the original photo;
+  // the rest must clear the photo and use the entire reading column.
+  return <div className="remedy-source-full">
+    <div className="remedy-source-intro">{renderChunks(chunks.slice(0,4))}</div>
+    {chunks.length>4&&<div className="remedy-source-rest">{renderChunks(chunks.slice(4))}</div>}
+  </div>;
 }
-
 function ContentSection({ section, locale, variant, sourceUrl }: { section: Section; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
   const Heading = variant === "book" ? "h3" : "h2";
   const sectionClass = section.key === "basis"

@@ -25,8 +25,8 @@ test('PDF prints approved lighthouse twice plus ocean and botanical vector graph
     assert.match(pdf,/^%PDF-1\.7/)
     assert.ok((pdf.match(/\/Lighthouse Do Q/g)??[]).length>=2,
       'cover includes brand lighthouse and a second illustrated ocean lighthouse')
-    assert.match(pdf,/0\.924 0\.960 0\.964 rg/,'pale ocean cover is rendered')
-    assert.match(pdf,/0\.82 0\.90 0\.91 rg/,'coastal illustration is rendered')
+    assert.match(pdf,/0\.989 0\.977 0\.966 rg/,'warm ivory hero paper is rendered')
+    assert.match(pdf,/0\.79 0\.88 0\.88 rg/,'coastal illustration is rendered')
     assert.match(pdf,/0\.75 0\.85 0\.78 rg/,'botanical leaf vector art is rendered')
     assert.match(pdf,/\/RemedyPhoto1 Do Q/,'selected library image remains')
     assert.match(pdf,/\/Signature Do Q/,'approved practitioner signature remains')
