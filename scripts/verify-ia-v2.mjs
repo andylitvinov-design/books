@@ -1,6 +1,7 @@
 // Write-capable acceptance harness: loopback + isolated CI Redis DB 15 ONLY.
 // There is deliberately no --live flag, production URL, seed route or real credential.
 import assert from 'node:assert/strict'
+import { observePublicNavigation } from './ia-public-navigation-diagnostics.mjs'
 import { randomBytes, randomUUID, createHmac } from 'node:crypto'
 import { createServer } from 'node:https'
 import { request as httpRequest } from 'node:http'
@@ -26,6 +27,7 @@ const redactions = [token, key]
 const environment = { NODE_ENV: 'production', VERCEL_ENV: 'preview', PRESCRIPTIONS_KV_REST_API_URL: apiOrigin, PRESCRIPTIONS_KV_REST_API_TOKEN: token, PRESCRIPTIONS_DATA_ENCRYPTION_KEY: key, PRESCRIPTIONS_ADMIN_TOKEN: token, PRESCRIPTIONS_ADMIN_PIN: '' }
 const certificate = { key: readFileSync('/tmp/ia222-key.pem'), cert: readFileSync('/tmp/ia222-cert.pem') }
 const results = []
+const publicNavigationDiagnostics = []
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 let bridge, proxy, app, browser, secondBrowser, logs = ''
 const pass = message => { results.push({ status: 'PASS', message }); console.log(`PASS: ${message}`) }
@@ -51,6 +53,8 @@ async function go(page, path) {
 }
 
 async function verifyPublicHeaderMatrix(page, engine) {
+  const diagnostic = await observePublicNavigation(page, { engine, origin, record: event => publicNavigationDiagnostics.push(event) })
+  try {
   const originalViewport = page.viewportSize()
   const inViewport = async (locator, label) => {
     await expect(locator).toBeVisible()
@@ -62,6 +66,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
       for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
+        diagnostic.phase(label)
         await page.setViewportSize({ width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
         await page.waitForLoadState('networkidle')
@@ -135,6 +140,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
   }
   await page.setViewportSize(originalViewport)
   pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
+  } finally { diagnostic.stop() }
 }
 try {
   await redis(['FLUSHDB']) // Dedicated ephemeral service database, not a configured production store.
@@ -436,6 +442,7 @@ try {
   results.push({ status: 'FAIL', message: sanitize(error.message) })
   console.error(sanitize(error.stack)); process.exitCode = 1
 } finally {
+  writeFileSync(`${evidence}/public-navigation-diagnostics.json`, JSON.stringify(publicNavigationDiagnostics, null, 2))
   await browser?.close(); await secondBrowser?.close(); await stopApp()
   bridge?.close(); proxy?.close()
   writeFileSync(`${evidence}/results.json`, JSON.stringify(results, null, 2))
