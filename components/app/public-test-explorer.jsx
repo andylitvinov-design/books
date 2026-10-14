@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
+import { COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent } from '@/lib/inner-growth/course-entry-intent'
 
 async function request(path, body, method = 'POST') {
   const response = await fetch('/api/app/' + path, {
@@ -67,8 +68,18 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
       throw cause
     }
   }
+  const launchCourse = (entries, selectionPreferences) => {
+    // Same-tab, short-lived editorial selection only; an explicit course
+    // consent screen controls any eventual server-side saving.
+    try {
+      window.sessionStorage.setItem(COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent(entries, selectionPreferences))
+    } catch { /* Private mode may block session storage; the course still opens. */ }
+    router.push('/' + effectiveLocale + '/app/course?entry=personal')
+  }
   return <>
-    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',')} initialPreferences={initialPreferences} onStart={submit} />
+    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded}
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',')}
+      initialPreferences={initialPreferences} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }
