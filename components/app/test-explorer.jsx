@@ -131,7 +131,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -205,7 +205,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [customizeOpen, setCustomizeOpen] = useState(Boolean(openFiltersInitially))
   const [activeFilterGroup, setActiveFilterGroup] = useState(initialFilterGroup)
   const [showAll, setShowAll] = useState(false)
-  const [browseFull, setBrowseFull] = useState(false)
+  const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
   // Direct History -> Test selection must also work when the URL changes without remounting.
