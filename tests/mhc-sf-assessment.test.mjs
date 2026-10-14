@@ -110,11 +110,11 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,127)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,60)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,68)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!newViaIds.has(x.id)&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
