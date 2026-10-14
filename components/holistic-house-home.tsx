@@ -9,6 +9,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
+import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -148,6 +149,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </div>
       </section>
 
+      <HomeFreeTestsBanner locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
       <HomepageTopicJourneys locale={locale} />
 
