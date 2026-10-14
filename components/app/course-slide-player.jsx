@@ -17,7 +17,9 @@ const WORDS = {
     pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
     shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
     understand: 'One idea at a time', adjustPace: 'Change my practice style',
-    baseline: 'Notice your state at the start', baselineQuestion: 'How are you starting this lesson? This rating is separate from the practice pair.',
+    baseline: 'Notice your state at the start', baselineQuestion: 'How strongly do you feel the quality or state at the heart of today’s lesson right now?',
+    baselineResourceQuestion: 'How much inner resource and support do you feel right now?',
+    baselineLow: '0 · Not at all', baselineHigh: '10 · Fully present',
     momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
     focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
     easierResult: 'points less difficult after the practice', harderResult: 'points more difficult after the practice',
@@ -92,7 +94,9 @@ const WORDS = {
     pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
     shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
     understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
-    baseline: 'Заметьте состояние в начале занятия', baselineQuestion: 'Как вы начинаете урок? Эта оценка не заменяет замер прямо перед практикой.',
+    baseline: 'Заметьте состояние перед практикой', baselineQuestion: 'Насколько вы сейчас ощущаете в себе качество или состояние, которому посвящён урок?',
+    baselineResourceQuestion: 'Насколько вы сейчас ощущаете в себе ресурс и внутреннюю опору?',
+    baselineLow: '0 · Совсем не ощущаю', baselineHigh: '10 · Ощущаю в полной мере',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
     easierResult: 'меньше трудности после занятия', harderResult: 'больше трудности после занятия',
@@ -204,13 +208,13 @@ function buildSlides(lesson) {
   ]
 }
 
-function MomentScale({ value, onChange, words, label, disabled }) {
+function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
   return <div>
     <div className={styles.numberGrid} role="group" aria-label={label}>
       {Array.from({length:11}, (_, i) => <button key={i} type="button"
         disabled={disabled} aria-pressed={value === i} onClick={() => onChange(i)}>{i}</button>)}
     </div>
-    <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
+    <div className={styles.rangeCaption}><span>{lowLabel}</span><span>{highLabel}</span></div>
   </div>
 }
 
@@ -239,6 +243,8 @@ export default function CourseSlidePlayer({
   const today = data.currentCheckin
   const session = data.currentSession
   const focusLabel = cycle.activeScaleLabel || data.roadmap?.find(item => item.day === cycle.day)?.focusTitle || data.target?.label || words.todaySkill
+  const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
+  const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
   const slides = useMemo(() => buildSlides(lesson), [lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
@@ -390,11 +396,17 @@ export default function CourseSlidePlayer({
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
+  const scenicBaseline = !finished && !promoOpen && !discomfortOpen && slide.kind === 'baseline'
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
     data-course-slide-player ref={frame}>
-    <div className={styles.frame}>
+    <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
+      {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
+        <img className={styles.fullscreenScenePhoto}
+          src="/images/holistic-house/course-focus-mountain-boy.webp"
+          alt="" width={705} height={411} loading="eager" decoding="async"/>
+      </div>}
       <header className={styles.header}>
         <button type="button" className={styles.close} onClick={onClose} disabled={locked}
           aria-label={words.close}><X size={23}/></button>
@@ -516,11 +528,11 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'baseline' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt}>{words.baselineQuestion}</p>
+            <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
             <MomentScale value={entryNow} onChange={setEntryNow} words={words}
-              label={words.baseline + ': ' + focusLabel} disabled={locked}/>
+              label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
+              highLabel={words.baselineHigh} disabled={locked}/>
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
