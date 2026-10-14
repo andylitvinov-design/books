@@ -695,3 +695,10 @@
     object-position:50% 50%!important;
   }
 }
+
+
+/* The old incense hero is intentionally not fetched behind scenic lesson art. */
+.shell[data-course-view=today] .heroPhoto{
+  background:linear-gradient(140deg,#e8f8fa,#f5fff8)!important;
+  opacity:.22!important;
+}
