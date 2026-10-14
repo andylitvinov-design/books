@@ -137,7 +137,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
 
   return <section className={styles.mapShell} data-course-quest-map aria-label={t.map}>
     <header className={styles.mapHeader}>
-      <div><p className={styles.eyebrow}>HOLISTIC HOUSE · MY COURSE</p>
+      <div><p className={styles.eyebrow}>{locale==='ru'?'Путешествие в 14 дней':'Your 14-day journey'}</p>
         <h3>{t.map}</h3><p>{t.pathIntro}</p></div>
       <div className={styles.pointBox} title={t.rewardNote}>
         <Sparkles size={18} aria-hidden="true"/><strong>{xp}</strong><small>XP</small>
@@ -145,7 +145,6 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
     </header>
     <div className={styles.mapProgress}><span>{t.progress}: <strong>{count}/{cycle.durationDays || 14}</strong></span>
       <progress max={cycle.durationDays || 14} value={count} aria-label={t.progress}/></div>
-    <img className={styles.journeyScene} src="/images/holistic-house/course-journey-landscape.svg" alt="" width={860} height={245} loading="lazy" aria-hidden="true"/>
     <ol className={styles.path}>
       {roadmap.map((item, index) => {
         const Icon = ICONS[index % ICONS.length]
@@ -153,7 +152,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         const complete = item.status === 'completed'
         const expanded = selected === item.day
         return <li key={item.day} className={styles.pathRow} data-course-day={item.day}
-          data-status={STATES[item.status] || 'later'} data-side={index % 4 < 2 ? 'left' : 'right'}>
+          data-status={STATES[item.status] || 'later'} data-side={index % 2 === 0 ? 'left' : 'right'}>
           {STARTS[item.day] && <p className={styles.chapter}>
             <span>{locale === 'ru' ? 'Глава' : 'Chapter'} {Object.keys(STARTS).indexOf(String(item.day)) + 1}</span>
             <strong>{t[STARTS[item.day]]}</strong>
@@ -181,6 +180,8 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         </li>
       })}
     </ol>
+    <img className={styles.journeyScene} src="/images/holistic-house/course-journey-landscape.svg" alt=""
+      width={860} height={245} loading="lazy" aria-hidden="true"/>
     <p className={styles.mapFootnote}><LockKeyhole size={14} aria-hidden="true"/>{t.rewardNote}</p>
   </section>
 }
