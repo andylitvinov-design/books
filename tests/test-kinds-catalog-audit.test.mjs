@@ -110,3 +110,44 @@ test('ASRS6 EN/RU versions are source-documented and supported by the key audit'
     assert.equal(auditTestKey({ catalog, definition: unsupported }).status, 'key_review')
   }
 })
+
+
+test('test-kind checkboxes belong inside detailed selection, not the initial screen', async () => {
+  const [simple, full] = await Promise.all([
+    readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
+  ])
+  const disclosure = simple.indexOf('<details className={styles.advanced}>')
+  const endDisclosure = simple.indexOf('</details>', disclosure)
+  const typeChoices = simple.indexOf('<fieldset className={styles.kindFilters}')
+  assert.ok(disclosure >= 0 && typeChoices > disclosure && typeChoices < endDisclosure)
+  assert.equal((simple.match(/data-test-kind-filter/g) || []).length, 1)
+  const quickStart = full.indexOf('<div className={styles.quickFilters}')
+  const quickEnd = full.indexOf('<div className={styles.quickDiscoveryFooter}', quickStart)
+  assert.ok(quickStart >= 0 && quickEnd > quickStart)
+  assert.doesNotMatch(full.slice(quickStart, quickEnd), /KindCheckboxFilters|Только профессиональные|Professional only/)
+  assert.match(full, /activeFilterGroup === 'format'[\s\S]*?<KindCheckboxFilters/)
+})
+
+test('author questionnaire cards do not repeat long evidence wording', async () => {
+  const [methodology, simple, full] = await Promise.all([
+    readFile(new URL('../lib/assessments/assessment-methodology.js', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
+  ])
+  assert.doesNotMatch(methodology, /Авторский образовательный опросник Holistic House \(2026\)/)
+  assert.match(methodology, /Авторская шкала для самонаблюдения[^']+не предназначена для постановки диагноза/)
+  for (const file of [simple, full]) assert.match(file, /entry\.methodologyStatus !== 'original'/)
+})
+
+test('public client and explorer guard against mobile horizontal overflow', async () => {
+  const [globalCss, simpleCss, fullCss] = await Promise.all([
+    readFile(new URL('../app/globals.css', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/simple-test-picker.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/test-explorer.module.css', import.meta.url), 'utf8'),
+  ])
+  assert.match(globalCss, /\.client-entry-shell\s*\{[^}]*overflow-x:\s*clip/s)
+  assert.match(simpleCss, /\.shell\s*\{[^}]*overflow-x:\s*clip/s)
+  assert.match(fullCss, /\.explorer\s*\{[^}]*overflow-x:\s*clip/s)
+  assert.match(fullCss, /\.explorer \.scaleRail, \.explorer \.quickFilterChips, \.explorer \.quickFilterExtras/)
+})

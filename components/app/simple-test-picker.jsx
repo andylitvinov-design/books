@@ -228,24 +228,24 @@ export function SimpleTestPicker({
             )}
           </div>
         </div>
+        <fieldset className={styles.kindFilters} data-test-kind-filter>
+          <legend>{locale === 'ru' ? 'Выберите типы тестов' : locale === 'es' ? 'Elige tipos de pruebas' : 'Choose types of tests'}</legend>
+          <p>{locale === 'ru' ? 'Можно отметить несколько типов одновременно. Остальные фильтры тоже сохранятся.' : locale === 'es' ? 'Puedes seleccionar varios tipos a la vez.' : 'Select one or more types. Other filters still apply.'}</p>
+          <div className={styles.kindChoices}>
+            {TEST_KINDS.map((kind) => {
+              const Icon = TEST_KIND_ICONS[kind.key]
+              return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
+                <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
+                <Icon size={19} aria-hidden="true" />
+                <span>{kind.label[locale] || kind.label.en}</span>
+              </label>
+            })}
+          </div>
+        </fieldset>
         <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>
       </div>
     </details>
 
-    <fieldset className={styles.kindFilters} data-test-kind-filter>
-      <legend>{locale === 'ru' ? 'Выберите типы тестов' : locale === 'es' ? 'Elige tipos de pruebas' : 'Choose types of tests'}</legend>
-      <p>{locale === 'ru' ? 'Можно отметить несколько типов одновременно. Остальные фильтры тоже сохранятся.' : locale === 'es' ? 'Puedes seleccionar varios tipos a la vez.' : 'Select one or more types. Other filters still apply.'}</p>
-      <div className={styles.kindChoices}>
-        {TEST_KINDS.map((kind) => {
-          const Icon = TEST_KIND_ICONS[kind.key]
-          return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
-            <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
-            <Icon size={19} aria-hidden="true" />
-            <span>{kind.label[locale] || kind.label.en}</span>
-          </label>
-        })}
-      </div>
-    </fieldset>
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations">
       <div className={styles.sectionHeader}>
@@ -270,7 +270,7 @@ export function SimpleTestPicker({
               <strong>{entry.title}</strong>
               <KindBadge entry={entry} locale={locale} />
               <small>{entry.description || entry.category}</small>
-              {entry.methodology && <small className={styles.methodology}>{entry.methodology}</small>}
+              {entry.methodology && entry.methodologyStatus !== 'original' && <small className={styles.methodology}>{entry.methodology}</small>}
             </span>
             <span className={styles.testMeta}>
               <strong className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>

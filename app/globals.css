@@ -5807,3 +5807,22 @@
 .prescription-distance-homeopathy-choice input { margin-top:4px; accent-color:#80344b; }
 .prescription-distance-homeopathy-choice strong { display:block; color:#682f42; }
 .prescription-distance-homeopathy-choice small { display:block; margin-top:6px; line-height:1.5; color:#62575b; }
+
+
+/* Holistic House client entry: keep the iPhone viewport stable. */
+.client-entry-shell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.client-entry-shell > :where(header, section, article, div, aside) {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 600px) {
+  .client-entry-shell {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
