@@ -107,7 +107,7 @@ function iconFor(entry) {
 }
 
 export function SimpleTestPicker({
-  locale = 'en',
+  locale = 'en', initialMode = 'tests',
   focus, onToggleFocus,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
@@ -119,7 +119,7 @@ export function SimpleTestPicker({
 }) {
   const c = TEXT[locale] || TEXT.en
   const [visibleCount, setVisibleCount] = useState(5)
-  const [journeyMode, setJourneyMode] = useState('tests')
+  const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
