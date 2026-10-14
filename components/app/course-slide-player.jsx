@@ -613,7 +613,8 @@ export default function CourseSlidePlayer({
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        {!finished && !discomfortOpen && ['guided','symbol'].includes(slide.kind) && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)}>{words.discomfortAction}</button>}
+        {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
+        {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
         {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
