@@ -78,7 +78,7 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
   }
   return <>
     <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded}
-      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',')}
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode}
       initialPreferences={initialPreferences} initialMode={initialMode} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
