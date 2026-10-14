@@ -19,7 +19,7 @@
 .helper svg{flex:none;margin-top:1px}
 .illustration{align-self:center;width:min(290px,100%);height:clamp(150px,27vh,228px);display:grid;place-items:center;margin:2px 0 0;background:radial-gradient(circle,#e4faff 10%,#e9fbf9 61%,transparent 75%);border-radius:26px}
 .illustration img{display:block;width:100%;max-width:290px;height:100%;object-fit:contain}
-.photoMoment{position:relative;flex:none;width:100%;height:clamp(145px,23vh,220px);border-radius:22px;background:linear-gradient(90deg,#e7fafe 4%,#dbf7f68c 45%,#ffffff00 100%),url('/images/holistic-house/hero-olive-incense.webp') center 52%/cover no-repeat;box-shadow:0 9px 25px #2a7e9217;border:1px solid #d4f0f0}
+.photoMoment{position:relative;flex:none;width:100%;height:clamp(145px,23vh,220px);border-radius:22px;background:linear-gradient(90deg,#e7fafe 4%,#dbf7f68c 45%,#ffffff00 100%);box-shadow:0 9px 25px #2a7e9217;border:1px solid #d4f0f0}
 .photoSparkle{position:absolute;right:17px;top:17px;display:grid;place-items:center;width:45px;height:45px;border-radius:16px;background:#e6faffd9;color:#009aae}
 .bigIcon{align-self:center;display:grid;place-items:center;width:128px;height:128px;margin:14px 0 9px;border:1px solid #c7eff0;border-bottom:6px solid #8ddfe2;border-radius:35px;background:linear-gradient(145deg,#effdfe,#d3f6f3);color:#0799a9;box-shadow:0 15px 35px #299ba21b}
 .quote{margin:0;padding:17px 18px;border-left:4px solid #13b8c2;background:linear-gradient(105deg,#ebfcfd,#f6fffc);border-radius:0 18px 18px 0;color:#28677f;font:italic 20px/1.55 Georgia,serif;white-space:pre-wrap}
@@ -72,7 +72,7 @@
 @media(prefers-reduced-motion:reduce){.overlay *, .overlay *:before, .overlay *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{.overlay{display:none!important}}
 
-.photoMoment[data-photo="books"]{background:linear-gradient(100deg,#effeffeb,#ddf7f278 55%,#ffffff00),url('/images/holistic-house/books-library.webp') center/cover no-repeat}
+.photoMoment[data-photo="books"]{background:linear-gradient(100deg,#effeffeb,#ddf7f278 55%,#ffffff00)}
 
 /* Daily skill measurement and the two-point completion comparison. */
 .focusName{margin:0;padding:10px 13px;border:1px solid #cfebed;border-radius:12px;background:#edfafb;font-size:13px;line-height:1.45;color:#507e8f}
