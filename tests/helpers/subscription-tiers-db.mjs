@@ -46,10 +46,16 @@ export async function runTierDatabaseTests(t, { admin, pool, appConfig, billingC
         (id,account_id,course_id,primary_domain,content_version,start_local_date,time_zone,status,finished_at)
         values($1,$2,$3,'calm_regulation',$4,(clock_timestamp() at time zone 'UTC')::date-14,'UTC',$5,
           case when $5='completed' then now() else null end)`, [cycleId, owner.id, courseId, COURSE_CONTENT_V3, cycleStatus])
-      await db.query(`insert into app_private.growth_sessions
-        (account_id,cycle_id,day_number,local_date,lesson_id,content_version,feedback,operation_id,completed_at)
-        values($1,$2,14,(clock_timestamp() at time zone 'UTC')::date-1,$3,$4,'skip',$5,now()-interval '1 day')`,
-      [owner.id, cycleId, lessonFor('calm_regulation', 14, 'en', 'standard', COURSE_CONTENT_V3).id, COURSE_CONTENT_V3, randomUUID()])
+      // Completion-driven progression requires the full contiguous history,
+      // including paused/active legacy cycles, not just a day-14 marker.
+      for (let day = 1; day <= 14; day++) {
+        await db.query(`insert into app_private.growth_sessions
+          (account_id,cycle_id,day_number,local_date,lesson_id,content_version,feedback,operation_id,completed_at)
+          values($1,$2,$3,(clock_timestamp() at time zone 'UTC')::date-(15-$3::integer),$4,$5,'skip',$6,
+            now()-make_interval(days => 15-$3::integer))`,
+        [owner.id, cycleId, day, lessonFor('calm_regulation', day, 'en', 'standard', COURSE_CONTENT_V3).id,
+          COURSE_CONTENT_V3, randomUUID()])
+      }
       await db.query(`insert into app_private.growth_targets(id,account_id,cycle_id,problem_label_ciphertext)
         values($1,$2,$3,$4)`, [targetId, owner.id, cycleId,
         seal('Synthetic original practice', { accountId: owner.id, recordId: targetId, field: 'course.target_label' }, courseConfig)])

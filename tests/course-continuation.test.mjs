@@ -233,3 +233,31 @@ test('multi-course completed active rows require capacity because SQL excludes t
   }
  }
 })
+
+test('billing finished-course fixture supplies contiguous past-day lessons for active and paused cycles', async () => {
+  const source=readFileSync(new URL('./helpers/subscription-tiers-db.mjs',import.meta.url),'utf8')
+  const body=source.slice(source.indexOf('  async function finishedCourse('),source.indexOf('  async function courseSnapshot('))
+  const {courseLessonProgress}=await import('../lib/inner-growth/course-progress.js')
+  for(const status of ['active','paused','completed']) {
+    const inserts=[]
+    const asCourse=async (_owner,fn)=>fn({query:async(sql,args)=>{inserts.push({sql,args});return {rows:[]}}})
+    const build=new Function('asCourse','randomUUID','lessonFor','COURSE_CONTENT_V3','seal','courseConfig',body+'; return finishedCourse')
+    const finished=build(asCourse,()=>`synthetic-${++sequence}`,lessonFor,COURSE_CONTENT_V3,()=> 'synthetic',{})
+    await finished({id:'synthetic-owner'},{status,cycleStatus:status})
+    const rows=inserts.filter(row=>row.sql.includes('insert into app_private.growth_sessions'))
+    assert.deepEqual(rows.map(row=>row.args[2]),Array.from({length:14},(_,i)=>i+1))
+    const today='2026-10-14'
+    const sessions=rows.map(({sql,args})=>{
+      assert.match(sql,/date-\(15-\$3::integer\)/)
+      assert.match(sql,/make_interval\(days => 15-\$3::integer\)/)
+      const day=args[2],date=addCalendarDays(today,day-15)
+      assert.equal(args[3],lessonFor('calm_regulation',day,'en','standard',COURSE_CONTENT_V3).id)
+      return {dayNumber:day,localDate:date,completedAt:date+'T12:00:00Z'}
+    })
+    const progress=courseLessonProgress({sessions,now:Date.parse(today+'T16:00:00Z'),completed:status==='completed'})
+    assert.equal(progress.day,14)
+    assert.equal(progress.isAfterCycle,true)
+    assert.equal(progress.completedToday,false)
+    assert.equal(sessions.at(-1).localDate,'2026-10-13')
+  }
+})
