@@ -25,8 +25,11 @@ test('starter battery is deterministic and only reorders real rights-cleared rec
     .map((key, i) => ({ key, title:key, completed:i%2===0 }))
   const result = orderCourseProgramTests(current, 'stress')
   assert.deepEqual(result.slice(0, 3).map(test => test.key),
-    ['hh-weekly-pulse', 'hh-resource-pulse', 'hh-current-state'])
+    ['hh-weekly-pulse', 'hh-resource-pulse', 'other'])
   assert.deepEqual(result.map(test => test.key).sort(), current.map(test => test.key).sort())
+  const withGad = orderCourseProgramTests([...current, {key:'gad-7', title:'GAD-7'}], 'stress')
+  assert.deepEqual(withGad.slice(0, 3).map(test => test.key),
+    ['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'])
   assert.equal(result.filter(test => test.recommended).length, 5)
   assert.deepEqual(orderCourseProgramTests(current, null), current)
   assert.equal(result.find(test => test.key === 'other').completed, true)
