@@ -80,7 +80,7 @@ test('responsive primary action, automatic problem fill and personal course swit
   assert.match(route,/query\.mode === 'course'/)
   assert.match(publicExplorer,/COURSE_ENTRY_INTENT_KEY/)
   assert.match(publicExplorer,/onStartCourse=\{launchCourse\}/)
-  assert.match(explorer,/onStartCourse=\{\(\) => onStartCourse\?\./)
+  assert.match(explorer,/onStartCourse=\{onStartCourse \? \(\) => onStartCourse\(/)
   assert.match(picker,/data-test-course-switch/)
   assert.match(picker,/journeyMode === 'course' \? onStartCourse : onStart/)
   assert.match(pickerStyle,/\.modeSwitch\{/)
