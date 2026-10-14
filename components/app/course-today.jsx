@@ -315,13 +315,13 @@ export default function CourseToday({locale='en',accountId=null}){
       alt="" aria-hidden="true" decoding="async"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
-        <span className={styles.heroBrand}>{ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP'}</span>
+        <span className={styles.heroBrand}>{data.programme?.title || (ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP')}</span>
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
       <h2>{lesson?.title||lesson?.journey?.heading}</h2>
       <p className={styles.heroPurpose}>{completed&&!isFinished?
         (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
-        (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.')}</p>
+        (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
       <button type="button" className={styles.todayPrimary} disabled={busy}
         data-course-today-primary onClick={()=>
           paused ? void submit('resume',{expectedRevision:cycle.revision}) :

@@ -194,3 +194,61 @@
 
 .heroMark{overflow:hidden;background:#daf6f8;border-color:#a1dce1}
 .heroMark img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 35%;border-radius:inherit}
+
+
+/* Demand-led 14-day course picker: one calm promise, then three recognizable pains.
+   Scoped to My Course; no ads, health scores or sensitive content on cards. */
+.programSelection{display:grid;gap:14px;margin-top:4px}
+.programHeading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.programHeading h2{font-size:clamp(21px,3vw,28px);letter-spacing:-.03em;line-height:1.2;color:#173f5a;margin:0}
+.programHeading p{font-size:12px;color:#5b8191;margin:0}
+.programGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.programCard{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;padding:20px 18px 17px;min-height:276px;color:#173e56;background:linear-gradient(155deg,#f5feff 0%,#e2f6fa 100%);border:1px solid #bee5ec;border-radius:22px;box-shadow:0 6px 22px #137f9b0e;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.programCard::after{content:'';position:absolute;right:-50px;top:-65px;width:145px;height:145px;border-radius:50%;background:radial-gradient(circle,#92e3e647,transparent 72%);pointer-events:none}
+.programCard:nth-child(2){background:linear-gradient(155deg,#f7fcff,#e8f3fc);border-color:#c9e3f2}
+.programCard:nth-child(3){background:linear-gradient(155deg,#f6ffff,#e4f7f4);border-color:#cce8e3}
+.programCard:hover,.programCard:focus-visible{border-color:#24aab9;box-shadow:0 10px 30px #137f9b22;transform:translateY(-2px)}
+.programCard:focus-visible,.personalTrack:focus-visible{outline:3px solid #0b96b5;outline-offset:3px}
+.programCard:disabled,.personalTrack:disabled{cursor:wait;opacity:.65;transform:none}
+.programIcon{display:grid;place-items:center;width:50px;height:50px;color:#068ca6;background:#d3f4f8;border-radius:16px}
+.programCard:nth-child(2) .programIcon{color:#2875a2;background:#dceefd}
+.programCard:nth-child(3) .programIcon{color:#168f89;background:#d5f4e8}
+.programPain{text-transform:uppercase;letter-spacing:.045em;color:#518198;font-size:10px;font-weight:800}
+.programCard strong{font-size:21px;line-height:1.15;letter-spacing:-.025em;color:#153f5e}
+.programPromise{font-size:13.5px;line-height:1.43;color:#476d80;flex:1}
+.programOutcomes{font-size:11px;line-height:1.35;font-weight:700;color:#188fa2}
+.programAction{display:inline-flex;align-items:center;gap:7px;color:#087f9c;font-size:13px;font-weight:800}
+.personalTrack{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:16px 19px;color:#175572;background:#fff;border:1.5px dashed #74bdcd;border-radius:18px;cursor:pointer}
+.personalTrack>span{display:grid;gap:4px;flex:1;min-width:0}
+.personalTrack strong{font-size:16px;color:#1c5672}
+.personalTrack small{font-size:13px;color:#648598}
+.personalTrack:hover{background:#f2fcff;border-color:#088fa9}
+.overviewDisclosure{border:1px solid #d8ebef;background:#fbfeff;border-radius:17px;overflow:hidden}
+.overviewDisclosure>summary{cursor:pointer;list-style:none;padding:14px 18px;color:#166d86;font-size:14px;font-weight:750}
+.overviewDisclosure>summary::-webkit-details-marker{display:none}
+.overviewDisclosure>summary::after{content:'+';float:right;font-size:20px;line-height:14px}
+.overviewDisclosure[open]>summary::after{content:'−'}
+.overviewDisclosure>*:not(summary){margin:0 12px 13px}
+.selectedProgramName{font-weight:800!important;color:#097d9b!important}
+.heroMark{width:186px;height:175px;border-radius:18px;box-shadow:0 10px 25px #12647d24}
+.hero{grid-template-columns:minmax(0,1fr) 186px}
+@media(max-width:760px){
+  .programGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .programCard:last-child{grid-column:1/-1;min-height:212px}
+}
+@media(max-width:530px){
+  .hero{grid-template-columns:minmax(0,1fr) 89px;gap:11px}
+  .heroMark{width:89px;height:116px;border-radius:13px}
+  .programHeading{display:grid;gap:4px}
+  .programGrid{grid-template-columns:1fr;gap:10px}
+  .programCard,.programCard:last-child{grid-column:auto;min-height:0;padding:14px 16px;display:grid;grid-template-columns:45px minmax(0,1fr);column-gap:12px;row-gap:4px;border-radius:17px}
+  .programIcon{grid-row:1/6;width:43px;height:43px;border-radius:13px}
+  .programPain{grid-column:2;font-size:10px}
+  .programCard strong{grid-column:2;font-size:19px}
+  .programPromise{grid-column:2;font-size:13px}
+  .programOutcomes{grid-column:2}
+  .programAction{grid-column:2;margin-top:3px}
+  .personalTrack{padding:14px}
+  .personalTrack strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){.programCard{transition:none}.programCard:hover{transform:none}}

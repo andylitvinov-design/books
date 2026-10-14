@@ -146,7 +146,9 @@ test('first-screen free start is separate from optional account-owned course int
   assert.match(ui, /ref=\{startDialogRef\}/)
   assert.match(ui, /startDialogRef\.current\?\.showModal\(\)/)
   assert.match(ui, /disabled=\{!optIn \|\| busy\}/)
-  assert.match(ui, /void act\('start', \{ consent: true \}\)/)
+  assert.match(ui, /onClick=\{\(\) => void confirmStart\(\)\}/)
+  assert.match(ui, /request\(\{ action: 'start', consent: true \}\)/)
+  assert.match(ui, /expectedRevision: started\.course\.revision/)
   assert.match(css, /\.heroActions/)
   assert.match(css, /\.details/)
 
@@ -671,8 +673,9 @@ test('guests can inspect course plan before Google login and signed-in clients b
   const preview=read('components/app/course-14-day-overview.jsx')
   const css=read('components/app/course-14-day-overview.module.css')
   assert.match(app, /page === 'course' && <Course14DayOverview locale=\{locale\} compact \/>/)
-  assert.match(landing, /stage === 0 && <Course14DayOverview locale=\{locale\} \/>/)
-  const beforeConsent=landing.indexOf('stage === 0 && <Course14DayOverview')
+  assert.match(landing, /stage === 0 && <details className=\{styles\.overviewDisclosure\}>/)
+  assert.match(landing, /<Course14DayOverview locale=\{locale\} \/>/)
+  const beforeConsent=landing.indexOf('stage === 0 && <details className={styles.overviewDisclosure}')
   const afterHero=landing.indexOf('stage === 0 && <header')
   const consent=landing.indexOf('ref={startDialogRef}')
   assert.ok(afterHero>=0 && beforeConsent>afterHero && consent>beforeConsent,

@@ -345,3 +345,7 @@
 .completeHero h2,.completeHero>strong{color:#178c9e}
 .completeSymbol{color:#059daf;border-color:#85cfd8}
 @media(max-width:530px){.section{padding:17px 13px}.testRow{border-radius:14px}.section .progress > button.ctaLink{min-height:52px!important}}
+
+/* A chosen course remains recognizable during the existing test wizard. */
+.programmeContext{display:inline-flex!important;align-items:center;gap:5px;flex-wrap:wrap;justify-self:start;border:1px solid #a8e0e7;border-radius:999px;background:#e9fafa;color:#156984!important;padding:8px 13px;font-size:12px!important;line-height:1.4!important}
+.programmeContext strong{color:#155773}
