@@ -319,7 +319,7 @@ try {
  await guestPickerPage.goto(origin+'/en/client')
  const picker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await expect(picker).toBeVisible({timeout:30000})
- await expect(picker.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
+ await expect(picker.getByRole('heading',{name:'Understand yourself and your life better',exact:true})).toBeVisible()
  await expect(picker.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  const conditionalProblems=picker.locator('[data-topic-problem-filter]')
  await expect(conditionalProblems).toBeVisible()
