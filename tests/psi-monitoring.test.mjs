@@ -1,3 +1,5 @@
+import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
+import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -99,6 +101,8 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
     ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
     ...RELATIONSHIPS_INTIMACY_KEYS,
+    ...IPIP_THREE_CATALOG.map((item) => item.key),
+    ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
   ].sort())
   for (const key of ['functioning-review'])
