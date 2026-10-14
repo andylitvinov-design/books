@@ -183,7 +183,7 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">2</span>
         <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
       </div>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> :
+      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
         {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
           {visibleProblems.map((problem) => {
@@ -194,7 +194,7 @@ export function SimpleTestPicker({
               <span>{problem.label[locale] || problem.label.en}</span>
             </button>
           })}
-        </div>}
+        </div></>}
       {focus.length > 0 && <div className={styles.problemActions}>
         {allProblems.length > 8 && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
