@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { ASRS6_DEFINITIONS } from '../data/assessments/asrs-v1-6-nyu.js'
 import { IPIP_VIA_R_COMPLETION_DEFINITIONS } from '../data/assessments/ipip-via-r-completion-2026.js'
+import { NEW_PROFESSIONAL_NEOPIC_DEFINITIONS } from '../data/assessments/ipip-neo-ipc-professional-2026.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers, provenance } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
@@ -97,7 +98,7 @@ test('all six valid answers required, including zero; missing/null never become 
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,127)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,165)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
@@ -202,7 +203,8 @@ test('source-backed runner and report wiring preserve adult guard, accessible sh
   assert.match(sql,/definition is distinct from d/)
   assert.doesNotMatch(sql,/^\s*(update app\.|delete from|alter table|create policy|grant )/im)
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>d.key!=='asrs-6'&&!newViaIds.has(d.id))
+  const newNeoIds = new Set(NEW_PROFESSIONAL_NEOPIC_DEFINITIONS.map(d=>d.id))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>d.key!=='asrs-6'&&!newViaIds.has(d.id)&&!newNeoIds.has(d.id))
   assert.equal(prior.length,178)
   assert.equal(digest(prior),'a6c1b0cca75863dc951a02003aa914437dff637d9dd61f9f0dc36925b40e12c0')
 })
