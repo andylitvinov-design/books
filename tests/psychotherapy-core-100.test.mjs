@@ -34,8 +34,8 @@ test('the core list is exactly 100 nonduplicated professional instruments across
 test('fifteen new professional references expand registry without publishing copyrighted questionnaires', () => {
   assert.equal(NEW_PSYCHOTHERAPY_REFERENCES.length, 15)
   const allKeys = new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key))
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 154)
-  assert.equal(allKeys.size, 154)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 386)
+  assert.equal(allKeys.size, 386)
   for (const reference of NEW_PSYCHOTHERAPY_REFERENCES) {
     const row = MIND_BODY_MONITOR_REGISTRY.find((item) => item.key === reference.key)
     assert.ok(row, reference.key)
