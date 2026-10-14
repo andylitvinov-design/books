@@ -252,3 +252,8 @@
   .personalTrack strong{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){.programCard{transition:none}.programCard:hover{transform:none}}
+
+/* A topic-page recommendation highlights an existing track; it never enrols automatically. */
+.programCard[data-recommended='true']{border-color:#4f9690!important;box-shadow:0 0 0 2px #a9d6d1,0 12px 28px #477b751a}
+.preselectedProgram{margin:10px 0 0;color:#356f68;font-size:.93rem;line-height:1.45}
+.preselectedProgram strong{font-weight:780}
