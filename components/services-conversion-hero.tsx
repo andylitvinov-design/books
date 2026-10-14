@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import type { Locale } from "@/data/remedies";
@@ -55,7 +55,7 @@ export function ServicesConversionHero({ locale }: { locale: Locale }) {
         </ul>
       </div>
       <div className={styles.visual}>
-        <Image
+        <StaticPortrait
           src="/images/holistic-house/andy-about.png"
           alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
           fill priority sizes="(max-width: 760px) 100vw, 42vw" className={styles.image}

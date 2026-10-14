@@ -1,21 +1,23 @@
-/**
- * Preserve the exact PsiTrends course photographs while serving them through
- * Holistic House's own Next.js image optimizer. This avoids third-party image
- * requests from Safari/mobile visitors (and the cross-site hotlink failures
- * that otherwise leave an empty beige block).
- *
- * No stock images or AI-generated replacements. Historical archive source
- * links keep their original URLs; only the displayed image is proxied.
+import photoAssets from "@/data/academy/reiki-photo-assets.json";
+
+/** Preserve original course photographs without runtime image transformations.
+ * Static same-origin files retain Safari compatibility and original pixels.
+ * Historical archive hyperlinks are intentionally unchanged by this helper.
  */
 export type ReikiPhotoWidth = 384 | 640 | 750 | 828 | 1080 | 1200 | 1920;
 
-export function reikiPhotoUrl(src: string, width: ReikiPhotoWidth = 1080): string {
-  // Local original art and non-PsiTrends assets remain untouched.
-  if (!/^https:\/\/(?:www\.)?psitrends\.com\/images\//i.test(src)) return src;
+const sourcePaths = new Map(photoAssets.assets.map((asset) => [asset.source, asset.path]));
 
-  // Use the canonical origin, without a www redirect, and properly encode
-  // historical filenames containing spaces or parentheses.
+export function reikiPhotoUrl(src: string, width: ReikiPhotoWidth = 1080): string {
+  // Preserve the existing consumer signature. CSS controls display size;
+  // byte-identical originals are no longer resized at runtime.
+  void width;
+  if (!/^https:\/\/(?:www\.)?psitrends\.com\/images\//i.test(src)) return src;
   const source = new URL(src);
-  const canonical = new URL(source.pathname + source.search, "https://psitrends.com").href;
-  return `/_next/image?url=${encodeURIComponent(canonical)}&w=${width}&q=75`;
+  const canonical = `https://psitrends.com${decodeURIComponent(source.pathname)}`;
+  const local = sourcePaths.get(canonical);
+  if (!local || source.search || source.hash) {
+    throw new Error(`Missing verified static course photo: ${canonical}`);
+  }
+  return local;
 }

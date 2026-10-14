@@ -1,7 +1,7 @@
 "use client";
 
 import { ClipboardCheck, GraduationCap } from "lucide-react";
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -114,7 +114,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
 
       <section className="service-home-hero" aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
-          <Image
+          <StaticPortrait
             src="/images/holistic-house/andy-about.png"
             alt=""
             fill
@@ -212,7 +212,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </AcquisitionEventLink>
         </div>
         <div className="service-home-about__portrait">
-          <Image
+          <StaticPortrait
             src="/images/holistic-house/andy-about.png"
             alt={locale === "ru" ? "Андрей Литвинов" : "Andrey Litvinov"}
             width={900}
