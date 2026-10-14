@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
+import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
@@ -60,6 +61,10 @@ const WORDS = {
     transferReal: 'Tried a safe real-world step', transferSkip: 'No action today',
     transferPlanLabel: 'My optional plan for day 10', lastPlanTitle: 'My saved day 6 experience',
     noSavedPlan: 'No day 6 plan was saved; you can continue without one.',
+    adaptationTitle: 'Choose for future practices (optional)',
+    adaptationHint: 'A possible adjustment, not a prescription:',
+    adaptationKeep: 'Keep the approach', adaptationSimplify: 'Try a shorter practice',
+    adaptationNeutral: 'Choose a neutral version',
     before: 'Just before the practice', after: 'Just after the practice', none: 'Not rated',
     finish: 'Finish and save', finished: 'A little step forward!',
     completed: 'Practice saved', celebration: 'You took time to practise. That counts.',
@@ -134,6 +139,10 @@ const WORDS = {
     transferReal: 'Попробовал(а) в безопасной жизни', transferSkip: 'Без действия сегодня',
     transferPlanLabel: 'Мой необязательный план для урока 10', lastPlanTitle: 'Сохранённый опыт из урока 6',
     noSavedPlan: 'В уроке 6 план не был сохранён. Можно продолжать и без него.',
+    adaptationTitle: 'Выбор для следующих занятий (необязательно)',
+    adaptationHint: 'Возможный вариант, а не назначение:',
+    adaptationKeep: 'Оставить как есть', adaptationSimplify: 'Упростить практику',
+    adaptationNeutral: 'Перейти на нейтральный вариант',
     before: 'Непосредственно перед практикой', after: 'Непосредственно после практики', none: 'Нет оценки',
     finish: 'Завершить и сохранить', finished: 'Маленький шаг вперёд!',
     completed: 'Практика сохранена', celebration: 'Вы нашли время для себя. Это уже важный шаг.',
@@ -241,6 +250,7 @@ export default function CourseSlidePlayer({
   const [usefulness, setUsefulness] = useState(session?.signals?.usefulness || 'skip')
   const [flexibility, setFlexibility] = useState(session?.signals?.flexibility || 'skip')
   const [transferStage, setTransferStage] = useState(session?.signals?.transferStage || 'skip')
+  const [adaptationChoice, setAdaptationChoice] = useState(session?.signals?.adaptationChoice || 'skip')
   const [transferPlan, setTransferPlan] = useState(session?.transferPlan || '')
   const [beforeNow, setBeforeNow] = useState(session?.beforeNow ?? null)
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
@@ -264,6 +274,7 @@ export default function CourseSlidePlayer({
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
   const finished = index >= slides.length
+  const adaptationProposal = practiceAdjustmentSuggestion({comfort,usefulness,flexibility})
   const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
 
@@ -357,14 +368,14 @@ export default function CourseSlidePlayer({
       if (!sessionOp.current) sessionOp.current = crypto.randomUUID()
       // Keep the legacy feedback field for old reports; independent v1.5
       // signals carry comfort, usefulness and flexibility without conflation.
-      const feedback = comfort==='uncomfortable' ? 'uncomfortable'
-        : usefulness==='useful' ? 'helped'
+      const legacyFeedback = feedback==='uncomfortable' || comfort==='uncomfortable'
+        ? 'uncomfortable' : usefulness==='useful' ? 'helped'
         : usefulness==='unchanged' ? 'neutral' : 'skip'
       const response = await onSession({
         day:cycle.day,lessonId:lesson.id,operationId:sessionOp.current,
-        feedback,beforeNow,afterNow,reflection,
+        feedback:legacyFeedback,beforeNow,afterNow,reflection,
         practiceWindow:'practice_v15',comfort,usefulness,flexibility,
-        transferStage,thoughtPath:thoughtChoice,
+        transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         transferPlan:cycle.day===6?transferPlan:'',
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
@@ -685,6 +696,22 @@ export default function CourseSlidePlayer({
                 <span>{label}</span>{flexibility===key&&<Check size={18} aria-hidden="true"/>}
               </button>)}
             </div>
+            {(comfort!=='skip'||usefulness!=='skip')&&<div className={styles.practiceRating} data-course-practice-adaptation>
+              <p className={styles.prompt}>{words.adaptationTitle}</p>
+              {adaptationProposal&&adaptationProposal.kind!=='stop'&&<p className={styles.helper}>
+                {words.adaptationHint} {adaptationProposal.kind==='keep'?words.adaptationKeep:
+                  adaptationProposal.kind==='simplify'?words.adaptationSimplify:words.adaptationNeutral}
+              </p>}
+              <div className={styles.feedbackOptions} role="group" aria-label={words.adaptationTitle}>
+                {[
+                  ['keep',words.adaptationKeep],['simplify',words.adaptationSimplify],
+                  ['neutral',words.adaptationNeutral],
+                ].map(([key,label])=><button key={key} type="button" disabled={locked}
+                  aria-pressed={adaptationChoice===key} onClick={()=>setAdaptationChoice(key)}>
+                  <span>{label}</span>{adaptationChoice===key&&<Check size={18} aria-hidden="true"/>}
+                </button>)}
+              </div>
+            </div>}
             <small className={styles.helper}>{words.needSave}</small>
           </>}
         </>}
