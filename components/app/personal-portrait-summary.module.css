@@ -1,12 +1,12 @@
 /* Personal portrait — the same mint, teal and ivory palette as My Tests / Insights. */
-.root{--teal:#297667;--forest:#205f52;--line:#d6e3da;--muted:#65766e;color:#35443b;display:grid;gap:13px;padding:clamp(15px,2.5vw,22px);border:1px solid var(--line);border-radius:19px;background:linear-gradient(140deg,#f3f9f5 0%,#fcfaf4 100%)}
+.root{--teal:#147e8c;--forest:#075f70;--line:#c7e3e7;--muted:#65766e;color:#264b55;display:grid;gap:13px;padding:clamp(15px,2.5vw,22px);border:1px solid var(--line);border-radius:19px;background:linear-gradient(140deg,#e9f8fa 0%,#f9fdfd 100%)}
 .root *{box-sizing:border-box}
 .heading{display:grid;gap:4px}
-.eyebrow{margin:0!important;color:#397668;font:780 10px/1.35 system-ui,sans-serif!important;letter-spacing:.13em;text-transform:uppercase}
+.eyebrow{margin:0!important;color:#157c88;font:780 10px/1.35 system-ui,sans-serif!important;letter-spacing:.13em;text-transform:uppercase}
 .heading h2{color:#332f2b!important;font:400 clamp(23px,2.9vw,31px)/1.18 Georgia,serif!important;margin:0!important}
 .heading>p:last-child{max-width:78ch;color:#62756a;font:400 13px/1.48 system-ui,sans-serif!important;margin:0!important}
 .layout{display:grid;grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr);align-items:stretch;gap:11px;min-width:0}
-.visual{min-width:0;padding:10px;border:1px solid #cfe3d8;border-radius:15px;background:#f8fcf9;display:flex;flex-direction:column}
+.visual{min-width:0;padding:10px;border:1px solid #c4e1e6;border-radius:15px;background:#f3fbfc;display:flex;flex-direction:column}
 .image{width:100%;min-width:0;overflow:hidden;border-radius:11px}
 .image :global(section[class*="visualCompact"]){padding:0!important;border:none!important;border-radius:12px!important;background:transparent!important;box-shadow:none!important}
 .image :global([class*="visualHeader"]){display:none!important}
@@ -15,20 +15,24 @@
 .visualNote{display:flex;align-items:flex-start;gap:7px;color:#54766c;font:400 11px/1.45 system-ui,sans-serif!important;margin:8px 2px 0!important}
 .visualNote svg{flex:none;margin-top:1px}
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
-.card{position:relative;min-width:0;min-height:128px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 13px 28px;border:1px solid #d6e3da;border-radius:13px;background:#fffefa;color:#385347!important;text-decoration:none!important;overflow-wrap:anywhere;transition:border-color .15s,background .15s}
-.card:hover{background:#f1f8f3;border-color:#9bc3b4}
+.card{position:relative;min-width:0;min-height:128px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:13px 13px 28px;border:1px solid #c7e3e7;border-radius:13px;background:#ffffff;color:#285660!important;text-decoration:none!important;overflow-wrap:anywhere;transition:border-color .15s,background .15s}
+.card:hover{background:#e6f6f8;border-color:#8bc8d0}
 .card>svg:first-child{flex:none;color:var(--teal);margin-bottom:2px}
-.card strong{color:#245e53;font:750 13px/1.27 system-ui,sans-serif}
-.card>span{color:#334b40;font:650 12.5px/1.38 system-ui,sans-serif}
-.card small{color:#738078;font:400 10.5px/1.4 system-ui,sans-serif}
+.card strong{color:#145e6c;font:750 13px/1.27 system-ui,sans-serif}
+.card>span{color:#28545d;font:650 12.5px/1.38 system-ui,sans-serif}
+.card small{color:#6d828b;font:400 10.5px/1.4 system-ui,sans-serif}
 .cardArrow{position:absolute;right:12px;bottom:11px;color:var(--teal)}
 .footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:3px;flex-wrap:wrap}
-.footer>span{font:500 11.5px/1.4 system-ui,sans-serif;color:#667a6c}
+.footer>span{font:500 11.5px/1.4 system-ui,sans-serif;color:#637e86}
 .primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border-radius:11px;border:1px solid var(--forest);background:var(--teal);font:750 12px/1.3 system-ui,sans-serif;color:#fff!important;text-decoration:none!important}
 .primary:hover{background:var(--forest);color:white!important}
-.privacy{color:#829085;font:400 10.5px/1.4 system-ui,sans-serif!important;margin:-2px 0 0!important}
-.root a:focus-visible{outline:3px solid #297667;outline-offset:2px}
+.privacy{color:#738991;font:400 10.5px/1.4 system-ui,sans-serif!important;margin:-2px 0 0!important}
+.root a:focus-visible{outline:3px solid #147e8c;outline-offset:2px}
 @media(max-width:800px){.layout{grid-template-columns:1fr}.visual{align-items:center}.image{max-width:520px}.visualNote{max-width:520px}.card{min-height:112px}}
 @media(max-width:480px){.root{padding:13px;border-radius:16px;gap:11px}.heading h2{font-size:24px!important}.heading>p:last-child{font-size:12px!important}.cards{gap:7px}.card{min-height:127px;padding:10px 9px 25px;border-radius:11px;gap:4px}.card strong{font-size:12px}.card>span{font-size:11.5px}.card small{font-size:10px}.image :global([class*="modelStage"]){height:222px!important;min-height:222px!important}.image :global(svg[class*="model"]){height:222px!important}.footer{align-items:stretch}.primary{width:100%}}
 @media(max-width:330px){.cards{grid-template-columns:1fr}.card{min-height:94px}}
 @media(prefers-reduced-motion:reduce){.card{transition:none}}
+
+/* Calm turquoise focus and tap targets for the private profile. */
+.card:focus-visible,.primary:focus-visible{outline:3px solid #01a5b7;outline-offset:3px}
+@media(max-width:480px){.card{min-height:118px}.primary{min-height:46px}}

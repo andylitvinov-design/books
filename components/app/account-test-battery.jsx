@@ -7,6 +7,7 @@ import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkl
 import { TestExplorer } from './test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
+import { TestDynamics } from './test-dynamics'
 import { coverageForFocus } from '@/lib/assessments/test-explorer'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
@@ -119,6 +120,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const c = COPY[locale] || COPY.en
   const router = useRouter()
   const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get('tab') === 'dynamics' ? 'dynamics' : 'values'
+  const [activeTab, setActiveTab] = useState(tabFromUrl)
+  useEffect(() => { setActiveTab(tabFromUrl) }, [tabFromUrl])
   const openFromInsights = searchParams.get('explore') === '1'
   const fromCourse = searchParams.get('course') === '1'
   const requestedCategory = searchParams.get('category')
@@ -209,6 +213,13 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     return planRows({ definitionIds: ids, completedRunIds: [] }, data, locale)
   }, [data, locale])
   const root = '/' + locale + '/app'
+  function chooseTab(next) {
+    setActiveTab(next)
+    const query = new URLSearchParams(searchParams.toString())
+    if (next === 'dynamics') query.set('tab', 'dynamics')
+    else query.delete('tab')
+    router.replace(root + '/tests' + (query.toString() ? '?' + query.toString() : ''), { scroll: false })
+  }
   const selectionPreferences = currentPlan?.selectionPreferences || data.latestTestPlan?.selectionPreferences || {}
   // A category-scoped invitation starts a fresh *filter view*, never modifies
   // stored selections. Saving uses the existing appendActive flow.
@@ -448,6 +459,28 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
   }
   return <>
+    <nav className={styles.viewTabs} role="tablist" aria-label={locale === 'ru' ? 'Представление моих тестов' : 'My tests view'} data-my-tests-tabs>
+      {[
+        ['values', locale === 'ru' ? 'Значения' : 'Values'],
+        ['dynamics', locale === 'ru' ? 'Динамика' : 'Dynamics'],
+      ].map(([key, label], index) => <button key={key} type="button"
+        id={'hh-tests-tab-' + key} role="tab" aria-selected={activeTab === key}
+        aria-controls={'hh-tests-panel-' + key} tabIndex={activeTab === key ? 0 : -1}
+        className={activeTab === key ? styles.activeTab : ''}
+        onClick={() => chooseTab(key)}
+        onKeyDown={event => {
+          if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+          event.preventDefault()
+          const next = event.key === 'Home' ? 'values' : event.key === 'End' ? 'dynamics'
+            : key === 'values' ? 'dynamics' : 'values'
+          chooseTab(next)
+          event.currentTarget.parentElement?.querySelector('#hh-tests-tab-' + next)?.focus()
+        }}>
+        {key === 'values' ? <ClipboardList size={17} aria-hidden="true" /> : <Activity size={17} aria-hidden="true" />}
+        {label}
+      </button>)}
+    </nav>
+    {activeTab === 'values' && <div role="tabpanel" id="hh-tests-panel-values" aria-labelledby="hh-tests-tab-values">
     <div className={styles.batteryLayout}>
       <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
         <MyTestsDashboard
@@ -611,5 +644,15 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
       </section>}
+    </div>}
+    {activeTab === 'dynamics' && <div role="tabpanel" id="hh-tests-panel-dynamics" aria-labelledby="hh-tests-tab-dynamics">
+      <TestDynamics results={data.results || []} locale={locale} busy={busy}
+        canRetake={definitionId => pastRows.some(row => row.definition.id === definitionId)}
+        onRetake={definitionId => {
+          const row = pastRows.find(item => item.definition.id === definitionId)
+          if (row) void openTest(row)
+        }} />
+      {error && <p role="alert" className={styles.inlineError}>{error}</p>}
+    </div>}
   </>
 }
