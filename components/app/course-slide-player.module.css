@@ -179,3 +179,12 @@
 @media(max-width:540px){.rewardStage{gap:15px;min-height:290px}.rewardMedal{width:128px;height:128px}.rewardMedal svg{width:58px;height:58px}.rewardStats>div{min-height:94px;padding:8px 4px}.rewardStats span{font-size:10px}.rewardStage>p{font-size:13px}}
 @media(max-width:350px){.rewardStats{gap:5px}.rewardStats>div{padding:8px 3px}.rewardStats strong{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.rewardMedal{animation:none!important}}
+
+/* The closing path screen focuses on one thing: real completion / 14. */
+.journeyRewardIcon{display:grid;place-items:center;width:134px;height:134px;margin:0 auto;color:#099aa9;border-radius:40px;background:linear-gradient(145deg,#effdf9,#d0f2fd);box-shadow:0 14px 24px #188f9b16}
+.completionPath{display:grid;gap:13px;width:min(100%,360px);padding:15px;border:1px solid #c5e9ee;border-radius:22px;background:#f0fcfd}
+.completionPath strong{color:#048b9c;font-size:clamp(27px,7vw,40px);font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.completionPath progress{display:block;width:100%;height:15px;accent-color:#0aa6b9;border-radius:99px;overflow:hidden}
+.rewardStats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:350px}
+.rewardStats>div:nth-child(2){color:#b88925;background:#fff8e4;border-color:#f2e2a9}
+@media(max-width:540px){.journeyRewardIcon{width:105px;height:105px;border-radius:28px}.journeyRewardIcon svg{width:54px;height:54px}.completionPath{padding:13px}}
