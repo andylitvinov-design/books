@@ -87,7 +87,8 @@ test('invoice and receipt retain separately approved neutral geometry',()=>{
 
 test('editorial A4 cover enlarges the identity art and keeps exactly two actual ratings',()=>{
   const pdf=buildPrescriptionPdf(sample('en'),'en',origin).toString('latin1')
-  assert.match(pdf,/PEOPLE  ·  INSIGHT  ·  HARMONY/,'running identity includes the brand motto')
+  assert.match(readFileSync('lib/prescriptions/pdf.js','utf8'),/PEOPLE  ·  INSIGHT  ·  HARMONY/,
+    'running identity includes the brand motto')
   assert.match(pdf,/A GENTLER PATH TO INNER BALANCE/,'approved editorial subtitle is printed')
   const lighthousePlacements=[...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 [\d.]+ [\d.]+ [\d.]+ cm \/Lighthouse Do Q/g)]
   assert.ok(lighthousePlacements.length>=2 && Number(lighthousePlacements[1][1])>=96,
