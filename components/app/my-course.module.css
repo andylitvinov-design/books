@@ -252,3 +252,6 @@
   .personalTrack strong{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){.programCard{transition:none}.programCard:hover{transform:none}}
+
+/* Return from one lesson to the compact course-selection slide. */
+.backToCourses{display:inline-flex;align-items:center;gap:7px;justify-self:start;padding:8px 10px;background:#ecfafb!important;border:1px solid #bbdfe8!important;border-radius:11px;font-size:13px;font-weight:800;color:#157e94!important;cursor:pointer}.backToCourses:focus-visible{outline:3px solid #11617a;outline-offset:3px}
