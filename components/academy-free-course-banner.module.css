@@ -163,3 +163,8 @@
   .cta:hover { transform: none; }
 }
 @media print { .banner { display: none; } }
+
+.learn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:9px 11px;border-radius:10px;color:#8a3655!important;font-size:13px;font-weight:800;text-decoration:underline!important;text-underline-offset:3px}
+.learn:hover{background:#faecf0}
+.learn:focus-visible{outline:3px solid #944569;outline-offset:2px}
+@media(max-width:460px){.learn{width:100%;justify-content:center}}
