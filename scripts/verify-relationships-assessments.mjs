@@ -184,8 +184,11 @@ try{
   await page.setViewportSize({width:390,height:844})
   // Keyboard activation also works when Next's development-only badge overlaps Home.
   const home=page.locator('.mobile-bottom-navigation [data-nav-item="home"]')
+  await expect(home).toHaveAttribute('href','/?lang='+locale)
   await home.focus()
   await home.press('Enter')
+  // Await the actual route commit; cold Next compilation can outlast the default assertion window.
+  await expect(page).toHaveURL(origin+'/?lang='+locale,{timeout:20000})
   await page.waitForLoadState('networkidle')
   const spotlight=page.locator('[data-home-topic-journeys] [data-topic-id="relationships"]')
   await expect(spotlight).toBeVisible()
