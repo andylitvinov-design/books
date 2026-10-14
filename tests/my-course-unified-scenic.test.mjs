@@ -31,7 +31,7 @@ test('all course surfaces reuse the approved standalone scenic art asset', () =>
 })
 
 test('each semantic learning unit has the same scene presentation but retains unique readable content', () => {
-  for (const kind of ['pace','baseline','checkin','recall','idea','understand','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
+  for (const kind of ['welcome','baseline','checkin','recall','idea','understand','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
     assert.match(player, new RegExp("slide\\.kind === '" + kind + "'"))
     assert.match(player, new RegExp('' + kind + ':'))
   }
@@ -53,6 +53,6 @@ test('no course visuals change the real persisted 14-day progress and safe one-a
   assert.match(playerCss, /prefers-reduced-motion:reduce/)
   assert.match(playerCss, /\.overlay \.primary\{/)
   assert.match(player, /aria-pressed=\{value === i\}/)
-  assert.match(player, /onPreferences\(next\)/)
+  assert.match(player, /onPreferences\(change\)/)
   assert.doesNotMatch(player, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
 })

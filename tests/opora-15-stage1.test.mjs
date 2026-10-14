@@ -11,7 +11,7 @@ test('OPORA v1.5 preserves the approved multi-slide sequence, not a four-slide c
   assert.ok(block)
   const actual = [...block.matchAll(/kind:\s*'([^']+)'/g)].map(match => match[1])
   assert.deepEqual(actual, [
-    'pace','baseline','checkin','recall','idea','understand','phrase','guided',
+    'welcome','baseline','checkin','recall','idea','understand','phrase','guided',
     'ritual','transfer','symbol','reflection','moment','feedback',
   ])
   assert.match(block, /guided\.map\(\(section, index\) =>/)
