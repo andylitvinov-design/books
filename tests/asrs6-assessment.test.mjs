@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
@@ -25,7 +26,7 @@ import { buildClientReport } from '../lib/profile/client-report.js'
 const source = JSON.parse(readFileSync(new URL('../docs/assessments/sources/asrs6/instrument-extraction.json',import.meta.url),'utf8'))
 const digest = value => createHash('sha256').update(canonicalJSON(value)).digest('hex')
 const answers = values => Object.fromEntries(values.map((value,i)=>[`asrs6.${String(i+1).padStart(2,'0')}`,value]))
-const score = (values,language='en') => scoreAssessment(getAssessmentDefinition('asrs-6','v1',language),answers(values))
+const score = (values,language='en') => scoreAssessment(getAssessmentDefinition('asrs-6','v1',language),answers(values), syntheticTraumaContext(getAssessmentDefinition('asrs-6','v1',language)))
 const text = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('source-exact EN/RU six items, anchors, instructions, safety, attribution and immutable identities',()=>{
@@ -84,20 +85,20 @@ test('all six valid answers required, including zero; missing/null never become 
     assert.equal(Object.keys(validateAnswers(d,complete)).length,6)
     for(const q of d.questions){
       const missing={...complete};delete missing[q.id]
-      assert.throws(()=>scoreAssessment(d,missing),/REQUIRED_ANSWER/)
-      assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}),/REQUIRED_ANSWER/)
+      assert.throws(()=>scoreAssessment(d,missing, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+      assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
       assert.equal(Object.keys(validateAnswers(d,missing,{requireComplete:false})).length,5)
-      for(const invalid of [-1,5,.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:invalid}),/INVALID_ANSWER/)
+      for(const invalid of [-1,5,.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:invalid}, syntheticTraumaContext(d)),/INVALID_ANSWER/)
     }
-    assert.throws(()=>scoreAssessment(d,answers([2,2,2,3,0,null])),/REQUIRED_ANSWER/)
-    assert.throws(()=>scoreAssessment(d,{...complete,extra:0}),/UNKNOWN_FIELD/)
-    assert.throws(()=>scoreAssessment({...d,title:'changed'},complete),/INVALID_PROVENANCE/)
+    assert.throws(()=>scoreAssessment(d,answers([2,2,2,3,0,null]), syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+    assert.throws(()=>scoreAssessment(d,{...complete,extra:0}, syntheticTraumaContext(d)),/UNKNOWN_FIELD/)
+    assert.throws(()=>scoreAssessment({...d,title:'changed'},complete, syntheticTraumaContext({...d,title:'changed'})),/INVALID_PROVENANCE/)
   }
 })
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
@@ -202,7 +203,7 @@ test('source-backed runner and report wiring preserve adult guard, accessible sh
   assert.match(sql,/definition is distinct from d/)
   assert.doesNotMatch(sql,/^\s*(update app\.|delete from|alter table|create policy|grant )/im)
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
   assert.equal(prior.length,178)
   assert.equal(digest(prior),'a6c1b0cca75863dc951a02003aa914437dff637d9dd61f9f0dc36925b40e12c0')
 })

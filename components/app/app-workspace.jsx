@@ -1,4 +1,6 @@
 'use client'
+import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
@@ -1297,6 +1299,11 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     )
   }
 
+  if (hasTraumaAdministration(def) && !traumaContextReady(def, run.context || {})) {
+    return <TraumaFrontMatter definition={def} context={context} onChange={setContext}
+      onContinue={() => save({}, index)} onExit={onExit} busy={busy || Boolean(operation.current)} error={error} />
+  }
+
   const min = question?.min ?? def.answerScale?.min,
     max = question?.max ?? def.answerScale?.max,
     partCount = def.key === 'hh-bach-flower-profile' ? 3 : Math.min(4, Math.max(1, def.questions.length)),
@@ -1386,7 +1393,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         </div>
       </header>
 
-      <p className="hh-runner-instructions">{timeframe}</p>
+      <p className="hh-runner-instructions">{hasTraumaAdministration(def) ? (def.key === 'itq-adult' ? 'Follow the instructions for each section below.' : 'During the past month') : timeframe}</p>
+      {hasTraumaAdministration(def) && <p lang="en">{def.safetyText}</p>}
       {def.instructions && <p className="hh-runner-instructions" lang={def.instrumentLocale}>{def.instructions}</p>}
       <Asrs6SourceNotice definition={def} startedAt={run.startedAt} locale={locale} />
 
@@ -1397,6 +1405,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
               <legend>
                 <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
                 {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
+                <TraumaSectionInstructions question={item} />
                 <h2>{item.text}</h2>
               </legend>
               {def.key === 'cdc-hrqol-4' && item.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (
@@ -1413,6 +1422,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
           <legend>
             {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
+            <TraumaSectionInstructions question={question} />
             <h1>{question.text}</h1>
           </legend>
           {def.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers['hrqol4.02'] === 0 && run.answers['hrqol4.03'] === 0 && (

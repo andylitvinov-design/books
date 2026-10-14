@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -11,7 +12,7 @@ import {MIND_BODY_MONITOR_REGISTRY} from '../data/assessments/mind-body-monitor-
 
 test('six new source-backed measures have intact definitions',()=>{
  assert.equal(definitions.length,2)
- assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 135)
+ assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 137)
  for(const d of definitions){
   const {contentHash,...body}=d
   assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(body)).digest('hex'))
@@ -23,7 +24,7 @@ test('registered instruments compute raw scores in declared ranges',()=>{
  for(const d of definitions){
   const found=getAssessmentDefinition(d.key,d.version,d.instrumentLocale)
   const answers=Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale.min]))
-  const score=scoreAssessment(found,answers).dimensions[0]
+  const score=scoreAssessment(found,answers, syntheticTraumaContext(found)).dimensions[0]
   assert.ok(score.value>=score.min&&score.value<=score.max)
  }
 })
@@ -39,15 +40,15 @@ test('positive and negative reversed items produce the expected range endpoints'
    q.id,negative.has(index+1)?(invert?0:d.answerScale.max):(invert?d.answerScale.max:0),
   ]))
   assert.deepEqual(d.scoring.dimensions[0].reverseItems,reverseSet.map(index=>d.questions[index-1].id))
-  assert.equal(scoreAssessment(d,answers(false)).dimensions[0].value,0)
-  assert.equal(scoreAssessment(d,answers(true)).dimensions[0].value,maximum)
+  assert.equal(scoreAssessment(d,answers(false), syntheticTraumaContext(d)).dimensions[0].value,0)
+  assert.equal(scoreAssessment(d,answers(true), syntheticTraumaContext(d)).dimensions[0].value,maximum)
  }
 })
 test('brief and somatic forms have original item counts and upper scores',()=>{
  for(const [key,items,max] of [['phq-2',2,6],['gad-2',2,6],['k10',10,40],['phq-15',15,30]]){
   const d=getAssessmentDefinition(key,'v1','en')
   assert.equal(d.questions.length,items)
-  assert.equal(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,d.answerScale.max]))).dimensions[0].value,max)
+  assert.equal(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,d.answerScale.max])), syntheticTraumaContext(d)).dimensions[0].value,max)
  }
 })
 

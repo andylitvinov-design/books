@@ -1,4 +1,6 @@
 'use client'
+import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
+import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -516,6 +518,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  async function saveTraumaContext() {
+    if (!run || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+        answers: {}, context, progress: index, expectedRevision: run.revision, operationId: crypto.randomUUID(),
+      })
+      setRun(saved)
+      setContext(saved.context || {})
+    } catch { setError(c.error) } finally { setBusy(false) }
+  }
+
   async function submitSavedRun(currentRun, destination = 'report') {
     const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
       expectedRevision: currentRun.revision,
@@ -773,7 +788,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
-        {phase === 'mode' && definition && run && (
+        {['mode', 'questions'].includes(phase) && definition && run && hasTraumaAdministration(definition) && !traumaContextReady(definition, run.context || {}) && (
+          <TraumaFrontMatter definition={definition} context={context} onChange={setContext}
+            onContinue={saveTraumaContext} onExit={resetToCatalog} busy={busy} error={error} />
+        )}
+
+        {phase === 'mode' && traumaContextReady(definition, run?.context || {}) && definition && run && (
           <div className="cabinet-guest-runner hh-test-mode-picker">
             <div className="hh-test-mode-intro">
               <p className="cabinet-test-progress">{definitionTitle(definition, locale)}</p>
@@ -797,7 +817,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
-        {phase === 'questions' && definition && question && run && (
+        {phase === 'questions' && definition && question && run && traumaContextReady(definition, run.context || {}) && (
           <div className={`cabinet-guest-runner cabinet-guest-runner--${mode || 'guided'}`}>
             <div className="hh-runner-topline">
               <p className="cabinet-test-progress">
@@ -830,6 +850,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               ))}
             </div>
 
+            {hasTraumaAdministration(definition) && <p lang="en" className="cabinet-test-note">{definition.safetyText}</p>}
             {definition.instructions && <p className="cabinet-test-note" lang={definition.instrumentLocale}>{definition.instructions}</p>}
             <Asrs6SourceNotice definition={definition} startedAt={run.startedAt} locale={locale} />
             {mode === 'quick' ? (
@@ -838,6 +859,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                   <fieldset key={item.id} className="cabinet-quick-question" disabled={busy}>
                     <legend>
                       <span className="cabinet-question-number">{c.question} {step + 1} / {definition.questions.length}</span>
+                      <TraumaSectionInstructions question={item} />
                       <h3>{item.text}</h3>
                     </legend>
                     {definition.key === 'mini-ipip-20' && step === 0 && <p className="cabinet-test-note">{c.traitNotice}</p>}
@@ -870,7 +892,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             ) : (
               <div className="cabinet-guided-question">
-                <h3>{question.text}</h3>
+                <TraumaSectionInstructions question={question} />
+                  <h3>{question.text}</h3>
                 {definition.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
                 {definition.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && answers['hrqol4.02'] === 0 && answers['hrqol4.03'] === 0 && (
                   <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>

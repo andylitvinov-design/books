@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
@@ -6,7 +7,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 test('published Psychic Health battery resolves all active executable definitions and score shapes', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 135)
+  assert.equal(active.length, 137)
 
   for (const item of active) {
     const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale
@@ -19,7 +20,7 @@ test('published Psychic Health battery resolves all active executable definition
         question.min ?? definition.answerScale?.min ?? 0,
       ]),
     )
-    const scored = scoreAssessment(definition, answers)
+    const scored = scoreAssessment(definition, answers, syntheticTraumaContext(definition))
     assert.equal(scored.definitionKey, item.key)
     assert.ok(scored.dimensions.length > 0, item.key)
     assert.ok(

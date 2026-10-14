@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -12,13 +13,13 @@ import { buildExplorerEntries, coverageForSelection } from '../lib/assessments/t
 
 const get = (key) => getAssessmentDefinition(key, 'v1', 'en')
 const answersFor = (definition, value=0) => Object.fromEntries(definition.questions.map(q => [q.id, Math.max(q.min ?? 0, value)]))
-const scores = (definition, answers) => Object.fromEntries(scoreAssessment(definition,answers).dimensions.map(d=>[d.key,d.value]))
+const scores = (definition, answers) => Object.fromEntries(scoreAssessment(definition,answers, syntheticTraumaContext(definition)).dimensions.map(d=>[d.key,d.value]))
 const keys = ['cdc-hrqol-4','cdc-healthy-days-symptoms']
 
 test('CDC official modules are published, verified, immutable and original-English', () => {
   assert.equal(CDC_HEALTHY_DAYS_CATALOG.length,2)
   assert.equal(CDC_HEALTHY_DAYS_DEFINITIONS.length,2)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 135)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 137)
   assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
   for (const key of keys) {
     const item=MONITORING_CATALOG.find(x=>x.key===key), d=get(key)

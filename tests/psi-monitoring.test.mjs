@@ -1,5 +1,6 @@
 import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -39,12 +40,12 @@ const result = (def, value, day) => ({
   runId: randomUUID(),
   accountId,
   measurementAt: '2026-10-' + String(day).padStart(2, '0') + 'T12:00:00.000Z',
-  ...scoreAssessment(def, answers(def, value)),
+  ...scoreAssessment(def, answers(def, value), syntheticTraumaContext(def)),
 })
 
 test('monitoring catalog exposes the cleared active checks and keeps uncleared measures metadata-only', () => {
   const newViaKeys = new Set(IPIP_VIA_R_COMPLETION_CATALOG.map(item=>item.key))
-  const active = MONITORING_CATALOG.filter((item) => item.startable&&!newViaKeys.has(item.key)).map((item) => item.key).sort()
+  const active = MONITORING_CATALOG.filter((item) => item.startable&&!['pcl-5','itq-adult'].includes(item.key)&&!newViaKeys.has(item.key)).map((item) => item.key).sort()
   assert.deepEqual(active, [
     'asrs-6',
     'mhc-sf',
@@ -110,7 +111,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
 })
 
 test('HH Weekly Pulse is original, versioned and keeps axes separate without a total score', () => {
-  const scored = scoreAssessment(weekly, answers(weekly, 5))
+  const scored = scoreAssessment(weekly, answers(weekly, 5), syntheticTraumaContext(weekly))
   assert.equal(scored.total, undefined)
   assert.equal(scored.dimensions.length, 8)
   assert.deepEqual(

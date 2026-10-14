@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
@@ -56,12 +57,12 @@ test('all active scoring keys match immutable registered versions and yield full
       assert.equal(audit.status, 'ready', item.key + '/' + locale + ': ' + audit.status)
       assert.ok(def.translationVersion && def.contentHash?.startsWith('sha256:'), item.key)
       for (const extreme of ['min', 'max']) {
-        const scored = scoreAssessment(def, answersFor(def, extreme))
+        const scored = scoreAssessment(def, answersFor(def, extreme), syntheticTraumaContext(def))
         assert.ok(scored.dimensions.length > 0, item.key)
         for (const language of ['en', 'ru']) {
           const report = buildAssessmentResultReport(scored, language)
           assert.equal(report.sections.length, scored.dimensions.length, item.key + '/' + language)
-          assert.ok(report.sections.every(s => s.meaning?.length > 40 && s.followUp?.length > 20 && s.steps?.length >= 2), item.key + '/' + language)
+          assert.ok(report.sections.every(s => s.meaning?.length > 40 && s.followUp?.length > 20 && (def.administration ? s.steps?.length === 0 : s.steps?.length >= 2)), item.key + '/' + language)
         }
       }
     }

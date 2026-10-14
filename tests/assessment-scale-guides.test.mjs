@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
@@ -32,7 +33,7 @@ test('every active test has one separate bilingual source document and correct s
     assert.match(document,/What this test explores/)
     for (const language of ['en','ru']) {
       const def=defFor(item,language)
-      const result=scoreAssessment(def,answers(def))
+      const result=scoreAssessment(def,answers(def), syntheticTraumaContext(def))
       const guide=getTestScaleGuide(item.key,language)
       assert.ok(guide,item.key+'/'+language)
       assert.equal(guide.scales.length,result.dimensions.length,item.key+'/'+language)

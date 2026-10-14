@@ -1,0 +1,31 @@
+{
+  "itq_underlined_greater_than_signs": 10,
+  "meaning": "greater-than-or-equal; plain text extraction loses underline. Do not implement >2.",
+  "source_files": [
+    {
+      "file": "pcl5-standard.pdf",
+      "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/PCL5_Standard_form.pdf",
+      "sha256": "80e133dd9eb977bef1aa21401ec8c8b19fecaec7856437bc2dcc3a44b5c07bd3"
+    },
+    {
+      "file": "pcl5-criterion-a.pdf",
+      "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/PCL5_criterionA_form.PDF",
+      "sha256": "9615bb0198a06dde3cb2016a8736e8f0c657cf454ac8d823cfda758262b26dde"
+    },
+    {
+      "file": "pcl5-guide.pdf",
+      "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/using-PCL5.pdf",
+      "sha256": "df2b624a8419cfa24915d3ad0b336b71360445af32e6c65250800fd9340ee952"
+    },
+    {
+      "file": "pc-ptsd5.pdf",
+      "url": "https://www.ptsd.va.gov/PTSD/professional/assessment/documents/pc-ptsd-5-v6.pdf",
+      "sha256": "70c1ef7ccad2423d39ef9f50e46d50faa36f8ad71d9d8479641029f80860702e"
+    },
+    {
+      "file": "itq-english.docx",
+      "url": "https://cdn.prod.website-files.com/686e835a5683f56bbfc4c3a4/68b0694afb8eccbc37bb76c0_ITQ_English.docx",
+      "sha256": "c056fcf2a438787f145242e2009c2d8d4806fd0f7fd15e6d9093f243c79886cf"
+    }
+  ]
+}

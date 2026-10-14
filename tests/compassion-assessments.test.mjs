@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -25,7 +26,7 @@ const fixtures = [
     mixed:[1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1],expected:[3,3,2.5,3.25,3.25],uniformMin:[2,1,1,1,5],uniformMax:[4,5,5,5,1]},
 ]
 const answers=(f,values)=>Object.fromEntries(values.map((v,i)=>[`${f.prefix}.${String(i+1).padStart(2,'0')}`,v]))
-const values=(d,a)=>scoreAssessment(d,a).dimensions.map(x=>x.value)
+const values=(d,a)=>scoreAssessment(d,a, syntheticTraumaContext(d)).dimensions.map(x=>x.value)
 const numbers=ids=>ids.map(id=>Number(id.split('.').at(-1)))
 
 for(const f of fixtures){
@@ -67,16 +68,16 @@ for(const f of fixtures){
   const complete=answers(f,Array(f.count).fill(3))
   for(const q of d.questions){
    const missing={...complete};delete missing[q.id]
-   assert.throws(()=>scoreAssessment(d,missing),/REQUIRED_ANSWER/)
-   assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}),/REQUIRED_ANSWER/)
+   assert.throws(()=>scoreAssessment(d,missing, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+   assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
    assert.equal(Object.keys(validateAnswers(d,missing,{requireComplete:false})).length,f.count-1)
-   for(const bad of [0,6,-1,2.5,'3',NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:bad}),/INVALID_ANSWER/)
+   for(const bad of [0,6,-1,2.5,'3',NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:bad}, syntheticTraumaContext(d)),/INVALID_ANSWER/)
   }
-  assert.throws(()=>scoreAssessment(d,{...complete,unexpected:3}))
+  assert.throws(()=>scoreAssessment(d,{...complete,unexpected:3}, syntheticTraumaContext(d)))
  })
  test(`${f.key}: EN/RU reports and guides are complete, directional, continuous and source-linked`,()=>{
   for(const locale of ['en','ru'])for(const n of [1,3,5]){
-   const result=scoreAssessment(d,answers(f,Array(f.count).fill(n)))
+   const result=scoreAssessment(d,answers(f,Array(f.count).fill(n)), syntheticTraumaContext(d))
    const report=buildAssessmentResultReport(result,locale),guide=getTestScaleGuide(d.key,locale)
    assert.equal(report.sections.length,f.groups.length)
    assert.equal(guide.scales.length,f.groups.length)
@@ -104,7 +105,7 @@ for(const f of fixtures){
 }
 
 test('two distinct professional instruments are selectable once in both languages/audiences and correct filters',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
  for(const locale of ['en','ru'])for(const audience of ['guest','account']){
   const entries=buildExplorerEntries({locale,audience})
   for(const f of fixtures){
@@ -136,7 +137,7 @@ test('registration payload exactly matches both immutable definitions and reject
 
 test('confidential EN/RU PDF model retains both tests, scale explanations and compatible history',async()=>{
  const {buildClientReport}=await import('../lib/profile/client-report.js')
- const results=defs.map((d,i)=>({...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,3]))),id:'synthetic-'+i,measurementAt:'2026-10-12T02:00:00Z'}))
+ const results=defs.map((d,i)=>({...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,3])), syntheticTraumaContext(d)),id:'synthetic-'+i,measurementAt:'2026-10-12T02:00:00Z'}))
  results.push({...results[0],id:'synthetic-repeat',measurementAt:'2026-10-12T03:00:00Z'})
  for(const locale of ['en','ru']){
   const report=buildClientReport({results,locale,now:new Date('2026-10-12T04:00:00Z')})

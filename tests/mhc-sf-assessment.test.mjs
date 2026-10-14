@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -33,7 +34,7 @@ const groups = [[1,2,3,4,5,6,7,8,9,10,11,12,13,14],[1,2,3],[4,5,6,7,8],[9,10,11,
 const maxima = [70,15,25,30]
 const mixed = [0,1,2,3,4,5,0,1,2,3,4,5,0,1]
 const answers = values => Object.fromEntries(values.map((v,i)=>[`mhc_sf.${String(i+1).padStart(2,'0')}`,v]))
-const score = values => scoreAssessment(d, answers(values))
+const score = values => scoreAssessment(d, answers(values), syntheticTraumaContext(d))
 const values = result => result.dimensions.map(s=>s.value)
 
 test('adult December 2011 MHC-SF pins all original items, revised item 6, anchors, identity and source version',()=>{
@@ -77,12 +78,12 @@ test('zero is a complete answer; missing, null, fractional and out-of-range resp
   assert.equal(Object.keys(validateAnswers(d,complete)).length,14)
   for(const q of d.questions){
     const missing={...complete};delete missing[q.id]
-    assert.throws(()=>scoreAssessment(d,missing),/REQUIRED_ANSWER/)
-    assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}),/REQUIRED_ANSWER/)
+    assert.throws(()=>scoreAssessment(d,missing, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
+    assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:null}, syntheticTraumaContext(d)),/REQUIRED_ANSWER/)
     assert.equal(Object.keys(validateAnswers(d,missing,{requireComplete:false})).length,13)
-    for(const bad of [-1,6,0.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:bad}),/INVALID_ANSWER/)
+    for(const bad of [-1,6,0.5,'0',false,NaN,Infinity])assert.throws(()=>scoreAssessment(d,{...complete,[q.id]:bad}, syntheticTraumaContext(d)),/INVALID_ANSWER/)
   }
-  assert.throws(()=>scoreAssessment(d,{...complete,unexpected:0}))
+  assert.throws(()=>scoreAssessment(d,{...complete,unexpected:0}, syntheticTraumaContext(d)))
 })
 
 test('EN/RU reports provide four continuous sums, attribution, form-specific limits and no categorical labels',()=>{
@@ -110,11 +111,11 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,68)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,70)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))

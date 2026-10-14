@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -67,9 +68,9 @@ test('TIPI reproduces official 10 item, 5 scale configuration and 1–7 scored e
   // Higher answers to positive-keyed items, lower answers to reverse-keyed items.
   const allHigh=Object.fromEntries(d.questions.map((q,i)=>[q.id, [1,3,5,7,9].includes(i+1)?7:1]))
   const allLow=Object.fromEntries(d.questions.map((q,i)=>[q.id, [1,3,5,7,9].includes(i+1)?1:7]))
-  assert.deepEqual(scoreAssessment(d,allHigh).dimensions.map(x=>x.value),[7,7,7,7,7])
-  assert.deepEqual(scoreAssessment(d,allLow).dimensions.map(x=>x.value),[1,1,1,1,1])
-  assert.deepEqual(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,4]))).dimensions.map(x=>x.value),[4,4,4,4,4])
+  assert.deepEqual(scoreAssessment(d,allHigh, syntheticTraumaContext(d)).dimensions.map(x=>x.value),[7,7,7,7,7])
+  assert.deepEqual(scoreAssessment(d,allLow, syntheticTraumaContext(d)).dimensions.map(x=>x.value),[1,1,1,1,1])
+  assert.deepEqual(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,4])), syntheticTraumaContext(d)).dimensions.map(x=>x.value),[4,4,4,4,4])
 })
 
 test('BFAS and VIA-R use complete official positive/negative keyed forms; no clinical cutoffs',()=>{
@@ -80,7 +81,7 @@ test('BFAS and VIA-R use complete official positive/negative keyed forms; no cli
     const high=Object.fromEntries(d.questions.map(q=>[q.id,dim.reverseItems.includes(q.id)?1:5]))
     const low=Object.fromEntries(d.questions.map(q=>[q.id,dim.reverseItems.includes(q.id)?5:1]))
     for(const [answers,expect] of [[high,5],[low,1]]) {
-      const result=scoreAssessment(d,answers)
+      const result=scoreAssessment(d,answers, syntheticTraumaContext(d))
       assert.equal(result.dimensions.length,1,d.key)
       assert.equal(result.dimensions[0].value,expect,d.key)
       assert.equal(classificationDirection(result.dimensions[0]),'neutral',d.key)
@@ -97,11 +98,11 @@ test('BFAS and VIA-R use complete official positive/negative keyed forms; no cli
   }
 })
 
-test('all runnable 135 now have exact-version score interpretation plans and per-scale guidance',()=>{
+test('all runnable 137 now have exact-version score interpretation plans and per-scale guidance',()=>{
   const c=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual({total:c.total,registered:c.registered,uncovered:c.uncovered,obsolete:c.obsolete},
-    {total:135,registered:135,uncovered:[],obsolete:[]})
-  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,135)
+    {total:137,registered:137,uncovered:[],obsolete:[]})
+  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,137)
   for(const def of professional){
     const guideEN=getTestScaleGuide(def.key,'en')
     const guideRU=getTestScaleGuide(def.key,'ru')
@@ -110,7 +111,7 @@ test('all runnable 135 now have exact-version score interpretation plans and per
     assert.ok(guideEN.scales.every(s=>s.type==='trait' && !s.canChooseSkill))
     assert.ok(guideRU.scales.every(s=>s.watch.length>=30 && s.action.length>=30))
     if(def.key==='tipi-10'){
-      const scored=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,4])))
+      const scored=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,4])), syntheticTraumaContext(def))
       assert.equal(buildAssessmentResultReport(scored,'en').sections.length,5)
       assert.equal(buildAssessmentResultReport(scored,'ru').sections.length,5)
     }
