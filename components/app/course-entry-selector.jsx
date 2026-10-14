@@ -20,7 +20,7 @@ const COPY = {
     addNote: 'A new topic and its own 14-day journey', firstNote: 'Choose a topic or create your personal plan',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
     upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
-    plans: 'Membership plans', start: 'Start', advanced: 'Advanced', premium: 'Premium',
+    plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
     one: '1 active course', five: 'Up to 5 active courses', noAds: 'No ads',
     tests: 'Included tests', session: '1 personal 60-minute session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
@@ -39,7 +39,7 @@ const COPY = {
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: 'Выберите тему или создайте персональный курс',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
     upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
-    plans: 'Тарифы подписки', start: 'Start', advanced: 'Advanced', premium: 'Premium',
+    plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
     one: '1 активный курс', five: 'До 5 активных курсов', noAds: 'Без рекламы',
     tests: 'Тесты включены', session: '1 персональная сессия на 60 минут в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
@@ -58,10 +58,10 @@ function courseTitle(course, locale, t) {
   return topic?.title?.[locale] || t.defaultCourse
 }
 
-const PLANS = PAID_PLAN_KEYS.map(id => {
+const PLANS = ['free', ...PAID_PLAN_KEYS].map(id => {
   const plan = SUBSCRIPTION_PLANS[id]
   return { id, price: plan.amount / 100, spots: plan.activeCourseLimit === 1 ? 'one' : 'five',
-    items: [...(plan.adFree ? ['noAds'] : []), ...(plan.freeTests ? ['tests'] : []), ...(plan.monthlySessions ? ['session'] : [])] }
+    items: [...(plan.adFree ? ['noAds'] : ['ads']), ...(plan.freeTests ? ['tests'] : []), ...(plan.monthlySessions ? ['session'] : [])] }
 })
 
 export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd }) {
@@ -106,6 +106,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
     // The server rechecks capacity when the user actually starts a course.
     if (canAdd && typeof onAdd === 'function') { onAdd(); return }
     dialogRef.current?.showModal()
+    dialogRef.current?.scrollTo?.({ top: 0 })
   }
 
   return <div className={styles.page} data-my-course data-course-selector>
@@ -121,16 +122,20 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
     <section className={styles.tiles} aria-label={t.title}>
       {hasCourse && <article className={styles.current} data-current-course-card>
         <div className={styles.currentTop}>
-          <span className={styles.currentIcon} aria-hidden="true"><ShieldCheck size={27} strokeWidth={1.8}/></span>
+          <div className={styles.currentPhoto} aria-hidden="true">
+            <img src="/images/holistic-house/hero-olive-incense.webp" alt=""
+              width={240} height={280} loading="lazy" decoding="async"/>
+            <span className={styles.currentIcon}><ShieldCheck size={21} strokeWidth={1.9}/></span>
+          </div>
           <div className={styles.currentText}>
             <span className={styles.overline}>{t.current}</span>
             <h2>{name}</h2>
             <p>{t.programme}</p>
+            {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
+              {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
+            </div>}
           </div>
         </div>
-        {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
-          {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
-        </div>}
         <div className={styles.progressInfo}>
           <span>{course.stage === 4 && nextLesson !== null
             ? completed === 14 ? t.finished : t.lesson + ' ' + nextLesson + ' ' + t.of + ' 14'
@@ -150,9 +155,12 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       </article>}
 
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
-        <span className={styles.plusIcon}><Plus size={27} strokeWidth={1.8} aria-hidden="true"/></span>
-        <strong>{hasCourse ? t.add : t.first}</strong>
-        <small>{hasCourse ? t.addNote : t.firstNote}</small>
+        <span className={styles.plusIcon}><Plus size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+        <span className={styles.addTileText}>
+          <strong>{hasCourse ? t.add : t.first}</strong>
+          <small>{hasCourse ? t.addNote : t.firstNote}</small>
+        </span>
+        <ArrowRight className={styles.addArrow} size={19} aria-hidden="true"/>
       </button>
     </section>
 
@@ -172,7 +180,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       <h3>{t.plans}</h3>
       <div className={styles.planGrid}>
         {PLANS.map(plan => <article className={styles.planCard} key={plan.id}
-          data-recommended={plan.id === 'advanced'}>
+          data-plan={plan.id} data-recommended={plan.id === 'advanced'}>
           {plan.id === 'advanced' && <span className={styles.recommended}>{t.recommended}</span>}
           <strong>{t[plan.id]}</strong>
           <div className={styles.price}>€{plan.price}<small>{t.perMonth}</small></div>

@@ -379,17 +379,23 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   {view==='today'&&<>
   <header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
-    <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
-      alt="" aria-hidden="true" decoding="async"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
         <span className={styles.heroBrand}>{data.programme?.title || (ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP')}</span>
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
-      <h2>{lesson?.title||lesson?.journey?.heading}</h2>
-      <p className={styles.heroPurpose}>{completed&&!isFinished?
-        (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
-        (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
+      <div className={styles.todayCore}>
+        <div className={styles.todayStory}>
+        <h2>{lesson?.title||lesson?.journey?.heading}</h2>
+        <p className={styles.heroPurpose}>{completed&&!isFinished?
+          (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
+          (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
+        </div>
+        <div className={styles.todayVisual} aria-hidden="true">
+          <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
+      alt="" aria-hidden="true" decoding="async"/>
+        </div>
+      </div>
       <button type="button" className={styles.todayPrimary} disabled={busy||(paused&&resumeBlocked)}
         data-course-today-primary onClick={()=>
           paused ? void submit('resume',{expectedRevision:cycle.revision}) :

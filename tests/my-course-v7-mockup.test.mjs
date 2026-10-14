@@ -194,3 +194,21 @@ test('V7 completion returns to the path and releases the exact presenter token; 
   h.unmount()
  }
 })
+
+
+test('Today story, illustration, CTA and progress have separate non-overlapping responsive rows',()=>{
+  const heroStart=today.indexOf('<header className={styles.questHero}')
+  const contentStart=today.indexOf('className={styles.todayCore}',heroStart)
+  const storyStart=today.indexOf('className={styles.todayStory}',contentStart)
+  const illustration=today.indexOf('className={styles.todayVisual}',storyStart)
+  const primary=today.indexOf('className={styles.todayPrimary}',illustration)
+  const progress=today.indexOf('className={styles.heroProgress}',primary)
+  assert.ok(heroStart>=0 && contentStart>heroStart && storyStart>contentStart)
+  assert.ok(illustration>storyStart && primary>illustration && progress>primary)
+  assert.equal((today.match(/className=\{styles\.heroPerson\}/g)||[]).length,1)
+  assert.match(todayCss,/\.shell\[data-course-view=today\] \.todayCore\{\s*display:grid;grid-template-columns:/)
+  assert.match(todayCss,/\.todayVisual\{[^}]*position:relative/s)
+  assert.match(todayCss,/\.todayVisual \.heroPerson\{[^}]*position:absolute!important/s)
+  assert.match(todayCss,/\.shell\[data-course-view=today\] button\.todayPrimary\{[^}]*margin:0!important/s)
+  assert.match(todayCss,/@media\(max-width:360px\)/)
+})

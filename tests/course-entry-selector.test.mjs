@@ -1,3 +1,4 @@
+import { PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '../lib/billing/public-plan.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -40,7 +41,7 @@ test('daily lesson number comes from saved lessons, not elapsed dates', () => {
 
 test('Free paywall is informational until verified server billing is live', () => {
   assert.match(entry, /data-course-subscription-dialog/)
-  assert.match(entry, /PAID_PLAN_KEYS.map/)
+  assert.match(entry, /PAID_PLAN_KEYS\]\.map/)
   assert.match(entry, /SUBSCRIPTION_PLANS\[id\]/)
   assert.match(entry, /price: plan.amount \/ 100/)
   assert.match(entry, /plan.activeCourseLimit === 1/)
@@ -133,11 +134,11 @@ test('entry plan cards use the existing EUR catalogue and keep checkout unavaila
   const h = mount('course-entry-selector', { props: { accountId: 'owner-a', course: course('course-a'), onOpen() {} }, fetcher() {} })
   await h.settle()
   const cards = nodes(h.tree).filter(node => node.type === 'article' && node.props.className === 'planCard')
-  assert.equal(cards.length, 3)
-  for (const [index, amount] of [10, 20, 100].entries()) assert.ok(textOf(cards[index]).includes(String(amount)))
-  assert.ok(textOf(cards[0]).includes('1 active course'))
-  assert.ok(textOf(cards[1]).includes('Up to 5 active courses'))
-  assert.ok(textOf(cards[2]).includes('1 personal 60-minute session per month'))
+  assert.equal(cards.length, 4)
+  for (const [index, amount] of [0, 10, 20, 100].entries()) assert.ok(textOf(cards[index]).includes(String(amount)))
+  assert.ok(textOf(cards[1]).includes('1 active course'))
+  assert.ok(textOf(cards[2]).includes('Up to 5 active courses'))
+  assert.ok(textOf(cards[3]).includes('1 personal 60-minute session per month'))
   assert.ok(textOf(h.tree).includes('Subscription checkout is not available yet'))
   assert.equal(h.calls.length, 0)
   h.unmount()
@@ -201,4 +202,52 @@ test('a consumed personal entry cannot populate a second separately consented co
   assert.notEqual(starts[0].body.courseId,starts[1].body.courseId)
   assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,1)
   h.unmount()
+})
+
+
+test('the current course has a real photo to the left and a compact mobile add tile', () => {
+  const photo = entry.indexOf('className={styles.currentPhoto}')
+  const title = entry.indexOf('<h2>{name}</h2>', photo)
+  const progress = entry.indexOf('className={styles.progressInfo}', title)
+  const action = entry.indexOf('className={styles.openButton}', progress)
+  assert.ok(photo >= 0 && title > photo && progress > title && action > progress)
+  assert.match(entry, /<img src="\/images\/holistic-house\/hero-olive-incense\.webp"/)
+  assert.match(entry, /className=\{styles\.addTileText\}/)
+  assert.match(css, /\.currentTop\{display:grid;grid-template-columns:/)
+  assert.match(css, /\.currentPhoto img\{[^}]*object-fit:cover/s)
+  assert.match(css, /\.addTile\{display:grid;grid-template-columns:42px/)
+  assert.match(css, /@media\(max-width:340px\)/)
+})
+
+test('membership modal shows bilingual Free at €0 before paid tiers and remains scrollable', () => {
+  const planKeys = ['free', ...PAID_PLAN_KEYS]
+  assert.deepEqual(planKeys, ['free','start','advanced','premium'])
+  assert.match(entry, /const PLANS = \[\x27free\x27, \.\.\.PAID_PLAN_KEYS\]\.map/)
+  assert.equal(SUBSCRIPTION_PLANS.free.amount, 0)
+  assert.equal(SUBSCRIPTION_PLANS.free.activeCourseLimit, 1)
+  assert.equal(SUBSCRIPTION_PLANS.free.adFree, false)
+  assert.match(entry, /plan.adFree \? \[\x27noAds\x27\] : \[\x27ads\x27\]/)
+  assert.match(entry, /free: 'Free'/)
+  assert.match(entry, /ads: 'With ads'/)
+  assert.match(entry, /ads: 'С рекламой'/)
+  assert.match(entry, /data-plan=\{plan\.id\}/)
+  assert.match(css, /\.planCard\[data-plan=free\]/)
+  assert.match(css, /max-height:min\(80dvh,770px\)/)
+  assert.match(css, /\.dialogHead\{position:sticky/)
+  assert.doesNotMatch(entry, /\/api\/stripe\/holistic-course|checkout\/start/)
+})
+
+test('informational cards render Free first in EN/RU without creating checkout or granting capacity',async()=>{
+  for(const locale of ['en','ru']){
+    const h=mount('course-entry-selector',{props:{accountId:'owner-a',locale,course:course('course-a'),access:{...access,tier:'free',activeCourseLimit:1,activeCourseCount:1},onOpen(){}},fetcher(){throw new Error('informational card must not fetch')}})
+    await h.settle()
+    const cards=nodes(h.tree).filter(n=>n.type==='article'&&n.props['data-plan'])
+    assert.deepEqual(cards.map(n=>n.props['data-plan']),['free','start','advanced','premium'])
+    assert.match(textOf(cards[0]),locale==='en'?/With ads/:/С рекламой/)
+    assert.match(textOf(cards[0]),/€ 0|€0/)
+    nodes(h.tree).find(n=>n.props['data-add-course']!==undefined).props.onClick();await h.settle()
+    assert.equal(nodes(h.tree).find(n=>n.type==='dialog').props.ref.current.open,true)
+    assert.equal(h.calls.length,0)
+    h.unmount()
+  }
 })

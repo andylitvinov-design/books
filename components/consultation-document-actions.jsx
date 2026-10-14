@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 
 export function ConsultationDocumentActions({
   recordId,
   locale,
+  dateIssued,
+  kind = 'recommendation',
+  paymentStatus,
   active,
   editHref,
   editLabel,
@@ -32,6 +36,7 @@ export function ConsultationDocumentActions({
 
   const labels = resultCopy(locale)
   const urls = documentActionUrls(recordId, locale)
+  const pdfFilename = kind === 'payment' ? (paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename({dateIssued})
   const ru = locale === 'ru'
 
   const copy = async () => {
@@ -52,16 +57,16 @@ export function ConsultationDocumentActions({
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
-      <a className="consultation-action-primary" href={urls.previewPdf} target="_blank" rel="noopener noreferrer">{labels.previewPdf}</a>
-      <a href={urls.open} target="_blank" rel="noopener noreferrer">{labels.open}</a>
-      <a href={urls.pdf} download>{labels.pdf}</a>
+      <a className="consultation-action-primary" href={urls.open}>{ru ? 'Предпросмотр / открыть' : 'Preview / Open'}</a>
+      <a href={urls.previewPdf}>{labels.previewPdf}</a>
+      <a href={urls.pdf} download={pdfFilename}>{labels.pdf}</a>
       <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}>
         {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
       </button>
     </div>
 
     <div className="consultation-document-secondary-actions" aria-label={ru ? 'Дополнительные действия с документом' : 'Additional document actions'}>
-      <a href={urls.print} target="_blank" rel="noopener noreferrer">{labels.print}</a>
+      <a href={urls.print}>{labels.print}</a>
       {editHref && <a href={editHref}>{editLabel}</a>}
       {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
         {!active && <p>{reactivateHelp}</p>}

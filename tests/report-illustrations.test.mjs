@@ -83,3 +83,19 @@ test('invoice and receipt retain separately approved neutral geometry',()=>{
   assert.doesNotMatch(pdf,/0\.924 0\.960 0\.964 rg/)
   assert.doesNotMatch(pdf,/SELF-RATED PROGRESS/)
 })
+
+
+test('editorial A4 cover enlarges the identity art and keeps exactly two actual ratings',()=>{
+  const pdf=buildPrescriptionPdf(sample('en'),'en',origin).toString('latin1')
+  assert.match(readFileSync('lib/prescriptions/pdf.js','utf8'),/PEOPLE  ·  INSIGHT  ·  HARMONY/,
+    'running identity includes the brand motto')
+  assert.match(pdf,/A GENTLER PATH TO INNER BALANCE/,'approved editorial subtitle is printed')
+  const lighthousePlacements=[...pdf.matchAll(/q (\d+(?:\.\d+)?) 0 0 [\d.]+ [\d.]+ [\d.]+ cm \/Lighthouse Do Q/g)]
+  assert.ok(lighthousePlacements.length>=2 && Number(lighthousePlacements[1][1])>=96,
+    'hero lighthouse occupies a larger integrated illustration area')
+  assert.match(pdf,/\(START\)/)
+  assert.match(pdf,/\(END\)/)
+  assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal must not become a third reading')
+  assert.match(pdf,/\/RemedyPhoto1 Do Q/,'approved original library photo remains present')
+  assert.match(pdf,/\/Signature Do Q/,'signed core report is preserved')
+})
