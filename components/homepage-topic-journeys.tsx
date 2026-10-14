@@ -6,8 +6,8 @@ import styles from './homepage-topic-journeys.module.css'
 
 const icons = { relationships: HeartHandshake, business: BriefcaseBusiness, stress: Waves, energy: Leaf, effectiveness: Target }
 const text = {
-  en: { kicker: 'FIND YOUR DIRECTION', title: 'What would you like to change?', intro: 'Start with a topic that matters to you. Choose a focus, then explore free tests, a support course or a personal written situation review.', action: 'Explore this topic' },
-  ru: { kicker: 'ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ', title: 'Что сейчас для вас важно?', intro: 'Сначала выберите сферу и конкретную тему. Затем — бесплатные тесты, курс поддержки или персональный письменный разбор.', action: 'Выбрать тему' },
+  en: { kicker: 'FIND YOUR DIRECTION', title: 'What would you like to change?', intro: 'Start with a topic that matters to you. Choose a focus, then explore free tests, a support course or a personal written situation review.', action: 'Take a free test' },
+  ru: { kicker: 'ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ', title: 'Что сейчас для вас важно?', intro: 'Сначала выберите сферу и конкретную тему. Затем — бесплатные тесты, курс поддержки или персональный письменный разбор.', action: 'Пройти тест' },
 } as const
 
 export function HomepageTopicJourneys({ locale }: { locale: Locale }) {
