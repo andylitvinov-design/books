@@ -686,7 +686,6 @@ export default function CourseSlidePlayer({
               </button>)}
             </div>
             <small className={styles.helper}>{words.needSave}</small>
-          </>
         </>}
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
