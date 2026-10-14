@@ -1,3 +1,16 @@
+// Exact approved public hero and its real topic-selection anchor, in each tested locale.
+async function assertPublicPickerEntrance(target,locale){
+ const copy=locale==='ru'
+  ? {region:'Подберите свои тесты',hero:'Лучше понять себя и свою жизнь',action:'Выбрать темы',first:'Что вы хотите исследовать?'}
+  : {region:'Choose your tests',hero:'Understand yourself and your life better',action:'Choose my topics',first:'What would you like to explore?'}
+ const picker=target.locator('[data-prelogin-test-picker]')
+ await expect(picker).toHaveAttribute('aria-label',copy.region)
+ await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
+ const entrance=picker.locator('[data-client-tests-promo]').getByRole('link',{name:copy.action,exact:true})
+ await expect(entrance).toBeVisible()
+ await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
+ await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
+}
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
@@ -14,10 +27,10 @@ const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
 const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
+const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
 // The top-level cabinet entry now goes to the supported English app; the
 // separate /es/client landing remains a valid Spanish language counterpart.
-const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/about', '/en/app'];
+const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/courses', '/en/app'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -108,7 +121,7 @@ try {
             // explicit continuation action and remains available below it.
             const preloginPicker=page.locator('[data-prelogin-test-picker]');
             await expect(preloginPicker).toBeVisible();
-            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Подберите свои тесты':'Choose your tests'})).toBeVisible();
+            await assertPublicPickerEntrance(page,language);
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Рекомендуем для вас':'Recommended for you'})).toBeVisible();
             assert.equal(await preloginPicker.locator('details').first().evaluate(element=>element.open),false,'advanced filter starts folded');
             await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Начать бесплатный мониторинг/:/Start free monitoring/})).toBeVisible();

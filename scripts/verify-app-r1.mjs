@@ -91,10 +91,23 @@ async function chooseVisibleTest(testPage,name){
  await expect(card()).toBeVisible({timeout:15000})
  await card().getByRole('checkbox',{name,exact:true}).check()
 }
+// Exact approved public hero and its real topic-selection anchor, in each tested locale.
+async function assertPublicPickerEntrance(target,locale){
+ const copy=locale==='ru'
+  ? {region:'Подберите свои тесты',hero:'Лучше понять себя и свою жизнь',action:'Выбрать темы',first:'Что вы хотите исследовать?'}
+  : {region:'Choose your tests',hero:'Understand yourself and your life better',action:'Choose my topics',first:'What would you like to explore?'}
+ const picker=target.locator('[data-prelogin-test-picker]')
+ await expect(picker).toHaveAttribute('aria-label',copy.region)
+ await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
+ const entrance=picker.locator('[data-client-tests-promo]').getByRole('link',{name:copy.action,exact:true})
+ await expect(entrance).toBeVisible()
+ await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
+ await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
+}
 // Public routes start in the easy picker. Exercise the real catalog transition,
 // then explicitly clear its carried suggestions for the exact-one-test checks.
 async function chooseSinglePublicTest(target,name){
- await expect(target.getByRole('heading',{name:'Choose your tests',level:1,exact:true})).toBeVisible()
+ await assertPublicPickerEntrance(target,'en')
  await target.getByRole('button',{name:'Browse full database',exact:true}).click()
  await expect(target.getByRole('heading',{name:'Start with a simple check-in',level:1,exact:true})).toBeVisible()
  await expect(target.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
@@ -319,7 +332,7 @@ try {
  await guestPickerPage.goto(origin+'/en/client')
  const picker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await expect(picker).toBeVisible({timeout:30000})
- await expect(picker.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
+ await assertPublicPickerEntrance(guestPickerPage,'en')
  await expect(picker.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  const conditionalProblems=picker.locator('[data-topic-problem-filter]')
  await expect(conditionalProblems).toBeVisible()
@@ -414,7 +427,7 @@ try {
  assert.match(guestPickerPage.url(),/\/en\/client$/)
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
- await expect(ruPicker.getByRole('heading',{name:'Подберите свои тесты'})).toBeVisible()
+ await assertPublicPickerEntrance(guestPickerPage,'ru')
  await expect(ruPicker.locator('[data-test-kind-filter]')).toBeHidden()
  await expect(ruPicker.locator('[data-test-kind-filter] input[data-test-kind-checkbox]')).toHaveCount(3)
  await ruPicker.locator('details').first().locator('summary').click()
