@@ -9,7 +9,7 @@ import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
 import './consultation-report.css'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
@@ -31,7 +31,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
 
   let itemNumber = 0
 
-  return <main className="prescription-shell canonical-shell">
+  const Root = embedded ? 'section' : 'main'
+  return <Root className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
       <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
@@ -135,5 +136,5 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
     </article>
-  </main>
+  </Root>
 }
