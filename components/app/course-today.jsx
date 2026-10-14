@@ -7,6 +7,7 @@ import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
 import { appFetch } from '@/lib/app/client-fetch'
 import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
@@ -167,13 +168,14 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',accountId=null}){
+export default function CourseToday({locale='en',accountId=null,onExit=null}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const router=useRouter()
  const promotion=useCoursePromotion(accountId)
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [focusOpen,setFocusOpen]=useState(true)
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const retestLock=useRef(false)
  const [view,setView]=useState('today')
@@ -274,6 +276,13 @@ export default function CourseToday({locale='en',accountId=null}){
  // guided timer repeat their text as additional meditation steps.
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
+ function startFocusLesson(){
+   setFocusOpen(false)
+   if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
+   if(data.finalRetest?.ready){showFinalRetest();return}
+   if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
+   setQuestOpen(true)
+ }
  if(data.requiresTarget) return <section className={'hh-panel '+styles.shell+' '+styles.activatePanel}
     data-course-activation>
    <header className={styles.activateHeading}>
@@ -294,6 +303,11 @@ export default function CourseToday({locale='en',accountId=null}){
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course data-course-view={view}>
+  {focusOpen&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
+    progress={progress} programme={data.programme} completed={completed}
+    finished={isFinished} busy={busy} onStart={startFocusLesson}
+    onExit={()=>onExit?.()}/>}
+
   {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
     <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
     <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
@@ -329,11 +343,7 @@ export default function CourseToday({locale='en',accountId=null}){
         </div>
       </div>
       <button type="button" className={styles.todayPrimary} disabled={busy}
-        data-course-today-primary onClick={()=>
-          paused ? void submit('resume',{expectedRevision:cycle.revision}) :
-          data.finalRetest?.ready ? showFinalRetest() :
-          (isFinished||(completed&&reportDay&&!reviewed)) ? setView('details') :
-          setQuestOpen(true)}>
+        data-course-today-primary onClick={startFocusLesson}>
         {paused?(ru?'Возобновить курс':'Resume course') :
           data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests') :
           isFinished?(ru?'Посмотреть итоги курса':'Review course results') :
