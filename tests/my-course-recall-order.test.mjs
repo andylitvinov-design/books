@@ -10,16 +10,23 @@ assert.ok(match, 'test the real player slide builder, without a duplicate implem
 const buildSlides = runInNewContext('(' + match[0] + ')')
 const keys = lesson => Array.from(buildSlides(lesson), slide => slide.key)
 
-test('every EN/RU V3/V4 lesson recalls before both teaching slides, retaining all stable step keys', () => {
+test('every EN/RU V3/V4 lesson recalls before the merged teaching exercise, preserving the rest of the steps', () => {
   for (const version of [COURSE_CONTENT_V3, COURSE_CONTENT_V4]) {
     for (const locale of ['en', 'ru']) for (const goal of Object.keys(TRACKS)) {
       for (let day = 1; day <= 14; day++) for (const length of ['quick', 'standard']) {
         const lesson = lessonFor(goal, day, locale, length, version)
         const before = JSON.stringify(lesson)
         const actual = keys(lesson)
-        assert.deepEqual(actual.slice(0, 6), ['welcome', 'baseline', 'checkin', 'recall', 'idea', 'understand'], `${version}/${locale}/${goal}/${day}/${length}`)
+        const hasArrival = lesson.sections?.some(part => part.kind === 'arrive')
+        const hasLearn = lesson.sections?.some(part => part.kind === 'learn')
+        const prefix = ['welcome', 'baseline', 'checkin', 'recall', 'idea',
+          ...(hasLearn && !hasArrival ? ['understand'] : [])]
+        assert.deepEqual(actual.slice(0, prefix.length), prefix, `${version}/${locale}/${goal}/${day}/${length}`)
         assert.equal(new Set(actual).size, actual.length)
-        assert.deepEqual(actual.slice(6), ['phrase', 'guided-0', 'guided-1', 'guided-2', 'ritual', 'transfer', ...(lesson.practiceV4 ? ['symbol'] : []), 'reflection', 'moment', 'feedback'])
+        assert.deepEqual(actual.slice(prefix.length), ['phrase', 'guided-0', 'guided-1', 'guided-2', 'ritual', 'transfer', ...(lesson.practiceV4 ? ['symbol'] : []), 'reflection', 'moment', 'feedback'])
+        if (hasArrival && hasLearn) {
+          assert.equal(actual.includes('understand'), false, 'arrival holds learn text in a collapsible transcript')
+        }
         assert.equal(JSON.stringify(lesson), before, 'no content, lesson ID, or answers are mutated')
       }
     }
@@ -29,9 +36,12 @@ test('every EN/RU V3/V4 lesson recalls before both teaching slides, retaining al
 test('legacy/no-recall and sparse lessons never receive an invented recall or teaching step', () => {
   const legacy = lessonFor('calm_regulation', 1, 'en', 'standard', COURSE_CONTENT_VERSION)
   assert.equal(keys(legacy).includes('recall'), false)
-  assert.deepEqual(keys(legacy).slice(0, 5), ['welcome', 'baseline', 'checkin', 'idea', 'understand'])
+  assert.deepEqual(keys(legacy).slice(0, 5), ['welcome', 'baseline', 'checkin', 'idea', 'phrase'])
+  assert.ok(legacy.sections.some(part => part.kind === 'arrive'), 'legacy arrival now hosts its learn text')
   assert.deepEqual(keys({sections:[]}), ['welcome', 'baseline', 'checkin', 'idea', 'ritual', 'reflection', 'moment', 'feedback'])
   assert.deepEqual(keys({sections:[], practiceV3:{recall:'Optional orientation'}}).slice(0, 5), ['welcome', 'baseline', 'checkin', 'recall', 'idea'])
+  assert.ok(keys({sections:[{kind:'learn',text:'Only learning'}]}).includes('understand'),
+    'older or sparse content without arrival keeps the separate teaching slide')
 })
 
 test('day one is orientation, while later prompts preserve previously learned-skill wording', () => {
