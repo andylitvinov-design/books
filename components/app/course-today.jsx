@@ -32,6 +32,7 @@ const UI={
   keep:'Continue my current direction',softer:'Choose gentler practices',rest:'Give myself more rest',
   completed:'You reached the end of this cycle. Your observations and history remain yours.',
   nextCycle:'Start another 14-day cycle',newGoal:'My next learning direction',
+  approvedNextGoal:'Choose from the directions represented by your confirmed scales. A different direction requires a new measured-scale confirmation before a cycle can start.',
   problem:'The one problem I want to observe',intention:'One everyday skill I would like to practise (optional)',
   activate:'Start my daily 14-day course',activateText:'Your course has been updated. Confirm your personal problem to begin daily check-ins and reviewed lessons.',
   consent:'My daily problem ratings are an optional Holistic House self-monitoring tool, not a validated psychological test.',
@@ -90,6 +91,7 @@ const UI={
   keep:'Продолжить выбранное направление',softer:'Выбрать более мягкие практики',rest:'Дать себе больше отдыха',
   completed:'Вы завершили этот цикл. Все наблюдения и история остаются у вас.',
   nextCycle:'Начать ещё 14 дней',newGoal:'Новое направление развития',
+  approvedNextGoal:'Выберите направление среди подтверждённых шкал. Для другого направления нужно заново подтвердить подходящие измеренные шкалы до начала цикла.',
   problem:'Проблема, за которой хочу наблюдать',intention:'Какой повседневный навык хочу развивать? (необязательно)',
   activate:'Начать мой ежедневный курс на 14 дней',activateText:'Ваш курс обновлён. Подтвердите личную проблему, чтобы начать ежедневные замеры и полноценные уроки.',
   consent:'Ежедневные оценки — авторское наблюдение Holistic House, не валидированный психологический тест.',
@@ -148,12 +150,12 @@ function Rating({value,onChange,label,optional=false}){
     </select>
   </label>
 }
-function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,children}){
+function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,completedLabel,children}){
  return <section className={styles.card} data-course-card={number} id={number==='checkin'?'course-today-lesson':undefined}>
   <button type="button" className={styles.cardHeader} aria-expanded={expanded} onClick={onToggle}>
     <span className={styles.cardIcon}><Icon aria-hidden="true" size={20}/></span>
     <span className={styles.cardTitle}><strong>{title}</strong><small>{subtitle}</small></span>
-    {completed?<CheckCircle2 aria-label="Completed" size={19} className={styles.checked}/>:expanded?<ChevronDown size={18}/>:<ChevronRight size={18}/>}
+    {completed?<CheckCircle2 aria-label={completedLabel} size={19} className={styles.checked}/>:expanded?<ChevronDown size={18}/>:<ChevronRight size={18}/>}
   </button>
   {expanded&&<div className={styles.cardContent}>{children}</div>}
  </section>
@@ -169,7 +171,7 @@ export default function CourseToday({locale='en'}){
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
  const [feedback,setFeedback]=useState('skip'),[reflection,setReflection]=useState('')
  const [reviewNote,setReviewNote]=useState(''),[reviewDecision,setReviewDecision]=useState('continue')
- const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('calm_regulation')
+ const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('')
  const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
   setData(response)
@@ -232,6 +234,9 @@ export default function CourseToday({locale='en'}){
  if(loading&&!data)return <section className={'hh-panel '+styles.shell} aria-busy="true">{ru?'Открываем ваш ежедневный курс…':'Opening your daily course…'}</section>
  if(!data)return <section className={'hh-panel '+styles.shell} role="alert"><p>{t.error}</p><button type="button" onClick={reload}>{t.retry}</button></section>
  const cycle=data.cycle,lesson=data.lesson,progress=data.progress||{},target=data.target||{},today=data.currentCheckin
+ const continuationGoals=(data.continuationGoals||[]).filter(goal=>GROWTH_GOALS[goal])
+ const nextGoal=continuationGoals.includes(newGoal)?newGoal
+  :continuationGoals.includes(cycle?.primaryGoal)?cycle.primaryGoal:continuationGoals[0]||''
  const session=data.currentSession,completed=Boolean(session),paused=cycle?.status==='paused',isFinished=cycle?.status==='completed'||Boolean(cycle?.afterCycle)
  const reportDay=cycle?.day>=14?14:cycle?.day>=7?7:null
  const reviewed=reportDay&&data.reviews?.some(r=>r.day===reportDay)
@@ -373,7 +378,7 @@ export default function CourseToday({locale='en'}){
   </details>
   {!isFinished&&<>
    <DailyCard number="checkin" title={'01 · '+t.daily} subtitle="~30 sec" icon={ClipboardList}
-    expanded={expanded==='checkin'} onToggle={()=>setExpanded(x=>x==='checkin'?'':'checkin')} completed={Boolean(today)}>
+    expanded={expanded==='checkin'} onToggle={()=>setExpanded(x=>x==='checkin'?'':'checkin')} completed={Boolean(today)} completedLabel={t.doneDay}>
     <p className={styles.hint}>{t.consent}</p>
     <label className={styles.field}>{t.checkinSchedule}
       <select disabled={busy||paused} value={cycle.preferences?.checkinFrequency||'daily'}
@@ -489,7 +494,7 @@ export default function CourseToday({locale='en'}){
       <button type="button" className={styles.nextButton} onClick={()=>setExpanded('reflection')}>{t.next}<ArrowRight size={16}/></button>
    </DailyCard>
    <DailyCard number="reflection" title={'05 · '+t.reflection} subtitle={t.private} icon={HeartHandshake}
-    expanded={expanded==='reflection'} onToggle={()=>setExpanded(x=>x==='reflection'?'':'reflection')} completed={completed}>
+    expanded={expanded==='reflection'} onToggle={()=>setExpanded(x=>x==='reflection'?'':'reflection')} completed={completed} completedLabel={t.doneDay}>
     <p>{lesson?.reflection}</p>
     {lesson?.workbook&&<section className={styles.workbookPrompt} data-course-workbook>
       <span>{t.workbookTitle} · {t.practiceApproach}: {lesson.workbook.method}</span>
@@ -585,12 +590,13 @@ export default function CourseToday({locale='en'}){
       <input maxLength={160} value={targetLabel} onChange={e=>setTargetLabel(e.target.value)} placeholder={problem}/>
     </label>
     <label className={styles.field}>{t.intention}<textarea maxLength={300} value={intention} onChange={e=>setIntention(e.target.value)}/></label>
-    <label className={styles.field}>{t.newGoal}<select value={newGoal} onChange={e=>setNewGoal(e.target.value)}>
-      {Object.entries(GROWTH_GOALS).map(([id,item])=><option key={id} value={id}>{item.title[locale]}</option>)}
+    {data.continuationRequiresMeasuredChoice&&<p className={styles.hint}>{t.approvedNextGoal}</p>}
+    <label className={styles.field}>{t.newGoal}<select value={nextGoal} onChange={e=>setNewGoal(e.target.value)}>
+      {continuationGoals.map(id=><option key={id} value={id}>{GROWTH_GOALS[id].title[locale]}</option>)}
     </select></label>
-    <button type="button" className="hh-primary" disabled={busy||targetLabel.trim().length<3}
-      onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:newGoal},
-        ()=>{setExpanded('checkin');setStage(0);setReflection('')})}>{t.nextCycle}<ArrowRight size={16}/></button>
+    <button type="button" className="hh-primary" disabled={busy||!nextGoal||targetLabel.trim().length<3}
+      onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:nextGoal},
+        ()=>{setExpanded('checkin');setStage(0);setReflection('');setNewGoal('')})}>{t.nextCycle}<ArrowRight size={16}/></button>
    </section>}
   {data.recommendedTest&&<aside className={styles.retest}>
     <div><strong>{data.recommendedTest.due?t.retestDue:t.retestLater}</strong>
