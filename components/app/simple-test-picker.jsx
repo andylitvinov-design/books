@@ -228,7 +228,6 @@ export function SimpleTestPicker({
             )}
           </div>
         </div>
-    
         <fieldset className={styles.kindFilters} data-test-kind-filter>
           <legend>{locale === 'ru' ? 'Выберите типы тестов' : locale === 'es' ? 'Elige tipos de pruebas' : 'Choose types of tests'}</legend>
           <p>{locale === 'ru' ? 'Можно отметить несколько типов одновременно. Остальные фильтры тоже сохранятся.' : locale === 'es' ? 'Puedes seleccionar varios tipos a la vez.' : 'Select one or more types. Other filters still apply.'}</p>
@@ -243,7 +242,7 @@ export function SimpleTestPicker({
             })}
           </div>
         </fieldset>
-<button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>
+        <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>
       </div>
     </details>
 
