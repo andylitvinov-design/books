@@ -24,13 +24,13 @@ const copy = {
       "kicker": "ОПОРА · АНТИСТРЕСС",
       "intro": "Каждому навыку посвящены два занятия: знакомство с техникой и её бережная тренировка в обычной ситуации.",
       "skills": [
-        "Раньше замечать напряжение",
-        "Делать паузу вместо автопилота",
-        "Выбирать реакцию на тревожные мысли",
-        "Находить и настраивать личную опору",
-        "Возвращаться к опоре среди дел",
-        "Поддерживать себя в трудный день",
-        "Самостоятельно выбирать подходящую практику"
+        "Ориентироваться в настоящем и сохранять выбор",
+        "Раньше замечать признаки перегрузки",
+        "Мягко регулировать напряжение и нагрузку",
+        "Находить реальные и внутренние ресурсы",
+        "Отделять тревожные мысли от фактов",
+        "Обозначать границы и обращаться за поддержкой",
+        "Самостоятельно применять знакомые практики"
       ],
       "cta": "Начать программу «Антистресс»",
       "safety": "Самостоятельное обучение управлению повседневным стрессом. Не терапия шоковой травмы или ПТСР и не замена помощи специалиста. Любую практику можно остановить или пропустить."
@@ -68,13 +68,13 @@ const copy = {
       "kicker": "OPORA · STRESS RELIEF",
       "intro": "Each skill is explored twice: first a gentle introduction, then practice in an ordinary, manageable situation.",
       "skills": [
-        "Notice stress signals earlier",
-        "Pause before reacting automatically",
-        "Choose how to respond to difficult thoughts",
-        "Find and adapt a personal source of support",
-        "Bring a familiar pause into everyday routines",
-        "Support yourself on difficult days",
-        "Choose helpful practices more independently"
+        "Orient to the present and retain choice",
+        "Notice signs of overload earlier",
+        "Regulate tension and pace gently",
+        "Find practical and inner sources of support",
+        "Separate worrying thoughts from facts",
+        "Set boundaries and ask for support",
+        "Choose familiar practices independently"
       ],
       "cta": "Start Stress Relief",
       "safety": "Self-guided education for everyday stress, not shock-trauma or PTSD treatment and not a replacement for professional care. You may stop or skip any exercise."
@@ -112,13 +112,13 @@ const copy = {
       "kicker": "OPORA · MENOS ESTRÉS",
       "intro": "Cada habilidad se practica en dos lecciones: primero se conoce y después se prueba en una situación cotidiana segura.",
       "skills": [
-        "Reconocer antes las señales de estrés",
-        "Hacer una pausa antes de reaccionar",
-        "Elegir cómo responder a los pensamientos difíciles",
-        "Encontrar y adaptar apoyos personales",
-        "Recordar una pausa en la vida diaria",
-        "Cuidarte en los días difíciles",
-        "Elegir prácticas con más autonomía"
+        "Orientarte en el presente y poder elegir",
+        "Reconocer antes las señales de sobrecarga",
+        "Regular la tensión y la carga con suavidad",
+        "Encontrar apoyos reales e internos",
+        "Distinguir pensamientos inquietantes de hechos",
+        "Poner límites y pedir apoyo",
+        "Elegir prácticas conocidas con autonomía"
       ],
       "cta": "Empezar el programa antiestrés",
       "safety": "Educación para afrontar el estrés cotidiano; no es tratamiento del trauma agudo ni del TEPT y no sustituye la ayuda profesional. Puedes detener o saltar cualquier ejercicio."

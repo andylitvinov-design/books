@@ -14,7 +14,7 @@ test('lesson-entry measure asks for presence and uses its own positive anchors i
   assert.match(player, /data-course-baseline-presence>\{baselinePrompt\}/)
   assert.match(player, /lowLabel=\{words\.baselineLow\}/)
   assert.match(player, /highLabel=\{words\.baselineHigh\}/)
-  const intro = player.slice(player.indexOf("{slide.kind === 'baseline' && <>"), player.indexOf("{slide.kind === 'checkin' && <>"))
+  const intro = player.slice(player.indexOf("{slide.kind === 'baseline' && <>"), player.indexOf("{slide.kind === 'checkin' && ("))
   assert.doesNotMatch(intro, /<IllustratedMoment/)
   assert.match(intro, /value=\{entryNow\}/)
 })
