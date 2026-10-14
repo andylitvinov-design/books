@@ -340,3 +340,29 @@
   .hh-profile-domains .hh-domain-hero h1 { font-size:31px!important; }
   .hh-profile-domains .hh-domain-hero:after { opacity:.12; }
 }
+
+
+/* Shared turquoise controls; preserve the illustrated profile hero and new service cards. */
+.hh-profile-domains{--domain-ink:#244853;--domain-muted:#647c84;--domain-line:#c7e3e7;--domain-accent:#127f8d;--domain-accent-dark:#075f70;--domain-paper:#fff}
+.hh-profile-domains .hh-domain-tabs button{background:#fff!important;color:#3d6874!important;border-color:#d2e6e9!important;box-shadow:0 2px 8px #0b718108!important;min-height:47px!important}
+.hh-profile-domains .hh-domain-tabs button svg{color:#3c8791}
+.hh-profile-domains .hh-domain-tabs button:hover{background:#ebf8fa!important;border-color:#add9de!important}
+.hh-profile-domains .hh-domain-tabs button.is-current{border-color:#137f8c!important;background:#147e8c!important;color:#fff!important;box-shadow:0 4px 13px #0c6f8230!important}
+.hh-profile-domains .hh-domain-tabs button.is-current svg{color:#fff!important}
+.hh-profile-domains .hh-domain-tabs button.is-current small{color:#0e6c79;background:#e4f5f8}
+.hh-profile-domains .hh-domain-panel{background:#fff;border-color:#c9e3e7;box-shadow:0 8px 22px #137b890a}
+.hh-profile-domains .hh-domain-link-row a,.hh-profile-domains .hh-domain-secondary-link{border-color:#b6dce1;background:#f7fcfc;color:#116d7e!important}
+.hh-profile-domains .hh-domain-link-row a:hover,.hh-profile-domains .hh-domain-secondary-link:hover{background:#e8f7fa;border-color:#79c0ca}
+.hh-profile-domains .hh-domain-psych-details,.hh-profile-domains .hh-domain-latest{background:#f3fbfc;border-color:#c8e4e7}
+.hh-profile-domains .hh-domain-psych-details>summary{color:#126d7c}
+.hh-profile-domains .hh-domain-services-link{background:#e6f6f8;border-color:#b8dee3;color:#0b7281!important}
+.hh-profile-domains .hh-domain-services-link:hover{background:#d8f0f4;border-color:#93cbd4}
+.hh-profile-domains .hh-domain-history-row:hover{border-color:#a4cdd3;background:#f2fafb}
+.hh-profile-domains .hh-domain-tabs button:focus-visible,.hh-profile-domains .hh-domain-panel a:focus-visible,.hh-profile-domains .hh-domain-panel summary:focus-visible{outline:3px solid #00aabd;outline-offset:2px}
+@media(max-width:560px){
+ .hh-profile-domains .hh-domain-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;padding-bottom:0;margin:11px 0 10px}
+ .hh-profile-domains .hh-domain-tabs button{display:flex;justify-content:flex-start;min-width:0!important;width:100%;min-height:47px!important;white-space:normal!important;padding:9px!important;gap:6px!important;text-align:left}
+ .hh-profile-domains .hh-domain-tabs button svg{width:18px;height:18px}
+ .hh-profile-domains .hh-domain-tabs button strong{min-width:0;font-size:11.5px;line-height:1.25;white-space:normal}
+ .hh-profile-domains .hh-domain-tabs button small{margin-left:auto}
+}

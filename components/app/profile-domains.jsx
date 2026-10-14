@@ -32,7 +32,7 @@ const WORDS = {
     noHypno: 'No personal hypnotherapy recommendations have been shared here yet.',
     noRemedies: 'This document has no named homeopathic remedies to display.',
     continue: 'Open report', openDocument: 'Read original recommendation', seeAll: 'See all personal reports',
-    compare: 'View test history', assessments: 'My tests', analysis: 'Personal analysis',
+    compare: 'Test dynamics', assessments: 'My tests', analysis: 'Personal analysis',
     request: 'Request personal support', consultation: 'Request consultation', freeWu: 'Request free resource analysis',
     learnMore: 'Explore consultation options', date: 'Dated', loading: 'Opening your saved materials…',
     incomplete: 'Some saved materials could not be opened. Available originals remain accessible in My personal reports below.',
@@ -272,7 +272,7 @@ export function ProfileDomains({
         </> : <>
           <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
           {children}
-          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/history'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
+          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/tests?tab=dynamics'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
           {psychologicalReports.length > 0 && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.noPsy} t={t} />}
         </>}
       </section>}
