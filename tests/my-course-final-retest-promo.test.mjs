@@ -32,6 +32,7 @@ test('exact original selected test is re-offered after day 14, using a fixed bef
   assert.equal(out.totalCount,1)
   assert.equal(out.fullyRetested,true)
   assert.equal(out.tests[0].baselineResultId,'baseline')
+  assert.equal(out.tests[0].instrumentLocale,'en')
   assert.equal(out.tests[0].afterResultId,'final')
   assert.deepEqual(out.tests[0].comparison[0],{key:'weekly.tension',from:8,to:3,delta:-5,min:0,max:10,
     direction:'higher_is_more_difficult',label:'Tension'})
