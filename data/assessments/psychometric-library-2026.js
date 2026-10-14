@@ -263,20 +263,20 @@ export const PSYCHOMETRIC_LIBRARY_2026 = Object.freeze([
     "enabled": false
   },
   {
-    "key": "sds-zung-20",
+    "key": "sas-zung-20",
     "instrument": "Zung Self-Rating Anxiety Scale",
-    "acronym": "SDS-ZUNG-20",
+    "acronym": "SAS",
     "items": 20,
     "area": "mood",
     "category": "mood_anxiety",
     "priority": "B",
     "duration": null,
     "scales": [
-      "Anxiety symptoms"
+      "Anxiety symptoms (overall index)"
     ],
-    "rightsStatus": "rights_review",
-    "access": "account",
-    "sourceUrl": "https://novopsych.com/assessments/",
+    "rightsStatus": "licensed_only",
+    "access": "practitioner",
+    "sourceUrl": "https://site.thoracic.org/assemblies/pr/outcome-measures/anxiety-and-depression-outcome-measures",
     "rightsNote": "Research metadata only. Exact instrument edition, item rights, digital commercial administration, translation, scoring and clinical suitability require instrument-level approval before activation.",
     "enabled": false
   },
@@ -1154,20 +1154,22 @@ export const PSYCHOMETRIC_LIBRARY_2026 = Object.freeze([
     "enabled": false
   },
   {
-    "key": "satisfaction-therapy-8",
-    "instrument": "Therapy Satisfaction Questionnaire Short Form",
-    "acronym": "SATISFACTION-THERAPY-8",
-    "items": 8,
+    "key": "gcq-s-12",
+    "instrument": "Group Climate Questionnaire - Short Form",
+    "acronym": "GCQ-S",
+    "items": 12,
     "area": "therapy",
     "category": "therapy_progress",
     "priority": "B",
     "duration": null,
     "scales": [
-      "Perceived satisfaction with care"
+      "Engagement",
+      "Avoidance",
+      "Conflict"
     ],
     "rightsStatus": "permission_required",
     "access": "account",
-    "sourceUrl": "https://www.coresystemtrust.org.uk/home/instruments/",
+    "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3770539/",
     "rightsNote": "Research metadata only. Exact instrument edition, item rights, digital commercial administration, translation, scoring and clinical suitability require instrument-level approval before activation.",
     "enabled": false
   },
@@ -1906,21 +1908,24 @@ export const PSYCHOMETRIC_LIBRARY_2026 = Object.freeze([
     "enabled": false
   },
   {
-    "key": "aq-partner-20",
-    "instrument": "Relationship Attachment Style Questionnaire - Partner Form",
-    "acronym": "AQ-PARTNER-20",
-    "items": 20,
+    "key": "asq-40",
+    "instrument": "Attachment Style Questionnaire (Feeney et al.)",
+    "acronym": "ASQ",
+    "items": 40,
     "area": "relationships",
     "category": "relationships_support",
     "priority": "B",
     "duration": null,
     "scales": [
-      "Attachment avoidance",
-      "Attachment anxiety"
+      "Confidence",
+      "Discomfort with closeness",
+      "Relationships as secondary",
+      "Need for approval",
+      "Preoccupation with relationships"
     ],
     "rightsStatus": "permission_required",
     "access": "account",
-    "sourceUrl": "https://novopsych.com/assessments/",
+    "sourceUrl": "https://psytests.org/ipl/asqen.html",
     "rightsNote": "Research metadata only. Exact instrument edition, item rights, digital commercial administration, translation, scoring and clinical suitability require instrument-level approval before activation.",
     "enabled": false
   },
@@ -2278,22 +2283,25 @@ export const PSYCHOMETRIC_LIBRARY_2026 = Object.freeze([
     "enabled": false
   },
   {
-    "key": "cfi-compassion-38",
-    "instrument": "Compassionate Engagement and Action Scales",
-    "acronym": "CFI-COMPASSION-38",
-    "items": 38,
+    "key": "ceas-39",
+    "instrument": "Compassionate Engagement and Action Scales (three 13-item forms)",
+    "acronym": "CEAS",
+    "items": 39,
     "area": "resources",
     "category": "resilience_coping",
     "priority": "B",
     "duration": null,
     "scales": [
-      "Compassion to self",
-      "Compassion to others",
-      "Compassion from others"
+      "Self-compassion engagement",
+      "Self-compassion action",
+      "Compassion for others engagement",
+      "Compassion for others action",
+      "Compassion from others engagement",
+      "Compassion from others action"
     ],
     "rightsStatus": "permission_required",
     "access": "account",
-    "sourceUrl": "https://novopsych.com/assessments/",
+    "sourceUrl": "https://link.springer.com/article/10.1186/s40639-017-0033-3",
     "rightsNote": "Research metadata only. Exact instrument edition, item rights, digital commercial administration, translation, scoring and clinical suitability require instrument-level approval before activation.",
     "enabled": false
   },
@@ -4498,22 +4506,26 @@ export const PSYCHOMETRIC_LIBRARY_2026 = Object.freeze([
     "enabled": false
   },
   {
-    "key": "existential-anxiety-20",
-    "instrument": "Existential Anxiety Questionnaire",
-    "acronym": "EXISTENTIAL-ANXIETY-20",
-    "items": 20,
+    "key": "eaq-13",
+    "instrument": "Existential Anxiety Questionnaire (Weems et al.)",
+    "acronym": "EAQ",
+    "items": 13,
     "area": "resources",
     "category": "meaning_spirituality",
     "priority": "B",
     "duration": null,
     "scales": [
-      "Anxiety about death",
-      "Meaninglessness",
-      "Isolation"
+      "Existential anxiety overall",
+      "Fear of death",
+      "Anxiety about fate",
+      "Anxiety about emptiness",
+      "Fear of meaninglessness",
+      "Guilt-related anxiety",
+      "Condemnation-related anxiety"
     ],
     "rightsStatus": "permission_required",
     "access": "account",
-    "sourceUrl": "https://novopsych.com/assessments/",
+    "sourceUrl": "https://www.researchgate.net/publication/380999443_The_Existential_Anxiety_Questionnaire_EAQ_User_Guide_Original_Scale_Scoring_Reliability_and_Validity_Child-Youth_Report_Spanish_Chinese_Dutch_Polish_Slovak_Translations",
     "rightsNote": "Research metadata only. Exact instrument edition, item rights, digital commercial administration, translation, scoring and clinical suitability require instrument-level approval before activation.",
     "enabled": false
   },
