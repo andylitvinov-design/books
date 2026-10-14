@@ -53,18 +53,18 @@ A new test may study the same **general construct** as an established method wit
 ### New active-catalogue candidate: original HH Session Clarity Pulse
 **Status:** fully versioned and added as the **111th startable catalogue key in this PR** (account-only, optional, not part of the starter battery). **Not yet deployed to the live website** and not a validated clinical instrument, WAI-SR or Session Rating Scale equivalent.
 
-**Purpose:** help a participant reflect on how practical and comfortable a recent support conversation felt. Suggested anchors 0=Not at all / Совсем нет to 4=Very much / Очень сильно, with an option to skip. The answer is personal feedback, not a clinician performance score. EN / RU review is needed before any release.
+**Purpose:** help a participant reflect on how practical and comfortable a recent support conversation felt. Suggested anchors 0=Not at all / Совсем нет to 4=Very much / Очень сильно, participation and saving optional; all six answers are required for a scored result. The answer is personal feedback, not a clinician performance score. EN / RU review is needed before production release.
 
-| No. | EN pilot statement | RU pilot statement |
+| No. | EN registered statement | RU registered statement |
 |---|---|---|
-| 1 | During our last conversation, I could bring up the question that mattered most to me. | Во время последнего разговора я смог(ла) поднять самый важный для меня вопрос. |
-| 2 | I had room to say when something was unclear. | У меня была возможность сказать, когда что-то было непонятно. |
-| 3 | I can name one useful detail I want to remember from that conversation. | Я могу назвать одну полезную мысль, которую хочу сохранить после разговора. |
-| 4 | I felt comfortable asking for a slower pace when I needed it. | Мне было комфортно попросить замедлиться, когда это было необходимо. |
-| 5 | I know what I want to try or explore before our next contact, if anything. | Я понимаю, что хочу попробовать или исследовать до следующего контакта, если такое желание есть. |
-| 6 | I have a way to share feedback if a conversation did not feel helpful. | Я знаю, как дать обратную связь, если разговор оказался для меня бесполезным. |
+| 1 | During the most recent support conversation, I could bring up what mattered most to me. | Во время последнего разговора о поддержке я смог(ла) поднять самый важный для меня вопрос. |
+| 2 | I had space to say when something needed a clearer explanation. | У меня была возможность сказать, когда требовалось более понятное объяснение. |
+| 3 | I can name one idea I want to remember from that conversation. | Я могу назвать одну мысль, которую хочу сохранить после разговора. |
+| 4 | I felt free to ask for a slower pace when I needed it. | Я чувствовал(а), что могу попросить замедлиться, когда это необходимо. |
+| 5 | I know one small step I might choose before my next conversation. | Я понимаю, какой небольшой шаг мог(ла) бы выбрать до следующего разговора. |
+| 6 | I know how to share feedback if that conversation did not feel helpful. | Я знаю, как дать обратную связь, если разговор не показался полезным. |
 
-**Implemented scoring:** one descriptive mean of six self-reported 0–4 answers, with no standardized percentile, diagnosis, clinical cutoff, therapist ranking, automatic referral or treatment-effectiveness claim. Original item text and canonical EN/RU scoring definitions are in `data/assessments/hh-session-clarity-v1.js`. The brainstorming wording in the table above is intentionally **not** the published definition; do not use it for scoring. For exact text use the versioned definition file.
+**Implemented scoring:** one descriptive mean of six self-reported 0–4 answers, with no standardized percentile, diagnosis, clinical cutoff, therapist ranking, automatic referral or treatment-effectiveness claim. Original item text and canonical EN/RU scoring definitions are in `data/assessments/hh-session-clarity-v1.js`. The table above reproduces the registered v1 wording for reference. The versioned definition file remains canonical.
 
 **Implemented in this PR:** immutable EN/RU `id/version/contentHash` definitions, `app.assessment_versions` append-only migration `20261014140000_hh_session_clarity_v1.sql`, a bilingual interpretation plan and a scale-guide document. **Still required:** independent item/safety review, CI tests and UI/RLS verification, privacy/consent QA and actual production deployment. The form is a nonvalidated observational check-in, not a professional standardized test. Old results and published versions must not change retroactively.
 
