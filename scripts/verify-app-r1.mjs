@@ -196,34 +196,46 @@ async function verifyPublicServiceConversionJourneys(){
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    const main=servicePage.locator(kind==='alchemy'?'main[data-alchemy-soul-landing]':'main[data-core-service-detail="'+kind+'"]')
+    await expect(main.locator('h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
-     const guideHeading=servicePage.locator('#distance-homeopathy-guide h1')
-     await expect(guideHeading).toBeVisible()
-     const headingSize=await guideHeading.evaluate(node=>({
-      scroll:node.scrollWidth,client:node.clientWidth,font:getComputedStyle(node).fontSize,
-     }))
-     assert.ok(headingSize.scroll<=headingSize.client+1,
-      'Distance-homeopathy heading must wrap inside its '+width+'px '+locale+' article: '+JSON.stringify(headingSize))
-     // The article itself stays on the Alchemy page, but there is no
-     // navigation link to inject into client reports or service copy.
-     await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
+     // The new service owns two lead forms, a video introduction and verified reviews.
+     await expect(main.locator('form[data-alchemy-lead-form]')).toHaveCount(2)
+     await expect(main.locator('#alchemy-video')).toBeVisible()
+     await expect(main.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     await expect(servicePage.locator('[data-core-service-capture="alchemy"]')).toHaveCount(0)
+     await expect(main.locator('#distance-homeopathy-guide')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-    await capture.scrollIntoViewIfNeeded()
-    await expect(capture).toBeVisible({timeout:30000})
-    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
-    await expect(cta).toBeVisible()
-    const href=await cta.getAttribute('href')
-    const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-    assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-    const alternative=capture.locator('details')
-    assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
-    await alternative.locator('summary').click()
-    await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    if(kind==='alchemy'){
+     const heroForm=main.locator('form[data-alchemy-lead-form="hero"]')
+     const finalForm=main.locator('form[data-alchemy-lead-form="final"]')
+     await expect(heroForm.locator('input[name="name"]')).toBeVisible()
+     await expect(heroForm.locator('input[name="contact"]')).toBeVisible()
+     await expect(heroForm.locator('textarea[name="topic"]')).toBeVisible()
+     await heroForm.locator('input[name="name"]').fill('Synthetic Visitor')
+     await heroForm.locator('input[name="contact"]').fill('synthetic@example.invalid')
+     await heroForm.locator('textarea[name="topic"]').fill('Synthetic private question for safe layout validation')
+     await heroForm.locator('select[name="duration"]').selectOption('30')
+     await expect(heroForm.locator('select[name="duration"]')).toHaveValue('30')
+     await finalForm.scrollIntoViewIfNeeded()
+     await expect(finalForm.locator('button[type="submit"]')).toBeVisible()
+    }else{
+     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+     await capture.scrollIntoViewIfNeeded()
+     await expect(capture).toBeVisible({timeout:30000})
+     const cta=capture.locator('a[data-contact-channel="whatsapp"]')
+     await expect(cta).toBeVisible()
+     const href=await cta.getAttribute('href')
+     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
+     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
+     const alternative=capture.locator('details')
+     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+     await alternative.locator('summary').click()
+     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    }
    }
    await servicePage.close()
   }
