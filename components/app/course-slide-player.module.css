@@ -73,3 +73,19 @@
 @media print{.overlay{display:none!important}}
 
 .photoMoment[data-photo="books"]{background:linear-gradient(100deg,#effeffeb,#ddf7f278 55%,#ffffff00),url('/images/holistic-house/books-library.webp') center/cover no-repeat}
+
+/* Daily skill measurement and the two-point completion comparison. */
+.focusName{margin:0;padding:10px 13px;border:1px solid #cfebed;border-radius:12px;background:#edfafb;font-size:13px;line-height:1.45;color:#507e8f}
+.focusName strong{color:#087f95}
+.momentResult{display:grid;justify-items:center;gap:11px;width:100%;padding:16px;border:1px solid #bce8e6;border-radius:21px;background:linear-gradient(125deg,#e9fbf7,#e1f5fc);box-shadow:0 9px 24px #088ca617}
+.momentResult h3{font-size:18px;letter-spacing:-.025em;color:#226079;margin:0}
+.resultFocus{margin:0;font-size:12px;font-weight:740;color:#428597}
+.resultPair{display:flex;align-items:center;justify-content:center;gap:19px;width:100%}
+.resultPair>div{display:grid;justify-items:center;gap:4px;min-width:95px;padding:8px 12px;border:1px solid #c1e4e8;border-radius:16px;background:#fff}
+.resultPair>div span{font-size:12px;color:#678d9c;font-weight:750}
+.resultPair strong{font-size:32px;line-height:1.1;color:#078da4;font-variant-numeric:tabular-nums}
+.resultPair small{font-size:14px;font-weight:600;color:#7aa0ae}
+.resultPair>svg{color:#57a2b3}
+.resultMeaning{margin:0;color:#246878;font-size:13px;line-height:1.4;font-weight:760}
+.finished:has([data-course-moment-result]) .illustration{height:clamp(100px,15vh,155px)}
+@media(max-width:540px){.momentResult{padding:11px 13px;gap:8px}.resultPair{gap:12px}.resultPair>div{min-width:86px}.resultPair strong{font-size:29px}.resultMeaning{font-size:12px}}
