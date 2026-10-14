@@ -91,6 +91,21 @@ async function chooseVisibleTest(testPage,name){
  await expect(card()).toBeVisible({timeout:15000})
  await card().getByRole('checkbox',{name,exact:true}).check()
 }
+// Public routes start in the easy picker. Exercise the real catalog transition,
+// then explicitly clear its carried suggestions for the exact-one-test checks.
+async function chooseSinglePublicTest(target,name){
+ await expect(target.getByRole('heading',{name:'Choose your tests',level:1,exact:true})).toBeVisible()
+ await target.getByRole('button',{name:'Browse full database',exact:true}).click()
+ await expect(target.getByRole('heading',{name:'Start with a simple check-in',level:1,exact:true})).toBeVisible()
+ await expect(target.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
+ const checked=target.locator('article input[type="checkbox"]:checked')
+ const suggestedCount=await checked.count()
+ for(let index=0;index<suggestedCount;index++)await checked.first().uncheck()
+ await expect(checked).toHaveCount(0)
+ await chooseVisibleTest(target,name)
+ await expect(checked).toHaveCount(1)
+ await expect(checked).toHaveAttribute('aria-label',name)
+}
 async function enterTest(name='Current State Check',mode='Guided'){
  await page.goto(origin+'/en/app/tests');await ready()
  if(await page.locator('[data-saved-test]').count()){
@@ -794,9 +809,7 @@ try {
  const selectionWrites=[]
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
- await expect(selectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
-  await expect(selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
- await chooseVisibleTest(selectionPage,'Personality Baseline')
+ await chooseSinglePublicTest(selectionPage,'Personality Baseline')
  const selectionGuided=selectionPage.locator('#hh-test-customizer')
  if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
@@ -819,8 +832,7 @@ try {
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
  await repeatSelectionPage.goto(origin+'/en/client/tests')
- await expect(repeatSelectionPage.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
- await chooseVisibleTest(repeatSelectionPage,'Personality Baseline')
+ await chooseSinglePublicTest(repeatSelectionPage,'Personality Baseline')
  await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
