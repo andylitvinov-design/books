@@ -63,6 +63,8 @@ test('first mission slide offers three real persisted practice choices; original
   assert.match(player,/day:cycle\.day,lessonId:lesson\.id,operationId:sessionOp\.current/)
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
+  assert.match(player,/onFinish\|\|onClose/)
+  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
   assert.match(playerCss,/\.paceChoices button\[aria-pressed=true\]/)
   assert.match(playerCss,/\.paceIcon\{/)
 })
