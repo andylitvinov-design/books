@@ -43,7 +43,6 @@ export const GAD7_RU_V1 = deepFreeze({
       items:TEXT.map((_,i)=>'gad7.'+String(i+1).padStart(2,'0')),
       min:0,max:21,dimensionClass:'symptoms',
       sourceConstruct:'Частота тревожных симптомов за последние две недели',
-      direction:'lower-reported-symptoms',
     },
   ]},
   questions: TEXT.map((text,i)=>({id:'gad7.'+String(i+1).padStart(2,'0'),text,required:true})),
