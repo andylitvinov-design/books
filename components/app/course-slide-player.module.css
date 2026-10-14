@@ -451,3 +451,35 @@
 @media(max-height:680px){
   .overlay .fullscreenScenePhoto{top:calc(env(safe-area-inset-top) + 62px)}
 }
+
+/* OPORA personalized Day Focus: compact, actual completed-test scales.
+   The photograph is the existing full-screen contain-fit scenic layer, not a
+   second cropped card; every choice remains readable over the soft scrim. */
+.overlay .focusScaleChoices{display:grid;gap:9px;margin:2px 0 5px}
+.overlay .focusScaleChoices button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:61px;padding:11px 14px!important;text-align:left;cursor:pointer;border:1px solid #badfe2!important;border-bottom:3px solid #a6d5d9!important;border-radius:16px!important;background:#fbfffdf2!important;color:#1c5165!important;box-shadow:0 7px 17px #17577610;transition:transform .16s,border-color .16s}
+.overlay .focusScaleChoices button:hover:not(:disabled){transform:translateY(-1px);border-color:#32a4b0!important}
+.overlay .focusScaleChoices button[aria-pressed=true]{background:linear-gradient(105deg,#e0f9f5f7,#f5fffefa)!important;border:2px solid #0798a3!important;border-bottom:4px solid #057e8b!important;color:#07697a!important}
+.overlay .focusScaleChoices button:focus-visible,.overlay .quoteResponses button:focus-visible,.overlay .moreScaleChoices:focus-visible{outline:3px solid #055d74;outline-offset:3px}
+.overlay .focusScaleChoices button>svg{flex:none;color:#168e9f}
+.overlay .focusScaleText{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}
+.overlay .focusScaleText strong{font-size:15px;line-height:1.35;font-weight:810}
+.overlay .focusScaleText small{font-size:11px;line-height:1.4;color:#567b8c;font-weight:600}
+.overlay .moreScaleChoices{display:flex;align-items:center;justify-content:center;gap:8px;min-height:39px;padding:8px 12px!important;border:0!important;background:#f4fffde8!important;color:#007e92!important;border-radius:12px;font-size:13px;font-weight:750;cursor:pointer}
+.overlay .moreScaleChoices[aria-expanded=true] svg{transform:rotate(180deg)}
+.overlay .noMeasuredScales{margin:5px 0;padding:16px 18px;background:#f9fffdea;border:1px solid #cde4e7;border-radius:16px;font-size:15px;line-height:1.55;color:#386276}
+.overlay .quoteResponses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.overlay .quoteResponses button{min-width:0;min-height:54px;padding:11px 6px!important;border:1px solid #b7dfe4!important;border-bottom:3px solid #a4d0d8!important;border-radius:14px!important;background:#fafffef5!important;color:#285b70!important;cursor:pointer;font-size:13px;font-weight:780;line-height:1.3;overflow-wrap:anywhere}
+.overlay .quoteResponses button[aria-pressed=true]{background:#def8f3!important;border:2px solid #0399a5!important;border-bottom:4px solid #007c89!important;color:#086e7f!important}
+.overlay .quoteReply{margin:0;padding:14px 16px;border:1px solid #c6e6e8;border-radius:15px;background:#f7fffcf0;color:#315b6f;line-height:1.55;font-size:14px}
+.overlay .content[data-slide-kind=recall] .prompt,
+.overlay .content[data-slide-kind=idea] .prompt{padding:11px 13px;border-radius:14px;background:#f8fffde8;border:1px solid #d0e8e6}
+.overlay .content[data-slide-kind=idea] .quote{padding:25px 23px!important;font-size:clamp(20px,4.4vw,27px)!important;line-height:1.58}
+@media(max-width:540px){
+  .overlay .focusScaleChoices{gap:7px}
+  .overlay .focusScaleChoices button{min-height:57px;padding:9px 11px!important}
+  .overlay .focusScaleText strong{font-size:14px}
+  .overlay .quoteResponses{gap:6px}
+  .overlay .quoteResponses button{min-height:50px;padding:9px 4px!important;font-size:12px}
+  .overlay .quoteReply{font-size:13px;padding:12px}
+}
+@media(prefers-reduced-motion:reduce){.overlay .focusScaleChoices button{transition:none!important}}
