@@ -17,6 +17,8 @@
 | Express commercial-use permission with conditions | CBI personal, work, client burnout | Original source says commercial/noncommercial use allowed when citing Borritz et al. (2006). Do not combine the three subscales into an invented clinical aggregate. |
 | PHQ/GAD family with publisher public-access permission | PHQ-2, PHQ-4, PHQ-8, GAD-2, GAD-7; account and safe-usage details vary | Review each exact form and scoring. Safety-sensitive forms require a genuine safety flow and must not be automatically recommended to every guest. |
 | Commercial licence or explicit noncommercial restriction | WEMWBS/SWEMWBS, WHO-5, BDI-II/BAI, proprietary psychotherapeutic inventories | **Do not expose original questions, scoring or direct Start** until a licence specifically covers our commercial online and translation context. |
+| Public-domain copyright but restricted administration context | **DASS-21** | The author's [official FAQ](https://dass.psy.unsw.edu.au/DASSFAQ.htm) allows copying but expressly **forbids** administration in a public-facing website/app and forbids altering the scales. A restricted enrolment/clinician-feedback workflow could be reviewed; do not put it in the public client-test explorer. |
+| Public-domain original, qualified-professional safety requirement | **VA PC-PTSD-5 / PCL-5** | The US VA states they are public domain, but intended for qualified professionals and researchers. Preserve trauma-informed consent, safety and qualified follow-up before any controlled administration. |
 | Electronic administration permissions or jurisdiction-specific conditions | PROMIS/HealthMeasures, COPSOQ III, many third-party scales | Verify publisher's current digital/electronic instrument terms *and* the exact form and language. A freely readable PDF is not enough. |
 | Practitioner-only / trauma / crisis instruments | MMPI-3, PAI, trauma/dissociation/risk screens | No casual public activation, equivalent-score claims or automatic substitution. Reassess qualifications, informed consent, privacy, support and delivery path first. |
 | Our own new forms | HH-authored state, resource and relationship reflections | Allowed as **genuinely original**, non-diagnostic questionnaires. They do not inherit protected items, original names, standardized cutoffs, published reliability, validity or norms. |
@@ -28,6 +30,8 @@ Key official starting points:
 - [Warwick — WEMWBS licences](https://warwick.ac.uk/services/innovations/wemwbs/licenses/)
 - [WHO — commercial use permissions](https://www.who.int/about/policies/publishing/copyright)
 - [HealthMeasures — obtain/administer PROMIS](https://www.healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures)
+- [UNSW DASS — public-domain but public-web prohibition and no modifications](https://dass.psy.unsw.edu.au/DASSFAQ.htm)
+- [US VA PC-PTSD-5 — public domain, trained professional use](https://www.ptsd.va.gov/professional/assessment/screens/pc-ptsd.asp)
 
 ## Implemented in this branch: related **existing** active questionnaires
 
