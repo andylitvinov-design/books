@@ -23,7 +23,7 @@ test('legacy discomfort measures remain unchanged to avoid reversing persisted s
   assert.match(player, /checkinQuestion: 'Насколько эта трудность ощущалась за последние 24 часа\?'/)
   assert.match(player, /practicePrePrompt: 'Прямо перед упражнением: насколько трудно/)
   assert.match(player, /practicePostPrompt: 'Сразу после упражнения: насколько трудно/)
-  assert.match(player, /feedback,beforeNow,afterNow,reflection/)
+  assert.match(player, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)
 })
 
 test('baseline shows the entire landscape picture in a fullscreen accessible background', () => {
