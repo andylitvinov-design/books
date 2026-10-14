@@ -13,6 +13,9 @@ import styles from './course-slide-player.module.css'
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
+    pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
+    shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
+    understand: 'One idea at a time', adjustPace: 'Change my practice style',
     baseline: 'Before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
     momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
     focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
@@ -47,6 +50,9 @@ const WORDS = {
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
+    pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
+    shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
+    understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
     baseline: 'Перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
@@ -85,6 +91,8 @@ const WORDS = {
 }
 
 const SCENE = {
+  pace: Compass,
+  understand: Leaf,
   baseline: Target,
   checkin: Target,
   idea: Leaf,
@@ -102,9 +110,11 @@ const SCENE = {
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   return [
+    { key: 'pace', kind: 'pace' },
     { key: 'baseline', kind: 'baseline' },
     { key: 'checkin', kind: 'checkin' },
     { key: 'idea', kind: 'idea' },
+    ...((lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
     ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
@@ -156,6 +166,8 @@ export default function CourseSlidePlayer({
   const [beforeNow, setBeforeNow] = useState(session?.beforeNow ?? null)
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
+  const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
+    ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -231,6 +243,26 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
+  async function savePace() {
+    if (submitting.current) return
+    const previous = cycle.preferences || {}
+    const next = pace === 'quick'
+      ? { length:'quick', imagery:previous.imagery || 'optional' }
+      : pace === 'no_imagery'
+        ? { length:previous.length || 'standard', imagery:'no_imagery' }
+        : { length:'standard', imagery:'optional' }
+    if ((previous.length||'standard') === next.length &&
+        (previous.imagery||'optional') === next.imagery) { goNext(); return }
+    submitting.current = true
+    setSaving(true); setError('')
+    try {
+      const result = await onPreferences(next)
+      if (result) goNext()
+      else setError(words.saveError)
+    } catch { setError(words.saveError) }
+    finally { submitting.current = false; setSaving(false) }
+  }
+
   async function finishLesson() {
     if (alreadyDone) { setIndex(slides.length); return }
     if (submitting.current) return
@@ -300,6 +332,24 @@ export default function CourseSlidePlayer({
           </div>
           <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
 
+          {slide.kind === 'pace' && <>
+            <IllustratedMoment variant="calm"/>
+            <p className={styles.prompt}>{words.pacePrompt}</p>
+            <div className={styles.paceChoices} role="group" aria-label={words.pacePrompt}>
+              {[
+                ['quick',words.short,words.shortDetail,Clock3],
+                ['standard',words.standard,words.standardDetail,Waves],
+                ['no_imagery',words.noImagery,words.noImageryDetail,Leaf],
+              ].map(([key,label,detail,OptionIcon])=><button key={key} type="button"
+                disabled={locked} aria-pressed={pace===key} onClick={()=>setPace(key)}>
+                <span className={styles.paceIcon}><OptionIcon size={22} aria-hidden="true"/></span>
+                <span className={styles.paceCopy}><strong>{label}</strong><small>{detail}</small></span>
+                {pace===key?<CheckCircle2 size={19} className={styles.paceCheck} aria-hidden="true"/>:
+                  <ArrowRight size={18} aria-hidden="true"/>}
+              </button>)}
+            </div>
+          </>}
+
           {slide.kind === 'baseline' && <>
             <IllustratedMoment variant="calm"/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
@@ -325,7 +375,10 @@ export default function CourseSlidePlayer({
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo/>
             <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
-            <p className={styles.instruction}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
+          </>}
+          {slide.kind === 'understand' && <>
+            <IllustratedMoment variant="calm"/>
+            <p className={styles.prompt}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
           </>}
 
           {slide.kind === 'recall' && <>
@@ -344,17 +397,20 @@ export default function CourseSlidePlayer({
             <IllustratedMoment variant="calm"/>
             <p className={styles.prompt}>{slide.section.text}</p>
             <p className={styles.helper}>{words.gentle}</p>
-            <div className={styles.preferenceRow} role="group" aria-label={words.guided}>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.length === 'quick'}
-                onClick={() => void updatePreferences({length:'quick'})}>{words.short}</button>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.length !== 'quick'}
-                onClick={() => void updatePreferences({length:'standard'})}>{words.standard}</button>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
-                onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
-            </div>
+            <details className={styles.timerDetails}>
+              <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
+              <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.length === 'quick'}
+                  onClick={() => void updatePreferences({length:'quick'})}>{words.short}</button>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.length !== 'quick'}
+                  onClick={() => void updatePreferences({length:'standard'})}>{words.standard}</button>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
+                  onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
+              </div>
+            </details>
             <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
@@ -438,12 +494,13 @@ export default function CourseSlidePlayer({
         </div>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={finished ? onClose
+            : slide.kind === 'pace' ? () => void savePace()
             : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{finished ? words.seeMap
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
+            : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>
         <p>{words.safety}</p>
