@@ -634,6 +634,16 @@ export default function CourseSlidePlayer({
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo kind={slide.kind}/>
             <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
+            {lesson.antiStress&&<section data-course-aphorism-dialogue>
+              <p className={styles.prompt}>{learning.aphorismTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
+                {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={aphorismResponse===key}
+                    onClick={()=>setAphorismResponse(key)}>{label}</button>)}
+              </div>
+              {aphorismResponse&&<p className={styles.helper} role="status">
+                {learning.aphorismHints[aphorismResponse]}</p>}
+            </section>}
           </>}
           {slide.kind === 'understand' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -644,6 +654,14 @@ export default function CourseSlidePlayer({
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
             <p className={styles.helper}>{words.recallHint}</p>
+            {lesson.antiStress&&<div className={styles.feedbackOptions}
+              role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
+              {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
+                <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
+                  onClick={()=>setRecallAttempt(key)}>{label}</button>)}
+            </div>}
+            {lesson.antiStress&&recallAttempt==='hint'&&
+              <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
           </>}
 
           {slide.kind === 'phrase' && <>
@@ -654,7 +672,16 @@ export default function CourseSlidePlayer({
             </div>}
             <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
-          </>}
+            {lesson.antiStress&&<div data-course-support-phrase-choice>
+              <p className={styles.prompt}>{learning.phraseTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.phraseTitle}>
+                {[['fits',learning.fits],['unsure',learning.phraseUnsure],['no',learning.phraseNo]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={phraseResponse===key}
+                    onClick={()=>setPhraseResponse(key)}>{label}</button>)}
+              </div>
+              {phraseResponse&&<p className={styles.helper}>{learning.phraseHints[phraseResponse]}</p>}
+            </div>}
+          </>
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
@@ -718,6 +745,16 @@ export default function CourseSlidePlayer({
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {lesson.antiStress&&<section data-course-practice-attempt>
+              <p className={styles.prompt}>{learning.practiceTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
+                {[['tried',learning.tried],['simplified',learning.simplified],
+                  ['neutral',learning.neutral],['skip',learning.practiceSkip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={practiceAttempt===key}
+                    onClick={()=>setPracticeAttempt(key)}>{label}</button>)}
+              </div>
+              <p className={styles.helper}>{learning.practiceNote}</p>
+            </section>}
             {lesson.antiStress?.probe && <section className={styles.antiStressProbe} data-antistress-skill-probe>
               <p className={styles.antiStressProbeTag}>{locale==='ru'?'Практический выбор · навык '+lesson.antiStress.skillId:'Practice choice · skill '+lesson.antiStress.skillId}</p>
               <strong>{lesson.antiStress.probe.prompt}</strong>
@@ -739,6 +776,16 @@ export default function CourseSlidePlayer({
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {lesson.antiStress&&<section data-course-everyday-transfer>
+              <p className={styles.prompt}>{learning.transferTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.transferTitle}>
+                {[['plan',learning.plan],['imagined',learning.imagined],['phrase',learning.phrase],
+                  ['real',learning.real],['skip',learning.skip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={transferStage===key}
+                    onClick={()=>setTransferStage(key)}>{label}</button>)}
+              </div>
+              <p className={styles.helper}>{locale==='ru'?'Реальный шаг фиксируется только с ваших слов. Ни один шаг не обязателен.':'Real-world action is self-reported only. No action is required.'}</p>
+            </section>}
             {cycle.day===6 && !lesson.antiStress && <>
               <p className={styles.prompt}>{words.transferStageTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={words.transferStageTitle} data-course-transfer-stage>
