@@ -271,7 +271,7 @@ try{
  await expect(picker.locator('[data-public-selected-tests]')).toContainText('Love & Affection')
  const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
  const loadVoluntary=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
- await picker.getByRole('button',{name:/^Start free monitoring/}).click()
+ await picker.getByRole('button',{name:'Start free monitoring Save your selection and get started',exact:true}).click()
  const voluntaryResponse=await saveVoluntary
  assert.ok(voluntaryResponse.ok())
  const voluntaryPlan=await voluntaryResponse.json()
@@ -294,9 +294,12 @@ try{
  assert.ok(savedChoice.activeTestPlan.definitionIds.includes(localized('hh-love-affection','en').id))
  passed('explicit relationship choice survives broader filters, private plan saving and reload without adding other intimate forms')
  await navigate(page,origin+'/en/client/tests?test=hh-love-affection')
+ const selectedPublicTest=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+ await expect(selectedPublicTest).toHaveCount(1)
+ await expect(selectedPublicTest).toHaveAttribute('data-selected-test-key','hh-love-affection')
  const selectionResponse=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
  const selectionLoaded=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
- await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ await picker.getByRole('button',{name:'Start free monitoring Save your selection and get started',exact:true}).click()
  const selection=await selectionResponse
  assert.ok(selection.ok())
  const savedPlan=await selection.json()
