@@ -228,7 +228,7 @@ try {
         const nav = page.locator(selector)
         // Desktop includes the EN/RU relationship hub. The compact mobile bar
         // intentionally keeps six destinations; Home exposes the hub spotlight.
-        const mobileIds = ['home', 'library', 'services', 'academy', 'about', 'cabinet']
+        const mobileIds = ['home', 'library', 'services', 'academy', 'courses', 'cabinet']
         const expectedItems = selector === '.mobile-bottom-navigation'
           ? expected.filter(item => mobileIds.includes(item.id))
           : expected.map(item => item.id === 'cabinet'
