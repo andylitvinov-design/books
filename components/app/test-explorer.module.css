@@ -673,3 +673,13 @@
 .testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;color:#766085;border-color:#e7daeb}
 .testKindBadge svg{flex:0 0 auto}
 @media(max-width:590px){.kindChoices{display:grid;grid-template-columns:1fr;gap:6px}.kindChoice{width:100%;min-width:0}}
+
+/* Rights-aware catalogue: only a link to another already-cleared questionnaire. */
+.relatedAvailable{border:1px solid #a0d5d0;border-radius:14px;background:linear-gradient(125deg,#ebf8f7,#f6fcfb);padding:11px 13px;margin:10px 0;color:#174c50;min-width:0}
+.relatedAvailable>strong{font-size:.86rem;line-height:1.35;display:block}
+.relatedAvailable>p{font-size:.79rem;line-height:1.42;margin:4px 0 9px;color:#3e6264}
+.relatedAvailable>div{display:flex;flex-wrap:wrap;gap:7px}
+.relatedAvailable button{font:inherit;font-size:.8rem;line-height:1.3;background:#fff;border:1px solid #95c7c4;border-radius:999px;color:#176265;padding:8px 11px;cursor:pointer;max-width:100%;white-space:normal;text-align:left}
+.relatedAvailable button:hover{background:#d7f3ef;border-color:#549994}
+.relatedAvailable button:focus-visible{outline:3px solid #176265;outline-offset:2px}
+@media (max-width:480px){.relatedAvailable{padding:10px}.relatedAvailable>div{flex-direction:column;align-items:stretch}.relatedAvailable button{width:100%}}
