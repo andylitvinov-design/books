@@ -40,7 +40,7 @@ export function HomepageTopicJourneys({ locale }: { locale: Locale }) {
     </header>
     <div className={styles.grid}>
       {TOPIC_JOURNEYS.map((journey) => <article key={journey.id} className={styles.tile} data-topic-id={journey.id}>
-        <Link href={'/' + language + '/explore/' + journey.id} className={styles.tileLink}>
+        <Link href={`/${language}/explore/${journey.id}`} className={styles.tileLink}>
           <span className={styles.photo}>
             <Image src={photos[journey.id]} alt="" fill unoptimized loading="lazy"
               sizes="(max-width: 720px) 116px, (max-width: 1024px) 145px, 185px" />
