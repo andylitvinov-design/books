@@ -161,7 +161,7 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
             aria-current={active ? 'step' : undefined}
             aria-label={t.lesson + ' ' + item.day + ': ' + item.title + '. ' + (complete ? t.done : active ? t.today : item.status === 'past' ? t.missed : t.later)}
             onClick={() => setSelected(expanded ? null : item.day)}>
-            {complete ? <Check size={29} strokeWidth={3} aria-hidden="true"/> : <Icon size={31} strokeWidth={2.4} aria-hidden="true"/>}
+            {complete ? <Check size={29} strokeWidth={3} aria-hidden="true"/> : item.status === 'planned' ? <LockKeyhole size={26} strokeWidth={2.2} aria-hidden="true"/> : <Icon size={31} strokeWidth={2.4} aria-hidden="true"/>}
           </button>
           <span className={styles.pathLabel}>
             <small>{t.lesson} {String(item.day).padStart(2, '0')}</small>
