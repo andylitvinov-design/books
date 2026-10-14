@@ -66,6 +66,9 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
           <ConsultationDocumentActions
             recordId={document.id}
             locale={locale}
+            dateIssued={dateIssued}
+            kind={document.kind}
+            paymentStatus={document.paymentStatus}
             active={document.active}
             editHref={document.editHref}
             editLabel={text.edit}

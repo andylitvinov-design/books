@@ -27,6 +27,21 @@ test('saved consultation opens current private full report in the same Safari ta
   assert.match(pdfRoute,/no-store/,'private PDF is not cached by a CDN')
 })
 
+test('all saved report actions give iOS a dated filename instead of pdf.pdf',()=>{
+  const panel=sourceFile('components/admin-document-panels.jsx')
+  const actions=sourceFile('components/consultation-document-actions.jsx')
+  const result=sourceFile('components/consultation-result.jsx')
+  const ownerPage=sourceFile('app/admin/documents/[id]/page.js')
+  const reader=sourceFile('app/admin/documents/[id]/view/page.js')
+  const helper=sourceFile('lib/documents/report-filename.js')
+  assert.match(panel,/download=\{record\.kind === 'payment'/)
+  assert.match(actions,/download=\{pdfFilename\}/)
+  assert.match(result,/dateIssued=\{dateIssued\}/)
+  assert.match(ownerPage,/dateIssued=\{record\.dateIssued\}/)
+  assert.match(reader,/reportPdfFilename\(doc\)/)
+  assert.match(helper,/HolisticHouse_Report_/)
+})
+
 test('Russian headline wraps naturally at word boundaries on an iPhone',()=>{
   const css=sourceFile('components/consultation-report.css')
   const index=css.indexOf('/* iOS Safari client report:')
