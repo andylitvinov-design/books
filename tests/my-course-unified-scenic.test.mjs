@@ -10,13 +10,15 @@ const todayCss = read('components/app/course-today.module.css')
 const journey = read('components/app/course-quest.jsx')
 const journeyCss = read('components/app/course-quest.module.css')
 const focus = read('components/app/course-focus-entry.jsx')
+const selector = read('components/app/course-entry-selector.jsx')
+const onboarding = read('components/app/my-course.jsx')
 const focusCss = read('components/app/course-focus-entry.module.css')
 const photo = '/images/holistic-house/course-focus-mountain-boy.webp'
 
 test('all course surfaces reuse the approved standalone scenic art asset', () => {
   const asset = statSync(new URL('../public' + photo, import.meta.url))
   assert.ok(asset.size > 20_000)
-  for (const source of [focus, player, today, journey]) {
+  for (const source of [focus, player, today, journey, selector, onboarding]) {
     assert.ok(source.includes(photo), 'Course surface must use the same scenic artwork')
   }
   assert.match(player, /data-scene-kind=\{kind\}/)
