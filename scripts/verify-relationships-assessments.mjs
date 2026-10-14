@@ -47,7 +47,8 @@ async function diagnosticPage(context,label){
  })
  page.on('request',request=>{
   const url=new URL(request.url())
-  if(url.origin!==origin||!(request.isNavigationRequest()||url.pathname.startsWith('/api/app/')||url.searchParams.has('_rsc')))return
+  const routeChunk=request.resourceType()==='script'&&url.pathname.startsWith('/_next/static/')
+  if(url.origin!==origin||!(request.isNavigationRequest()||url.pathname.startsWith('/api/app/')||url.searchParams.has('_rsc')||routeChunk))return
   const entry={id:++diagnosticRequestId,url:request.url(),method:request.method(),
    resourceType:request.resourceType(),isNavigationRequest:request.isNavigationRequest(),
    startedPageUrl:page.url(),startedProbe:info.probe}
@@ -186,6 +187,9 @@ try{
   assert.equal(new URL(page.url()).searchParams.get('topics'),'boundaries')
   assert.equal(new URL(page.url()).searchParams.has('mode'),false)
   assert.equal(new URL(page.url()).searchParams.get('catalog'),'full')
+  // Server-rendered controls may be visible before route chunks hydrate.
+  // Match the existing navigate/course-route readiness contract before clicking.
+  await page.waitForLoadState('networkidle')
   const easySelection=page.getByRole('button',{name:locale==='ru'?'← Назад к простому подбору':'← Back to easy selection',exact:true})
   await expect(easySelection).toBeVisible()
   await expect(page.locator('article input[type="checkbox"]').first()).toBeVisible()
