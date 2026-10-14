@@ -94,3 +94,98 @@
  .plusIcon{width:36px;height:36px}
 }
 @media(prefers-reduced-motion:reduce){.openButton{transition:none}}
+
+
+/* Approved My Courses visual refresh — 2026-10-14.
+   Presentation only: existing server-owned course, progress and membership gates are unchanged. */
+.page{max-width:900px;gap:20px;padding:clamp(4px,1.4vw,15px) 0 24px;color:#154968}
+.header{gap:8px;padding:0 8px}
+.header .eyebrow{display:none}
+.headline{align-items:center;gap:22px}
+.headline h1{font:700 clamp(34px,4.8vw,49px)/1.08 Georgia,serif;letter-spacing:-.045em;color:#07536b;margin:0}
+.header p{font-size:clamp(13px,1.6vw,16px);line-height:1.5;color:#668fa1;margin:0}
+.headerMotto{display:flex;align-items:flex-end;gap:5px;max-width:185px;font:italic 18px/1.18 "Brush Script MT","Segoe Script",cursive;color:#099cb4;transform:rotate(-6deg);text-align:center}
+.headerMotto svg{flex:none;margin-bottom:-7px}
+.tiles{grid-template-columns:minmax(0,1fr);gap:18px}
+.current{position:relative;gap:19px;padding:clamp(18px,3vw,29px);border:1.5px solid #a5e0e9;border-radius:29px;background:linear-gradient(130deg,#fcffff 12%,#e9fafb 100%);box-shadow:0 10px 28px #1c8a9d0e}
+.currentTop{grid-template-columns:clamp(165px,25vw,238px) minmax(0,1fr);gap:clamp(18px,3vw,32px);min-height:225px}
+.currentPhoto{min-height:215px;border:1.5px solid #a5e0e9;border-radius:24px;background:#e6f4f3}
+.currentPhoto img{object-position:50% 50%}
+.currentPhoto .currentIcon{width:55px;height:55px;border-radius:17px;bottom:11px;right:11px;background:#ffffffed}
+.currentText{gap:10px}
+.overline{display:inline-flex;padding:6px 13px;border-radius:99px;background:#ddf7f8;color:#0a93a4;font-size:12px;letter-spacing:.1em}
+.current h2{font:700 clamp(29px,4.3vw,45px)/1.08 Georgia,serif;letter-spacing:-.04em;color:#104e6b;text-wrap:balance}
+.currentText p{font-size:clamp(13px,1.8vw,16px);color:#6b90a0}
+.axes{gap:8px;margin-top:6px}
+.axes span{font-size:clamp(11px,1.35vw,14px);color:#286f86;padding:7px 12px;border:1px solid #bce4e9;background:#fffefa}
+.axes svg{color:#03a5b8}
+.progressInfo{margin-top:3px;font-size:clamp(13px,1.8vw,17px);color:#537f8f}
+.progressInfo strong{font-weight:850;color:#557e90}
+.progressTrack{height:9px;background:#d4ecee}
+.courseActions{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:12px;align-items:stretch}
+.openButton{width:100%;min-width:0;min-height:64px;border-radius:18px;font-size:clamp(16px,2.2vw,20px);gap:16px;box-shadow:none}
+.planButton{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:64px;padding:8px;border:1px solid #c5e8ee!important;border-radius:18px;background:#fcffff!important;color:#17768d!important;font-size:13px;font-weight:800;cursor:pointer}
+.planButton:hover{background:#e8fbfd!important}
+.planButton:focus-visible{outline:3px solid #074f76;outline-offset:3px}
+.planDetails{max-width:100%;overflow:hidden;border-top:1px solid #cee7ea;padding-top:16px}
+.planDetails :global([data-course-14-day-overview]){margin:0;max-width:100%}
+.addTile{display:grid;grid-template-columns:105px minmax(0,1fr) 28px;align-items:center;justify-items:start;gap:26px;min-height:150px;padding:23px 29px;border:2px dashed #a0d3de!important;border-radius:26px;text-align:left;background:linear-gradient(130deg,#fbffff,#f2fcfc)!important}
+.plusIcon{width:86px;height:86px;border-radius:23px}
+.addTileText{gap:8px}
+.addTileText strong{font-size:clamp(20px,2.6vw,26px);font-weight:850;color:#155674}
+.addTileText small{font-size:clamp(13px,1.6vw,15px);max-width:none;color:#688d9c}
+.addArrow{display:block;color:#0896ae}
+.benefits{display:grid;gap:20px;border:1px solid #d5eff1;border-radius:25px;background:linear-gradient(150deg,#fcffff,#f0fbfa);padding:clamp(20px,3vw,29px);box-shadow:0 12px 28px #1c89980b}
+.benefitHeading{display:flex;align-items:center;gap:13px}
+.benefitHeading h2{font:700 clamp(22px,3vw,30px)/1.2 Georgia,serif;color:#135570;margin:0}
+.benefitMark{display:grid;place-items:center;flex:none;width:52px;height:52px;background:#dff5f7;border-radius:50%;color:#079eb3}
+.benefitGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.benefitGrid>div{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-width:0}
+.benefitGrid>div>span{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#e0f8fa;border:1px solid #ceecf2;color:#049eb4}
+.benefitGrid p{font-size:13px;line-height:1.35;color:#5c8597;margin:0;max-width:160px}
+.benefitQuote{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:8px 0 0;color:#276b84;font:italic clamp(15px,2vw,19px)/1.45 Georgia,serif}
+.benefitQuote span{align-self:flex-end;font:italic 17px "Brush Script MT","Segoe Script",cursive;color:#91aeba}
+.footnote{align-items:center;font-size:12px;line-height:1.5;padding:0 4px;color:#7394a3}
+@media(max-width:690px){
+ .page{gap:16px;padding:4px 0 22px}
+ .header{padding:0 3px}
+ .headerMotto{max-width:115px;font-size:13px}
+ .headline h1{font-size:clamp(30px,8vw,42px)}
+ .tiles{gap:13px}
+ .current{gap:14px;padding:17px;border-radius:23px}
+ .currentTop{grid-template-columns:clamp(108px,30vw,148px) minmax(0,1fr);gap:14px;min-height:0}
+ .currentPhoto{min-height:150px;border-radius:17px}
+ .currentPhoto .currentIcon{width:40px;height:40px;border-radius:13px;bottom:7px;right:7px}
+ .current h2{font-size:clamp(23px,6.5vw,32px);line-height:1.1}
+ .overline{font-size:10px;padding:5px 9px}
+ .currentText{gap:6px}
+ .currentText p{font-size:12px}
+ .axes{margin-top:4px;gap:5px}
+ .axes span{font-size:11px;padding:6px 8px;line-height:1.22}
+ .progressInfo{font-size:13px}
+ .courseActions{grid-template-columns:minmax(0,1fr) 78px;gap:8px}
+ .openButton,.planButton{min-height:52px;border-radius:14px}
+ .openButton{font-size:16px}
+ .planButton{font-size:12px}
+ .addTile{grid-template-columns:67px minmax(0,1fr) 20px;gap:13px;min-height:109px;padding:16px;border-radius:21px}
+ .plusIcon{width:64px;height:64px;border-radius:18px}
+ .addTileText strong{font-size:18px}
+ .addTileText small{font-size:12px}
+ .benefits{gap:16px;border-radius:22px;padding:20px}
+ .benefitHeading h2{font-size:23px}
+ .benefitGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+ .benefitGrid p{font-size:12px}
+}
+@media(max-width:380px){
+ .headline h1{font-size:29px}
+ .headerMotto{max-width:100px;font-size:11px}
+ .currentTop{grid-template-columns:96px minmax(0,1fr);gap:11px}
+ .currentPhoto{min-height:152px}
+ .current h2{font-size:21px}
+ .axes span{font-size:10px;padding:5px 7px}
+ .openButton{font-size:14px}
+ .addTile{grid-template-columns:56px minmax(0,1fr) 18px;gap:10px}
+ .plusIcon{width:54px;height:54px}
+ .addTileText strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){.openButton{transition:none}}

@@ -20,7 +20,7 @@ test('adaptive A4 core uses original signature inline, not a nearly empty second
   const pdf = buildPrescriptionPdf(base, 'en', origin)
   assert.equal(countPages(pdf), 1, 'short client recommendation should fit on one A4')
   const txt = source(pdf)
-  assert.match(txt, /q 120 0 0 47 83 /)
+  assert.match(txt, /q 207 0 0 81\.5 83 /, 'wide original-ink signature is part of the white report body')
   assert.equal((txt.match(/\/Signature Do Q/g) ?? []).length, 1)
   assert.match(txt, /Synthetic Example/)
   assert.doesNotMatch(txt, /PRIVATE|internalNotes|undefined/)

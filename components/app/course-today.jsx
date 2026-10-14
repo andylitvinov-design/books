@@ -8,6 +8,7 @@ import CourseGuidedTimer from './course-guided-timer'
 import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
 import { appFetch } from '@/lib/app/client-fetch'
 import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
@@ -172,7 +173,7 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange}){
+export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange,onExit=null}){
  const notifyLessonSaved=useLessonCompletionOffer()
  const router=useRouter()
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
@@ -184,6 +185,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  currentScope.current={accountId,courseId,cycleId:data?.cycle?.id||null}
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [focusOpen,setFocusOpen]=useState(true)
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const retestLock=useRef(false)
  useEffect(()=>{if(questOpen)return promotion.dismiss},[questOpen,promotion.dismiss])
@@ -216,6 +218,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     setSymbolMode('image')
     setExpanded('checkin')
     setQuestOpen(false)
+    setFocusOpen(true)
     setView('today')
   }else {
     if(response?.currentSession){
@@ -331,6 +334,15 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  // guided timer repeat their text as additional meditation steps.
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
  const beforeValue=v=>v===null||v===undefined?null:v
+ const focusEpoch=generation.current
+ function startFocusLesson(){
+   if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
+   setFocusOpen(false)
+   if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
+   if(data.finalRetest?.ready){showFinalRetest();return}
+   if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
+   setQuestOpen(true)
+ }
  if(data.readOnly) return <section className={'hh-panel '+styles.shell} data-course-readonly-history>
    <h2>{ru?'История курса':'Course history'}</h2>
    <p>{ru?'Курс завершён вами. Сохранённые наблюдения доступны для чтения.':'You closed this course. Your saved observations remain available to read.'}</p>
@@ -362,6 +374,11 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course data-course-view={view}>
+  {focusOpen&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
+    progress={progress} programme={data.programme} completed={completed}
+    finished={isFinished} busy={busy||(paused&&resumeBlocked)} onStart={startFocusLesson}
+    onExit={()=>onExit?.()}/>}
+
   {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
     <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
     <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
@@ -397,11 +414,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         </div>
       </div>
       <button type="button" className={styles.todayPrimary} disabled={busy||(paused&&resumeBlocked)}
-        data-course-today-primary onClick={()=>
-          paused ? void submit('resume',{expectedRevision:cycle.revision}) :
-          data.finalRetest?.ready ? showFinalRetest() :
-          (isFinished||(completed&&reportDay&&!reviewed)) ? setView('details') :
-          setQuestOpen(true)}>
+        data-course-today-primary onClick={startFocusLesson}>
         {paused?(ru?'Возобновить курс':'Resume course') :
           data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests') :
           isFinished?(ru?'Посмотреть итоги курса':'Review course results') :

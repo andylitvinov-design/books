@@ -209,3 +209,29 @@ test('V6 close, already-completed replay and owner/course changes do not generat
   pending.resolve(savedLesson());assert.equal(await saving,null);await h.settle();assert.equal(h.notified.length,0);if(change)h.unmount()
  }
 })
+
+test('focus entry uses saved progress, opens lessons without writes and blocks stale scope callbacks',async()=>{
+ const h=mount('course-today',{props:{accountId:'owner-a',courseId:'course-a'},fetcher:path=>path.includes('course-b')?dailyView('course-b','cycle-b'):dailyView()})
+ await h.settle();const focus=findPart(h.tree,'CourseFocusEntry');assert.ok(focus)
+ assert.equal(focus.props.cycle.id,'cycle-a')
+ const oldStart=focus.props.onStart
+ h.render({accountId:'owner-b',courseId:'course-b'});await h.settle()
+ const count=h.calls.length;oldStart();await h.settle()
+ assert.ok(findPart(h.tree,'CourseFocusEntry'));assert.equal(findPart(h.tree,'CourseSlidePlayer'),undefined)
+ assert.equal(h.calls.length,count)
+ findPart(h.tree,'CourseFocusEntry').props.onStart();await h.settle()
+ assert.ok(findPart(h.tree,'CourseSlidePlayer'));assert.equal(h.calls.filter(c=>c.body).length,0)
+ h.unmount();oldStart();assert.equal(h.calls.length,count)
+})
+
+test('focus entry cannot bypass paused capacity or readonly history',async()=>{
+ for(const readOnly of [false,true]){
+  const h=mount('course-today',{props:{accountId:'owner-a',courseId:'course-a'},fetcher:()=>dailyView('course-a','cycle-a',{
+   readOnly,cycle:{...dailyView().cycle,status:'paused'},access:{...access,activeCourseLimit:1,activeCourseCount:1},
+  })})
+  await h.settle();const focus=findPart(h.tree,'CourseFocusEntry')
+  assert.equal(focus,undefined)
+  if(!readOnly)assert.ok(textOf(h.tree).includes('Pause another course before resuming'))
+  assert.equal(h.calls.filter(c=>c.body).length,0);h.unmount()
+ }
+})

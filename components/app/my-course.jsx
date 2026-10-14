@@ -581,7 +581,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <p>{t.selected}: {state.course.testKeys?.length || 0}</p>
     </section>}
 
-    {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} />}
+    {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
 
     {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
