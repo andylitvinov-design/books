@@ -144,3 +144,22 @@
 .themeRefinements button:hover{background:#d7eae4}
 .themeRefinements button:focus-visible{outline:3px solid #347d9a;outline-offset:2px}
 .themeRefinements button span{font-size:1.15rem;line-height:.9}
+
+
+/* iPhone layout: keep optional filters and test cards within the picker. */
+.shell {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+.shell :is(.hero, .section, .advanced, .advancedBody, .kindFilters, .kindChoices, .testList, .testEntry, .testRow, .testInfo, .testMeta, .selectedSummary) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.testInfo, .kindChoice { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .kindChoices { grid-template-columns: minmax(0, 1fr); }
+  .testRow { width: 100%; }
+}
