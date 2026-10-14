@@ -6,6 +6,7 @@ import { Plus, X, Check, Loader2 } from 'lucide-react'
 
 import { PrescriptionTextImport } from './prescription-text-import'
 import { ReportLanguagePicker } from './report-language-picker'
+import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { initialPrescriptionRows, serializePrescriptionRows } from '@/lib/prescriptions/editor'
 
@@ -112,7 +113,12 @@ export function PrescriptionForm({ action, prescription, remedies }) {
           <small>Include the full article text as the final appendix in the client report and PDF, without a website link.</small>
         </span>
       </label>
-      <label className="prescription-instructions">Follow-up<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
+      <label className="prescription-instructions prescription-follow-up-date">
+        {reportFollowUpCopy(reportLocale).title}
+        <input name="followUpDate" type="date" defaultValue={prescription?.followUpDate ?? ''} />
+        <span className="prescription-form-hint">{reportFollowUpCopy(reportLocale).description}</span>
+      </label>
+      <label className="prescription-instructions">Additional follow-up notes (optional)<textarea name="followUp" defaultValue={prescription?.followUp} rows={2} /></label>
       <input type="hidden" name="practitionerName" value="Andrii Litvinov" />
       <input type="hidden" name="practitionerRole" value="Psychological Consultant · Hypnotherapist · Homeopath" />
       <input type="hidden" name="practitionerBackground" value="Systemic & Family Constellations Facilitator" />
