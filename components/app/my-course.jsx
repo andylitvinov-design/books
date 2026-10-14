@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
 import { COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
 import CourseToday from './course-today'
+import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
@@ -140,6 +141,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const [showCourse, setShowCourse] = useState(false)
   const requestedProgram = getCourseProgram(searchParams.get('program'))
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
@@ -211,7 +214,18 @@ export function MyCourse({ data, locale = 'en' }) {
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
+  // Returning from a test or following a programme link must keep the learner
+  // inside the existing course onboarding flow.
+  const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
+  const programmeEntry = stage === 0 && Boolean(requestedProgram)
+  if (!showCourse && !testReturn && !programmeEntry) return <CourseEntrySelector
+    course={state.course} locale={locale} onOpen={() => setShowCourse(true)}/>
+
   return <div className={styles.root} data-my-course>
+    <button type="button" className={styles.backToCourses} onClick={() => {
+      setShowCourse(false)
+      if (testReturn || programmeEntry) router.replace(root + '/course')
+    }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button>
     {stage === 0 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
