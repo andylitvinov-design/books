@@ -376,3 +376,78 @@
 .practiceRating .prompt{margin:0;color:#28556b;font-weight:730}
 .practiceRating .numberGrid{margin:0}
 @media(max-width:540px){.practiceRating{padding:12px;gap:9px}}
+
+
+/* OPORA entry check-in: the approved scenic photograph is a fullscreen, uncropped
+   decorative background rather than a cropped card. A soft ambient layer fills the
+   remaining portrait viewport without stretching or clipping the actual picture. */
+.overlay .sceneFrame{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:#edf9f8;
+}
+.overlay .fullscreenScene{
+  position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:linear-gradient(165deg,#e7f9fa 0%,#e9f9f6 55%,#f5fcfa 100%);
+}
+.overlay .fullscreenScene::before{
+  content:"";position:absolute;inset:-65px;
+  background:url('/images/holistic-house/course-focus-mountain-boy.webp') center 35%/cover no-repeat;
+  filter:blur(38px);opacity:.22;
+}
+.overlay .fullscreenScenePhoto{
+  position:absolute;left:50%;
+  top:calc(env(safe-area-inset-top) + clamp(78px,12dvh,125px));
+  display:block;width:100%;height:auto;max-height:48dvh;
+  object-fit:contain;object-position:center top;transform:translateX(-50%);
+  opacity:.83;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 78%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 78%,transparent 100%);
+}
+.overlay .fullscreenScene::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    #eaf9fcbf 0%,#f1fcfc55 27%,#f3fcfacb 56%,#f5fcf9f0 80%,#f5fcf9fa 100%);
+}
+.overlay .sceneFrame > .header,
+.overlay .sceneFrame > .content,
+.overlay .sceneFrame > .footer{position:relative;z-index:1}
+.overlay .sceneFrame > .header{
+  background:#f0fcfadd!important;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.overlay .sceneFrame > .content{
+  background:none!important;
+}
+.overlay .sceneFrame > .footer{
+  background:linear-gradient(180deg,#f1fcfaf0,#eefaf8fc)!important;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.overlay .sceneFrame .slideTitle{
+  text-shadow:0 1px 15px #effefdf2,0 1px 3px #ffffff;
+}
+.overlay .sceneFrame .focusName{
+  padding:12px 15px;background:#f7fffde8;
+  border:1px solid #c2e7e6;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.overlay .sceneFrame [data-course-baseline-presence]{
+  padding:12px 15px;border-radius:16px;
+  background:#f9fffdeb;border:1px solid #d1ebe8;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+  font-weight:760;
+}
+.overlay .sceneFrame .numberGrid button{background:#fffefcf2!important}
+.overlay .sceneFrame .rangeCaption{
+  color:#2f5f6e;font-weight:710;
+}
+@media(max-width:540px){
+  .overlay .fullscreenScenePhoto{
+    top:calc(env(safe-area-inset-top) + 74px);
+    max-height:42dvh;
+  }
+  .overlay .sceneFrame .focusName,
+  .overlay .sceneFrame [data-course-baseline-presence]{padding:11px 13px}
+}
+@media(max-height:680px){
+  .overlay .fullscreenScenePhoto{top:calc(env(safe-area-inset-top) + 62px)}
+}
