@@ -86,4 +86,3 @@ test('mobile safe areas, touch targets, reduced-motion, focus return and EN/RU a
   assert.match(css, /max-width:355px/)
   assert.match(mapCss, /max-width:350px/)
 })
-

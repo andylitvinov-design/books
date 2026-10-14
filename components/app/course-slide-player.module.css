@@ -188,4 +188,3 @@
 .rewardStats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:350px}
 .rewardStats>div:nth-child(2){color:#b88925;background:#fff8e4;border-color:#f2e2a9}
 @media(max-width:540px){.journeyRewardIcon{width:105px;height:105px;border-radius:28px}.journeyRewardIcon svg{width:54px;height:54px}.completionPath{padding:13px}}
-
