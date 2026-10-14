@@ -61,7 +61,7 @@ export function ConsultationDocumentActions({
     </div>
 
     <div className="consultation-document-secondary-actions" aria-label={ru ? 'Дополнительные действия с документом' : 'Additional document actions'}>
-      <a href={urls.print} target="_blank" rel="noopener noreferrer">{labels.print}</a>
+      <a href={urls.print}>{labels.print}</a>
       {editHref && <a href={editHref}>{editLabel}</a>}
       {(revoke || reactivate) && <form action={active ? revoke : reactivate}>
         {!active && <p>{reactivateHelp}</p>}
