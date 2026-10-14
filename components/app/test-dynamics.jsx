@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BarChart3, CalendarDays, RotateCcw, TrendingUp } from 'lucide-react'
 import { buildTestDynamicsGroups } from '@/lib/assessments/test-dynamics'
+import { ScoreGauge } from './assessment-gauge'
+import { labelFor } from './copy'
 import styles from './test-dynamics.module.css'
 
 const TEXT = {
@@ -22,6 +24,7 @@ const TEXT = {
     incompatible: 'Some measurement versions or scales are not comparable. Values are shown without an inferred change.',
     note: 'Scores reflect responses within individual instruments, not an overall health percentage or a diagnosis.',
     unavailable: 'Retake unavailable', scales: 'scales',
+    awaiting: 'No repeat measurement yet',
   },
   ru: {
     kicker: 'ЛИЧНЫЕ ИЗМЕРЕНИЯ', title: 'Динамика тестов',
@@ -38,6 +41,7 @@ const TEXT = {
     incompatible: 'Часть версий или шкал теста несопоставима. Значения показаны без расчёта изменения.',
     note: 'Баллы относятся к шкалам отдельных тестов, а не к проценту здоровья или диагнозу.',
     unavailable: 'Повтор пока недоступен', scales: 'шкал',
+    awaiting: 'Повторного замера пока нет',
   },
 }
 
@@ -67,19 +71,27 @@ function TrendLine({ item }) {
   </svg>
 }
 
-function ScaleRow({ item, c }) {
+function ScaleRow({ item, c, locale, hasRepeat }) {
+  const translated = labelFor(item.key, locale)
+  const title = translated !== item.key ? translated : item.label
   return <div className={styles.scaleRow}>
-    <div className={styles.scaleName}>
-      <strong>{item.label}</strong>
+    <div className={styles.scaleDial}>
+      <ScoreGauge dimension={item.gaugeDimension} locale={locale} compact />
+    </div>
+    <div className={styles.scaleContent}>
+      <strong className={styles.scaleTitle}>{title}</strong>
+      <div className={styles.values}>
+        <span><small>{c.first}</small><strong>{number(item.firstValue)}</strong></span>
+        <span><small>{c.latest}</small>
+          <strong className={!hasRepeat ? styles.awaiting : undefined}
+            aria-label={!hasRepeat ? c.awaiting : undefined}>{hasRepeat ? number(item.lastValue) : '?'}</strong>
+        </span>
+        {item.delta !== null && <span className={styles.delta} aria-label={c.change + ': ' + number(item.delta)}>
+          {item.delta > 0 ? '+' : ''}{number(item.delta)}
+        </span>}
+      </div>
       <TrendLine item={item} />
     </div>
-    <div className={styles.values}>
-      <span><small>{c.first}</small><strong>{number(item.firstValue)}</strong></span>
-      <span><small>{c.latest}</small><strong>{number(item.lastValue)}</strong></span>
-    </div>
-    {item.delta !== null && <span className={styles.delta} aria-label={c.change + ': ' + number(item.delta)}>
-      {item.delta > 0 ? '+' : ''}{number(item.delta)}
-    </span>}
   </div>
 }
 
@@ -131,13 +143,15 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
             </header>
             <div className={styles.dateRow}>
               <time dateTime={group.first.measurementAt}>{c.first}: {date(group.first.measurementAt, locale)}</time>
-              <time dateTime={group.latest.measurementAt}>{c.latest}: {date(group.latest.measurementAt, locale)}</time>
+              {group.count > 1
+                ? <time dateTime={group.latest.measurementAt}>{c.latest}: {date(group.latest.measurementAt, locale)}</time>
+                : <span>{c.latest}: ?</span>}
             </div>
             <div className={styles.scales}>
-              {group.scales.slice(0,3).map(item => <ScaleRow item={item} c={c} key={item.key} />)}
+              {group.scales.slice(0,3).map(item => <ScaleRow item={item} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
               {group.scales.length > 3 && <details className={styles.more}>
                 <summary>{c.more} ({group.scales.length - 3})</summary>
-                {group.scales.slice(3).map(item => <ScaleRow item={item} c={c} key={item.key} />)}
+                {group.scales.slice(3).map(item => <ScaleRow item={item} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
               </details>}
             </div>
             {group.count === 1 && <p className={styles.footnote}>{c.baseline}</p>}

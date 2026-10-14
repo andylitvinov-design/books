@@ -9,7 +9,8 @@ const css = read('components/app/course-entry-selector.module.css')
 
 test('My Course first renders the selection slide and keeps the existing course wizard', () => {
   assert.match(wrapper, /<CourseEntrySelector/)
-  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry\) return/)
+  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry\) return/)
+  assert.match(wrapper, /personalEntry = stage === 0 &&/)
   assert.match(wrapper, /onOpen=\{\(\) => setShowCourse\(true\)\}/)
   assert.match(wrapper, /stage === 0 && <header/)
   assert.match(wrapper, /programmeEntry = stage === 0 && Boolean\(requestedProgram\)/)
