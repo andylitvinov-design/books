@@ -7,11 +7,17 @@ import {
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
+import { compareLessonMoments } from '@/lib/inner-growth/course-moment-trends'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
+    baseline: 'Before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
+    momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
+    focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
+    easierResult: 'points less difficult after the practice', harderResult: 'points more difficult after the practice',
+    sameResult: 'The feeling stayed the same for now', noPair: 'You can finish without ratings; there is no score to compare.',
     next: 'Continue', back: 'Back', skip: 'Skip this step', saveNext: 'Save & continue',
     save: 'Save today’s practice', saveError: 'Saving did not work. Nothing was marked complete. Please try again.',
     saved: 'Your observation was saved privately.', retry: 'Try again',
@@ -41,6 +47,11 @@ const WORDS = {
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
+    baseline: 'Перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
+    momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
+    focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
+    easierResult: 'балла меньше трудности после занятия', harderResult: 'балла больше трудности после занятия',
+    sameResult: 'Ощущение пока не изменилось', noPair: 'Можно завершить без оценок — сравнение не рассчитывается.',
     next: 'Продолжить', back: 'Назад', skip: 'Пропустить шаг', saveNext: 'Сохранить и продолжить',
     save: 'Сохранить практику дня', saveError: 'Не получилось сохранить. Ничего не отмечено выполненным. Попробуйте ещё раз.',
     saved: 'Наблюдение сохранено приватно.', retry: 'Повторить',
@@ -74,6 +85,7 @@ const WORDS = {
 }
 
 const SCENE = {
+  baseline: Target,
   checkin: Target,
   idea: Leaf,
   recall: Compass,
@@ -90,6 +102,7 @@ const SCENE = {
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   return [
+    { key: 'baseline', kind: 'baseline' },
     { key: 'checkin', kind: 'checkin' },
     { key: 'idea', kind: 'idea' },
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
@@ -104,14 +117,14 @@ function buildSlides(lesson) {
   ]
 }
 
-function OptionalNumber({ label, value, onChange, words }) {
-  return <label className={styles.optionalNumber}><span>{label}</span>
-    <select value={value === null ? '' : String(value)}
-      onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}>
-      <option value="">{words.none}</option>
-      {Array.from({length:11}, (_, i) => <option key={i} value={i}>{i}/10</option>)}
-    </select>
-  </label>
+function MomentScale({ value, onChange, words, label, disabled }) {
+  return <div>
+    <div className={styles.numberGrid} role="group" aria-label={label}>
+      {Array.from({length:11}, (_, i) => <button key={i} type="button"
+        disabled={disabled} aria-pressed={value === i} onClick={() => onChange(i)}>{i}</button>)}
+    </div>
+    <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
+  </div>
 }
 
 function IllustratedMoment({ variant = 'calm', photo = false }) {
@@ -133,6 +146,7 @@ export default function CourseSlidePlayer({
   const lesson = data.lesson || {}
   const today = data.currentCheckin
   const session = data.currentSession
+  const focusLabel = cycle.activeScaleLabel || data.roadmap?.find(item => item.day === cycle.day)?.focusTitle || data.target?.label || words.todaySkill
   const alreadyDone = Boolean(session)
   const slides = useMemo(() => buildSlides(lesson), [lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
@@ -237,6 +251,7 @@ export default function CourseSlidePlayer({
   const title = finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
+  const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
@@ -258,6 +273,17 @@ export default function CourseSlidePlayer({
         {finished ? <div className={styles.finished} data-course-slide-completion>
           <IllustratedMoment variant="celebration"/>
           <h2 tabIndex={-1} ref={headingRef}>{alreadyDone && !earned ? words.completed : words.finished}</h2>
+          {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
+            <p className={styles.resultFocus}>{focusLabel}</p>
+            <h3>{words.pairTitle}</h3>
+            <div className={styles.resultPair}>
+              <div><span>{words.before}</span><strong>{paired.before}<small>/10</small></strong></div>
+              <ArrowRight size={24} aria-hidden="true"/>
+              <div><span>{words.after}</span><strong>{paired.after}<small>/10</small></strong></div>
+            </div>
+            <p className={styles.resultMeaning}>{paired.change === 0 ? words.sameResult :
+              Math.abs(paired.change) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
+          </section> : <p className={styles.helper}>{words.noPair}</p>}
           <p>{words.celebration}</p>
           {earned && <div className={styles.xpReward}><Star size={21} fill="currentColor"/>{words.earned}</div>}
           <div className={styles.finalTiles}>
@@ -273,6 +299,15 @@ export default function CourseSlidePlayer({
             <span className={styles.identityLabel}>{lesson.title}</span>
           </div>
           <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
+
+          {slide.kind === 'baseline' && <>
+            <IllustratedMoment variant="calm"/>
+            <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
+            <p className={styles.prompt}>{words.baselineQuestion}</p>
+            <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
+              label={words.before + ': ' + focusLabel} disabled={locked}/>
+            <p className={styles.helper}>{words.ratingHint}</p>
+          </>}
 
           {slide.kind === 'checkin' && <>
             <IllustratedMoment variant="calm"/>
@@ -365,11 +400,11 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'moment' && <>
             <div className={styles.bigIcon}><Waves size={61} strokeWidth={1.4}/></div>
+            <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
+            <p className={styles.prompt}>{words.momentQuestion}</p>
+            <MomentScale value={afterNow} onChange={setAfterNow} words={words}
+              label={words.after + ': ' + focusLabel} disabled={locked}/>
             <p className={styles.helper}>{words.momentHint}</p>
-            <div className={styles.momentFields}>
-              <OptionalNumber words={words} value={beforeNow} onChange={setBeforeNow} label={words.before}/>
-              <OptionalNumber words={words} value={afterNow} onChange={setAfterNow} label={words.after}/>
-            </div>
           </>}
 
           {slide.kind === 'feedback' && <>
@@ -397,7 +432,7 @@ export default function CourseSlidePlayer({
         {!finished && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {['checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
+          {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
