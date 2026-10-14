@@ -23,10 +23,11 @@ test('recommendation cards stay compact with separate selection, disclosure and 
 })
 
 test('each Take Test button submits only that test via the existing account or Google workflow', () => {
-  assert.match(explorer, /const start = async \(battery = activeBattery\)/)
-  assert.match(explorer, /await onStart\(battery, \{/)
-  assert.match(explorer, /onStartSingle=\{\(entry\) => start\(\[entry\]\)\}/)
-  assert.match(explorer, /onStart=\{\(\) => start\(\)\}/)
+  assert.match(explorer, /const startSingle = async \(entry\)/)
+  assert.match(explorer, /await onStart\(activeBattery, \{/)
+  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(explorer, /onStartSingle=\{startSingle\}/)
+  assert.match(explorer, /onStart=\{start\}/)
   assert.match(publicFlow, /makeTestSelectionIntent\(entries\.map\(\(entry\) => entry\.key\)/)
   assert.match(publicFlow, /request\('test-plans'/)
   assert.match(publicFlow, /request\('auth\/start'/)
