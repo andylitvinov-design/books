@@ -17,9 +17,9 @@ test('every EN/RU V3/V4 lesson recalls before both teaching slides, retaining al
         const lesson = lessonFor(goal, day, locale, length, version)
         const before = JSON.stringify(lesson)
         const actual = keys(lesson)
-        assert.deepEqual(actual.slice(0, 6), ['pace', 'baseline', 'checkin', 'recall', 'idea', 'understand'], `${version}/${locale}/${goal}/${day}/${length}`)
+        assert.deepEqual(actual.slice(0, 5), ['pace', 'baseline', 'recall', 'idea', 'understand'], `${version}/${locale}/${goal}/${day}/${length}`)
         assert.equal(new Set(actual).size, actual.length)
-        assert.deepEqual(actual.slice(6), ['phrase', 'guided-0', 'guided-1', 'guided-2', 'ritual', 'transfer', ...(lesson.practiceV4 ? ['symbol'] : []), 'reflection', 'moment', 'feedback'])
+        assert.deepEqual(actual.slice(5), ['phrase', 'guided-0', 'guided-1', 'guided-2', 'ritual', 'transfer', ...(lesson.practiceV4 ? ['symbol'] : []), 'reflection', 'moment', 'feedback'])
         assert.equal(JSON.stringify(lesson), before, 'no content, lesson ID, or answers are mutated')
       }
     }
@@ -29,9 +29,9 @@ test('every EN/RU V3/V4 lesson recalls before both teaching slides, retaining al
 test('legacy/no-recall and sparse lessons never receive an invented recall or teaching step', () => {
   const legacy = lessonFor('calm_regulation', 1, 'en', 'standard', COURSE_CONTENT_VERSION)
   assert.equal(keys(legacy).includes('recall'), false)
-  assert.deepEqual(keys(legacy).slice(0, 5), ['pace', 'baseline', 'checkin', 'idea', 'understand'])
-  assert.deepEqual(keys({sections:[]}), ['pace', 'baseline', 'checkin', 'idea', 'ritual', 'reflection', 'moment', 'feedback'])
-  assert.deepEqual(keys({sections:[], practiceV3:{recall:'Optional orientation'}}).slice(0, 5), ['pace', 'baseline', 'checkin', 'recall', 'idea'])
+  assert.deepEqual(keys(legacy).slice(0, 5), ['pace', 'baseline', 'idea', 'understand', 'phrase'])
+  assert.deepEqual(keys({sections:[]}), ['pace', 'baseline', 'idea', 'ritual', 'reflection', 'moment', 'feedback'])
+  assert.deepEqual(keys({sections:[], practiceV3:{recall:'Optional orientation'}}).slice(0, 4), ['pace', 'baseline', 'recall', 'idea'])
 })
 
 test('day one is orientation, while later prompts preserve previously learned-skill wording', () => {
