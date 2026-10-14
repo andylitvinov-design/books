@@ -1,0 +1,42 @@
+[
+  {
+    "path": "docs/analytics/rejected-ec432/.github/workflows/ga4-privacy.yml.source",
+    "originalPath": ".github/workflows/ga4-privacy.yml",
+    "sha": "1f5a22323861bb0926b122912960b5a01b61e553"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/scripts/verify-ga4-document-boundary.mjs.source",
+    "originalPath": "scripts/verify-ga4-document-boundary.mjs",
+    "sha": "4922ec3c1542d3946e4a22a2882653947c5e701f"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/scripts/verify-ga4-privacy.mjs.source",
+    "originalPath": "scripts/verify-ga4-privacy.mjs",
+    "sha": "524c7c1d05eb3bc392f81a2fc17746278a61dad4"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/tests/ga4-transport.test.mjs.source",
+    "originalPath": "tests/ga4-transport.test.mjs",
+    "sha": "b600a735e4ba944eb10ef2a7d6e7879a0a06fb3d"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/components/analytics-consent.tsx.source",
+    "originalPath": "components/analytics-consent.tsx",
+    "sha": "cac592d37461b80404098182ce68c3dbe3ac170e"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/components/ga4-analytics.tsx.source",
+    "originalPath": "components/ga4-analytics.tsx",
+    "sha": "08eb75f79500cbf57a1c04aa37f65fa1d29c094a"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/lib/public-analytics.ts.source",
+    "originalPath": "lib/public-analytics.ts",
+    "sha": "d04eb07f462fd694413b8c7d3756d94e55098a7e"
+  },
+  {
+    "path": "docs/analytics/rejected-ec432/tests/ga4-analytics.test.mjs.source",
+    "originalPath": "tests/ga4-analytics.test.mjs",
+    "sha": "154585b2456468a4f32b85c240cf772b3fc004b1"
+  }
+]
