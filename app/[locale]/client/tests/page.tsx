@@ -17,6 +17,6 @@ export default async function PublicTestExplorerPage({ params, searchParams }: {
   const initialPreferences = focus.length ? { focus } : null
   return <main lang={locale} style={{maxWidth:'100%',minWidth:0,overflowX:'clip'}}>
     <PublicSiteHeader locale={locale as Locale} />
-    <PublicTestExplorer locale={locale} initialPreferences={initialPreferences} />
+    <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} />
   </main>
 }
