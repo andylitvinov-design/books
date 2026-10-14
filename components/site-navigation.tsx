@@ -17,6 +17,12 @@ const cabinetEntryCopy = {
   es: { full: 'Mi espacio', compact: 'Espacio', aria: 'Abrir mi espacio personal (en inglés)' },
 } as const;
 
+const consultationEntryCopy = {
+  en: { full: 'Book a consultation', compact: 'Book session' },
+  ru: { full: 'Записаться на консультацию', compact: 'Записаться' },
+  es: { full: 'Reservar consulta', compact: 'Reservar' },
+} as const;
+
 export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const pathname = usePathname();
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -24,6 +30,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const activeLocale = locale ?? preference;
   const text = navigationCopy[activeLocale];
   const cabinet = cabinetEntryCopy[activeLocale];
+  const consultation = consultationEntryCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
@@ -79,6 +86,16 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     {getSiteNavigation(activeLocale).filter(item => item.id !== 'cabinet').map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
+    <Link
+      className="site-consultation-entry"
+      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/services#consultation`}
+      prefetch={false}
+      data-nav-item="consultation"
+      aria-label={consultation.full}
+    >
+      <span className="site-consultation-entry__full">{consultation.full}</span>
+      <span className="site-consultation-entry__compact">{consultation.compact}</span>
+    </Link>
     <Link
       className="site-cabinet-entry"
       href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}

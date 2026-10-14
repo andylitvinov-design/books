@@ -80,3 +80,28 @@ test("only immutable-by-name public poster folders have a bounded CDN policy", (
   const privateMiddleware = read("middleware.ts");
   assert.match(privateMiddleware, /private, no-store, max-age=0, must-revalidate/);
 });
+
+test("header offers localized direct paid consultation CTA, including compact mobile entry", () => {
+  const nav = read("components/site-navigation.tsx");
+  const css = read("app/holistic-house-home.css");
+  assert.match(nav, /site-consultation-entry/);
+  assert.match(nav, /Book a consultation/);
+  assert.match(nav, /Записаться на консультацию/);
+  assert.match(nav, /services#consultation/);
+  assert.match(css, /site-consultation-entry/);
+  assert.match(css, /order: -1/);
+});
+
+test("video player restores a first-click gesture across a locale RSC remount", () => {
+  const player = read("components/site-video-player.tsx");
+  assert.match(player, /recentUserPlayIntent = new Map/);
+  assert.match(player, /USER_PLAY_INTENT_WINDOW_MS = 10_000/);
+  assert.match(player, /onPointerDown=\{rememberPlayIntent\}/);
+  assert.match(player, /Date\.now\(\) - time < USER_PLAY_INTENT_WINDOW_MS/);
+  assert.doesNotMatch(player, /sessionStorage|localStorage/);
+  assert.match(player, /unoptimized=\{true\}/);
+  assert.match(player, /portrait-static\/andy-828-3dcbabded1e9\.webp/);
+  const cfg = read("next.config.ts");
+  assert.match(cfg, /portrait-static\/\:path\*/);
+  assert.doesNotMatch(cfg, /images: \{ unoptimized: true/);
+});

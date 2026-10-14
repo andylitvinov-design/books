@@ -791,3 +791,47 @@ a.service-home-start-card:hover {
 @media (prefers-reduced-motion: reduce) {
   .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }
+
+/* High-visibility direct consultation action, accessible above the first fold. */
+.house-header--services .site-navigation > .site-consultation-entry {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid #086d79;
+  border-radius: 999px;
+  padding: 8px 15px;
+  background: #087f8c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.house-header--services .site-navigation > .site-consultation-entry:hover { background: #076572; color: #fff; }
+.house-header--services .site-navigation > .site-consultation-entry:focus-visible { outline: 3px solid #087f8c; outline-offset: 3px; }
+.house-header--services .site-consultation-entry__compact { display: none; }
+@media (max-width: 1200px) {
+  .house-header--services .site-consultation-entry__full { display: none; }
+  .house-header--services .site-consultation-entry__compact { display: inline; }
+}
+@media (max-width: 767px) {
+  .house-header--services .site-navigation { gap: 9px 12px; }
+  .house-header--services .site-navigation > .site-consultation-entry { order: -1; min-height: 40px; padding: 9px 15px; }
+  .house-home--services .service-home-hero-copy { padding-top: 28px; padding-bottom: 32px; }
+  .house-home--services .service-home-hero h1 { margin: 12px 0 14px; font-size: clamp(36px, 8vw, 48px); }
+  .house-home--services .service-home-actions { margin-top: 16px; gap: 8px; }
+  .house-home--services .service-home-actions .service-home-button { min-height: 44px; padding: 9px 16px; }
+}
+/* Skip below-fold paint/layout only on desktop; avoid WebKit mobile scroll races. */
+@supports (content-visibility: auto) {
+  @media (min-width: 768px) {
+    .house-home--services .service-home-video,
+    .house-home--services .service-home-about {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 540px;
+    }
+  }
+}

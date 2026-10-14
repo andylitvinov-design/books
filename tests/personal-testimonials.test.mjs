@@ -70,7 +70,7 @@ test("video browser verification selects the managed intro even when testimonial
 test("mobile video testimonials keep real YouTube thumbnail images with a same-origin and direct fallback", () => {
   const player = read("components", "site-video-player.tsx");
   assert.match(player, /compact \? "hq" : "maxres"/);
-  assert.match(player, /unoptimized=\{poster === "direct"\}/);
+  assert.match(player, /unoptimized=\{true\}/);
   assert.match(player, /current === "hq" \? "direct"/);
   assert.match(player, /i\.ytimg\.com\/vi\/\$\{video\.youtubeId\}/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
@@ -106,7 +106,7 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
   assert.doesNotMatch(component, /homepage-constellations\.svg|homepage-guided-imagery\.svg/);
   assert.match(component, /data-testimonial-video-id=\{item\.id\}/);
   assert.match(player, /fallbackPoster\?: string/);
-  assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
+  assert.match(player, /rememberPlayIntent\(\); setPlaying\(true\)/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
   assert.match(player, /href=\{watchUrl\}/);
   // Two older RU About clips remain in the catalog without a wrong-person thumbnail.
