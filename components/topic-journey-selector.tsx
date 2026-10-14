@@ -28,7 +28,9 @@ export function TopicJourneySelector({ locale, journey }: { locale: Language; jo
   const [selected, setSelected] = useState<string[]>([])
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const testHref = `/${language}/client/tests?focus=${encodeURIComponent(focus.join(','))}&journey=${journey.id}&topics=${encodeURIComponent(selected.join(','))}`
-  const courseHref = `/${language}/app/course?program=${encodeURIComponent(journey.courseProgram)}`
+  // Starting from the free-course option keeps the same filtered test battery,
+  // then activates the personal-course mode after the visitor reviews it.
+  const courseHref = testHref + '&mode=course'
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   return <div className={styles.root} data-topic-journey={journey.id}>
     <section className={styles.hero}>
