@@ -54,10 +54,10 @@ test('MHC-SF explanation preserves accepted source, language and non-diagnostic 
   }
 })
 
-test('all 154 research-only references have concise bilingual field, verified rights and no public start',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
+test('all 386 research references have concise bilingual field, verified rights and no public start',()=>{
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,386)
   const unique=new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key))
-  assert.equal(unique.size,154)
+  assert.equal(unique.size,386)
   for(const locale of ['en','ru']){
     const entries=buildExplorerEntries({locale,audience:'guest'})
     for(const row of MIND_BODY_MONITOR_REGISTRY){

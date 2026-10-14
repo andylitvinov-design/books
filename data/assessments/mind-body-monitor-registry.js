@@ -1,4 +1,6 @@
 import { NEW_PSYCHOTHERAPY_REFERENCES } from './psychotherapy-core-100.js'
+import { PSYCHOMETRIC_LIBRARY_2026 } from './psychometric-library-2026.js'
+import { LEGACY_PSYCHOMETRIC_SCALES } from './psychometric-legacy-scales-2026.js'
 
 // Canonical Mind–Body Monitor research registry.
 // Product source: Holistic House — Psychic Health Monitoring Test Database
@@ -63,6 +65,9 @@ function row(
     rightsStatus,
     access,
     enabled: false,
+    // Scale labels are research metadata only. They never make a measure
+    // startable or create a scoring dimension without a validated definition.
+    scales: LEGACY_PSYCHOMETRIC_SCALES[key] || [],
     ...metadata,
   })
 }
@@ -328,6 +333,13 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     item.key, item.category, item.area, item.priority, item.instrument,
     item.acronym, item.items, item.duration, item.rightsStatus, item.access,
     { rightsNote: item.rightsNote },
+  )),
+  // Externally discovered tools are always non-runnable, even when their
+  // descriptive construct metadata and citation are publicly indexed.
+  ...PSYCHOMETRIC_LIBRARY_2026.map((item) => row(
+    item.key, item.category, item.area, item.priority, item.instrument,
+    item.acronym, item.items, item.duration, item.rightsStatus, item.access,
+    { scales: item.scales, sourceUrl: item.sourceUrl, rightsNote: item.rightsNote },
   )),
 ])
 

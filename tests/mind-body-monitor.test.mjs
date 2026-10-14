@@ -10,10 +10,10 @@ import {
   registryCount,
 } from '../data/assessments/mind-body-monitor-registry.js'
 
-test('Mind–Body Monitor registry contains 154 unique research instruments', () => {
-  assert.equal(registryCount(), 154)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 154)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 154)
+test('Mind–Body Monitor registry contains 386 unique research instruments', () => {
+  assert.equal(registryCount(), 386)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 386)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key)).size, 386)
   assert.equal(MONITOR_AREAS.length, 14)
 })
 
