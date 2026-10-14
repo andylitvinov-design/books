@@ -33,3 +33,10 @@
 .panel a:focus-visible,.panel button:focus-visible{outline:3px solid #24b4c8;outline-offset:3px}
 @media(max-width:480px){.panel{padding:14px 13px;border-radius:17px}.header{gap:10px}.emblem{width:42px;height:42px}.item{padding:11px}.counter{grid-template-columns:1fr;gap:7px}.actions{gap:11px}.resultDates{gap:6px 10px}}
 @media print{.panel{box-shadow:none;page-break-inside:avoid}.start{display:none}}
+
+/* Antistress: all eight weekly dimensions, readable before/after, no invented thresholds. */
+.dueNotice{margin:10px 0;padding:10px 11px;border-radius:10px;background:#f9edf2;border:1px solid #e6cbd7;color:#743751;font-size:12px;line-height:1.45}
+.delta{font-size:11px;color:#556c7f;font-weight:700}
+.comparison>div{align-items:flex-start}
+.comparison>div span{flex:1}
+@media(max-width:480px){.comparison>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.comparison strong{font-size:13px}}
