@@ -15,7 +15,7 @@ test('first screen presents course identity and one focused CTA with approved or
   assert.match(today,/data-course-today-heading/)
   assert.match(today,/Мой курс/)
   assert.match(today,/Number\(progress\.practiceCount\)\|\|0/)
-  assert.match(today,/course-hero-mindful\.svg/)
+  assert.match(today,/course-focus-mountain-boy\.webp/)
   assert.match(today,/data-course-teal-hero/)
   assert.match(today,/data-course-today-primary/)
   assert.match(today,/data-course-view=\{view\}/)
