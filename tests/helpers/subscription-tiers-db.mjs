@@ -51,7 +51,7 @@ export async function runTierDatabaseTests(t, { admin, pool, appConfig, billingC
       for (let day = 1; day <= 14; day++) {
         await db.query(`insert into app_private.growth_sessions
           (account_id,cycle_id,day_number,local_date,lesson_id,content_version,feedback,operation_id,completed_at)
-          values($1,$2,$3,(clock_timestamp() at time zone 'UTC')::date-(15-$3::integer),$4,$5,'skip',$6,
+          values($1,$2,$3::integer,(clock_timestamp() at time zone 'UTC')::date-(15-$3::integer),$4,$5,'skip',$6,
             now()-make_interval(days => 15-$3::integer))`,
         [owner.id, cycleId, day, lessonFor('calm_regulation', day, 'en', 'standard', COURSE_CONTENT_V3).id,
           COURSE_CONTENT_V3, randomUUID()])

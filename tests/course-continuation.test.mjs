@@ -248,6 +248,7 @@ test('billing finished-course fixture supplies contiguous past-day lessons for a
     assert.deepEqual(rows.map(row=>row.args[2]),Array.from({length:14},(_,i)=>i+1))
     const today='2026-10-14'
     const sessions=rows.map(({sql,args})=>{
+      assert.match(sql,/values\(\$1,\$2,\$3::integer,/ )
       assert.match(sql,/date-\(15-\$3::integer\)/)
       assert.match(sql,/make_interval\(days => 15-\$3::integer\)/)
       const day=args[2],date=addCalendarDays(today,day-15)
