@@ -263,6 +263,47 @@ try {
   const owner = await browser.newContext(common)
   await owner.addCookies([{ name: 'prescriptions_admin', value: createHmac('sha256', token).update('prescriptions-admin-v1').digest('base64url'), domain: '127.0.0.1', path: '/admin', secure: true, httpOnly: true, sameSite: 'Strict' }])
   const admin = await owner.newPage()
+  // Isolated synthetic document: exercise the actual newly dedicated preview
+  // route with the same owner permissions as the practitioner UI. Never use
+  // production reports or a guessed private client.
+  const previewId = randomUUID()
+  await store.save({
+    id: previewId,
+    clientId: a.id,
+    kind: 'recommendation',
+    status: 'active',
+    patientName: 'Synthetic Preview Client',
+    dateIssued: '2026-10-13',
+    recommendationType: 'homeopathy',
+    languagePreference: 'ru',
+    analysis: 'Было: напряжение 3/10\\nПосле сессии: напряжение 6/10\\nSynthetic analysis, not a clinical claim.',
+    additionalNotes: 'Synthetic client-visible notes',
+    internalNotes: 'DO NOT DISPLAY — PRIVATE SYNTHETIC PRACTITIONER NOTE',
+    items: [{ remedySlug: 'colchicum-autumnale', itemType: 'homeopathy' }],
+  })
+  await admin.setViewportSize({ width: 390, height: 844 })
+  assert.equal((await go(admin, `/admin/documents/${previewId}?locale=ru`)).status(), 200)
+  const openReport = admin.getByRole('link', { name: 'Preview / Open' })
+  await expect(openReport).toBeVisible()
+  await expect(openReport).toHaveAttribute('href', `/admin/documents/${previewId}/view?locale=ru`)
+  await openReport.click()
+  await expect(admin).toHaveURL(origin + `/admin/documents/${previewId}/view?locale=ru`)
+  await expect(admin.getByRole('heading', { name: 'Гомеопатическая рекомендация' })).toBeVisible()
+  await expect(admin.locator('.canonical-progress-item')).toHaveCount(2)
+  await expect(admin.locator('.canonical-report-analysis')).toContainText('Synthetic analysis')
+  await expect(admin.locator('.canonical-remedy-profiles')).toContainText('Colchicum')
+  assert.ok(!(await admin.content()).includes('DO NOT DISPLAY — PRIVATE SYNTHETIC'))
+  assert.ok(await admin.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '390px preview must not overflow')
+  await admin.screenshot({ path: `${evidence}/report-premium-mobile-ru.png`, fullPage: false })
+  await go(admin, `/admin/documents/${previewId}/view?locale=en`)
+  await expect(admin.getByRole('heading', { name: 'Homeopathic recommendation' })).toBeVisible()
+  await expect(admin.locator('.canonical-progress-item')).toHaveCount(2)
+  assert.ok(await admin.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '390px EN preview must not overflow')
+  await admin.screenshot({ path: `${evidence}/report-premium-mobile-en.png`, fullPage: false })
+  const leaked = await publicContext.request.get(origin + `/admin/documents/${previewId}/view?locale=ru`, { maxRedirects: 0 })
+  assert.equal(leaked.status(), 307, 'Unauthenticated preview must redirect to owner sign-in')
+  assert.ok(!(await leaked.text()).includes('Synthetic analysis'))
+  pass('Working Preview/Open navigates to the exact protected full report, both languages, 2 real gauges, source appendix, 390px and no practitioner notes')
   const ca = await browser.newContext(common), cb = await browser.newContext(common)
   const pa = await ca.newPage(), pb = await cb.newPage()
   const exchangeA = pa.waitForResponse(response => response.url().endsWith('/api/client-access') && response.request().method() === 'POST')
