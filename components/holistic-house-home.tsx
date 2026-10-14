@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
-import { RelationshipsSpotlight } from "@/components/relationships-spotlight";
+import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -149,7 +149,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
       </section>
 
       <ServicesSolutions locale={locale} variant="home" />
-      <RelationshipsSpotlight locale={locale} />
+      <HomepageTopicJourneys locale={locale} />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">

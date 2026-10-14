@@ -64,12 +64,14 @@ async function handle(request, { params }) {
       auth.apply(NextResponse.json(data, { status, headers: PRIVATE_HEADERS }))
     if (joined === 'auth/start' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo'])
+      onlyKeys(body, ['locale', 'intentId', 'serviceId', 'continueTo', 'program'])
       const locale = body.locale === 'ru' ? 'ru' : 'en'
       const intentId = body.intentId || null,
         serviceId = body.serviceId || null,
-        continueTo = body.continueTo || null
-      if (continueTo !== null && continueTo !== 'tests') throw new AppError('INVALID_CONTINUATION', 400)
+        continueTo = body.continueTo || null,
+        program = body.program || null
+      if (continueTo !== null && !['tests', 'course'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
       if ((intentId && serviceId) || (continueTo && (intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -86,7 +88,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo === 'tests' ? '&continue=tests' : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo === 'tests' ? '&continue=tests' : continueTo === 'course' ? '&continue=course' : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -100,17 +102,21 @@ async function handle(request, { params }) {
         code = url.searchParams.get('code'),
         intentId = url.searchParams.get('intent'),
         serviceId = url.searchParams.get('service'),
-        continueTo = url.searchParams.get('continue')
+        continueTo = url.searchParams.get('continue'),
+        program = url.searchParams.get('program')
+      if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (continueTo !== 'tests' || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests', 'course'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
           ? `${origin}/${locale}/app/consultations?service=${encodeURIComponent(serviceId)}`
           : continueTo === 'tests'
             ? `${origin}/${locale}/app/tests?selection=pending`
-            : `${origin}/${locale}/app`
+            : continueTo === 'course'
+              ? `${origin}/${locale}/app/course${program ? `?program=${encodeURIComponent(program)}` : ''}`
+              : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
           NextResponse.redirect(destination + (destination.includes('?') ? '&auth=cancelled' : '?auth=cancelled'), {
