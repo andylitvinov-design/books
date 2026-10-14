@@ -185,7 +185,7 @@ export default function CourseToday({locale='en',accountId=null}){
  const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
   setData(response)
-  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day : ''
+  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day+':'+response.cycle.todayLocalDate : ''
   if(nextDay!==hydratedDayRef.current){
     // Change of local day or cycle: never carry an unsaved private answer into
     // another lesson. Same-day preference changes must preserve draft text.

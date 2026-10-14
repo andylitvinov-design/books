@@ -21,7 +21,8 @@ async function request(path, body, method = 'POST') {
   return value
 }
 
-export function PublicTestExplorer({ locale, embedded = false }) {
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[] } | null }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
@@ -67,7 +68,7 @@ export function PublicTestExplorer({ locale, embedded = false }) {
     }
   }
   return <>
-    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} onStart={submit} />
+    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',')} initialPreferences={initialPreferences} onStart={submit} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }

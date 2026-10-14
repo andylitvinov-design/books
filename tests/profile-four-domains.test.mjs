@@ -62,7 +62,7 @@ test('Google and private cabinets both select four areas without auto-linking pr
   assert.match(domain, /cache: 'no-store'/)
   assert.match(domain, /recommendationItemType\(item, document\.recommendationType\)/)
   assert.match(domain, /results\.map\(result =>/)
-  assert.match(domain, /\/app\/history/)
+  assert.match(domain, /\/app\/tests\?tab=dynamics/)
   assert.match(domain, /<ProfileServiceOffer area={active} locale={locale} \/>/)
   assert.match(domain, /data-profile-service-cta={area}/)
   assert.match(domain, /data-profile-interactive={interactive/)

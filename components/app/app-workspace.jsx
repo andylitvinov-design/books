@@ -19,7 +19,7 @@ import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
-import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
+import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
@@ -162,6 +162,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         locale,
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
+        ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
@@ -1856,23 +1857,19 @@ function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
   const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
   const summary = buildInsightsSummary(allGroups)
-  const [period, setPeriod] = useState('all')
-  const [periodStart, setPeriodStart] = useState('')
-  const [periodEnd, setPeriodEnd] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
-  const validPeriod = periodWindow(period, periodStart, periodEnd).valid
   const entriesByKey = useMemo(() => new Map(
     buildExplorerEntries({ locale, audience: 'account' }).map((entry) => [entry.key, entry]),
   ), [locale])
   const groups = allGroups.map(group => {
-    const history = resultsForPeriod(group.history, period, periodStart, periodEnd)
+    const history = group.history
     const { current, previous } = periodComparison(history)
     return { ...group, latest: current, periodPrior: previous, history, count: history.length }
   }).filter(group => group.latest)
   const { counts: categoryCounts, sections: categorySections } = buildInsightsCategorySections(groups, entriesByKey, selectedCategories)
   const categoryFilters = INSIGHTS_TEST_CATEGORIES.filter((category, index) =>
     index < HOME_TEST_TOPICS.length || categoryCounts[category.key] > 0 || selectedCategories.includes(category.key))
-  const activeFilters = selectedCategories.length + (period === 'all' ? 0 : 1)
+  const activeFilters = selectedCategories.length
   const visibleCount = categorySections.reduce((sum, section) => sum + section.groups.length, 0)
   function toggleCategory(key) {
     setSelectedCategories((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key])
@@ -1899,14 +1896,14 @@ function PortfolioPage({ data, locale }) {
           <SlidersHorizontal size={18} aria-hidden="true" />
           <strong>{ru ? 'Фильтры' : 'Filters'}</strong>
           {activeFilters > 0 && <span className="hh-insights-active-count">{activeFilters}</span>}
-          <small>{(selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')) + ' · ' + (period === 'all' ? (ru ? 'Всё время' : 'All time') : (ru ? 'Период выбран' : 'Period selected'))}</small>
+          <small>{selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')}</small>
           <ChevronDown className="hh-insights-filter-chevron" size={17} aria-hidden="true" />
         </summary>
         <div className="hh-insights-filter-panel">
           <div className="hh-insights-filter-heading">
-            <span>{ru ? 'Категории и период' : 'Categories and period'}</span>
+            <span>{ru ? 'Категории' : 'Categories'}</span>
             {activeFilters > 0 && <button type="button" className="hh-insights-reset"
-              onClick={() => { setSelectedCategories([]); setPeriod('all'); setPeriodStart(''); setPeriodEnd('') }}>
+              onClick={() => setSelectedCategories([])}>
               {ru ? 'Сбросить' : 'Reset filters'}</button>}
           </div>
       <div className="hh-insights-category-filters" role="group" aria-label={ru ? 'Фильтр по категориям тестов' : 'Filter completed tests by category'} data-testid="insights-category-filters">
@@ -1925,36 +1922,12 @@ function PortfolioPage({ data, locale }) {
           </button>
         })}
       </div>
-      <div className="hh-insights-period" role="group" aria-label={ru ? 'Период анализа' : 'Analysis period'}>
-        <span>{ru ? 'Период:' : 'Period:'}</span>
-        {[
-          ['all', ru ? 'Всё время' : 'All time'],
-          ['week', ru ? 'Неделя' : '7 days'],
-          ['month', ru ? 'Месяц' : '30 days'],
-          ['quarter', ru ? '3 месяца' : '3 months'],
-          ['custom', ru ? 'Свой период' : 'Custom'],
-        ].map(([key, title]) => (
-          <button key={key} type="button" aria-pressed={period === key}
-            onClick={() => setPeriod(key)}>{title}</button>
-        ))}
-      </div>
-      {period === 'custom' && <div className="hh-insights-date-range">
-        <label>{ru ? 'С' : 'From'} <input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
-        <label>{ru ? 'По' : 'To'} <input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
-      </div>}
-      <p className="hh-insights-period-guide">{ru
-        ? 'Стрелки сравнивают последний результат с первым совместимым замером за выбранный период. Личностные шкалы нейтральны.'
-        : 'Trend arrows compare your latest result with the earliest compatible measure in this period. Personality traits are neutral.'}</p>
         </div>
       </details>
       {activeFilters > 0 && <p className="hh-insights-filter-status" role="status">
         {ru ? 'Показано тестов:' : 'Showing tests:'} {visibleCount} / {summary.tests}
       </p>}
-      {!validPeriod ? (
-        <div className="hh-insights-empty hh-panel" role="status">
-          <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
-        </div>
-      ) : groups.length || selectedCategories.length > 0 ? (
+      {groups.length || selectedCategories.length > 0 ? (
         <div className="hh-insights-categories">
           {categorySections.map(({ category, groups: categoryGroups }) => {
             const CategoryIcon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
@@ -1974,7 +1947,7 @@ function PortfolioPage({ data, locale }) {
                 </div>
               </header>
               {categoryGroups.length === 0 && <p className="hh-insights-category-empty">
-                {ru ? 'В выбранном периоде нет результатов в этой категории. Можно добавить подходящий тест.' : 'No results in this category for this period. You can choose a test for this topic.'}
+                {ru ? 'В этой категории пока нет результатов. Можно добавить подходящий тест.' : 'No results in this category yet. You can choose a test for this topic.'}
               </p>}
               <div className="hh-insights-test-list">
                 {categoryGroups.map(group => {
@@ -2019,13 +1992,13 @@ function PortfolioPage({ data, locale }) {
       ) : (
         <div className="hh-insights-empty hh-panel">
           <h2>{allGroups.length
-            ? (ru ? 'Нет тестов за выбранный период' : 'No assessments in this period')
+            ? (ru ? 'Нет тестов по выбранным темам' : 'No assessments for these topics')
             : (ru ? 'Отчётов пока нет' : 'No reports yet')}</h2>
           <p>{allGroups.length
-            ? (ru ? 'Выберите более длинный период — сохранённые результаты не удалены.' : 'Try a longer time range. Your past results are still saved.')
+            ? (ru ? 'Попробуйте изменить категории — результаты сохранены.' : 'Try other topic categories; your results are still saved.')
             : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
           {allGroups.length
-            ? <button type="button" onClick={() => setPeriod('all')}>{ru ? 'Всё время' : 'Show all time'}</button>
+            ? <button type="button" onClick={() => setSelectedCategories([])}>{ru ? 'Показать все категории' : 'Show all categories'}</button>
             : <Link href={`/${locale}/app/tests?explore=1&filters=topics`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
         </div>
       )}
@@ -2038,7 +2011,7 @@ function PortfolioPage({ data, locale }) {
         </details>
       )}
       <div className="hh-insights-links">
-        <Link href={`/${locale}/app/history`} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
+        <Link href={`/${locale}/app/tests?tab=dynamics`} prefetch={false}>{ru ? 'Динамика тестов' : 'Test dynamics'}</Link>
         <Link href={`/${locale}/app/tests?explore=1&filters=topics`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 
