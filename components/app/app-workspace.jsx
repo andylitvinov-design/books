@@ -2,6 +2,7 @@
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
+import './saved-document-reader.css'
 import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
