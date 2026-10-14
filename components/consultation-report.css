@@ -2049,3 +2049,84 @@
   .canonical-document--editorial .canonical-report-notes {break-inside:avoid-page}
   .canonical-document--editorial .canonical-remedy-profile h3 {break-after:avoid}
 }
+
+
+/* Optional follow-up session date: a single compact CTA in both editor and client report. */
+.consultation-studio .consultation-follow-up-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 225px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 14px 0;
+  padding: 13px 15px;
+  border: 1px solid #c2dedb;
+  border-radius: 13px;
+  background: #f3faf9;
+}
+.consultation-studio .consultation-follow-up-setting label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  color: #205e64;
+  font-size: 13px;
+  font-weight: 700;
+}
+.consultation-studio .consultation-follow-up-setting input {
+  min-width: 0;
+  min-height: 43px;
+  padding: 8px 10px;
+  border: 1px solid #a9cfcb;
+  border-radius: 9px;
+  background: white;
+  color: #1d4e54;
+  font-size: 16px;
+}
+.consultation-studio .consultation-follow-up-setting small {
+  color: #5e7679;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.consultation-studio .consultation-follow-up-setting p {
+  margin: 0;
+  color: #3a6268;
+  font-size: 13px;
+  line-height: 1.48;
+}
+.canonical-document--editorial .canonical-follow-up-appointment {
+  margin: 17px 0 10px;
+  padding: 14px 17px;
+  border: 1px solid #bad9d4;
+  border-left: 4px solid #287f7c;
+  border-radius: 12px;
+  background: #f3faf8;
+  break-inside: avoid;
+}
+.canonical-document--editorial .canonical-follow-up-appointment h2 {
+  margin: 0 0 5px;
+  color: #286b70;
+  font: 700 11px/1.4 Arial, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.canonical-document--editorial .canonical-follow-up-appointment time {
+  display: block;
+  color: #4d2c40;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 750;
+}
+.canonical-document--editorial .canonical-follow-up-appointment p {
+  margin: 8px 0 0;
+  color: #34545a;
+  font-size: 15px;
+  line-height: 1.48;
+}
+@media (max-width: 680px) {
+  .consultation-studio .consultation-follow-up-setting { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; }
+  .canonical-document--editorial .canonical-follow-up-appointment { padding: 13px 14px; }
+  .canonical-document--editorial .canonical-follow-up-appointment p { font-size: 16px; line-height: 1.46; }
+}
+@media print {
+  .canonical-document--editorial .canonical-follow-up-appointment { background: #fff; border-color: #c4d8d5; box-shadow: none; }
+}
