@@ -68,7 +68,7 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
     }
   }
   return <>
-    <TestExplorer key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',')} locale={locale} audience="account" embedded={embedded} simpleMode initialPreferences={initialPreferences} onStart={submit} />
+    <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded} key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',')} initialPreferences={initialPreferences} onStart={submit} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }
