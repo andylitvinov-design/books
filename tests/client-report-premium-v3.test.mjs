@@ -4,6 +4,12 @@ import test from 'node:test'
 import { clientReportHeading } from '../lib/documents/report-heading.js'
 import { documentActionUrls } from '../lib/consultations/result-actions.js'
 import { buildPrescriptionPdf, buildPaymentPdf } from '../lib/prescriptions/pdf.js'
+import { randomUUID } from 'node:crypto'
+import { reportFollowUpCopy, reportFollowUpDetails } from '../lib/documents/recommendation.js'
+import { createPrescription, getClientPrescription, updatePrescription } from '../lib/prescriptions/service.js'
+import { createConsultation, updateConsultation } from '../lib/consultations/service.js'
+import { createConsultationDraftPreview } from '../lib/consultations/draft-preview.js'
+import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 
 const id = '30000000-0000-4000-8000-000000000001'
 
@@ -86,4 +92,82 @@ test('PDF title parity keeps privacy, original source and all original remedy so
     currency: 'CAD', service: 'Synthetic consultation', paymentStatus: 'unpaid',
   }, 'en', 'https://example.invalid').toString('latin1')
   assert.ok(invoice.includes('68 613 459.28 44 re f'), 'invoice geometry must remain unchanged')
+})
+
+test('follow-up session date is a real optional ISO day with identical localized client-facing copy', () => {
+  assert.equal(reportFollowUpCopy('ru').title, 'Дата повторной сессии')
+  assert.match(reportFollowUpCopy('ru').description, /Напишите мне в этот день о своём состоянии/)
+  assert.match(reportFollowUpCopy('en').description, /complimentary follow-up/)
+  assert.equal(reportFollowUpDetails('2026-10-27', 'ru').displayDate, '27 октября 2026 г.')
+  assert.match(reportFollowUpDetails('2026-10-27', 'en').displayDate, /October.*27|27.*October/)
+  assert.equal(reportFollowUpDetails('', 'en'), undefined)
+  assert.equal(reportFollowUpDetails('2026-02-30', 'ru'), undefined)
+  const base = { patientName: 'Synthetic Follow-up', practitionerName: 'Test Practitioner', items: [{ remedySlug: 'arsenicum-album' }], status: 'active' }
+  assert.throws(() => createPrescription({ ...base, followUpDate: '2026-02-30' }), /Follow-up session date.*ISO date/)
+  assert.throws(() => createPrescription({ ...base, followUpDate: 'next week' }), /Follow-up session date.*ISO date/)
+  const saved = createPrescription({ ...base, followUpDate: '2026-10-27', followUp: 'Additional legacy follow-up note', internalNotes: 'OWNER-ONLY-SECRET' })
+  const client = getClientPrescription(saved, 'en')
+  assert.equal(client.followUpDate, '2026-10-27')
+  assert.equal(client.followUp, 'Additional legacy follow-up note')
+  assert.equal(client.internalNotes, undefined)
+  const pdf = buildPrescriptionPdf(client, 'en', 'https://example.invalid').toString('latin1')
+  assert.ok(pdf.includes('Follow-up session date'))
+  assert.ok(pdf.includes('Please write to me on this day'))
+  assert.ok(pdf.includes('Additional legacy follow-up note'))
+  assert.ok(!pdf.includes('OWNER-ONLY-SECRET'))
+  const cleared = updatePrescription(saved, { ...base, followUpDate: '', followUp: '' })
+  assert.equal(cleared.followUpDate, undefined)
+  assert.equal(getClientPrescription(cleared, 'en').followUpDate, undefined)
+})
+
+test('consultation date survives create, draft PDF preview, edit and persisted client-safe projection', async () => {
+  const store = createMemoryPrescriptionStore()
+  const input = {
+    patientName: 'Synthetic Client', consultationDate: '2026-10-13',
+    languagePreference: 'ru', includeRecommendation: true, includeInvoice: false,
+    items: [{ remedySlug: 'arsenicum-album' }],
+    followUpDate: '2026-10-27', additionalNotes: 'Synthetic observation plan',
+  }
+  const draft = await createConsultationDraftPreview({ ...input, clientMode: 'new' }, { store, kind: 'recommendation', locale: 'ru' })
+  assert.equal(draft.followUpDate, input.followUpDate)
+  const created = await createConsultation({
+    ...input, newClient: { fullName: input.patientName, preferredLocale: 'ru' },
+  }, { store, requestId: randomUUID() })
+  assert.equal(created.recommendation.followUpDate, input.followUpDate)
+  assert.equal((await store.findById(created.recommendation.id)).followUpDate, input.followUpDate)
+  assert.equal(getClientPrescription(created.recommendation, 'ru').followUpDate, input.followUpDate)
+  const updated = await updateConsultation(created.recommendation, undefined, {
+    ...input, followUpDate: '', clientId: created.recommendation.clientId,
+  }, { store })
+  assert.equal(updated.recommendation.followUpDate, undefined)
+  assert.equal((await store.findById(created.recommendation.id)).followUpDate, undefined)
+})
+
+test('both practitioner report constructors, unsaved preview and HTML/PDF include date safely', async () => {
+  const paths = [
+    'components/consultation-form.jsx',
+    'components/prescription-form.jsx',
+    'components/prescription-document.jsx',
+    'lib/prescriptions/pdf.js',
+    'app/admin/consultations/actions.js',
+    'app/admin/prescriptions/actions.js',
+    'app/admin/api/consultations/preview/route.js',
+    'lib/consultations/service.js',
+    'lib/prescriptions/service.js',
+  ]
+  const [studio, standalone, html, pdf, consultationAction, standaloneAction, draftRoute, service, prescriptionService] =
+    await Promise.all(paths.map((path) => readFile(path, 'utf8')))
+  assert.match(studio, /name="followUpDate"/)
+  assert.match(standalone, /name="followUpDate"/)
+  assert.match(studio, /reportFollowUpCopy\(reportLocale\)\.description/)
+  assert.match(standalone, /reportFollowUpCopy\(reportLocale\)\.description/)
+  assert.match(html, /followUpSession\.displayDate/)
+  assert.match(html, /followUpSession\.description/)
+  assert.match(pdf, /followUpSession\.displayDate/)
+  assert.match(pdf, /followUpSession\.description/)
+  assert.match(consultationAction, /'followUpDate'/)
+  assert.match(standaloneAction, /formData\.get\('followUpDate'\)/)
+  assert.match(draftRoute, /'followUpDate'/)
+  assert.match(service, /followUpDate: input\.followUpDate/)
+  assert.match(prescriptionService, /followUpDate: record\.followUpDate/)
 })
