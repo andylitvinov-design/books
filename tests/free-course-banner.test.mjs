@@ -234,7 +234,7 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
     const report = element('section', { 'data-personal-result-report': '' }, outer)
     const score = element('article', {}, report)
     const banner = element('aside', { 'data-free-course-banner': '' }, report)
-    const link = element('a', { href: '/' + locale + '/app/course' }, banner)
+    const link = element('a', { href: '/' + locale + '/app/course?program=stress' }, banner)
     const valid = collect([link])
     assert.equal(link.closest('article'), outer)
     assert.equal(valid[0].insideScore, false)
@@ -246,9 +246,9 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
       assert.throws(() => check(collect([link, badLink]), locale), /single optional banner/)
     }
     const nestedBanner = element('aside', { 'data-free-course-banner': '' }, score)
-    const nestedLink = element('a', { href: '/' + locale + '/app/course' }, nestedBanner)
+    const nestedLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, nestedBanner)
     assert.throws(() => check(collect([nestedLink]), locale), /outside scored articles/)
-    const footerLink = element('a', { href: '/' + locale + '/app/course' }, report)
+    const footerLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, report)
     assert.throws(() => check(collect([footerLink]), locale), /score-derived course recommendation/)
   }
 })
