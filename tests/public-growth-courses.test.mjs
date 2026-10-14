@@ -43,3 +43,36 @@ test('About stays reachable via Services for all languages', async () => {
   assert.match(services, /<ServicesAboutEntry locale=\{locale as Locale\}/);
   assert.match(spanish, /<ServicesAboutEntry locale="es"/);
 });
+
+
+test('OPORA methodology page is linked, localized, accessible and evidence-honest', async () => {
+  const [landing, methodPage, spanishPage, component, style, localeModel, sitemap, methodology] = await Promise.all([
+    readFile('components/public-growth-courses.tsx', 'utf8'),
+    readFile('app/[locale]/courses/methodology/page.tsx', 'utf8'),
+    readFile('app/es/courses/methodology/page.tsx', 'utf8'),
+    readFile('components/public-course-methodology.tsx', 'utf8'),
+    readFile('components/public-course-methodology.module.css', 'utf8'),
+    readFile('lib/public-locales.ts', 'utf8'),
+    readFile('app/sitemap.ts', 'utf8'),
+    readFile('docs/myspace/HOLISTIC_HOUSE_OPORA_COURSE_METHODOLOGY_CANONICAL_2026-10-14.md', 'utf8'),
+  ]);
+  assert.match(landing, /\/courses\/methodology/);
+  assert.match(landing, /Узнать о методе ОПОРА/);
+  assert.match(landing, /Explore the OPORA Method/);
+  assert.match(methodPage, /generateMetadata/);
+  assert.match(methodPage, /PublicCourseMethodology locale=\{locale\}/);
+  assert.match(spanishPage, /PublicCourseMethodology locale="es"/);
+  assert.match(component, /data-course-methodology/);
+  assert.match(component, /Метод ОПОРА/);
+  assert.match(component, /The OPORA Method/);
+  assert.match(component, /Método OPORA/);
+  assert.match(component, /не подтверждена отдельными клиническими исследованиями/);
+  assert.match(component, /has not been independently validated/);
+  assert.match(component, /not a diagnosis/i);
+  assert.match(style, /@media\(max-width:700px\)/);
+  assert.match(style, /course-focus-mountain-boy\.webp/);
+  assert.match(localeModel, /courses\(\?:\\\/methodology\)\?/);
+  for (const locale of ['ru','en','es']) assert.match(sitemap, new RegExp('/' + locale + '/courses/methodology'));
+  assert.match(methodology, /Авторство Holistic House/);
+  assert.match(methodology, /Доказанность компонентов/);
+});
