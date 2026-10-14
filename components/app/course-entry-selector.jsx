@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
@@ -77,6 +78,17 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
   const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
   const dialogRef = useRef(null)
+  const searchParams = useSearchParams()
+  const requestedAdd = searchParams.get('add') === '1'
+
+  // A public landing link can request the existing subscription modal.
+  // Never start or charge for a second course in the browser.
+  useEffect(() => {
+    if (requestedAdd && hasCourse && dialogRef.current && !dialogRef.current.open) {
+      dialogRef.current.showModal()
+      dialogRef.current.scrollTo({ top: 0 })
+    }
+  }, [requestedAdd, hasCourse])
 
   useEffect(() => {
     if (!hasCourse || course.stage !== 4) return
