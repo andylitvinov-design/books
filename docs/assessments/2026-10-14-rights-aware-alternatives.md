@@ -7,7 +7,7 @@
 - Current automated source audit documents **110 startable catalogue keys** and **154 research-registry rows** (some keys overlap). The registry is metadata, **not** a second set of 154 administered questionnaires.
 - Source-catalogue `rightsStatus: 'cleared'` indicates a prior *internal* rights review, not a new independent legal audit of all 110 instruments or their Russian translations.
 - `MIND_BODY_MONITOR_REGISTRY` keeps research entries disabled. `buildExplorerEntries` requires an active catalog entry, full versioned questionnaire definition, cleared rights, a valid scoring-key audit, and audience access before a client can select a test.
-- No existing completed scoring definition, historic result, stored client data, database migration, or commercial licence status was changed in this branch.
+- No existing completed scoring definition, historic result, stored client data or commercial licence status was changed in this branch; one **new append-only migration** was added for our independently written instrument.
 
 ## Evidence-driven rights triage
 
@@ -50,8 +50,8 @@ Code: `lib/assessments/available-alternatives.js`, `lib/assessments/test-explore
 
 A new test may study the same **general construct** as an established method without copying its wording, item ordering, response layout, distinctive selection or scoring key. It needs independent creation from a construct brief and an item-writing review (including qualitative similarity review), explicit non-validation status, source notes, and pilot checks of comprehensibility and item behavior. For a validated professional label, independently gather suitable reliability/validity evidence; rewording alone never preserves original norms.
 
-### Draft item bank for a genuinely original pilot: HH Session Clarity Pulse
-**Status:** unregistered draft only; **not active**, not a WAI-SR or Session Rating Scale equivalent, not a therapy-outcome or clinical instrument.
+### New active-catalogue candidate: original HH Session Clarity Pulse
+**Status:** fully versioned and added as the **111th startable catalogue key in this PR** (account-only, optional, not part of the starter battery). **Not yet deployed to the live website** and not a validated clinical instrument, WAI-SR or Session Rating Scale equivalent.
 
 **Purpose:** help a participant reflect on how practical and comfortable a recent support conversation felt. Suggested anchors 0=Not at all / Совсем нет to 4=Very much / Очень сильно, with an option to skip. The answer is personal feedback, not a clinician performance score. EN / RU review is needed before any release.
 
@@ -64,13 +64,13 @@ A new test may study the same **general construct** as an established method wit
 | 5 | I know what I want to try or explore before our next contact, if anything. | Я понимаю, что хочу попробовать или исследовать до следующего контакта, если такое желание есть. |
 | 6 | I have a way to share feedback if a conversation did not feel helpful. | Я знаю, как дать обратную связь, если разговор оказался для меня бесполезным. |
 
-**Scoring prototype:** show six independent 0–4 responses plus optional free-form feedback; **no** total clinical score, cutoff, standardized percentile, diagnosis, published benchmark, automatic referral or treatment effectiveness claim. On a repeat, compare the *same* question on two dates only with the participant's permission. Avoid showing these as other publishers' proprietary alliance ratings.
+**Implemented scoring:** one descriptive mean of six self-reported 0–4 answers, with no standardized percentile, diagnosis, clinical cutoff, therapist ranking, automatic referral or treatment-effectiveness claim. Original item text and canonical EN/RU scoring definitions are in `data/assessments/hh-session-clarity-v1.js`. The brainstorming wording in the table above is intentionally **not** the published definition; do not use it for scoring. For exact text use the versioned definition file.
 
-**Before activation:** review EN/RU wording and safety, check noninfringement, add immutable `id/version/contentHash` definitions, separate interpretation metadata, append-only `app.assessment_versions` migration, UX and RLS QA, test privacy and consent, then verify production version. Old result definitions must not change retroactively.
+**Implemented in this PR:** immutable EN/RU `id/version/contentHash` definitions, `app.assessment_versions` append-only migration `20261014140000_hh_session_clarity_v1.sql`, a bilingual interpretation plan and a scale-guide document. **Still required:** independent item/safety review, CI tests and UI/RLS verification, privacy/consent QA and actual production deployment. The form is a nonvalidated observational check-in, not a professional standardized test. Old results and published versions must not change retroactively.
 
 ## Release gates
 
 1. Run all targeted node tests, existing assessment/unit/DB integration, lint/typecheck and Next build against PR HEAD. Check guest/account startability, key count and no protected-item leakage.
 2. Verify mobile RU/EN/ES full-database cards and deliberate click selection. Test result saving, later Insights and PDF without exposing health answers in URLs/analytics.
 3. Re-review candidate instrument commercial/digital and translation rights before **any** future new original professional activation. A `ready_account` registry status alone does not create an approved full questionnaire or a deployment.
-4. Merge to the actual production source branch and verify Vercel live route only after checks. This branch does not do a production release.
+4. Merge to the actual production source branch and verify Vercel live route only after checks. This branch does not do a production release; an account-only original `hh-session-clarity` instrument is included as a new opt-in runner candidate.
