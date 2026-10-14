@@ -90,7 +90,7 @@ test('marketing statements keep trauma/PTSD and clinical effectiveness limitatio
   assert.match(page, /not treatment for PTSD/)
   assert.match(page, /no cuenta con validación clínica independiente/)
   assert.match(page, /нет необходимости|не нужно|No\./i)
-  assert.match(page, /с вашего согласия/)
+  assert.match(page, /после вашего согласия|с вашим согласием/)
   assert.match(page, /without.*consent|only saved after consent/i)
   assert.match(page, /"faqs": \[/)
 })
