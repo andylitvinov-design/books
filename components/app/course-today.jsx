@@ -1,12 +1,17 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sprout } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
 import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseFinalRetest from './course-final-retest'
+import { appFetch } from '@/lib/app/client-fetch'
+import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
+import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
 
@@ -169,14 +174,19 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
 
 export default function CourseToday({locale='en',courseId,accountId,access,onCourseChange}){
  const notifyLessonSaved=useLessonCompletionOffer()
+ const router=useRouter()
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
  const [snapshot,setSnapshot]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const data=snapshot?.accountId===accountId&&snapshot?.courseId===courseId?snapshot.value:null
+ const promotion=useCoursePromotion(accountId,{courseId,cycleId:data?.cycle?.id,day:data?.cycle?.day,lessonId:data?.lesson?.id})
  const currentScope=useRef({accountId,courseId}),mounted=useRef(false),generation=useRef(0),readVersion=useRef(0)
  const readController=useRef(null),submitLock=useRef(null),offeredCompletions=useRef(new Set())
- currentScope.current={accountId,courseId}
+ currentScope.current={accountId,courseId,cycleId:data?.cycle?.id||null}
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
+ const retestLock=useRef(false)
+ useEffect(()=>{if(questOpen)return promotion.dismiss},[questOpen,promotion.dismiss])
  const [view,setView]=useState('today')
  const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
@@ -185,8 +195,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const [targetLabel,setTargetLabel]=useState(''),[intention,setIntention]=useState(''),[newGoal,setNewGoal]=useState('')
  const hydratedDayRef=useRef('')
  const hydrate=useCallback((response)=>{
+  currentScope.current={accountId,courseId,cycleId:response?.cycle?.id||null}
   setSnapshot({accountId,courseId,value:response})
-  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day : ''
+  const nextDay=response?.cycle ? response.cycle.id+':'+response.cycle.day+':'+response.cycle.todayLocalDate : ''
   if(nextDay!==hydratedDayRef.current){
     // Change of local day or cycle: never carry an unsaved private answer into
     // another lesson. Same-day preference changes must preserve draft text.
@@ -238,12 +249,13 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  },[hydrate,locale,accountId,courseId])
  useEffect(()=>{
   mounted.current=true;generation.current+=1;submitLock.current=null
+  retestLock.current=null;setRetestBusyKey('');setRetestError('')
   hydratedDayRef.current='';setSnapshot(null);setBusy(false);setTargetLabel('');setIntention('');setQuestOpen(false)
   void reload()
   return()=>{mounted.current=false;generation.current+=1;readVersion.current+=1;readController.current?.abort()}
  },[reload])
  const viewGeneration=generation.current
- async function submit(action,body={},after){
+ async function submit(action,body={},after,presentation='aside'){
   const epoch=viewGeneration,cycleId=data?.cycle?.id||null
   const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId
   if(submitLock.current||!data||data.readOnly||!isCurrent())return null
@@ -267,7 +279,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       const completionKey=[accountId,courseId,cycleId,body.day,body.lessonId].join(':')
       if(!offeredCompletions.current.has(completionKey)){
         offeredCompletions.current.add(completionKey)
-        notifyLessonSaved({cycleId,day:body.day,lessonId:body.lessonId})
+        notifyLessonSaved({cycleId,day:body.day,lessonId:body.lessonId},{accountId,courseId,presentation})
       }
     }
     if(['session','pause','resume','activate','review','new-cycle'].includes(action) &&
@@ -277,6 +289,23 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     return result
   }catch(e){if(isCurrent())setError(e.message);return null}
   finally{if(submitLock.current===token){submitLock.current=null;if(isCurrent())setBusy(false)}}
+ }
+ async function openFinalRetest(key){
+  const epoch=viewGeneration,cycleId=data?.cycle?.id
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId&&currentScope.current.cycleId===cycleId
+  if(retestLock.current||!data||data.readOnly||!cycleId||!isCurrent())return
+  const token={};retestLock.current=token
+  setRetestBusyKey(key);setRetestError('')
+  try{
+   const run=await startOrResumeCourseFinalRetest({key,locale,accountId,courseId,cycleId,isCurrent,request:appFetch})
+   if(!isCurrent())return
+   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest&courseId='+encodeURIComponent(courseId)+'&cycleId='+encodeURIComponent(cycleId))
+  }catch(e){if(isCurrent())setRetestError(e.message||'COURSE_RETEST_UNAVAILABLE')}
+  finally{if(retestLock.current===token){retestLock.current=null;if(isCurrent())setRetestBusyKey('')}}
+ }
+ function showFinalRetest(){
+  setQuestOpen(false);setView('today')
+  requestAnimationFrame(()=>document.getElementById('course-final-retest')?.scrollIntoView({behavior:'smooth',block:'start'}))
  }
  const timezone=()=>{
   try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}
@@ -333,6 +362,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
  return <section className={styles.shell} data-daily-course data-course-view={view}>
+  {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
+    <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
+    <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
+      <Sparkles size={20} aria-hidden="true"/>{20*(Number(progress.practiceCount)||0)} XP
+    </span>
+  </div>}
   <div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
     {[
       ['today',ru?'Сегодня':'Today'],
@@ -344,19 +379,25 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   {view==='today'&&<>
   <header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
+    <img className={styles.heroPerson} src="/images/holistic-house/course-hero-mindful.svg" width={460} height={560}
+      alt="" aria-hidden="true" decoding="async"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
-        <span className={styles.heroBrand}>{ru?'Практика сегодня':'Today’s practice'}</span>
+        <span className={styles.heroBrand}>{data.programme?.title || (ru?'СЕГОДНЯШНИЙ ШАГ':'TODAY’S STEP')}</span>
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
       <h2>{lesson?.title||lesson?.journey?.heading}</h2>
-      <p className={styles.heroPurpose}>{ru?'Один небольшой шаг — в своём темпе.':'One small step, at your pace.'}</p>
+      <p className={styles.heroPurpose}>{completed&&!isFinished?
+        (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
+        (data.programme?.day?.prompt || (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.'))}</p>
       <button type="button" className={styles.todayPrimary} disabled={busy||(paused&&resumeBlocked)}
         data-course-today-primary onClick={()=>
           paused ? void submit('resume',{expectedRevision:cycle.revision}) :
+          data.finalRetest?.ready ? showFinalRetest() :
           (isFinished||(completed&&reportDay&&!reviewed)) ? setView('details') :
           setQuestOpen(true)}>
         {paused?(ru?'Возобновить курс':'Resume course') :
+          data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests') :
           isFinished?(ru?'Посмотреть итоги курса':'Review course results') :
           completed&&reportDay&&!reviewed?(ru?'Подвести итоги недели':'Review my week') :
           completed?(ru?'Посмотреть урок дня':'Review today’s lesson') :
@@ -369,8 +410,14 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       </div>
     </div>
   </header>
-  <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
-    progress={progress} roadmap={data.roadmap||[]}/>
+  <details className={styles.momentPeek} data-course-today-trends>
+    <summary><span><Sparkles size={16} aria-hidden="true"/>{ru?'Моя динамика':'My progress over time'}</span>
+      <ChevronDown size={18} aria-hidden="true"/></summary>
+    <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
+      progress={progress} roadmap={data.roadmap||[]}/>
+  </details>
+  <CourseFinalRetest locale={locale} plan={data.finalRetest}
+    onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
@@ -398,9 +445,11 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>}
   {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-    data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+    data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
+     onFinish={()=>{setQuestOpen(false);setView('path')}}
+    onOpenRetest={showFinalRetest}
     onCheckin={body=>submit('checkin',body)}
-    onSession={body=>submit('session',body)}
+    onSession={body=>submit('session',body,undefined,'inline')}
     onPreferences={patch=>submit('preferences',{
       expectedRevision:cycle.revision,
       length:patch.length||cycle.preferences?.length||'standard',

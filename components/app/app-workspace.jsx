@@ -19,7 +19,7 @@ import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
-import { periodComparison, periodWindow, resultsForPeriod } from '@/lib/assessments/dashboard-gauges'
+import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
@@ -101,6 +101,15 @@ export default function AppWorkspace({ locale, path = [] }) {
   const page = path[0] || 'tests',
     recordId = path[1],
     root = `/${locale}/app`
+  const retestLifetime = useRef({ mounted: false, epoch: 0 })
+  const retestScope = useRef(null)
+  retestScope.current = { accountId: data?.account?.id, page, recordId,
+    courseId: searchParams.get('courseId'), cycleId: searchParams.get('cycleId'), courseMode: searchParams.get('course') }
+  useEffect(() => {
+    const lifetime = retestLifetime.current
+    lifetime.mounted = true; lifetime.epoch += 1
+    return () => { lifetime.mounted = false; lifetime.epoch += 1 }
+  }, [])
   const load = useCallback(async () => {
     setError(null)
     try {
@@ -130,6 +139,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       channel = new BroadcastChannel('hh-app-session')
       channel.onmessage = (e) => {
         if (e.data === 'signed-out') {
+          retestLifetime.current.epoch += 1
           setData(null)
           setState('signed-out')
           router.refresh()
@@ -146,6 +156,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         }
       },
       hide = () => {
+        retestLifetime.current.epoch += 1
         setData(null)
         setState('loading')
       }
@@ -165,6 +176,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         locale,
         serviceId: searchParams.get('service') || null,
         ...(page === 'tests' && searchParams.get('selection') === 'pending' ? { continueTo: 'tests' } : {}),
+        ...(page === 'course' ? { continueTo: 'course', ...(['stress','confidence','focus'].includes(searchParams.get('program')) ? { program: searchParams.get('program') } : {}) } : {}),
       })
       window.location.assign(result.redirectUrl)
     } catch (e) {
@@ -195,10 +207,42 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
-  async function completePlan(result, destination = 'report') {
-    if (searchParams.get('course') === '1') {
-      const requestedCourseId = searchParams.get('courseId')
-      const courseState = await appFetch('course' + (requestedCourseId ? '?courseId=' + encodeURIComponent(requestedCourseId) : ''), undefined, undefined, { accountId: data.account.id })
+  const renderedRetestScope = retestScope.current, renderedRetestEpoch = retestLifetime.current.epoch
+  async function returnFromFinalRetest(completed = false) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || !scope.courseId || !scope.cycleId || !isCurrent()) return
+    const today = await appFetch('course/today?locale=' + encodeURIComponent(locale) + '&courseId=' + encodeURIComponent(scope.courseId),
+      undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || today?.courseId !== scope.courseId || today?.cycle?.id !== scope.cycleId || today.readOnly) return
+    const fresh = await appFetch('bootstrap', undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || fresh?.account?.id !== scope.accountId) return
+    setData(fresh); setState('ready')
+    router.push(root + '/course?courseId=' + encodeURIComponent(scope.courseId) + (completed ? '&retest=updated' : ''))
+  }
+  async function continueCoursePlan(result) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || scope.courseMode !== '1' || !isCurrent() ||
+        (scope.recordId && result.runId !== scope.recordId)) return
+    const request = async (path, body, method) => {
+      if (!isCurrent()) throw new Error('COURSE_SELECTION_CHANGED')
+      const response = await appFetch(path, body, method, { accountId: scope.accountId })
+      if (!isCurrent() || (path === 'bootstrap' && response?.account?.id !== scope.accountId))
+        throw new Error('COURSE_SELECTION_CHANGED')
+      return response
+    }
+    const refreshCourseOwner = async () => {
+      const fresh = await request('bootstrap')
+      if (!isCurrent()) return
+      setData(fresh); setState('ready')
+    }
+    try {
+      const requestedCourseId = scope.courseId
+      const courseState = await request('course' + (requestedCourseId ? '?courseId=' + encodeURIComponent(requestedCourseId) : ''))
+      if (requestedCourseId && courseState.course?.id !== requestedCourseId) return
       const courseQuery = courseState.course?.id ? '&courseId=' + encodeURIComponent(courseState.course.id) : ''
       // Validate membership against the server-owned confirmed set, not only
       // the URL. Normal non-course tests still use their original result flow.
@@ -207,33 +251,49 @@ export default function AppWorkspace({ locale, path = [] }) {
         // count in the ordinary account-wide selection. Sync that ledger
         // independently; stale plan revisions never block course progression.
         try {
-          const snapshot = await appFetch('bootstrap')
+          const snapshot = await request('bootstrap')
           const active = snapshot.activeTestPlan
           if (active?.status === 'active' && active.definitionIds?.includes(result.definitionId)) {
-            const plan = await appFetch('test-plans/' + encodeURIComponent(active.id))
-            await appFetch('test-plans/' + encodeURIComponent(active.id) + '/advance', {
+            const plan = await request('test-plans/' + encodeURIComponent(active.id))
+            await request('test-plans/' + encodeURIComponent(active.id) + '/advance', {
               completedRunId: result.runId,
               expectedRevision: plan.revision,
             })
           }
-        } catch {
+        } catch (error) {
+          if (error.message === 'COURSE_SELECTION_CHANGED') throw error
           // The saved result and authoritative course state remain intact.
         }
+        if (!isCurrent()) return
         const nextKey = coursePendingKeys(courseState)[0]
         if (nextKey) {
           const nextRun = await startOrResumeCourseTest({
-            courseState, key: nextKey, locale, request: appFetch,
+            courseState, key: nextKey, locale, request,
           })
-          await load()
+          await refreshCourseOwner()
+          if (!isCurrent()) return
           router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1' + courseQuery)
         } else {
-          await load()
+          await refreshCourseOwner()
+          if (!isCurrent()) return
           router.push(root + '/course?tests=complete' + courseQuery)
         }
         return
       }
-      await load()
+      await refreshCourseOwner()
+      if (!isCurrent()) return
       router.push(root + '/results/' + encodeURIComponent(result.id))
+    } catch (error) {
+      if (isCurrent()) throw error
+    }
+  }
+  async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === 'retest') {
+      await returnFromFinalRetest(true)
+      return
+    }
+    if (searchParams.get('course') === '1') {
+      await continueCoursePlan(result)
       return
     }
     const planId = searchParams.get('plan')
@@ -439,6 +499,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               initialMode={searchParams.get('mode') === 'quick' ? 'quick' : searchParams.get('mode') === 'guided' ? 'guided' : null}
               courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
+                if (searchParams.get('course') === 'retest') { await returnFromFinalRetest(); return }
                 await load()
                 router.push(searchParams.get('course') === '1' ? root + '/course' + (searchParams.get('courseId') ? '?courseId=' + encodeURIComponent(searchParams.get('courseId')) : '') : root + '/tests')
               }}
@@ -1863,23 +1924,19 @@ function PortfolioPage({ data, locale }) {
   const ru = locale === 'ru'
   const allGroups = assessmentHistoryGroups(data.results || [], [], locale).filter(group => group.latest)
   const summary = buildInsightsSummary(allGroups)
-  const [period, setPeriod] = useState('all')
-  const [periodStart, setPeriodStart] = useState('')
-  const [periodEnd, setPeriodEnd] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
-  const validPeriod = periodWindow(period, periodStart, periodEnd).valid
   const entriesByKey = useMemo(() => new Map(
     buildExplorerEntries({ locale, audience: 'account' }).map((entry) => [entry.key, entry]),
   ), [locale])
   const groups = allGroups.map(group => {
-    const history = resultsForPeriod(group.history, period, periodStart, periodEnd)
+    const history = group.history
     const { current, previous } = periodComparison(history)
     return { ...group, latest: current, periodPrior: previous, history, count: history.length }
   }).filter(group => group.latest)
   const { counts: categoryCounts, sections: categorySections } = buildInsightsCategorySections(groups, entriesByKey, selectedCategories)
   const categoryFilters = INSIGHTS_TEST_CATEGORIES.filter((category, index) =>
     index < HOME_TEST_TOPICS.length || categoryCounts[category.key] > 0 || selectedCategories.includes(category.key))
-  const activeFilters = selectedCategories.length + (period === 'all' ? 0 : 1)
+  const activeFilters = selectedCategories.length
   const visibleCount = categorySections.reduce((sum, section) => sum + section.groups.length, 0)
   function toggleCategory(key) {
     setSelectedCategories((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key])
@@ -1906,14 +1963,14 @@ function PortfolioPage({ data, locale }) {
           <SlidersHorizontal size={18} aria-hidden="true" />
           <strong>{ru ? 'Фильтры' : 'Filters'}</strong>
           {activeFilters > 0 && <span className="hh-insights-active-count">{activeFilters}</span>}
-          <small>{(selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')) + ' · ' + (period === 'all' ? (ru ? 'Всё время' : 'All time') : (ru ? 'Период выбран' : 'Period selected'))}</small>
+          <small>{selectedCategories.length ? (ru ? 'Темы выбраны' : 'Topics selected') : (ru ? 'Все темы' : 'All topics')}</small>
           <ChevronDown className="hh-insights-filter-chevron" size={17} aria-hidden="true" />
         </summary>
         <div className="hh-insights-filter-panel">
           <div className="hh-insights-filter-heading">
-            <span>{ru ? 'Категории и период' : 'Categories and period'}</span>
+            <span>{ru ? 'Категории' : 'Categories'}</span>
             {activeFilters > 0 && <button type="button" className="hh-insights-reset"
-              onClick={() => { setSelectedCategories([]); setPeriod('all'); setPeriodStart(''); setPeriodEnd('') }}>
+              onClick={() => setSelectedCategories([])}>
               {ru ? 'Сбросить' : 'Reset filters'}</button>}
           </div>
       <div className="hh-insights-category-filters" role="group" aria-label={ru ? 'Фильтр по категориям тестов' : 'Filter completed tests by category'} data-testid="insights-category-filters">
@@ -1932,36 +1989,12 @@ function PortfolioPage({ data, locale }) {
           </button>
         })}
       </div>
-      <div className="hh-insights-period" role="group" aria-label={ru ? 'Период анализа' : 'Analysis period'}>
-        <span>{ru ? 'Период:' : 'Period:'}</span>
-        {[
-          ['all', ru ? 'Всё время' : 'All time'],
-          ['week', ru ? 'Неделя' : '7 days'],
-          ['month', ru ? 'Месяц' : '30 days'],
-          ['quarter', ru ? '3 месяца' : '3 months'],
-          ['custom', ru ? 'Свой период' : 'Custom'],
-        ].map(([key, title]) => (
-          <button key={key} type="button" aria-pressed={period === key}
-            onClick={() => setPeriod(key)}>{title}</button>
-        ))}
-      </div>
-      {period === 'custom' && <div className="hh-insights-date-range">
-        <label>{ru ? 'С' : 'From'} <input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
-        <label>{ru ? 'По' : 'To'} <input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
-      </div>}
-      <p className="hh-insights-period-guide">{ru
-        ? 'Стрелки сравнивают последний результат с первым совместимым замером за выбранный период. Личностные шкалы нейтральны.'
-        : 'Trend arrows compare your latest result with the earliest compatible measure in this period. Personality traits are neutral.'}</p>
         </div>
       </details>
       {activeFilters > 0 && <p className="hh-insights-filter-status" role="status">
         {ru ? 'Показано тестов:' : 'Showing tests:'} {visibleCount} / {summary.tests}
       </p>}
-      {!validPeriod ? (
-        <div className="hh-insights-empty hh-panel" role="status">
-          <p>{ru ? 'Выберите корректные даты начала и конца периода.' : 'Choose valid start and end dates for comparison.'}</p>
-        </div>
-      ) : groups.length || selectedCategories.length > 0 ? (
+      {groups.length || selectedCategories.length > 0 ? (
         <div className="hh-insights-categories">
           {categorySections.map(({ category, groups: categoryGroups }) => {
             const CategoryIcon = INSIGHTS_CATEGORY_ICONS[category.key] || ClipboardList
@@ -1981,7 +2014,7 @@ function PortfolioPage({ data, locale }) {
                 </div>
               </header>
               {categoryGroups.length === 0 && <p className="hh-insights-category-empty">
-                {ru ? 'В выбранном периоде нет результатов в этой категории. Можно добавить подходящий тест.' : 'No results in this category for this period. You can choose a test for this topic.'}
+                {ru ? 'В этой категории пока нет результатов. Можно добавить подходящий тест.' : 'No results in this category yet. You can choose a test for this topic.'}
               </p>}
               <div className="hh-insights-test-list">
                 {categoryGroups.map(group => {
@@ -2026,13 +2059,13 @@ function PortfolioPage({ data, locale }) {
       ) : (
         <div className="hh-insights-empty hh-panel">
           <h2>{allGroups.length
-            ? (ru ? 'Нет тестов за выбранный период' : 'No assessments in this period')
+            ? (ru ? 'Нет тестов по выбранным темам' : 'No assessments for these topics')
             : (ru ? 'Отчётов пока нет' : 'No reports yet')}</h2>
           <p>{allGroups.length
-            ? (ru ? 'Выберите более длинный период — сохранённые результаты не удалены.' : 'Try a longer time range. Your past results are still saved.')
+            ? (ru ? 'Попробуйте изменить категории — результаты сохранены.' : 'Try other topic categories; your results are still saved.')
             : (ru ? 'Завершите первый тест — здесь появятся показатели и рекомендации.' : 'Finish your first assessment to see your gauges and recommendations here.')}</p>
           {allGroups.length
-            ? <button type="button" onClick={() => setPeriod('all')}>{ru ? 'Всё время' : 'Show all time'}</button>
+            ? <button type="button" onClick={() => setSelectedCategories([])}>{ru ? 'Показать все категории' : 'Show all categories'}</button>
             : <Link href={`/${locale}/app/tests?explore=1&filters=topics`} className="hh-primary">{ru ? 'Выбрать тест' : 'Choose a test'}</Link>}
         </div>
       )}
@@ -2045,7 +2078,7 @@ function PortfolioPage({ data, locale }) {
         </details>
       )}
       <div className="hh-insights-links">
-        <Link href={`/${locale}/app/history`} prefetch={false}>{ru ? 'История и динамика' : 'History & progress'}</Link>
+        <Link href={`/${locale}/app/tests?tab=dynamics`} prefetch={false}>{ru ? 'Динамика тестов' : 'Test dynamics'}</Link>
         <Link href={`/${locale}/app/tests?explore=1&filters=topics`} prefetch={false}>{ru ? 'Пройти ещё тест' : 'Take another test'}</Link>
       </div>
 

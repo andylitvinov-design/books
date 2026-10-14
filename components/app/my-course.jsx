@@ -1,13 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CoursePresetCatalog from './course-preset-catalog'
 import MyCoursesDashboard from './my-courses-dashboard'
 import { useSubscription } from './subscription-access'
 import CourseToday from './course-today'
+import CourseEntrySelector from './course-entry-selector'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
 import styles from './my-course.module.css'
@@ -15,8 +19,11 @@ import './my-course-theme.css'
 
 const WORDS = {
   en: {
-    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'My personal course',
-    intro: 'Explore your stress patterns, choose your own tests and build practical skills with short daily exercises.',
+    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'Feel calmer. Grow stronger.',
+    intro: 'A personal 14-day journey, one small step at a time. Choose what matters to you.',
+    chooseProgram: 'Where would you like to begin?', personalCourse: 'Create my personal course',
+    personalPrompt: 'A programme built around my own question and priorities.',
+    exploreTrack: 'Choose this course', simpleSteps: 'Tests → 3 focus areas → 14 daily lessons',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
     start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
     how: 'How it works', detailTitle: 'Six steps to your personal course',
@@ -68,8 +75,11 @@ const WORDS = {
     interest: 'Based on your choices', notDiagnostic: 'Weekly Pulse is an original non-diagnostic self-report; these are not clinical thresholds.',
   },
   ru: {
-    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Мой личный курс',
-    intro: 'Узнайте больше о своих стрессовых зонах, выберите нужные тесты и развивайте полезные навыки с короткими ежедневными практиками.',
+    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Больше спокойствия. Больше опоры.',
+    intro: 'Ваш личный путь на 14 дней. Каждый день — один небольшой шаг.',
+    chooseProgram: 'С чего хотите начать?', personalCourse: 'Создать персональный курс',
+    personalPrompt: 'Программа под мой собственный запрос и приоритеты.',
+    exploreTrack: 'Выбрать курс', simpleSteps: 'Тесты → 3 направления → 14 ежедневных уроков',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
     start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
     how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
@@ -161,10 +171,16 @@ export function MyCourse({ data, locale = 'en' }) {
   const billingScope = useRef(null)
   const [snapshot, setSnapshot] = useState(undefined)
   const state = snapshot?.accountId === accountId ? snapshot.value : undefined
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [showCourse, setShowCourse] = useState(false)
+  const requestedProgram = getCourseProgram(searchParams.get('program'))
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
   const [view, setView] = useState('list'), [selectedPreset, setSelectedPreset] = useState(null)
+  const [selectedProgram,setSelectedProgram]=useState(null),[pendingPrograms,setPendingPrograms]=useState({})
+  const startIntent=useRef(null),pendingProgramIntent=useRef({})
   const startDialogRef = useRef(null), selectorId = useId()
   const selectedCourse = useRef(null), currentAccount = useRef(accountId), mounted = useRef(false)
   const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
@@ -195,7 +211,7 @@ export function MyCourse({ data, locale = 'en' }) {
   useEffect(() => {
     mounted.current = true; generation.current += 1
     actionLock.current = null; newCourseId.current = null
-    setBusy(false); setOptIn(false); setSelectedPreset(null)
+    setShowCourse(Boolean(selectedCourseFromUrl())); setBusy(false); setOptIn(false); setSelectedPreset(null); setSelectedProgram(null); setPendingPrograms({}); pendingProgramIntent.current={}; startIntent.current=null
     startDialogRef.current?.close()
     selectedCourse.current = selectedCourseFromUrl()
     setView(selectedCourse.current ? 'detail' : 'list')
@@ -265,38 +281,107 @@ export function MyCourse({ data, locale = 'en' }) {
     } finally { if (actionLock.current === token) { actionLock.current = null; if (isSelected(courseId, epoch)) setBusy(false) } }
   }
 
+  async function applyProgramIntake(started, programme, epoch) {
+    const courseId=started.course?.id
+    if (!courseId || !isSelected(courseId,epoch)) throw new Error('COURSE_SELECTION_CHANGED')
+    if (started.course.presetId) throw new Error('COURSE_PRESET_TESTS_FIXED')
+    if (started.course.stage !== 1) {
+      if (started.course.stage >= 2 && courseProgramFromTopics(started.course.focusTags)?.id === programme.id) return started
+      throw new Error('COURSE_SELECTION_CHANGED')
+    }
+    const withTopics=await request(accountId, {
+      action: 'intake', courseId,
+      expectedRevision: started.course.revision,
+      concerns: '', focusTags: [...programme.focusTags],
+    })
+    if (!isSelected(courseId,epoch) || withTopics.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
+    return withTopics
+  }
+  function clearPendingProgram(courseId) {
+    delete pendingProgramIntent.current[courseId]
+    setPendingPrograms(previous=>{const next={...previous};delete next[courseId];return next})
+  }
   async function act(action, values = {}) {
     if (actionLock.current) return
     if (action !== 'start') {
-      try { acceptState(await courseCommand(action, values)) }
-      catch (e) { acceptError(e.message) }
+      try {
+        const response=await courseCommand(action,values)
+        if (!isSelected() || response.course?.id!==state?.course?.id) return
+        acceptState(response)
+        if (['select-preset','select-personal','intake'].includes(action)) clearPendingProgram(response.course.id)
+      } catch (e) { acceptError(e.message) }
       return
     }
-    if (values.consent !== true || (values.presetId && !getCoursePreset(values.presetId))) return
-    const oldCourseId = selectedCourse.current, epoch = viewGeneration
-    if (!mounted.current || currentAccount.current !== accountId) return
+    const programme=getCourseProgram(values.programId)
+    if (values.consent !== true || (values.presetId && !getCoursePreset(values.presetId)) ||
+        (values.programId && !programme) || (values.presetId && programme)) return
+    let targetCourseId=selectedCourse.current
+    const epoch=viewGeneration
+    if (!isSelected(targetCourseId,epoch)) return
     const token = {}; actionLock.current = token; setBusy(true); setError('')
     readVersion.current += 1; readController.current?.abort()
     try {
       newCourseId.current ||= crypto.randomUUID()
-      const response = await request(accountId, { action: 'start', consent: true, courseId: newCourseId.current,
+      const requestedCourseId=newCourseId.current
+      const started = await request(accountId, { action: 'start', consent: true, courseId: requestedCourseId,
         newCourse: true, ...(values.presetId ? { presetId: values.presetId } : {}),
       })
-      if (!isSelected(oldCourseId, epoch)) return
-      if (!response.course?.id || response.course.id !== newCourseId.current) throw new Error('COURSE_SELECTION_CHANGED')
+      if (!isSelected(targetCourseId,epoch)) return
+      if (started.course?.id !== requestedCourseId) throw new Error('COURSE_SELECTION_CHANGED')
       readVersion.current += 1; readController.current?.abort()
-      selectedCourse.current = response.course.id
-      setSnapshot({ accountId, value: response }); replaceCourseUrl(response.course.id)
+      selectedCourse.current = targetCourseId = started.course.id
+      setSnapshot({ accountId, value: started }); replaceCourseUrl(started.course.id)
       newCourseId.current = null; setView('detail')
-    } catch (e) { if (isSelected(oldCourseId, epoch)) setError(e.message) }
+      if ((started.course.presetId || null) !== (values.presetId || null)) throw new Error('COURSE_START_SELECTION_CHANGED')
+      if (programme) {
+        if (started.course.presetId) throw new Error('COURSE_PRESET_TESTS_FIXED')
+        pendingProgramIntent.current[started.course.id]=programme.id
+        setPendingPrograms(previous=>({...previous,[started.course.id]:programme.id}))
+        const withTopics=await applyProgramIntake(started,programme,epoch)
+        if (!isSelected(targetCourseId,epoch)) return
+        readVersion.current+=1;readController.current?.abort()
+        setSnapshot({accountId,value:withTopics});clearPendingProgram(targetCourseId)
+      }
+    } catch (e) { if (isSelected(targetCourseId,epoch)) setError(e.message) }
     finally { if (actionLock.current === token) { actionLock.current = null; if (mounted.current && currentAccount.current === accountId && generation.current === epoch) setBusy(false) } }
   }
 
-  function openStartDialog(presetId = null) {
-    if (busy || (presetId !== null && !getCoursePreset(presetId))) return
+  function openStartDialog(presetId = null, programId = null) {
+    if (busy || (presetId !== null && !getCoursePreset(presetId)) || (programId !== null && !getCourseProgram(programId)) ||
+        (presetId && programId) || (view === 'switch' && programId)) return
     if (view !== 'switch' && (atLimit || (courses.length > 0 && !access?.multiCourseEnabled))) return
-    setSelectedPreset(presetId); setOptIn(false)
+    setSelectedPreset(presetId);setSelectedProgram(programId);setOptIn(false)
+    startIntent.current={accountId,courseId:selectedCourse.current,epoch:viewGeneration,presetId,programId,switching:view==='switch'}
     startDialogRef.current?.showModal()
+  }
+  const renderedStartIntent=startIntent.current
+  async function confirmStart() {
+    if (!optIn || busy) return
+    const intent=startIntent.current
+    if (!intent || intent!==renderedStartIntent || intent.accountId!==accountId || !isSelected(intent.courseId,intent.epoch) || actionLock.current) return
+    startIntent.current=null;startDialogRef.current?.close()
+    if (intent.switching) {
+      setView('detail')
+      await act(intent.presetId ? 'select-preset' : 'select-personal',{consent:true,...(intent.presetId?{presetId:intent.presetId}:{})})
+    } else {
+      await act('start', { consent: true, ...(intent.presetId ? { presetId: intent.presetId } : {}), ...(intent.programId ? { programId: intent.programId } : {}) })
+    }
+  }
+  async function retryProgramIntake() {
+    const courseId=state?.course?.id,epoch=viewGeneration,programme=getCourseProgram(pendingPrograms[courseId])
+    const isCurrent=()=>isSelected(courseId,epoch)&&pendingProgramIntent.current[courseId]===programme?.id
+    if (!programme || actionLock.current || !isCurrent()) return
+    const token={};actionLock.current=token;setBusy(true);setError('')
+    readVersion.current+=1;readController.current?.abort()
+    try {
+      const fresh=await request(accountId,undefined,{courseId})
+      if (!isCurrent() || fresh.course?.id!==courseId || ['completed','archived'].includes(fresh.course.status)) throw new Error('COURSE_SELECTION_CHANGED')
+      const withTopics=await applyProgramIntake(fresh,programme,epoch)
+      if (!isCurrent()) return
+      readVersion.current+=1;readController.current?.abort()
+      setSnapshot({accountId,value:withTopics});clearPendingProgram(courseId)
+    } catch(e) {if(isSelected(courseId,epoch))setError(e.message)}
+    finally {if(actionLock.current===token){actionLock.current=null;if(isSelected(courseId,epoch))setBusy(false)}}
   }
   function changeView(next) {
     // Leaving a detail page invalidates all of its callbacks, including when
@@ -341,6 +426,16 @@ export function MyCourse({ data, locale = 'en' }) {
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={() => refresh()}>{t.retry}</button></section>
 
+  // Returning from a test or following a programme link must keep the learner
+  // inside the existing course onboarding flow.
+  const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
+  const programmeEntry = stage === 0 && Boolean(requestedProgram)
+  if (!showCourse && !testReturn && !programmeEntry) return <CourseEntrySelector
+    key={accountId + ':' + (state.course?.id || '')}
+    accountId={accountId} course={state.course} access={access} locale={locale}
+    onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
+    onOpen={() => setShowCourse(true)}/>
+
   return <div className={styles.root} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
@@ -365,18 +460,60 @@ export function MyCourse({ data, locale = 'en' }) {
       <p className={styles.small}>{t.historySafe}</p>
       <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
     </section>}
+    {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses} onClick={() => {
+      changeView('list'); setShowCourse(false)
+      if (testReturn || programmeEntry) router.replace(root + '/course')
+    }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button> : null}
     {!showDashboard && stage === 0 && <header className={styles.hero}>
       <div>
         <p className="hh-kicker">{t.eyebrow}</p>
-        <h1>{ru ? 'Мои курсы' : 'My courses'}</h1>
-        <p className={styles.heroLead}>{ru ? 'Выберите направление с пятью фиксированными тестами или создайте курс под свой запрос. Пройдите тесты, изучите результаты, подтвердите направления и начните 14 дней практики.' : 'Choose a focus with five fixed tests or create your own course. Complete your tests, review your results, approve your focus areas and begin 14 days of practice.'}</p>
+        <h1>{t.title}</h1>
+        <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
+        <div className={styles.heroActions}>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null, requestedProgram?.id || null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
+        </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/andy-about.png" alt="" width={118} height={118} loading="lazy" /></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/hero-olive-incense.webp" alt="" width={320} height={220} loading="lazy" /></div>
     </header>}
-    {!showDashboard && stage === 0 && <CoursePresetCatalog locale={locale} busy={busy}
-      onPreset={openStartDialog} onPersonal={() => openStartDialog(null)} switchMode={view === 'switch'} />}
-    {!showDashboard && stage === 0 && <Course14DayOverview locale={locale} />}
+    {!showDashboard && view !== 'switch' && stage === 0 && <section className={styles.programSelection} data-course-program-selection aria-label={t.chooseProgram}>
+      <div className={styles.programHeading}>
+        <h2>{t.chooseProgram}</h2>
+        <p>{t.simpleSteps}</p>
+        {requestedProgram && <p className={styles.preselectedProgram} data-course-preselected-program={requestedProgram.id}>{ru ? 'По вашему направлению подойдёт курс:' : 'Suggested for your chosen direction:'} <strong>{requestedProgram.title[ru ? 'ru' : 'en']}</strong></p>}
+      </div>
+      <div className={styles.programGrid}>
+        {COURSE_PROGRAMS.map((program, index) => {
+          const Icon = [Waves, ShieldCheck, Target][index]
+          return <button className={styles.programCard} key={program.id} type="button"
+            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id} disabled={busy}
+            onClick={() => openStartDialog(null,program.id)}>
+            <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+            <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>
+            <strong>{program.title[ru ? 'ru' : 'en']}</strong>
+            <span className={styles.programPromise}>{program.promise[ru ? 'ru' : 'en']}</span>
+            <span className={styles.programOutcomes}>{program.outcome[ru ? 'ru' : 'en']}</span>
+            <span className={styles.programAction}>{t.exploreTrack}<ArrowRight size={16} aria-hidden="true"/></span>
+          </button>
+        })}
+      </div>
+      <button className={styles.personalTrack} type="button" disabled={busy}
+        data-course-personal-program onClick={() => openStartDialog(null)}>
+        <SlidersHorizontal size={24} aria-hidden="true"/>
+        <span><strong>{t.personalCourse}</strong><small>{t.personalPrompt}</small></span>
+        <ArrowRight size={21} aria-hidden="true"/>
+      </button>
+    </section>}
+    {!showDashboard && stage === 0 && <details className={styles.overviewDisclosure}>
+      <summary>{t.how}</summary>
+      <Course14DayOverview locale={locale} />
+    </details>}
+    {!showDashboard && stage === 0 && (view === 'switch' ? <CoursePresetCatalog locale={locale} busy={busy}
+      onPreset={openStartDialog} onPersonal={() => openStartDialog(null)} switchMode /> : <details className={styles.overviewDisclosure} data-course-fixed-presets>
+      <summary>{ru?'Курсы с фиксированным набором тестов':'Courses with fixed test sets'}</summary>
+      <CoursePresetCatalog locale={locale} busy={busy} onPreset={openStartDialog} onPersonal={() => openStartDialog(null)} />
+    </details>)}
     {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
@@ -391,24 +528,22 @@ export function MyCourse({ data, locale = 'en' }) {
     </section>}
 
     <dialog ref={startDialogRef} className={styles.startDialog}
-      aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
+      aria-labelledby="course-consent-heading" onClose={() => {setOptIn(false);startIntent.current=null}}>
       <h2 id="course-consent-heading">{selectedPreset ? getCoursePreset(selectedPreset)?.title?.[ru ? 'ru' : 'en'] : t.consentTitle}</h2>
+      {getCourseProgram(selectedProgram) && <p className={styles.selectedProgramName}>{getCourseProgram(selectedProgram).title[ru ? "ru" : "en"]}</p>}
       <p>{t.consentHelp}</p>
       <label className={styles.consent}><input type="checkbox" checked={optIn}
         onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
       <div className={styles.dialogActions}>
-        <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => {
-          if (!optIn || busy) return
-          const switching = view === 'switch'
-          startDialogRef.current?.close()
-          if (switching) {
-            setView('detail')
-            void act(selectedPreset ? 'select-preset' : 'select-personal', { consent: true, ...(selectedPreset ? { presetId: selectedPreset } : {}) })
-          } else void act('start', { consent: true, ...(selectedPreset ? { presetId: selectedPreset } : {}) })
-        }}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
+        <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => void confirmStart()}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
         <button type="button" disabled={busy} onClick={() => startDialogRef.current?.close()}>{t.cancel}</button>
       </div>
     </dialog>
+
+    {!showDashboard && !isHistory && pendingPrograms[state?.course?.id] && <section className={styles.notice} data-course-program-retry>
+      <p>{ru?'Курс создан. Завершите настройку выбранной программы:':'Your course is created. Finish setting up your chosen programme:'} {getCourseProgram(pendingPrograms[state.course.id])?.title?.[ru?'ru':'en']}</p>
+      <button type="button" disabled={busy} onClick={()=>void retryProgramIntake()}>{ru?'Повторить настройку программы':'Retry programme setup'}</button>
+    </section>}
 
     {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
       onClick={() => changeView('switch')}>

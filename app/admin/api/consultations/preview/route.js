@@ -22,7 +22,7 @@ const inputKeys = [
   'patientName', 'clientMode', 'clientId', 'consultationId', 'dateIssued',
   'languagePreference', 'amount', 'currency', 'service', 'paymentStatus',
   'paymentMethod', 'documentNumber', 'recommendationNumber',
-  'generalInstructions', 'analysis', 'additionalNotes', 'followUp',
+  'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate',
 ]
 
 function errorMessage(error, locale) {

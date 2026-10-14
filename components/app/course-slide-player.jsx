@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookmarkCheck, Check, CheckCircle2, ChevronDown,
-  Clock3, Compass, Heart, Leaf, LockKeyhole, ShieldCheck,
+  Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, ShieldCheck,
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
@@ -13,6 +13,9 @@ import styles from './course-slide-player.module.css'
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
+    pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
+    shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
+    understand: 'One idea at a time', adjustPace: 'Change my practice style',
     baseline: 'Before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
     momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
     focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
@@ -44,9 +47,24 @@ const WORDS = {
     pictureCredit: 'An invitation to slow down', todaySkill: 'My focus for today',
     needSave: 'Saved only when the server confirms your lesson.',
     noLesson: 'This part is optional. You can continue whenever you wish.',
+    nextDayNotice: 'One new lesson per day. Tomorrow brings a new skill step.',
+    retestInvitation: 'Day 14: repeat the original course tests to compare your starting and finishing scores.',
+    retestButton: 'Compare my starting tests',
+    celebrationLabel: 'Lesson completed', rewardIntro: 'You showed up for yourself today.',
+    rewardMeaning: 'XP rewards saved practice, not how you feel or your scores.',
+    rewardTotal: 'Total XP', rewardStreak: 'Practice streak', rewardStreakUnit: 'days',
+    rewardPath: 'My 14-lesson journey', rewardPathNote: 'Tomorrow, or whenever you return, your next lesson will be waiting.',
+    promoContinue: 'See the Pro options', promoBrand: 'PRO FEATURES · ADVANCED PLAN',
+    promoTitle: 'Grow in five directions', promoText: 'With Advanced you can run up to five courses in parallel, without advertising.',
+    promoPrice: 'Advanced · €20 / month', promoCta: 'Explore subscription options',
+    promoSoon: 'Checkout is not active yet. Your free course stays available.',
+    promoSkip: 'No thanks, back to my course', promoDisclaimer: 'Optional monthly membership. Your lessons and results stay yours.',
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
+    pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
+    shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
+    understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
     baseline: 'Перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
@@ -81,10 +99,24 @@ const WORDS = {
     pictureCredit: 'Время для небольшой паузы', todaySkill: 'Мой навык сегодня',
     needSave: 'Практика отмечается завершённой только после подтверждения сервера.',
     noLesson: 'Этот шаг необязателен. Можно продолжать в своём темпе.',
+    nextDayNotice: 'Не более одного нового урока в день. Завтра — следующий шаг.',
+    retestInvitation: 'День 14: повторите стартовые тесты и сравните исходные и итоговые показатели.',
+    retestButton: 'Сравнить мои стартовые тесты',
+    celebrationLabel: 'Урок завершён', rewardIntro: 'Сегодня вы уделили время себе.',
+    rewardMeaning: 'XP начисляются за сохранённую практику, не за самочувствие или оценки.',
+    rewardTotal: 'Всего XP', rewardStreak: 'Серия практик', rewardStreakUnit: 'дн.',
+    rewardPath: 'Мой путь из 14 уроков', rewardPathNote: 'Следующий урок будет ждать вас в другой день — без спешки.',
+    promoContinue: 'Возможности Pro', promoBrand: 'PRO-ВОЗМОЖНОСТИ · ТАРИФ ADVANCED',
+    promoTitle: 'Развивайтесь в пяти направлениях', promoText: 'С тарифом Advanced можно вести до пяти курсов одновременно, без рекламы.',
+    promoPrice: 'Advanced · 20 € / месяц', promoCta: 'Посмотреть варианты подписки',
+    promoSoon: 'Оплата пока не подключена. Бесплатный курс остаётся доступным.',
+    promoSkip: 'Не сейчас, вернуться в курс', promoDisclaimer: 'Необязательная ежемесячная подписка. Уроки и результаты сохраняются.',
   },
 }
 
 const SCENE = {
+  pace: Compass,
+  understand: Leaf,
   baseline: Target,
   checkin: Target,
   idea: Leaf,
@@ -102,9 +134,11 @@ const SCENE = {
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   return [
+    { key: 'pace', kind: 'pace' },
     { key: 'baseline', kind: 'baseline' },
     { key: 'checkin', kind: 'checkin' },
     { key: 'idea', kind: 'idea' },
+    ...((lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
     ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
@@ -139,7 +173,7 @@ function IllustratedMoment({ variant = 'calm', photo = false }) {
 }
 
 export default function CourseSlidePlayer({
-  locale = 'en', data, busy = false, onClose, onCheckin, onSession, onPreferences,
+  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
   const cycle = data.cycle || {}
@@ -156,7 +190,11 @@ export default function CourseSlidePlayer({
   const [beforeNow, setBeforeNow] = useState(session?.beforeNow ?? null)
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
+  const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
+    ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
+  const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
+  const [promoOpen, setPromoOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const checkinOp = useRef(null)
@@ -168,6 +206,7 @@ export default function CourseSlidePlayer({
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
   const finished = index >= slides.length
+  const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
 
   useEffect(() => {
@@ -178,7 +217,7 @@ export default function CourseSlidePlayer({
     const trap = event => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
       if (event.key !== 'Tab') return
-      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
+      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), a[href]:not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
         .filter(node => node.getClientRects().length)
       if (!nodes.length) return
       const first = nodes[0], last = nodes[nodes.length - 1]
@@ -196,7 +235,7 @@ export default function CourseSlidePlayer({
   useEffect(() => {
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index])
+  }, [index, rewardStep, promoOpen])
 
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
@@ -231,6 +270,26 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
+  async function savePace() {
+    if (submitting.current) return
+    const previous = cycle.preferences || {}
+    const next = pace === 'quick'
+      ? { length:'quick', imagery:previous.imagery || 'optional' }
+      : pace === 'no_imagery'
+        ? { length:previous.length || 'standard', imagery:'no_imagery' }
+        : { length:'standard', imagery:'optional' }
+    if ((previous.length||'standard') === next.length &&
+        (previous.imagery||'optional') === next.imagery) { goNext(); return }
+    submitting.current = true
+    setSaving(true); setError('')
+    try {
+      const result = await onPreferences(next)
+      if (result) goNext()
+      else setError(words.saveError)
+    } catch { setError(words.saveError) }
+    finally { submitting.current = false; setSaving(false) }
+  }
+
   async function finishLesson() {
     if (alreadyDone) { setIndex(slides.length); return }
     if (submitting.current) return
@@ -248,9 +307,11 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  const title = finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
+  const title = promoOpen && promotion.show ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
+  const lessonsSaved = Number(data.progress?.practiceCount) || 0
+  const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
@@ -270,10 +331,55 @@ export default function CourseSlidePlayer({
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
       <main className={styles.content} data-slide-scroller>
-        {finished ? <div className={styles.finished} data-course-slide-completion>
+        {promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
+          <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
+          <p className={styles.promoBrand}>{words.promoBrand}</p>
+          <h2 tabIndex={-1} ref={headingRef}>{words.promoTitle}</h2>
+          <p className={styles.promoLead}>{words.promoText}</p>
+          <div className={styles.promoBenefits}>
+            <div><CheckCircle2 size={21}/><span>5 {locale==='ru'?'параллельных курсов':'parallel courses'}</span></div>
+            <div><CheckCircle2 size={21}/><span>{locale==='ru'?'Без рекламы':'No advertising'}</span></div>
+          </div>
+          <strong className={styles.promoPrice}>{words.promoPrice}</strong>
+          {promotion.checkoutReady ? <a className={styles.promoLink} href={'/'+locale+'/app/settings#subscriptions'}>{words.promoCta}<ArrowRight size={17}/></a>
+            : <p className={styles.promoSoon}>{words.promoSoon}</p>}
+          <p className={styles.promoLegal}>{words.promoDisclaimer}</p>
+        </div> : finished && earned && rewardStep===0 ? <div className={styles.finished}
+          data-course-slide-completion data-course-reward-stage="celebration" aria-live="polite">
           <IllustratedMoment variant="celebration"/>
-          <h2 tabIndex={-1} ref={headingRef}>{alreadyDone && !earned ? words.completed : words.finished}</h2>
+          <p className={styles.rewardKicker}><CheckCircle2 size={17}/>{words.day} {cycle.day} · {words.celebrationLabel}</p>
+          <h2 tabIndex={-1} ref={headingRef}>{words.finished}</h2>
           {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
+            <p className={styles.resultFocus}>{focusLabel}</p>
+            <h3>{words.pairTitle}</h3>
+            <div className={styles.resultPair}>
+              <div><span>{words.before}</span><strong>{paired.before}<small>/10</small></strong></div>
+              <ArrowRight size={24} aria-hidden="true"/>
+              <div><span>{words.after}</span><strong>{paired.after}<small>/10</small></strong></div>
+            </div>
+            <p className={styles.resultMeaning}>{paired.change===0 ? words.sameResult :
+              changeAmount(paired.change,locale)+' '+(paired.change<0 ? words.easierResult : words.harderResult)}</p>
+          </section> : <p className={styles.helper}>{words.noPair}</p>}
+          <p>{words.rewardIntro}</p>
+        </div> : finished && earned && rewardStep===1 ? <div className={styles.rewardStage}
+          data-course-slide-completion data-course-reward-stage="xp" aria-live="polite">
+          <div className={styles.rewardMedal}><Star size={74} fill="currentColor" aria-hidden="true"/></div>
+          <h2 tabIndex={-1} ref={headingRef}>{words.earned}</h2>
+          <p>{words.rewardMeaning}</p>
+          <div className={styles.rewardStats}>
+            <div><Sparkles size={24} aria-hidden="true"/><strong>{20*lessonsSaved}</strong><span>{words.rewardTotal}</span></div>
+            {practiceStreak>0 && <div><Waves size={24} aria-hidden="true"/><strong>{practiceStreak}</strong>
+              <span>{words.rewardStreak} · {words.rewardStreakUnit}</span></div>}
+          </div>
+        </div> : finished ? <div className={styles.finished} data-course-slide-completion>
+          {earned ? <div className={styles.journeyRewardIcon}><Trophy size={66} aria-hidden="true"/></div> :
+            <IllustratedMoment variant="celebration"/>}
+          <h2 tabIndex={-1} ref={headingRef}>{earned ? words.rewardPath : words.completed}</h2>
+          {earned && <div className={styles.completionPath} data-course-completion-progress>
+            <strong>{lessonsSaved} / {cycle.durationDays}</strong>
+            <progress max={cycle.durationDays} value={lessonsSaved} aria-label={words.rewardPath}/>
+          </div>}
+          {!earned && (paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
             <p className={styles.resultFocus}>{focusLabel}</p>
             <h3>{words.pairTitle}</h3>
             <div className={styles.resultPair}>
@@ -283,15 +389,22 @@ export default function CourseSlidePlayer({
             </div>
             <p className={styles.resultMeaning}>{paired.change === 0 ? words.sameResult :
               changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
-          </section> : <p className={styles.helper}>{words.noPair}</p>}
-          <p>{words.celebration}</p>
-          {earned && <div className={styles.xpReward}><Star size={21} fill="currentColor"/>{words.earned}</div>}
-          <div className={styles.finalTiles}>
+          </section> : <p className={styles.helper}>{words.noPair}</p>)}
+          <p>{earned ? words.rewardPathNote : words.celebration}</p>
+          {finalRetestReady && <div className={styles.finalRetestCue}>
+            <p>{words.retestInvitation}</p>
+            <button type="button" onClick={onOpenRetest} disabled={locked||typeof onOpenRetest!=='function'}>
+              {words.retestButton}<ArrowRight size={16}/>
+            </button>
+          </div>}
+          {!finalRetestReady && <p className={styles.nextDayCue}>{words.nextDayNotice}</p>}
+          {!earned && <div className={styles.xpReward}><CheckCircle2 size={21}/>{words.completed}</div>}
+          {!earned && <div className={styles.finalTiles}>
             <span><CheckCircle2 size={22}/>{words.completed}</span>
             <span><Target size={22}/>{words.todaySkill}</span>
             <span><Sparkles size={22}/>{words.private}</span>
-          </div>
-          <small>{words.xpNote}</small>
+          </div>}
+          {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
           <div className={styles.slideIdentity}>
@@ -299,6 +412,24 @@ export default function CourseSlidePlayer({
             <span className={styles.identityLabel}>{lesson.title}</span>
           </div>
           <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
+
+          {slide.kind === 'pace' && <>
+            <IllustratedMoment variant="calm"/>
+            <p className={styles.prompt}>{words.pacePrompt}</p>
+            <div className={styles.paceChoices} role="group" aria-label={words.pacePrompt}>
+              {[
+                ['quick',words.short,words.shortDetail,Clock3],
+                ['standard',words.standard,words.standardDetail,Waves],
+                ['no_imagery',words.noImagery,words.noImageryDetail,Leaf],
+              ].map(([key,label,detail,OptionIcon])=><button key={key} type="button"
+                disabled={locked} aria-pressed={pace===key} onClick={()=>setPace(key)}>
+                <span className={styles.paceIcon}><OptionIcon size={22} aria-hidden="true"/></span>
+                <span className={styles.paceCopy}><strong>{label}</strong><small>{detail}</small></span>
+                {pace===key?<CheckCircle2 size={19} className={styles.paceCheck} aria-hidden="true"/>:
+                  <ArrowRight size={18} aria-hidden="true"/>}
+              </button>)}
+            </div>
+          </>}
 
           {slide.kind === 'baseline' && <>
             <IllustratedMoment variant="calm"/>
@@ -325,7 +456,10 @@ export default function CourseSlidePlayer({
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo/>
             <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
-            <p className={styles.instruction}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
+          </>}
+          {slide.kind === 'understand' && <>
+            <IllustratedMoment variant="calm"/>
+            <p className={styles.prompt}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
           </>}
 
           {slide.kind === 'recall' && <>
@@ -344,17 +478,20 @@ export default function CourseSlidePlayer({
             <IllustratedMoment variant="calm"/>
             <p className={styles.prompt}>{slide.section.text}</p>
             <p className={styles.helper}>{words.gentle}</p>
-            <div className={styles.preferenceRow} role="group" aria-label={words.guided}>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.length === 'quick'}
-                onClick={() => void updatePreferences({length:'quick'})}>{words.short}</button>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.length !== 'quick'}
-                onClick={() => void updatePreferences({length:'standard'})}>{words.standard}</button>
-              <button type="button" disabled={locked}
-                aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
-                onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
-            </div>
+            <details className={styles.timerDetails}>
+              <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
+              <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.length === 'quick'}
+                  onClick={() => void updatePreferences({length:'quick'})}>{words.short}</button>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.length !== 'quick'}
+                  onClick={() => void updatePreferences({length:'standard'})}>{words.standard}</button>
+                <button type="button" disabled={locked}
+                  aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
+                  onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
+              </div>
+            </details>
             <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
@@ -429,6 +566,9 @@ export default function CourseSlidePlayer({
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>
+        {promoOpen && promotion.show && <div className={styles.subactions}>
+          <button type="button" className={styles.skip} onClick={onFinish||onClose}>{words.promoSkip}<SkipForward size={14}/></button>
+        </div>}
         {!finished && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
@@ -437,13 +577,17 @@ export default function CourseSlidePlayer({
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={finished ? onClose
+          onClick={promoOpen ? (onFinish||onClose)
+            : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
+              : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
+            : slide.kind === 'pace' ? () => void savePace()
             : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
-          <span>{finished ? words.seeMap
+          <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
+              : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
+            : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>
         <p>{words.safety}</p>

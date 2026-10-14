@@ -10,8 +10,8 @@ import styles from './subscription-access.module.css'
 
 const noAction = () => {}
 const SubscriptionContext = createContext({
-  locale: 'en', status: null, phase: 'unavailable', busy: '', error: '', offerKey: null,
-  offerAfterCompletion: noAction, notifyLessonSaved: noAction, dismissOffer: noAction,
+  locale: 'en', status: null, phase: 'unavailable', busy: '', error: '', offerKey: null, offerScope: null,
+  offerAfterCompletion: noAction, notifyLessonSaved: noAction, dismissOffer: noAction, dismissCompletionOffer: noAction,
   showOffer: noAction, startCheckout: noAction, cancelRenewal: noAction,
   openPortal: noAction, requestSession: noAction, refresh: noAction,
 })
@@ -27,6 +27,8 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   const [offers, dispatch] = useReducer(lessonOfferReducer, EMPTY_LESSON_OFFERS)
   const [manualOffer, setManualOffer] = useState(false)
   const mounted = useRef(false), requestVersion = useRef(0), inFlight = useRef(false)
+  const offerScopes = useRef(new Map()), latestStatus = useRef(status)
+  latestStatus.current = status
   const operationIds = useRef({}), lifecycle = useRef(0), currentAccount = useRef(accountId)
   const statusController = useRef(null), reconciledReturn = useRef(null)
   currentAccount.current = accountId
@@ -38,7 +40,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     const version = ++requestVersion.current
     statusController.current?.abort()
     if (!accountId) {
-      setStatus(null); setPhase('unavailable')
+      latestStatus.current = null; setStatus(null); setPhase('unavailable')
       return false
     }
     const controller = new AbortController()
@@ -48,7 +50,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
       if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
       const next = normalizeBillingStatus(await requestBillingStatus(accountId, { signal: controller.signal }))
       if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
-      setStatus(next); setPhase('ready')
+      latestStatus.current = next; setStatus(next); setPhase('ready')
       if (next.entitlement.active || next.entitlement.adFree) {
         dispatch({ type: 'suppress' }); setManualOffer(false)
       }
@@ -62,8 +64,8 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   useEffect(() => {
     mounted.current = true; lifecycle.current += 1
     inFlight.current = false; setBusy('')
-    setStatus(null); setPhase('loading'); setManualOffer(false)
-    dispatch({ type: 'reset' }); operationIds.current = {}
+    latestStatus.current = null; setStatus(null); setPhase('loading'); setManualOffer(false)
+    dispatch({ type: 'reset' }); operationIds.current = {}; offerScopes.current.clear()
     const returned = new URLSearchParams(window.location.search).get('billing')
     const isReturn = returned === 'success' || returned === 'returned'
     const returnKey = JSON.stringify([accountId, returned])
@@ -104,12 +106,20 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     }
   }, [loadStatus, accountId, readLifecycle])
 
-  const offerAfterCompletion = useCallback((key) => {
-    dispatch({ type: 'saved', key, suppressed: Boolean(status?.entitlement.active || status?.entitlement.adFree) })
-  }, [status])
-  const notifyLessonSaved = useCallback((completion) => {
-    offerAfterCompletion(lessonCompletionKey(completion))
+  const offerAfterCompletion = useCallback((key, scope = {}) => {
+    if (!mounted.current || currentAccount.current !== accountId || !key ||
+        (scope.accountId && scope.accountId !== accountId)) return
+    if (!offerScopes.current.has(key)) offerScopes.current.set(key, {
+      accountId, courseId: scope.courseId || null, presentation: scope.presentation === 'inline' ? 'inline' : 'aside',
+    })
+    dispatch({ type: 'saved', key, suppressed: Boolean(latestStatus.current?.entitlement.active || latestStatus.current?.entitlement.adFree) })
+  }, [accountId])
+  const notifyLessonSaved = useCallback((completion, scope) => {
+    offerAfterCompletion(lessonCompletionKey(completion), scope)
   }, [offerAfterCompletion])
+  const dismissCompletionOffer = useCallback(key => {
+    if (mounted.current && currentAccount.current === accountId && key) dispatch({ type: 'dismiss', key })
+  }, [accountId])
   const dismissOffer = useCallback(() => {
     if (offers.pending[0]) dispatch({ type: 'dismiss', key: offers.pending[0] })
     else setManualOffer(false)
@@ -123,7 +133,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     try { await run(isCurrent); return isCurrent() } catch (failure) {
       if (isCurrent()) {
         if (['BILLING_OPERATION_CLOSED', 'BILLING_CHECKOUT_FINISHED'].includes(failure.code) && planId) delete operationIds.current.checkout?.[planId]
-        if (failure.code === 'ACCOUNT_CHANGED') { setStatus(null); setPhase('error') }
+        if (failure.code === 'ACCOUNT_CHANGED') { latestStatus.current = null; setStatus(null); setPhase('error') }
         setError(['BILLING_CHECKOUT_PLAN_CONFLICT', 'BILLING_PLAN_CONFLICT'].includes(failure.code) ? 'checkoutConflict' : 'action')
       }
       return false
@@ -178,11 +188,12 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   const value = useMemo(() => ({
     locale: lang, status, phase, busy, error,
     offerKey: offers.pending[0] || (manualOffer ? 'manual' : null),
-    offerAfterCompletion, notifyLessonSaved, dismissOffer,
+    offerScope: offerScopes.current.get(offers.pending[0]) || null,
+    offerAfterCompletion, notifyLessonSaved, dismissOffer, dismissCompletionOffer,
     showOffer: () => { setError(''); setManualOffer(true) },
     startCheckout, cancelRenewal, openPortal, requestSession, refresh,
   }), [lang, status, phase, busy, error, offers.pending, manualOffer, offerAfterCompletion,
-    notifyLessonSaved, dismissOffer, startCheckout, cancelRenewal, openPortal, requestSession, refresh])
+    notifyLessonSaved, dismissOffer, dismissCompletionOffer, startCheckout, cancelRenewal, openPortal, requestSession, refresh])
   return <SubscriptionContext.Provider value={value}>
     {children}
     <SubscriptionOffer />
@@ -252,7 +263,7 @@ function PlanSelection({ t }) {
  * Escape dismisses while focus is within the offer. Course controls remain usable.
  */
 export function SubscriptionOffer() {
-  const { locale, status, phase, offerKey, dismissOffer, error } = useSubscription()
+  const { locale, status, phase, offerKey, offerScope, dismissOffer, error } = useSubscription()
   const t = SUBSCRIPTION_COPY[locale], titleId = useId()
   const previousFocus = useRef(null), panelRef = useRef(null)
   useEffect(() => {
@@ -266,7 +277,7 @@ export function SubscriptionOffer() {
     dismissOffer()
     if (focusedInside && previousFocus.current?.isConnected) previousFocus.current.focus?.()
   }
-  if (!offerKey || !canShowHousePromotion(status, phase)) return null
+  if (!offerKey || offerScope?.presentation === 'inline' || !canShowHousePromotion(status, phase)) return null
   return <aside ref={panelRef} tabIndex={-1} className={styles.offer} role="region" aria-labelledby={titleId}
     data-subscription-offer="true" onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismiss() }

@@ -8,6 +8,7 @@ import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
+import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales } from '@/lib/inner-growth/course-programs'
 import CourseCompletionReview from './course-completion-review'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
@@ -21,7 +22,8 @@ const UI = {
     useDescription: 'Suggest areas from my description', confirmFocus: 'Confirm my areas',
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
-    testsIntro: 'We matched available questionnaires to your chosen areas. These five are selected for review, not saved until you confirm.',
+    testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
+    programmeLabel: 'Your chosen course', programmeBattery: 'Starter tests for this programme',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
     showMore: 'Add or remove more tests', showLess: 'Show the five suggestions',
@@ -71,7 +73,8 @@ const UI = {
     useDescription: 'Предложить темы по моему описанию', confirmFocus: 'Подтвердить мои темы',
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
-    testsIntro: 'Мы подобрали доступные опросники по вашим темам. Пять первых отмечены для просмотра, но не сохранятся без подтверждения.',
+    testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
+    programmeLabel: 'Ваш курс', programmeBattery: 'Стартовые тесты программы',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
     showMore: 'Добавить или убрать другие тесты', showLess: 'Показать только пять первых',
@@ -149,18 +152,19 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [openingTest,setOpeningTest]=useState(false)
   const [showCompletedOptions,setShowCompletedOptions]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
+  const programme=useMemo(()=>preset?null:courseProgramFromTopics(current.focusTags||[]),[current.focusTags,preset])
   const ranked=useMemo(()=>{
-    const options=courseRecommendedTests({
+    const options=orderCourseProgramTests(courseRecommendedTests({
       // Personal courses keep their editable relevance-ranked shortlist.
       focusTags:current.focusTags?.length ? current.focusTags
         : suggestedCourseTopics(current.concerns||'').topics,
       results:data.results||[],locale,
-    })
+    }),programme?.id)
     if (!preset) return options
     const choices=new Map(options.map(test=>[test.key,test]))
     // Fixed published battery: no opportunistic dynamic substitutions.
     return preset.testKeys.map(key=>choices.get(key)).filter(Boolean)
-  },[current.focusTags,current.concerns,data.results,locale,preset])
+  },[current.focusTags,current.concerns,data.results,locale,preset,programme?.id])
   const profile=useMemo(()=>courseMeasuredProfile({
     results:data.results||[],testKeys:current.testKeys||[],locale,
   }),[data.results,current.testKeys,locale])
@@ -173,7 +177,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const minScales=Math.min(3,profile.eligible.length)
   const suggestedScales=useMemo(()=>preset
     ? coursePresetSuggestedScales(profile,preset.id,3)
-    : courseSuggestedFocus(profile,3),[profile,preset])
+    : programme ? suggestCourseProgramScales(profile,programme.id,3) : courseSuggestedFocus(profile,3),[profile,preset,programme])
 
 
   const ensureCurrent=()=>{if(!isCourseCurrent())throw new Error('COURSE_SELECTION_CHANGED')}
@@ -338,6 +342,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   if(stage===2) {
     const visible=preset?ranked:showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
+      {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
       <div className={styles.sectionHeading}><h2>{t.testsTitle}</h2>
         {!preset&&<button type="button" className={styles.secondary} disabled={busy}
           onClick={()=>onAct('edit-intake')}>{t.editAreas}</button>}</div>

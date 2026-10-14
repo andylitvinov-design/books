@@ -8,7 +8,7 @@ import { createDailyCourseRepository } from '../../lib/app/growth-daily.js'
 import { seal } from '../../lib/app/crypto.js'
 import { ASSESSMENT_DEFINITIONS } from '../../lib/assessments/definitions.js'
 import { COURSE_PRESETS } from '../../lib/inner-growth/course-presets.js'
-import { COURSE_CONTENT_V3, COURSE_CONTENT_V4 } from '../../lib/inner-growth/lesson-library.js'
+import { COURSE_CONTENT_V3, COURSE_CONTENT_V4, lessonFor } from '../../lib/inner-growth/lesson-library.js'
 import { premiumSessionStore } from '../../lib/billing/premium-sessions.js'
 
 // Called only by the guarded, fresh native PostgreSQL17 billing integration job.
@@ -46,6 +46,10 @@ export async function runTierDatabaseTests(t, { admin, pool, appConfig, billingC
         (id,account_id,course_id,primary_domain,content_version,start_local_date,time_zone,status,finished_at)
         values($1,$2,$3,'calm_regulation',$4,(clock_timestamp() at time zone 'UTC')::date-14,'UTC',$5,
           case when $5='completed' then now() else null end)`, [cycleId, owner.id, courseId, COURSE_CONTENT_V3, cycleStatus])
+      await db.query(`insert into app_private.growth_sessions
+        (account_id,cycle_id,day_number,local_date,lesson_id,content_version,feedback,operation_id,completed_at)
+        values($1,$2,14,(clock_timestamp() at time zone 'UTC')::date-1,$3,$4,'skip',$5,now()-interval '1 day')`,
+      [owner.id, cycleId, lessonFor('calm_regulation', 14, 'en', 'standard', COURSE_CONTENT_V3).id, COURSE_CONTENT_V3, randomUUID()])
       await db.query(`insert into app_private.growth_targets(id,account_id,cycle_id,problem_label_ciphertext)
         values($1,$2,$3,$4)`, [targetId, owner.id, cycleId,
         seal('Synthetic original practice', { accountId: owner.id, recordId: targetId, field: 'course.target_label' }, courseConfig)])

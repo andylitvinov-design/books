@@ -69,12 +69,17 @@ test('period comparison picks earliest compatible baseline, not a different scor
 })
 
 
-test('account report and Insights use the same measured dial with selectable time windows and retake',()=>{
+test('account reports and Insights share measured dials; test date ranges live under My Tests dynamics',()=>{
  const account=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
  const report=readFileSync(new URL('../components/app/compact-assessment-report.jsx',import.meta.url),'utf8')
  const css=readFileSync(new URL('../app/[locale]/app/[[...path]]/assessment-dashboard.css',import.meta.url),'utf8')
- assert.match(account,/periodWindow\(period,\s*periodStart,\s*periodEnd\)/)
- assert.match(account,/resultsForPeriod\(group\.history,\s*period,\s*periodStart,\s*periodEnd\)/)
+ const dynamics=readFileSync(new URL('../components/app/test-dynamics.jsx',import.meta.url),'utf8')
+ const view=readFileSync(new URL('../lib/assessments/test-dynamics.js',import.meta.url),'utf8')
+ const battery=readFileSync(new URL('../components/app/account-test-battery.jsx',import.meta.url),'utf8')
+ assert.match(view,/periodWindow\(period,\s*start,\s*end,\s*now\)/)
+ assert.match(view,/resultsForPeriod\(results,\s*period,\s*start,\s*end,\s*now\)/)
+ assert.match(dynamics,/setPeriod/)
+ assert.match(battery,/data-my-tests-tabs/)
  assert.match(account,/<ScoreGauge dimension=\{main\}/)
  assert.match(account,/<ScoreTrend current=\{latest\}/)
  assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)

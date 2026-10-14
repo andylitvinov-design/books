@@ -153,7 +153,7 @@ test('EN/RU copy is complete with truthful EUR tiers, history, retest and separa
 
 test('daily-course completion hook runs only at the shared verified session-save boundary', () => {
   assert.match(daily, /const result=await api\(action,locale,body,\{accountId,courseId\}\)[\s\S]*?if\(!isCurrent\(\)\)return null[\s\S]*?hydrate\(result\)[\s\S]*?if\(after\)after\(\)/)
-  assert.match(daily, /if\(action==='session'&&!data\.currentSession\)[\s\S]*?offeredCompletions\.current\.has\(completionKey\)[\s\S]*?notifyLessonSaved\(\{cycleId,day:body\.day,lessonId:body\.lessonId\}\)/)
+  assert.match(daily, /if\(action==='session'&&!data\.currentSession\)[\s\S]*?offeredCompletions\.current\.has\(completionKey\)[\s\S]*?notifyLessonSaved\(\{cycleId,day:body\.day,lessonId:body\.lessonId\},\{accountId,courseId,presentation\}\)/)
   assert.equal((daily.match(/notifyLessonSaved\(\{/g) || []).length, 1)
   assert.match(daily, /if\(action==='session'&&result\?\.cycle\?\.id!==data\?\.cycle\?\.id\)throw/)
   assert.doesNotMatch(daily, /response\.json\(\)\.catch/)
@@ -192,7 +192,8 @@ test('mobile style guards provide reflow, 44px controls, dynamic-height bounds, 
 
 // Exercise provider callbacks and effect lifecycles with deterministic hooks and
 // timers. JSX is compiled from the real component; no browser or payment call is made.
-const compiled = ts.transpileModule(component + '\nexport { PlanSelection, CheckoutAction, SessionBenefit, SubscriptionContext }', {
+const promotionSource = (await readFile(new URL('../components/app/use-course-promotion.js', import.meta.url), 'utf8')).replace(/^import .*$/gm, '')
+const compiled = ts.transpileModule(component + '\n' + promotionSource + '\nexport function CoursePromotionProbe({accountId,...scope}) { return useCoursePromotion(accountId,scope) }\nexport { PlanSelection, CheckoutAction, SessionBenefit, SubscriptionContext }', {
   fileName: 'subscription-access.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText
 function harness({ initialStatus = freeStatus(), search = '', request, statusRequest, context } = {}) {
@@ -268,6 +269,7 @@ function harness({ initialStatus = freeStatus(), search = '', request, statusReq
     deferEffects() { deferEffects = true },
     flushEffects() { deferEffects = false; const pending = heldEffects; heldEffects = []; pending.forEach(fn => fn()) },
     get value() { return api.SubscriptionContext.value },
+    setContext(value) { api.SubscriptionContext.value = value },
     setStatus: value => { currentStatus = value },
     async advance(ms) {
       now += ms
@@ -632,4 +634,78 @@ test('failed success-return status stays error without an unhandled polling exce
   assert.equal(h.calls.filter(call => call.action === 'reconcile').length, 1)
   assert.equal(h.value.phase, 'error')
   h.unmount()
+})
+
+
+test('one verified completion selects either the inline Advanced slide or the legacy aside, never both',async()=>{
+ const h=harness();h.render();await h.settle()
+ const completion={cycleId:'cycle-a',day:14,lessonId:'lesson-a'},scope={accountId:'owner-A',courseId:'course-a',presentation:'inline'}
+ h.value.notifyLessonSaved(completion,scope);await h.settle()
+ const token=lessonCompletionKey(completion)
+ assert.equal(h.value.offerKey,token);assert.equal(h.value.offerScope.presentation,'inline')
+ const aside=harness({context:h.value});assert.equal(aside.render('SubscriptionOffer'),null)
+ const probe=harness({context:h.value})
+ let promo=probe.render('CoursePromotionProbe',{...completion,...scope})
+ assert.equal(promo.show,true);assert.equal(promo.checkoutReady,true)
+ const stableDismiss=promo.dismiss
+ probe.setContext({...h.value,status:freeStatus({sandbox:true})})
+ promo=probe.render();assert.equal(promo.dismiss,stableDismiss);assert.equal(promo.show,true);assert.equal(promo.checkoutReady,false)
+ assert.equal(h.value.offerKey,token,'ordinary status changes do not consume an inline token')
+ h.value.notifyLessonSaved({cycleId:'cycle-b',day:1,lessonId:'lesson-b'},{accountId:'owner-A',courseId:'course-b'})
+ await h.settle();promo.dismiss();await h.settle()
+ assert.equal(h.value.offerScope.presentation,'aside','closing inline releases the next legacy offer')
+ assert.notEqual(h.value.offerKey,token)
+ h.value.dismissOffer();await h.settle()
+ h.value.notifyLessonSaved(completion,scope);await h.settle();assert.equal(h.value.offerKey,null,'replay does not reopen either presentation')
+ probe.unmount();h.unmount()
+})
+
+test('inline scope mismatch hides the offer and presenter unmount dismisses exactly its token',async()=>{
+ for(const field of ['accountId','courseId','cycleId','day','lessonId']){
+  const h=harness();h.render();await h.settle()
+  const completion={cycleId:'cycle-a',day:1,lessonId:'lesson-a'},scope={accountId:'owner-A',courseId:'course-a',presentation:'inline'}
+  h.value.notifyLessonSaved(completion,scope);await h.settle()
+  const probe=harness({context:h.value}),props={...completion,...scope}
+  assert.equal(probe.render('CoursePromotionProbe',props).show,true)
+  const changed={...props,[field]:field==='day'?2:props[field]+'-other'}
+  assert.equal(probe.render('CoursePromotionProbe',changed).show,false)
+  probe.unmount();await h.settle()
+  // Owner/course changes normally unmount CourseToday. The exact completion
+  // dismiss callback is unchanged for owner/course-only changes, then runs here.
+  assert.equal(h.value.offerKey,null)
+  h.value.notifyLessonSaved(completion,scope);await h.settle();assert.equal(h.value.offerKey,null)
+  h.unmount()
+ }
+})
+
+test('paid transition suppresses inline tokens permanently and stale owner callbacks cannot enqueue offers',async()=>{
+ const h=harness();h.render();await h.settle()
+ const completion={cycleId:'cycle-a',day:1,lessonId:'lesson-a'},scope={accountId:'owner-A',courseId:'course-a',presentation:'inline'}
+ const oldNotify=h.value.notifyLessonSaved
+ oldNotify(completion,scope);await h.settle()
+ h.setStatus(paidStatus('advanced'));await h.value.refresh();await h.settle()
+ assert.equal(h.value.offerKey,null)
+ const delayedCompletion={cycleId:'delayed-cycle',day:2,lessonId:'delayed-lesson'}
+ oldNotify(delayedCompletion,scope);await h.settle();assert.equal(h.value.offerKey,null,'an old Free callback uses the latest paid entitlement')
+ const probe=harness({context:h.value});assert.equal(probe.render('CoursePromotionProbe',{...completion,...scope}).show,false)
+ h.setStatus(freeStatus());await h.value.refresh();await h.settle()
+ h.value.notifyLessonSaved(completion,scope);h.value.notifyLessonSaved(delayedCompletion,scope);await h.settle();assert.equal(h.value.offerKey,null)
+ h.render('SubscriptionProvider',{accountId:'owner-B'});await h.settle()
+ oldNotify({cycleId:'cycle-other',day:1,lessonId:'lesson-other'},scope);await h.settle()
+ assert.equal(h.value.offerKey,null)
+ probe.unmount();h.unmount()
+})
+
+test('a paid refresh suppresses late saved completions before React commits the status render',async()=>{
+ const h=harness();h.render();await h.settle()
+ const notify=h.value.notifyLessonSaved
+ h.setStatus(paidStatus('advanced'))
+ await h.value.refresh()
+ const completion={cycleId:'paid-batch-cycle',day:1,lessonId:'paid-batch-lesson'}
+ const scope={accountId:'owner-A',courseId:'course-a',presentation:'inline'}
+ notify(completion,scope)
+ await h.settle();assert.equal(h.value.offerKey,null)
+ h.setStatus(freeStatus());await h.value.refresh();await h.settle()
+ notify(completion,scope);await h.settle();assert.equal(h.value.offerKey,null)
+ h.unmount()
 })

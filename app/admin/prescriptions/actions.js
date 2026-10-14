@@ -15,7 +15,7 @@ function formInput(formData) {
     practitionerBackground: formData.get('practitionerBackground'), practitionerContact: formData.get('practitionerContact'), generalInstructions: formData.get('generalInstructions'),
     analysis: formData.get('analysis'), additionalNotes: formData.get('additionalNotes'),
     includeDistanceHomeopathy: formData.get('includeDistanceHomeopathy') === 'on',
-    recommendationNumber: formData.get('recommendationNumber'), followUp: formData.get('followUp'),
+    recommendationNumber: formData.get('recommendationNumber'), followUp: formData.get('followUp'), followUpDate: formData.get('followUpDate'),
     internalNotes: formData.get('internalNotes'), status: formData.get('status'), items,
   }
 }

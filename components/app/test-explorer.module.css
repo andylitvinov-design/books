@@ -673,3 +673,32 @@
 .testKindBadge[data-test-kind-badge=hobby]{background:#f4eef6;color:#766085;border-color:#e7daeb}
 .testKindBadge svg{flex:0 0 auto}
 @media(max-width:590px){.kindChoices{display:grid;grid-template-columns:1fr;gap:6px}.kindChoice{width:100%;min-width:0}}
+
+
+/* iPhone layout: prevent explorer grids and scrollable rails from widening the page. */
+.explorer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.explorer :is(.explorerHero, .quickStart, .heroPortrait, .quickDiscovery, .quickFilters, .scaleFirst, .customizer, .guidedPicker, .workspace, .database, .list, .row, .rowBody, .catalogTopbar, .catalogControls) {
+  min-width: 0;
+  max-width: 100%;
+}
+.explorer .scaleRail, .explorer .quickFilterChips, .explorer .quickFilterExtras {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.explorer .rowBody { overflow-wrap: anywhere; }
+.explorer .heroPortrait .modelStage, .explorer .heroPortrait .portraitArt {
+  max-width: 100%;
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .explorerHero { grid-template-columns: minmax(0, 1fr); }
+}

@@ -194,3 +194,36 @@
   .profile{gap:8px}
   .profile .measureCard{padding:10px}
 }
+
+
+/* Profile measurements inherit the new turquoise cabinet palette. */
+.profile{
+  --ink:#274b56;--muted:#67818a;--teal:#147f8b;--forest:#08616e;
+  --line:#cbe5e9;--soft:#f2fbfc;
+}
+.portraitSection{background:linear-gradient(135deg,#eef9fb,#fff);border-color:#cae6e9}
+.eyebrow{color:#117985}
+.sectionTitle h2,.measureHeading h2,.actionsHeading h2{color:#1d5967}
+.count{border-color:#c1e1e6;background:#e9f7f9;color:#146e7c}
+.measureCard{border-color:#d2e7ea;background:#fff}
+.measureTop>span{color:#365c67}
+.measureTop strong{color:#176f7e}
+.measureTop small{color:#738791}
+.measuredBar{background:#dbebee}
+.measuredBar span{background:#208a98}
+.profile .measureCard:hover{border-color:#8dcad3;background:#f2fafb}
+.profile .measureCard:focus-visible{outline-color:#00aabd}
+.profile .moreScales{border-color:#b5dce3;background:#f6fbfc}
+.profile .moreScales:hover{background:#e7f6f9}
+.noData,.noPending{border-color:#c4e2e7;background:#f6fbfc;color:#69838b}
+.pending{background:#fbfdfd}
+.pendingCard{border-color:#dcebed;background:#f8fbfc}
+.profile .pendingFooter button{border-color:#c5e2e7!important;background:#fff!important}
+.profile .pendingFooter button:hover{background:#e5f5f8!important;border-color:#9dd0d8!important}
+.other{border-color:#dcebef;background:#fbfdfd}
+.other>summary{color:#3d6974}
+.actions{background:#f8fcfc}
+.profile .remainingAction{background:#147f8b;color:#fff;border-color:#147f8b}
+.profile .specialistAction{background:#eef9fa;border-color:#c6e5e8;color:#167889}
+.profile .secondaryAction{background:#fff;border-color:#d8e8ea;color:#436a74}
+.profile button:focus-visible,.profile summary:focus-visible,.profile a:focus-visible{outline-color:#00aabd}

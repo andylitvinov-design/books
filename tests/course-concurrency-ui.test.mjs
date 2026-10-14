@@ -6,7 +6,7 @@ const sources = Object.fromEntries(['my-course', 'course-today', 'course-r3-step
 
 test('course selector binds owner/id and discards a delayed response from a previously selected course', async () => {
   const slow = deferred()
-  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, search: '?courseId=course-a',
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a'), locale: 'en' }, search: '?courseId=course-a',
     fetcher: path => path.includes('courseId=course-b') ? slow.promise : courseView() })
   await h.settle()
   const oldSteps = findPart(h.tree, 'CourseR3Steps')
@@ -25,7 +25,7 @@ test('course selector binds owner/id and discards a delayed response from a prev
 
 test('course command ignores a delayed mutation and old child updates after an account change', async () => {
   const slow = deferred()
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, options, body) => body ? slow.promise : courseView(options.headers['X-HH-Account-ID'] === 'owner-b' ? courseB : courseA) })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, options, body) => body ? slow.promise : courseView(options.headers['X-HH-Account-ID'] === 'owner-b' ? courseB : courseA) })
   await h.settle()
   const oldSteps = findPart(h.tree, 'CourseR3Steps')
   const request = oldSteps.props.onCourseCommand('intake', { concerns: 'synthetic note' })
@@ -41,7 +41,7 @@ test('course command ignores a delayed mutation and old child updates after an a
 })
 
 test('additional-course start requires checked consent and keeps a stable course ID after an uncertain result', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? { error: 'SERVICE_UNAVAILABLE' } : courseView() })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? { error: 'SERVICE_UNAVAILABLE' } : courseView() })
   await h.settle()
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt === 0) { findButton(h.tree, 'Start another course').props.onClick(); await h.settle() }
@@ -65,7 +65,7 @@ test('additional-course start requires checked consent and keeps a stable course
 
 test('downgrade preserves active course/history and disables only additional creation at the current limit', async () => {
   for (const locale of ['en', 'ru']) {
-    const h = mount('my-course', { props: { data: account('owner-a'), locale }, search: '?courseId=course-a', fetcher: () => courseView(course('course-a', 4), {
+    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a'), locale }, search: '?courseId=course-a', fetcher: () => courseView(course('course-a', 4), {
       access: { ...access, tier: 'free', activeCourseLimit: 1, overLimit: true },
     }) })
     await h.settle()

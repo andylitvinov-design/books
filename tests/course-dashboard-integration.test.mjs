@@ -17,7 +17,7 @@ const checkConsent = async h => {
 const tiles = tree => nodes(tree).filter(node => typeof node.type === 'function' && node.type.name === 'CourseTile').map(node => node.type(node.props))
 
 test('My courses opens the authored dashboard and explicitly selected cards retain the course URL and account', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: path => courseView(path.includes('course-b') ? courseB : courseA) })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: path => courseView(path.includes('course-b') ? courseB : courseA) })
   await h.settle()
   const dashboard = findPart(h.tree, 'MyCoursesDashboard')
   assert.ok(dashboard)
@@ -34,7 +34,7 @@ test('My courses opens the authored dashboard and explicitly selected cards reta
 
 test('preset cards and personal selection never save before explicit checked consent, including cancellation', async () => {
   for (const presetId of [...COURSE_PRESETS.map(preset => preset.id), null]) {
-    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
+    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: (_path, _options, body) => body
       ? courseView({ ...course(body.courseId, presetId ? 2 : 1), presetId })
       : { course: null, courses: [], access: { ...access, activeCourseCount: 0 }, assessments: {} } })
     await h.settle()
@@ -64,7 +64,7 @@ test('preset cards and personal selection never save before explicit checked con
 })
 
 test('switching preset requires fresh consent and invalidates callbacks from the dismissed personal setup', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => courseView(body ? { ...courseA, stage: 2, revision: 2, presetId: body.presetId } : courseA) })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => courseView(body ? { ...courseA, stage: 2, revision: 2, presetId: body.presetId } : courseA) })
   await h.settle()
   const oldSteps = findPart(h.tree, 'CourseR3Steps')
   findButton(h.tree, 'Change course direction').props.onClick(); await h.settle()
@@ -86,7 +86,7 @@ test('switching preset requires fresh consent and invalidates callbacks from the
 test('close and primary management carry target revision and discard delayed results after account changes', async () => {
   for (const action of ['onClose', 'onPrimary']) {
     const slow = deferred()
-    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: (_path, options, body) => body ? slow.promise : options.headers['X-HH-Account-ID'] === 'owner-a' ? courseView() : courseView(course('owner-b-course'), { courses: [course('owner-b-course')] }) })
+    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: (_path, options, body) => body ? slow.promise : options.headers['X-HH-Account-ID'] === 'owner-a' ? courseView() : courseView(course('owner-b-course'), { courses: [course('owner-b-course')] }) })
     await h.settle()
     const dashboard = findPart(h.tree, 'MyCoursesDashboard')
     const pending = dashboard.props[action](courseB)
@@ -99,6 +99,9 @@ test('close and primary management carry target revision and discard delayed res
     h.render({ data: account('owner-b') }); await h.settle()
     slow.resolve(courseView({ ...courseB, status: 'archived', revision: 2 }))
     await pending; await h.settle()
+    const nextEntry = findPart(h.tree, 'CourseEntrySelector')
+    assert.equal(nextEntry.props.accountId, 'owner-b')
+    nextEntry.props.onOpen(); await h.settle()
     assert.equal(findPart(h.tree, 'MyCoursesDashboard').props.courses[0].id, 'owner-b-course')
     assert.equal(h.calls.at(-1).options.headers['X-HH-Account-ID'], 'owner-b')
     h.unmount()
@@ -159,7 +162,7 @@ test('each dashboard checkout obeys authoritative per-plan readiness and never c
 
 test('confirmed subscription changes re-read course allowance without writing or trusting a return query', async () => {
   let billing = { phase: 'ready', status: freeStatus() }
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?billing=success', fetcher: () => courseView(courseA, { access: billing.status.entitlement.tier === 'free' ? { ...access, tier: 'free', activeCourseLimit: 1, activeCourseCount: 1 } : access }), extraModules: { './subscription-access': { useSubscription: () => billing } } })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?billing=success', fetcher: () => courseView(courseA, { access: billing.status.entitlement.tier === 'free' ? { ...access, tier: 'free', activeCourseLimit: 1, activeCourseCount: 1 } : access }), extraModules: { './subscription-access': { useSubscription: () => billing } } })
   await h.settle()
   assert.equal(h.calls.length, 1)
   assert.equal(findPart(h.tree, 'MyCoursesDashboard').props.canAddCourse, false)
@@ -230,7 +233,7 @@ test('a slow billing-triggered read cannot roll back a course mutation that has 
   let billing = { phase: 'ready', status: freeStatus() }
   const read = deferred(), write = deferred()
   let reads = 0
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? write.promise : ++reads === 1 ? courseView() : read.promise,
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? write.promise : ++reads === 1 ? courseView() : read.promise,
     extraModules: { './subscription-access': { useSubscription: () => billing } } })
   await h.settle()
   const steps = findPart(h.tree, 'CourseR3Steps')
@@ -255,7 +258,7 @@ test('lifecycle actions stay disabled until the server enables multi-course stor
 
 
 test('an archived setup opens its history without presenting editable intake or preset-switch controls', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: () => courseView(course('course-a', 2, 'archived')) })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: () => courseView(course('course-a', 2, 'archived')) })
   await h.settle()
   assert.equal(findPart(h.tree, 'CourseR3Steps'), undefined)
   assert.equal(findButton(h.tree, 'Change course direction'), undefined)
@@ -266,7 +269,7 @@ test('an archived setup opens its history without presenting editable intake or 
 
 test('active primary course first entry opens Today, with explicit My courses management still reachable',async()=>{
  const active=course('course-a',4)
- const h=mount('my-course',{props:{data:account('owner-a')},fetcher:()=>courseView(active)})
+ const h=mount('my-course', { enterCourse: true, props:{data:account('owner-a')},fetcher:()=>courseView(active)})
  await h.settle()
  assert.equal(findPart(h.tree,'CourseToday').props.courseId,'course-a')
  assert.equal(findPart(h.tree,'MyCoursesDashboard'),undefined)
@@ -281,7 +284,7 @@ test('active primary course first entry opens Today, with explicit My courses ma
 test('Today first entry uses only the server-selected course for free and multiple-course owners', async () => {
   for (const tier of ['free', 'advanced']) {
     const active = course('server-selected', 4)
-    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: () => courseView(active, {
+    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: () => courseView(active, {
       courses: tier === 'free' ? [active] : [course('other-active', 4), active],
       access: { ...access, tier, activeCourseLimit: tier === 'free' ? 1 : 5, activeCourseCount: tier === 'free' ? 1 : 2 },
     }) })
@@ -295,7 +298,7 @@ test('Today first entry uses only the server-selected course for free and multip
 
 test('no authoritative selected course never infers Today from a multiple-course list', async () => {
   for (const courses of [[], [course('one', 4), course('two', 4)]]) {
-    const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: () => courseView(null, { courses }) })
+    const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: () => courseView(null, { courses }) })
     await h.settle()
     assert.equal(findPart(h.tree, 'CourseToday'), undefined)
     assert.equal(h.calls.filter(call => call.body).length, 0)
@@ -304,7 +307,7 @@ test('no authoritative selected course never infers Today from a multiple-course
 })
 
 test('explicit selected course cannot be replaced by a different server default', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a') }, search: '?courseId=chosen', fetcher: () => courseView(course('different', 4)) })
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=chosen', fetcher: () => courseView(course('different', 4)) })
   await h.settle()
   assert.equal(findPart(h.tree, 'CourseToday'), undefined)
   assert.match(h.calls[0].path, /courseId=chosen/)
@@ -314,7 +317,7 @@ test('explicit selected course cannot be replaced by a different server default'
 
 test('a delayed previous-owner default cannot open Today after the account changes', async () => {
   const slow = deferred()
-  const h = mount('my-course', { props: { data: account('owner-a') }, fetcher: (_path, options) =>
+  const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, fetcher: (_path, options) =>
     options.headers['X-HH-Account-ID'] === 'owner-a' ? slow.promise : courseView(course('owner-b-selected', 4)) })
   await h.settle()
   h.render({ data: account('owner-b') }); await h.settle()

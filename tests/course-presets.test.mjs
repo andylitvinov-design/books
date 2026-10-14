@@ -89,7 +89,7 @@ test('all presets pass the original consent, owner-scoped battery, real-result a
   assert.match(r3,/\?mode=guided&course=1/)
   assert.match(ui,/<CoursePresetCatalog locale=\{locale\}/)
   assert.match(ui,/onPersonal=\{\(\)\s*=>\s*openStartDialog\(null\)\}/)
-  assert.match(ui,/consent: true, \.\.\.\(selectedPreset \? \{\s*presetId:\s*selectedPreset\s*\}/)
+  assert.match(ui,/consent: true, \.\.\.\(intent\.presetId \? \{\s*presetId:\s*intent\.presetId\s*\}/)
   assert.match(catalogUi,/data-course-presets/)
   assert.match(catalogUi,/data-course-personal-card/)
   assert.match(catalogUi,/coursePresetTests\(preset\.id,language\)/)

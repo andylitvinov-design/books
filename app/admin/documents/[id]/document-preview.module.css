@@ -279,3 +279,73 @@
   .previewSection, .previewSection :global(.canonical-shell) { width: 100%; max-width: none; margin: 0 !important; padding: 0 !important; }
   .previewSection :global(.canonical-document) { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 }
+
+
+/* Practitioner preview v3: the document, not multiple oversized action cards,
+   must be visible above the fold on a real iPhone. */
+.page {
+  padding-top:clamp(9px,1.9vw,20px);
+  background:radial-gradient(circle at 90% -100px,#e6f3ee 0,transparent 43%),#f6f5f1;
+}
+.topLine {gap:11px}
+.heading {
+  align-items:center;
+  margin:12px 0 13px;
+  gap:17px;
+}
+.heading h1 {font-size:clamp(26px,3.2vw,35px);line-height:1.14}
+.eyebrow {color:#3d7d78;letter-spacing:.11em}
+.meta {font-size:12px;margin-top:6px;color:#647071}
+.editButton {min-height:43px;padding:9px 15px;border-radius:11px;font-size:12px}
+.actionPanel {
+  border-color:#d9e7e2;
+  border-radius:15px;
+  padding:13px 16px;
+  background:#fffefa;
+}
+.panelHeading {align-items:center;flex-wrap:wrap;margin:0 0 11px;gap:10px}
+.panelHeading h2 {font-size:18px;color:#4c3540}
+.panelHeading p {margin:1px 0 0}
+.accessStatus {padding:5px 9px}
+.actionControls :global(.document-panel-actions),
+.actionControls :global(.consultation-document-actions) {gap:8px}
+.actionControls :global(.document-panel-actions > a),
+.actionControls :global(.consultation-document-actions > a),
+.actionControls :global(.document-panel-actions .prescription-admin-link > button),
+.actionControls :global(.consultation-document-actions > button) {min-height:44px;font-size:12px}
+.previewSection {margin-top:14px}
+.previewCaption {padding-bottom:8px}
+.previewSection :global(.canonical-document) {border-radius:14px}
+@media(max-width:700px) {
+  .page {padding:10px 10px 32px}
+  .heading {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:8px;
+    margin:9px 0 12px;
+  }
+  .heading h1 {font-size:27px}
+  .meta {font-size:11px;line-height:1.3;gap:5px;margin-top:6px}
+  .editButton {width:auto;min-height:44px;padding:8px 11px;gap:5px;font-size:11px}
+  .editButton svg {width:15px;height:15px}
+  .actionPanel {padding:12px;border-radius:14px}
+  .panelHeading {margin-bottom:9px;gap:7px}
+  .panelHeading h2 {font-size:17px}
+  .panelHeading p {font-size:11px;line-height:1.3}
+  .accessStatus {font-size:10px}
+  .actionControls :global(.document-panel-actions),
+  .actionControls :global(.consultation-document-actions) {grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .actionControls :global(.document-panel-actions > a),
+  .actionControls :global(.consultation-document-actions > a),
+  .actionControls :global(.document-panel-actions .prescription-admin-link > button),
+  .actionControls :global(.consultation-document-actions > button) {padding:7px 6px;min-height:44px}
+  .previewSection {margin-top:12px}
+  .previewCaption h2 {font-size:12px}
+  .previewSection :global(.canonical-document) {border-radius:12px}
+}
+@media(max-width:390px) {
+  .heading {grid-template-columns:minmax(0,1fr) auto}
+  .heading h1 {font-size:24px}
+  .editButton {max-width:142px;line-height:1.2}
+}

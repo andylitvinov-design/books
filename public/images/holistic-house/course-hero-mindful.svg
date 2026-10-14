@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 560" role="img" aria-label="A peaceful person taking a mindful moment" preserveAspectRatio="xMidYMid meet">
+<defs>
+ <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#e7fdff"/><stop offset="1" stop-color="#a9ebe9"/></linearGradient>
+ <linearGradient id="shirt" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#22bdce"/><stop offset="1" stop-color="#078ca6"/></linearGradient>
+ <linearGradient id="leaf" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#78d8c4"/><stop offset="1" stop-color="#1298a7"/></linearGradient>
+ <linearGradient id="face" x1="0" x2="1"><stop stop-color="#f9d0af"/><stop offset="1" stop-color="#eeb48f"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="170%" height="180%"><feGaussianBlur stdDeviation="15"/></filter>
+</defs>
+<path d="M85 80Q85 33 138 33H320Q375 33 375 89V526H85Z" fill="url(#sky)" opacity=".83"/>
+<path d="M110 77H349M110 164H349M114 239H347" stroke="#fff" stroke-width="8" opacity=".42"/>
+<path d="M224 67V514" stroke="#fff" stroke-width="7" opacity=".38"/>
+<circle cx="294" cy="120" r="40" fill="#fff8d8" opacity=".75"/>
+<path d="M58 486C135 459 245 466 430 502" stroke="#188d9f" stroke-width="41" stroke-linecap="round" opacity=".09" filter="url(#shadow)"/>
+<!-- botanical stems and leaf silhouettes -->
+<g fill="none" stroke="#319b99" stroke-width="5" stroke-linecap="round"><path d="M75 532Q61 395 114 309"/><path d="M84 530Q40 411 35 379"/><path d="M393 540Q438 441 387 330"/><path d="M385 531Q363 431 412 395"/></g>
+<g fill="url(#leaf)" opacity=".9">
+<path d="M93 422Q24 390 23 345Q80 351 98 405Z"/><path d="M91 367Q58 318 89 270Q125 315 91 367Z"/>
+<path d="M62 470Q16 459 12 424Q58 421 75 461Z"/><path d="M111 316Q108 258 159 246Q162 286 111 316Z"/>
+<path d="M404 443Q378 380 424 346Q450 393 404 443Z"/><path d="M397 379Q349 344 370 293Q409 307 397 379Z"/>
+<path d="M377 494Q335 468 338 426Q381 440 377 494Z"/></g>
+<!-- relaxed sitting figure -->
+<ellipse cx="245" cy="529" rx="150" ry="22" fill="#067e96" opacity=".1"/>
+<path d="M111 522Q112 389 202 352L293 358Q368 395 374 522Z" fill="url(#shirt)"/>
+<path d="M138 453Q96 500 88 520H159L202 462" fill="#178eac"/>
+<path d="M307 463Q367 474 393 521H321L267 473" fill="#0b8da3"/>
+<path d="M193 368Q202 342 199 314H264Q261 354 290 369L270 401H219Z" fill="#f3bd9a"/>
+<path d="M180 321Q159 297 160 242Q163 179 204 150Q235 131 273 152Q326 185 319 264Q321 320 278 338Q241 363 204 339Z" fill="#183e5d"/>
+<path d="M193 314Q171 285 178 238Q177 180 238 164Q298 165 307 228Q320 283 284 318Q255 348 225 334Q205 323 193 314Z" fill="url(#face)"/>
+<path d="M179 252Q161 231 169 207Q162 161 215 145Q268 115 303 165Q330 177 324 238Q301 223 295 192Q266 211 220 202Q209 225 180 228Z" fill="#254960"/>
+<path d="M183 237Q165 279 179 333Q154 309 146 275Q144 231 163 197Z" fill="#254960"/>
+<path d="M300 225Q320 267 300 311L313 323Q344 287 320 213Z" fill="#254960"/>
+<path d="M199 264Q212 272 223 264M262 263Q275 272 286 260" stroke="#785d54" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<path d="M241 293Q251 299 261 293" stroke="#a56565" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M238 271Q228 280 237 284" stroke="#dc9a82" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M154 414Q174 382 204 380Q242 427 266 428Q298 428 324 390Q343 382 348 414Q331 458 280 461Q219 468 166 437Z" fill="#0a97ab"/>
+<!-- a hand on chest, no medical implication -->
+<path d="M160 443Q195 413 220 410Q228 410 246 421L261 436Q263 450 250 451Q233 451 215 440L179 464Z" fill="#eab393" stroke="#f9cfb1" stroke-width="3"/>
+<path d="M219 414Q231 416 246 429" stroke="#cf907a" stroke-width="3" stroke-linecap="round"/>
+<!-- gentle highlights -->
+<g fill="#fff" opacity=".89"><path d="M363 135l5-16 5 16 14 5-14 5-5 14-5-14-14-5z"/><circle cx="63" cy="185" r="5"/><circle cx="350" cy="235" r="4"/></g>
+<g fill="none" stroke="#b9edf3" stroke-width="3" opacity=".6"><circle cx="240" cy="270" r="150" stroke-dasharray="3 18"/></g>
+</svg>

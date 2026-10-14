@@ -1,0 +1,39 @@
+.root{--ink:#294941;--muted:#607a77;min-width:0;max-width:1350px;margin:0 auto;padding:0 clamp(15px,4vw,54px) 90px;color:var(--ink);overflow-wrap:break-word}
+.root *{box-sizing:border-box;min-width:0}
+.hero{border-radius:0 0 28px 28px;background:radial-gradient(circle at 95% 20%,#f3dce8 0%,transparent 47%),linear-gradient(115deg,#eaf8f6,#f5f7f5 60%,#f9f3ef);border:1px solid #dce8e5;border-top:0;padding:clamp(22px,5vw,65px);margin-bottom:30px}
+.back{display:inline-flex;gap:6px;align-items:center;color:#377b74;text-decoration:none;font-weight:650;font-size:.82rem;margin:0 0 25px}
+.back:hover{text-decoration:underline}
+.eyebrow{margin:0 0 9px;font-size:.72rem;font-weight:790;letter-spacing:.16em;color:#4b847f}
+.hero h1{font:normal clamp(2.5rem,5.7vw,5.1rem)/1.07 Georgia,'Times New Roman',serif;letter-spacing:-.047em;margin:0 0 20px;color:#274943}
+.introduction{max-width:760px;line-height:1.58;font-size:clamp(1rem,1.7vw,1.23rem);color:#58766c;margin:0}
+.selection,.actions{margin:24px auto}
+.sectionHead{max-width:730px;margin:0 0 18px}
+.sectionHead h2{margin:0 0 10px;font:normal clamp(1.75rem,3.5vw,2.75rem)/1.16 Georgia,'Times New Roman',serif;letter-spacing:-.035em}
+.sectionHead>p:last-child{color:var(--muted);font-size:.94rem;line-height:1.55;margin:0}
+.topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.topic{display:flex;align-items:center;gap:13px;text-align:left;width:100%;min-height:96px;padding:16px 17px;background:#fbfefd;color:#385950;border:1px solid #d3e3e0;border-radius:19px;cursor:pointer;font:inherit;transition:background .2s,border .2s}
+.topic:hover{border-color:#90c1b9}
+.topic[aria-pressed=true]{border-color:#38877c;background:#e5f3f0;box-shadow:inset 0 0 0 1px #9bc8c1}
+.topic:focus-visible,.actionCard:focus-visible,.back:focus-visible{outline:3px solid #347d9a;outline-offset:3px}
+.check{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;border:1px solid #adc9c3;color:transparent;background:#fff}
+.topic[aria-pressed=true] .check{background:#32776e;color:white;border-color:#32776e}
+.topic>span:last-child{display:grid;gap:5px}
+.topic strong{font-size:1rem;line-height:1.32}
+.topic small{font-size:.82rem;color:#6b817c;line-height:1.4}
+.selectionStatus{border:1px dashed #c5d9d4;border-radius:10px;padding:11px 14px;font-size:.85rem;color:#537970;background:#f8fbfa;margin:13px 0 0}
+.actions{padding-top:22px}
+.actionGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.actionCard{display:flex;flex-direction:column;gap:12px;padding:23px 20px;border:1px solid #d0e1dd;border-radius:22px;background:linear-gradient(155deg,#f0f8f6,#fdfefd);text-decoration:none;color:var(--ink);box-shadow:0 10px 28px #4772670c;min-height:263px}
+.actionCard:nth-child(2){background:linear-gradient(155deg,#eaf4fa,#f9fcfc)}
+.actionCard:nth-child(3){background:linear-gradient(155deg,#f7f2f3,#fffdfa)}
+.actionCard:hover{border-color:#8dbfb5;box-shadow:0 14px 35px #4772671d}
+.actionIcon{width:47px;height:47px;display:grid;place-items:center;border-radius:15px;background:#fff;color:#34786e}
+.actionCard>strong{font:normal clamp(1.2rem,1.8vw,1.58rem)/1.18 Georgia,'Times New Roman',serif;letter-spacing:-.017em}
+.actionCard>span:nth-of-type(2){color:#637c75;font-size:.84rem;line-height:1.52;flex:1}
+.actionCard b{display:flex;align-items:center;gap:7px;color:#2d6f64;font-size:.88rem;line-height:1.4}
+.footnote{display:flex;flex-wrap:wrap;gap:13px 25px;margin-top:18px;color:#6c837c;font-size:.79rem;line-height:1.5}
+.footnote span,.footnote a{display:inline-flex;align-items:center;gap:6px}
+.footnote a{color:#306f66}
+@media(max-width:850px){.actionGrid{grid-template-columns:1fr}.actionCard{min-height:0;gap:8px;padding:20px}.actionCard>span:nth-of-type(2){flex:initial}}
+@media(max-width:630px){.root{padding:0 13px 110px}.hero{padding:23px 18px 30px;margin-bottom:20px;border-radius:0 0 20px 20px}.back{margin-bottom:21px}.hero h1{font-size:clamp(2.3rem,10vw,3.15rem)}.introduction{font-size:.95rem}.sectionHead h2{font-size:1.85rem}.topics{grid-template-columns:1fr;gap:8px}.topic{min-height:75px;padding:12px 13px;border-radius:14px;gap:10px}.topic strong{font-size:.93rem}.topic small{font-size:.78rem}.selection,.actions{margin:20px auto}.actionCard{border-radius:18px}.footnote span,.footnote a{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){.topic{transition:none}}
