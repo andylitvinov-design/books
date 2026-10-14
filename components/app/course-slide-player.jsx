@@ -7,7 +7,7 @@ import {
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
-import { compareLessonMoments } from '@/lib/inner-growth/course-moment-trends'
+import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
@@ -50,7 +50,7 @@ const WORDS = {
     baseline: 'Перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
-    easierResult: 'балла меньше трудности после занятия', harderResult: 'балла больше трудности после занятия',
+    easierResult: 'меньше трудности после занятия', harderResult: 'больше трудности после занятия',
     sameResult: 'Ощущение пока не изменилось', noPair: 'Можно завершить без оценок — сравнение не рассчитывается.',
     next: 'Продолжить', back: 'Назад', skip: 'Пропустить шаг', saveNext: 'Сохранить и продолжить',
     save: 'Сохранить практику дня', saveError: 'Не получилось сохранить. Ничего не отмечено выполненным. Попробуйте ещё раз.',
@@ -282,7 +282,7 @@ export default function CourseSlidePlayer({
               <div><span>{words.after}</span><strong>{paired.after}<small>/10</small></strong></div>
             </div>
             <p className={styles.resultMeaning}>{paired.change === 0 ? words.sameResult :
-              Math.abs(paired.change) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
+              changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>}
           <p>{words.celebration}</p>
           {earned && <div className={styles.xpReward}><Star size={21} fill="currentColor"/>{words.earned}</div>}
