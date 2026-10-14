@@ -29,7 +29,10 @@ test('public Start button explicitly initiates Google and preserves the selected
   assert.match(auth, /continueTo === 'tests'/)
   assert.match(auth, /app\/tests\?selection=pending/)
   assert.match(auth, /ensureAccount\(actor\)/)
-  assert.match(auth, /continueTo !== 'tests'/)
+  assert.match(auth, /!\\['tests', 'course'\\]\\.includes\\(continueTo\\)/)
+  assert.match(auth, /program !== null/)
+  assert.match(auth, /app\\/course/)
+  assert.match(auth, /INVALID_CONTINUATION/)
 })
 
 test('account Cabinet waits for onboarding, restores selection, keeps progress and offers retakes', () => {
