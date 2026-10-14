@@ -27,7 +27,8 @@ test('client PDF uses warm Holistic House styling without losing text, links or 
     const source = buildPrescriptionPdf(example, locale, origin).toString('latin1')
     assert.match(source, /^%PDF-1\.7/)
     assert.match(source, /0\.39 0\.21 0\.30 rg/)
-    assert.match(source, /0\.984 0\.961 0\.941 rg/)
+    assert.match(source, /0\.989 0\.977 0\.966 rg/, 'approved ivory lighthouse hero remains')
+    assert.match(source, /q 207 0 0 81\.5 83 /, 'wide ink signature rests on white report paper')
     for (const value of [
       'Synthetic Client', 'TEST-2026-10', 'SYNTHETIC-ANALYSIS-VISIBILITY',
       'SYNTHETIC-GUIDANCE-VISIBILITY',
