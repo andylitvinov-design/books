@@ -616,6 +616,5 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
       </section>}
-    </div>
   </>
 }
