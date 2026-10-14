@@ -369,3 +369,10 @@
 /* Three alternative methods must remain readable on 320px screens. */
 .thoughtChoices{display:grid;grid-template-columns:1fr;gap:8px}
 .thoughtChoices button{width:100%;min-width:0;white-space:normal;text-align:left;line-height:1.4;overflow-wrap:anywhere}
+
+/* OPORA v1.5: a voluntary immediate measurement sits INSIDE the existing
+   meditation slide, never as a removed/reordered slide. */
+.practiceRating{display:grid;gap:12px;padding:15px;border:1px solid #cae9ed;border-radius:16px;background:#f4fcfd}
+.practiceRating .prompt{margin:0;color:#28556b;font-weight:730}
+.practiceRating .numberGrid{margin:0}
+@media(max-width:540px){.practiceRating{padding:12px;gap:9px}}
