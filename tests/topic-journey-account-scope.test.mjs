@@ -68,11 +68,11 @@ function mount(locale = 'en', options = {}) {
     useEffect(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) pending.push(() => { slots[i]?.cleanup?.(); slots[i] = { deps, cleanup: fn() } }) },
   }
   const document = { visibilityState: 'visible', addEventListener: (name, fn) => add('document', name, fn), removeEventListener: (name, fn) => remove('document', name, fn) }
-  const window = { location: { href: 'https://local.example/' + locale + '/explore/relationships', assign: url => authNavigations.push(url) },
+  const window = { location: { href: 'https://local.example/' + locale + '/explore/relationships', assign: url => { if (url.startsWith('/')) navigations.push(url); else authNavigations.push(url) } },
     sessionStorage: { getItem: key => { if (options.storageThrows === 'read') throw Error('SecurityError'); return storage.get(key) ?? null }, setItem: (key, value) => { if (options.storageThrows === 'write') throw Error('SecurityError'); storage.set(key, value) }, removeItem: key => { if (options.storageThrows === 'remove') throw Error('SecurityError'); storage.delete(key) } },
     addEventListener: (name, fn) => add('window', name, fn), removeEventListener: (name, fn) => remove('window', name, fn) }
   const modules = { react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'next/image': { default: 'Image' }, 'next/link': { default: 'Link' }, 'next/navigation': { useRouter: () => ({ push: url => navigations.push(url) }) },
+    'next/image': { default: 'Image' }, 'next/link': { default: 'Link' },
     'lucide-react': new Proxy({}, { get: (_, key) => String(key) }), '@/lib/assessments/topic-journeys': journeys,
     '@/lib/app/test-selection-intent': intents, './topic-journey-selector.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) } }
   const runtime = { exports: {}, require: name => { assert.ok(modules[name], name); return modules[name] }, window, document,
@@ -95,7 +95,7 @@ function mount(locale = 'en', options = {}) {
 }
 
 for (const locale of ['en', 'ru']) {
-  test(`topic start uses the actual owner-bound route and preserves the plan payload (${locale})`, async () => {
+  test(`topic start uses a fresh private document after the actual owner-bound route and preserves the plan payload (${locale})`, async () => {
     const h = mount(locale)
     const first = h.start(); const duplicate = h.start()
     await Promise.all([first, duplicate]); await h.settle()

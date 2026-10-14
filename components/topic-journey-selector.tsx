@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
@@ -95,7 +94,6 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
 }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const c = copy[language]
-  const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
@@ -201,7 +199,9 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         const session = await request('bootstrap', undefined, 'GET', ownerOptions)
         if (!current()) return
         if (session.account?.id !== accountId) throw new Error('ACCOUNT_CHANGED')
-        router.push('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
+        // Cross public -> private CSP policies with one fresh document.
+        // A soft transition would start chunks that the CSP boundary must cancel.
+        window.location.assign('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
         return
       }
       // Store only the editorial test identifiers, never personal answers.
