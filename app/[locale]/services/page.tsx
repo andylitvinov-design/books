@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
@@ -72,6 +73,7 @@ export default async function ServicesPage({ params }: PageProps) {
       <PublicSiteHeader locale={locale} />
 
       <ServicesConversionHero locale={locale as Locale} />
+      <ServicesAboutEntry locale={locale as Locale} />
 
       <FreeInsightsPaths locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
