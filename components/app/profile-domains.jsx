@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
+import { ProfileServiceCards } from './profile-service-cards'
 import './profile-domains.css'
 
 const DOMAINS = PROFILE_AREAS
@@ -12,8 +13,8 @@ const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnother
 const WORDS = {
   en: {
     eyebrow: 'PRIVATE SPACE · HOLISTIC HOUSE',
-    title: 'My profile',
-    reports: 'Your resources, personal perspectives and chosen direction of growth',
+    title: 'Your profile',
+    reports: 'Your path to balance, awareness and a more harmonious life.',
     intro: 'Four perspectives on your journey. Explore what is available, follow changes over time, and choose support only when you want it.',
     psychology: 'Psychological', homeopathy: 'Homeopathy', wu_xing: 'Wu Xing', hypnotherapy: 'Hypnotherapy',
     psyDetail: 'Psychological profile', homeoDetail: 'Homeopathic profile', wuDetail: 'Five-element resource profile', hypnoDetail: 'Hypnotherapist recommendations',
@@ -45,8 +46,8 @@ const WORDS = {
   },
   ru: {
     eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
-    title: 'Мой профиль',
-    reports: 'Ваши ресурсы, индивидуальные особенности и направления развития',
+    title: 'Ваш профиль',
+    reports: 'Ваш путь к балансу, осознанности и гармоничной жизни.',
     intro: 'Четыре стороны вашего профиля. Вы можете спокойно изучить записи, увидеть изменения и обратиться за поддержкой, когда захотите.',
     psychology: 'Психология', homeopathy: 'Гомеопатия', wu_xing: 'У-Син', hypnotherapy: 'Гипнотерапия',
     psyDetail: 'Психологический профиль', homeoDetail: 'Гомеопатический профиль', wuDetail: 'Ресурсы по пяти стихиям У-Син', hypnoDetail: 'Рекомендации гипнотерапевта',
@@ -234,8 +235,10 @@ export function ProfileDomains({
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
         <h1>{t.title}</h1>
         <p className="hh-domain-hero-subtitle">{t.reports}</p>
+        <p className="hh-domain-hero-quote">{ru ? 'Больше понимания. Больше ресурса. Более полная и гармоничная жизнь.' : 'More understanding. More resources. A fuller, more harmonious life.'}</p>
       </div>
     </header>
+    {!external && <ProfileServiceCards locale={locale} results={results} />}
     {overviewContent}
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
