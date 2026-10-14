@@ -161,7 +161,7 @@ test('the generated private PDF has a distinct clickable remedy description URL'
   assert.match(rendering, /Подробнее о препарате/)
   assert.match(rendering, /Read remedy description/)
   assert.match(rendering, /linkWidth = measurePdfText\(linkLabel, linkSize\)/)
-  assert.match(rendering, /page\.links\.push\(\{ url, x: linkX, y, width: linkWidth \}\)/)
+  assert.match(rendering, /page\.links\.push\(\{url,x:titleX,y:linkY,width:actionWidth\}\)/)
   for (const locale of ['en', 'ru']) {
     const record = createPrescription({
       patientName: 'Synthetic Client',

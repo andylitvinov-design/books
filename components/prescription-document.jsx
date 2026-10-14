@@ -57,7 +57,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           <div><dt>{labels.date}</dt><dd><time dateTime={document.dateIssued}>{document.dateIssued}</time></dd></div>
           {document.recommendationNumber && <div><dt>{labels.number}</dt><dd>{document.recommendationNumber}</dd></div>}
         </dl>
-        <p className="canonical-intro">{labels.intro}</p>
+        {!document.analysis && <p className="canonical-intro">{labels.intro}</p>}
         {progress && <section className="canonical-progress" aria-label={locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}>
           <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
           <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценка клиента до и после консультации' : 'Client-recorded ratings before and after the consultation'}</p>

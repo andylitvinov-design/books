@@ -4,17 +4,15 @@ import test from "node:test";
 
 const read = (file) => readFileSync(file, "utf8");
 
-test("Reiki original photos use same-origin Next image optimization, not browser hotlinks", () => {
+test("Reiki original photos use verified same-origin static assets, not optimizer or browser hotlinks", () => {
   const helper = read("lib/academy/reiki-photo.ts");
   const config = read("next.config.ts");
-  assert.ok(helper.includes("https://psitrends.com"));
+  assert.ok(helper.includes("reiki-photo-assets.json"));
   assert.ok(helper.includes("new URL(src)"));
-  assert.ok(helper.includes("encodeURIComponent(canonical)"));
-  assert.ok(helper.includes("/_next/image?url="));
-  assert.ok(helper.includes("return src;")); // Already-local artwork remains unchanged.
-  assert.ok(config.includes('hostname: "psitrends.com", pathname: "/images/**"'));
-  assert.ok(config.includes('hostname: "www.psitrends.com", pathname: "/images/**"'));
-  assert.ok(config.includes('hostname: "i.ytimg.com"')); // Videos remain supported.
+  assert.ok(helper.includes("decodeURIComponent(source.pathname)"));
+  assert.ok(!helper.includes("/_next/image"));
+  assert.ok(helper.includes("return src;"));
+  assert.ok(!config.includes("images: { unoptimized: true"));
 });
 
 test("Tantra Reiki retains the three festival, nine stage, hero and source gallery originals", () => {

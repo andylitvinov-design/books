@@ -71,7 +71,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
           <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
-              <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp")} sizes={isHome ? "(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" : "(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px"} loading={index === 0 ? "eager" : "lazy"} />
+              <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp") || (isHome ? homepageMedia[offer.id] : offer.image) === "/academy/reiki-yggdrasil/source/eastern-tradition.png"} sizes={isHome ? "(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" : "(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px"} loading={index === 0 ? "eager" : "lazy"} />
             </Link>
             <div className={styles.cardContent}>
               <span className={styles.cardLabel}>{offer.label}</span>

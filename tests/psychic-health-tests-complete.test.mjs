@@ -1,3 +1,5 @@
+import { IPIP_FIVE_CATALOG } from '../data/assessments/ipip-five-2026.js'
+import { IPIP_THREE_CATALOG } from '../data/assessments/ipip-three-2026.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
@@ -21,7 +23,7 @@ const answers = (definition, value) =>
 
 test('all active published monitoring tests resolve to executable definitions', () => {
   const items = startable()
-  assert.equal(items.length, 47 + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length)
+  assert.equal(items.length, 47 + IPIP_THREE_CATALOG.length + IPIP_FIVE_CATALOG.length + RELATIONSHIPS_INTIMACY_KEYS.length + EXPANDED_BATTERY_V3_KEYS.length + EXPANDED_BATTERY_V4_KEYS.length + PROFESSIONAL_BATTERY_2026_CATALOG.length + PROFESSIONAL_BATTERY_2026_B_CATALOG.length + CDC_HEALTHY_DAYS_CATALOG.length + IPIP_BIG_FIVE_50_CATALOG.length + OPEN_PROFESSIONAL_2026_CATALOG.length + PERSONALITY_TYPE_CATALOG.length + IPIP_VIA_R_COMPLETION_CATALOG.length)
   assert.deepEqual(
     items.filter(item=>!IPIP_VIA_R_COMPLETION_CATALOG.some(candidate=>candidate.key===item.key)).map((item) => item.key).sort(),
     [
@@ -80,6 +82,8 @@ test('all active published monitoring tests resolve to executable definitions', 
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
     ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
     ...RELATIONSHIPS_INTIMACY_KEYS,
+    ...IPIP_THREE_CATALOG.map((item) => item.key),
+    ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
   ].sort(),
   )
@@ -117,5 +121,6 @@ test('PHQ-9 explicit risk answer triggers safety but zero does not', () => {
 test('licensed and uncleared professional references remain non-startable', () => {
   const planned = MONITORING_CATALOG.filter((item) => !item.startable)
   assert.ok(planned.length > 0)
-  assert.ok(planned.every((item) => item.rightsStatus !== 'cleared'))
+  assert.ok(planned.every((item) => item.rightsStatus !== 'cleared' || item.registrationRequired === true))
+  assert.ok(planned.filter(item => item.registrationRequired).every(item => item.startable === false))
 })

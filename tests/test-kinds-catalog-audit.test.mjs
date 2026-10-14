@@ -23,7 +23,13 @@ test('every catalogue record has exactly one stable display kind; research stays
       assert.equal(entry.testKind, testKindFor(entry), entry.key)
       assert.ok(entry.keyAudit && entry.keyAudit.status, entry.key)
       if (entry.testKind === 'professional' && entry.source === 'product') {
-        assert.ok(entry.definition?.source?.url?.startsWith('https://'), entry.key + ': professional requires a named source')
+        if (entry.catalog.registrationRequired && !entry.startable) {
+          const prepared = getAssessmentDefinition(entry.key, entry.catalog.version, entry.catalog.instrumentLocale)
+          assert.equal(entry.catalog.sourceUrl, prepared.source.url)
+          assert.ok(entry.catalog.sourceUrl.startsWith('https://'))
+          assert.equal(entry.definition, null)
+          assert.equal(entry.selectable, false)
+        } else assert.ok(entry.definition?.source?.url?.startsWith('https://'), entry.key + ': professional requires a named source')
       }
       if (entry.source === 'research') {
         assert.equal(entry.selectable, false)
