@@ -12,7 +12,7 @@ const COPY = {
     title: 'My courses', intro: 'Your personal path, at your own pace.',
     count: 'active course', current: 'CURRENT COURSE', defaultCourse: 'My personal course',
     setup: 'Setting up your course', programme: '14-day learning journey', focus: 'My development directions',
-    lesson: 'Day', of: 'of', completed: 'Lessons completed', loading: 'Loading progress…',
+    lesson: 'Day', of: 'of', completed: 'Lessons completed', finished: 'Course completed', loading: 'Loading progress…', progressUnavailable: 'Progress temporarily unavailable',
     continue: 'Continue course', completeSetup: 'Continue setup', review: 'Review my course',
     add: 'Add a new course', first: 'Start my first course',
     addNote: 'A new topic and its own 14-day journey', firstNote: 'Choose a topic or create your personal plan',
@@ -31,7 +31,7 @@ const COPY = {
     title: 'Мои курсы', intro: 'Ваш путь развития — в собственном темпе.',
     count: 'активный курс', current: 'ТЕКУЩИЙ КУРС', defaultCourse: 'Мой персональный курс',
     setup: 'Настройка курса', programme: '14-дневный курс развития', focus: 'Направления моей работы',
-    lesson: 'День', of: 'из', completed: 'Уроков завершено', loading: 'Загружаем прогресс…',
+    lesson: 'День', of: 'из', completed: 'Уроков завершено', finished: 'Курс завершён', loading: 'Загружаем прогресс…', progressUnavailable: 'Прогресс временно недоступен',
     continue: 'Продолжить курс', completeSetup: 'Продолжить настройку', review: 'Посмотреть мой курс',
     add: 'Добавить новый курс', first: 'Начать первый курс',
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: 'Выберите тему или создайте персональный курс',
@@ -125,8 +125,8 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
         </div>}
         <div className={styles.progressInfo}>
           <span>{course.stage === 4 && nextLesson !== null
-            ? completed === 14 ? t.completed : t.lesson + ' ' + nextLesson + ' ' + t.of + ' 14'
-            : t.setup}</span>
+            ? completed === 14 ? t.finished : t.lesson + ' ' + nextLesson + ' ' + t.of + ' 14'
+            : course.stage === 4 ? (progressError ? t.progressUnavailable : t.loading) : t.setup}</span>
           {course.stage === 4 && <strong>{completed === null ? '— / 14' : completed + ' / 14'}</strong>}
         </div>
         <div className={styles.progressTrack} role={completed !== null ? 'progressbar' : undefined}
