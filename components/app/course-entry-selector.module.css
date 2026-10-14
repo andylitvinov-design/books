@@ -189,3 +189,75 @@
  .addTileText strong{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){.openButton{transition:none}}
+
+
+/* 2026-10-14 mobile legibility pass.
+   Keep the approved photo and turquoise palette. Only the presentation changes:
+   no cut-off "Plan", no focus chips trapped in the narrow photo column. */
+.currentText{min-width:0}
+.axes{min-width:0;max-width:100%}
+.courseActions{min-width:0}
+.planButton{min-width:max-content;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.planButton span{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.planButton svg{flex:none}
+.openButton svg{flex:none}
+
+@media(max-width:690px){
+ .page{min-width:0;max-width:100%;gap:13px;padding:2px 0 calc(90px + env(safe-area-inset-bottom))}
+ .header{gap:4px;padding:0 2px}
+ .headline{gap:0;min-width:0}
+ .headline h1{font-size:clamp(29px,8vw,35px);line-height:1.09;letter-spacing:-.035em;overflow-wrap:normal}
+ .headerMotto{display:none}
+ .header p{font-size:13px;line-height:1.4;color:#648a9c;margin-top:3px}
+ .tiles{gap:12px;min-width:0}
+ .current{min-width:0;gap:11px;padding:15px;border-radius:22px;border-width:1.5px;box-shadow:0 8px 22px #166f8910}
+ .currentTop{grid-template-columns:clamp(94px,27vw,112px) minmax(0,1fr);gap:12px;align-items:center;min-width:0;min-height:0}
+ .currentPhoto{align-self:start;width:100%;height:133px;min-height:133px;border-radius:15px}
+ .currentPhoto .currentIcon{width:35px;height:35px;border-radius:11px;right:7px;bottom:7px}
+ .currentPhoto .currentIcon svg{width:18px;height:18px}
+ .currentText{align-self:center;justify-content:center;gap:6px;min-width:0}
+ .overline{max-width:100%;font-size:10px;line-height:1.2;padding:5px 9px;white-space:normal}
+ .current h2{font:700 clamp(21px,5.9vw,26px)/1.1 Georgia,serif;letter-spacing:-.035em;overflow-wrap:normal;word-break:normal;text-wrap:pretty}
+ .currentText p{font-size:12px;line-height:1.35}
+ .axes{width:100%;gap:6px;margin:0;align-items:flex-start}
+ .axes span{max-width:100%;min-width:0;min-height:29px;padding:5px 10px;font-size:11px;line-height:1.25;white-space:normal;overflow-wrap:normal;word-break:normal}
+ .axes svg{width:12px;height:12px}
+ .progressInfo{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:1px 0 0;font-size:12px;line-height:1.3;overflow-wrap:normal}
+ .progressInfo strong{white-space:nowrap}
+ .progressTrack{height:7px}
+ .courseActions{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;justify-items:stretch;gap:4px}
+ .openButton{min-width:0;min-height:51px;padding:9px 14px!important;border-radius:14px;font-size:15px;line-height:1.2;text-wrap:balance}
+ .planButton{justify-self:end;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;width:auto;min-width:0;min-height:44px;padding:5px 9px!important;border:1px solid transparent!important;border-radius:10px;background:transparent!important;color:#117c93!important;font-size:12px;line-height:1.2;white-space:nowrap}
+ .planButton:hover{border-color:#bbe2ea!important;background:#eafbfd!important}
+ .planButton svg{width:17px;height:17px}
+ /* Global .hh-app button uses font:inherit; raise selector weight for phone typography. */
+ .page .openButton{font-size:15px;line-height:1.2}
+ .page .planButton{font-size:13px;line-height:1.2}
+ .addTile{grid-template-columns:43px minmax(0,1fr) 17px;min-height:79px;padding:12px 13px;gap:11px;border-radius:18px;align-items:center}
+ .plusIcon{width:43px;height:43px;border-radius:14px}
+ .plusIcon svg{width:24px;height:24px}
+ .addTileText{gap:3px}
+ .addTileText strong{font-size:16px;line-height:1.24}
+ .addTileText small{font-size:11px;line-height:1.32}
+ .addArrow{width:17px;height:17px}
+ .benefits{padding:18px;gap:13px;border-radius:19px}
+ .benefitHeading h2{font-size:20px}
+ .benefitMark{width:44px;height:44px}
+ .benefitGrid{gap:14px 10px}
+ .benefitGrid>div>span{width:43px;height:43px}
+ .benefitGrid p{font-size:11px;line-height:1.35}
+ .footnote{font-size:11px;line-height:1.4}
+}
+@media(max-width:360px){
+ .current{padding:13px}
+ .currentTop{grid-template-columns:88px minmax(0,1fr);gap:10px}
+ .currentPhoto{height:122px;min-height:122px}
+ .current h2{font-size:21px}
+ .overline{font-size:9px;padding:4px 8px}
+ .currentText p{font-size:11px}
+ .axes span{font-size:10px;padding:5px 8px}
+ .openButton{font-size:14px}
+ .addTile{grid-template-columns:40px minmax(0,1fr) 16px;gap:9px;padding:11px}
+ .plusIcon{width:40px;height:40px}
+ .addTileText strong{font-size:15px}
+}

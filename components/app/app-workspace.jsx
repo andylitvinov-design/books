@@ -406,7 +406,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
+          Holistic House<span>{page === 'course'
+            ? (locale === 'ru' ? 'Мои курсы' : 'My courses')
+            : (locale === 'ru' ? 'Мои тесты' : 'My tests')}</span>
         </Link>
         {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
         <details className="hh-account-menu">

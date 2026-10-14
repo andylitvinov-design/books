@@ -251,3 +251,29 @@ test('informational cards render Free first in EN/RU without creating checkout o
     h.unmount()
   }
 })
+
+test('iPhone My Courses layout puts scales below both columns and keeps Plan fully readable', () => {
+  const axes = entry.indexOf('className={styles.axes}')
+  const photo = entry.indexOf('className={styles.currentPhoto}')
+  const title = entry.indexOf('<h2>{name}</h2>', photo)
+  const photoRowClose = entry.indexOf('</div>\n        </div>', title)
+  const progress = entry.indexOf('className={styles.progressInfo}', axes)
+  assert.ok(photo < title && title < photoRowClose && photoRowClose < axes && axes < progress)
+  assert.match(entry, /plan: 'Course plan'/)
+  assert.match(entry, /plan: 'План курса'/)
+  assert.match(css, /\.planButton span\{white-space:nowrap/)
+  assert.match(css, /@media\(max-width:690px\)\{[\s\S]*?\.courseActions\{display:grid;grid-template-columns:minmax\(0,1fr\)/)
+  assert.match(css, /\.planButton\{justify-self:end;display:inline-flex;flex-direction:row/)
+  assert.match(css, /\.currentPhoto\{align-self:start;width:100%;height:133px;min-height:133px/)
+  assert.match(css, /\.addTile\{grid-template-columns:43px minmax\(0,1fr\) 17px;min-height:79px/)
+})
+
+test('course page brand and bottom nav agree on My Courses while keeping the original course backend', () => {
+  const workspace = read('components/app/app-workspace.jsx')
+  const theme = read('components/app/my-course-theme.css')
+  assert.match(workspace, /'Мои курсы' : 'My courses'/)
+  assert.match(workspace, /page === 'course'/)
+  assert.match(theme, /:has\(\[data-course-selector\]\) \.hh-header/)
+  assert.match(theme, /@media\(max-width:620px\)/)
+  assert.doesNotMatch(entry, /checkout\/start|stripe\.redirect|localStorage|sessionStorage/)
+})

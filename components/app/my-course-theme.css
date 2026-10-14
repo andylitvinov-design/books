@@ -22,3 +22,13 @@
 /* The course's approved self-help/safety text is accessible in its Details screen;
    do not append the global footer to the one-task daily dashboard. */
 .hh-app:has([data-my-course]) > .hh-footer{display:none!important}
+
+
+/* Compact the shared cabinet header only on the My Courses selection view. */
+@media(max-width:620px){
+ .hh-app:has([data-course-selector]) .hh-header{gap:7px;margin-bottom:12px!important}
+ .hh-app:has([data-course-selector]) .hh-brand{font-size:clamp(17px,5.2vw,22px)!important;line-height:1.18;letter-spacing:-.02em;min-width:0}
+ .hh-app:has([data-course-selector]) .hh-brand span{font-size:10px!important;letter-spacing:.1em;line-height:1.4;margin-top:2px}
+ .hh-app:has([data-course-selector]) .hh-master-header-link{min-height:39px!important;padding:0 10px!important;font-size:11px!important}
+ .hh-app:has([data-course-selector]) .hh-account-menu>summary{min-height:39px!important;padding:7px 9px!important;font-size:12px!important}
+}
