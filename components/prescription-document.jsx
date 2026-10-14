@@ -43,6 +43,10 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
     <article className="canonical-document canonical-document--editorial">
       <DocumentAutoPrint enabled={admin && autoPrint} />
       <div className="canonical-report-brandline">
+        <div className="canonical-editorial-brand">
+          <strong>HOLISTIC HOUSE</strong>
+          <span>Mind · Body · Soul · Nature</span>
+        </div>
         <DocumentLetterhead compact />
         <span className="canonical-report-private-label">{locale === 'ru' ? 'ЛИЧНЫЙ ОТЧЁТ' : 'PRIVATE REPORT'}</span>
       </div>
@@ -50,7 +54,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <div className="canonical-report-hero">
           <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
           <h1>{reportHeading}</h1>
-          <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Индивидуально подготовлено по итогам консультации' : 'Prepared following your individual consultation'}</p>
+          <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Мягкий путь к внутреннему равновесию' : 'A gentler path to inner balance'}</p>
+          <span className="canonical-editorial-hero-motto" aria-hidden="true">{locale === 'ru' ? 'Глубже. Человечнее. Целостнее.' : 'Deeper. Kinder. More whole.'}</span>
         </div>
         <dl className="canonical-client">
           <div><dt>{labels.patient}</dt><dd>{document.patientName}</dd></div>
