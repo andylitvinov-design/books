@@ -1,6 +1,7 @@
 'use client'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
@@ -50,6 +51,12 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { isNativePsiAlchemy } from '@/lib/native/client'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
+
+// The full remedy appendices load only when a client opens a saved document.
+const SavedCanonicalDocument = dynamic(
+  () => import('./saved-canonical-document').then((module) => module.SavedCanonicalDocument),
+  { ssr: false, loading: () => <p role="status">Opening your complete report…</p> },
+)
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -331,9 +338,12 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['portrait', c.portrait, '/portrait'],
     ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
   ]
+  const documentReader = Boolean(recordId) &&
+    data.account.onboardingState === 'active' &&
+    (page === 'documents' || page === 'reports')
   return (
-    <main className="hh-app">
-      <header className="hh-header">
+    <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
+      {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
         </Link>
@@ -369,8 +379,8 @@ export default function AppWorkspace({ locale, path = [] }) {
             </button>
           </div>
         </details>
-      </header>
-      {page !== 'runs' && (
+      </header>}
+      {!documentReader && page !== 'runs' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(([id, label, url]) => (
             <Link
@@ -468,11 +478,11 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
         </>
       )}
-      <footer className="hh-footer">
+      {!documentReader && <footer className="hh-footer">
         <p>{c.nonDiagnostic}</p>
         <a href={`/${locale}/client`}>{c.legacy}</a>
-      </footer>
-      {page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
+      </footer>}
+      {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
         <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
         <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
@@ -2705,68 +2715,6 @@ function ResultPage({ id, locale, data }) {
     </article>
   )
 }
-function SavedPaymentDocument({ document, locale }) {
-  const ru = locale === 'ru'
-  const received = document.paymentStatus === 'received'
-  const amount = (Number(document.amount || 0) / 100)
-    .toFixed(2)
-    .replace('.', ru ? ',' : '.')
-  return (
-    <article className="hh-panel hh-saved-client-document">
-      <p className="hh-kicker">Holistic House</p>
-      <h1>{received ? (ru ? 'Квитанция' : 'Receipt') : (ru ? 'Счёт' : 'Invoice')}</h1>
-      <dl className="hh-saved-document-details">
-        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
-        <div><dt>{ru ? 'Дата документа' : 'Date issued'}</dt><dd>{document.dateIssued}</dd></div>
-        <div><dt>{ru ? 'Услуга' : 'Service'}</dt><dd>{document.service}</dd></div>
-        {document.consultations && <div><dt>{ru ? 'Количество консультаций' : 'Consultations'}</dt><dd>{document.consultations}</dd></div>}
-        <div><dt>{received ? (ru ? 'Получено' : 'Amount received') : (ru ? 'К оплате' : 'Amount due')}</dt><dd>{document.currency} {amount}</dd></div>
-        {document.dateOfService && <div><dt>{ru ? 'Дата услуги' : 'Date of service'}</dt><dd>{document.dateOfService}</dd></div>}
-        {document.paymentMethod && <div><dt>{ru ? 'Способ оплаты' : 'Payment method'}</dt><dd>{document.paymentMethod}</dd></div>}
-        {document.documentNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.documentNumber}</dd></div>}
-      </dl>
-    </article>
-  )
-}
-
-function SavedRecommendationDocument({ document, locale }) {
-  const ru = locale === 'ru'
-  return (
-    <article className="hh-panel hh-saved-client-document">
-      <p className="hh-kicker">Holistic House</p>
-      <h1>{ru ? 'Рекомендация' : 'Recommendation'}</h1>
-      <dl className="hh-saved-document-details">
-        <div><dt>{ru ? 'Клиент' : 'Client'}</dt><dd>{document.patientName}</dd></div>
-        <div><dt>{ru ? 'Дата' : 'Date'}</dt><dd>{document.dateIssued}</dd></div>
-        {document.patientDob && <div><dt>{ru ? 'Дата рождения' : 'Date of birth'}</dt><dd>{document.patientDob}</dd></div>}
-        {document.recommendationNumber && <div><dt>{ru ? 'Номер' : 'Number'}</dt><dd>{document.recommendationNumber}</dd></div>}
-        {document.practitionerName && <div><dt>{ru ? 'Специалист' : 'Practitioner'}</dt><dd>{document.practitionerName}{document.practitionerRole ? ' · ' + document.practitionerRole : ''}</dd></div>}
-        {document.practitionerContact && <div><dt>{ru ? 'Контакт' : 'Contact'}</dt><dd>{document.practitionerContact}</dd></div>}
-      </dl>
-      <div className="hh-saved-recommendation-list">
-        {(document.items || []).map((item, index) => (
-          <section key={index}>
-            <h2>{index + 1}. {item.displayName}</h2>
-            <dl className="hh-saved-document-details">
-              {item.potency && <div><dt>{ru ? 'Потенция' : 'Potency'}</dt><dd>{item.potency}</dd></div>}
-              {item.granules && <div><dt>{ru ? 'Гранулы' : 'Granules'}</dt><dd>{item.granules}</dd></div>}
-              {item.timesPerDay && <div><dt>{ru ? 'Раз в день' : 'Times per day'}</dt><dd>{item.timesPerDay}</dd></div>}
-              {item.dosage && <div><dt>{ru ? 'Дозировка' : 'Dosage'}</dt><dd>{item.dosage}</dd></div>}
-              {item.frequency && <div><dt>{ru ? 'Частота' : 'Frequency'}</dt><dd>{item.frequency}</dd></div>}
-              {item.duration && <div><dt>{ru ? 'Длительность' : 'Duration'}</dt><dd>{item.duration}</dd></div>}
-              {item.sequence && <div><dt>{ru ? 'Последовательность' : 'Sequence'}</dt><dd>{item.sequence}</dd></div>}
-              {item.instructions && <div><dt>{ru ? 'Инструкция' : 'Instructions'}</dt><dd>{item.instructions}</dd></div>}
-              {item.purpose && <div><dt>{ru ? 'Назначение' : 'Purpose'}</dt><dd>{item.purpose}</dd></div>}
-            </dl>
-          </section>
-        ))}
-      </div>
-      {document.generalInstructions && <section className="hh-saved-document-note"><h2>{ru ? 'Общие рекомендации' : 'General guidance'}</h2><p>{document.generalInstructions}</p></section>}
-      {document.followUp && <p className="hh-fine">{ru ? 'Контроль' : 'Follow-up'}: {document.followUp}</p>}
-    </article>
-  )
-}
-
 function SavedDocumentPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -2810,24 +2758,34 @@ function SavedDocumentPage({ id, locale, reload }) {
     )
   if (error) return <p role="alert">{ru ? 'Не удалось открыть документ.' : 'The document could not be opened.'}</p>
   if (!value) return <p>{ru ? 'Загружаем документ…' : 'Loading document…'}</p>
+  const otherLocale = ru ? 'en' : 'ru'
+  const pdfHref = '/api/app/documents/' + encodeURIComponent(id) + '/pdf?locale=' + locale
   return (
-    <section>
-      <div className="hh-panel">
-        <p className="hh-kicker">{ru ? 'Сохранённый документ' : 'Saved document'}</p>
-        <p className="hh-fine">{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
-      </div>
-      {value.kind === 'receipt' || value.kind === 'invoice'
-        ? <SavedPaymentDocument document={value.document} locale={locale} />
-        : <SavedRecommendationDocument document={value.document} locale={locale} />}
-      <div className="hh-panel hh-actions">
-        <Link href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'История' : 'History'}
+    <article className="hh-saved-document-reader" data-canonical-saved-document>
+      <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
+        <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+          {ru ? '← Мои отчёты' : '← My reports'}
         </Link>
+        <div className="hh-saved-document-reader__actions">
+          <Link href={'/' + otherLocale + '/app/documents/' + encodeURIComponent(id)} prefetch={false}>
+            {otherLocale.toUpperCase()}
+          </Link>
+          <a className="hh-saved-document-reader__pdf" href={pdfHref} download>
+            {ru ? 'Скачать PDF' : 'Download PDF'}
+          </a>
+        </div>
+      </nav>
+      <SavedCanonicalDocument document={value.document} kind={value.kind} locale={locale} />
+      <details className="hh-saved-document-reader__management">
+        <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
+        <p>{ru ? 'Сохранено в вашем кабинете' : 'Saved in your Cabinet'}: {dateLabel(value.savedAt, locale)}</p>
         <button type="button" disabled={busy} onClick={remove}>
-          {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
+          {busy
+            ? (ru ? 'Удаляем…' : 'Removing…')
+            : (ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet')}
         </button>
-      </div>
-    </section>
+      </details>
+    </article>
   )
 }
 
@@ -2875,22 +2833,29 @@ function SavedReportPage({ id, locale, reload }) {
   if (error) return <p role="alert">{ru ? 'Не удалось открыть отчёт.' : 'The report could not be opened.'}</p>
   if (!value) return <p>{ru ? 'Загружаем отчёт…' : 'Loading report…'}</p>
   return (
-    <section className="hh-panel">
-      <p className="hh-kicker">{ru ? 'Сохранённый отчёт' : 'Saved report'}</p>
-      <AssessmentReading record={value.report} locale={locale} />
-      <div className="hh-analysis-detail-download"><DownloadPractitionerReport reportId={id} locale={locale} /></div>
-      <p className="hh-fine">
-        {ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}
-      </p>
-      <div className="hh-actions">
+    <article className="hh-saved-document-reader" data-canonical-saved-report>
+      <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
         <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
-          {ru ? 'Мои отчёты' : 'My reports'}
+          {ru ? '← Мои отчёты' : '← My reports'}
         </Link>
+        <Link href={'/' + (ru ? 'en' : 'ru') + '/app/reports/' + encodeURIComponent(id)} prefetch={false}>
+          {ru ? 'EN' : 'RU'}
+        </Link>
+      </nav>
+      <div className="hh-saved-document-reader__assessment">
+        <AssessmentReading record={value.report} locale={locale} />
+        <div className="hh-analysis-detail-download">
+          <DownloadPractitionerReport reportId={id} locale={locale} />
+        </div>
+      </div>
+      <details className="hh-saved-document-reader__management">
+        <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
+        <p>{ru ? 'Сохранено' : 'Saved'}: {dateLabel(value.savedAt, locale)}</p>
         <button type="button" disabled={busy} onClick={remove}>
           {ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet'}
         </button>
-      </div>
-    </section>
+      </details>
+    </article>
   )
 }
 
