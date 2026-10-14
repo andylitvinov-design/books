@@ -451,3 +451,96 @@
 @media(max-height:680px){
   .overlay .fullscreenScenePhoto{top:calc(env(safe-area-inset-top) + 62px)}
 }
+
+/* OPORA arrival scene: the whole approved 705×411 photograph appears at its
+   natural aspect ratio as a background layer, never under object-fit:cover.
+   The rest of the screen continues the sea/mint palette without cropping the
+   person. Responses are optional and distinct from the 0–10 measurements. */
+.overlay .content[data-slide-kind=welcome]{
+  padding:0!important;gap:0;background:#f2fbfb;
+}
+.overlay .welcomeScreen{
+  position:relative;width:100%;min-height:100%;
+  padding:min(58.3vw,410px) clamp(17px,4vw,35px) 20px;
+  overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,#d5f3f5 0%,#eaf9f8 50%,#f8fdfd 100%);
+}
+.overlay .welcomeBackdrop{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,#d0f0f6 0%,#ecf9f7 52%,#f8fdfd 100%);
+}
+.overlay .welcomeBackgroundImage{
+  display:block;position:absolute;top:0;left:0;
+  width:100%;height:auto;max-width:100%;
+  object-fit:contain;object-position:center top;
+}
+.overlay .welcomeContent{
+  position:relative;z-index:1;display:grid;gap:12px;align-content:start;width:100%;
+  margin:0 auto;max-width:590px;
+}
+.overlay .welcomeKicker{
+  display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;
+  color:#0b8193;font-size:12px;font-weight:850;
+  letter-spacing:.045em;text-transform:uppercase;
+}
+.overlay .welcomeContent .slideTitle{
+  font-family:Georgia,'Times New Roman',serif;font-weight:750;
+  font-size:clamp(28px,5.4vw,39px);line-height:1.17;
+  letter-spacing:-.035em;max-width:580px;
+}
+.overlay .welcomePrompt{
+  margin:0;color:#355f72;font-size:clamp(15px,2.3vw,18px);
+  line-height:1.45;font-weight:660;
+}
+.overlay .welcomeChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.overlay .welcomeChoices button{
+  display:flex;align-items:center;gap:10px;min-width:0;min-height:67px;
+  border-radius:18px!important;border:2px solid #c9e5e9!important;
+  border-bottom:4px solid #b3d8de!important;background:#ffffffee!important;
+  padding:11px 13px!important;color:#204e64!important;
+  font-size:15px!important;line-height:1.33;font-weight:800!important;
+  text-align:left;cursor:pointer;box-shadow:0 4px 14px #11577f0b;
+  transition:border-color .16s,background .16s,transform .16s;
+}
+.overlay .welcomeChoices button:hover:not(:disabled){transform:translateY(-1px);border-color:#44afbc!important}
+.overlay .welcomeChoices button[aria-pressed=true]{
+  border-color:#079cab!important;border-bottom-color:#057889!important;
+  background:#e6f9f6!important;color:#076e84!important;
+}
+.overlay .welcomeChoices button>span:nth-child(2){flex:1;min-width:0}
+.overlay .welcomeChoices button>svg:last-child{flex:none;color:#1497a7}
+.overlay .welcomeChoiceIcon{
+  display:grid;place-items:center;flex:none;width:39px;height:39px;
+  border-radius:13px;background:#dcf6f7;color:#078aa1;
+}
+.overlay .welcomeChoices button[aria-pressed=true] .welcomeChoiceIcon{
+  background:#c5f3e9;color:#057e87;
+}
+.overlay .welcomeResponse{
+  margin:0;padding:10px 13px;border-left:3px solid #15a9ab;
+  border-radius:0 12px 12px 0;background:#e9f8f6;
+  color:#26596b;font-size:14px;line-height:1.48;font-weight:680;
+}
+.overlay .welcomeNote{margin:0;color:#587889;font-size:12px;line-height:1.5}
+.overlay .welcomeSkip{
+  justify-self:center;padding:6px 12px!important;border:0!important;
+  border-radius:10px;background:transparent!important;
+  color:#477c8c!important;text-decoration:underline;
+  text-underline-offset:3px;font-size:13px!important;font-weight:750!important;
+  cursor:pointer;
+}
+@media(max-width:540px){
+  .overlay .welcomeScreen{padding:58.3vw 17px 14px}
+  .overlay .welcomeContent{gap:10px}
+  .overlay .welcomeContent .slideTitle{font-size:clamp(27px,7vw,33px)}
+  .overlay .welcomeChoices{grid-template-columns:minmax(0,1fr);gap:8px}
+  .overlay .welcomeChoices button{min-height:58px;padding:8px 11px!important;font-size:14px!important}
+  .overlay .welcomeChoiceIcon{width:37px;height:37px}
+}
+@media(max-width:360px){
+  .overlay .welcomeChoices button{min-height:54px}
+  .overlay .welcomeContent .slideTitle{font-size:26px}
+}
+@media(prefers-reduced-motion:reduce){
+  .overlay .welcomeChoices button{transition:none!important}
+}
