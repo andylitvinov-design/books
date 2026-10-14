@@ -9,12 +9,14 @@ import {COURSE_CONTENT_V3} from '../lib/inner-growth/course-v3.js'
 import {COURSE_CONTENT_V4} from '../lib/inner-growth/course-v4.js'
 import {COURSE_CONTENT_VERSION,lessonFor} from '../lib/inner-growth/lesson-library.js'
 let sequence=0
-async function fixture({legacy=false,locale='en',version=COURSE_CONTENT_V3}={}){
+async function fixture({legacy=false,locale='en',version=COURSE_CONTENT_V3,sameDayFinal=false,missingFinal=false}={}){
 const actor={id:'11111111-1111-4111-8111-111111111111'}
 const course={id:'22222222-2222-4222-8222-222222222222',stage:4,goals:['calm_regulation','energy_agency','connection_boundaries'],scale_keys:['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.recovery','hh-weekly-pulse::weekly.connection']}
 if(legacy)course.scale_keys=[]
 const originalScales=[...course.scale_keys]
-let cycle={id:'33333333-3333-4333-8333-333333333333',status:'completed',cycle_number:1,primary_domain:'calm_regulation',content_version:version,start_local_date:addCalendarDays(localDateKey(Date.now(),'UTC'),-13),time_zone:'UTC',duration_days:14,preferences:{}}
+const currentDate=localDateKey(Date.now(),'UTC')
+const finalDate=addCalendarDays(currentDate,sameDayFinal?0:-1)
+let cycle={id:'33333333-3333-4333-8333-333333333333',status:'completed',cycle_number:1,primary_domain:'calm_regulation',content_version:version,start_local_date:addCalendarDays(finalDate,-13),time_zone:'UTC',duration_days:14,preferences:{}}
 const originalCycle=structuredClone(cycle)
 let target={id:'44444444-4444-4444-8444-444444444444',problem_label_ciphertext:'Synthetic old target'}
 const queries=[]
@@ -25,6 +27,7 @@ const db={async query(sql,args=[]){
  if(sql.startsWith('select * from app_private.growth_cycles'))return {rows:[cycle]}
  if(sql.startsWith('update app_private.growth_courses set goals=')){course.goals=[args[1],...course.goals.filter(g=>g!==args[1])];if(args.length===3)course.scale_keys=args[2];return {rows:[]}}
  if(sql.startsWith("update app_private.growth_cycles set status='archived'")){cycle.status='archived';return {rows:[]}}
+ if(sql.startsWith('select local_date from app_private.growth_sessions'))return {rows:missingFinal?[]:[{local_date:finalDate}]}
  if(sql.startsWith('select id from app_private.growth_cycles'))return {rows:[]}
  if(sql.startsWith('select coalesce(max(cycle_number)'))return {rows:[{max:1}]}
  if(sql.startsWith('insert into app_private.growth_cycles')){cycle={id:args[0],status:'active',cycle_number:args[3],primary_domain:args[4],content_version:args[5],start_local_date:args[6],time_zone:args[7],duration_days:14,preferences:{}};return {rows:[]}}
@@ -105,6 +108,24 @@ test('repeat new-cycle submission cannot archive or replace the newly started cy
  await assert.rejects(()=>f.service.command(f.actor,'new-cycle',body),/COURSE_NOT_FINISHED/)
  assert.equal(f.getCycle().id,id)
  assert.equal(f.queries.filter(sql=>/^(insert|update|delete)/.test(sql)).length,count)
+})
+test('a completed 14th lesson cannot open another new lesson on the same local day',async()=>{
+ const f=await fixture({sameDayFinal:true})
+ await assert.rejects(
+  ()=>f.service.command(f.actor,'new-cycle',{problemLabel:'Same-day second course lesson',goal:'connection_boundaries',timeZone:'UTC'}),
+  /COURSE_NEXT_DAY_ONLY/
+ )
+ assert.equal(f.getCycle().id,f.originalCycle.id)
+ assert.ok(!f.queries.some(sql=>/^(insert|update|delete)/.test(sql)))
+})
+test('a course without a saved day-14 session cannot silently start its next cycle',async()=>{
+ const f=await fixture({missingFinal:true})
+ await assert.rejects(
+  ()=>f.service.command(f.actor,'new-cycle',{problemLabel:'Final lesson not saved',goal:'connection_boundaries',timeZone:'UTC'}),
+  /COURSE_NOT_FINISHED/
+ )
+ assert.deepEqual(f.getCycle(),f.originalCycle)
+ assert.ok(!f.queries.some(sql=>/^(insert|update|delete)/.test(sql)))
 })
 test('scale reorder retains every key and relative order, never mutates its input or creates eligibility',()=>{
  const keys=['hh-weekly-pulse::weekly.tension','hh-weekly-pulse::weekly.recovery','hh-weekly-pulse::weekly.connection']

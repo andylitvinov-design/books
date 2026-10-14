@@ -1,11 +1,16 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowRight, Check, CheckCircle2, ChevronDown, ChevronRight, CirclePause, ClipboardList, Clock3, HeartHandshake, Leaf, Lightbulb, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 import { GROWTH_GOALS } from '@/lib/inner-growth/course-model'
 import CourseGuidedTimer from './course-guided-timer'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseFinalRetest from './course-final-retest'
+import { appFetch } from '@/lib/app/client-fetch'
+import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
+import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
 
@@ -162,11 +167,15 @@ function DailyCard({number,title,subtitle,icon:Icon,expanded,onToggle,completed,
  </section>
 }
 
-export default function CourseToday({locale='en'}){
+export default function CourseToday({locale='en',accountId=null}){
  const t=UI[locale]||UI.en,ru=locale==='ru',root='/'+locale+'/app'
+ const router=useRouter()
+ const promotion=useCoursePromotion(accountId)
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(true)
  const [expanded,setExpanded]=useState('checkin'),[stage,setStage]=useState(0),[symbolMode,setSymbolMode]=useState('image')
  const [questOpen,setQuestOpen]=useState(false)
+ const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
+ const retestLock=useRef(false)
  const [view,setView]=useState('today')
  const [severity,setSeverity]=useState(null),[interference,setInterference]=useState(null),[resource,setResource]=useState(null)
  const [dailyNote,setDailyNote]=useState(''),[beforeNow,setBeforeNow]=useState(null),[afterNow,setAfterNow]=useState(null)
@@ -228,6 +237,20 @@ export default function CourseToday({locale='en'}){
     return result
   }catch(e){setError(e.message);return null}
   finally{setBusy(false)}
+ }
+ async function openFinalRetest(key){
+  if(retestLock.current)return
+  retestLock.current=true
+  setRetestBusyKey(key);setRetestError('')
+  try{
+   const run=await startOrResumeCourseFinalRetest({key,locale,request:appFetch})
+   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest')
+  }catch(e){setRetestError(e.message||'COURSE_RETEST_UNAVAILABLE')}
+  finally{setRetestBusyKey('');retestLock.current=false}
+ }
+ function showFinalRetest(){
+  setQuestOpen(false);setView('today')
+  requestAnimationFrame(()=>document.getElementById('course-final-retest')?.scrollIntoView({behavior:'smooth',block:'start'}))
  }
  const timezone=()=>{
   try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}
@@ -296,13 +319,17 @@ export default function CourseToday({locale='en'}){
         <span className={styles.questDayPill}>{t.day} {cycle.day} {t.of} {cycle.durationDays}</span>
       </div>
       <h2>{lesson?.title||lesson?.journey?.heading}</h2>
-      <p className={styles.heroPurpose}>{ru?'Один небольшой шаг — в своём темпе.':'One small step, at your pace.'}</p>
+      <p className={styles.heroPurpose}>{completed&&!isFinished?
+        (ru?'Сегодняшний урок завершён. Следующий откроется завтра.':'Today’s lesson is complete. Your next one opens tomorrow.'):
+        (ru?'Один новый урок в день — в своём темпе.':'One new lesson each day, at your own pace.')}</p>
       <button type="button" className={styles.todayPrimary} disabled={busy}
         data-course-today-primary onClick={()=>
           paused ? void submit('resume',{expectedRevision:cycle.revision}) :
+          data.finalRetest?.ready ? showFinalRetest() :
           (isFinished||(completed&&reportDay&&!reviewed)) ? setView('details') :
           setQuestOpen(true)}>
         {paused?(ru?'Возобновить курс':'Resume course') :
+          data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests') :
           isFinished?(ru?'Посмотреть итоги курса':'Review course results') :
           completed&&reportDay&&!reviewed?(ru?'Подвести итоги недели':'Review my week') :
           completed?(ru?'Посмотреть урок дня':'Review today’s lesson') :
@@ -321,6 +348,8 @@ export default function CourseToday({locale='en'}){
     <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
       progress={progress} roadmap={data.roadmap||[]}/>
   </details>
+  <CourseFinalRetest locale={locale} plan={data.finalRetest}
+    onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>
@@ -347,7 +376,8 @@ export default function CourseToday({locale='en'}){
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>}
   {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-    data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+    data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
+    onOpenRetest={showFinalRetest}
     onCheckin={body=>submit('checkin',body)}
     onSession={body=>submit('session',body)}
     onPreferences={patch=>submit('preferences',{
