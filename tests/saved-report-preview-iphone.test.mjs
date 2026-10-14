@@ -57,9 +57,9 @@ test('Russian headline wraps naturally at word boundaries on an iPhone',()=>{
 
 test('long signed reports can start the complete appendix in unused continuation space',()=>{
   const pdfCode=sourceFile('lib/prescriptions/pdf.js')
-  assert.match(pdfCode,/appendixOnSignedContinuation = layouts\.length > 1 && y >= 344/)
+  assert.match(pdfCode,/appendixOnSignedContinuation = layouts\.length > 1 && y >= 280/)
   assert.match(pdfCode,/if \(appendixOnSignedContinuation\)/)
-  assert.match(pdfCode,/if \(y < \(compactOpening \? 252 : 330\)\) startPage\(\)/,
+  assert.match(pdfCode,/if \(y < \(compactOpening \? 206 : 330\)\) startPage\(\)/,
     'keep a compact remedy introduction above the footer without truncation')
   const remedy=getRemedy('ru','veratrum-album')
   const entries=remedyDescriptionBlocks(remedy.description).filter(x=>x.kind!=='space')
