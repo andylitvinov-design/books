@@ -357,7 +357,14 @@ export default function CourseSlidePlayer({
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
       <main className={styles.content} data-slide-scroller data-slide-kind={promoOpen ? "offer" : finished ? "completion" : slide.kind}>
-        {promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
+        {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
+          <ShieldCheck size={36} aria-hidden="true"/>
+          <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={onClose}>{words.discomfortExit}</button>
+          <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
+          <small>{words.discomfortEmergency}</small>
+        </section> : promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
           <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
           <p className={styles.promoBrand}>{words.promoBrand}</p>
           <h2 tabIndex={-1} ref={headingRef}>{words.promoTitle}</h2>
@@ -496,15 +503,19 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
-            <blockquote className={styles.quote}>{lesson.workbook?.workingPosition}</blockquote>
+            {cycle.day===5 && <div className={styles.modeTabs} role="group" aria-label={words.choiceTitle}>
+              {[['cbt',words.cbtChoice],['act',words.actChoice],['neutral',words.neutralChoice]].map(([key,label])=><button key={key} type="button"
+                disabled={locked} aria-pressed={thoughtChoice===key} onClick={()=>setThoughtChoice(key)}>{label}</button>)}
+            </div>}
+            <blockquote className={styles.quote}>{cycle.day===5 ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
           </>}
 
           {slide.kind === 'guided' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{slide.section.text}</p>
+            <p className={styles.prompt}>{neutralMode ? words.neutralPractice : slide.section.text}</p>
             <p className={styles.helper}>{words.gentle}</p>
-            <details className={styles.timerDetails}>
+            {!neutralMode && <details className={styles.timerDetails}>
               <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
               <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
                 <button type="button" disabled={locked}
@@ -517,11 +528,11 @@ export default function CourseSlidePlayer({
                   aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
                   onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
               </div>
-            </details>
-            <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
+            </details>}
+            {!neutralMode && <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
-            </details>
+            </details>}
           </>}
 
           {slide.kind === 'ritual' && <>
@@ -581,7 +592,7 @@ export default function CourseSlidePlayer({
                 ['skip',words.preferNot,SkipForward],
               ].map(([key,label,ChoiceIcon]) => <button type="button" key={key}
                 disabled={locked} aria-pressed={feedback === key}
-                onClick={() => setFeedback(key)}>
+                onClick={() => { setFeedback(key); if (key === 'uncomfortable') setDiscomfortOpen(true) }}>
                 <ChoiceIcon size={20} aria-hidden="true"/><span>{label}</span>
                 {feedback === key && <Check size={18} aria-hidden="true"/>}
               </button>)}
@@ -595,14 +606,15 @@ export default function CourseSlidePlayer({
         {promoOpen && promotion.show && <div className={styles.subactions}>
           <button type="button" className={styles.skip} onClick={onFinish||onClose}>{words.promoSkip}<SkipForward size={14}/></button>
         </div>}
-        {!finished && <div className={styles.subactions}>
+        {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
           {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        <button type="button" className={styles.primary} disabled={locked}
+        {!finished && !discomfortOpen && ['guided','symbol'].includes(slide.kind) && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)}>{words.discomfortAction}</button>}
+        {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
@@ -615,7 +627,7 @@ export default function CourseSlidePlayer({
             : index === slides.length - 1 ? words.finish
             : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
-        </button>
+        </button>}
         <p>{words.safety}</p>
       </footer>
     </div>
