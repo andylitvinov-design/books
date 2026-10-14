@@ -52,8 +52,8 @@ export function ConsultationDocumentActions({
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
-      <a className="consultation-action-primary" href={urls.previewPdf} target="_blank" rel="noopener noreferrer">{labels.previewPdf}</a>
-      <a href={urls.open} target="_blank" rel="noopener noreferrer">{labels.open}</a>
+      <a className="consultation-action-primary" href={urls.open}>{ru ? 'Предпросмотр / открыть' : 'Preview / Open'}</a>
+      <a href={urls.previewPdf}>{labels.previewPdf}</a>
       <a href={urls.pdf} download>{labels.pdf}</a>
       <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}>
         {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
