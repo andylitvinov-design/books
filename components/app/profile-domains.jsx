@@ -102,7 +102,7 @@ function RemedyHistory({ updates, locale, selector, t }) {
   const [newest, ...prior] = ordered(updates)
   const href = item => selector
     ? '/' + locale + '/client/' + encodeURIComponent(selector) + '/documents/' + encodeURIComponent(item.id)
-    : '/' + locale + '/app/documents/' + encodeURIComponent(item.id)
+    : '/' + locale + '/app/document-view/' + encodeURIComponent(item.id)
   return <>
     <article className="hh-domain-latest">
       <div className="hh-domain-latest-top"><span>{t.current}</span><time>{readableDate(newest.date, locale)}</time></div>
