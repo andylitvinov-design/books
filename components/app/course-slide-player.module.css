@@ -343,3 +343,29 @@
 @media(prefers-reduced-motion:reduce){
   .overlay .primary,.overlay .paceChoices button{animation:none!important;transition:none!important}
 }
+
+/* OPORA 1.1: a visible safety path while practising. No progress or XP is saved by these controls. */
+.discomfortShortcut {
+  width:100%; min-height:42px; border:1px solid #d2a2a2; border-radius:14px;
+  background:#fff9f7; color:#824747; padding:9px 15px;
+  font-size:14px; font-weight:650; cursor:pointer;
+}
+.discomfortShortcut:hover { background:#fff0ed; }
+.discomfortShortcut:focus-visible,
+.discomfortPanel button:focus-visible,
+.discomfortPanel a:focus-visible { outline:3px solid #edac51; outline-offset:3px; }
+.discomfortPanel {
+  display:grid; align-content:start; justify-items:stretch; gap:13px;
+  width:min(100%,580px); padding:22px 8px; margin:0 auto;
+}
+.discomfortPanel > svg { color:#92706d; }
+.discomfortPanel h2 { font:500 clamp(27px,7vw,38px)/1.2 Georgia,'Times New Roman',serif; margin:0; }
+.discomfortPanel p { font-size:16px; line-height:1.65; margin:0 0 7px; }
+.discomfortPanel button { cursor:pointer; min-height:52px; padding:12px 18px; border:1px solid #a6ced1; background:#e7f9f9; border-radius:14px; color:#154b59; font-size:15px; font-weight:750; }
+.discomfortPanel button:hover { background:#d8f3f3; }
+.discomfortPanel a { min-height:46px; display:inline-flex; align-items:center; gap:8px; color:#086879; text-decoration:underline; font-size:14px; }
+.discomfortPanel small { color:#647481; line-height:1.5; font-size:13px; }
+
+/* Three alternative methods must remain readable on 320px screens. */
+.thoughtChoices{display:grid;grid-template-columns:1fr;gap:8px}
+.thoughtChoices button{width:100%;min-width:0;white-space:normal;text-align:left;line-height:1.4;overflow-wrap:anywhere}

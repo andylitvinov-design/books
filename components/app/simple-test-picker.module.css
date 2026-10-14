@@ -333,3 +333,6 @@
  .testGuide{padding-left:11px}
 }
 @media(prefers-reduced-motion:reduce){.promoAction,.topic,.testRow{transition:none}}
+
+/* Preserve a visible section heading after the short test-picker anchor jump. */
+#hh-simple-topic-title{scroll-margin-top:92px}

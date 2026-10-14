@@ -16,7 +16,7 @@ const WORDS = {
     pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
     shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
     understand: 'One idea at a time', adjustPace: 'Change my practice style',
-    baseline: 'Before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
+    baseline: 'Notice your state before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
     momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
     focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
     easierResult: 'points less difficult after the practice', harderResult: 'points more difficult after the practice',
@@ -32,11 +32,20 @@ const WORDS = {
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
     guided: 'A moment of practice', gentle: 'Eyes can remain open; breathe naturally. Pause or skip anything uncomfortable.',
     short: 'Short', standard: 'Standard', noImagery: 'No imagery', optionalTimer: 'Optional timer',
-    ritual: 'One little action', transfer: 'Try it in ordinary life', transferHint: 'Choose a safe, very small action. No challenge is required.',
+    ritual: 'One gentle support', transfer: 'If you feel ready', transferHint: 'Choose a safe, very small action. No challenge is required.',
     symbol: 'A resource image', words: 'Plain words', imagery: 'Optional image', symbolHint: 'A metaphor for reflection, never diagnosis or treatment.',
     reflection: 'One thought worth keeping', reflectionHint: 'One sentence is enough. You can leave this empty.',
     note: 'My private reflection', feedback: 'How was the practice for you?', feedbackHint: 'Any honest response is welcome.',
     helped: 'Helpful', neutral: 'Neutral', uncomfortable: 'Uncomfortable', preferNot: 'Prefer not to say',
+    choiceTitle: 'Choose a suitable approach', cbtChoice: 'Check the thought with facts (CBT)', actChoice: 'Notice the thought without debate (ACT)', neutralChoice: 'Return to neutral support',
+    cbtText: 'What supports this thought? What else could be true? Find a believable alternative without forcing positivity.',
+    actText: 'I notice I am having this thought. I do not have to argue with it or follow it now.',
+    neutralText: 'Notice the colour or shape of a neutral object. You do not need to work with your thoughts.',
+    discomfortAction: 'I feel uncomfortable', discomfortTitle: 'You may stop the exercise',
+    discomfortIntro: 'You do not need to push through discomfort. No specialist monitors this lesson or journal in real time.',
+    discomfortNeutral: 'Choose a neutral practice', discomfortExit: 'Stop and return',
+    discomfortHelp: 'Find a human helpline', discomfortEmergency: 'If there is immediate danger, contact your local emergency services.',
+    neutralPractice: 'Keep your eyes open and notice two ordinary shapes or colours in the room. You can sense support beneath you if comfortable. Breathe naturally and stop at any time.',
     moment: 'One optional comparison', momentHint: 'Two separate momentary impressions, not a clinical improvement score.',
     before: 'Just before the practice', after: 'Just after the practice', none: 'Not rated',
     finish: 'Finish and save', finished: 'A little step forward!',
@@ -48,7 +57,7 @@ const WORDS = {
     needSave: 'Saved only when the server confirms your lesson.',
     noLesson: 'This part is optional. You can continue whenever you wish.',
     nextDayNotice: 'One new lesson per day. Tomorrow brings a new skill step.',
-    retestInvitation: 'Day 14: repeat the original course tests to compare your starting and finishing scores.',
+    retestInvitation: 'Day 14: repeat the same baseline tests when the rules allow it and compare wellbeing.',
     retestButton: 'Compare my starting tests',
     celebrationLabel: 'Lesson completed', rewardIntro: 'You showed up for yourself today.',
     rewardMeaning: 'XP rewards saved practice, not how you feel or your scores.',
@@ -65,7 +74,7 @@ const WORDS = {
     pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
     shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
     understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
-    baseline: 'Перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
+    baseline: 'Заметьте состояние перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
     easierResult: 'меньше трудности после занятия', harderResult: 'больше трудности после занятия',
@@ -81,14 +90,23 @@ const WORDS = {
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
     guided: 'Момент практики', gentle: 'Можно не закрывать глаза и не менять дыхание. Неудобный шаг пропускайте.',
     short: 'Короткая', standard: 'Обычная', noImagery: 'Без образов', optionalTimer: 'Таймер — по желанию',
-    ritual: 'Одно небольшое действие', transfer: 'Перенесите в обычную жизнь',
-    transferHint: 'Выберите безопасное маленькое действие. Испытания не обязательны.',
+    ritual: 'Небольшая опора', transfer: 'Если появится готовность',
+    transferHint: 'Самочувствие и опора первичны. Действие необязательно, отдых тоже подходит.',
     symbol: 'Образ ресурса', words: 'Простыми словами', imagery: 'Через образ',
     symbolHint: 'Это метафора для размышления, а не диагностика или лечение.',
     reflection: 'Одна мысль на память', reflectionHint: 'Достаточно одного предложения. Можно оставить пустым.',
     note: 'Моя личная заметка', feedback: 'Как вам было во время практики?',
     feedbackHint: 'Любой честный ответ подходит.',
     helped: 'Помогло', neutral: 'Нейтрально', uncomfortable: 'Было некомфортно', preferNot: 'Не хочу отвечать',
+    choiceTitle: 'Выберите подходящий способ', cbtChoice: 'Проверить мысль фактами (КПТ)', actChoice: 'Заметить мысль без спора (ACT)', neutralChoice: 'Вернуться к нейтральной опоре',
+    cbtText: 'Что подтверждает мысль? Что ещё может быть верно? Можно найти правдоподобный взгляд без принудительного оптимизма.',
+    actText: 'Я замечаю, что появилась такая мысль. Не обязательно спорить с ней или следовать ей.',
+    neutralText: 'Заметьте цвет или форму нейтрального предмета. Работать с мыслью не обязательно.',
+    discomfortAction: 'Мне некомфортно', discomfortTitle: 'Вы можете остановить упражнение',
+    discomfortIntro: 'Не нужно заставлять себя продолжать. Специалист не наблюдает за уроком или дневником в реальном времени.',
+    discomfortNeutral: 'Нейтральная практика', discomfortExit: 'Остановить и вернуться',
+    discomfortHelp: 'Найти помощь человека', discomfortEmergency: 'Если есть непосредственная опасность, обратитесь в местные экстренные службы.',
+    neutralPractice: 'Оставляя глаза открытыми, заметьте два цвета или формы в комнате. Если комфортно, почувствуйте опору под собой. Дышите естественно. Можно остановиться.',
     moment: 'Необязательное сравнение', momentHint: 'Два впечатления в разные моменты, а не медицинский показатель улучшения.',
     before: 'Непосредственно перед практикой', after: 'Непосредственно после практики', none: 'Нет оценки',
     finish: 'Завершить и сохранить', finished: 'Маленький шаг вперёд!',
@@ -100,7 +118,7 @@ const WORDS = {
     needSave: 'Практика отмечается завершённой только после подтверждения сервера.',
     noLesson: 'Этот шаг необязателен. Можно продолжать в своём темпе.',
     nextDayNotice: 'Не более одного нового урока в день. Завтра — следующий шаг.',
-    retestInvitation: 'День 14: повторите стартовые тесты и сравните исходные и итоговые показатели.',
+    retestInvitation: 'День 14: повторите те же стартовые тесты, когда это допускает методика, и сравните самочувствие.',
     retestButton: 'Сравнить мои стартовые тесты',
     celebrationLabel: 'Урок завершён', rewardIntro: 'Сегодня вы уделили время себе.',
     rewardMeaning: 'XP начисляются за сохранённую практику, не за самочувствие или оценки.',
@@ -195,6 +213,9 @@ export default function CourseSlidePlayer({
   const [beforeNow, setBeforeNow] = useState(session?.beforeNow ?? null)
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
+  const [thoughtChoice, setThoughtChoice] = useState('neutral')
+  const [discomfortOpen, setDiscomfortOpen] = useState(false)
+  const [neutralMode, setNeutralMode] = useState(false)
   const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
     ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
@@ -336,7 +357,14 @@ export default function CourseSlidePlayer({
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
       <main className={styles.content} data-slide-scroller data-slide-kind={promoOpen ? "offer" : finished ? "completion" : slide.kind}>
-        {promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
+        {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
+          <ShieldCheck size={36} aria-hidden="true"/>
+          <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={onClose}>{words.discomfortExit}</button>
+          <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
+          <small>{words.discomfortEmergency}</small>
+        </section> : promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
           <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
           <p className={styles.promoBrand}>{words.promoBrand}</p>
           <h2 tabIndex={-1} ref={headingRef}>{words.promoTitle}</h2>
@@ -475,15 +503,19 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
-            <blockquote className={styles.quote}>{lesson.workbook?.workingPosition}</blockquote>
+            {cycle.day===5 && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
+              {[['cbt',words.cbtChoice],['act',words.actChoice],['neutral',words.neutralChoice]].map(([key,label])=><button key={key} type="button"
+                disabled={locked} aria-pressed={thoughtChoice===key} onClick={()=>setThoughtChoice(key)}>{label}</button>)}
+            </div>}
+            <blockquote className={styles.quote}>{cycle.day===5 ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
           </>}
 
           {slide.kind === 'guided' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{slide.section.text}</p>
+            <p className={styles.prompt}>{neutralMode ? words.neutralPractice : slide.section.text}</p>
             <p className={styles.helper}>{words.gentle}</p>
-            <details className={styles.timerDetails}>
+            {!neutralMode && <details className={styles.timerDetails}>
               <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
               <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
                 <button type="button" disabled={locked}
@@ -496,11 +528,11 @@ export default function CourseSlidePlayer({
                   aria-pressed={cycle.preferences?.imagery === 'no_imagery'}
                   onClick={() => void updatePreferences({imagery:cycle.preferences?.imagery === 'no_imagery' ? 'optional' : 'no_imagery'})}>{words.noImagery}</button>
               </div>
-            </details>
-            <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
+            </details>}
+            {!neutralMode && <details className={styles.timerDetails}><summary><Clock3 size={16}/>{words.optionalTimer}<ChevronDown size={15}/></summary>
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
-            </details>
+            </details>}
           </>}
 
           {slide.kind === 'ritual' && <>
@@ -560,7 +592,7 @@ export default function CourseSlidePlayer({
                 ['skip',words.preferNot,SkipForward],
               ].map(([key,label,ChoiceIcon]) => <button type="button" key={key}
                 disabled={locked} aria-pressed={feedback === key}
-                onClick={() => setFeedback(key)}>
+                onClick={() => { setFeedback(key); if (key === 'uncomfortable') setDiscomfortOpen(true) }}>
                 <ChoiceIcon size={20} aria-hidden="true"/><span>{label}</span>
                 {feedback === key && <Check size={18} aria-hidden="true"/>}
               </button>)}
@@ -574,14 +606,15 @@ export default function CourseSlidePlayer({
         {promoOpen && promotion.show && <div className={styles.subactions}>
           <button type="button" className={styles.skip} onClick={onFinish||onClose}>{words.promoSkip}<SkipForward size={14}/></button>
         </div>}
-        {!finished && <div className={styles.subactions}>
+        {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
           {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        <button type="button" className={styles.primary} disabled={locked}
+        {!finished && !discomfortOpen && ['guided','symbol'].includes(slide.kind) && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)}>{words.discomfortAction}</button>}
+        {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
@@ -594,7 +627,7 @@ export default function CourseSlidePlayer({
             : index === slides.length - 1 ? words.finish
             : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
-        </button>
+        </button>}
         <p>{words.safety}</p>
       </footer>
     </div>
