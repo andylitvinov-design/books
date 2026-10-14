@@ -257,3 +257,86 @@
 .hh-profile-domains .hh-domain-services-link svg:last-child{margin-left:4px}
 .hh-profile-domains .hh-domain-services-link:hover{background:#deefe4;border-color:#99c6b0}
 .hh-profile-domains .hh-domain-services-link:focus-visible{outline:3px solid #297667;outline-offset:2px}
+
+
+/* October 2026: the user-approved turquoise mobile Profile entrance.
+   Existing private reports, four profile areas and account actions stay intact. */
+.hh-profile-domains .hh-domain-hero {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:185px;
+  padding:24px clamp(18px,3.2vw,30px);
+  margin:0 0 21px;
+  border-radius:25px;
+  border:1px solid #c7e8e8;
+  background:linear-gradient(118deg,#f8fdfb 0%,#e7f8f7 55%,#d5f0ef 100%);
+  box-shadow:0 7px 24px rgba(11,108,112,.06);
+}
+.hh-profile-domains .hh-domain-hero:after {
+  content:'';
+  position:absolute;
+  z-index:-1;
+  top:-31%;right:-5%;bottom:-15%;
+  width:42%;pointer-events:none;
+  background:url('/images/holistic-house/homepage-botanical.svg') center right / contain no-repeat;
+  opacity:.75;
+}
+.hh-profile-domains .hh-domain-title { position:relative;z-index:1;max-width:78%; }
+.hh-profile-domains .hh-domain-eyebrow { color:#0d8283; }
+.hh-profile-domains .hh-domain-hero h1 {
+  margin:4px 0 11px!important;
+  color:#123f4b!important;
+  font:400 clamp(35px,4.8vw,49px)/1.08 Georgia,serif!important;
+}
+.hh-profile-domains .hh-domain-hero-subtitle {
+  max-width:43ch;
+  color:#456875!important;
+  font:400 clamp(14px,1.6vw,17px)/1.48 system-ui,sans-serif!important;
+}
+.hh-profile-domains .hh-domain-hero-quote {
+  max-width:48ch;margin:16px 0 0!important;padding:11px 14px;
+  border:1px solid rgba(154,218,217,.58);
+  border-radius:14px;
+  background:rgba(255,255,255,.62);
+  color:#1e6570!important;
+  font:italic 400 14px/1.46 Georgia,serif!important;
+}
+.hh-profile-domains .hh-domain-tabs { margin-top:18px; }
+.hh-profile-domains .hh-domain-tabs button.is-current {
+  border-color:#0b7779!important;
+  background:#0b7779!important;
+}
+.hh-profile-domains .hh-domain-panel {
+  border-color:#d1e7e5;
+  background:#fffefd;
+}
+.hh-profile-domains .hh-domain-report-archive-head h2 { color:#124f57; }
+@media (max-width:800px) {
+  .hh-profile-domains .hh-domain-hero {
+    min-height:175px;border-radius:22px;
+    margin-bottom:17px;padding:20px;
+  }
+  .hh-profile-domains .hh-domain-title { max-width:83%; }
+}
+@media (max-width:520px) {
+  .hh-profile-domains .hh-domain-hero {
+    min-height:192px;
+    padding:17px;
+    border-radius:20px;
+  }
+  .hh-profile-domains .hh-domain-title { max-width:92%; }
+  .hh-profile-domains .hh-domain-hero:after { width:46%;right:-13%;opacity:.34; }
+  .hh-profile-domains .hh-domain-hero h1 { font-size:35px!important;line-height:1.1!important; }
+  .hh-profile-domains .hh-domain-hero-subtitle { font-size:15px!important; }
+  .hh-profile-domains .hh-domain-hero-quote {
+    font-size:13.5px!important;line-height:1.4!important;
+    margin-top:12px!important;padding:10px 12px;
+  }
+  .hh-profile-domains .hh-domain-tabs { margin-top:15px; }
+}
+@media (max-width:355px) {
+  .hh-profile-domains .hh-domain-title { max-width:100%; }
+  .hh-profile-domains .hh-domain-hero h1 { font-size:31px!important; }
+  .hh-profile-domains .hh-domain-hero:after { opacity:.12; }
+}
