@@ -165,6 +165,13 @@ export function SimpleTestPicker({
           </button>
         })}
       </div>
+      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
+        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
+        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
+          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
+          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
+        </button>)}
+      </div>}
     </section>
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
