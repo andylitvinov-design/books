@@ -315,10 +315,20 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     })
     setSimpleSelectionChanged(true)
   }
+  // Keep the existing batch start unchanged. Per-card actions use the same
+  // handoff with a single-item battery, without modifying the selected set.
   const start = async () => {
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
+      focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+      depth, maxMinutes, language, tracking, freeOnly,
+    }) } catch (error) { setActionError(error) } finally { setStarting(false) }
+  }
+  const startSingle = async (entry) => {
+    if (!entry?.selectable || !onStart || starting) return
+    setStarting(true); setActionError(null)
+    try { await onStart([entry], {
       focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
@@ -352,6 +362,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       matchCount={simpleRecommendations.length}
       onStart={start}
+      onStartSingle={startSingle}
       onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus, problems }) : null}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowseFull={() => {

@@ -30,7 +30,7 @@ const TEXT = {
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
     modeLabel:'Choose your next step', modeTests:'Tests', modeCourse:'Tests + support course', courseHint:'A personal, self-guided 14-day support course. Review your selected tests and explicitly consent before saving.', courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
-    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests',
+    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'Details & measured scales',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'Save your selection and get started',
     browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
@@ -57,7 +57,7 @@ const TEXT = {
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
     modeLabel:'Как хотите продолжить', modeTests:'Тесты', modeCourse:'Тесты + коррекция', courseHint:'Персональный курс поддержки на 14 дней с ежедневными упражнениями. Перед сохранением вы подтвердите выбор и согласие.', courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
-    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов',
+    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Подробнее о тесте и шкалах',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Сохранить подборку и начать',
     browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
@@ -84,7 +84,7 @@ const TEXT = {
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
     modeLabel:'Elige cómo continuar', modeTests:'Pruebas', modeCourse:'Pruebas + apoyo', courseHint:'Curso personal de apoyo de 14 días. Revisa las pruebas y da tu consentimiento antes de guardar.', courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
-    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes',
+    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Detalles y escalas',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Guardar selección y empezar',
     browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
@@ -110,15 +110,12 @@ function KindBadge({ entry, locale }) {
   </span>
 }
 
-function iconFor(entry) {
+// Lightweight images already in the site bundle; avoid additional image transformations.
+function artworkFor(entry) {
   const topics = entry.topics || []
-  if (topics.includes('anxiety')) return Heart
-  if (topics.includes('sleep')) return Moon
-  if (topics.includes('stress')) return Zap
-  if (topics.includes('relationships') || topics.includes('support')) return Users
-  if (topics.includes('energy') || topics.includes('recovery')) return Sun
-  if (topics.includes('mood')) return Smile
-  return Leaf
+  if (topics.includes('relationships') || topics.includes('support')) return '/images/holistic-house/course-hero-mindful.svg'
+  if (topics.includes('stress') || topics.includes('energy') || topics.includes('recovery')) return '/images/holistic-house/course-journey-landscape.svg'
+  return '/images/holistic-house/course-calm-illustration.svg'
 }
 
 export function SimpleTestPicker({
@@ -129,7 +126,7 @@ export function SimpleTestPicker({
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onStartCourse = null, onBrowseFull, onBrowseCore,
+  matchCount, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const c = TEXT[locale] || TEXT.en
@@ -303,33 +300,46 @@ export function SimpleTestPicker({
         <p>{c.whyText}</p>
       </details>
       {recommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
-        {visibleRecommendations.map((entry,index) => {
-          const Icon = iconFor(entry)
-          const checked = selectedKeys.has(entry.key)
-          return <div className={styles.testEntry} key={entry.key}>
-          <label className={styles.testRow} data-selected={checked} data-test-match={entry.key} data-relevance={entry.matchPercent}>
-            <input type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
-              aria-label={entry.title} />
-            <span className={styles.testArt} aria-hidden="true"><Icon size={24} strokeWidth={1.7}/></span>
-            <span className={styles.testInfo}>
-              <strong>{entry.title}</strong>
-              <KindBadge entry={entry} locale={locale} />
-              <small>{entry.description || entry.category}</small>
-              {entry.methodology && entry.methodologyStatus !== 'original' && <small className={styles.methodology}>{entry.methodology}</small>}
-            </span>
-            <span className={styles.testMeta}>
-              <strong className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
-                {entry.matchPercent}% <span>{c.fit}</span>
-              </strong>
-              <em>{checked ? c.viewSelection : index === 0 ? c.suggested : c.available}</em>
-              <small><Clock3 size={14} aria-hidden="true"/> ~{entry.durationMinutes ?? '—'} min</small>
-            </span>
-          </label>
-          <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
-          </div>
-        })}
-      </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
-      {recommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
+         {visibleRecommendations.map((entry, index) => {
+           const checked = selectedKeys.has(entry.key)
+           const inputId = `hh-public-test-${entry.key}`
+           return <article className={styles.testEntry} key={entry.key} data-test-match={entry.key} data-relevance={entry.matchPercent} data-selected={checked}>
+             <div className={styles.testRow} data-selected={checked}>
+               <input id={inputId} type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
+                 aria-label={entry.title} />
+               <span className={styles.testArt} aria-hidden="true">
+                 <img src={artworkFor(entry)} alt="" width="80" height="80" loading="lazy" decoding="async" />
+               </span>
+               <label htmlFor={inputId} className={styles.testInfo}>
+                 <strong>{entry.title}</strong>
+                 <small>{entry.description || entry.category}</small>
+                 <span className={styles.testChips}>
+                   <KindBadge entry={entry} locale={locale} />
+                   <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
+                     {entry.matchPercent}% <span>{c.fit}</span>
+                   </span>
+                   <span className={styles.duration}><Clock3 size={13} aria-hidden="true" /> ~{entry.durationMinutes ?? '—'} min</span>
+                   {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
+                 </span>
+               </label>
+               <button type="button" className={styles.takeTest}
+                 onClick={() => onStartSingle?.(entry)} disabled={starting || !onStartSingle}
+                 aria-label={`${c.takeTest}: ${entry.title}`}>
+                 {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
+               </button>
+             </div>
+             <details className={styles.testDetails}>
+               <summary>{c.expandTest}<ChevronDown size={15} aria-hidden="true" /></summary>
+               <div className={styles.testDetailsBody}>
+                 <p>{entry.description || entry.category}</p>
+                 {entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}</p>}
+                 <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
+               </div>
+             </details>
+           </article>
+         })}
+       </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
+       {recommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
         <span role="status" aria-live="polite">
           {format(c.showing, { shown: visibleRecommendations.length, total: recommendations.length })}
         </span>
