@@ -947,7 +947,7 @@ try {
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
  await page.goto(origin+'/en/client')
- await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
+ await assertPublicPickerEntrance(page,'en')
  await expect(page.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Browse full database'}).click()
  await expect(page.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()

@@ -108,7 +108,7 @@ test('V7 rhythm changes wait for server confirmation, serialize double-clicks an
  assert.ok(textOf(h.tree).includes('Choose your rhythm'));assert.equal(primary(h).props.disabled,true)
  assert.equal(calls.sessions.length,0);assert.equal(calls.finish,0)
  slow.resolve(fixture());await h.settle()
- assert.ok(textOf(h.tree).includes('Before the practice'));assert.equal(calls.sessions.length,0)
+ assert.ok(textOf(h.tree).includes('Notice your state before the practice'));assert.equal(calls.sessions.length,0)
  h.unmount()
 })
 
@@ -122,7 +122,7 @@ test('false and rejected rhythm saves remain retryable on the same slide without
   assert.ok(nodes(h.tree).some(node=>node.props.role==='alert'))
   assert.equal(calls.sessions.length,0);assert.equal(nodes(h.tree).some(node=>node.props.className==='xpReward'),false)
   primary(h).props.onClick();await h.settle()
-  assert.equal(attempts,2);assert.ok(textOf(h.tree).includes('Before the practice'))
+  assert.equal(attempts,2);assert.ok(textOf(h.tree).includes('Notice your state before the practice'))
   assert.equal(calls.sessions.length,0);h.unmount()
  }
 })
