@@ -55,7 +55,7 @@ test('Bach PDF renders the Bach title and automatic mixture instructions', () =>
     items: [{ displayName: 'Mimulus' }, { displayName: 'Larch' }],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /BACH FLOWER ESSENCE/)
+  assert.match(source, /Bach flower essence recommendation/)
   assert.match(source, /RECOMMENDATION/, 'long editorial title wraps to a second line')
   const guidance = recommendationGuidance(document, 'en')
   assert.ok(guidance.sections.flatMap((section) => section.bullets).some((line) => line.startsWith('Prepare a mixture: add 5 drops')))
@@ -91,7 +91,7 @@ test('Mixed PDF groups Homeopathy and Bach items and renders both guidance secti
     ],
   }
   const source = buildPrescriptionPdf(document, 'en', 'https://example.test').toString('latin1')
-  assert.match(source, /INTEGRATED RECOMMENDATION/)
+  assert.match(source, /Integrated recommendation/)
   assert.match(source, /HOMEOPATHY/)
   assert.match(source, /BACH ESSENCES/)
   const guidance = recommendationGuidance(document, 'en')
