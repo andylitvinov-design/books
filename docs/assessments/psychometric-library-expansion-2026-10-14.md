@@ -28,9 +28,9 @@
 
 ## Instrument licensing and safety
 New records are conservatively **research-only** and `enabled: false`:
-- 17 `rights_review`;
+- 16 `rights_review`;
 - 116 `permission_required`;
-- 38 `licensed_only`;
+- 39 `licensed_only`;
 - 61 `clinician_only`.
 
 These categories are **release gates**, not individual legal determinations. The source URLs supplied for these entries are **catalogue discovery starting points**, not instrument-specific commercial licences or proof that every measure is listed by every indexed site. Each version needs owner/manual provenance, approved language, complete items and scorer, clinician/safety review (where applicable), appropriately restricted consent, and quality assurance before moving into `MONITORING_CATALOG` or `app.assessment_versions`.
