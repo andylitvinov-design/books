@@ -43,7 +43,7 @@ for (const locale of ['en', 'ru']) {
     assert.equal(nodes.filter(node => node.type === 'h3').length, 1)
     const links = nodes.filter(node => node.type === Link)
     assert.equal(links.length, 1)
-    assert.equal(links[0].props.href, '/' + locale + '/app/course')
+    assert.equal(links[0].props.href, '/' + locale + '/app/course?program=stress')
     assert.equal(links[0].props.prefetch, false)
     assert.match(text(links[0]), locale === 'ru' ? /Начать курс бесплатно/ : /Start course for free/)
     const details = nodes.find(node => node.type === 'details')
@@ -64,7 +64,7 @@ for (const locale of ['en', 'ru']) {
 test('default and unsupported locale safely use the English route and copy', () => {
   for (const props of [{}, { locale: 'es' }, { locale: '../../admin' }, { locale: null }]) {
     const tree = FreeCourseBanner(props)
-    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course')
+    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course?program=stress')
     assert.match(text(tree), /An optional next step/)
   }
 })
