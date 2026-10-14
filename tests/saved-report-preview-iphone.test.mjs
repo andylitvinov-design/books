@@ -55,16 +55,52 @@ test('Russian headline wraps naturally at word boundaries on an iPhone',()=>{
   assert.match(excerpt,/@media print/)
 })
 
-test('long signed reports can start the complete appendix in unused continuation space',()=>{
+function pageContentStreams(pdf) {
+  const source=pdf.toString('latin1')
+  return [...source.matchAll(/\/Type \/Page\b[^]*?\/Contents (\d+) 0 R/g)].map(match=>{
+    const content=source.match(new RegExp('\\n'+match[1]+' 0 obj\\n<< /Length (\\d+) >>\\nstream\\n'))
+    assert.ok(content,'every PDF page has a content stream')
+    const start=content.index+content[0].length
+    return source.slice(start,start+Number(content[1]))
+  })
+}
+
+test('restored report header and strict appendix page boundary in both languages',()=>{
   const pdfCode=sourceFile('lib/prescriptions/pdf.js')
-  assert.match(pdfCode,/appendixOnSignedContinuation = layouts\.length > 1 && y >= 280/)
-  assert.match(pdfCode,/if \(appendixOnSignedContinuation\)/)
-  assert.match(pdfCode,/if \(y < \(compactOpening \? 206 : 330\)\) startPage\(\)/,
-    'keep a compact remedy introduction above the footer without truncation')
+  assert.match(pdfCode,/q 82 0 0 80\.81 68 724 cm \/Lighthouse Do Q/,
+    'approved lighthouse and name form the header on the left')
+  assert.match(pdfCode,/text\(LETTERHEAD\.name, 164, 788, 19/,
+    'brand header stays away from iOS page number overlay')
+  assert.doesNotMatch(pdfCode,/appendixOnSignedContinuation/,
+    'never start an appendix under a signature, even with empty space')
+  assert.match(pdfCode,/appendixKind = 'remedies'[^]*?startPage\(\)[^]*?for \(const \{ item, remedy \} of profiles\)/)
   const remedy=getRemedy('ru','veratrum-album')
   const entries=remedyDescriptionBlocks(remedy.description).filter(x=>x.kind!=='space')
   const last=remedy.description.trim().split(/\r?\n/).filter(Boolean).at(-1).trim()
-  assert.equal(entries.at(-1).text,last,'no author source lines are deleted')
+  assert.equal(entries.at(-1).text,last,'all original library text remains')
+  for (const locale of ['en','ru']) {
+    const pdf=buildPrescriptionPdf({
+      patientName:'SYNTHETIC PAGE-BREAK CLIENT',
+      dateIssued:'2026-10-13',
+      recommendationType:'homeopathy',
+      analysis:locale==='ru'
+        ? 'Было: к цели интерес 3/10\nПосле сессии: к цели стало 6/10\nЦель: план 7.3/10'
+        : 'Before: interest 3/10\nAfter session: interest 6/10\nTarget: plan 7.3/10',
+      additionalNotes:('SYNTHETIC PRACTITIONER-APPROVED OBSERVATION. ').repeat(23),
+      followUpDate:'2026-10-25',
+      items:[{displayName:'Veratrum Album',remedySlug:'veratrum-album',remedyPath:'/en/homeopathy/remedies/veratrum-album'}],
+      internalNotes:'PRIVATE CONTENT DO NOT EXPOSE',
+    },locale,'https://example.invalid')
+    const pages=pageContentStreams(pdf)
+    const signed=pages.findIndex(p=>p.includes('/Signature Do Q'))
+    const appendix=pages.findIndex((p,index)=>index>signed && p.includes('/RemedyPhoto1 Do Q'))
+    assert.ok(signed>=0 && appendix===signed+1,
+      locale+': appendix original image must start on a new page immediately after signed core')
+    assert.equal(pages[signed].includes('(APPENDIX)'),false)
+    if(signed===1)assert.equal(appendix,2,'when core spans two pages, appendix starts on page 3')
+    assert.ok(pages[0].includes('164 788 Tm'),'first page has restored name letterhead')
+    assert.doesNotMatch(pdf.toString('latin1'),/PRIVATE CONTENT DO NOT EXPOSE/)
+  }
 })
 
 test('the saved record regenerates an access-controlled, signed PDF without leaking internal notes',()=>{
