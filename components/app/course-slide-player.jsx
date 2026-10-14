@@ -196,7 +196,7 @@ export default function CourseSlidePlayer({
     const trap = event => {
       if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return }
       if (event.key !== 'Tab') return
-      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
+      const nodes = [...(frame.current?.querySelectorAll('button:not([disabled]), a[href]:not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), summary') || [])]
         .filter(node => node.getClientRects().length)
       if (!nodes.length) return
       const first = nodes[0], last = nodes[nodes.length - 1]
