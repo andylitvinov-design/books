@@ -84,7 +84,6 @@ try {
         await page.setContent(fixture(locale))
         const card=page.locator('[data-current-course-card]')
         const plan=card.locator('button[class*="selector_planButton"]')
-        const button=card.locator('button[class*="selector_openButton"]')
         const add=page.locator('[data-add-course]')
         await expect(card).toHaveCount(1)
         await expect(plan).toHaveText(locale==='ru'?'План курса':'Course plan')
