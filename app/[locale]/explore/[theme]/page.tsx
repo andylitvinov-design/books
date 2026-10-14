@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
+import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
 import type { Locale } from '@/data/remedies'
 
 type Props = { params: Promise<{ locale: string; theme: string }> }
@@ -27,6 +28,6 @@ export default async function TopicJourneyPage({ params }: Props) {
   if (!journey) notFound()
   return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
     <PublicSiteHeader locale={locale as Locale} showAssessmentStrip={false}/>
-    <TopicJourneySelector locale={locale} journey={journey}/>
+    <TopicJourneySelector locale={locale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
   </main>
 }
