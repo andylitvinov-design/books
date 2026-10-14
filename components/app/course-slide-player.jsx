@@ -165,7 +165,7 @@ function IllustratedMoment({ variant = 'calm', photo = false }) {
 }
 
 export default function CourseSlidePlayer({
-  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onCheckin, onSession, onPreferences,
+  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
   const cycle = data.cycle || {}
@@ -524,7 +524,7 @@ export default function CourseSlidePlayer({
       </main>
       <footer className={styles.footer}>
         {promoOpen && promotion.show && <div className={styles.subactions}>
-          <button type="button" className={styles.skip} onClick={onClose}>{words.promoSkip}<SkipForward size={14}/></button>
+          <button type="button" className={styles.skip} onClick={onFinish||onClose}>{words.promoSkip}<SkipForward size={14}/></button>
         </div>}
         {!finished && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
@@ -534,8 +534,8 @@ export default function CourseSlidePlayer({
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={promoOpen ? onClose
-            : finished ? (promotion.show && earned ? () => setPromoOpen(true) : onClose)
+          onClick={promoOpen ? (onFinish||onClose)
+            : finished ? (promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
             : slide.kind === 'pace' ? () => void savePace()
             : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
