@@ -9,4 +9,3 @@
 @media (max-width: 760px) {
   .placement { width: calc(100% - 24px); margin: 17px auto 22px; }
 }
-:global(#hh-topic-journeys) { scroll-margin-top: 100px; }
