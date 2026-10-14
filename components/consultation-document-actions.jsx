@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 
 export function ConsultationDocumentActions({
   recordId,
   locale,
+  dateIssued,
+  kind = 'recommendation',
+  paymentStatus,
   active,
   editHref,
   editLabel,
@@ -32,6 +36,7 @@ export function ConsultationDocumentActions({
 
   const labels = resultCopy(locale)
   const urls = documentActionUrls(recordId, locale)
+  const pdfFilename = kind === 'payment' ? (paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename({dateIssued})
   const ru = locale === 'ru'
 
   const copy = async () => {
@@ -54,7 +59,7 @@ export function ConsultationDocumentActions({
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
       <a className="consultation-action-primary" href={urls.open}>{ru ? 'Предпросмотр / открыть' : 'Preview / Open'}</a>
       <a href={urls.previewPdf}>{labels.previewPdf}</a>
-      <a href={urls.pdf} download>{labels.pdf}</a>
+      <a href={urls.pdf} download={pdfFilename}>{labels.pdf}</a>
       <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}>
         {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
       </button>
