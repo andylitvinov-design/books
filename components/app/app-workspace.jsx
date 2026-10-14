@@ -337,7 +337,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
     ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
     ['portrait', c.portrait, '/portrait'],
-    ['course', locale === 'ru' ? 'Мой курс' : 'My course', '/course'],
+    ['course', locale === 'ru' ? 'Мои курсы' : 'My courses', '/course'],
   ]
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
@@ -346,7 +346,9 @@ export default function AppWorkspace({ locale, path = [] }) {
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span>
+          Holistic House<span>{page === 'course'
+            ? (locale === 'ru' ? 'Мои курсы' : 'My courses')
+            : (locale === 'ru' ? 'Мои тесты' : 'My tests')}</span>
         </Link>
         {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
         <details className="hh-account-menu">
@@ -356,7 +358,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {c.portrait}
             </Link>
             <Link href={root + '/portrait#personal-reports'} prefetch={false}>{locale === 'ru' ? 'Мои отчёты' : 'My reports'}</Link>
-            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мой курс' : 'My course'}</Link>
+            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</Link>
             <Link href={root + '/history'} prefetch={false}>
               {c.history}
             </Link>
