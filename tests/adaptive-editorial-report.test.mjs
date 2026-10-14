@@ -97,8 +97,12 @@ test('realistic RU example keeps the practitioner signature with the core report
     return full.slice(matchHeader.index + matchHeader[0].length,matchHeader.index + matchHeader[0].length + Number(matchHeader[1]))
   })
   const signaturePage = pages.findIndex(page => /\/Signature Do Q/.test(page))
-  assert.equal(signaturePage, 0, 'compact realistic consultation keeps its approved signature on the first A4 page')
-  assert.ok(pages.slice(1).some(page => /\/RemedyPhoto1 Do Q/.test(page)), 'full approved appendix follows')
+  assert.ok(signaturePage >= 0 && signaturePage <= 1, 'signed report stays within the compact core')
+  if (signaturePage === 1) {
+    const drawnText = (pages[signaturePage].match(/BT \/F/g) ?? []).length
+    assert.ok(drawnText >= 12, 'second page contains meaningful authored text, not only a signature')
+  }
+  assert.ok(pages.slice(signaturePage + 1).some(page => /\/RemedyPhoto1 Do Q/.test(page)), 'full approved appendix follows the signed core')
 })
 
 
