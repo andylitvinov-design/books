@@ -10,6 +10,7 @@ import { useActionState, useEffect, useMemo, useState } from 'react'
 import { initialConsultationRows, serializeConsultationRows, validateConsultationRows } from '@/lib/consultations/editor'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
+import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { ReportLanguagePicker } from './report-language-picker'
 import { readUiLocale } from '@/lib/ui-locale'
 
@@ -48,6 +49,8 @@ const copy = {
     clientNotes: 'Примечания',
     clientNotesHint: 'Ваши дополнительные советы и пояснения клиенту',
     clientNotesPlaceholder: 'Что важно делать, наблюдать или обсудить на следующей консультации…',
+    followUpDate: 'Дата повторной сессии',
+    followUpDateHint: 'Необязательно. Дата и пояснение появятся в отчёте клиента.',
     reportTextLanguageNotice: 'Язык отчёта:',
     reportTextManualNote: 'Ваш авторский текст не переводится автоматически. Проверьте его перед отправкой клиенту.',
     reloadTemplate: 'Подставить шаблон на',
@@ -122,6 +125,8 @@ const copy = {
     clientNotes: 'Notes',
     clientNotesHint: 'Additional guidance and practical next steps for the client',
     clientNotesPlaceholder: 'Things to do, observe or discuss at follow-up…',
+    followUpDate: 'Follow-up session date',
+    followUpDateHint: 'Optional. The date and message will appear in the client report.',
     reportTextLanguageNotice: 'Report language:',
     reportTextManualNote: 'Your own text is not translated automatically. Review it before sharing with the client.',
     reloadTemplate: 'Load template in',
@@ -486,6 +491,14 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           ? 'Я проверил(а) и отредактировал(а) шаблон для этого клиента. Это персональные рекомендации, а не готовое назначение.'
           : 'I have reviewed and adapted this template for this client. This is personal guidance, not a ready-made prescription.'}</span>
       </label>}
+      <div className="consultation-follow-up-setting">
+        <label>
+          <span>{labels.followUpDate}</span>
+          <input type="date" name="followUpDate" defaultValue={consultation?.followUpDate ?? ''} />
+          <small>{labels.followUpDateHint}</small>
+        </label>
+        <p>{reportFollowUpCopy(reportLocale).description}</p>
+      </div>
       <label className="consultation-note consultation-legacy-instructions">{labels.note}
         <textarea name="generalInstructions" rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder={labels.notePlaceholder} />
       </label>
