@@ -11,7 +11,7 @@ const COPY = {
   en: {
     eyebrow: 'MY COURSES · HOLISTIC HOUSE',
     title: 'My courses', intro: 'Knowledge. Practice. Your own meaningful changes.',
-    motto: 'The best in you is already here', plan: 'Plan',
+    motto: 'The best in you is already here', plan: 'Course plan',
     benefitsTitle: 'What you will find in your courses', progressBenefit: 'Track your progress', practiceBenefit: 'Daily small practices', focusBenefit: 'A personal direction', rhythmBenefit: 'Your own pace',
     quote: 'Small steps each day make room for lasting habits',
     count: 'active course', current: 'CURRENT COURSE', defaultCourse: 'My personal course',
@@ -33,7 +33,7 @@ const COPY = {
   ru: {
     eyebrow: 'МОИ КУРСЫ · HOLISTIC HOUSE',
     title: 'Мои курсы', intro: 'Знания. Практика. Ваши собственные изменения.',
-    motto: 'Лучшее в тебе уже здесь', plan: 'План',
+    motto: 'Лучшее в тебе уже здесь', plan: 'План курса',
     benefitsTitle: 'Что вы найдёте в наших курсах', progressBenefit: 'Наблюдение за прогрессом', practiceBenefit: 'Практики на каждый день', focusBenefit: 'Личное направление', rhythmBenefit: 'Удобный темп',
     quote: 'Маленькие шаги каждый день создают новые привычки',
     count: 'активный курс', current: 'ТЕКУЩИЙ КУРС', defaultCourse: 'Мой персональный курс',
@@ -132,11 +132,11 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
             <span className={styles.overline}>{t.current}</span>
             <h2>{name}</h2>
             <p>{t.programme}</p>
-            {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
-              {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
-            </div>}
           </div>
         </div>
+        {axes.length > 0 && <div className={styles.axes} aria-label={t.focus}>
+          {axes.map(axis => <span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
+        </div>}
         <div className={styles.progressInfo}>
           <span>{course.stage === 4 && nextLesson !== null
             ? completed === 14 ? t.finished : t.lesson + ' ' + nextLesson + ' ' + t.of + ' 14'
