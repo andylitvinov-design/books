@@ -22,8 +22,8 @@ async function request(path, body, method = 'POST') {
   return value
 }
 
-/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course' }} props */
-export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests' }) {
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course', initialBrowseFull?: boolean }} props */
+export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const effectiveLocale = locale === 'ru' ? 'ru' : 'en'
@@ -78,8 +78,8 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
   }
   return <>
     <TestExplorer locale={locale} audience="account" embedded={embedded} simpleMode={embedded}
-      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode}
-      initialPreferences={initialPreferences} initialMode={initialMode} onStart={submit} onStartCourse={launchCourse} />
+      key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
+      initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
   </>
 }
