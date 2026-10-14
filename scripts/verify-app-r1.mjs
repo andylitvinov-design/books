@@ -94,7 +94,7 @@ async function chooseVisibleTest(testPage,name){
 // Public routes start in the easy picker. Exercise the real catalog transition,
 // then explicitly clear its carried suggestions for the exact-one-test checks.
 async function chooseSinglePublicTest(target,name){
- await expect(target.getByRole('heading',{name:'Choose your tests',level:1,exact:true})).toBeVisible()
+ await expect(target.getByRole('heading',{name:'Understand yourself and your life better',level:1,exact:true})).toBeVisible()
  await target.getByRole('button',{name:'Browse full database',exact:true}).click()
  await expect(target.getByRole('heading',{name:'Start with a simple check-in',level:1,exact:true})).toBeVisible()
  await expect(target.getByRole('button',{name:'Start free monitoring',exact:true}).first()).toBeEnabled()
@@ -458,7 +458,7 @@ try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
- await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
  await expect(page.getByRole('button',{name:/^Choose tests/}).first()).toBeInViewport();await expect(page.getByRole('button',{name:/Open test filters/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
@@ -872,7 +872,7 @@ try {
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
  await page.goto(origin+'/en/client')
- await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Understand yourself and your life better',exact:true})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Browse full database'}).click()
  await expect(page.getByRole('heading',{name:'Start with a simple check-in'})).toBeVisible()
