@@ -31,7 +31,7 @@ export function SitewideAntistressBanner({ initialLocale = "en" }: { initialLoca
   return (
     <aside className={styles.ribbon} data-sitewide-antistress-banner aria-label={t.eyebrow}>
       <div className={styles.inner}>
-        <span className={styles.name}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</span>
+        <Link className={styles.name} href={"/" + locale + "/courses/antistress"} prefetch={false} aria-label={t.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}<ArrowRight size={14} aria-hidden="true" /></Link>
         <span className={styles.detail}>{t.detail}</span>
         <Link className={styles.cta} href={`/${targetLocale}/app/course?program=stress`} prefetch={false}>
           {t.cta}<ArrowRight size={16} aria-hidden="true" />

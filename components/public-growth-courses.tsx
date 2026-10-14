@@ -11,7 +11,7 @@ const copy = {
     title: "Мои курсы",
     lead: "Небольшие шаги к спокойствию и внутренней опоре.",
     intro: "14 дней в вашем темпе. Один урок, одна практика и возможность замечать свои изменения.",
-    start: "Начать бесплатно", learn: "Посмотреть программы",
+    start: "Начать бесплатно", learn: "Подробнее об Антистрессе",
     heroTag: "14 дней · личный темп", visualTitle: "Ваша точка опоры",
     visualText: "Один урок, одна практика, один небольшой шаг.",
     badge: "Первый курс бесплатно",
@@ -55,7 +55,7 @@ const copy = {
     title: "My courses",
     lead: "Small steps towards calm and inner support.",
     intro: "Fourteen days at your own pace. One lesson, one practice, and room to notice how you feel.",
-    start: "Start for free", learn: "Explore the programmes",
+    start: "Start for free", learn: "About Stress Relief",
     heroTag: "14 days · your pace", visualTitle: "Find your footing",
     visualText: "One lesson, one practice, one small step.",
     badge: "Your first course is free",
@@ -99,7 +99,7 @@ const copy = {
     title: "Mis cursos",
     lead: "Pequeños pasos hacia la calma y tu apoyo interior.",
     intro: "Catorce días a tu ritmo. Una lección, una práctica y espacio para observar los cambios.",
-    start: "Empezar gratis", learn: "Ver los programas",
+    start: "Empezar gratis", learn: "Conocer Antiestrés",
     heroTag: "14 días · a tu ritmo", visualTitle: "Tu punto de apoyo",
     visualText: "Una lección, una práctica, un pequeño paso.",
     badge: "Tu primer curso es gratis",
@@ -158,7 +158,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         <p className={styles.heroIntro}>{t.intro}</p>
         <div className={styles.heroActions}>
           <Link className={styles.primary} href={courseUrl} prefetch={false}>{t.start}<ArrowRight size={18} aria-hidden="true" /></Link>
-          <a className={styles.secondary} href="#course-programmes">{t.learn}<ArrowRight size={18} aria-hidden="true" /></a>
+          <Link className={styles.secondary} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={18} aria-hidden="true" /></Link>
         </div>
         <span className={styles.freeNote}><CheckCircle2 size={17} aria-hidden="true" />{t.badge}</span>
       </div>
@@ -191,6 +191,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
             <p className={styles.programmeText}>{programme.description}</p>
             <p className={styles.programmeResult}>{programme.result}</p>
             <Link href={courseUrl} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className={styles.programmeMore} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={15} aria-hidden="true" /></Link>
           </article>;
         })}
       </div>
