@@ -149,7 +149,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
   const courseUrl = `/${appLocale}/app/course?program=stress`;
 
   return <main className={styles.root} lang={locale} data-public-my-courses>
-    <PublicSiteHeader locale={locale} />
+    <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
     <section className={styles.hero} aria-labelledby="courses-title">
       <div className={styles.heroCopy}>
         <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>

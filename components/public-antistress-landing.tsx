@@ -641,7 +641,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
 
   return (
     <main className={styles.root} lang={locale} data-opora-antistress-landing>
-      <PublicSiteHeader locale={locale} />
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <div className={styles.container}>
         <nav className={styles.crumbs} aria-label={t.back}>
           <Link href={aboutPath}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
