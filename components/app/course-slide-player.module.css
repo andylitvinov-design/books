@@ -162,3 +162,29 @@
  .overlay .momentResult{padding:8px}
 }
 @media(prefers-reduced-motion:reduce){.paceChoices button{transition:none!important}}
+
+/* Post-save completion journey: result → participation XP → saved path. */
+.rewardKicker{display:inline-flex;align-items:center;gap:7px;margin:0;color:#07899f;font-size:13px;font-weight:850}
+.rewardStage{display:grid;align-content:center;justify-items:center;gap:19px;flex:1;min-height:380px;padding:18px 0;text-align:center}
+.rewardStage h2{margin:0;font-size:clamp(38px,8vw,60px);font-weight:900;letter-spacing:-.055em;line-height:1.05;color:#078fa9}
+.rewardStage>p{margin:0;max-width:350px;color:#547b8c;font-size:15px;line-height:1.52}
+.rewardMedal{display:grid;place-items:center;width:160px;height:160px;color:#f4b839;background:radial-gradient(circle,#fff7cf 5%,#e7fbfd 62%,transparent 73%);filter:drop-shadow(0 12px 12px #e5b64142);animation:rewardLift .65s ease-out both}
+.rewardStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%;max-width:440px}
+.rewardStats>div{display:grid;justify-items:center;align-content:center;gap:5px;min-width:0;min-height:112px;padding:11px 7px;background:#edfbfd;border:1px solid #c4e9ee;border-bottom:4px solid #acdce4;border-radius:17px;color:#087e9c}
+.rewardStats>div:nth-child(2){color:#2c9782;background:#ecfbf5;border-color:#c6eddd}
+.rewardStats>div:nth-child(3){color:#b88925;background:#fff8e4;border-color:#f2e2a9}
+.rewardStats strong{font-size:clamp(21px,4vw,26px);font-variant-numeric:tabular-nums}
+.rewardStats span{font-size:11px;line-height:1.35;font-weight:780;overflow-wrap:anywhere}
+@keyframes rewardLift{from{opacity:0;transform:translateY(17px) scale(.86)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:540px){.rewardStage{gap:15px;min-height:290px}.rewardMedal{width:128px;height:128px}.rewardMedal svg{width:58px;height:58px}.rewardStats>div{min-height:94px;padding:8px 4px}.rewardStats span{font-size:10px}.rewardStage>p{font-size:13px}}
+@media(max-width:350px){.rewardStats{gap:5px}.rewardStats>div{padding:8px 3px}.rewardStats strong{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.rewardMedal{animation:none!important}}
+
+/* The closing path screen focuses on one thing: real completion / 14. */
+.journeyRewardIcon{display:grid;place-items:center;width:134px;height:134px;margin:0 auto;color:#099aa9;border-radius:40px;background:linear-gradient(145deg,#effdf9,#d0f2fd);box-shadow:0 14px 24px #188f9b16}
+.completionPath{display:grid;gap:13px;width:min(100%,360px);padding:15px;border:1px solid #c5e9ee;border-radius:22px;background:#f0fcfd}
+.completionPath strong{color:#048b9c;font-size:clamp(27px,7vw,40px);font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.completionPath progress{display:block;width:100%;height:15px;accent-color:#0aa6b9;border-radius:99px;overflow:hidden}
+.rewardStats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:350px}
+.rewardStats>div:nth-child(2){color:#b88925;background:#fff8e4;border-color:#f2e2a9}
+@media(max-width:540px){.journeyRewardIcon{width:105px;height:105px;border-radius:28px}.journeyRewardIcon svg{width:54px;height:54px}.completionPath{padding:13px}}
