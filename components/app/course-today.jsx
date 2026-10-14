@@ -7,6 +7,7 @@ import CourseGuidedTimer from './course-guided-timer'
 import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
 
 const UI={
@@ -368,6 +369,8 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       </div>
     </div>
   </header>
+  <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
+    progress={progress} roadmap={data.roadmap||[]}/>
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>

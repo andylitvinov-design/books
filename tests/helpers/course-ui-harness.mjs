@@ -47,6 +47,7 @@ export function mount(name, { props, search = '', fetcher, extraModules = {}, gl
     '@/lib/inner-growth/course-presets': presets, '@/lib/inner-growth/course-plans': coursePlans, '@/lib/billing/public-plan': billingPlan,
     './my-courses-dashboard': moduleFor('MyCoursesDashboard'), './course-preset-catalog': moduleFor('CoursePresetCatalog'),
     './course-today': moduleFor('CourseToday'), './course-14-day-overview': moduleFor('Course14DayOverview'), './course-r3-steps': moduleFor('CourseR3Steps'),
+    './course-moment-trends': moduleFor('CourseMomentTrends'),
     './course-guided-timer': moduleFor('CourseGuidedTimer'), './course-slide-player': moduleFor('CourseSlidePlayer'), './subscription-access': { useSubscription: () => ({ status: null, phase: 'unavailable', busy: '' }), useLessonCompletionOffer: () => completion => notified.push(completion) },
     './course-quest': { CourseQuestMap: stub('CourseQuestMap'), CourseQuestPlayer: stub('CourseQuestPlayer') },
     ...extraModules,
