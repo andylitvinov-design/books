@@ -3,7 +3,7 @@
 **Scope:** discovery metadata; NOT distribution of copyrighted questionnaires, licensing approval, clinical advice or production release.
 
 ## Source-of-truth comparison
-- Dedicated Holistic House Supabase project `shervdixkaxurnaecioe`, `app.assessment_versions`: **110 distinct registered instrument keys, 180 historical/language version rows** (read-only audit, 2026-10-14). Those are full assessment definitions and must not be mixed with research metadata.
+- Dedicated Holistic House Supabase project `shervdixkaxurnaecioe`, `app.assessment_versions`: **110 distinct registered instrument keys, 180 historical/language version rows** (read-only audit, 2026-10-14). The source branch has since advanced to 127 runnable keys, while the production database at readback still held 110; rollout and version registry are distinct. Do not mix full questionnaire definitions with research metadata.
 - Existing canonical research registry: **154** unique reference keys. Many overlap the active catalog.
 - New unique reference entries in `psychometric-library-2026.js`: **232**, checked against every existing research registry key; no duplicates.
 - New canonical research reference total: **386** unique reference keys. **708** descriptive measured-domain labels among the 232 new methods, plus named scales for all 154 preceding registry rows.

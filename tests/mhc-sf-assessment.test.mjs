@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
 import { MHC_SF_DEFINITIONS } from '../data/assessments/mhc-sf-adult-dec2011.js'
+import { IPIP_VIA_R_COMPLETION_DEFINITIONS } from '../data/assessments/ipip-via-r-completion-2026.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition, validateAnswers } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
@@ -109,10 +110,11 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,110)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,43)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,127)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,60)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
-  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
+  const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
+  const prior=ASSESSMENT_DEFINITIONS.filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!newViaIds.has(x.id)&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
