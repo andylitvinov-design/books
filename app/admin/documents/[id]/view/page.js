@@ -8,6 +8,7 @@ import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { documentPreviewEditHref } from '@/lib/consultations/document-preview-navigation'
+import { reportPdfFilename } from '@/lib/documents/report-filename'
 import styles from './viewer.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -52,7 +53,7 @@ export default async function AdminFullReportView({ params, searchParams }) {
           <Link href={root + '/view?locale=' + nextLocale} className={styles.control} aria-label={ru ? 'Switch to English' : 'Переключить на русский'}>
             <Languages size={16} aria-hidden="true" />{nextLocale.toUpperCase()}
           </Link>
-          <a href={pdf} download className={styles.control}><Download size={16} aria-hidden="true" />PDF</a>
+          <a href={pdf} download={payment ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(doc)} className={styles.control}><Download size={16} aria-hidden="true" />PDF</a>
           <Link href={reader + '&print=1'} className={styles.control}><Printer size={16} aria-hidden="true" />{ru ? 'Печать' : 'Print'}</Link>
           <Link href={edit} className={styles.edit}><PencilLine size={16} aria-hidden="true" />{ru ? 'Редактировать' : 'Edit'}</Link>
         </div>
