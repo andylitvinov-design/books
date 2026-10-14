@@ -7,6 +7,7 @@ import {
   SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
+import CoursePracticeVoice from './course-practice-voice'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import styles from './course-slide-player.module.css'
@@ -34,6 +35,17 @@ const WORDS = {
     recall: 'Remember a familiar skill', recallHint: 'Try recalling it without pressure, or simply continue.',
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
     guided: 'A moment of practice', gentle: 'Eyes can remain open; breathe naturally. Pause or skip anything uncomfortable.',
+    arrivalTitle: 'A gentle minute of grounding',
+    arrivalKicker: 'GUIDED EXERCISE · ABOUT 1 MINUTE',
+    arrivalFocus: 'Today’s focus',
+    arrivalSteps: [
+      'Find a comfortable position. Eyes may stay open.',
+      'Notice one colour, one sound and the support beneath you.',
+      'Observe how you feel right now. Nothing needs to change.',
+    ],
+    arrivalAudioLead: 'Take a gentle pause. You can keep your eyes open and let your breathing happen naturally. Today’s focus is',
+    arrivalAudioBody: 'Notice one colour around you. Notice one sound. If comfortable, feel the surface supporting you. Notice what is present for you now, without having to change anything. You can stop or continue in your own time.',
+    fullInstructions: 'Read the full instructions',
     short: 'Short', standard: 'Standard', noImagery: 'No imagery', optionalTimer: 'Optional timer',
     ritual: 'One gentle support', transfer: 'If you feel ready', transferHint: 'Choose a safe, very small action. No challenge is required.',
     symbol: 'A resource image', words: 'Plain words', imagery: 'Optional image', symbolHint: 'A metaphor for reflection, never diagnosis or treatment.',
@@ -111,6 +123,17 @@ const WORDS = {
     recall: 'Вспомните знакомый навык', recallHint: 'Попробуйте вспомнить без напряжения — или просто продолжайте.',
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
     guided: 'Момент практики', gentle: 'Можно не закрывать глаза и не менять дыхание. Неудобный шаг пропускайте.',
+    arrivalTitle: 'Минута мягкой опоры',
+    arrivalKicker: 'ПРАКТИЧЕСКОЕ УПРАЖНЕНИЕ · ОКОЛО 1 МИНУТЫ',
+    arrivalFocus: 'Тема сегодняшнего занятия',
+    arrivalSteps: [
+      'Устройтесь удобно. Глаза можно оставить открытыми.',
+      'Заметьте один цвет, один звук и опору под собой.',
+      'Понаблюдайте за состоянием. Менять ничего не требуется.',
+    ],
+    arrivalAudioLead: 'Сделайте небольшую паузу. Глаза можно оставить открытыми, а дыхание — естественным. Сегодня наша тема',
+    arrivalAudioBody: 'Заметьте один цвет вокруг. Заметьте один звук. Если комфортно, почувствуйте поверхность, на которую опираетесь. Отметьте, как вы себя сейчас ощущаете. Ничего не нужно исправлять. Вы можете закончить или продолжить в своём ритме.',
+    fullInstructions: 'Прочитать полную инструкцию',
     short: 'Короткая', standard: 'Обычная', noImagery: 'Без образов', optionalTimer: 'Таймер — по желанию',
     ritual: 'Небольшая опора', transfer: 'Если появится готовность',
     transferHint: 'Самочувствие и опора первичны. Действие необязательно, отдых тоже подходит.',
@@ -190,13 +213,16 @@ const SCENE = {
 
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
+  // If a lesson has an arrival exercise, its learn/understand text becomes optional
+  // reading on that same screen rather than an extra wall-of-text slide.
+  const hasArrival = guided.some(section => section.kind === 'arrive')
   return [
     { key: 'pace', kind: 'pace' },
     { key: 'baseline', kind: 'baseline' },
     { key: 'checkin', kind: 'checkin' },
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     { key: 'idea', kind: 'idea' },
-    ...((lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
+    ...(!hasArrival && (lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
     ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
     ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
     { key: 'ritual', kind: 'ritual' },
@@ -390,13 +416,14 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
+  const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.kind === 'arrive' ? words.arrivalTitle : slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
-  const scenicBaseline = !finished && !promoOpen && !discomfortOpen && slide.kind === 'baseline'
+  const scenicBaseline = !finished && !promoOpen && !discomfortOpen &&
+    (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
@@ -575,13 +602,37 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'guided' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
+            {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
             {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
               <p className={styles.prompt}>{words.practicePrePrompt}</p>
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
                 label={words.before + ': ' + focusLabel} disabled={locked}/>
             </div>}
-            <p className={styles.prompt}>{neutralMode ? words.neutralPractice : slide.section.text}</p>
+            {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
+              <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
+              <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
+              <CoursePracticeVoice key={slide.key + ':' + neutralMode} locale={locale}
+                text={neutralMode ? words.neutralPractice : words.arrivalAudioLead + ': ' + focusLabel + '. ' + words.arrivalAudioBody}/>
+              <ol className={styles.arrivalSteps}>
+                {words.arrivalSteps.map((step, stepIndex) => <li key={stepIndex}>
+                  <span aria-hidden="true">{stepIndex + 1}</span><p>{step}</p>
+                </li>)}
+              </ol>
+              <details className={styles.practiceTranscript}>
+                <summary>{words.fullInstructions}<ChevronDown size={17} aria-hidden="true"/></summary>
+                <div>
+                  {lesson.sections?.find(part => part.kind === 'learn')?.text && <p>{lesson.sections.find(part => part.kind === 'learn').text}</p>}
+                  <p>{neutralMode ? words.neutralPractice : slide.section.text}</p>
+                </div>
+              </details>
+            </section> : <>
+              <CoursePracticeVoice key={slide.key + ':' + neutralMode} locale={locale}
+                text={neutralMode ? words.neutralPractice : slide.section.text}/>
+              <details className={styles.practiceTranscript}>
+                <summary>{words.fullInstructions}<ChevronDown size={17} aria-hidden="true"/></summary>
+                <div><p>{neutralMode ? words.neutralPractice : slide.section.text}</p></div>
+              </details>
+            </>}
             <p className={styles.helper}>{words.gentle}</p>
             {!neutralMode && <details className={styles.timerDetails}>
               <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
