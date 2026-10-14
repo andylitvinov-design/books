@@ -45,12 +45,12 @@ test('game map zigzags without overlapping absolute labels, with honest locked f
   assert.doesNotMatch(map,/correctAnswer|scorePenalty|leaderboard/)
 })
 
-test('first mission slide offers three real persisted practice choices; original check-ins remain separate',()=>{
+test('first mission slide offers practice choices; daily check-ins no longer repeat on adjacent entry slides',()=>{
   assert.match(player,/pace: 'Choose your rhythm'/)
   assert.match(player,/pace: 'Выберите свой темп'/)
   assert.match(player,/key: 'pace', kind: 'pace'/)
   assert.match(player,/key: 'baseline', kind: 'baseline'/)
-  assert.match(player,/key: 'checkin', kind: 'checkin'/)
+  assert.doesNotMatch(player,/key: 'checkin', kind: 'checkin'/)
   assert.match(player,/kind:'understand'/)
   assert.match(player,/guided\.map\(\(section, index\)/)
   assert.match(player,/slide\.kind === 'pace'/)
@@ -59,7 +59,7 @@ test('first mission slide offers three real persisted practice choices; original
   assert.match(player,/const result = await onPreferences\(next\)/)
   assert.match(player,/if \(result\) goNext\(\)/)
   assert.match(player,/slide\.kind === 'pace' \? \(\) => void savePace\(\)/)
-  assert.match(player,/slide\.kind === 'checkin' \? \(\) => void saveCheckin\(\)/)
+  assert.match(player,/data-course-measured-scale-choice/)
   assert.match(player,/day:cycle\.day,lessonId:lesson\.id,operationId:sessionOp\.current/)
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
