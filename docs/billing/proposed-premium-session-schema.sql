@@ -27,7 +27,12 @@ CREATE TABLE billing_private.premium_session_credits (
   CHECK((status='fulfilled')=(fulfilled_at IS NOT NULL))
 );
 REVOKE ALL ON billing_private.premium_session_credits FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
-GRANT SELECT,INSERT ON billing_private.premium_session_credits TO hh_billing_backend;
+GRANT SELECT ON billing_private.premium_session_credits TO hh_billing_backend;
+-- Mint only the initial available 60-minute credit using the table defaults.
+-- Runtime cannot insert request, hold or fulfillment state/history/timestamps.
+-- Remove prior table and column INSERT grants before restoring the narrow grant.
+REVOKE INSERT ON billing_private.premium_session_credits FROM hh_billing_backend;
+GRANT INSERT(owner_id,provider,environment,subscription_id,period_end) ON billing_private.premium_session_credits TO hh_billing_backend;
 -- Hold reasons and prior state survive recovery; operation/timestamp are never reset.
 -- Runtime can request, expire or revoke; it cannot set fulfilled_at or confirm a booking.
 GRANT UPDATE(status,operation_id,requested_at,updated_at,held_from_status,hold_details) ON billing_private.premium_session_credits TO hh_billing_backend;

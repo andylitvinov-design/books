@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBillingRepository } from '../../lib/billing/repository.js'
 import { createGrowthCourseRepository } from '../../lib/app/growth-course.js'
@@ -320,6 +321,75 @@ export async function runTierDatabaseTests(t, { admin, pool, appConfig, billingC
     state=await courses.command(owner,{action:'close',courseId:id,expectedRevision:state.course.revision})
     assert.equal(state.course.status,'archived');assert.equal(state.access.activeCourseCount,0)
     assert.equal((await courses.exportHistory(owner))[0].testKeys.length,2)
+  })
+  await t.test('Premium INSERT hardening removes legacy table/column grants and allows only initial available credits', async () => {
+    const owner = await createOwner(admin)
+    const snapshot = await seedSubscription(repo, owner, { planId: 'premium' })
+    const credits = createBillingRepository(appConfig, billingConfig, { pool, extendStore: premiumSessionStore })
+    const scope = [owner.id, 'stripe', 'sandbox', snapshot.subscriptionId, snapshot.paidThroughAt]
+    // Replay only this exact reviewed permission delta in the guarded fresh CI
+    // fixture. The proposal file and its execution guard remain untouched.
+    const proposal = await readFile(new URL('../../docs/billing/proposed-premium-session-schema.sql', import.meta.url), 'utf8')
+    const permissionStatements = [
+      'REVOKE INSERT ON billing_private.premium_session_credits FROM hh_billing_backend;',
+      'GRANT INSERT(owner_id,provider,environment,subscription_id,period_end) ON billing_private.premium_session_credits TO hh_billing_backend;',
+    ]
+    assert.match(proposal, /^-- UNAPPLIED/)
+    assert.match(proposal, /RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL: explicit approval required'/)
+    for (const statement of permissionStatements) assert.equal(proposal.split(statement).length, 2)
+    // Simulate the old broad grant plus separately granted lifecycle columns.
+    await admin.query(`grant insert on billing_private.premium_session_credits to hh_billing_backend;
+      grant insert(minutes,status,held_from_status,hold_details,operation_id,requested_at,fulfilled_at,created_at,updated_at)
+        on billing_private.premium_session_credits to hh_billing_backend;`)
+    for (const statement of permissionStatements) await admin.query(statement)
+    // Repeating the permission delta must not broaden or remove valid access.
+    for (const statement of permissionStatements) await admin.query(statement)
+    assert.equal((await admin.query("select has_table_privilege('hh_billing_backend','billing_private.premium_session_credits','INSERT') as allowed")).rows[0].allowed, false)
+    const columnPrivileges = (await admin.query(`select attname as name,
+      has_column_privilege('hh_billing_backend',attrelid,attnum,'INSERT') as allowed
+      from pg_attribute where attrelid='billing_private.premium_session_credits'::regclass
+        and attnum>0 and not attisdropped order by attnum`)).rows
+    assert.equal(columnPrivileges.length, 14)
+    assert.deepEqual(columnPrivileges.filter(column => column.allowed).map(column => column.name),
+      ['owner_id', 'provider', 'environment', 'subscription_id', 'period_end'])
+    // These shapes satisfy the table constraints under the old broad INSERT
+    // grant. Each attempt must fail on privileges, before any row is created.
+    const forgeries = [
+      ['fulfilled', 'status,operation_id,requested_at,fulfilled_at', "'fulfilled',$6,now(),now()", [randomUUID()]],
+      ['requested', 'status,operation_id,requested_at', "'requested',$6,now()", [randomUUID()]],
+      ['held', 'status,held_from_status,hold_details', "'revoked','available','[{\"reason\":\"refund\"}]'::jsonb"],
+      ['expired', 'status', "'expired'"],
+      ['revoked', 'status', "'revoked'"],
+      ['explicit available', 'status', "'available'"],
+      ['operation history', 'operation_id', '$6', [randomUUID()]],
+      ['request timestamp', 'requested_at', 'now()'],
+      ['prior held state', 'held_from_status', "'requested'"],
+      ['hold history', 'hold_details', "'[{\"reason\":\"refund\"}]'::jsonb"],
+      ['explicit minutes', 'minutes', '60'],
+      ['creation timestamp', 'created_at', "now()-interval '1 day'"],
+      ['update timestamp', 'updated_at', "now()-interval '1 day'"],
+    ]
+    for (const [label, columns, values, extra = []] of forgeries) {
+      await assert.rejects(rawAs(owner, 'hh_billing_backend', db => db.query(`
+        insert into billing_private.premium_session_credits
+          (owner_id,provider,environment,subscription_id,period_end,${columns})
+          values($1,$2,$3,$4,$5,${values})`, [...scope, ...extra]), { ownerId: owner.id }),
+      error => error?.code === '42501', label)
+    }
+    assert.equal((await admin.query('select count(*)::integer n from billing_private.premium_session_credits where owner_id=$1', [owner.id])).rows[0].n, 0)
+    await credits.withOwner(owner, store => store.syncSessionCredit(snapshot))
+    await credits.withOwner(owner, store => store.syncSessionCredit(snapshot))
+    const rows = (await admin.query(`select minutes,status,held_from_status,hold_details,operation_id,requested_at,fulfilled_at
+      from billing_private.premium_session_credits where owner_id=$1`, [owner.id])).rows
+    assert.deepEqual(rows, [{ minutes: 60, status: 'available', held_from_status: null, hold_details: [],
+      operation_id: null, requested_at: null, fulfilled_at: null }])
+    const input = { operationId: randomUUID(), periodEnd: snapshot.paidThroughAt }
+    const requested = await credits.withOwner(owner, store => store.requestSessionCredit(snapshot, input))
+    assert.equal(requested.status, 'requested')
+    assert.deepEqual(await credits.withOwner(owner, store => store.requestSessionCredit(snapshot, input)), requested)
+    await assert.rejects(rawAs(owner, 'hh_billing_backend', db => db.query(
+      "update billing_private.premium_session_credits set status='fulfilled',fulfilled_at=now() where owner_id=$1", [owner.id]),
+    { ownerId: owner.id }), error => error?.code === '42501')
   })
   await t.test('dispute recovery keeps exact requested operation and cannot clear a refund hold', async () => {
     const owner=await createOwner(admin),snapshot=await seedSubscription(repo,owner,{planId:'premium'})

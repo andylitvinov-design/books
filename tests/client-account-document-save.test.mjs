@@ -77,7 +77,7 @@ test('Google save bridge is item-scoped and persists a private Client to Account
   assert.match(api, /commitLegacyDocumentSaveIntent/)
   assert.match(api, /readSavedDocument/)
   assert.match(page, /SavePrivateDocumentControl/)
-  assert.match(workspace, /app\/documents/)
+  assert.match(workspace, /app\/document-view/)
   assert.match(workspace, /CLIENT_ACCOUNT_ALREADY_LINKED/)
   assert.match(admin, /googleBinding\.linked/)
 })

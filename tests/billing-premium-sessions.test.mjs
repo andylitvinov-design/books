@@ -41,6 +41,12 @@ test('premium reconciliation mints one period credit regardless of duplicate eve
   const f = fixture()
   await f.store.syncSessionCredit(sub, NOW); await f.store.syncSessionCredit(sub, NOW)
   assert.equal(f.rows.length, 1)
+  const inserts = f.queries.filter(query => query.sql.includes('insert into billing_private.premium_session_credits'))
+  assert.equal(inserts.length, 2)
+  for (const { sql, args } of inserts) {
+    assert.match(sql, /\(owner_id,provider,environment,subscription_id,period_end\)\s+values\(\$1,\$2,\$3,\$4,\$5\) on conflict do nothing/)
+    assert.deepEqual(args, ['owner', 'stripe', 'sandbox', sub.subscriptionId, END])
+  }
   assert.deepEqual(await f.store.getSessionCredit(sub, NOW), { periodEnd: END, minutes: 60, count: 1, status: 'available', scheduling: 'separate_confirmation_required' })
   assert.equal(await f.stranger.getSessionCredit(sub, NOW), null)
   assert.equal(await f.live.getSessionCredit(sub, NOW), null)
@@ -81,11 +87,22 @@ test('next paid month earns one new credit while prior request history remains',
 })
 test('proposal is guarded, scoped, no runtime fulfillment write and no automatic booking', async () => {
   const sql = await readFile(new URL('../docs/billing/proposed-premium-session-schema.sql', import.meta.url), 'utf8')
+  assert.match(sql, /^-- UNAPPLIED PROPOSAL\. Outside the migration runner\. No execution authorized\./)
   assert.match(sql, /RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL/)
   assert.match(sql, /FORCE ROW LEVEL SECURITY/); assert.match(sql, /UNIQUE\(owner_id,provider,environment,operation_id\)/)
   assert.match(sql, /PRIMARY KEY\(owner_id,provider,environment,subscription_id,period_end\)/)
   assert.match(sql, /GRANT UPDATE\(status,operation_id,requested_at,updated_at,held_from_status,hold_details\)/)
   assert.doesNotMatch(sql, /GRANT UPDATE\([^)]*fulfilled_at/)
+  const grants = [...sql.matchAll(/GRANT\s+([^;]+?)\s+ON billing_private\.premium_session_credits TO hh_billing_backend;/g)]
+  assert.deepEqual(grants.map(match => match[1]), [
+    'SELECT',
+    'INSERT(owner_id,provider,environment,subscription_id,period_end)',
+    'UPDATE(status,operation_id,requested_at,updated_at,held_from_status,hold_details)',
+  ])
+  assert.match(sql, /REVOKE INSERT ON billing_private\.premium_session_credits FROM hh_billing_backend;\s+GRANT INSERT\(owner_id,provider,environment,subscription_id,period_end\)/)
+  assert.match(sql, /minutes smallint NOT NULL DEFAULT 60 CHECK\(minutes=60\)/)
+  assert.match(sql, /status text NOT NULL DEFAULT 'available'/)
+  assert.match(sql, /hold_details jsonb NOT NULL DEFAULT '\[\]'::jsonb/)
 })
 
 const dispute={reason:'dispute',chargeId:'ch_fixture',invoiceId:'in_fixture',disputeId:'dp_fixture',disputeStatus:'under_review',periodEnd:END}

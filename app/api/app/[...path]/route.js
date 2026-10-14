@@ -464,6 +464,37 @@ async function handle(request, { params }) {
       const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
       return json(await readSavedDocument(config, store, actor, path[1], locale))
     }
+    if (path[0] === 'documents' && path.length === 3 && path[2] === 'pdf' && method === 'GET') {
+      // Account-scoped PDF: do NOT reuse an owner endpoint or a fragment-only link.
+      // readSavedDocument checks the signed-in account, source status and hash.
+      const store = getPrescriptionStore()
+      if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
+      const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
+      const saved = await readSavedDocument(config, store, actor, path[1], locale)
+      const payment = saved.kind === 'invoice' || saved.kind === 'receipt'
+      const [
+        { buildPaymentPdf, buildPrescriptionPdf },
+        { reportPdfFilename },
+        { metadataBaseFor },
+      ] = await Promise.all([
+        import('@/lib/prescriptions/pdf'),
+        import('@/lib/documents/report-filename'),
+        import('@/data/site-metadata'),
+      ])
+      const pdf = await (payment ? buildPaymentPdf : buildPrescriptionPdf)(
+        saved.document, locale, metadataBaseFor().origin,
+      )
+      const filename = payment
+        ? (saved.kind === 'receipt' ? 'receipt.pdf' : 'invoice.pdf')
+        : reportPdfFilename(saved.document)
+      return auth.apply(new NextResponse(pdf, {
+        headers: {
+          ...PRIVATE_HEADERS,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      }))
+    }
     if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
     const body = await readBody(request)
     if (path[0] === 'reports' && path.length === 3 && path[2] === 'remove')
