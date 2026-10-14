@@ -466,7 +466,7 @@
   background:linear-gradient(180deg,#d5f3f5 0%,#eaf9f8 50%,#f8fdfd 100%);
 }
 .overlay .welcomeBackdrop{
-  position:absolute;inset:0;z-index:-1;pointer-events:none;
+  position:absolute;inset:0;z-index:0;pointer-events:none;
   background:linear-gradient(180deg,#d0f0f6 0%,#ecf9f7 52%,#f8fdfd 100%);
 }
 .overlay .welcomeBackgroundImage{
@@ -475,7 +475,7 @@
   object-fit:contain;object-position:center top;
 }
 .overlay .welcomeContent{
-  display:grid;gap:12px;align-content:start;width:100%;
+  position:relative;z-index:1;display:grid;gap:12px;align-content:start;width:100%;
   margin:0 auto;max-width:590px;
 }
 .overlay .welcomeKicker{
