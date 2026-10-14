@@ -41,7 +41,10 @@
  .reader{padding:9px 8px 30px;}
  .toolbar{gap:5px;}
  .back{width:100%;justify-content:flex-start!important;padding:5px 3px;}
- .controls{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;}
+ .controls{width:100%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+ .controls > a{box-sizing:border-box;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;}
+ .controls > a svg{flex:0 0 14px;}
+ .reader :global(.canonical-shell),.reader :global(.canonical-document){min-width:0;max-width:100%;overflow-wrap:anywhere;}
  .control,.edit{font-size:12px!important;padding:7px 5px!important;gap:4px!important;}
  .control svg,.edit svg {width:14px;height:14px;}
  .headline{padding:11px 4px;}
