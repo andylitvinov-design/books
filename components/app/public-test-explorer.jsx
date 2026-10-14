@@ -22,7 +22,7 @@ async function request(path, body, method = 'POST') {
   return value
 }
 
-/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[] } | null }} props */
+/** @param {{ locale: string, embedded?: boolean, initialPreferences?: { focus: string[], problems?: string[] } | null, initialMode?: 'tests' | 'course' }} props */
 export function PublicTestExplorer({ locale, embedded = false, initialPreferences = null, initialMode = 'tests' }) {
   const router = useRouter()
   const [error, setError] = useState('')
