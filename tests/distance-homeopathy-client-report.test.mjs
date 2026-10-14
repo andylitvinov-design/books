@@ -96,9 +96,11 @@ test('guide is an explicitly named final appendix in HTML and PDF, never an exte
   assert.match(source('components/prescription-form.jsx'), /name="includeDistanceHomeopathy"/)
 })
 
-test('service page, editor, preview and HTML report all reference the one optional guide', () => {
+test('optional distance homeopathy guide stays in reports and Library, not the Alchemy landing', () => {
   const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-  assert.match(source('app/[locale]/services/alchemy-of-soul/page.tsx'), /DistanceHomeopathyGuide locale=/)
+  assert.match(source('app/[locale]/services/alchemy-of-soul/page.tsx'), /<AlchemySoulLanding locale=/)
+  assert.doesNotMatch(source('app/[locale]/services/alchemy-of-soul/page.tsx'), /DistanceHomeopathyGuide/)
+  assert.match(source('components/library-hub.tsx'), /\/library\/distance-homeopathy/)
   assert.match(source('components/consultation-form.jsx'), /name="includeDistanceHomeopathy"/)
   assert.match(source('app/admin/consultations/actions.js'), /data\.includeDistanceHomeopathy =/)
   assert.match(source('app/admin/api/consultations/preview/route.js'), /input\.includeDistanceHomeopathy =/)
