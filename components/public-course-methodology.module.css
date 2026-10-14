@@ -56,6 +56,12 @@
 .step h3 { margin:0 0 9px; font-size:clamp(17px,1.6vw,20px); line-height:1.22; letter-spacing:-.02em; }
 .step p { color:var(--muted); font-size:13px; line-height:1.56; margin:0; }
 .step:not(:last-child)::after { content:'→'; color:#6caeb6; position:absolute; top:34px; right:-15px; z-index:1; font-size:21px; font-weight:800; }
+.measureSection { max-width:1110px; margin:45px auto 0; padding:27px 32px; border:1px solid #bfe5e6; border-radius:24px; background:linear-gradient(120deg,#e3f8f8,#f6fcfb); display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:25px; }
+.measureNumber { color:#0a7989; font:500 clamp(30px,4vw,49px)/1.1 Georgia,'Times New Roman',serif; white-space:nowrap; letter-spacing:-.05em; }
+.measureNumber span { color:#87bac3; }
+.measureSection h2 { font:500 clamp(25px,3vw,37px)/1.2 Georgia,'Times New Roman',serif; letter-spacing:-.035em; margin:0 0 9px; }
+.measureSection p:not(.sectionEyebrow) { margin:0; font-size:14px; line-height:1.65; color:#436b76; }
+@media(max-width:700px) { .measureSection { margin:26px 12px 0; padding:22px 19px; display:block; border-radius:18px; } .measureNumber { margin-bottom:13px; } }
 .science { padding-top:84px; }
 .pillars { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:27px; }
 .pillar { padding:23px 27px; border:1px solid #d2e9ec; background:#fff; border-radius:20px; min-width:0; }
