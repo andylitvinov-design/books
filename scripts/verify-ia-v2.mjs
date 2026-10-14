@@ -303,6 +303,7 @@ try {
   const leaked = await publicContext.request.get(origin + `/admin/documents/${previewId}/view?locale=ru`, { maxRedirects: 0 })
   assert.equal(leaked.status(), 307, 'Unauthenticated preview must redirect to owner sign-in')
   assert.ok(!(await leaked.text()).includes('Synthetic analysis'))
+  await admin.setViewportSize({ width: 1280, height: 800 })
   pass('Working Preview/Open navigates to the exact protected full report, both languages, 2 real gauges, source appendix, 390px and no practitioner notes')
   const ca = await browser.newContext(common), cb = await browser.newContext(common)
   const pa = await ca.newPage(), pb = await cb.newPage()
