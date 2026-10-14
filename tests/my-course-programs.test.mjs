@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics,
-  orderCourseProgramTests, suggestCourseProgramScales,
+  orderCourseProgramTests, suggestCourseProgramScales, courseProgramDay, COURSE_PROGRAM_ARCS,
 } from '../lib/inner-growth/course-programs.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -65,4 +65,34 @@ test('the new UI uses one consented start and private existing test/lesson endpo
   assert.match(wizard, /data-course-selected-programme/)
   assert.match(style, /@media\(max-width:530px\)/)
   assert.doesNotMatch(shell, /localStorage|sessionStorage|dangerouslySetInnerHTML/)
+})
+
+test('each flagship has fourteen complete, distinct, bilingual self-help prompts', () => {
+  for (const program of COURSE_PROGRAMS) {
+    const days = COURSE_PROGRAM_ARCS[program.id]
+    assert.equal(days.length,14)
+    assert.equal(new Set(days.map(day => day.title.en)).size,14)
+    for (let day = 1; day <= 14; day++) {
+      const en = courseProgramDay(program.id,day,'en')
+      const ru = courseProgramDay(program.id,day,'ru')
+      assert.equal(en.day,day)
+      assert.equal(ru.day,day)
+      assert.ok(en.title.length > 5 && en.prompt.length > 15)
+      assert.ok(ru.title.length > 5 && ru.prompt.length > 15)
+    }
+  }
+  assert.equal(courseProgramDay('stress',15),null)
+  assert.equal(courseProgramDay('unknown',1),null)
+})
+
+test('the authenticated daily API overlays curriculum without touching existing lesson validation', () => {
+  const server = read('lib/app/growth-daily.js')
+  const today = read('components/app/course-today.jsx')
+  const quest = read('components/app/course-quest.jsx')
+  assert.match(server,/programme:programme\?\{id:programme.id/)
+  assert.match(server,/programmeDay:programme\?courseProgramDay/)
+  assert.match(today,/data.programme\?\.day\?\.prompt/)
+  assert.match(quest,/item.programmeDay\?\.title/)
+  assert.match(server,/const lessonGoal=currentFocus.goal/)
+  assert.match(server,/lessonFor\(lessonGoal,dayInfo.day/)
 })
