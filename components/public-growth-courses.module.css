@@ -324,3 +324,8 @@
 .programmes:has([data-course-programme="stress"]:only-child){grid-template-columns:minmax(0,1fr);max-width:640px}
 .personal [data-course-upcoming]{margin-left:auto;white-space:nowrap;color:#7d4c63;font-weight:750}
 @media(max-width:700px){.personal [data-course-upcoming]{margin-left:0}}
+
+/* Seven skills and their detailed 14-day curriculum on the public page. */
+.dailyPlanPreview { margin:20px 0 13px;min-width:0; }
+.dailyPlanPreview :global([data-course-14-day-overview]) { max-width:none; }
+@media(max-width:700px){ .dailyPlanPreview{margin-top:13px} }
