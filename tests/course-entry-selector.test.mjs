@@ -63,7 +63,7 @@ test('the current course has a real photo to the left and a compact mobile add t
   const progress = entry.indexOf('className={styles.progressInfo}', title)
   const action = entry.indexOf('className={styles.openButton}', progress)
   assert.ok(photo >= 0 && title > photo && progress > title && action > progress)
-  assert.match(entry, /<img src="\/images\/holistic-house\/hero-olive-incense\.webp"/)
+  assert.match(entry, /<img src="\/images\/holistic-house\/course-focus-mountain-boy\.webp"/)
   assert.match(entry, /className=\{styles\.addTileText\}/)
   assert.match(css, /\.currentTop\{display:grid;grid-template-columns:/)
   assert.match(css, /\.currentPhoto img\{[^}]*object-fit:cover/s)
