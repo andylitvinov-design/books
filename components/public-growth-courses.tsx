@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CheckCircle2, CircleHelp, Clock3, ShieldCheck, SlidersHorizontal, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicCourseCabinet } from "@/components/public-course-cabinet";
+import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-growth-courses.module.css";
 
@@ -213,6 +214,9 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
+      <div className={styles.dailyPlanPreview} data-opora-14-day-public-plan>
+        <Course14DayOverview locale={locale} programId="stress" compact />
+      </div>
       <div className={styles.personal}>
         <span className={styles.personalIcon}><SlidersHorizontal size={27} aria-hidden="true" /></span>
         <div><h3>{t.personal}</h3><p>{t.personalDesc}</p></div>
