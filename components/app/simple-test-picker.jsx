@@ -13,6 +13,11 @@ import { TEST_KINDS } from '@/lib/assessments/test-kinds'
 const TEXT = {
   en: {
     kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
+    heroKicker:'MY TESTS · HOLISTIC HOUSE', heroHeadline:'Understand yourself and your life better',
+    heroDescription:'Select what matters to you and explore suitable questionnaires at your own pace.',
+    benefitOne:'Track changes', benefitTwo:'Understand yourself', benefitThree:'Relevant guidance', benefitFour:'Your own pace',
+    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Begin with your personal starting point',
+    promoText:'Explore stress, mood and your inner resources with a selection of self-checks.', promoAction:'Choose my topics',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
@@ -35,6 +40,11 @@ const TEXT = {
   },
   ru: {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
+    heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
+    heroDescription:'Выберите важные темы, пройдите подходящие тесты и наблюдайте за изменениями в своём темпе.',
+    benefitOne:'Динамика результатов', benefitTwo:'Понимание себя', benefitThree:'Подбор по запросу', benefitFour:'Удобный темп',
+    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с базового исследования себя',
+    promoText:'Узнайте больше о стрессе, настроении и ресурсах с помощью опросников для самонаблюдения.', promoAction:'Выбрать темы',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
@@ -57,6 +67,11 @@ const TEXT = {
   },
   es: {
     kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
+    heroKicker:'MIS PRUEBAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor y comprende tu vida',
+    heroDescription:'Elige los temas importantes, explora los cuestionarios y observa tus cambios a tu ritmo.',
+    benefitOne:'Sigue tus cambios', benefitTwo:'Autoconocimiento', benefitThree:'Opciones personalizadas', benefitFour:'A tu ritmo',
+    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza a explorar tu bienestar',
+    promoText:'Conoce mejor tu estrés, estado de ánimo y recursos personales mediante cuestionarios.', promoAction:'Elegir temas',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
@@ -144,14 +159,34 @@ export function SimpleTestPicker({
   const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
   return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
-    <header className={styles.hero}>
+    <header className={styles.hero} data-client-tests-hero>
       <div>
-        <p className={styles.eyebrow}>{c.kicker}</p>
-        <h1>{c.title}</h1>
-        <p className={styles.lead}>{c.lead}</p>
+        <p className={styles.eyebrow}>{c.heroKicker}</p>
+        <h1>{c.heroHeadline}</h1>
+        <p className={styles.lead}>{c.heroDescription}</p>
       </div>
-      <Leaf className={styles.heroLeaf} size={78} strokeWidth={0.8} aria-hidden="true" />
+      <div className={styles.heroSaying} aria-hidden="true">
+        <span>{locale === 'ru' ? 'Лучшее в тебе уже здесь' : locale === 'es' ? 'Lo mejor ya está en ti' : 'The best of you is already here'}</span>
+        <Heart size={22} strokeWidth={1.5}/>
+      </div>
     </header>
+    <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
+      <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
+      <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
+      <div><Leaf size={21} aria-hidden="true"/><span>{c.benefitThree}</span></div>
+      <div><Users size={21} aria-hidden="true"/><span>{c.benefitFour}</span></div>
+    </div>
+    <section className={styles.promo} aria-label={c.promoTitle} data-client-tests-promo>
+      <div className={styles.promoImage}>
+        <img src="/images/holistic-house/course-hero-mindful.svg" alt="" width="460" height="560" decoding="async" />
+      </div>
+      <div className={styles.promoCopy}>
+        <p className={styles.promoKicker}>{c.promoKicker}</p>
+        <h2>{c.promoTitle}</h2>
+        <p>{c.promoText}</p>
+        <a href="#hh-simple-topic-title" className={styles.promoAction}>{c.promoAction}<ArrowRight size={19} aria-hidden="true"/></a>
+      </div>
+    </section>
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.sectionHeader}>
