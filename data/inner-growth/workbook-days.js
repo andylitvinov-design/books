@@ -88,7 +88,7 @@ export const WORKBOOK_DAYS = Object.freeze([
     method: {"en":"Implementation intention / context cue","ru":"Намерение «если — то» / подсказка контекста"},
     skill: {"en":"Give my skill a reliable cue","ru":"Привязать навык к понятному сигналу"},
     question: {"en":"Which everyday event (for example, finishing work or closing the laptop) might naturally remind you of a 20–60 second pause?","ru":"Какое привычное событие (например, завершение дела или закрытие ноутбука) могло бы без напряжения напоминать об опоре на 20–60 секунд?"},
-    sentenceStarter: {"en":"After ___, I may choose ___ for about ___, if it suits me.","ru":"После ___ я при желании могу попробовать ___ примерно на ___."},
+    sentenceStarter: {"en":"After ___, I may choose ___ for about ___, if it suits me.","ru":"Если завершится моё обычное дело ___, то я при желании могу попробовать ___ примерно на ___."},
     microPractice: {"en":"Link one ordinary event, not constant symptom-monitoring, to a voluntary neutral support. A reminder is never a demand.","ru":"Свяжите обычное внешнее событие с доступной опорой без постоянного слежения за симптомами. Подсказка не обязывает действовать."},
     workingPosition: {"en":"A tiny cue can remind me of a choice.","ru":"Небольшая подсказка может напомнить о возможности выбора."},
     takeaway: {"en":"One concrete if–then plan.","ru":"Один конкретный план «если — то»."},
