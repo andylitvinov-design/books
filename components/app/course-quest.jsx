@@ -166,12 +166,12 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
           </button>
           <span className={styles.pathLabel}>
             <small>{t.lesson} {String(item.day).padStart(2, '0')}</small>
-            <strong>{item.title}</strong>
+            <strong>{item.programmeDay?.title || item.title}</strong>
           </span>
           {expanded && <div className={styles.pathPreview} data-course-day-preview>
             <div className={styles.previewMeta}><span>{t.lesson} {String(item.day).padStart(2,'0')}</span>
               <span>{complete ? t.done : active ? t.today : item.status === 'past' ? t.missed : t.later}</span></div>
-            <p className={styles.journeySummary}>{item.outcome}</p>
+            <p className={styles.journeySummary}>{item.programmeDay?.prompt || item.outcome}</p>
             {(active || (complete && item.day === cycle.day)) && <button type="button"
               className={styles.primaryButton} disabled={paused} onClick={onPlay}>
               {complete ? t.revisit : t.launch}<ArrowRight size={17}/></button>}
