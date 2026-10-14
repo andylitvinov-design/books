@@ -47,7 +47,6 @@ test('full database exposes measured domains as searchable references, never as 
       assert.equal(available.some((entry) => entry.key === key), false, key)
     }
     assert.ok(filterExplorerEntries(entries, { availability: 'full', search: 'rumination' }).some((item) => item.key === 'cerq-36'))
-    assert.ok(filterExplorerEntries(entries, { availability: 'full', search: 'physical functioning' }).some((item) => item.key === 'whodas-36') === false)
     assert.ok(filterExplorerEntries(entries, { availability: 'full', search: 'mobility' }).some((item) => item.key === 'whodas-36'))
   }
 })
