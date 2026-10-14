@@ -129,6 +129,8 @@ export function SitewideLeadCapture() {
   const coreSlugToKind: Record<string, DetailKind> = { "dao-health-profile": "dao", "alchemy-of-soul": "alchemy", "hypnotherapy-course": "hypnotherapy" };
   const coreKind = coreMatch ? coreSlugToKind[coreMatch[1]] || null : null;
   const coreDetail = coreKind && locale !== "es" ? coreOfferDetailData(locale, coreKind) : null;
+  // The redesigned Alchemy of the Soul page owns its two lead forms; avoid a third, obsolete global CTA.
+  if (coreKind === "alchemy") return null;
   const networkService = kind === "network" && /^\/services\/[a-z0-9-]+\/[a-z0-9-]+/.test(relative);
   const networkMaster = kind === "network" && /^\/masters\/[a-z0-9-]+/.test(relative);
   const primary = kind === "training" ? trainingEnquiryUrl(locale, pathname)
