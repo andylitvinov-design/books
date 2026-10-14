@@ -12,6 +12,8 @@ const reportPdfAssets = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Keep optimization for existing book/media redirect paths.
+  // Verified static course photographs and the hot-path portrait opt out locally.
   images: { remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
     // The site owns the original course photographs; proxy them same-origin
@@ -51,6 +53,8 @@ const nextConfig: NextConfig = {
   // Vercel redirects these images to pinned public sources; do not bundle
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
+    // Public-only artwork is served statically, never read by document PDFs.
+    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*"],
     "/media/**": [
       "./source-books/book-1-alchemy-soul/media/**/*",
       "./source-books/book-2-dao-books/photos/**/*",

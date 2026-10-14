@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowUpRight, HeartHandshake, Flower2, Compass } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -24,10 +25,10 @@ export default function SpanishServicesPage() {
       <Link className="services-studio-primary" href="/es/services/free-situation-review">Iniciar evaluación gratuita por dibujo <ArrowUpRight size={20} /></Link>
       <p>Gratis · informe escrito · sin llamada · sin compromiso</p>
     </div>
-    <div className="services-studio-photo" aria-hidden="true"><Image src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, 44vw" /></div>
+    <div className="services-studio-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, 44vw" /></div>
   </section>
   <section className="services-studio-approach" aria-labelledby="directions-heading"><div><p className="homeopathy-kicker">Tres enfoques claros</p><h2 id="directions-heading">¿Qué necesitas ahora?</h2></div><p>Elige la situación que más se acerque a la tuya. No necesitas conocer de antemano los métodos de trabajo.</p></section>
-  <section className="services-studio-grid services-studio-grid--three" aria-label="Tres enfoques de atención">{approaches.map(({id,icon:Icon,image,title,situation,detail,action,href})=><article className="services-studio-card services-studio-card--detailed" id={id} key={id}><div className="services-studio-card-photo"><Image src={image} alt="" fill sizes="(max-width: 800px) 100vw, 370px" loading="lazy" /></div><span className="services-studio-icon" aria-hidden="true"><Icon /></span><h2>{title}</h2><p className="services-studio-card-subtitle">{situation}</p><p>{detail}</p><Link href={href}>{action}<span aria-hidden="true"> →</span></Link></article>)}</section>
+  <section className="services-studio-grid services-studio-grid--three" aria-label="Tres enfoques de atención">{approaches.map(({id,icon:Icon,image,title,situation,detail,action,href})=><article className="services-studio-card services-studio-card--detailed" id={id} key={id}><div className="services-studio-card-photo"><Image unoptimized src={image} alt="" fill sizes="(max-width: 800px) 100vw, 370px" loading="lazy" /></div><span className="services-studio-icon" aria-hidden="true"><Icon /></span><h2>{title}</h2><p className="services-studio-card-subtitle">{situation}</p><p>{detail}</p><Link href={href}>{action}<span aria-hidden="true"> →</span></Link></article>)}</section>
   <section className="services-studio-approach"><div><p className="homeopathy-kicker">Tu primera evaluación por dibujo</p><h2>Dibuja tu situación y recibe un informe</h2></div><div><p>Describe tu situación en el formulario, dibuja a mano y envía la foto. La consulta exprés de 30 minutos cuesta €50 y la sesión de 60 minutos cuesta €100.</p><Link href="/es/services/free-situation-review">Abrir el formulario gratuito →</Link></div></section>
   <PublicConsultationCta locale="es" />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
