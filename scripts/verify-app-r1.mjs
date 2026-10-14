@@ -414,7 +414,7 @@ try {
  assert.match(guestPickerPage.url(),/\/en\/client$/)
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
- await expect(ruPicker.getByRole('heading',{name:'Подберите свои тесты'})).toBeVisible()
+ await expect(ruPicker.getByRole('heading',{name:'Лучше понять себя и свою жизнь',exact:true})).toBeVisible()
  await expect(ruPicker.locator('[data-test-kind-filter]')).toBeHidden()
  await expect(ruPicker.locator('[data-test-kind-filter] input[data-test-kind-checkbox]')).toHaveCount(3)
  await ruPicker.locator('details').first().locator('summary').click()
