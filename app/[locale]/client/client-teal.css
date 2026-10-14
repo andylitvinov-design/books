@@ -1,0 +1,17 @@
+/* /client public test discovery: align the site chrome with My Courses teal visuals.
+   Scoped to this route only; private client document pages are unaffected. */
+.client-entry-shell{min-height:100svh;overflow-x:clip;background:linear-gradient(165deg,#fffefa 0%,#f5fdfd 43%,#faffff 100%);color:#15516b}
+.client-entry-shell .house-header{border-bottom:1px solid #d2edf0;background:#fbffff;gap:16px;padding:clamp(13px,2vw,22px) clamp(12px,4vw,42px)}
+.client-entry-shell .house-wordmark{color:#0f5368;font-family:Georgia,serif}
+.client-entry-shell .house-wordmark span{color:#658c9d;font-family:system-ui,-apple-system,sans-serif;line-height:1.4}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link{background:#eefbfc;border:1px solid #aee1e7;color:#117f95}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link:hover{background:#dff5f7}
+.client-entry-shell .cabinet-signin-hero{border-color:#c6e9ed;background:linear-gradient(135deg,#fcffff,#e9f9fa)}
+.client-entry-shell .cabinet-signin-hero :is(h2,h3){color:#13546b}
+.client-entry-shell .cabinet-signin-hero p{color:#608798}
+.client-entry-shell .cabinet-signin-hero :is(button,a):focus-visible{outline:3px solid #0b819c;outline-offset:3px}
+@media(max-width:600px){
+ .client-entry-shell .house-header{gap:8px;padding:13px 12px}
+ .client-entry-shell .house-wordmark{font-size:clamp(20px,5.5vw,25px)}
+ .client-entry-shell .house-wordmark span{font-size:9px}
+}
