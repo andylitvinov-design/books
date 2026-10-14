@@ -76,6 +76,7 @@ test('short retest intervals are guidance, not an invented hard contraindication
 
 test('private daily read, server day lock and final-test link are required',()=>{
  const source=read('lib/app/growth-daily.js')
+ const legacy=read('lib/app/growth-course.js')
  const today=read('components/app/course-today.jsx')
  const player=read('components/app/course-slide-player.jsx')
  const workspace=read('components/app/app-workspace.jsx')
@@ -83,6 +84,7 @@ test('private daily read, server day lock and final-test link are required',()=>
  assert.match(source,/growth_sessions where account_id=\$1 and cycle_id=\$2/)
  assert.match(source,/finalSaved/)
  assert.match(source,/COURSE_NEXT_DAY_ONLY/)
+ assert.match(legacy,/body\.day !== courseDay\(row\.started_at, row\.duration_days\)/)
  assert.match(source,/today\.date<=dateString\(finalSaved\.local_date\)/)
  assert.match(source,/if\(!Number\.isInteger\(input\.day\)\|\|input\.day!==today\.day\)/)
  assert.match(source,/on conflict\(cycle_id,day_number\) do nothing/)
