@@ -140,9 +140,10 @@ export function MyCourse({ data, locale = 'en' }) {
   const ru = locale === 'ru'
   const t = WORDS[locale] || WORDS.en
   const root = '/' + locale + '/app'
+  const searchParams = useSearchParams()
   const router = useRouter()
-  const params = useSearchParams()
   const [showCourse, setShowCourse] = useState(false)
+  const requestedProgram = getCourseProgram(searchParams.get('program'))
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -213,16 +214,17 @@ export function MyCourse({ data, locale = 'en' }) {
   if (state === undefined && !error) return <section className={'hh-panel ' + styles.root} aria-busy="true"><p>{ru ? 'Открываем ваш курс…' : 'Opening your course…'}</p></section>
   if (!state) return <section className={'hh-panel ' + styles.root} role="alert"><h1>{t.personal}</h1><p>{t.issue}</p><button onClick={refresh}>{t.retry}</button></section>
 
-  // Open the course picker only after choosing the active course. Returning
-  // from a test/retest keeps the learner in their existing onboarding flow.
-  const testReturn = params.get('tests') === 'complete' || params.get('retest') === 'updated'
-  if (!showCourse && !testReturn) return <CourseEntrySelector
+  // Returning from a test or following a programme link must keep the learner
+  // inside the existing course onboarding flow.
+  const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
+  const programmeEntry = stage === 0 && Boolean(requestedProgram)
+  if (!showCourse && !testReturn && !programmeEntry) return <CourseEntrySelector
     course={state.course} locale={locale} onOpen={() => setShowCourse(true)}/>
 
   return <div className={styles.root} data-my-course>
     <button type="button" className={styles.backToCourses} onClick={() => {
       setShowCourse(false)
-      if (testReturn) router.replace(root + '/course')
+      if (testReturn || programmeEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button>
     {stage === 0 && <header className={styles.hero}>
       <div>
@@ -231,7 +233,7 @@ export function MyCourse({ data, locale = 'en' }) {
         <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(requestedProgram?.id || null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
@@ -241,12 +243,13 @@ export function MyCourse({ data, locale = 'en' }) {
       <div className={styles.programHeading}>
         <h2>{t.chooseCourse}</h2>
         <p>{t.simpleSteps}</p>
+        {requestedProgram && <p className={styles.preselectedProgram} data-course-preselected-program={requestedProgram.id}>{ru ? 'По вашему направлению подойдёт курс:' : 'Suggested for your chosen direction:'} <strong>{requestedProgram.title[ru ? 'ru' : 'en']}</strong></p>}
       </div>
       <div className={styles.programGrid}>
         {COURSE_PROGRAMS.map((program, index) => {
           const Icon = [Waves, ShieldCheck, Target][index]
           return <button className={styles.programCard} key={program.id} type="button"
-            data-course-program-id={program.id} disabled={busy}
+            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id} disabled={busy}
             onClick={() => openStartDialog(program.id)}>
             <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
             <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>

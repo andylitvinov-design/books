@@ -7,6 +7,7 @@ import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
+import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS } from '@/lib/assessments/test-kinds'
 
 const TEXT = {
@@ -135,6 +136,8 @@ export function SimpleTestPicker({
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
   const hasExtraFilters = maxMinutes > 0 || testKinds.length > 0 || depth !== 'balanced'
+  const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
+  const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
   return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
     <header className={styles.hero}>
@@ -162,6 +165,13 @@ export function SimpleTestPicker({
           </button>
         })}
       </div>
+      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
+        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
+        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
+          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
+          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
+        </button>)}
+      </div>}
     </section>
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>

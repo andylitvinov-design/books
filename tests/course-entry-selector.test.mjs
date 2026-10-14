@@ -12,9 +12,10 @@ test('My Course first renders the selection slide and keeps the existing course 
   assert.match(wrapper, /if \(!showCourse && !testReturn\) return/)
   assert.match(wrapper, /onOpen=\{\(\) => setShowCourse\(true\)\}/)
   assert.match(wrapper, /stage === 0 && <header/)
+  assert.match(wrapper, /programmeEntry = stage === 0 && Boolean\(requestedProgram\)/)
   assert.match(wrapper, /stage === 4 && <CourseToday/)
-  assert.match(wrapper, /params\.get\('tests'\) === 'complete'/)
-  assert.match(wrapper, /params\.get\('retest'\) === 'updated'/)
+  assert.match(wrapper, /searchParams\.get\('tests'\) === 'complete'/)
+  assert.match(wrapper, /searchParams\.get\('retest'\) === 'updated'/)
   assert.match(wrapper, /router\.replace\(root \+ '\/course'\)/)
 })
 
