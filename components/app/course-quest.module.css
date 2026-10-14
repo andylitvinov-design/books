@@ -183,7 +183,7 @@
 .pathPreview{grid-column:2;grid-row:auto;justify-self:stretch;width:100%;max-width:none;min-width:0;display:grid;gap:7px;margin:0 0 12px;padding:12px 13px;background:#f3fcfe;border:1px solid #b9e7e9;border-left:4px solid #13b2bc;border-radius:14px;box-shadow:0 5px 14px #1884a00d;text-align:left}
 .previewMeta{gap:7px;font-size:10px;color:#208aa2}
 .journeySummary{margin:0;display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;color:#51778b;font-size:12px;line-height:1.5}
-.pathPreview .primaryButton{width:100%;max-width:285px;min-height:44px;padding:9px 12px!important;background:linear-gradient(105deg,#1abfca,#0394af)!important;border:1px solid #078ea4!important;border-bottom:4px solid #097586!important;border-radius:12px!important;color:#fff!important;font-size:12px!important;font-weight:810!important}
+.pathPreview .primaryButton{width:100%;max-width:285px;min-height:44px;padding:9px 12px!important;background:linear-gradient(105deg,#087d89,#03778c)!important;border:1px solid #078ea4!important;border-bottom:4px solid #097586!important;border-radius:12px!important;color:#fff!important;font-size:12px!important;font-weight:810!important}
 .previewHint{color:#7297a6;font-size:11px}
 .mapFootnote{font-size:11px;line-height:1.5;color:#8ba3ab;padding:0 2px}
 @media(max-width:620px){
@@ -268,3 +268,4 @@
 @media(prefers-reduced-motion:reduce){
  .mapShell .pathNode{transition:none!important}
 }
+
