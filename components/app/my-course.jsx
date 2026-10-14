@@ -250,7 +250,7 @@ export function MyCourse({ data, locale = 'en' }) {
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/hero-olive-incense.webp" alt="" width={320} height={220} loading="lazy" /></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" width={320} height={220} loading="lazy" /></div>
     </header>}
     {stage === 0 && <section className={styles.programSelection} data-course-program-selection aria-label={t.chooseCourse}>
       <div className={styles.programHeading}>

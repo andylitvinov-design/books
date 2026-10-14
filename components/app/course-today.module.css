@@ -670,3 +670,35 @@
   .todayVisual{aspect-ratio:1/1.26;border-radius:14px}
   .viewSwitch button{font-size:11px!important}
 }
+
+
+/* Focus v2.1: Today card reuses the same approved coastal artwork as each lesson.
+   Text stays in its separate column: no overlap at narrow mobile widths. */
+.shell[data-course-view=today] .todayVisual{
+  background:linear-gradient(160deg,#ecfdf9,#ceeef0);
+  border-color:#bde6e7;
+  box-shadow:0 7px 19px #0f819017;
+}
+.shell[data-course-view=today] .todayVisual .heroPerson{
+  object-fit:cover!important;object-position:52% 50%!important;
+  filter:none!important;
+}
+.shell[data-course-view=today] .questHero{
+  background:linear-gradient(135deg,#fafdff,#e9f8fa 58%,#e5f7f4)!important;
+}
+.shell[data-course-view=today] button.todayPrimary{
+  border-radius:17px!important;
+  background:linear-gradient(105deg,#11b9c4,#078fa8)!important;
+}
+@media(max-width:360px){
+  .shell[data-course-view=today] .todayVisual .heroPerson{
+    object-position:50% 50%!important;
+  }
+}
+
+
+/* The old incense hero is intentionally not fetched behind scenic lesson art. */
+.shell[data-course-view=today] .heroPhoto{
+  background:linear-gradient(140deg,#e8f8fa,#f5fff8)!important;
+  opacity:.22!important;
+}

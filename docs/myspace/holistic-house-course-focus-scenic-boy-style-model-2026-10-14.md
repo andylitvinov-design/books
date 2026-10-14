@@ -46,3 +46,18 @@ Background #E8F9FC to #F3FCFC; primary #079EAE to #058DA9; navy #123D55; soft bo
 
 ## Memory index
 Search terms: MySpace / Holistic House / Course Focus / scenic boy / mountains / full-screen course / Duolingo inspiration / course model. This document is the canonical always-searchable course style brief; future redesigns must consult it before changes.
+
+## Addendum 2026-10-14 — unified **all-slide** design contract (Course Focus v2.1)
+This extends and takes precedence over old V6/V7 art-direction notes wherever they show a different course character. The canonical approved site asset is `/images/holistic-house/course-focus-mountain-boy.webp` (site-local), not a Google Drive hotlink.
+
+- **Use one photographic art language for the entire learning journey**, not a woman in one lesson, incense in another and giant disconnected icons in later steps. The young man facing the sea is the recurring identity. Scene is strictly decorative (`alt=""`), the actual lesson title and choices are normal accessible HTML.
+- **All 14 lesson steps are visually coherent:** pace, baseline, optional daily check-in, recall, quote, explanation, flexible phrase, each guided meditation segment, ritual, micro-action, symbolism, private reflection, after-practice optional moment scale, feedback. One consistent horizontal scenic image card across slides. Preserve unique in-context step icon in upper-right scene badge, so every step remains legible without becoming visually identical.
+- **Progress structure:** title and Day n/14 above scene, a narrow real slide-progress bar above, one significant question/task below, and a single sticky bottom action. Back/skip are small secondary actions. Keep the 0–10 choices and free-text fields accessible.
+- **Lesson density:** choose a smaller 105–155 px decorative image for complex interactive exercises; welcome/pace slide can show a larger 155–235 px image. On narrow or short iPhones, shrink illustration to 86–160px so question/response and sticky CTA have priority; inner content may scroll independently, never cause sideways scrolling.
+- **Completion:** keep the gentler green-blue celebration SVG and gold only as a subtle reward accent; don't suggest XP indicates therapeutic progress. Make success, XP and 14-day saved path visually consistent with the same palette.
+- **Today and chapter path:** replace mismatched imagery with the same site-owned scenic hero, preserving independent text row, CTA and progress to avoid overlap. Course navigation stays hidden while fullscreen focus/slide is active.
+- **Accessibility & safety:** preserve role dialog, Escape/Tab handling, 44px close target, focus indication, reduced-motion CSS, private journal, voluntary skip, accurate EN/RU, existing API and lesson IDs. All 14 days share one component and the current lesson content comes from the approved library, not the picture.
+- **QA:** `tests/my-course-unified-scenic.test.mjs`, old `my-course-teal-slides`, `my-course-v7-mockup`, `my-course-completion-progression`; run `npm run test:app`, lint, TypeScript, production build, Chromium/WebKit 320/375/390/430 + desktop. Verify genuine production alias SHA before claiming live.
+- **Code:** `components/app/course-slide-player.jsx`, `course-slide-player.module.css`, `course-today.jsx/.module.css`, `course-quest.jsx/.module.css`, plus `course-focus-entry.jsx/.module.css`.
+
+The scene is a brand mood, not a user-specific medical intervention. It must not imply guaranteed results or replace safety messaging.
