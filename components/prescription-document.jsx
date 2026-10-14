@@ -7,12 +7,14 @@ import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
+import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
+  const reportHeading = clientReportHeading(locale, document.recommendationType)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
@@ -38,12 +40,16 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
     </div>}
     <article className="canonical-document canonical-document--editorial">
-      <DocumentAutoPrint enabled={admin && autoPrint} /><DocumentLetterhead compact />
+      <DocumentAutoPrint enabled={admin && autoPrint} />
+      <div className="canonical-report-brandline">
+        <DocumentLetterhead compact />
+        <span className="canonical-report-private-label">{locale === 'ru' ? 'ЛИЧНЫЙ ОТЧЁТ' : 'PRIVATE REPORT'}</span>
+      </div>
       <header className="canonical-report-heading">
         <div className="canonical-report-hero">
           <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
-          <h1>{labels.title}</h1>
-          <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Индивидуальные рекомендации по итогам консультации' : 'Individual guidance from your consultation'}</p>
+          <h1>{reportHeading}</h1>
+          <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Индивидуально подготовлено по итогам консультации' : 'Prepared following your individual consultation'}</p>
         </div>
         <dl className="canonical-client">
           <div><dt>{labels.patient}</dt><dd>{document.patientName}</dd></div>
@@ -53,6 +59,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p className="canonical-intro">{labels.intro}</p>
         {progress && <section className="canonical-progress" aria-label={locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}>
           <h2>{locale === 'ru' ? 'Динамика самооценки' : 'Self-rated progress'}</h2>
+          <p className="canonical-progress-subtitle">{locale === 'ru' ? 'Оценка клиента до и после консультации' : 'Client-recorded ratings before and after the consultation'}</p>
           <div className="canonical-progress-grid">
             {[
               { key: 'before', label: locale === 'ru' ? 'Начало' : 'Start', value: progress.before },
