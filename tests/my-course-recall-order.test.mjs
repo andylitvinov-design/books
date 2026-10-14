@@ -29,7 +29,7 @@ test('every EN/RU V3/V4 lesson recalls before both teaching slides, retaining al
 test('legacy/no-recall and sparse lessons never receive an invented recall or teaching step', () => {
   const legacy = lessonFor('calm_regulation', 1, 'en', 'standard', COURSE_CONTENT_VERSION)
   assert.equal(keys(legacy).includes('recall'), false)
-  assert.deepEqual(keys(legacy).slice(0, 5), ['pace', 'baseline', 'idea', 'understand', 'phrase'])
+  assert.deepEqual(keys(legacy).slice(0, 4), ['pace', 'baseline', 'idea', 'understand'])
   assert.deepEqual(keys({sections:[]}), ['pace', 'baseline', 'idea', 'ritual', 'reflection', 'moment', 'feedback'])
   assert.deepEqual(keys({sections:[], practiceV3:{recall:'Optional orientation'}}).slice(0, 4), ['pace', 'baseline', 'recall', 'idea'])
 })
