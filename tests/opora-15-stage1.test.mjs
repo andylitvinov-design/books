@@ -5,13 +5,13 @@ import { describeCycle } from '../lib/inner-growth/course-progress.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('OPORA v1.5 preserves learning units while removing the duplicate opening rating', () => {
+test('OPORA v1.5 retains the full educational sequence without redundant daily rating', () => {
   const source = read('components/app/course-slide-player.jsx')
   const block = source.match(/function buildSlides\(lesson\) \{[\s\S]*?\n\}/)?.[0]
   assert.ok(block)
   const actual = [...block.matchAll(/kind:\s*'([^']+)'/g)].map(match => match[1])
   assert.deepEqual(actual, [
-    'pace','baseline','recall','idea','understand','phrase','guided',
+    'welcome','baseline','recall','idea','understand','phrase','guided',
     'ritual','transfer','symbol','reflection','moment','feedback',
   ])
   assert.match(block, /guided\.map\(\(section, index\) =>/)

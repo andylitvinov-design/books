@@ -3,20 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookmarkCheck, Check, CheckCircle2, ChevronDown,
-  Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, ShieldCheck,
-  SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
+  CircleHelp, Cloud, Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, Moon, ShieldCheck,
+  SkipForward, Sparkles, Star, Sun, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
+import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import { courseFocusAphorism } from '@/lib/inner-growth/course-focus-dialogue'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
-    pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
-    shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
+    welcome: 'How are you feeling today?',
+    welcomePrompt: 'What feels closest to your experience right now?',
+    welcomeNote: 'A gentle momentary check-in, not a test. Your answer will not change your course or test results.',
+    welcomeSkip: 'I would rather not answer',
     understand: 'One idea at a time', adjustPace: 'Change my practice style',
     baseline: 'Notice your state at the start', baselineQuestion: 'How strongly do you feel the quality or state at the heart of today’s lesson right now?',
     baselineResourceQuestion: 'How much inner resource and support do you feel right now?',
@@ -98,8 +101,10 @@ const WORDS = {
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
-    pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
-    shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
+    welcome: 'Как вы себя чувствуете сегодня?',
+    welcomePrompt: 'Какое описание сейчас вам ближе?',
+    welcomeNote: 'Мягкий вопрос о состоянии сейчас, а не тест. Ответ не изменяет курс или результаты тестов.',
+    welcomeSkip: 'Предпочитаю не отвечать',
     understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
     baseline: 'Заметьте состояние перед практикой', baselineQuestion: 'Насколько вы сейчас ощущаете в себе качество или состояние, которому посвящён урок?',
     baselineResourceQuestion: 'Насколько вы сейчас ощущаете в себе ресурс и внутреннюю опору?',
@@ -185,7 +190,7 @@ const WORDS = {
 }
 
 const SCENE = {
-  pace: Compass,
+  welcome: Heart,
   understand: Leaf,
   baseline: Target,
   checkin: Target,
@@ -204,7 +209,7 @@ const SCENE = {
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   return [
-    { key: 'pace', kind: 'pace' },
+    { key: 'welcome', kind: 'welcome' },
     { key: 'baseline', kind: 'baseline' },
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     { key: 'idea', kind: 'idea' },
@@ -278,10 +283,9 @@ export default function CourseSlidePlayer({
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
   const [thoughtChoice, setThoughtChoice] = useState(session?.signals?.thoughtPath || 'neutral')
+  const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
-  const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
-    ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
   const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
   const [promoOpen, setPromoOpen] = useState(false)
@@ -330,32 +334,13 @@ export default function CourseSlidePlayer({
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
 
+
   async function updatePreferences(change) {
     if (submitting.current) return
     submitting.current = true
     setSaving(true); setError('')
     try {
       if (!await onPreferences(change)) setError(words.saveError)
-    } catch { setError(words.saveError) }
-    finally { submitting.current = false; setSaving(false) }
-  }
-
-  async function savePace() {
-    if (submitting.current) return
-    const previous = cycle.preferences || {}
-    const next = pace === 'quick'
-      ? { length:'quick', imagery:previous.imagery || 'optional' }
-      : pace === 'no_imagery'
-        ? { length:previous.length || 'standard', imagery:'no_imagery' }
-        : { length:'standard', imagery:'optional' }
-    if ((previous.length||'standard') === next.length &&
-        (previous.imagery||'optional') === next.imagery) { goNext(); return }
-    submitting.current = true
-    setSaving(true); setError('')
-    try {
-      const result = await onPreferences(next)
-      if (result) goNext()
-      else setError(words.saveError)
     } catch { setError(words.saveError) }
     finally { submitting.current = false; setSaving(false) }
   }
@@ -377,6 +362,7 @@ export default function CourseSlidePlayer({
         feedback:legacyFeedback,beforeNow,afterNow,reflection,
         practiceWindow:'practice_v15',comfort,usefulness,flexibility,
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
+        welcomeFeeling:welcomeFeeling||'skip',
         selectedScaleId:selectedScale?.id || null,aphorismReaction,
         transferPlan:cycle.day===6?transferPlan:'',
       })
@@ -499,29 +485,42 @@ export default function CourseSlidePlayer({
           {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
-          <div className={styles.slideIdentity}>
-            <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
-            <span className={styles.identityLabel}>{lesson.title}</span>
-          </div>
-          <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
-
-          {slide.kind === 'pace' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{words.pacePrompt}</p>
-            <div className={styles.paceChoices} role="group" aria-label={words.pacePrompt}>
-              {[
-                ['quick',words.short,words.shortDetail,Clock3],
-                ['standard',words.standard,words.standardDetail,Waves],
-                ['no_imagery',words.noImagery,words.noImageryDetail,Leaf],
-              ].map(([key,label,detail,OptionIcon])=><button key={key} type="button"
-                disabled={locked} aria-pressed={pace===key} onClick={()=>setPace(key)}>
-                <span className={styles.paceIcon}><OptionIcon size={22} aria-hidden="true"/></span>
-                <span className={styles.paceCopy}><strong>{label}</strong><small>{detail}</small></span>
-                {pace===key?<CheckCircle2 size={19} className={styles.paceCheck} aria-hidden="true"/>:
-                  <ArrowRight size={18} aria-hidden="true"/>}
-              </button>)}
+          {slide.kind !== 'welcome' && <>
+            <div className={styles.slideIdentity}>
+              <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
+              <span className={styles.identityLabel}>{lesson.title}</span>
             </div>
+            <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
           </>}
+
+          {slide.kind === 'welcome' && <section className={styles.welcomeScreen} data-course-welcome>
+            <div className={styles.welcomeBackdrop} aria-hidden="true">
+              <img className={styles.welcomeBackgroundImage}
+                src="/images/holistic-house/course-focus-mountain-boy.webp"
+                alt="" width={705} height={411} decoding="async" />
+            </div>
+            <div className={styles.welcomeContent}>
+              <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
+              <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
+              <p className={styles.welcomePrompt}>{words.welcomePrompt}</p>
+              <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
+                {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
+                  const FeelingIcon = [Sun, Cloud, Moon, CircleHelp][choiceIndex]
+                  return <button key={choice.id} type="button" disabled={locked}
+                    aria-pressed={welcomeFeeling === choice.id} onClick={() => setWelcomeFeeling(choice.id)}>
+                    <span className={styles.welcomeChoiceIcon}><FeelingIcon size={20} aria-hidden="true"/></span>
+                    <span>{choice.label}</span>
+                    {welcomeFeeling === choice.id ? <CheckCircle2 size={20} aria-hidden="true"/> : <ArrowRight size={17} aria-hidden="true"/>}
+                  </button>
+                })}
+              </div>
+              {welcomeFeeling && welcomeFeeling !== 'skip' &&
+                <p className={styles.welcomeResponse} role="status">{welcomeFeelingSupport(welcomeFeeling, locale)}</p>}
+              <p className={styles.welcomeNote}>{words.welcomeNote}</p>
+              <button type="button" className={styles.welcomeSkip} disabled={locked}
+                onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>
+            </div>
+          </section>}
 
           {slide.kind === 'baseline' && <>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
@@ -756,13 +755,12 @@ export default function CourseSlidePlayer({
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'pace' ? () => void savePace()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
               : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'pace' ? words.saveNext : words.next}</span>
+            : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>}
         <p>{words.safety}</p>

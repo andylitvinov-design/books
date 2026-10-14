@@ -19,11 +19,11 @@ test('lesson-entry measure asks for presence and uses its own positive anchors i
   assert.match(intro, /value=\{entryNow\}/)
 })
 
-test('practice-boundary ratings preserve meaning while the adjacent 24-hour rating slide is removed', () => {
+test('practice-boundary ratings retain their meaning while the repeated entry rating is gone', () => {
   assert.doesNotMatch(player, /key: 'checkin', kind: 'checkin'/)
   assert.match(player, /practicePrePrompt: 'Прямо перед упражнением: насколько трудно/)
   assert.match(player, /practicePostPrompt: 'Сразу после упражнения: насколько трудно/)
-  assert.match(player, /feedback,beforeNow,afterNow,reflection/)
+  assert.match(player, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)
 })
 
 test('baseline shows the entire landscape picture in a fullscreen accessible background', () => {

@@ -77,7 +77,7 @@ test('the opening of existing 14-day lessons has only one entry rating, then cho
   assert.ok(match)
   const buildSlides=runInNewContext('('+match[0]+')')
   const keys=Array.from(buildSlides({sections:[],practiceV3:{recall:'legacy copy'}}),item=>item.key)
-  assert.deepEqual(keys.slice(0,4),['pace','baseline','recall','idea'])
+  assert.deepEqual(keys.slice(0,4),['welcome','baseline','recall','idea'])
   assert.equal(keys.filter(kind=>kind==='checkin').length,0)
   assert.match(source,/selectedScaleId:selectedScale\?\.id \|\| null,aphorismReaction/)
   const server=read('lib/app/growth-daily.js')
