@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
-import { COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
+import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
@@ -19,9 +19,9 @@ const WORDS = {
   en: {
     eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'Feel calmer. Grow stronger.',
     intro: 'A personal 14-day journey, one small step at a time. Choose what matters to you.',
-    chooseCourse: 'Where would you like to begin?', personalCourse: 'Create my personal course',
-    personalPrompt: 'A programme built around my own question and priorities.',
-    exploreTrack: 'Choose this course', simpleSteps: 'Tests → 3 focus areas → 14 daily lessons',
+    chooseCourse: 'One course is available now', personalCourse: 'Personalize my Anti-Stress course',
+    personalPrompt: 'Choose the scales and daily goals that matter to you within OPORA Anti-Stress.',
+    exploreTrack: 'Start Anti-Stress', soon: 'Coming soon', simpleSteps: 'Optional tests → your focus → 14 daily lessons',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
     start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
     how: 'How it works', detailTitle: 'Six steps to your personal course',
@@ -68,9 +68,9 @@ const WORDS = {
   ru: {
     eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Больше спокойствия. Больше опоры.',
     intro: 'Ваш личный путь на 14 дней. Каждый день — один небольшой шаг.',
-    chooseCourse: 'С чего хотите начать?', personalCourse: 'Создать персональный курс',
-    personalPrompt: 'Программа под мой собственный запрос и приоритеты.',
-    exploreTrack: 'Выбрать курс', simpleSteps: 'Тесты → 3 направления → 14 ежедневных уроков',
+    chooseCourse: 'Сейчас доступен один курс', personalCourse: 'Настроить мой «Антистресс»',
+    personalPrompt: 'Выберите важные лично вам шкалы и цели внутри программы «ОПОРА — Антистресс».',
+    exploreTrack: 'Начать Антистресс', soon: 'Скоро', simpleSteps: 'Тесты по желанию → ваш фокус → 14 ежедневных уроков',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
     start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
     how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
@@ -145,7 +145,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [showCourse, setShowCourse] = useState(false)
-  const requestedProgram = getCourseProgram(searchParams.get('program'))
+  const requestedProgram = searchParams.get('program') === ACTIVE_COURSE_PROGRAM_ID ? getCourseProgram(ACTIVE_COURSE_PROGRAM_ID) : null
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -179,9 +179,10 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { setBusy(false) }
   }
 
-  function openStartDialog(programId = null) {
+  function openStartDialog(programId = ACTIVE_COURSE_PROGRAM_ID) {
     if (busy) return
-    setSelectedProgram(getCourseProgram(programId)?.id || null)
+    // Existing courses retain their state; only a brand-new enrollment is routed to Anti-Stress.
+    setSelectedProgram(programId === ACTIVE_COURSE_PROGRAM_ID ? programId : ACTIVE_COURSE_PROGRAM_ID)
     setOptIn(false)
     startDialogRef.current?.showModal()
   }
@@ -198,7 +199,7 @@ export function MyCourse({ data, locale = 'en' }) {
       setState(started)
       const programme = getCourseProgram(selectedProgram)
       const focusTags = programme?.focusTags || courseTagsForExplorerFocus(courseEntry?.focus)
-      const concerns = programme ? '' : courseConcernsFromIntent(courseEntry, locale)
+      const concerns = courseConcernsFromIntent(courseEntry, locale)
       // Server-owned course creation and intake happen only AFTER explicit
       // opt-in. The user can still edit themes and tests in course setup.
       if (started.course?.stage === 1 && (focusTags.length || concerns)) {
@@ -262,19 +263,22 @@ export function MyCourse({ data, locale = 'en' }) {
         {COURSE_PROGRAMS.map((program, index) => {
           const Icon = [Waves, ShieldCheck, Target][index]
           return <button className={styles.programCard} key={program.id} type="button"
-            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id} disabled={busy}
+            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id}
+             disabled={busy || program.id !== ACTIVE_COURSE_PROGRAM_ID}
+             aria-disabled={program.id !== ACTIVE_COURSE_PROGRAM_ID}
+             data-coming-soon={program.id !== ACTIVE_COURSE_PROGRAM_ID ? 'true' : undefined}
             onClick={() => openStartDialog(program.id)}>
             <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
             <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>
             <strong>{program.title[ru ? 'ru' : 'en']}</strong>
             <span className={styles.programPromise}>{program.promise[ru ? 'ru' : 'en']}</span>
             <span className={styles.programOutcomes}>{program.outcome[ru ? 'ru' : 'en']}</span>
-            <span className={styles.programAction}>{t.exploreTrack}<ArrowRight size={16} aria-hidden="true"/></span>
+            <span className={styles.programAction}>{program.id === ACTIVE_COURSE_PROGRAM_ID ? t.exploreTrack : t.soon}{program.id === ACTIVE_COURSE_PROGRAM_ID && <ArrowRight size={16} aria-hidden="true"/>}</span>
           </button>
         })}
       </div>
       <button className={styles.personalTrack} type="button" disabled={busy}
-        data-course-personal-program onClick={() => openStartDialog(null)}>
+        data-course-personal-program onClick={() => openStartDialog(ACTIVE_COURSE_PROGRAM_ID)}>
         <SlidersHorizontal size={24} aria-hidden="true"/>
         <span><strong>{t.personalCourse}</strong><small>{t.personalPrompt}</small></span>
         <ArrowRight size={21} aria-hidden="true"/>
@@ -294,7 +298,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <h2>{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
       <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+      <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(ACTIVE_COURSE_PROGRAM_ID)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 

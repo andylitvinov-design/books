@@ -76,7 +76,7 @@ try {
         const summary = banner.locator('summary')
         const details = banner.locator('details')
         await expect(summary).toHaveText(locale === 'ru' ? 'Подробнее о курсе' : 'More about the course')
-        await expect(start).toHaveAttribute('href', '/' + locale + '/app/course')
+        await expect(start).toHaveAttribute('href', '/' + locale + '/app/course?program=stress')
         await expect(details).not.toHaveAttribute('open')
         await expect(details.locator('div')).toBeHidden()
         const assertBounds = async state => {

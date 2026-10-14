@@ -22,7 +22,7 @@ const copy = {
     first: 'Начать первый курс', firstHint: 'Один курс доступен бесплатно',
     day: 'Урок', of: 'из', complete: 'Завершено', progress: 'Прогресс',
     loading: 'Загружаем ваши курсы…',
-    go: 'Открыть личный кабинет', signIn: 'Войдите, чтобы увидеть свой курс',
+    go: 'Начать Антистресс', signIn: 'Войдите, чтобы начать курс «ОПОРА — Антистресс»',
     free: 'Первый курс бесплатно', badge: '14 дней · ваш темп',
   },
   en: {
@@ -36,7 +36,7 @@ const copy = {
     first: 'Start my first course', firstHint: 'Your first course is free',
     day: 'Lesson', of: 'of', complete: 'Completed', progress: 'Progress',
     loading: 'Loading your courses…',
-    go: 'Open my cabinet', signIn: 'Sign in to see your current course',
+    go: 'Start Stress Relief', signIn: 'Sign in to start OPORA Stress Relief',
     free: 'First course free', badge: '14 days · your pace',
   },
 } as const
@@ -102,7 +102,7 @@ export function PublicCourseCabinet({ locale }: { locale: Locale }) {
         </div>
         <div className={styles.ownedCopy}>
           <span className={styles.ownedEyebrow}><BookOpenCheck size={15} aria-hidden="true" /> {hasCourse ? t.current : t.badge}</span>
-          <h3>{hasCourse ? courseTitle(course!, t) : t.personal}</h3>
+          <h3>{hasCourse ? courseTitle(course!, t) : t.stress}</h3>
           <p>{!loaded ? t.loading : hasCourse
             ? stage === 4 && completed !== null
               ? completed === 14 ? t.complete : t.day + ' ' + nextLesson + ' ' + t.of + ' 14'
@@ -112,13 +112,13 @@ export function PublicCourseCabinet({ locale }: { locale: Locale }) {
             role="progressbar" aria-label={t.progress} aria-valuemin={0} aria-valuemax={14} aria-valuenow={completed}>
             <span style={{ width: (completed / 14 * 100) + '%' }} />
           </div>}
-          <Link href={courseUrl} prefetch={false} className={styles.ownedAction}>
+          <Link href={hasCourse ? courseUrl : courseUrl + '?program=stress'} prefetch={false} className={styles.ownedAction}>
             {hasCourse ? stage !== 4 ? t.setup : completed === 14 ? t.review : t.continue : t.go}
             <ArrowRight size={17} aria-hidden="true" />
           </Link>
         </div>
       </article>
-      <Link href={courseUrl + (hasCourse ? '?add=1' : '')} prefetch={false}
+      <Link href={courseUrl + (hasCourse ? '?add=1' : '?program=stress')} prefetch={false}
         className={styles.addCourseTile} data-public-add-course>
         <span className={styles.addCourseIcon}><Plus size={26} strokeWidth={1.7} aria-hidden="true" /></span>
         <span className={styles.addCourseCopy}>

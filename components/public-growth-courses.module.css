@@ -319,3 +319,8 @@
   .stressSkillsFoot { display:grid; gap:13px; }
   .stressSkillsFoot a { width:100%; }
 }
+
+/* Single available Anti-Stress programme: no empty two-card gap on desktop. */
+.programmes:has([data-course-programme="stress"]:only-child){grid-template-columns:minmax(0,1fr);max-width:640px}
+.personal [data-course-upcoming]{margin-left:auto;white-space:nowrap;color:#7d4c63;font-weight:750}
+@media(max-width:700px){.personal [data-course-upcoming]{margin-left:0}}
