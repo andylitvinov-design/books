@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant HI. Descriptive
 
 ### Unassured-Submissive (HI)
 
-- **Key:** `trait.ipipipc.hi` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.hi` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Notice when listening feels freely chosen and when your own voice deserves space.
 - **RU — На что обратить внимание:** Замечайте, когда внимательное слушание добровольно и когда важно высказаться самому.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

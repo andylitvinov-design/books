@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant FG. Descriptive
 
 ### Aloof-Introverted (FG)
 
-- **Key:** `trait.ipipipc.fg` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.fg` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Compare settings where privacy feels natural with those that invite contact.
 - **RU — На что обратить внимание:** Сравните условия комфортного уединения и открытого контакта.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

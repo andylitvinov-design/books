@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant JK. Descriptive
 
 ### Unassuming-Ingenuous (JK)
 
-- **Key:** `trait.ipipipc.jk` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.jk` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Reflect on giving others space while making room for your own needs.
 - **RU — На что обратить внимание:** Замечайте, как заботиться о других, сохраняя место своим потребностям.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

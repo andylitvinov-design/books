@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant LM. Descriptive
 
 ### Warm-Agreeable (LM)
 
-- **Key:** `trait.ipipipc.lm` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.lm` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Notice the kinds of warmth that support mutuality without overextending.
 - **RU — На что обратить внимание:** Отмечайте проявления тепла без необходимости угождать всем.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

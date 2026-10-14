@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant BC. Descriptive
 
 ### Arrogant-Calculating (BC)
 
-- **Key:** `trait.ipipipc.bc` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.bc` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Observe how disagreement is expressed and whether respect stays intact.
 - **RU — На что обратить внимание:** Замечайте, как выражается несогласие и сохраняется ли уважение.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

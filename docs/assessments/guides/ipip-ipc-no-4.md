@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant NO. Descriptive
 
 ### Gregarious-Extraverted (NO)
 
-- **Key:** `trait.ipipipc.no` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.no` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Observe when starting conversations energizes you and when you prefer quiet.
 - **RU — На что обратить внимание:** Понаблюдайте, когда общение придаёт сил, а когда нужен покой.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

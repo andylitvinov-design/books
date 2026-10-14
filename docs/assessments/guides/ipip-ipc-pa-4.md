@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant PA. Descriptive
 
 ### Assured-Dominant (PA)
 
-- **Key:** `trait.ipipipc.pa` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.pa` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Notice when taking the lead supports collaboration and when shared decisions work better.
 - **RU — На что обратить внимание:** Отметьте, когда инициатива помогает группе, а когда полезно разделить решения.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.

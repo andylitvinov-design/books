@@ -16,7 +16,7 @@ Published four-item English IPIP Interpersonal Circumplex octant DE. Descriptive
 
 ### Cold-Hearted (DE)
 
-- **Key:** `trait.ipipipc.de` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
+- **Key:** `trait.ipipipc.short.de` · **Range:** 1–5 · **Mean of 4 responses** · **Reverse-coded:** none.
 - **EN — What to observe:** Notice when emotional distance protects you and when it limits connection.
 - **RU — На что обратить внимание:** Отметьте, когда дистанция помогает, а когда мешает общению.
 - **Interpretation:** Descriptive personality or interpersonal style; no clinical cutoff, normative percentile or diagnosis.
