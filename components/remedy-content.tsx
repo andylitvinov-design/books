@@ -10,6 +10,8 @@ type RemedyContentProps = {
   variant: "standalone" | "book";
   showEssence?: boolean;
   expandSupplementary?: boolean;
+  /** Preserve all source paragraphs and their order in client report appendices. */
+  fullSource?: boolean;
 };
 
 type Section = {
@@ -149,6 +151,40 @@ function ContentBlocks({ blocks, locale, sourceUrl }: { blocks: string[]; locale
   return rendered;
 }
 
+// Client report appendices display the entire original library card, in order.
+// This deliberately skips the directory reader's curated section sorting.
+function CompleteSourceDescription({
+  description, locale, sourceUrl, variant,
+}: { description: string; locale: Locale; sourceUrl?: string; variant: RemedyContentProps["variant"] }) {
+  const chunks = description.replace(/\r\n?/g, "\n").split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  const Heading = variant === "book" ? "h3" : "h2";
+  const rendered: ReactNode[] = [];
+  let paragraphBuffer: string[] = [];
+
+  const flush = () => {
+    if (!paragraphBuffer.length) return;
+    rendered.push(<div className="remedy-source-paragraphs" key={"source-" + rendered.length}>
+      <ContentBlocks blocks={paragraphBuffer} locale={locale} sourceUrl={sourceUrl} />
+    </div>);
+    paragraphBuffer = [];
+  };
+
+  chunks.forEach((block) => {
+    const plain = block.replace(/^#{1,6}\s+/, "").replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, "").trim();
+    const markdownHeading = /^#{1,6}\s+\S/u.test(block) && !block.includes("\n");
+    const capsHeading = !block.includes("\n") && plain.length <= 65 &&
+      /\p{L}/u.test(plain) && plain === plain.toLocaleUpperCase(locale);
+    if (markdownHeading || capsHeading) {
+      flush();
+      rendered.push(<Heading className="remedy-source-heading" key={"heading-" + rendered.length}>{plain}</Heading>);
+    } else {
+      paragraphBuffer.push(block);
+    }
+  });
+  flush();
+  return <div className="remedy-source-full">{rendered}</div>;
+}
+
 function ContentSection({ section, locale, variant, sourceUrl }: { section: Section; locale: Locale; variant: RemedyContentProps["variant"]; sourceUrl?: string }) {
   const Heading = variant === "book" ? "h3" : "h2";
   const sectionClass = section.key === "basis"
@@ -179,7 +215,10 @@ function SectionLayout({ sections, locale, variant, sourceUrl }: { sections: Sec
   return rendered;
 }
 
-export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true, expandSupplementary = false }: RemedyContentProps) {
+export function RemedyContent({ locale, remedy, sourceUrl, variant, showEssence = true, expandSupplementary = false, fullSource = false }: RemedyContentProps) {
+  if (fullSource) return <div className={"remedy-content-body remedy-content-body--" + variant}>
+    <CompleteSourceDescription description={remedy.description} locale={locale} sourceUrl={sourceUrl} variant={variant} />
+  </div>;
   const labels = copy[locale];
   const content = splitDescription(remedy.description);
   const supplementaryCount = countSupplementarySources(remedy.supplementary_materials);

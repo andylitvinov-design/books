@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import * as billingPublic from '../lib/billing/public-plan.js'
+import { billingReadLifecycle } from '../lib/billing/read-lifecycle.js'
 import ts from 'typescript'
 import vm from 'node:vm'
 import { SUBSCRIPTION_PLANS, PAID_PLAN_KEYS, normalizeBillingStatus, canShowHousePromotion, canStartCheckout, lessonCompletionKey, lessonOfferReducer, EMPTY_LESSON_OFFERS, safeBillingRedirect } from '../lib/billing/public-plan.js'
@@ -197,6 +198,7 @@ const compiled = ts.transpileModule(component + '\nexport { PlanSelection, Check
 function harness({ initialStatus = freeStatus(), search = '', request, statusRequest, context } = {}) {
   const slots = [], timers = new Map(), windowListeners = new Map(), documentListeners = new Map()
   const calls = [], redirects = []
+  let deferEffects = false, heldEffects = []
   let cursor = 0, due = [], dirty = false, now = 0, sequence = 0, root, props, currentStatus = initialStatus
   const sameDeps = (a, b) => a && b && a.length === b.length && a.every((value, index) => Object.is(value, b[index]))
   const hooks = {
@@ -227,7 +229,7 @@ function harness({ initialStatus = freeStatus(), search = '', request, statusReq
   const doc = { visibilityState: 'visible', addEventListener: (name, fn) => documentListeners.set(name, fn), removeEventListener: name => documentListeners.delete(name) }
   const win = { location: { search, assign: url => redirects.push(url) }, addEventListener: (name, fn) => windowListeners.set(name, fn), removeEventListener: name => windowListeners.delete(name) }
   const modules = {
-    react: hooks, 'react/jsx-runtime': runtime, 'lucide-react': {}, '@/lib/billing/public-plan': billingPublic,
+    react: hooks, 'react/jsx-runtime': runtime, 'lucide-react': {}, '@/lib/billing/public-plan': billingPublic, '@/lib/billing/read-lifecycle': { billingReadLifecycle },
     './subscription-copy': { SUBSCRIPTION_COPY }, './subscription-access.module.css': { default: new Proxy({}, { get: (_, key) => key }) },
     '@/lib/billing/client-session': {
       requestBilling: async (owner, action, body) => {
@@ -256,12 +258,15 @@ function harness({ initialStatus = freeStatus(), search = '', request, statusReq
     root = name; props = nextProps; cursor = 0; due = []; dirty = false
     const tree = api[name](props)
     if (name === 'SubscriptionProvider') api.SubscriptionContext.value = tree.props.value
-    due.forEach(fn => fn())
+    if (deferEffects) heldEffects = due
+    else due.forEach(fn => fn())
     return tree
   }
   const settle = async () => { for (let i = 0; i < 12; i++) { await Promise.resolve(); if (dirty && root) render() } }
   return {
     render, settle, calls, redirects, timers, api,
+    deferEffects() { deferEffects = true },
+    flushEffects() { deferEffects = false; const pending = heldEffects; heldEffects = []; pending.forEach(fn => fn()) },
     get value() { return api.SubscriptionContext.value },
     setStatus: value => { currentStatus = value },
     async advance(ms) {
@@ -269,13 +274,14 @@ function harness({ initialStatus = freeStatus(), search = '', request, statusReq
       for (const [id, timer] of [...timers]) if (timer.at <= now) { timers.delete(id); void timer.fn() }
       await settle()
     },
-    async event(name, hidden = false) {
+    async event(name, hidden = false, event = { isTrusted: true }) {
       doc.visibilityState = hidden ? 'hidden' : 'visible'
-      ;(windowListeners.get(name) || documentListeners.get(name))?.()
+      ;(windowListeners.get(name) || documentListeners.get(name))?.(event)
       await settle()
     },
     replayEffects() { slots.forEach(slot => { if (slot?.effect) { slot.cleanup?.(); slot.cleanup = slot.effect() } }) },
     unmount() { slots.forEach(slot => slot?.cleanup?.()) },
+    remount(nextProps = props) { slots.forEach(slot => slot?.cleanup?.()); slots.length = 0; return render('SubscriptionProvider', nextProps) },
   }
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
@@ -474,4 +480,156 @@ test('monthly session UI requires separate confirmation and gives no booked-time
     await confirm.props.onClick()
     assert.equal(requests, 1)
   }
+})
+
+
+test('beforeunload disposes status generation and blocks Strict Mode replay or a new owner until pageshow', async () => {
+  let release
+  const h = harness({ statusRequest: owner => owner === 'owner-A' ? new Promise(resolve => { release = resolve }) : paidStatus('start') })
+  h.render(); await h.settle()
+  const prior = h.calls.find(call => call.action === 'status')
+  await h.event('beforeunload')
+  assert.equal(prior.signal.aborted, true)
+  h.replayEffects(); await h.settle()
+  h.remount({ accountId: 'owner-B', children: 'new-course-content' }); await h.settle()
+  assert.equal(h.calls.filter(call => call.action === 'status').length, 1)
+  release(paidStatus('premium')); await h.settle()
+  assert.equal(h.value.status, null)
+  await h.event('pageshow')
+  assert.equal(h.calls.filter(call => call.action === 'status').length, 2)
+  assert.equal(h.calls.at(-1).owner, 'owner-B')
+  assert.equal(h.value.status.entitlement.tier, 'start')
+  h.unmount()
+})
+
+test('canceled navigation resumes without pageshow on real interaction, without repeating mutations', async () => {
+  for (const event of ['pointerdown', 'keydown']) {
+    const h = harness({ search: '?billing=success' })
+    h.render(); await h.settle()
+    await h.event('beforeunload')
+    const count = h.calls.length
+    await h.value.refresh(); await h.settle(); await h.advance(2000)
+    assert.equal(h.calls.length, count)
+    await h.event('pointerdown', false, { isTrusted: false })
+    assert.equal(h.calls.length, count)
+    await h.event(event)
+    assert.equal(h.calls.length, count + 1)
+    assert.equal(h.calls.at(-1).action, 'status')
+    assert.equal(h.value.phase, 'ready')
+    assert.equal(h.calls.filter(call => call.action === 'reconcile').length, 1)
+    await h.event('pointerdown')
+    assert.equal(h.calls.length, count + 1, 'ordinary active-page clicks do not add reads')
+    h.unmount()
+  }
+})
+
+test('an initially blocked remount reconciles a return exactly once after canceled navigation resumes', async () => {
+  const h = harness({ search: '?billing=success' })
+  h.render(); await h.settle(); await h.event('beforeunload')
+  h.remount({ accountId: 'owner-B', children: 'owner-B-course' }); await h.settle()
+  assert.equal(h.calls.filter(call => call.owner === 'owner-B').length, 0)
+  await h.event('pointerdown')
+  assert.deepEqual(h.calls.filter(call => call.owner === 'owner-B').map(call => call.action), ['reconcile', 'status'])
+  await h.event('focus')
+  assert.equal(h.calls.filter(call => call.owner === 'owner-B' && call.action === 'reconcile').length, 1)
+  h.unmount()
+})
+
+test('active-page status failures remain visible and recover only through an explicit new read', async () => {
+  let failing = true
+  const h = harness({ statusRequest: async () => { if (failing) throw new TypeError('synthetic active-page failure'); return freeStatus() } })
+  h.render(); await h.settle()
+  assert.equal(h.value.phase, 'error')
+  assert.equal(h.value.status, null)
+  assert.equal(h.calls.length, 1)
+  failing = false
+  await h.value.refresh(); await h.settle()
+  assert.equal(h.value.phase, 'ready')
+  assert.equal(h.calls.length, 2)
+  h.unmount()
+})
+
+test('BFCache pagehide and hidden tabs stay blocked until pageshow recovery', async () => {
+  const h = harness({ search: '?billing=success' })
+  h.render(); await h.settle(); await h.event('pagehide', true)
+  const count = h.calls.length
+  h.remount({ accountId: 'owner-A', children: 'another-course' }); await h.settle()
+  await h.event('focus', true); await h.advance(3000)
+  assert.equal(h.calls.length, count)
+  await h.event('pageshow')
+  assert.ok(h.calls.length > count)
+  assert.equal(h.value.status.entitlement.tier, 'free')
+  h.unmount()
+})
+
+
+test('focus and visibility alone cannot reopen a document with pending unload', async () => {
+  const h = harness()
+  h.render(); await h.settle(); await h.event('beforeunload')
+  const count = h.calls.length
+  await h.event('focus')
+  await h.event('focus', true)
+  await h.event('visibilitychange')
+  assert.equal(h.calls.length, count)
+  await h.event('pointerdown', true)
+  assert.equal(h.calls.length, count, 'hidden interaction cannot resume')
+  await h.event('keydown')
+  assert.equal(h.calls.length, count + 1)
+  h.unmount()
+})
+
+
+test('owner render blocks the old subscriber before passive cleanup can run', async () => {
+  const h = harness()
+  h.render(); await h.settle()
+  const count = h.calls.length
+  h.deferEffects(); h.render('SubscriptionProvider', { accountId: 'owner-B' })
+  await h.event('focus'); await h.event('visibilitychange')
+  assert.equal(h.calls.length, count)
+  h.flushEffects(); await h.settle()
+  assert.equal(h.calls.at(-1).owner, 'owner-B')
+  h.unmount()
+})
+
+test('old owner response or failure cannot commit in the render-to-cleanup interval', async () => {
+  for (const fail of [false, true]) {
+    let resolve, reject
+    const h = harness({ statusRequest: owner => owner === 'owner-A' ? new Promise((yes, no) => { resolve = yes; reject = no }) : freeStatus() })
+    h.render(); await h.settle()
+    h.deferEffects(); h.render('SubscriptionProvider', { accountId: 'owner-B' })
+    if (fail) reject(new Error('synthetic stale owner failure'))
+    else resolve(paidStatus('premium'))
+    await h.settle()
+    assert.equal(h.value.status, null)
+    assert.equal(h.value.phase, 'loading')
+    h.flushEffects(); await h.settle()
+    assert.equal(h.value.status.entitlement.tier, 'free')
+    assert.equal(h.calls.at(-1).owner, 'owner-B')
+    h.unmount()
+  }
+})
+
+test('old owner return reconciliation cannot continue to status after a new owner render', async () => {
+  let release
+  const h = harness({ search: '?billing=success', request: owner => owner === 'owner-A' ? new Promise(resolve => { release = resolve }) : {} })
+  h.render(); await h.settle()
+  h.deferEffects(); h.render('SubscriptionProvider', { accountId: 'owner-B' })
+  release({}); await h.settle()
+  assert.equal(h.calls.filter(call => call.owner === 'owner-A' && call.action === 'status').length, 0)
+  h.flushEffects(); await h.settle()
+  assert.deepEqual(h.calls.filter(call => call.owner === 'owner-B').map(call => call.action), ['reconcile', 'status'])
+  h.unmount()
+})
+
+
+test('failed success-return status stays error without an unhandled polling exception', async () => {
+  const h = harness({ search: '?billing=success', statusRequest: async () => { throw new Error('synthetic unavailable status') } })
+  h.render(); await h.settle()
+  assert.equal(h.value.phase, 'error')
+  assert.equal(h.value.status, null)
+  assert.equal(h.timers.size, 1)
+  await h.advance(2000)
+  assert.equal(h.calls.filter(call => call.action === 'reconcile').length, 1)
+  assert.equal(h.value.phase, 'error')
+  h.unmount()
 })

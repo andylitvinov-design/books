@@ -8,10 +8,10 @@ import { remedyDescriptionBlocks } from '../lib/documents/report-appendices.js'
 import { getRemedy } from '../data/remedies.js'
 import { buildPrescriptionPdf, buildPaymentPdf } from '../lib/prescriptions/pdf.js'
 
-test('only explicit before/after self-ratings create progress; target stays planned', () => {
+test('only explicit start/end self-ratings create two measured values', () => {
   for (const locale of ['en', 'ru']) {
     assert.deepEqual(extractReportProgress(getOwnerReportTextTemplate(locale).analysis),
-      { before: 3, after: 6, target: 7.3 })
+      { before: 3, after: 6 })
   }
   assert.equal(extractReportProgress('Interest in goal: 3/10. Next week: 6/10.'), null)
   assert.equal(extractReportProgress('After the session: engagement 6/10.'), null)
@@ -20,7 +20,7 @@ test('only explicit before/after self-ratings create progress; target stays plan
     { before: 3, after: 5 })
 })
 
-test('compact report PDF renders measured values and a labeled aspirational target without rewriting notes', () => {
+test('compact PDF draws only start/end and preserves the complete authored analysis', () => {
   const template = getOwnerReportTextTemplate('en')
   const document = {
     patientName: 'SYNTHETIC PDF TEST',
@@ -34,7 +34,9 @@ test('compact report PDF renders measured values and a labeled aspirational targ
   const source = pdf.toString('latin1')
   assert.match(source, /143 779 Tm/)
   assert.match(source, /\(SELF-RATED PROGRESS\)/)
-  assert.ok(source.includes('TARGET \\(PLAN\\)'), 'planned target is explicitly labeled')
+  assert.match(source, /\(START\)/)
+  assert.match(source, /\(END\)/)
+  assert.ok(!source.includes('TARGET \\(PLAN\\)'), 'the third planned score is not displayed')
   for (const value of ['3/10', '6/10', '7.3/10', 'SYNTHETIC PDF TEST']) {
     assert.ok(source.includes(value), 'Missing supplied report value: ' + value)
   }

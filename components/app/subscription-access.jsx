@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { Check, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { canShowHousePromotion, canStartCheckout, EMPTY_LESSON_OFFERS, lessonCompletionKey, lessonOfferReducer, normalizeBillingStatus, PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '@/lib/billing/public-plan'
 import { requestBilling, requestBillingStatus, verifiedBillingRedirect } from '@/lib/billing/client-session'
+import { billingReadLifecycle } from '@/lib/billing/read-lifecycle'
 import { SUBSCRIPTION_COPY } from './subscription-copy'
 import styles from './subscription-access.module.css'
 
@@ -30,8 +31,10 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   const statusController = useRef(null), reconciledReturn = useRef(null)
   currentAccount.current = accountId
   const lang = locale === 'ru' ? 'ru' : 'en'
+  const readLifecycle = typeof window === 'undefined' ? null : billingReadLifecycle(window, document)
 
   const loadStatus = useCallback(async ({ reconcile = false } = {}) => {
+    if (!mounted.current || currentAccount.current !== accountId || !readLifecycle?.canRead()) return false
     const version = ++requestVersion.current
     statusController.current?.abort()
     if (!accountId) {
@@ -42,19 +45,19 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     statusController.current = controller
     try {
       if (reconcile) await requestBilling(accountId, 'reconcile', {})
-      if (!mounted.current || requestVersion.current !== version || controller.signal.aborted) return false
+      if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
       const next = normalizeBillingStatus(await requestBillingStatus(accountId, { signal: controller.signal }))
-      if (!mounted.current || requestVersion.current !== version || controller.signal.aborted) return false
+      if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
       setStatus(next); setPhase('ready')
       if (next.entitlement.active || next.entitlement.adFree) {
         dispatch({ type: 'suppress' }); setManualOffer(false)
       }
       return next
     } catch {
-      if (mounted.current && requestVersion.current === version) setPhase('error')
+      if (mounted.current && currentAccount.current === accountId && requestVersion.current === version) setPhase('error')
       return false
     } finally { if (statusController.current === controller) statusController.current = null }
-  }, [accountId])
+  }, [accountId, readLifecycle])
 
   useEffect(() => {
     mounted.current = true; lifecycle.current += 1
@@ -65,42 +68,41 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     const isReturn = returned === 'success' || returned === 'returned'
     const returnKey = JSON.stringify([accountId, returned])
     const reconcileReturn = isReturn && reconciledReturn.current !== returnKey
-    if (reconcileReturn) reconciledReturn.current = returnKey
     const pollDeadline = Date.now() + 60000
     let pollTimer, stopped = false, paused = false
     // Reconcile once on return. Later attempts are bounded, cancellable status
     // reads only: an uncertain checkout or mutation is never retried here.
     const scheduleRead = next => {
       clearTimeout(pollTimer)
-      if (!isReturn || stopped || paused || document.visibilityState === 'hidden' || Date.now() >= pollDeadline ||
-          (returned === 'success' && next?.entitlement.active)) return
+      if (!isReturn || stopped || currentAccount.current !== accountId || paused || !readLifecycle?.canRead() || document.visibilityState === 'hidden' || Date.now() >= pollDeadline ||
+          (returned === 'success' && next?.entitlement?.active)) return
       pollTimer = setTimeout(async () => {
         if (stopped || Date.now() >= pollDeadline) return
         scheduleRead(await loadStatus())
       }, 2000)
     }
-    void loadStatus({ reconcile: reconcileReturn }).then(scheduleRead)
+    const read = () => {
+      if (stopped || currentAccount.current !== accountId || !readLifecycle?.canRead()) return
+      const reconcile = reconcileReturn && reconciledReturn.current !== returnKey
+      if (reconcile) reconciledReturn.current = returnKey
+      void loadStatus({ reconcile }).then(scheduleRead)
+    }
     const stopStatus = () => {
       paused = true; requestVersion.current += 1; statusController.current?.abort(); clearTimeout(pollTimer)
     }
-    const recheck = () => {
-      if (document.visibilityState === 'hidden') stopStatus()
-      else { paused = false; clearTimeout(pollTimer); void loadStatus().then(scheduleRead) }
+    const recheck = allowed => {
+      if (!allowed) stopStatus()
+      else { paused = false; clearTimeout(pollTimer); read() }
     }
-    window.addEventListener('focus', recheck)
-    window.addEventListener('pageshow', recheck)
-    window.addEventListener('pagehide', stopStatus)
-    document.addEventListener('visibilitychange', recheck)
+    const unsubscribe = readLifecycle?.subscribe(recheck)
+    read()
     return () => {
       stopped = true; clearTimeout(pollTimer)
       mounted.current = false; lifecycle.current += 1; requestVersion.current += 1
       statusController.current?.abort()
-      window.removeEventListener('focus', recheck)
-      window.removeEventListener('pageshow', recheck)
-      window.removeEventListener('pagehide', stopStatus)
-      document.removeEventListener('visibilitychange', recheck)
+      unsubscribe?.()
     }
-  }, [loadStatus, accountId])
+  }, [loadStatus, accountId, readLifecycle])
 
   const offerAfterCompletion = useCallback((key) => {
     dispatch({ type: 'saved', key, suppressed: Boolean(status?.entitlement.active || status?.entitlement.adFree) })
