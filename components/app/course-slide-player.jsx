@@ -368,13 +368,17 @@ export default function CourseSlidePlayer({
           <p>{words.rewardMeaning}</p>
           <div className={styles.rewardStats}>
             <div><Sparkles size={24} aria-hidden="true"/><strong>{20*lessonsSaved}</strong><span>{words.rewardTotal}</span></div>
-            <div><Trophy size={24} aria-hidden="true"/><strong>{lessonsSaved}/{cycle.durationDays}</strong><span>{words.rewardPath}</span></div>
             {practiceStreak>0 && <div><Waves size={24} aria-hidden="true"/><strong>{practiceStreak}</strong>
               <span>{words.rewardStreak} · {words.rewardStreakUnit}</span></div>}
           </div>
         </div> : finished ? <div className={styles.finished} data-course-slide-completion>
-          <IllustratedMoment variant="celebration"/>
-          <h2 tabIndex={-1} ref={headingRef}>{alreadyDone && !earned ? words.completed : words.finished}</h2>
+          {earned ? <div className={styles.journeyRewardIcon}><Trophy size={66} aria-hidden="true"/></div> :
+            <IllustratedMoment variant="celebration"/>}
+          <h2 tabIndex={-1} ref={headingRef}>{earned ? words.rewardPath : words.completed}</h2>
+          {earned && <div className={styles.completionPath} data-course-completion-progress>
+            <strong>{lessonsSaved} / {cycle.durationDays}</strong>
+            <progress max={cycle.durationDays} value={lessonsSaved} aria-label={words.rewardPath}/>
+          </div>}
           {!earned && (paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
             <p className={styles.resultFocus}>{focusLabel}</p>
             <h3>{words.pairTitle}</h3>
@@ -395,12 +399,12 @@ export default function CourseSlidePlayer({
           </div>}
           {!finalRetestReady && <p className={styles.nextDayCue}>{words.nextDayNotice}</p>}
           {!earned && <div className={styles.xpReward}><CheckCircle2 size={21}/>{words.completed}</div>}
-          <div className={styles.finalTiles}>
+          {!earned && <div className={styles.finalTiles}>
             <span><CheckCircle2 size={22}/>{words.completed}</span>
             <span><Target size={22}/>{words.todaySkill}</span>
             <span><Sparkles size={22}/>{words.private}</span>
-          </div>
-          <small>{words.xpNote}</small>
+          </div>}
+          {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
           <div className={styles.slideIdentity}>
