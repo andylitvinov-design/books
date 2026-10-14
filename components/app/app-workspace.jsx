@@ -1,7 +1,6 @@
 'use client'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
 import './saved-document-reader.css'
 import Image from 'next/image'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
@@ -52,12 +51,6 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { isNativePsiAlchemy } from '@/lib/native/client'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
-
-// The full remedy appendices load only when a client opens a saved document.
-const SavedCanonicalDocument = dynamic(
-  () => import('./saved-canonical-document').then((module) => module.SavedCanonicalDocument),
-  { ssr: false, loading: () => <p role="status">Opening your complete report…</p> },
-)
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -341,7 +334,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   ]
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
-    (page === 'documents' || page === 'reports')
+    page === 'reports'
   return (
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
@@ -457,9 +450,6 @@ export default function AppWorkspace({ locale, path = [] }) {
             ) : (
               <ReportsIndex data={data} locale={locale} />
             )
-          )}
-          {page === 'documents' && recordId && (
-            <SavedDocumentPage key={recordId} id={recordId} locale={locale} reload={load} />
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} />}
@@ -2716,80 +2706,6 @@ function ResultPage({ id, locale, data }) {
     </article>
   )
 }
-function SavedDocumentPage({ id, locale, reload }) {
-  const router = useRouter()
-  const [value, setValue] = useState(null)
-  const [error, setError] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const ru = locale === 'ru'
-  useEffect(() => {
-    let live = true
-    appFetch('documents/' + id + '?locale=' + locale)
-      .then((result) => {
-        if (live) setValue(result)
-      })
-      .catch((e) => {
-        if (live) setError(e)
-      })
-    return () => {
-      live = false
-    }
-  }, [id, locale])
-  async function remove() {
-    setBusy(true)
-    setError(null)
-    try {
-      await appFetch('documents/' + id + '/remove', {})
-      await reload()
-      router.replace('/' + locale + '/app/history')
-    } catch (e) {
-      setError(e)
-      setBusy(false)
-    }
-  }
-  if (error?.code === 'DOCUMENT_UNAVAILABLE' || error?.code === 'NOT_FOUND')
-    return (
-      <section className="hh-panel">
-        <h1>{ru ? 'Документ больше недоступен' : 'Document no longer available'}</h1>
-        <p>{ru ? 'Запись может оставаться в истории, но исходный документ был отозван или больше недоступен.' : 'The history reference may remain, but the source document was revoked or is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/history'} prefetch={false}>
-          {ru ? 'Вернуться в историю' : 'Back to History'}
-        </Link>
-      </section>
-    )
-  if (error) return <p role="alert">{ru ? 'Не удалось открыть документ.' : 'The document could not be opened.'}</p>
-  if (!value) return <p>{ru ? 'Загружаем документ…' : 'Loading document…'}</p>
-  const otherLocale = ru ? 'en' : 'ru'
-  const pdfHref = '/api/app/documents/' + encodeURIComponent(id) + '/pdf?locale=' + locale
-  return (
-    <article className="hh-saved-document-reader" data-canonical-saved-document>
-      <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
-        <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
-          {ru ? '← Мои отчёты' : '← My reports'}
-        </Link>
-        <div className="hh-saved-document-reader__actions">
-          <Link href={'/' + otherLocale + '/app/documents/' + encodeURIComponent(id)} prefetch={false}>
-            {otherLocale.toUpperCase()}
-          </Link>
-          <a className="hh-saved-document-reader__pdf" href={pdfHref} download>
-            {ru ? 'Скачать PDF' : 'Download PDF'}
-          </a>
-        </div>
-      </nav>
-      <SavedCanonicalDocument document={value.document} kind={value.kind} locale={locale} />
-      <details className="hh-saved-document-reader__management">
-        <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
-        <p>{ru ? 'Сохранено в вашем кабинете' : 'Saved in your Cabinet'}: {dateLabel(value.savedAt, locale)}</p>
-        <button type="button" disabled={busy} onClick={remove}>
-          {busy
-            ? (ru ? 'Удаляем…' : 'Removing…')
-            : (ru ? 'Убрать из моего кабинета' : 'Remove from my Cabinet')}
-        </button>
-      </details>
-    </article>
-  )
-}
-
 function SavedReportPage({ id, locale, reload }) {
   const router = useRouter()
   const [value, setValue] = useState(null)
@@ -2950,7 +2866,7 @@ function HistoryView({ data, locale, reload }) {
           : document.kind === 'invoice'
             ? (locale === 'ru' ? 'Счёт от Andy' : 'Invoice from Andy')
             : (locale === 'ru' ? 'Рекомендация от Andy' : 'Recommendation from Andy'),
-      href: `/${locale}/app/documents/${document.id}`,
+      href: `/${locale}/app/document-view/${document.id}`,
       note: `${c.saved}: ${dateLabel(document.savedAt, locale)}`,
     })),
     ...data.requests.map((r) => ({
