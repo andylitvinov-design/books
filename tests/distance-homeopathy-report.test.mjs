@@ -112,7 +112,7 @@ test('guide never leaks into an invoice and does not add unselected images', () 
   assert.doesNotMatch(noSelected, /APPENDIX/)
 })
 
-test('report and Alchemy page reuse the same article and private workflow safely', () => {
+test('the optional report appendix remains private while Alchemy has a dedicated sales landing', () => {
   const read = path => readFileSync(path, 'utf8')
   const form = read('components/consultation-form.jsx')
   const html = read('components/prescription-document.jsx')
@@ -128,7 +128,9 @@ test('report and Alchemy page reuse the same article and private workflow safely
   assert.match(html, /<RemedyContent[\s\S]+expandSupplementary/)
   assert.match(html, /<img src=\{remedy\.primary_image\}/)
   assert.match(html, /<DistanceHomeopathyGuide locale=\{locale\} embedded report \/>/)
-  assert.match(service, /<DistanceHomeopathyGuide locale=\{locale as Locale\} embedded \/>/)
+  assert.match(service, /<AlchemySoulLanding locale=\{locale as Locale\} \/>/)
+  assert.doesNotMatch(service, /DistanceHomeopathyGuide/)
+  assert.match(read('components/library-hub.tsx'), /\/library\/distance-homeopathy/)
   assert.match(article, /distanceHomeopathyCopy/)
   assert.match(source, /not supported by reliable clinical evidence/)
 })
