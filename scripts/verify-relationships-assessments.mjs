@@ -18,11 +18,27 @@ await mkdir(output,{recursive:true})
 const checks=[], errors=[]
 // Passive diagnostics only: preserve the strict page-error gate and navigation timing.
 const navigationDiagnostics=[]
+function diagnosticUrl(value){
+ try{const url=new URL(value,origin);return ['http:','https:'].includes(url.protocol)?url.origin+url.pathname:'[redacted-url]'}catch{return '[invalid-url]'}
+}
+function recordDiagnostic(event){
+ const safe={}
+ const urlFields=new Set(['url','destination','pageUrl','startedPageUrl','blockedURI','sourceFile'])
+ const fields=new Set(['type','time','page','probe','id','method','resourceType','isNavigationRequest','startedProbe','readyState','hydrated','persisted','status','lineNumber'])
+ for(const [key,value]of Object.entries(event)){
+  if(urlFields.has(key))safe[key]=diagnosticUrl(value)
+  else if(fields.has(key))safe[key]=value
+  else if(key==='failure')safe.failure=value?'request-failed':null
+  else if(key==='effectiveDirective')safe.effectiveDirective=/^[a-z-]+$/.test(value)?value:'[redacted-directive]'
+ }
+ navigationDiagnostics.push(safe)
+}
+browser.on('disconnected',()=>recordDiagnostic({type:'browser-disconnected',time:Date.now()}))
 const diagnosticPages=new WeakMap()
 let diagnosticRequestId=0
 function navigationMarker(page,type,destination){
  const info=diagnosticPages.get(page)
- navigationDiagnostics.push({type,time:Date.now(),page:info?.label,probe:info?.probe,
+ recordDiagnostic({type,time:Date.now(),page:info?.label,probe:info?.probe,
   url:page?.url(),...(destination?{destination}:{})})
 }
 async function diagnosticPage(context,label){
@@ -30,35 +46,42 @@ async function diagnosticPage(context,label){
  diagnosticPages.set(page,info)
  const prefix='HH_RELATIONSHIPS_LIFECYCLE '
  page.on('console',message=>{
-  if(!message.text().startsWith(prefix))return
+  if(!message.text().startsWith(prefix)){
+   if(message.type()==='error')recordDiagnostic({type:'console-error',time:Date.now(),page:label,probe:info.probe,url:page.url(),kind:'console-error'})
+   return
+  }
   try{
    const event=JSON.parse(message.text().slice(prefix.length))
    if(event.type==='init'||event.type==='pageshow')info.probe=event.probe
-   navigationDiagnostics.push({page:label,...event})
-  }catch(error){navigationDiagnostics.push({type:'diagnostic-parse-error',page:label,message:error.message})}
+   recordDiagnostic({page:label,...event})
+  }catch(error){recordDiagnostic({type:'diagnostic-parse-error',page:label,kind:'diagnostic-error'})}
  })
+ page.on('crash',()=>navigationMarker(page,'renderer-crash'))
+ page.on('close',()=>navigationMarker(page,'page-close'))
  page.on('pageerror',error=>{
   errors.push(error.message)
-  navigationDiagnostics.push({type:'pageerror',time:Date.now(),page:label,probe:info.probe,
-   url:page.url(),message:error.message,stack:error.stack})
+  recordDiagnostic({type:'pageerror',time:Date.now(),page:label,probe:info.probe,
+   url:page.url(),kind:'diagnostic-error',kind:'page-error'})
  })
  page.on('request',request=>{
   const url=new URL(request.url())
-  if(url.origin!==origin||!(request.isNavigationRequest()||url.pathname.startsWith('/api/app/')||url.searchParams.has('_rsc')))return
+  // Include static scripts/styles/fonts: a document can finish while hydration
+  // or load is blocked by an asset. Observe only this isolated test origin.
+  if(url.origin!==origin)return
   const entry={id:++diagnosticRequestId,url:request.url(),method:request.method(),
    resourceType:request.resourceType(),isNavigationRequest:request.isNavigationRequest(),
    startedPageUrl:page.url(),startedProbe:info.probe}
   requests.set(request,entry)
-  navigationDiagnostics.push({type:'request',time:Date.now(),page:label,...entry})
+  recordDiagnostic({type:'request',time:Date.now(),page:label,...entry})
  })
  page.on('response',response=>{
   const entry=requests.get(response.request());if(!entry)return
-  navigationDiagnostics.push({type:'response',time:Date.now(),page:label,...entry,
+  recordDiagnostic({type:'response',time:Date.now(),page:label,...entry,
    pageUrl:page.url(),probe:info.probe,status:response.status()})
  })
  for(const type of ['requestfinished','requestfailed'])page.on(type,request=>{
   const entry=requests.get(request);if(!entry)return
-  navigationDiagnostics.push({type,time:Date.now(),page:label,...entry,
+  recordDiagnostic({type,time:Date.now(),page:label,...entry,
    pageUrl:page.url(),probe:info.probe,failure:request.failure()?.errorText||null})
  })
  await page.addInitScript(({prefix})=>{
@@ -68,6 +91,7 @@ async function diagnosticPage(context,label){
   record('init')
   for(const type of ['DOMContentLoaded','load','pageshow','pagehide','popstate'])
    addEventListener(type,event=>record(type,{persisted:Boolean(event.persisted)}))
+  addEventListener('securitypolicyviolation',event=>record('csp-violation',{effectiveDirective:event.effectiveDirective,blockedURI:event.blockedURI,sourceFile:event.sourceFile,lineNumber:event.lineNumber}))
   addEventListener('error',event=>record('window-error',{message:event.message,stack:event.error?.stack||null}))
   addEventListener('unhandledrejection',event=>record('window-unhandledrejection',{
    message:String(event.reason?.message||event.reason),stack:event.reason?.stack||null}))
