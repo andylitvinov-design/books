@@ -55,3 +55,38 @@
 @media(max-width:480px){.root{gap:10px}.hero{padding:14px;border-radius:15px}.hero h2{font-size:26px!important}.heroIcon{height:28px;width:28px}.stats{gap:6px}.stats>div{padding:10px 8px;border-radius:11px}.stats strong{font-size:21px}.stats span{font-size:10px}.filters{padding:9px}.filters>label{flex-wrap:wrap}.filters select{flex-basis:55%}.card{padding:12px;gap:9px}.cardHeader h3{font-size:14px!important}.cardHeader a{font-size:10px}.scaleRow{gap:6px;padding:8px 7px}.scaleName strong{font-size:10.5px}.values{gap:6px}.values span{min-width:39px}.values strong{font-size:14px}.values small{font-size:8px}.delta{min-width:29px;padding:5px 4px;font-size:10px}}
 @media(max-width:360px){.scaleRow{grid-template-columns:minmax(0,1fr) auto}.delta{grid-column:2;justify-self:center}.cardHeader{flex-wrap:wrap}.cardHeader a{margin-left:auto}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+
+/* Score dials use each instrument's validated scale and orientation.
+   Baseline and repeat stay visibly distinct, including on narrow phones. */
+.card{background:linear-gradient(165deg,#fff 0%,#fbfeff 100%);border-color:#c2e1e7;box-shadow:0 7px 22px #0a617014}
+.scaleRow{grid-template-columns:100px minmax(0,1fr);gap:12px;align-items:center;padding:11px 12px;background:linear-gradient(115deg,#f0f9fb,#f8fcfd);border-color:#d1e9ed}
+.scaleDial{display:grid;place-items:center;min-width:0;padding:2px 4px}
+.scaleDial :global([data-assessment-gauge]){width:94px;max-width:100%;margin:0}
+.scaleDial :global([data-assessment-gauge] svg){max-height:55px}
+.scaleDial :global([data-assessment-gauge] strong){font-size:1.16rem;color:#125d69;margin-top:-2px}
+.scaleDial :global([data-assessment-gauge] strong span){font-size:.62rem}
+.scaleDial :global([data-assessment-gauge] figcaption){display:none}
+.scaleDial :global([data-assessment-gauge] small){font-size:.62rem}
+.scaleContent{min-width:0;display:grid;align-content:center;gap:4px}
+.scaleTitle{font:750 12px/1.4 system-ui,sans-serif;color:#245660;overflow-wrap:anywhere}
+.scaleContent .sparkline{max-width:140px;width:100%;height:18px;margin-top:4px}
+.values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:3px}
+.values span{min-width:0;display:grid;gap:4px;text-align:left}
+.values small{white-space:normal;font-size:10px;line-height:1.25;color:#6e838d}
+.values strong{font-size:18px;line-height:1.12}
+.values .delta{grid-column:1/-1;justify-self:start;display:inline-block;padding:5px 9px;font-size:11px}
+.values .awaiting{color:#8a9ea6;font-weight:700;letter-spacing:.08em}
+.cardHeader h3{font-size:16px!important}
+.dateRow{font-size:11px}
+@media(max-width:480px){
+  .scaleRow{grid-template-columns:82px minmax(0,1fr);gap:8px;padding:9px 8px}
+  .scaleDial{padding:0}
+  .scaleDial :global([data-assessment-gauge]){width:79px}
+  .scaleDial :global([data-assessment-gauge] svg){max-height:48px}
+  .scaleDial :global([data-assessment-gauge] strong){font-size:1.04rem}
+  .scaleTitle{font-size:11.5px}
+  .values{gap:6px}
+  .values small{font-size:9px}
+  .values strong{font-size:16px}
+  .cardHeader a{white-space:normal;text-align:right}
+}
