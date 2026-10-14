@@ -61,3 +61,13 @@ This extends and takes precedence over old V6/V7 art-direction notes wherever th
 - **Code:** `components/app/course-slide-player.jsx`, `course-slide-player.module.css`, `course-today.jsx/.module.css`, `course-quest.jsx/.module.css`, plus `course-focus-entry.jsx/.module.css`.
 
 The scene is a brand mood, not a user-specific medical intervention. It must not imply guaranteed results or replace safety messaging.
+
+
+## Addendum 2026-10-14 — lesson-entry positive measure and fullscreen photo
+
+- On the **entry/baseline** slide, ask how much of the desired quality/state the participant feels **right now**, rather than asking how difficult the positive daily theme is. For **«Ресурс и внутренняя опора»**, approved RU copy: «Насколько вы сейчас ощущаете в себе ресурс и внутреннюю опору?» Anchors: **0 · Совсем не ощущаю** / **10 · Ощущаю в полной мере**. EN has the same positive direction. Other focus topics use a neutral, grammatically stable quality/state prompt.
+- This entry reflection is **not** the saved concern-severity score from the last 24 hours, and is **not** the immediate pre/post pair around the guided exercise. Those currently use a difficulty scale where higher means harder. Do not reverse them or re-interpret historical records without a separately versioned data-model migration.
+- On the entry slide, replace the cropped horizontal picture card with a **decorative fullscreen background**. Reuse the local `course-focus-mountain-boy.webp` file; the actual photo must be fully visible with `object-fit: contain`, preserving aspect ratio. The remaining portrait screen may use a blurred/gradient atmospheric continuation behind the original image; do not distort the subject to fill the viewport.
+- Keep the main heading, topic, prompt, 0–10 choices, progress and primary action in real accessible DOM content above the scene. Use translucent light reading surfaces so the photo never reduces contrast. Respect iPhone safe areas, scroll within the screen, keyboard focus, reduced motion, optional skipping, and the existing server-side lesson progression.
+- This exception applies specifically to the **entry/baseline** slide. Other steps retain the previously approved compact scenic treatment, so their interactive content is not displaced by oversized decoration.
+- Regression contract: `tests/opora-baseline-presence-background.test.mjs`. Release only after build and production alias checks.
