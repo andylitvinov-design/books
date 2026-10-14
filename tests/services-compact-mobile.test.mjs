@@ -52,8 +52,30 @@ test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and hav
     assert.match(route, /generateMetadata/);
     assert.match(route, /generateStaticParams/);
     assert.match(route, /isSupportedLocale/);
-    assert.match(route, /<CoreServiceDetail locale=/);
-    assert.ok(route.includes('kind = "' + kind + '"'));
+    if (kind === "alchemy") {
+      assert.match(route, /<AlchemySoulLanding locale=/);
+      assert.doesNotMatch(route, /<DistanceHomeopathyGuide/);
+      const landing = read("components/alchemy-soul-landing.tsx");
+      const form = read("components/alchemy-soul-lead-form.tsx");
+      const landingCss = read("components/alchemy-soul-landing.module.css");
+      const capture = read("components/sitewide-lead-capture.tsx");
+      assert.match(landing, /placement="hero"/);
+      assert.match(landing, /placement="final"/);
+      assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
+      assert.match(landing, /MIVLm1GUTtM/);
+      assert.match(landing, /Dk0LBmOivQo/);
+      assert.match(landing, /reviewsNote/);
+      assert.match(form, /https:\/\/wa\.me\/14376066502/);
+      assert.match(form, /encodeURIComponent\(message\)/);
+      assert.match(form, /window\.location\.assign/);
+      assert.match(form, /required/);
+      assert.match(capture, /if \(coreKind === "alchemy"\) return null;/);
+      assert.match(landingCss, /@media \(max-width: 680px\)/);
+      assert.match(landingCss, /grid-template-columns: 1fr/);
+    } else {
+      assert.match(route, /<CoreServiceDetail locale=/);
+      assert.ok(route.includes('kind = "' + kind + '"'));
+    }
     for(const lang of ["en","ru"]) assert.ok(route.includes("/" + lang + "/services/" + slug));
   }
   for (const method of ["Situation analysis","Systemic constellations","homeopathic selection","Анализ ситуации","Системная расстановка","гомеопатический подбор"])
