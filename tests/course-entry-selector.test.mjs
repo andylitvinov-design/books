@@ -164,7 +164,7 @@ test('public personal choices stay consent-gated, owner-bound and continue into 
   nodes(h.tree).find(n=>n.type==='input'&&n.props.type==='checkbox').props.onChange({target:{checked:true}})
   await h.settle();await findButton(h.tree,'Agree & start').props.onClick();await h.settle()
   assert.deepEqual(h.calls.filter(x=>x.body).map(x=>x.body.action),['start','intake'])
-  assert.deepEqual([...h.calls.find(x=>x.body?.action==='intake').body.focusTags],['stress'])
+  assert.deepEqual([...h.calls.find(x=>x.body?.action==='intake').body.focusTags],['stress','mood','energy']) // Current Anti-Stress enrollment retains the consented programme's topic set.
   assert.ok(findPart(h.tree,'CourseR3Steps'))
   assert.equal(findPart(h.tree,'CourseEntrySelector'),undefined)
   h.unmount()

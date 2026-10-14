@@ -588,3 +588,29 @@
   .arrivalSteps li p{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.practiceTranscript summary svg{transition:none!important}}
+
+
+/* OPORA Anti-Stress 3.0: optional skill probe inside the existing ritual slide.
+   No extra slide, required answer, score manipulation or trauma exposure. */
+.antiStressProbe {
+  display:grid; gap:12px; margin:18px 0 5px; padding:19px;
+  border:1px solid #bccbd9; border-radius:18px;
+  background:linear-gradient(135deg,#f5f8fc,#f9f5f7);
+  color:#1b344c;
+}
+.antiStressProbeTag { margin:0; font-size:10px; font-weight:800; color:#813650; letter-spacing:.08em; }
+.antiStressProbe > strong { font-size:16px; line-height:1.45; }
+.antiStressProbeChoices { display:grid; gap:8px; }
+.antiStressProbeChoices button {
+  display:flex; align-items:center; justify-content:space-between; text-align:left;
+  gap:12px; padding:13px 14px; min-height:46px; color:#1c3652;
+  background:#fff; border:1px solid #d6e0ea; border-radius:12px; font-size:13px; line-height:1.35;
+}
+.antiStressProbeChoices button[aria-pressed="true"] { background:#f8eaf0; border-color:#813650; color:#712d45; }
+.antiStressProbeChoices button:focus-visible,.antiStressHint:focus-visible { outline:3px solid #9b536f; outline-offset:2px; }
+.antiStressHint { color:#823854; background:transparent; border:0; padding:8px 0; font-size:12px; text-align:left; text-decoration:underline; justify-self:start; }
+@media(max-width:480px) {
+ .antiStressProbe { margin-top:13px; padding:14px; border-radius:15px; }
+ .antiStressProbe > strong { font-size:14px; }
+ .antiStressProbeChoices button { padding:11px; font-size:12px; }
+}

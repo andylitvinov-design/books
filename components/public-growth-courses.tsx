@@ -16,7 +16,7 @@ const copy = {
     visualText: "Один урок, одна практика, один небольшой шаг.",
     badge: "Первый курс бесплатно",
     eyebrowPrograms: "ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ",
-    programsTitle: "Что важно для вас сейчас?", programsIntro: "Три готовые программы или персональный маршрут.",
+    programsTitle: "ОПОРА — Антистресс", programsIntro: "Сейчас открыт один 14-дневный курс: семь навыков для работы с повседневным стрессом.",
     cardAction: "Выбрать программу", days: "14-дневная программа",
     stress: { title: "Антистресс", pain: "Трудно расслабиться и выключить напряжение", description: "Наблюдаем свои реакции, находим короткие паузы и способы восстановления.", result: "Спокойствие · устойчивость · восстановление" },
     stressSkills: {
@@ -24,23 +24,23 @@ const copy = {
       "kicker": "ОПОРА · АНТИСТРЕСС",
       "intro": "Каждому навыку посвящены два занятия: знакомство с техникой и её бережная тренировка в обычной ситуации.",
       "skills": [
-        "Раньше замечать напряжение",
-        "Делать паузу вместо автопилота",
-        "Выбирать реакцию на тревожные мысли",
-        "Находить и настраивать личную опору",
-        "Возвращаться к опоре среди дел",
-        "Поддерживать себя в трудный день",
-        "Самостоятельно выбирать подходящую практику"
+        "Ориентироваться в настоящем и сохранять выбор",
+        "Раньше замечать признаки перегрузки",
+        "Мягко регулировать напряжение и нагрузку",
+        "Находить реальные и внутренние ресурсы",
+        "Отделять тревожные мысли от фактов",
+        "Обозначать границы и обращаться за поддержкой",
+        "Самостоятельно применять знакомые практики"
       ],
       "cta": "Начать программу «Антистресс»",
       "safety": "Самостоятельное обучение управлению повседневным стрессом. Не терапия шоковой травмы или ПТСР и не замена помощи специалиста. Любую практику можно остановить или пропустить."
     },
     confidence: { title: "Внутренняя уверенность", pain: "Сомнения и слишком строгий внутренний критик", description: "Работаем с внутренней поддержкой, личными границами и уверенностью в выборе.", result: "Опора · свой голос · границы" },
     focus: { title: "Фокус и энергия", pain: "Трудно собраться, начать и удержать внимание", description: "Развиваем мягкую концентрацию, ясность приоритетов и посильные действия.", result: "Ясность · действие · свой темп" },
-    personal: "Мой персональный курс", personalDesc: "Не нашли своё направление? Сформируйте программу вокруг ваших целей и актуальных вопросов.", personalAction: "Составить свой курс",
+    personal: "Другие направления — позже", personalDesc: "Курсы уверенности и концентрации готовятся. Сейчас можно выбрать свои цели и шкалы внутри Антистресса.", personalAction: "Составить свой курс",
     eyebrowHow: "ПРОСТОЙ ПУТЬ", howTitle: "Как проходит курс",
     steps: [
-      { title: "Выберите тему", description: "Готовый курс или личное направление под вашу цель." },
+      { title: "Определите свой фокус", description: "Курс Антистресс уже выбран: вы отмечаете важные лично вам навыки и цели." },
       { title: "Узнайте исходное состояние", description: "Короткий замер и подобранные тесты перед стартом." },
       { title: "Замечайте изменения", description: "14 небольших уроков. Следующий — после завершения текущего; в конце можно повторить замер." },
     ],
@@ -60,7 +60,7 @@ const copy = {
     visualText: "One lesson, one practice, one small step.",
     badge: "Your first course is free",
     eyebrowPrograms: "FIND YOUR STARTING POINT",
-    programsTitle: "What matters to you right now?", programsIntro: "Three ready-to-start programmes or a personal path.",
+    programsTitle: "OPORA — Stress Relief", programsIntro: "One programme is open now: 14 lessons and seven practical skills for everyday stress.",
     cardAction: "Choose programme", days: "14-day programme",
     stress: { title: "Stress Relief", pain: "It's hard to switch off and unwind", description: "Notice reactions, practise small pauses and make space for recovery.", result: "Calm · steadiness · recovery" },
     stressSkills: {
@@ -68,23 +68,23 @@ const copy = {
       "kicker": "OPORA · STRESS RELIEF",
       "intro": "Each skill is explored twice: first a gentle introduction, then practice in an ordinary, manageable situation.",
       "skills": [
-        "Notice stress signals earlier",
-        "Pause before reacting automatically",
-        "Choose how to respond to difficult thoughts",
-        "Find and adapt a personal source of support",
-        "Bring a familiar pause into everyday routines",
-        "Support yourself on difficult days",
-        "Choose helpful practices more independently"
+        "Orient to the present and retain choice",
+        "Notice signs of overload earlier",
+        "Regulate tension and pace gently",
+        "Find practical and inner sources of support",
+        "Separate worrying thoughts from facts",
+        "Set boundaries and ask for support",
+        "Choose familiar practices independently"
       ],
       "cta": "Start Stress Relief",
       "safety": "Self-guided education for everyday stress, not shock-trauma or PTSD treatment and not a replacement for professional care. You may stop or skip any exercise."
     },
     confidence: { title: "Inner Confidence", pain: "Self-doubt and a harsh inner critic", description: "Explore self-support, boundaries and confidence in everyday decisions.", result: "Support · voice · boundaries" },
     focus: { title: "Focus & Energy", pain: "It's hard to focus and get started", description: "Build gentle attention, clear priorities and manageable daily action.", result: "Clarity · action · your pace" },
-    personal: "My personal course", personalDesc: "Need a different topic? Shape a learning path around your goals and questions.", personalAction: "Create my course",
+    personal: "More programmes are coming", personalDesc: "Confidence and focus courses are in preparation. You can choose your own goals and scales within Stress Relief.", personalAction: "Create my course",
     eyebrowHow: "A SIMPLE PATH", howTitle: "How your course works",
     steps: [
-      { title: "Choose a focus", description: "Pick a guided programme or define your own question." },
+      { title: "Choose your focus", description: "Anti-Stress is selected; you choose which personal skills and goals matter." },
       { title: "Explore your starting point", description: "Complete suggested assessments to better understand your current experience." },
       { title: "One lesson at a time", description: "Try a short practice and mark it complete. The next lesson follows when you're ready." },
     ],
@@ -104,7 +104,7 @@ const copy = {
     visualText: "Una lección, una práctica, un pequeño paso.",
     badge: "Tu primer curso es gratis",
     eyebrowPrograms: "ELIGE TU CAMINO",
-    programsTitle: "¿Qué te importa ahora?", programsIntro: "Tres programas preparados o un recorrido personal.",
+    programsTitle: "OPORA — Antiestrés", programsIntro: "Un único curso disponible: 14 lecciones y siete habilidades prácticas para el estrés cotidiano.",
     cardAction: "Elegir programa", days: "Programa de 14 días",
     stress: { title: "Menos estrés", pain: "Cuesta desconectar y relajarte", description: "Observa tus reacciones y encuentra pausas para recuperarte.", result: "Calma · estabilidad · recuperación" },
     stressSkills: {
@@ -112,23 +112,23 @@ const copy = {
       "kicker": "OPORA · MENOS ESTRÉS",
       "intro": "Cada habilidad se practica en dos lecciones: primero se conoce y después se prueba en una situación cotidiana segura.",
       "skills": [
-        "Reconocer antes las señales de estrés",
-        "Hacer una pausa antes de reaccionar",
-        "Elegir cómo responder a los pensamientos difíciles",
-        "Encontrar y adaptar apoyos personales",
-        "Recordar una pausa en la vida diaria",
-        "Cuidarte en los días difíciles",
-        "Elegir prácticas con más autonomía"
+        "Orientarte en el presente y poder elegir",
+        "Reconocer antes las señales de sobrecarga",
+        "Regular la tensión y la carga con suavidad",
+        "Encontrar apoyos reales e internos",
+        "Distinguir pensamientos inquietantes de hechos",
+        "Poner límites y pedir apoyo",
+        "Elegir prácticas conocidas con autonomía"
       ],
       "cta": "Empezar el programa antiestrés",
       "safety": "Educación para afrontar el estrés cotidiano; no es tratamiento del trauma agudo ni del TEPT y no sustituye la ayuda profesional. Puedes detener o saltar cualquier ejercicio."
     },
     confidence: { title: "Confianza interior", pain: "Dudas y autocrítica", description: "Explora el apoyo interior, los límites y tus decisiones.", result: "Apoyo · voz · límites" },
     focus: { title: "Enfoque y energía", pain: "Cuesta concentrarte y empezar", description: "Cultiva una atención amable y pequeñas acciones sostenibles.", result: "Claridad · acción · tu ritmo" },
-    personal: "Mi curso personal", personalDesc: "¿Otro tema? Crea una ruta de aprendizaje centrada en tus objetivos.", personalAction: "Crear mi curso",
+    personal: "Próximamente otros cursos", personalDesc: "Estamos preparando cursos de confianza y concentración. Ya puedes elegir metas personales dentro de Antiestrés.", personalAction: "Crear mi curso",
     eyebrowHow: "UN CAMINO SENCILLO", howTitle: "Cómo funciona",
     steps: [
-      { title: "Elige un tema", description: "Escoge un programa o define tu propia pregunta." },
+      { title: "Elige tu enfoque", description: "Antiestrés ya está seleccionado; tú eliges tus metas personales." },
       { title: "Conoce tu punto de partida", description: "Completa las pruebas sugeridas para reflexionar sobre tu situación actual." },
       { title: "Una lección a la vez", description: "Practica, marca la lección como terminada y después sigue con la siguiente." },
     ],
@@ -140,13 +140,13 @@ const copy = {
   },
 } as const;
 
-const programmeIds = ["stress", "confidence", "focus"] as const;
+const programmeIds = ["stress"] as const; // Only the reviewed course accepts new public enrollment.
 const icons = { stress: Waves, confidence: ShieldCheck, focus: Target } as const;
 
 export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const appLocale = locale === "es" ? "en" : locale;
-  const courseUrl = `/${appLocale}/app/course`;
+  const courseUrl = `/${appLocale}/app/course?program=stress`;
 
   return <main className={styles.root} lang={locale} data-public-my-courses>
     <PublicSiteHeader locale={locale} />
@@ -190,7 +190,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
             <p className={styles.programmePain}>{programme.pain}</p>
             <p className={styles.programmeText}>{programme.description}</p>
             <p className={styles.programmeResult}>{programme.result}</p>
-            <Link href={`${courseUrl}?program=${id}`} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link href={courseUrl} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
           </article>;
         })}
       </div>
@@ -209,14 +209,14 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         </ol>
         <div className={styles.stressSkillsFoot}>
           <p>{t.stressSkills.safety}</p>
-          <Link href={`${courseUrl}?program=stress`} prefetch={false}>{t.stressSkills.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link href={courseUrl} prefetch={false}>{t.stressSkills.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
         </div>
       </section>
 
       <div className={styles.personal}>
         <span className={styles.personalIcon}><SlidersHorizontal size={27} aria-hidden="true" /></span>
         <div><h3>{t.personal}</h3><p>{t.personalDesc}</p></div>
-        <Link href={`${courseUrl}?entry=personal`} prefetch={false}>{t.personalAction}<ArrowRight size={17} aria-hidden="true" /></Link>
+        <span className={styles.programmeMeta} data-course-upcoming>{locale === "ru" ? "Скоро" : locale === "es" ? "Próximamente" : "Coming soon"}</span>
       </div>
     </section>
 

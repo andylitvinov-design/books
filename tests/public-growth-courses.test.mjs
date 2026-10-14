@@ -21,10 +21,10 @@ test('public course pages offer a free start with real 14-day program IDs and pr
     readFile('components/public-growth-courses.module.css', 'utf8'),
   ]);
   assert.match(landing, /data-public-my-courses/);
-  assert.match(landing, /const programmeIds = \["stress", "confidence", "focus"\]/);
+  assert.match(landing, /const programmeIds = \["stress"\]/);
   assert.match(landing, /\/app\/course/);
-  assert.match(landing, /\?program=\$\{id\}/);
-  assert.match(landing, /\?entry=personal/);
+  assert.match(landing, /\?program=stress/);
+  assert.doesNotMatch(landing, /\?entry=personal/);
   assert.match(landing, /Start for free/);
   assert.match(landing, /Начать бесплатно/);
   assert.match(enRu, /generateMetadata/);

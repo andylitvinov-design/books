@@ -4,8 +4,8 @@ import styles from './free-course-banner.module.css'
 const COPY = {
   en: {
     optional: 'An optional next step',
-    title: 'A free 14-day practice course',
-    intro: 'Explore topics that matter to you with short daily exercises, at your own pace.',
+    title: 'OPORA Stress Relief · a free 14-day course',
+    intro: 'Seven gentle skills for everyday stress, with short daily exercises at your own pace.',
     start: 'Start course for free',
     more: 'More about the course',
     format: 'You choose your topics, tests and practice goals. The course offers daily exercises over 14 days; you can skip or stop a practice.',
@@ -14,8 +14,8 @@ const COPY = {
   },
   ru: {
     optional: 'Следующий шаг — по желанию',
-    title: 'Бесплатный курс практики на 14 дней',
-    intro: 'Изучайте важные для вас темы с короткими ежедневными упражнениями в своём темпе.',
+    title: 'ОПОРА — Антистресс · бесплатный курс на 14 дней',
+    intro: 'Семь навыков работы с повседневным стрессом и короткие ежедневные упражнения в своём темпе.',
     start: 'Начать курс бесплатно',
     more: 'Подробнее о курсе',
     format: 'Вы сами выбираете темы, тесты и цели практики. Курс предлагает ежедневные упражнения на протяжении 14 дней; любую практику можно пропустить или остановить.',
@@ -33,7 +33,7 @@ export function FreeCourseBanner({ locale = 'en' }) {
     <h3 className={styles.title}>{t.title}</h3>
     <p className={styles.intro}>{t.intro}</p>
     <div className={styles.actions}>
-      <Link className={styles.start} href={'/' + language + '/app/course'} prefetch={false}>{t.start}</Link>
+      <Link className={styles.start} href={'/' + language + '/app/course?program=stress'} prefetch={false}>{t.start}</Link>
       <details className={styles.more}>
         <summary>{t.more}</summary>
         <div className={styles.information}>

@@ -13,7 +13,7 @@ const source=readFileSync(new URL('../components/app/course-slide-player.jsx',im
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)]
 const textOf=tree=>tree==null||typeof tree==='boolean'?'':typeof tree!=='object'?String(tree):Array.isArray(tree)?tree.map(textOf).join(' '):textOf(tree.props?.children)
 function mount(_name,{props}){
-  const slots=[];let index=0,pending=[],dirty=false,tree,serial=0,network=0
+  const slots=[];let index=0,pending=[],dirty=false,tree,serial=0,network=0,focused=null,focusCount=0
   const same=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]))
   const hooks={
     useState(initial){const i=index++;slots[i]??={value:typeof initial==='function'?initial():initial};return [slots[i].value,value=>{slots[i].value=typeof value==='function'?value(slots[i].value):value;dirty=true}]},
@@ -29,11 +29,11 @@ function mount(_name,{props}){
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}
   vm.runInNewContext(ts.transpileModule(source,{fileName:'course-slide-player.jsx',compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,runtime)
   const render=()=>{index=0;pending=[];dirty=false;tree=runtime.exports.default(props)
-    for(const node of nodes(tree))if(node.props?.ref&&typeof node.type==='string')node.props.ref.current??={focus(){},querySelector(){return {focus(){},scrollTo(){}}},querySelectorAll(){return []}}
+    for(const node of nodes(tree))if(node.props?.ref&&typeof node.type==='string')node.props.ref.current={focus(){focused=node;focusCount++},querySelector(){return {focus(){},scrollTo(){}}},querySelectorAll(){return []}}
     pending.forEach(fn=>fn())
   }
   render()
-  return {get tree(){return tree},get network(){return network},async settle(){for(let i=0;i<25;i++){await Promise.resolve();if(dirty)render()}},unmount(){slots.forEach(s=>s?.cleanup?.())}}
+  return {get tree(){return tree},get network(){return network},get focused(){return focused},get focusCount(){return focusCount},async settle(){for(let i=0;i<25;i++){await Promise.resolve();if(dirty)render()}},unmount(){slots.forEach(s=>s?.cleanup?.())}}
 }
 
 for(const locale of ['en','ru']) for(const version of [COURSE_CONTENT_VERSION,COURSE_CONTENT_V3,COURSE_CONTENT_V4]) {
@@ -45,10 +45,17 @@ for(const locale of ['en','ru']) for(const version of [COURSE_CONTENT_VERSION,CO
       const h=mount('course-slide-player',{props:{locale,data,onClose(){},onCheckin:async()=>{otherSaves++;return true},onPreferences:async()=>{otherSaves++;return true},onSession:async body=>{saved.push(body);return true}}})
       const byData=key=>nodes(h.tree).find(n=>n.props?.[key]!==undefined)
       const click=async node=>{assert.ok(node);node.props.onClick();await h.settle()}
+      const initialFocusCount=h.focusCount
+      assert.equal(h.focused?.type,'h2')
       await click(byData('data-course-global-discomfort'))
       const panel=byData('data-course-discomfort-support')
       assert.ok(panel);assert.equal(saved.length,0)
+      assert.equal(h.focusCount,initialFocusCount+1,'opening support refocuses its heading')
+      assert.equal(h.focused,nodes(panel).find(n=>n.type==='h2'))
       await click(nodes(panel).find(n=>n.type==='button'&&textOf(n)===(locale==='ru'?'Нейтральная практика':'Choose a neutral practice')))
+      assert.equal(h.focusCount,initialFocusCount+2,'neutral return refocuses the lesson heading')
+      assert.equal(h.focused?.type,'h2')
+      assert.ok(nodes(h.tree).includes(h.focused))
       for(let step=0;step<40;step++) {
         const content=byData('data-slide-kind')
         if(content.props['data-slide-kind']==='feedback')break

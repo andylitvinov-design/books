@@ -293,6 +293,8 @@ export default function CourseSlidePlayer({
   const [symbolMode, setSymbolMode] = useState('words')
   const [thoughtChoice, setThoughtChoice] = useState(session?.signals?.thoughtPath || 'neutral')
   const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
+  const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
+  const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
   const [earned, setEarned] = useState(false)
@@ -339,7 +341,7 @@ export default function CourseSlidePlayer({
   useEffect(() => {
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index, rewardStep, promoOpen])
+  }, [index, rewardStep, promoOpen, discomfortOpen])
 
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
@@ -392,7 +394,8 @@ export default function CourseSlidePlayer({
         practiceWindow:'practice_v15',comfort,usefulness,flexibility,
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         welcomeFeeling:welcomeFeeling||'skip',
-        transferPlan:cycle.day===6?transferPlan:'',
+        transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
+        ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -560,7 +563,18 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && <>
+          {slide.kind === 'checkin' && (lesson.antiStress ? <>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
+            <p className={styles.prompt}>{lesson.antiStress.skill}</p>
+            <p className={styles.instruction}>{lesson.antiStress.learningOutcome}</p>
+            <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+            <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
+            </div>
+            <p className={styles.helper}>{lesson.antiStress.neutralText}</p>
+          </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
             <p className={styles.instruction}>{words.checkinQuestion}</p>
@@ -571,7 +585,7 @@ export default function CourseSlidePlayer({
             <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
             <p className={styles.helper}>{words.ratingHint}</p>
             {today && <p className={styles.confirmed}><CheckCircle2 size={16}/>{words.saved}</p>}
-          </>}
+          </>)}
 
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo kind={slide.kind}/>
@@ -590,11 +604,11 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
-            {cycle.day===5 && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
+            {cycle.day===5 && !lesson.antiStress && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
               {[['cbt',words.cbtChoice],['act',words.actChoice],['neutral',words.neutralChoice]].map(([key,label])=><button key={key} type="button"
                 disabled={locked} aria-pressed={thoughtChoice===key} onClick={()=>setThoughtChoice(key)}>{label}</button>)}
             </div>}
-            <blockquote className={styles.quote}>{cycle.day===5 ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
+            <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
           </>}
 
@@ -660,13 +674,28 @@ export default function CourseSlidePlayer({
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {lesson.antiStress?.probe && <section className={styles.antiStressProbe} data-antistress-skill-probe>
+              <p className={styles.antiStressProbeTag}>{locale==='ru'?'Практический выбор · навык '+lesson.antiStress.skillId:'Practice choice · skill '+lesson.antiStress.skillId}</p>
+              <strong>{lesson.antiStress.probe.prompt}</strong>
+              <div className={styles.antiStressProbeChoices} role="group" aria-label={lesson.antiStress.probe.prompt}>
+                {lesson.antiStress.probe.choices.map(choice=><button type="button" key={choice.value}
+                  disabled={locked} aria-pressed={skillProbeChoice===choice.value}
+                  onClick={()=>setSkillProbeChoice(choice.value)}>
+                  {choice.label}{skillProbeChoice===choice.value&&<Check size={16} aria-hidden="true"/>}
+                </button>)}
+              </div>
+              <button type="button" className={styles.antiStressHint} disabled={locked}
+                onClick={()=>setSkillProbeHintUsed(true)}>{locale==='ru'?'Показать подсказку':'Show a hint'}</button>
+              {skillProbeHintUsed&&<p className={styles.helper}>{lesson.antiStress.probe.hint}</p>}
+              <p className={styles.helper}>{locale==='ru'?'Можно не отвечать. Выбор — учебная проба, а не показатель психического здоровья.':'You may skip this. A choice here is an educational attempt, not a mental-health score.'}</p>
+            </section>}
           </>}
 
           {slide.kind === 'transfer' && <>
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {cycle.day===6 && <>
+            {cycle.day===6 && !lesson.antiStress && <>
               <p className={styles.prompt}>{words.transferStageTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={words.transferStageTitle} data-course-transfer-stage>
                 {[
@@ -681,7 +710,7 @@ export default function CourseSlidePlayer({
                   onChange={event=>setTransferPlan(event.target.value)}/>
               </label>
             </>}
-            {cycle.day===10 && <div className={styles.practiceRating} data-course-day-six-recall>
+            {cycle.day===10 && !lesson.antiStress && <div className={styles.practiceRating} data-course-day-six-recall>
               <strong>{words.lastPlanTitle}</strong>
               <p>{data.daySixPlan?.plan || words.noSavedPlan}</p>
               {data.daySixPlan?.stage && <small>{words.transferStageTitle}: {data.daySixPlan.stage}</small>}
@@ -794,7 +823,7 @@ export default function CourseSlidePlayer({
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'checkin' ? () => void saveCheckin()
+            : slide.kind === 'checkin' ? (lesson.antiStress ? goNext : () => void saveCheckin())
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next

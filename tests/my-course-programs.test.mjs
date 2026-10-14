@@ -25,8 +25,11 @@ test('starter battery is deterministic and only reorders real rights-cleared rec
     .map((key, i) => ({ key, title:key, completed:i%2===0 }))
   const result = orderCourseProgramTests(current, 'stress')
   assert.deepEqual(result.slice(0, 3).map(test => test.key),
-    ['hh-weekly-pulse', 'hh-current-state', 'hh-resource-pulse'])
+    ['hh-weekly-pulse', 'hh-resource-pulse', 'other'])
   assert.deepEqual(result.map(test => test.key).sort(), current.map(test => test.key).sort())
+  const withGad = orderCourseProgramTests([...current, {key:'gad-7', title:'GAD-7'}], 'stress')
+  assert.deepEqual(withGad.slice(0, 3).map(test => test.key),
+    ['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'])
   assert.equal(result.filter(test => test.recommended).length, 5)
   assert.deepEqual(orderCourseProgramTests(current, null), current)
   assert.equal(result.find(test => test.key === 'other').completed, true)
@@ -90,7 +93,7 @@ test('the authenticated daily API overlays curriculum without touching existing 
   const today = read('components/app/course-today.jsx')
   const quest = read('components/app/course-quest.jsx')
   assert.match(server,/programme:programme\?\{id:programme.id/)
-  assert.match(server,/programmeDay:programme\?courseProgramDay/)
+  assert.match(server,/programmeDay:programme \? \(contentVersion===COURSE_ANTISTRESS_OUTCOME_V3/)
   assert.match(today,/data.programme\?\.day\?\.prompt/)
   assert.match(quest,/item.programmeDay\?\.title/)
   assert.match(server,/const lessonGoal=currentFocus.goal/)
@@ -160,7 +163,7 @@ test('failed or uncertain intake remains on the created course and explicit retr
    if(attempt===1){if(committed)current={...current,stage:2,revision:4,focusTags:body.focusTags};return {error:'SERVICE_UNAVAILABLE'}}
    current={...current,stage:2,revision:current.revision+1,focusTags:body.focusTags};return view(current)
   }})
-  await h.settle();await chooseProgram(h,'confidence');(await consent(h))();await h.settle()
+  await h.settle();await chooseProgram(h,'stress');(await consent(h))();await h.settle()
   const createdId=writes(h)[0].body.courseId
   assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.id,createdId)
   assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,1)
@@ -171,7 +174,7 @@ test('failed or uncertain intake remains on the created course and explicit retr
   assert.equal(writes(h).filter(call=>call.body.action==='start').length,1)
   assert.equal(writes(h).filter(call=>call.body.action==='intake').length,committed?1:2)
   assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,2)
-  assert.deepEqual(findPart(h.tree,'CourseR3Steps').props.state.course.focusTags,[...getCourseProgram('confidence').focusTags])
+  assert.deepEqual(findPart(h.tree,'CourseR3Steps').props.state.course.focusTags,[...getCourseProgram('stress').focusTags])
   assert.equal(findButton(h.tree,'Retry programme setup'),undefined)
   assert.ok(writes(h).every(call=>call.body.courseId===createdId));h.unmount()
  }
@@ -276,7 +279,9 @@ test('unknown fixed-preset start cannot be reinterpreted as a flagship even when
   return view(stored)
  }})
  await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPreset('confidence');await h.settle();(await consent(h))();await h.settle()
- await chooseProgram(h,'confidence');(await consent(h))();await h.settle()
+ await chooseProgram(h,'confidence');await h.settle()
+ assert.equal(writes(h).length,1,'coming-soon programme cannot reinterpret an uncertain fixed-preset start')
+ await chooseProgram(h,'stress');(await consent(h))();await h.settle()
  assert.equal(writes(h).length,2);assert.equal(writes(h)[0].body.courseId,writes(h)[1].body.courseId)
  assert.equal(findPart(h.tree,'CourseR3Steps').props.state.course.presetId,'confidence')
  assert.deepEqual(findPart(h.tree,'CourseR3Steps').props.state.course.focusTags,stored.focusTags)
@@ -361,4 +366,49 @@ test('manual intake clears the live programme intent so a retained retry cannot 
  assert.equal(findButton(h.tree,'Retry programme setup'),undefined)
  assert.deepEqual(findPart(h.tree,'CourseR3Steps').props.state.course.focusTags,['sleep'])
  h.unmount()
+})
+
+test('plain hero defaults to Anti-Stress while guided concerns survive failed intake and explicit retry',async()=>{
+ for(const guided of [false,true]) {
+  let current=null,attempt=0
+  const entry={focus:['stress'],problems:['stress-tension'],testKeys:[]}
+  const h=mount('my-course',{enterCourse:true,props:{data:account('owner-a')},extraModules:{
+   '@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>guided?entry:null},
+   '@/lib/inner-growth/course-entry-intent':{courseTagsForExplorerFocus:()=>['stress'],courseConcernsFromIntent:value=>value?'Captured guided concern':''},
+  },fetcher:(_path,options,body)=>{
+   if(!body)return view(current)
+   assert.equal(options.headers['X-HH-Account-ID'],'owner-a')
+   if(body.action==='start'){current=course(body.courseId);return view(current)}
+   assert.equal(body.action,'intake');assert.equal(body.concerns,guided?'Captured guided concern':'')
+   assert.deepEqual(body.focusTags,[...getCourseProgram('stress').focusTags])
+   if(++attempt===1)return {error:'SERVICE_UNAVAILABLE'}
+   current={...current,stage:2,revision:2,focusTags:body.focusTags};return view(current)
+  }})
+  await h.settle();findButton(h.tree,'Start course for free').props.onClick();await h.settle();(await consent(h))();await h.settle()
+  assert.equal(writes(h).filter(x=>x.body.action==='start').length,1)
+  assert.ok(findButton(h.tree,'Retry programme setup'))
+  findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
+  assert.equal(writes(h).filter(x=>x.body.action==='start').length,1)
+  assert.equal(writes(h).filter(x=>x.body.action==='intake').length,2)
+  assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,2);h.unmount()
+ }
+})
+
+test('captured guided programme concerns cannot dispatch after owner or course changes during retry read',async()=>{
+ for(const change of ['owner','course']){
+  let current=null,retrying=false;const slow=deferred()
+  const h=mount('my-course',{enterCourse:true,props:{data:account('owner-a')},extraModules:{
+   '@/lib/inner-growth/course-entry-client':{readCourseEntryIntent:()=>({focus:['stress'],problems:[],testKeys:[]})},
+   '@/lib/inner-growth/course-entry-intent':{courseTagsForExplorerFocus:()=>['stress'],courseConcernsFromIntent:()=> 'Captured guided concern'},
+  },fetcher:(path,_options,body)=>{
+   if(!body)return retrying&&!path.includes('other')?slow.promise:view(path.includes('other')?course('other'):current)
+   if(body.action==='start'){current=course(body.courseId);return view(current)}
+   return {error:'SERVICE_UNAVAILABLE'}
+  }})
+  await h.settle();await chooseProgram(h);(await consent(h))();await h.settle();retrying=true
+  findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
+  if(change==='owner')h.render({data:account('owner-b')});else await h.backTo('?courseId=other')
+  slow.resolve(view(current));await h.settle()
+  assert.equal(writes(h).length,2,'stale retry must not dispatch a second intake');h.unmount()
+ }
 })

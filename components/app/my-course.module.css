@@ -272,3 +272,7 @@
 
 /* Return to the compact My Courses selection slide. */
 .backToCourses{display:inline-flex;align-items:center;gap:7px;justify-self:start;padding:8px 10px;background:#ecfafb!important;border:1px solid #bbdfe8!important;border-radius:11px;font-size:13px;font-weight:800;color:#157e94!important;cursor:pointer}.backToCourses:focus-visible{outline:3px solid #11617a;outline-offset:3px}
+
+/* Other programs stay visible as future topics, never available for new enrollment. */
+.programCard[data-coming-soon="true"],.programCard[data-coming-soon="true"]:hover{opacity:.64;filter:saturate(.56);cursor:not-allowed;box-shadow:none;transform:none;border-color:#d8e0e7}
+.programCard[data-coming-soon="true"] .programAction{background:#edf0f4;color:#667785}

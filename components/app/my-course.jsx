@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, S
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
-import { COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
+import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CoursePresetCatalog from './course-preset-catalog'
 import MyCoursesDashboard from './my-courses-dashboard'
@@ -23,9 +23,9 @@ const WORDS = {
   en: {
     eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'Feel calmer. Grow stronger.',
     intro: 'A personal 14-day journey, one small step at a time. Choose what matters to you.',
-    chooseProgram: 'Where would you like to begin?', personalCourse: 'Create my personal course',
-    personalPrompt: 'A programme built around my own question and priorities.',
-    exploreTrack: 'Choose this course', simpleSteps: 'Tests → 3 focus areas → 14 daily lessons',
+    chooseProgram: 'One course is available now', personalCourse: 'Personalize my Anti-Stress course',
+    personalPrompt: 'Choose the scales and daily goals that matter to you within OPORA Anti-Stress.',
+    exploreTrack: 'Start Anti-Stress', soon: 'Coming soon', simpleSteps: 'Optional tests → your focus → 14 daily lessons',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
     start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
     how: 'How it works', detailTitle: 'Six steps to your personal course',
@@ -79,9 +79,9 @@ const WORDS = {
   ru: {
     eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Больше спокойствия. Больше опоры.',
     intro: 'Ваш личный путь на 14 дней. Каждый день — один небольшой шаг.',
-    chooseProgram: 'С чего хотите начать?', personalCourse: 'Создать персональный курс',
-    personalPrompt: 'Программа под мой собственный запрос и приоритеты.',
-    exploreTrack: 'Выбрать курс', simpleSteps: 'Тесты → 3 направления → 14 ежедневных уроков',
+    chooseProgram: 'Сейчас доступен один курс', personalCourse: 'Настроить мой «Антистресс»',
+    personalPrompt: 'Выберите важные лично вам шкалы и цели внутри программы «ОПОРА — Антистресс».',
+    exploreTrack: 'Начать Антистресс', soon: 'Скоро', simpleSteps: 'Тесты по желанию → ваш фокус → 14 ежедневных уроков',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
     start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
     how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
@@ -176,13 +176,13 @@ export function MyCourse({ data, locale = 'en' }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [showCourse, setShowCourse] = useState(false)
-  const requestedProgram = getCourseProgram(searchParams.get('program'))
+  const requestedProgram = searchParams.get('program') === ACTIVE_COURSE_PROGRAM_ID ? getCourseProgram(ACTIVE_COURSE_PROGRAM_ID) : null
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
   const [view, setView] = useState('list'), [selectedPreset, setSelectedPreset] = useState(null)
   const [selectedProgram,setSelectedProgram]=useState(null),[pendingPrograms,setPendingPrograms]=useState({})
-  const startIntent=useRef(null),pendingProgramIntent=useRef({})
+  const startIntent=useRef(null),pendingProgramIntent=useRef({}),pendingProgramConcerns=useRef({})
   const startDialogRef = useRef(null), selectorId = useId()
   const selectedCourse = useRef(null), currentAccount = useRef(accountId), mounted = useRef(false)
   const generation = useRef(0), readVersion = useRef(0), readController = useRef(null), actionLock = useRef(null)
@@ -216,7 +216,7 @@ export function MyCourse({ data, locale = 'en' }) {
   useEffect(() => {
     mounted.current = true; generation.current += 1
     actionLock.current = null; newCourseId.current = null
-    setShowCourse(Boolean(selectedCourseFromUrl())); setBusy(false); setOptIn(false); setSelectedPreset(null); setSelectedProgram(null); setPendingPrograms({}); pendingProgramIntent.current={}; startIntent.current=null
+    setShowCourse(Boolean(selectedCourseFromUrl())); setBusy(false); setOptIn(false); setSelectedPreset(null); setSelectedProgram(null); setPendingPrograms({}); pendingProgramIntent.current={}; pendingProgramConcerns.current={}; startIntent.current=null
     startDialogRef.current?.close()
     selectedCourse.current = selectedCourseFromUrl()
     setView(selectedCourse.current ? 'detail' : 'list')
@@ -286,7 +286,7 @@ export function MyCourse({ data, locale = 'en' }) {
     } finally { if (actionLock.current === token) { actionLock.current = null; if (isSelected(courseId, epoch)) setBusy(false) } }
   }
 
-  async function applyProgramIntake(started, programme, epoch) {
+  async function applyProgramIntake(started, programme, epoch, concerns = '') {
     const courseId=started.course?.id
     if (!courseId || !isSelected(courseId,epoch)) throw new Error('COURSE_SELECTION_CHANGED')
     if (started.course.presetId) throw new Error('COURSE_PRESET_TESTS_FIXED')
@@ -297,13 +297,14 @@ export function MyCourse({ data, locale = 'en' }) {
     const withTopics=await request(accountId, {
       action: 'intake', courseId,
       expectedRevision: started.course.revision,
-      concerns: '', focusTags: [...programme.focusTags],
+      concerns, focusTags: [...programme.focusTags],
     })
     if (!isSelected(courseId,epoch) || withTopics.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
     return withTopics
   }
   function clearPendingProgram(courseId) {
     delete pendingProgramIntent.current[courseId]
+    delete pendingProgramConcerns.current[courseId]
     setPendingPrograms(previous=>{const next={...previous};delete next[courseId];return next})
   }
   async function act(action, values = {}) {
@@ -319,6 +320,7 @@ export function MyCourse({ data, locale = 'en' }) {
     }
     const programme=getCourseProgram(values.programId)
     const entry=courseEntry
+    const entryConcerns=courseConcernsFromIntent(entry, locale)
     if (values.consent !== true || (values.presetId && !getCoursePreset(values.presetId)) ||
         (values.programId && !programme) || (values.presetId && programme)) return
     let targetCourseId=selectedCourse.current
@@ -343,8 +345,9 @@ export function MyCourse({ data, locale = 'en' }) {
       if (programme) {
         if (started.course.presetId) throw new Error('COURSE_PRESET_TESTS_FIXED')
         pendingProgramIntent.current[started.course.id]=programme.id
+        pendingProgramConcerns.current[started.course.id]=entryConcerns
         setPendingPrograms(previous=>({...previous,[started.course.id]:programme.id}))
-        const withTopics=await applyProgramIntake(started,programme,epoch)
+        const withTopics=await applyProgramIntake(started,programme,epoch,entryConcerns)
         if (!isSelected(targetCourseId,epoch)) return
         readVersion.current+=1;readController.current?.abort()
         setSnapshot({accountId,value:withTopics});clearPendingProgram(targetCourseId)
@@ -365,6 +368,7 @@ export function MyCourse({ data, locale = 'en' }) {
   }
 
   function openStartDialog(presetId = null, programId = null) {
+    if (programId !== null && programId !== ACTIVE_COURSE_PROGRAM_ID) return
     if (busy || (presetId !== null && !getCoursePreset(presetId)) || (programId !== null && !getCourseProgram(programId)) ||
         (presetId && programId) || (view === 'switch' && programId)) return
     if (view !== 'switch' && (atLimit || (courses.length > 0 && !access?.multiCourseEnabled))) return
@@ -387,6 +391,7 @@ export function MyCourse({ data, locale = 'en' }) {
   }
   async function retryProgramIntake() {
     const courseId=state?.course?.id,epoch=viewGeneration,programme=getCourseProgram(pendingPrograms[courseId])
+    const concerns=pendingProgramConcerns.current[courseId] || ''
     const isCurrent=()=>isSelected(courseId,epoch)&&pendingProgramIntent.current[courseId]===programme?.id
     if (!programme || actionLock.current || !isCurrent()) return
     const token={};actionLock.current=token;setBusy(true);setError('')
@@ -394,7 +399,7 @@ export function MyCourse({ data, locale = 'en' }) {
     try {
       const fresh=await request(accountId,undefined,{courseId})
       if (!isCurrent() || fresh.course?.id!==courseId || ['completed','archived'].includes(fresh.course.status)) throw new Error('COURSE_SELECTION_CHANGED')
-      const withTopics=await applyProgramIntake(fresh,programme,epoch)
+      const withTopics=await applyProgramIntake(fresh,programme,epoch,concerns)
       if (!isCurrent()) return
       readVersion.current+=1;readController.current?.abort()
       setSnapshot({accountId,value:withTopics});clearPendingProgram(courseId)
@@ -490,7 +495,7 @@ export function MyCourse({ data, locale = 'en' }) {
         <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null, requestedProgram?.id || null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null, requestedProgram?.id || ACTIVE_COURSE_PROGRAM_ID)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
@@ -506,19 +511,22 @@ export function MyCourse({ data, locale = 'en' }) {
         {COURSE_PROGRAMS.map((program, index) => {
           const Icon = [Waves, ShieldCheck, Target][index]
           return <button className={styles.programCard} key={program.id} type="button"
-            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id} disabled={busy}
+            data-course-program-id={program.id} data-recommended={requestedProgram?.id === program.id}
+             disabled={busy || program.id !== ACTIVE_COURSE_PROGRAM_ID}
+             aria-disabled={program.id !== ACTIVE_COURSE_PROGRAM_ID}
+             data-coming-soon={program.id !== ACTIVE_COURSE_PROGRAM_ID ? 'true' : undefined}
             onClick={() => openStartDialog(null,program.id)}>
             <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
             <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>
             <strong>{program.title[ru ? 'ru' : 'en']}</strong>
             <span className={styles.programPromise}>{program.promise[ru ? 'ru' : 'en']}</span>
             <span className={styles.programOutcomes}>{program.outcome[ru ? 'ru' : 'en']}</span>
-            <span className={styles.programAction}>{t.exploreTrack}<ArrowRight size={16} aria-hidden="true"/></span>
+            <span className={styles.programAction}>{program.id === ACTIVE_COURSE_PROGRAM_ID ? t.exploreTrack : t.soon}{program.id === ACTIVE_COURSE_PROGRAM_ID && <ArrowRight size={16} aria-hidden="true"/>}</span>
           </button>
         })}
       </div>
       <button className={styles.personalTrack} type="button" disabled={busy}
-        data-course-personal-program onClick={() => openStartDialog(null)}>
+        data-course-personal-program onClick={() => openStartDialog(null,ACTIVE_COURSE_PROGRAM_ID)}>
         <SlidersHorizontal size={24} aria-hidden="true"/>
         <span><strong>{t.personalCourse}</strong><small>{t.personalPrompt}</small></span>
         <ArrowRight size={21} aria-hidden="true"/>

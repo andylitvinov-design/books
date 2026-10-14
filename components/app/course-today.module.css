@@ -702,3 +702,21 @@
   background:linear-gradient(140deg,#e8f8fa,#f5fff8)!important;
   opacity:.22!important;
 }
+
+
+/* Outcome-aligned Anti-Stress course: honest educational evidence, not a health score. */
+.antiStressSkills { max-width:1100px; margin:17px auto 24px; padding:22px;
+  background:linear-gradient(128deg,#1a3554,#243e5b); border-radius:20px; color:white; }
+.antiStressSkills h3 { margin:0 0 8px; font-size:21px; line-height:1.28; color:#fff; }
+.antiStressSkills > p { margin:0 0 17px; max-width:800px; color:#d2e2ea; font-size:12px; line-height:1.5; }
+.antiStressSkills ol { padding:0; margin:0; list-style:none; display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.antiStressSkills li { display:grid; grid-template-columns:29px minmax(0,1fr); gap:3px 10px;
+  padding:12px; background:#ffffff0e; border:1px solid #ffffff25; border-radius:11px; }
+.antiStressSkillNumber { grid-row:span 2; display:grid; place-items:center; width:29px; height:29px;
+  color:#f2bace; font-size:11px; font-weight:800; }
+.antiStressSkills strong { min-width:0; font-size:13px; font-weight:650; color:#fff; }
+.antiStressSkills small { color:#bfdae4; font-size:11px; line-height:1.35; }
+@media(max-width:700px) { .antiStressSkills { margin:11px 0 17px; padding:17px 13px; border-radius:16px; }
+ .antiStressSkills ol { grid-template-columns:minmax(0,1fr); gap:7px; }
+ .antiStressSkills h3 { font-size:18px; } }
