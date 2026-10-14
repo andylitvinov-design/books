@@ -19,6 +19,22 @@ const copy = {
     programsTitle: "Что важно для вас сейчас?", programsIntro: "Три готовые программы или персональный маршрут.",
     cardAction: "Выбрать программу", days: "14-дневная программа",
     stress: { title: "Антистресс", pain: "Трудно расслабиться и выключить напряжение", description: "Наблюдаем свои реакции, находим короткие паузы и способы восстановления.", result: "Спокойствие · устойчивость · восстановление" },
+    stressSkills: {
+      "title": "Антистресс · 7 навыков за 14 занятий",
+      "kicker": "ОПОРА · АНТИСТРЕСС",
+      "intro": "Каждому навыку посвящены два занятия: знакомство с техникой и её бережная тренировка в обычной ситуации.",
+      "skills": [
+        "Раньше замечать напряжение",
+        "Делать паузу вместо автопилота",
+        "Выбирать реакцию на тревожные мысли",
+        "Находить и настраивать личную опору",
+        "Возвращаться к опоре среди дел",
+        "Поддерживать себя в трудный день",
+        "Самостоятельно выбирать подходящую практику"
+      ],
+      "cta": "Начать программу «Антистресс»",
+      "safety": "Самостоятельное обучение управлению повседневным стрессом. Не терапия шоковой травмы или ПТСР и не замена помощи специалиста. Любую практику можно остановить или пропустить."
+    },
     confidence: { title: "Внутренняя уверенность", pain: "Сомнения и слишком строгий внутренний критик", description: "Работаем с внутренней поддержкой, личными границами и уверенностью в выборе.", result: "Опора · свой голос · границы" },
     focus: { title: "Фокус и энергия", pain: "Трудно собраться, начать и удержать внимание", description: "Развиваем мягкую концентрацию, ясность приоритетов и посильные действия.", result: "Ясность · действие · свой темп" },
     personal: "Мой персональный курс", personalDesc: "Не нашли своё направление? Сформируйте программу вокруг ваших целей и актуальных вопросов.", personalAction: "Составить свой курс",
@@ -47,6 +63,22 @@ const copy = {
     programsTitle: "What matters to you right now?", programsIntro: "Three ready-to-start programmes or a personal path.",
     cardAction: "Choose programme", days: "14-day programme",
     stress: { title: "Stress Relief", pain: "It's hard to switch off and unwind", description: "Notice reactions, practise small pauses and make space for recovery.", result: "Calm · steadiness · recovery" },
+    stressSkills: {
+      "title": "Stress Relief · 7 skills across 14 lessons",
+      "kicker": "OPORA · STRESS RELIEF",
+      "intro": "Each skill is explored twice: first a gentle introduction, then practice in an ordinary, manageable situation.",
+      "skills": [
+        "Notice stress signals earlier",
+        "Pause before reacting automatically",
+        "Choose how to respond to difficult thoughts",
+        "Find and adapt a personal source of support",
+        "Bring a familiar pause into everyday routines",
+        "Support yourself on difficult days",
+        "Choose helpful practices more independently"
+      ],
+      "cta": "Start Stress Relief",
+      "safety": "Self-guided education for everyday stress, not shock-trauma or PTSD treatment and not a replacement for professional care. You may stop or skip any exercise."
+    },
     confidence: { title: "Inner Confidence", pain: "Self-doubt and a harsh inner critic", description: "Explore self-support, boundaries and confidence in everyday decisions.", result: "Support · voice · boundaries" },
     focus: { title: "Focus & Energy", pain: "It's hard to focus and get started", description: "Build gentle attention, clear priorities and manageable daily action.", result: "Clarity · action · your pace" },
     personal: "My personal course", personalDesc: "Need a different topic? Shape a learning path around your goals and questions.", personalAction: "Create my course",
@@ -75,6 +107,22 @@ const copy = {
     programsTitle: "¿Qué te importa ahora?", programsIntro: "Tres programas preparados o un recorrido personal.",
     cardAction: "Elegir programa", days: "Programa de 14 días",
     stress: { title: "Menos estrés", pain: "Cuesta desconectar y relajarte", description: "Observa tus reacciones y encuentra pausas para recuperarte.", result: "Calma · estabilidad · recuperación" },
+    stressSkills: {
+      "title": "Menos estrés · 7 habilidades en 14 lecciones",
+      "kicker": "OPORA · MENOS ESTRÉS",
+      "intro": "Cada habilidad se practica en dos lecciones: primero se conoce y después se prueba en una situación cotidiana segura.",
+      "skills": [
+        "Reconocer antes las señales de estrés",
+        "Hacer una pausa antes de reaccionar",
+        "Elegir cómo responder a los pensamientos difíciles",
+        "Encontrar y adaptar apoyos personales",
+        "Recordar una pausa en la vida diaria",
+        "Cuidarte en los días difíciles",
+        "Elegir prácticas con más autonomía"
+      ],
+      "cta": "Empezar el programa antiestrés",
+      "safety": "Educación para afrontar el estrés cotidiano; no es tratamiento del trauma agudo ni del TEPT y no sustituye la ayuda profesional. Puedes detener o saltar cualquier ejercicio."
+    },
     confidence: { title: "Confianza interior", pain: "Dudas y autocrítica", description: "Explora el apoyo interior, los límites y tus decisiones.", result: "Apoyo · voz · límites" },
     focus: { title: "Enfoque y energía", pain: "Cuesta concentrarte y empezar", description: "Cultiva una atención amable y pequeñas acciones sostenibles.", result: "Claridad · acción · tu ritmo" },
     personal: "Mi curso personal", personalDesc: "¿Otro tema? Crea una ruta de aprendizaje centrada en tus objetivos.", personalAction: "Crear mi curso",
@@ -146,6 +194,25 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
           </article>;
         })}
       </div>
+      <section className={styles.stressSkills} aria-labelledby="stress-seven-skills-title" data-opora-stress-seven-skills>
+        <div className={styles.stressSkillsHeader}>
+          <span className={styles.stressSkillsKicker}><Waves size={18} aria-hidden="true" />{t.stressSkills.kicker}</span>
+          <h3 id="stress-seven-skills-title">{t.stressSkills.title}</h3>
+          <p>{t.stressSkills.intro}</p>
+        </div>
+        <ol className={styles.stressSkillsList}>
+          {t.stressSkills.skills.map((skill, index) => <li key={skill}>
+            <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <strong>{skill}</strong>
+            <small>{index * 2 + 1}–{index * 2 + 2} / 14</small>
+          </li>)}
+        </ol>
+        <div className={styles.stressSkillsFoot}>
+          <p>{t.stressSkills.safety}</p>
+          <Link href={`${courseUrl}?program=stress`} prefetch={false}>{t.stressSkills.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+        </div>
+      </section>
+
       <div className={styles.personal}>
         <span className={styles.personalIcon}><SlidersHorizontal size={27} aria-hidden="true" /></span>
         <div><h3>{t.personal}</h3><p>{t.personalDesc}</p></div>
