@@ -216,6 +216,40 @@ const SCENE = {
   feedback: Heart,
 }
 
+const INTERACTIVE_STRESS = {
+  ru: {
+    aphorismTitle:'Как вам эта мысль?',agree:'Согласен',unsure:'Не знаю',disagree:'Не согласен',
+    aphorismHints:{
+      agree:'Можно взять эту мысль как приглашение к небольшой практике, но ничего доказывать не требуется.',
+      unsure:'Необязательно решать сейчас. Можно попробовать нейтральный шаг или просто продолжить.',
+      disagree:'Вы можете не соглашаться. Выберите собственную, более правдоподобную формулировку или нейтральную опору.',
+    },
+    phraseTitle:'Подходит ли вам эта формулировка?',fits:'Подходит',phraseUnsure:'Пока не знаю',phraseNo:'Не подходит',
+    phraseHints:{fits:'При желании сохраните её для себя.',unsure:'Можно оставить вопрос открытым.',no:'Никакую фразу не нужно принимать через силу.'},
+    recallTitle:'Как прошла попытка вспомнить?',recallYes:'Вспомнил(а)',recallHint:'Нужна подсказка',recallSkip:'Пропускаю',
+    practiceTitle:'Что вы действительно попробовали?',tried:'Попробовал(а)',simplified:'Сократил(а) практику',
+    neutral:'Выбрал(а) нейтральный вариант',practiceSkip:'Не сегодня',
+    practiceNote:'Это запись учебной попытки, а не оценка вашего психического здоровья. Можно пропустить.',
+    transferTitle:'Как вы хотите перенести этот опыт?',plan:'Только составить план',
+    imagined:'Мысленно представить',phrase:'Подготовить фразу',real:'Пробовал(а) в обычной жизни',skip:'Не планирую сейчас',
+  },
+  en: {
+    aphorismTitle:'How does this idea sound to you?',agree:'Agree',unsure:'Not sure',disagree:'Disagree',
+    aphorismHints:{
+      agree:'You can use it as an invitation to try one small exercise, not proof of anything.',
+      unsure:'There is no need to decide now. You may choose a neutral step or continue.',
+      disagree:'You are free to disagree. Choose your own credible wording or a neutral anchor.',
+    },
+    phraseTitle:'Does this phrase fit you?',fits:'It fits',phraseUnsure:'Not sure yet',phraseNo:'Not for me',
+    phraseHints:{fits:'You may keep it for yourself.',unsure:'You may leave the question open.',no:'You do not have to believe or use this phrase.'},
+    recallTitle:'How did recalling go?',recallYes:'Recalled it',recallHint:'Need a hint',recallSkip:'Skip',
+    practiceTitle:'Which step did you actually try?',tried:'Tried the exercise',simplified:'Used a shorter version',
+    neutral:'Chose a neutral alternative',practiceSkip:'Not today',
+    practiceNote:'This is a learning attempt, not a mental-health score. You can skip.',
+    transferTitle:'How would you carry this forward?',plan:'Make a plan only',
+    imagined:'Imagine a safe step',phrase:'Prepare a phrase',real:'Tried in ordinary life',skip:'Not planning now',
+  },
+}
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
@@ -268,6 +302,7 @@ export default function CourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
+  const learning = INTERACTIVE_STRESS[locale] || INTERACTIVE_STRESS.en
   const cycle = data.cycle || {}
   const lesson = data.lesson || {}
   const today = data.currentCheckin
@@ -294,6 +329,10 @@ export default function CourseSlidePlayer({
   const [thoughtChoice, setThoughtChoice] = useState(session?.signals?.thoughtPath || 'neutral')
   const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
+  const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
+  const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
+  const [recallAttempt,setRecallAttempt] = useState('')
   const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
@@ -395,6 +434,11 @@ export default function CourseSlidePlayer({
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         welcomeFeeling:welcomeFeeling||'skip',
         transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
+        ...(lesson.antiStress ? {
+          aphorismResponse:aphorismResponse||null,
+          practiceAttempt:practiceAttempt||null,
+          phraseResponse:phraseResponse||null,
+        } : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
