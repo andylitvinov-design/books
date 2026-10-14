@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
+import { COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
 import CourseToday from './course-today'
 import Course14DayOverview from './course-14-day-overview'
 import CourseR3Steps from './course-r3-steps'
@@ -12,8 +13,11 @@ import './my-course-theme.css'
 
 const WORDS = {
   en: {
-    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'My personal course',
-    intro: 'Explore your stress patterns, choose your own tests and build practical skills with short daily exercises.',
+    eyebrow: 'MY COURSE · HOLISTIC HOUSE', title: 'Feel calmer. Grow stronger.',
+    intro: 'A personal 14-day journey, one small step at a time. Choose what matters to you.',
+    chooseCourse: 'Where would you like to begin?', personalCourse: 'Create my personal course',
+    personalPrompt: 'A programme built around my own question and priorities.',
+    exploreTrack: 'Choose this course', simpleSteps: 'Tests → 3 focus areas → 14 daily lessons',
     free: 'Free to start', time: '5–12 minutes a day', note: 'Self-guided learning, not a diagnosis, psychotherapy session or emergency monitoring.',
     start: 'Start course for free', continue: 'Continue my course', consent: 'I agree to privately save my course choices, voluntary concerns and practice progress in my account.',
     how: 'How it works', detailTitle: 'Six steps to your personal course',
@@ -58,8 +62,11 @@ const WORDS = {
     interest: 'Based on your choices', notDiagnostic: 'Weekly Pulse is an original non-diagnostic self-report; these are not clinical thresholds.',
   },
   ru: {
-    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Мой личный курс',
-    intro: 'Узнайте больше о своих стрессовых зонах, выберите нужные тесты и развивайте полезные навыки с короткими ежедневными практиками.',
+    eyebrow: 'МОЙ КУРС · HOLISTIC HOUSE', title: 'Больше спокойствия. Больше опоры.',
+    intro: 'Ваш личный путь на 14 дней. Каждый день — один небольшой шаг.',
+    chooseCourse: 'С чего хотите начать?', personalCourse: 'Создать персональный курс',
+    personalPrompt: 'Программа под мой собственный запрос и приоритеты.',
+    exploreTrack: 'Выбрать курс', simpleSteps: 'Тесты → 3 направления → 14 ежедневных уроков',
     free: 'Начать бесплатно', time: '5–12 минут в день', note: 'Самостоятельная практика, а не диагноз, сеанс психотерапии или экстренная помощь.',
     start: 'Начать курс бесплатно', continue: 'Продолжить мой курс', consent: 'Я согласен(на) на приватное сохранение выбора курса, добровольно описанных трудностей и прогресса в моём аккаунте.',
     how: 'Как проходит курс', detailTitle: 'Шесть шагов личного курса',
@@ -135,6 +142,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [optIn, setOptIn] = useState(false)
+  const [selectedProgram, setSelectedProgram] = useState(null)
   const startDialogRef = useRef(null)
 
   async function refresh() {
@@ -157,10 +165,35 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { setBusy(false) }
   }
 
-  function openStartDialog() {
+  function openStartDialog(programId = null) {
     if (busy) return
+    setSelectedProgram(getCourseProgram(programId)?.id || null)
     setOptIn(false)
     startDialogRef.current?.showModal()
+  }
+
+  // A named track takes the learner straight to its EXISTING fixed-topic
+  // starter assessment list. Server revisions and opt-in are authoritative.
+  async function confirmStart() {
+    if (busy || !optIn) return
+    setBusy(true)
+    setError('')
+    startDialogRef.current?.close()
+    try {
+      const started = await request({ action: 'start', consent: true })
+      setState(started)
+      const programme = getCourseProgram(selectedProgram)
+      if (programme && started.course?.stage === 1) {
+        const withTopics = await request({
+          action: 'intake',
+          expectedRevision: started.course.revision,
+          concerns: '',
+          focusTags: [...programme.focusTags],
+        })
+        setState(withTopics)
+      }
+    } catch (e) { setError(e.message || 'COURSE_UNAVAILABLE') }
+    finally { setBusy(false) }
   }
 
   async function courseCommand(action,values={}) {
@@ -183,13 +216,43 @@ export function MyCourse({ data, locale = 'en' }) {
         <p className={styles.heroLead}>{t.intro}</p>
         <div className={styles.meta}><span><Sparkles size={16} aria-hidden="true"/>{t.free}</span><span><BookOpen size={16} aria-hidden="true"/>{t.time}</span></div>
         <div className={styles.heroActions}>
-          <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+          <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
           <a className={styles.textLink} href="#course-details">{t.how} ↓</a>
         </div>
       </div>
-      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/andy-about.png" alt="" width={118} height={118} loading="lazy" /></div>
+      <div className={styles.heroMark} aria-hidden="true"><img src="/images/holistic-house/hero-olive-incense.webp" alt="" width={320} height={220} loading="lazy" /></div>
     </header>}
-    {stage === 0 && <Course14DayOverview locale={locale} />}
+    {stage === 0 && <section className={styles.programSelection} data-course-program-selection aria-label={t.chooseCourse}>
+      <div className={styles.programHeading}>
+        <h2>{t.chooseCourse}</h2>
+        <p>{t.simpleSteps}</p>
+      </div>
+      <div className={styles.programGrid}>
+        {COURSE_PROGRAMS.map((program, index) => {
+          const Icon = [Waves, ShieldCheck, Target][index]
+          return <button className={styles.programCard} key={program.id} type="button"
+            data-course-program-id={program.id} disabled={busy}
+            onClick={() => openStartDialog(program.id)}>
+            <span className={styles.programIcon}><Icon size={29} strokeWidth={1.8} aria-hidden="true"/></span>
+            <span className={styles.programPain}>{program.pain[ru ? 'ru' : 'en']}</span>
+            <strong>{program.title[ru ? 'ru' : 'en']}</strong>
+            <span className={styles.programPromise}>{program.promise[ru ? 'ru' : 'en']}</span>
+            <span className={styles.programOutcomes}>{program.outcome[ru ? 'ru' : 'en']}</span>
+            <span className={styles.programAction}>{t.exploreTrack}<ArrowRight size={16} aria-hidden="true"/></span>
+          </button>
+        })}
+      </div>
+      <button className={styles.personalTrack} type="button" disabled={busy}
+        data-course-personal-program onClick={() => openStartDialog(null)}>
+        <SlidersHorizontal size={24} aria-hidden="true"/>
+        <span><strong>{t.personalCourse}</strong><small>{t.personalPrompt}</small></span>
+        <ArrowRight size={21} aria-hidden="true"/>
+      </button>
+    </section>}
+    {stage === 0 && <details className={styles.overviewDisclosure}>
+      <summary>{t.how}</summary>
+      <Course14DayOverview locale={locale} />
+    </details>}
     {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
@@ -200,21 +263,19 @@ export function MyCourse({ data, locale = 'en' }) {
       <h2>{t.detailTitle}</h2>
       <p>{t.detailIntro}</p>
       <Journey stage={1} locale={locale}/>
-      <button type="button" className="hh-primary" disabled={busy} onClick={openStartDialog}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
+      <button type="button" className="hh-primary" disabled={busy} onClick={() => openStartDialog(null)}>{t.start}<ArrowRight size={18} aria-hidden="true"/></button>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true"/>{t.note}</p>
     </section>}
 
     {stage === 0 && <dialog ref={startDialogRef} className={styles.startDialog}
       aria-labelledby="course-consent-heading" onClose={() => setOptIn(false)}>
       <h2 id="course-consent-heading">{t.consentTitle}</h2>
+      {getCourseProgram(selectedProgram) && <p className={styles.selectedProgramName}>{getCourseProgram(selectedProgram).title[ru ? "ru" : "en"]}</p>}
       <p>{t.consentHelp}</p>
       <label className={styles.consent}><input type="checkbox" checked={optIn}
         onChange={(e) => setOptIn(e.target.checked)}/><span>{t.consent}</span></label>
       <div className={styles.dialogActions}>
-        <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => {
-          startDialogRef.current?.close()
-          void act('start', { consent: true })
-        }}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
+        <button type="button" className="hh-primary" disabled={!optIn || busy} onClick={() => void confirmStart()}>{t.consentConfirm}<ArrowRight size={17} aria-hidden="true"/></button>
         <button type="button" disabled={busy} onClick={() => startDialogRef.current?.close()}>{t.cancel}</button>
       </div>
     </dialog>}
