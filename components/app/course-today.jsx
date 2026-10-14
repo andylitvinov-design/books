@@ -377,6 +377,7 @@ export default function CourseToday({locale='en',accountId=null}){
     onPlay={()=>setQuestOpen(true)}/>}
   {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
+     onFinish={()=>{setQuestOpen(false);setView('path')}}
     onOpenRetest={showFinalRetest}
     onCheckin={body=>submit('checkin',body)}
     onSession={body=>submit('session',body)}
