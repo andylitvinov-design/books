@@ -709,5 +709,32 @@ export const LEGACY_PSYCHOMETRIC_SCALES = Object.freeze({
     "Work–individual interface",
     "Values and justice",
     "Health and wellbeing (edition-dependent)"
+  ],
+  "hh-daily-pulse": [
+    "Current self-reported emotional state",
+    "Daily wellbeing"
+  ],
+  "hh-weekly-pulse": [
+    "Mood",
+    "Stress",
+    "Sleep",
+    "Energy",
+    "Social support",
+    "Daily functioning"
+  ],
+  "hh-monthly-profile": [
+    "Mood",
+    "Stress",
+    "Resource",
+    "Daily functioning"
+  ],
+  "pai": [
+    "Validity indicators",
+    "Clinical scales",
+    "Treatment consideration scales",
+    "Interpersonal scales"
+  ],
+  "ces-d-20": [
+    "Depressive symptom frequency (20-item total)"
   ]
 })
