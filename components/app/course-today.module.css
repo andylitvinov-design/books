@@ -720,3 +720,10 @@
 @media(max-width:700px) { .antiStressSkills { margin:11px 0 17px; padding:17px 13px; border-radius:16px; }
  .antiStressSkills ol { grid-template-columns:minmax(0,1fr); gap:7px; }
  .antiStressSkills h3 { font-size:18px; } }
+
+/* Opt-in full Anti-Stress daily scheme in private course path. */
+.antiStressDailyScheme{margin:17px auto 25px;max-width:1100px;border-radius:18px;border:1px solid #c2d0e0;background:#fff;overflow:hidden}
+.antiStressDailyScheme>summary{cursor:pointer;padding:17px 19px;color:#173852;font-size:14px;font-weight:800;background:#eaf1f8}
+.antiStressDailyScheme>summary:focus-visible{outline:3px solid #904a67;outline-offset:-3px}
+.antiStressDailyScheme>[data-course-14-day-overview]{border:0;border-radius:0}
+@media(max-width:700px){.antiStressDailyScheme{margin:11px 0}.antiStressDailyScheme>summary{padding:13px;font-size:12px}}
