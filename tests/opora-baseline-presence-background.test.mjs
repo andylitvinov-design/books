@@ -14,13 +14,13 @@ test('lesson-entry measure asks for presence and uses its own positive anchors i
   assert.match(player, /data-course-baseline-presence>\{baselinePrompt\}/)
   assert.match(player, /lowLabel=\{words\.baselineLow\}/)
   assert.match(player, /highLabel=\{words\.baselineHigh\}/)
-  const intro = player.slice(player.indexOf("{slide.kind === 'baseline' && <>"), player.indexOf("{slide.kind === 'checkin' && <>"))
+  const intro = player.slice(player.indexOf("{slide.kind === 'baseline' && <>"), player.indexOf("{slide.kind === 'idea' && <>"))
   assert.doesNotMatch(intro, /<IllustratedMoment/)
   assert.match(intro, /value=\{entryNow\}/)
 })
 
-test('legacy discomfort measures remain unchanged to avoid reversing persisted scores', () => {
-  assert.match(player, /checkinQuestion: 'Насколько эта трудность ощущалась за последние 24 часа\?'/)
+test('practice-boundary ratings retain their meaning while the repeated entry rating is gone', () => {
+  assert.doesNotMatch(player, /key: 'checkin', kind: 'checkin'/)
   assert.match(player, /practicePrePrompt: 'Прямо перед упражнением: насколько трудно/)
   assert.match(player, /practicePostPrompt: 'Сразу после упражнения: насколько трудно/)
   assert.match(player, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)

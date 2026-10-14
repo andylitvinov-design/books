@@ -31,7 +31,7 @@ test('all course surfaces reuse the approved standalone scenic art asset', () =>
 })
 
 test('each semantic learning unit has the same scene presentation but retains unique readable content', () => {
-  for (const kind of ['welcome','baseline','checkin','recall','idea','understand','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
+  for (const kind of ['welcome','baseline','recall','idea','understand','phrase','guided','ritual','transfer','symbol','reflection','moment','feedback']) {
     assert.match(player, new RegExp("slide\\.kind === '" + kind + "'"))
     assert.match(player, new RegExp('' + kind + ':'))
   }

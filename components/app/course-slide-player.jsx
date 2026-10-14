@@ -10,6 +10,7 @@ import CourseGuidedTimer from './course-guided-timer'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
+import { courseFocusAphorism } from '@/lib/inner-growth/course-focus-dialogue'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
@@ -34,7 +35,13 @@ const WORDS = {
     ratingHint: 'There is no correct number. This voluntary self-rating is not a clinical test.',
     low: '0 · Not difficult', high: '10 · Very difficult', skipRating: 'Skip this check-in',
     idea: 'A thought to take with you', ideaLabel: 'Today’s thought',
-    recall: 'Remember a familiar skill', recallHint: 'Try recalling it without pressure, or simply continue.',
+    recall: 'Choose your important focus', recallHint: 'Choose one parameter measured in a test you have completed. There is no right choice.',
+    focusFromTest: 'From test', showOtherScales: 'Show more parameters', showFewerScales: 'Show fewer',
+    noMeasuredScales: 'No suitable completed-test scales are available right now. You can continue with a general reflection.',
+    ideaPrompt: 'How does this thought feel to you?', agree: 'I agree', unsure: 'Not sure', disagree: 'I disagree',
+    agreeReply: 'Thank you. You may take this thought with you if it feels useful.',
+    unsureReply: 'Not knowing is fine. You can simply notice whether this thought fits you.',
+    disagreeReply: 'Your disagreement matters. You can leave this thought aside and keep your own perspective.',
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
     guided: 'A moment of practice', gentle: 'Eyes can remain open; breathe naturally. Pause or skip anything uncomfortable.',
     short: 'Short', standard: 'Standard', noImagery: 'No imagery', optionalTimer: 'Optional timer',
@@ -113,7 +120,13 @@ const WORDS = {
     ratingHint: 'Правильных чисел нет. Это добровольная самооценка, не клинический тест.',
     low: '0 · Не беспокоила', high: '10 · Очень сильно', skipRating: 'Пропустить замер',
     idea: 'Мысль, которую можно взять с собой', ideaLabel: 'Мысль дня',
-    recall: 'Вспомните знакомый навык', recallHint: 'Попробуйте вспомнить без напряжения — или просто продолжайте.',
+    recall: 'Выберите важный для вас параметр', recallHint: 'Выберите одну шкалу из пройденных вами тестов. Здесь нет правильного выбора.',
+    focusFromTest: 'Из теста', showOtherScales: 'Показать другие параметры', showFewerScales: 'Показать меньше',
+    noMeasuredScales: 'Подходящих шкал из завершённых тестов пока нет. Можно продолжить с общей мыслью дня.',
+    ideaPrompt: 'Как вы относитесь к этой мысли?', agree: 'Согласен', unsure: 'Не знаю', disagree: 'Не согласен',
+    agreeReply: 'Спасибо. Если мысль вам близка, можете взять её с собой.',
+    unsureReply: 'Не знать — нормально. Можно просто понаблюдать, насколько мысль вам подходит.',
+    disagreeReply: 'Ваше несогласие важно. Необязательно принимать эту мысль — у вас может быть свой взгляд.',
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
     guided: 'Момент практики', gentle: 'Можно не закрывать глаза и не менять дыхание. Неудобный шаг пропускайте.',
     short: 'Короткая', standard: 'Обычная', noImagery: 'Без образов', optionalTimer: 'Таймер — по желанию',
@@ -198,7 +211,6 @@ function buildSlides(lesson) {
   return [
     { key: 'welcome', kind: 'welcome' },
     { key: 'baseline', kind: 'baseline' },
-    { key: 'checkin', kind: 'checkin' },
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     { key: 'idea', kind: 'idea' },
     ...((lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
@@ -240,12 +252,11 @@ function IllustratedMoment({ variant = 'calm', photo = false, kind = 'idea' }) {
 }
 
 export default function CourseSlidePlayer({
-  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
+  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
   const cycle = data.cycle || {}
   const lesson = data.lesson || {}
-  const today = data.currentCheckin
   const session = data.currentSession
   const focusLabel = cycle.activeScaleLabel || data.roadmap?.find(item => item.day === cycle.day)?.focusTitle || data.target?.label || words.todaySkill
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
@@ -253,10 +264,15 @@ export default function CourseSlidePlayer({
   const alreadyDone = Boolean(session)
   const slides = useMemo(() => buildSlides(lesson), [lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
-  const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
   const [feedback, setFeedback] = useState(session?.feedback || 'skip')
   const [entryNow, setEntryNow] = useState(null)
+  const focusScaleChoices = Array.isArray(data.focusScaleChoices) ? data.focusScaleChoices : []
+  const [selectedScaleId, setSelectedScaleId] = useState(session?.signals?.selectedScaleId || null)
+  const [showAllScales, setShowAllScales] = useState(false)
+  const [aphorismReaction, setAphorismReaction] = useState(session?.signals?.aphorismReaction || 'skip')
+  const selectedScale = focusScaleChoices.find(scale => scale.id === selectedScaleId) || null
+  const currentAphorism = courseFocusAphorism(selectedScale, locale, lesson.aphorism)
   const [comfort, setComfort] = useState(session?.signals?.comfort || 'skip')
   const [usefulness, setUsefulness] = useState(session?.signals?.usefulness || 'skip')
   const [flexibility, setFlexibility] = useState(session?.signals?.flexibility || 'skip')
@@ -275,7 +291,6 @@ export default function CourseSlidePlayer({
   const [promoOpen, setPromoOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const checkinOp = useRef(null)
   const sessionOp = useRef(null)
   const submitting = useRef(false)
   const frame = useRef(null)
@@ -319,25 +334,6 @@ export default function CourseSlidePlayer({
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
 
-  async function saveCheckin() {
-    if (!Number.isInteger(severity) || (today && severity === today.severity)) { goNext(); return }
-    if (submitting.current) return
-    submitting.current = true
-    setSaving(true); setError('')
-    try {
-      if (!checkinOp.current) checkinOp.current = crypto.randomUUID()
-      const response = await onCheckin({
-        severity, interference: today?.interference ?? null,
-        resource: today?.resource ?? null,
-        note: today?.note || '',
-        operationId: checkinOp.current,
-        ...(today ? {expectedRevision:today.revision} : {}),
-      })
-      if (response) { checkinOp.current = null; goNext() }
-      else setError(words.saveError)
-    } catch { setError(words.saveError) }
-    finally { submitting.current = false; setSaving(false) }
-  }
 
   async function updatePreferences(change) {
     if (submitting.current) return
@@ -367,6 +363,7 @@ export default function CourseSlidePlayer({
         practiceWindow:'practice_v15',comfort,usefulness,flexibility,
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         welcomeFeeling:welcomeFeeling||'skip',
+        selectedScaleId:selectedScale?.id || null,aphorismReaction,
         transferPlan:cycle.day===6?transferPlan:'',
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
@@ -381,7 +378,7 @@ export default function CourseSlidePlayer({
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
-  const scenicBaseline = !finished && !promoOpen && !discomfortOpen && slide.kind === 'baseline'
+  const scenicBaseline = !finished && !promoOpen && !discomfortOpen && ['baseline','recall','idea'].includes(slide.kind)
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
@@ -534,22 +531,19 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
-            <p className={styles.instruction}>{words.checkinQuestion}</p>
-            <div className={styles.numberGrid} role="group" aria-label={words.checkinQuestion}>
-              {Array.from({length:11}, (_, i) => <button key={i} type="button" disabled={locked}
-                aria-pressed={severity === i} onClick={() => setSeverity(i)}>{i}</button>)}
-            </div>
-            <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
-            <p className={styles.helper}>{words.ratingHint}</p>
-            {today && <p className={styles.confirmed}><CheckCircle2 size={16}/>{words.saved}</p>}
-          </>}
 
           {slide.kind === 'idea' && <>
-            <IllustratedMoment photo kind={slide.kind}/>
-            <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
+            {selectedScale && <p className={styles.focusName}>{words.focusForToday}: <strong>{selectedScale.label}</strong></p>}
+            <blockquote className={styles.quote} data-course-personalized-aphorism>“{currentAphorism}”</blockquote>
+            <p className={styles.prompt}>{words.ideaPrompt}</p>
+            <div className={styles.quoteResponses} role="group" aria-label={words.ideaPrompt} data-course-aphorism-reaction>
+              {[['agree',words.agree],['unsure',words.unsure],['disagree',words.disagree]].map(([key,label])=>
+                <button key={key} type="button" disabled={locked} aria-pressed={aphorismReaction===key}
+                  onClick={()=>setAphorismReaction(key)}>{label}</button>)}
+            </div>
+            {aphorismReaction!=='skip' && <p className={styles.quoteReply} aria-live="polite">
+              {aphorismReaction==='agree'?words.agreeReply:aphorismReaction==='disagree'?words.disagreeReply:words.unsureReply}
+            </p>}
           </>}
           {slide.kind === 'understand' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -557,11 +551,28 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'recall' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
-            <p className={styles.helper}>{words.recallHint}</p>
+            <p className={styles.prompt}>{words.recallHint}</p>
+            {focusScaleChoices.length ? <>
+              <div className={styles.focusScaleChoices} role="group" aria-label={words.recall}
+                data-course-measured-scale-choice>
+                {(showAllScales ? focusScaleChoices : focusScaleChoices.slice(0,5)).map(scale=>
+                  <button type="button" key={scale.id} disabled={locked}
+                    aria-pressed={selectedScaleId===scale.id} onClick={()=>{
+                      if (selectedScaleId!==scale.id) setAphorismReaction('skip')
+                      setSelectedScaleId(scale.id)
+                    }}>
+                    <span className={styles.focusScaleText}><strong>{scale.label}</strong>
+                      <small>{words.focusFromTest}: {scale.testTitle}</small></span>
+                    {selectedScaleId===scale.id?<CheckCircle2 size={22} aria-hidden="true"/>:
+                      <Target size={21} aria-hidden="true"/>}
+                  </button>)}
+              </div>
+              {focusScaleChoices.length>5 && <button type="button" className={styles.moreScaleChoices}
+                disabled={locked} onClick={()=>setShowAllScales(open=>!open)} aria-expanded={showAllScales}>
+                {showAllScales?words.showFewerScales:words.showOtherScales} <ChevronDown size={17} aria-hidden="true"/>
+              </button>}
+            </> : <p className={styles.noMeasuredScales}>{words.noMeasuredScales}</p>}
           </>}
-
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
             {cycle.day===5 && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
@@ -734,9 +745,9 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
+          {['baseline','recall','idea','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
-            {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
+            {words.skip}<SkipForward size={14}/></button>}
         </div>}
         {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
         {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
@@ -744,13 +755,12 @@ export default function CourseSlidePlayer({
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
               : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
+            : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>}
         <p>{words.safety}</p>
