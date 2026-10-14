@@ -97,6 +97,7 @@ test("video player restores a first-click gesture across a locale RSC remount", 
   assert.match(player, /recentUserPlayIntent = new Map/);
   assert.match(player, /USER_PLAY_INTENT_WINDOW_MS = 10_000/);
   assert.match(player, /onPointerDown=\{rememberPlayIntent\}/);
+  assert.match(player, /onClickCapture=\{rememberPlayIntent\}/);
   assert.match(player, /Date\.now\(\) - time < USER_PLAY_INTENT_WINDOW_MS/);
   assert.doesNotMatch(player, /sessionStorage|localStorage/);
   assert.match(player, /unoptimized=\{true\}/);

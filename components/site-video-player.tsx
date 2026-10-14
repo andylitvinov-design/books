@@ -156,7 +156,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         {playing ? (
           <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
-          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onPointerDown={rememberPlayIntent} onClick={() => { rememberPlayIntent(); setPlaying(true); }}>
+          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onPointerDown={rememberPlayIntent} onClickCapture={rememberPlayIntent} onClick={() => setPlaying(true)}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
