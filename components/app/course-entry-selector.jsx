@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, Crown, LockKeyhole, Plus, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
+import Course14DayOverview from './course-14-day-overview'
 import styles from './course-entry-selector.module.css'
 
 const COPY = {
   en: {
     eyebrow: 'MY COURSES · HOLISTIC HOUSE',
-    title: 'My courses', intro: 'Your personal path, at your own pace.',
+    title: 'My courses', intro: 'Knowledge. Practice. Your own meaningful changes.',
+    motto: 'The best in you is already here', plan: 'Plan',
+    benefitsTitle: 'What you will find in your courses', progressBenefit: 'Track your progress', practiceBenefit: 'Daily small practices', focusBenefit: 'A personal direction', rhythmBenefit: 'Your own pace',
+    quote: 'Small steps each day make room for lasting habits',
     count: 'active course', current: 'CURRENT COURSE', defaultCourse: 'My personal course',
     setup: 'Setting up your course', programme: '14-day learning journey', focus: 'My development directions',
     lesson: 'Day', of: 'of', completed: 'Lessons completed', finished: 'Course completed', loading: 'Loading progress…', progressUnavailable: 'Progress temporarily unavailable',
@@ -28,7 +32,10 @@ const COPY = {
   },
   ru: {
     eyebrow: 'МОИ КУРСЫ · HOLISTIC HOUSE',
-    title: 'Мои курсы', intro: 'Ваш путь развития — в собственном темпе.',
+    title: 'Мои курсы', intro: 'Знания. Практика. Ваши собственные изменения.',
+    motto: 'Лучшее в тебе уже здесь', plan: 'План',
+    benefitsTitle: 'Что вы найдёте в наших курсах', progressBenefit: 'Наблюдение за прогрессом', practiceBenefit: 'Практики на каждый день', focusBenefit: 'Личное направление', rhythmBenefit: 'Удобный темп',
+    quote: 'Маленькие шаги каждый день создают новые привычки',
     count: 'активный курс', current: 'ТЕКУЩИЙ КУРС', defaultCourse: 'Мой персональный курс',
     setup: 'Настройка курса', programme: '14-дневный курс развития', focus: 'Направления моей работы',
     lesson: 'День', of: 'из', completed: 'Уроков завершено', finished: 'Курс завершён', loading: 'Загружаем прогресс…', progressUnavailable: 'Прогресс временно недоступен',
@@ -67,6 +74,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
   const t = COPY[locale] || COPY.en
   const hasCourse = Boolean(course?.stage > 0)
   const [daily, setDaily] = useState(null)
+  const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
   const dialogRef = useRef(null)
 
@@ -107,7 +115,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
       <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true"/>{t.eyebrow}</span>
       <div className={styles.headline}>
         <h1>{t.title}</h1>
-        <span className={styles.limitPill}><BookOpen size={16} aria-hidden="true"/>{hasCourse ? '1 / 1' : '0 / 1'}</span>
+        <span className={styles.headerMotto} aria-hidden="true">{t.motto}<Heart size={19} strokeWidth={1.7}/></span>
       </div>
       <p>{t.intro}</p>
     </header>
@@ -141,10 +149,19 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
           <span style={{ width: completed === null ? '0%' : (completed / 14 * 100) + '%' }}/>
         </div>
         {course.stage === 4 && completed === null && !progressError && <small className={styles.loading}>{t.loading}</small>}
-        <button type="button" className={styles.openButton} onClick={onOpen}>
-          {course.stage !== 4 ? t.completeSetup : completed === 14 ? t.review : t.continue}
-          <ArrowRight size={19} aria-hidden="true"/>
-        </button>
+        <div className={styles.courseActions}>
+          <button type="button" className={styles.openButton} onClick={onOpen}>
+            {course.stage !== 4 ? t.completeSetup : completed === 14 ? t.review : t.continue}
+            <ArrowRight size={19} aria-hidden="true"/>
+          </button>
+          <button type="button" className={styles.planButton} onClick={() => setShowPlan(value => !value)}
+            aria-expanded={showPlan} aria-controls="my-course-plan">
+            <BookOpen size={20} aria-hidden="true"/><span>{t.plan}</span>
+          </button>
+        </div>
+        {showPlan && <div className={styles.planDetails} id="my-course-plan">
+          <Course14DayOverview locale={locale}/>
+        </div>}
       </article>}
 
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
@@ -155,6 +172,20 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
         </span>
         <ArrowRight className={styles.addArrow} size={19} aria-hidden="true"/>
       </button>
+    </section>
+
+    <section className={styles.benefits} aria-labelledby="course-benefits-title">
+      <div className={styles.benefitHeading}>
+        <span className={styles.benefitMark}><Leaf size={23} strokeWidth={1.7} aria-hidden="true"/></span>
+        <h2 id="course-benefits-title">{t.benefitsTitle}</h2>
+      </div>
+      <div className={styles.benefitGrid}>
+        <div><span><TrendingUp size={22} aria-hidden="true"/></span><p>{t.progressBenefit}</p></div>
+        <div><span><Heart size={22} aria-hidden="true"/></span><p>{t.practiceBenefit}</p></div>
+        <div><span><Leaf size={22} aria-hidden="true"/></span><p>{t.focusBenefit}</p></div>
+        <div><span><UsersRound size={22} aria-hidden="true"/></span><p>{t.rhythmBenefit}</p></div>
+      </div>
+      <p className={styles.benefitQuote}>«{t.quote}» <span>Holistic House</span></p>
     </section>
 
     <p className={styles.footnote}><LockKeyhole size={15} aria-hidden="true"/>
