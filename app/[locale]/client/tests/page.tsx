@@ -9,7 +9,7 @@ import type { Locale } from '@/data/remedies'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Test Explorer | Holistic House', robots: { index: false, follow: false }, referrer: 'no-referrer' }
 
-export default async function PublicTestExplorerPage({ params, searchParams }: { params: Promise<{ locale: string }>, searchParams: Promise<{ focus?: string | string[]; journey?: string | string[]; topics?: string | string[] }> }) {
+export default async function PublicTestExplorerPage({ params, searchParams }: { params: Promise<{ locale: string }>, searchParams: Promise<{ focus?: string | string[]; journey?: string | string[]; topics?: string | string[]; mode?: string | string[] }> }) {
   const { locale } = await params
   if (!isSupportedLocale(locale)) notFound()
   const query = await searchParams
@@ -24,6 +24,6 @@ export default async function PublicTestExplorerPage({ params, searchParams }: {
   const initialPreferences = focus.length ? { focus, problems } : null
   return <main lang={locale} style={{maxWidth:'100%',minWidth:0,overflowX:'clip'}}>
     <PublicSiteHeader locale={locale as Locale} />
-    <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} />
+    <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} initialMode={query.mode === 'course' ? 'course' : 'tests'} />
   </main>
 }
