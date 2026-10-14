@@ -532,22 +532,19 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
-            <p className={styles.instruction}>{words.checkinQuestion}</p>
-            <div className={styles.numberGrid} role="group" aria-label={words.checkinQuestion}>
-              {Array.from({length:11}, (_, i) => <button key={i} type="button" disabled={locked}
-                aria-pressed={severity === i} onClick={() => setSeverity(i)}>{i}</button>)}
-            </div>
-            <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
-            <p className={styles.helper}>{words.ratingHint}</p>
-            {today && <p className={styles.confirmed}><CheckCircle2 size={16}/>{words.saved}</p>}
-          </>}
 
           {slide.kind === 'idea' && <>
-            <IllustratedMoment photo kind={slide.kind}/>
-            <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
+            {selectedScale && <p className={styles.focusName}>{words.focusForToday}: <strong>{selectedScale.label}</strong></p>}
+            <blockquote className={styles.quote} data-course-personalized-aphorism>“{currentAphorism}”</blockquote>
+            <p className={styles.prompt}>{words.ideaPrompt}</p>
+            <div className={styles.quoteResponses} role="group" aria-label={words.ideaPrompt} data-course-aphorism-reaction>
+              {[['agree',words.agree],['unsure',words.unsure],['disagree',words.disagree]].map(([key,label])=>
+                <button key={key} type="button" disabled={locked} aria-pressed={aphorismReaction===key}
+                  onClick={()=>setAphorismReaction(key)}>{label}</button>)}
+            </div>
+            {aphorismReaction!=='skip' && <p className={styles.quoteReply} aria-live="polite">
+              {aphorismReaction==='agree'?words.agreeReply:aphorismReaction==='disagree'?words.disagreeReply:words.unsureReply}
+            </p>}
           </>}
           {slide.kind === 'understand' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -555,11 +552,28 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'recall' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
-            <p className={styles.helper}>{words.recallHint}</p>
+            <p className={styles.prompt}>{words.recallHint}</p>
+            {focusScaleChoices.length ? <>
+              <div className={styles.focusScaleChoices} role="group" aria-label={words.recall}
+                data-course-measured-scale-choice>
+                {(showAllScales ? focusScaleChoices : focusScaleChoices.slice(0,5)).map(scale=>
+                  <button type="button" key={scale.id} disabled={locked}
+                    aria-pressed={selectedScaleId===scale.id} onClick={()=>{
+                      if (selectedScaleId!==scale.id) setAphorismReaction('skip')
+                      setSelectedScaleId(scale.id)
+                    }}>
+                    <span className={styles.focusScaleText}><strong>{scale.label}</strong>
+                      <small>{words.focusFromTest}: {scale.testTitle}</small></span>
+                    {selectedScaleId===scale.id?<CheckCircle2 size={22} aria-hidden="true"/>:
+                      <Target size={21} aria-hidden="true"/>}
+                  </button>)}
+              </div>
+              {focusScaleChoices.length>5 && <button type="button" className={styles.moreScaleChoices}
+                disabled={locked} onClick={()=>setShowAllScales(open=>!open)} aria-expanded={showAllScales}>
+                {showAllScales?words.showFewerScales:words.showOtherScales} <ChevronDown size={17} aria-hidden="true"/>
+              </button>}
+            </> : <p className={styles.noMeasuredScales}>{words.noMeasuredScales}</p>}
           </>}
-
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
             {cycle.day===5 && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
@@ -732,9 +746,9 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
+          {['baseline','recall','idea','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
-            {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
+            {words.skip}<SkipForward size={14}/></button>}
         </div>}
         {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
         {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
@@ -743,13 +757,12 @@ export default function CourseSlidePlayer({
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
             : slide.kind === 'pace' ? () => void savePace()
-            : slide.kind === 'checkin' ? () => void saveCheckin()
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
               : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
+            : slide.kind === 'pace' ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>}
         <p>{words.safety}</p>
