@@ -276,7 +276,7 @@ try {
     dateIssued: '2026-10-13',
     recommendationType: 'homeopathy',
     languagePreference: 'ru',
-    analysis: 'Было: напряжение 3/10\\nПосле сессии: напряжение 6/10\\nSynthetic analysis, not a clinical claim.',
+    analysis: 'Было: напряжение 3/10\nПосле сессии: напряжение 6/10\nSynthetic analysis, not a clinical claim.',
     additionalNotes: 'Synthetic client-visible notes',
     internalNotes: 'DO NOT DISPLAY — PRIVATE SYNTHETIC PRACTITIONER NOTE',
     items: [{ remedySlug: 'colchicum-autumnale', itemType: 'homeopathy' }],
