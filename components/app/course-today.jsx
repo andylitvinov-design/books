@@ -391,6 +391,18 @@ export default function CourseToday({locale='en',accountId=null,onExit=null}){
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>}
+  {view==='path'&&data.learningSkills?.length===7&&<section className={styles.antiStressSkills} data-antistress-seven-skill-progress>
+    <h3>{ru?'Семь навыков самоподдержки':'Seven self-support skills'}</h3>
+    <p>{ru?'Здесь отмечены только реальные учебные попытки и выборы. Это не шкала психического здоровья и не тест на «успешность».':'Only actual learning attempts and choices are shown. This is not a mental-health score or performance test.'}</p>
+    <ol>{data.learningSkills.map(skill=><li key={skill.id}>
+      <span className={styles.antiStressSkillNumber}>{skill.id}</span>
+      <strong>{skill.title}</strong>
+      <small>{skill.status==='new_context_choice'?(ru?'Выбор в новой ситуации':'New scenario choice')
+        :skill.status==='guided_attempt'?(ru?'Выбор с подсказкой':'Choice with hint')
+        :skill.status==='introduced_only'?(ru?'Знакомство с навыком':'Introduced')
+        :(ru?'Пока не оценивался':'Not assessed')}</small>
+    </li>)}</ol>
+  </section>}
   {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
      onFinish={()=>{setQuestOpen(false);setView('path')}}
