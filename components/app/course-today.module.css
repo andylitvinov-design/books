@@ -526,3 +526,53 @@
  .shell[data-course-view=today] .heroPhoto{opacity:.7}
 }
 @media(prefers-reduced-motion:reduce){.viewSwitch button{transition:none!important}}
+
+
+/* V7 approved 4-screen concept: welcoming photographic/illustrated hero.
+   The one purposeful daily CTA remains visually dominant. */
+.todayGreeting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 4px 1px;color:#163f59}
+.todayGreeting>div{min-width:0}
+.todayGreeting p{font-size:12px!important;font-weight:760!important;letter-spacing:.04em;color:#4e9aab!important;margin:0 0 2px!important}
+.todayGreeting h1{font:850 clamp(29px,4.8vw,38px)/1.1 system-ui,-apple-system,sans-serif;letter-spacing:-.045em;color:#123e58;margin:0}
+.todayReward{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;flex:none;border:1px solid #bce7ed;background:linear-gradient(120deg,#e5fbfc,#f5ffff);border-radius:18px;padding:12px 15px;color:#078ca5;font-size:15px;font-weight:840;box-shadow:0 4px 10px #1da2ab10}
+.todayReward svg{flex:none}
+.shell[data-course-view=today] .questHero{isolation:isolate;min-height:378px!important;background:linear-gradient(135deg,#fff 2%,#eafbfd 55%,#c4f0ed 100%)!important;border:1px solid #b9e7e9!important;box-shadow:0 14px 32px #218fa61b!important}
+.shell[data-course-view=today] .heroInner{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;min-height:378px!important;padding:22px 24px 17px;z-index:2}
+.shell[data-course-view=today] .heroPhoto{inset:0;width:100%;background:linear-gradient(95deg,#f8ffff 4%,#ebfcfddc 48%,#eafdf5b4 85%),url('/images/holistic-house/hero-olive-incense.webp') center/cover no-repeat!important;opacity:.45!important}
+.heroPerson{position:absolute;right:1%;bottom:44px;z-index:0;width:44%;max-width:265px;height:76%;object-fit:contain;object-position:bottom right;pointer-events:none;filter:drop-shadow(0 7px 12px #20889b18)}
+.shell[data-course-view=today] .heroBrand{font-size:11px!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#158e9f!important}
+.shell[data-course-view=today] .questDayPill{background:#fffdfcde!important;border-color:#bbeced!important;color:#0a8a9c!important}
+.shell[data-course-view=today] .questHero h2{max-width:70%;font:850 clamp(25px,3.8vw,35px)/1.13 system-ui,-apple-system,sans-serif!important;letter-spacing:-.045em!important;color:#133c58!important;margin:8px 0 2px!important;text-wrap:balance}
+.shell[data-course-view=today] .heroPurpose{max-width:56%!important;font-size:14px!important;line-height:1.5!important;color:#3d7589!important;-webkit-line-clamp:2!important;line-clamp:2!important}
+.shell[data-course-view=today] button.todayPrimary{position:relative;z-index:2;align-self:stretch;width:100%!important;max-width:none!important;min-height:56px!important;margin:auto 0 0!important;font-size:15px!important;background:linear-gradient(100deg,#14bbc5,#008da8)!important;box-shadow:0 8px 22px #0996b031!important;text-shadow:0 1px 1px #216c7926}
+.shell[data-course-view=today] .heroProgress{position:relative;z-index:2;width:100%!important;margin-top:7px!important;padding:10px 0 0!important;border-top:1px solid #bfdfdedd!important;color:#376f81!important}
+.shell[data-course-view=today] .heroProgress progress{height:9px!important}
+.momentPeek{border:1px solid #d5edef;border-radius:15px;background:#fafdfe;color:#2b657f;overflow:hidden}
+.momentPeek>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;padding:12px 15px;font:760 13px/1.4 system-ui,-apple-system,sans-serif;color:#398498;cursor:pointer}
+.momentPeek>summary::-webkit-details-marker{display:none}
+.momentPeek>summary>span{display:inline-flex;align-items:center;gap:9px}
+.momentPeek>summary>svg{transition:transform .2s}
+.momentPeek[open]>summary>svg{transform:rotate(180deg)}
+.momentPeek>section{margin:3px 10px 10px;border-color:#d3eaec}
+@media(max-width:620px){
+ .todayGreeting{padding:5px 2px 0}
+ .todayGreeting h1{font-size:28px}
+ .todayReward{padding:10px 12px;border-radius:15px;font-size:13px}
+ .todayReward svg{width:17px;height:17px}
+ .shell[data-course-view=today] .questHero{min-height:348px!important}
+ .shell[data-course-view=today] .heroInner{min-height:348px!important;padding:17px 16px 14px!important;gap:8px!important}
+ .heroPerson{width:58%;height:68%;right:-6%;bottom:49px}
+ .shell[data-course-view=today] .questHero h2{max-width:77%!important;font-size:27px!important;line-height:1.15!important;margin:8px 0 1px!important}
+ .shell[data-course-view=today] .heroPurpose{max-width:67%!important;font-size:12px!important}
+ .shell[data-course-view=today] button.todayPrimary{min-height:51px!important;font-size:14px!important}
+ .shell[data-course-view=today] .heroProgress{margin-top:7px!important}
+ .momentPeek>summary{min-height:43px;padding:10px 12px}
+}
+@media(max-width:365px){
+ .shell[data-course-view=today] .heroInner{padding:15px 13px 13px!important}
+ .shell[data-course-view=today] .questHero h2{font-size:24px!important}
+ .heroPerson{right:-10%;width:61%;opacity:.9}
+ .todayGreeting h1{font-size:26px}
+ .todayReward{padding:9px 10px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.momentPeek>summary svg{transition:none}}

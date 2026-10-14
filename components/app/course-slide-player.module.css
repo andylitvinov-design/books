@@ -109,3 +109,56 @@
 .promoSoon{margin:0;padding:9px 13px;border:1px solid #d7e9ec;border-radius:10px;color:#567b87;background:#f5fafb;font-size:12px}
 .promoLegal{font-size:11px;line-height:1.45;color:#7594a2;margin:0}
 @media(max-width:540px){.promoSlide{gap:11px;padding:10px 0}.promoIcon{width:72px;height:72px;border-radius:23px}.promoIcon svg{width:35px;height:35px}.promoLead{font-size:14px}.promoBenefits>div{padding:10px 13px}.promoSlide h2{font-size:27px}}
+
+
+/* V7 Duolingo-like activity: one visible decision per slide, one sticky CTA. */
+.paceChoices{display:grid;gap:10px;margin:2px 0 7px}
+.paceChoices button{display:flex;align-items:center;gap:13px;text-align:left;width:100%;min-height:76px;padding:13px 15px!important;border:2px solid #d1e8ef!important;border-bottom:4px solid #b8d8e2!important;border-radius:19px!important;background:linear-gradient(115deg,#ffffff,#f7fdff)!important;color:#24516b!important;cursor:pointer;box-shadow:0 5px 12px #1e86a509;transition:transform .15s,border-color .15s}
+.paceChoices button:hover:not(:disabled){transform:translateY(-2px);border-color:#75c9d4!important}
+.paceChoices button[aria-pressed=true]{border:2px solid #14b5c2!important;border-bottom:5px solid #058ba1!important;background:linear-gradient(110deg,#e9fafa,#f4fefe)!important;color:#076f88!important}
+.paceChoices button:disabled{opacity:.6;cursor:wait}
+.paceIcon{flex:none;display:grid;place-items:center;width:47px;height:47px;border-radius:15px;background:#def7fb;color:#079fb3}
+.paceChoices button[aria-pressed=true] .paceIcon{background:#c7f3ed;color:#007d91}
+.paceCopy{display:grid;gap:4px;flex:1;min-width:0}
+.paceCopy strong{font-size:15px;line-height:1.2;font-weight:820}
+.paceCopy small{font-size:12px;line-height:1.4;color:#65879a}
+.paceChoices button>svg{flex:none;color:#72a8b5}
+.paceCheck{color:#07a7ae!important}
+.overlay .slideTitle{max-width:640px;font-weight:850;letter-spacing:-.035em}
+.overlay .stepBars{background:#e0f0f4}
+.overlay .illustration[data-art=calm]{background:radial-gradient(ellipse at 50% 60%,#b5ebec,#e9fcfd 67%,transparent 74%)}
+.overlay .quote{border-left:0;border:1px solid #cdebef;border-radius:19px;background:linear-gradient(115deg,#e7fbfd,#faffff);font-style:italic;text-align:center;box-shadow:0 9px 19px #2096a10e}
+.overlay .finished{position:relative;isolation:isolate;padding:10px 0 0;background:radial-gradient(ellipse at 50% 26%,#f3fcf4 0%,transparent 70%)}
+.overlay .finished:before{content:"";position:absolute;inset:10px 0 auto;height:260px;pointer-events:none;z-index:-1;background-image:radial-gradient(circle,#63cbcf 2px,transparent 3px),radial-gradient(circle,#ffdc73 3px,transparent 4px),radial-gradient(circle,#95ddd1 2px,transparent 3px);background-size:87px 101px,124px 98px,69px 83px;background-position:5px 19px,39px 30px,61px 2px;opacity:.65}
+.overlay .finished h2{font-size:clamp(30px,5vw,42px)!important;color:#164b6a}
+.overlay .xpReward{border-color:#ffdd7b;background:linear-gradient(100deg,#fff1bd,#ffe18c);box-shadow:0 8px 22px #e8b74226;font-size:20px}
+.overlay .finalTiles span{border-color:#cfe9eb;background:#f3fcfd;border-radius:18px}
+.overlay .momentResult{gap:5px;padding:10px 12px;box-shadow:none;border-radius:16px}
+.overlay .momentResult h3{font-size:14px}
+.overlay .resultPair{gap:10px}
+.overlay .resultPair>div{padding:5px 10px;min-width:78px}
+.overlay .resultPair strong{font-size:25px}
+.overlay .resultMeaning{font-size:11px}
+.overlay .finished .illustration{width:min(270px,100%);height:clamp(145px,22vh,210px)}
+.overlay .finished:has([data-course-moment-result]) .illustration{height:clamp(120px,18vh,176px)}
+@media(max-width:540px){
+ .overlay .content{gap:12px}
+ .paceChoices{gap:8px;margin:0 0 3px}
+ .paceChoices button{min-height:64px;padding:9px 12px!important;border-radius:15px!important}
+ .paceIcon{width:39px;height:39px;border-radius:13px}
+ .paceIcon svg{width:21px;height:21px}
+ .paceCopy strong{font-size:14px}
+ .paceCopy small{font-size:11px}
+ .overlay .finished .illustration{height:clamp(135px,20vh,185px)}
+ .overlay .finished:has([data-course-moment-result]) .illustration{height:clamp(102px,15vh,148px)}
+ .overlay .finished{gap:10px}
+ .overlay .finalTiles span{min-height:75px}
+}
+@media(max-width:360px){
+ .paceChoices button{min-height:60px;padding:8px 10px!important}
+ .paceCopy small{font-size:10px}
+ .overlay .illustration{height:clamp(115px,20vh,155px)}
+ .overlay .finished{gap:8px}
+ .overlay .momentResult{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){.paceChoices button{transition:none!important}}

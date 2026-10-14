@@ -204,3 +204,67 @@
 }
 @media(max-width:350px){.path{gap:0}.mapShell{padding:11px 9px}.pathRow{grid-template-columns:58px minmax(0,1fr)}.path::before{left:29px}.pathNode{width:55px;height:55px;min-height:55px}.pathLabel strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.pathNode{transition:none!important}}
+
+
+/* V7 curved Duolingo-inspired route: real CSS grid, no absolutely positioned
+   labels. All 14 milestones remain a single accessible ordered list. */
+.mapShell{--course-wave:#14abbc;max-width:700px;margin:0 auto;gap:10px;border:1px solid #d1eaf0!important;background:linear-gradient(180deg,#ffffff,#f3fcfd 72%,#e7faf8)!important}
+.mapHeader h3{font-size:clamp(23px,3.6vw,30px)}
+.mapHeader p:not(.eyebrow){font-size:12px}
+.mapProgress{padding:2px 0 10px}
+.mapProgress progress{height:9px}
+.mapShell .path{position:relative;display:grid;gap:3px;isolation:isolate;width:100%;max-width:530px;margin:0 auto;padding:3px 0 6px;list-style:none}
+.mapShell .path::before{content:"";position:absolute;left:50%;top:62px;bottom:48px;width:108px;transform:translateX(-50%);border:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 424'%3E%3Cpath d='M53 0 C18 65 18 135 54 208 S90 355 53 424' stroke='%2396d9df' stroke-width='5' stroke-dasharray='2 12' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center top/108px 424px repeat-y;z-index:-1;pointer-events:none}
+.mapShell .pathRow{display:grid;grid-template-columns:minmax(0,1fr) 88px minmax(0,1fr);grid-template-rows:auto;gap:8px;min-height:98px;align-items:center;justify-items:center;padding:3px 0;position:relative}
+.mapShell .pathNode{grid-column:2;grid-row:1;justify-self:center;align-self:center;width:75px;height:75px;min-height:75px;border-radius:50%!important;border:3px solid #cbe3e9!important;border-bottom:7px solid #adced9!important;background:linear-gradient(145deg,#f4f8fa,#e3edf1)!important;color:#a0b1bf!important;box-shadow:0 7px 13px #315e7422!important;z-index:2}
+.mapShell .pathRow[data-side=left] .pathNode{transform:translateX(-16px)}
+.mapShell .pathRow[data-side=right] .pathNode{transform:translateX(16px)}
+.mapShell .pathRow[data-side=left] .pathNode:hover{transform:translateX(-16px) translateY(-2px)}
+.mapShell .pathRow[data-side=right] .pathNode:hover{transform:translateX(16px) translateY(-2px)}
+.mapShell .pathRow[data-status=today] .pathNode{color:white!important;background:linear-gradient(145deg,#39d4d5,#018fa9)!important;border-color:#0db2bd!important;border-bottom-color:#087b94!important;box-shadow:0 0 0 7px #c7f5f1,0 9px 19px #067f9f2d!important}
+.mapShell .pathRow[data-status=done] .pathNode{color:#168f8a!important;background:#e0fbf3!important;border-color:#88d6c3!important;border-bottom-color:#2aa99f!important;box-shadow:0 5px 13px #1e8e8b16!important}
+.mapShell .pathRow[data-status=later] .pathNode{opacity:.74}
+.mapShell .pathLabel{grid-row:1;grid-column:3;position:static!important;display:grid;align-content:center;gap:5px;width:100%!important;max-width:none!important;min-height:66px;padding:8px 5px!important;color:#4d7187!important;text-align:left!important;overflow-wrap:anywhere;hyphens:auto;background:transparent!important;border-radius:13px}
+.mapShell .pathLabel small{font-size:10px;font-weight:800;color:#729bac;letter-spacing:.05em}
+.mapShell .pathLabel strong{font-size:clamp(11px,1.9vw,13px);line-height:1.35;color:#2b5f76;font-weight:780}
+.mapShell .pathRow[data-side=right] .pathLabel{grid-column:1;text-align:right!important;justify-items:end}
+.mapShell .pathRow[data-side=right] .pathLabel small{text-align:right}
+.mapShell .pathRow[data-status=today] .pathLabel{background:#e9fafc!important}
+.mapShell .pathRow[data-status=today] .pathLabel strong{color:#047e99;font-size:14px}
+.mapShell .pathRow[data-status=done] .pathLabel strong{color:#138d83}
+.mapShell .pathRow .chapter{grid-column:1/-1;grid-row:1;justify-self:stretch;margin:16px 0 10px;padding:12px 15px;border-radius:16px;border:1px solid #c8e8ec;background:linear-gradient(95deg,#e4f9f9,#f6ffff);text-align:left}
+.mapShell .chapter span{font-size:10px;color:#098ca4}
+.mapShell .chapter strong{font-size:13px;color:#275f72}
+.mapShell .pathRow:has(.chapter) .pathNode,.mapShell .pathRow:has(.chapter) .pathLabel{grid-row:2}
+.mapShell .pathPreview{grid-column:1/-1;grid-row:2;justify-self:center;width:min(350px,100%);max-width:100%;margin:4px 0 18px;padding:14px 16px;border:1px solid #a8e0e6;border-top:4px solid #13bbbe;border-radius:17px;background:linear-gradient(140deg,#f6ffff,#e8fafc);box-shadow:0 8px 20px #317f9f15}
+.mapShell .pathRow:has(.chapter) .pathPreview{grid-row:3}
+.mapShell .pathPreview .journeySummary{font-size:13px;line-height:1.48;color:#446d80}
+.mapShell .pathPreview .primaryButton{width:100%;max-width:none}
+.mapShell .journeyScene{order:0;width:100%;max-width:620px;height:145px;align-self:center;object-fit:cover;object-position:center 61%;aspect-ratio:auto;border-radius:18px;background:#eafbfc;margin:-2px 0 4px}
+.mapShell .mapFootnote{align-items:center;font-size:10px;color:#7f9fa9}
+@media(max-width:620px){
+ .mapShell .path{gap:1px;padding:0 1px}
+ .mapShell .path::before{top:53px;bottom:50px}
+ .mapShell .pathRow{grid-template-columns:minmax(0,1fr) 78px minmax(0,1fr);gap:5px;min-height:94px}
+ .mapShell .pathNode{width:66px;height:66px;min-height:66px}
+ .mapShell .pathRow[data-side=left] .pathNode{transform:translateX(-12px)}
+ .mapShell .pathRow[data-side=right] .pathNode{transform:translateX(12px)}
+ .mapShell .pathRow[data-side=left] .pathNode:hover{transform:translateX(-12px) translateY(-2px)}
+ .mapShell .pathRow[data-side=right] .pathNode:hover{transform:translateX(12px) translateY(-2px)}
+ .mapShell .pathLabel{min-height:59px;padding:5px 3px!important}
+ .mapShell .pathLabel strong{font-size:11px!important}
+ .mapShell .pathRow[data-status=today] .pathLabel strong{font-size:12px!important}
+ .mapShell .pathRow .chapter{margin:14px 0 9px;padding:11px}
+ .mapShell .pathPreview{margin:2px 0 12px;padding:12px 13px}
+ .mapShell .journeyScene{height:116px;border-radius:15px}
+}
+@media(max-width:355px){
+ .mapShell .pathRow{grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);gap:3px}
+ .mapShell .pathNode{width:60px;height:60px;min-height:60px}
+ .mapShell .pathLabel strong{font-size:10px!important}
+ .mapShell .path::before{width:99px;background-size:99px 424px}
+ .mapShell .mapHeader h3{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mapShell .pathNode{transition:none!important}
+}
