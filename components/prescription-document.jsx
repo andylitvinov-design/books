@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getRemedy } from '@/data/remedies'
 import { RemedyContent } from './remedy-content'
 import { DistanceHomeopathyGuide } from './distance-homeopathy-guide'
-import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule } from '@/lib/documents/recommendation'
+import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule, reportFollowUpDetails } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
@@ -15,6 +15,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
+  const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
@@ -114,12 +115,17 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           <ul>{section.bullets.map((line) => <li key={line}>{line}</li>)}</ul>
         </div>)}
         <p>{guidance.course}</p>
-        <p>{guidance.recheck}</p>
-        <p className="canonical-guidance-contact">{guidance.contact}</p>
+        {guidance.recheck && <p>{guidance.recheck}</p>}
+        {guidance.contact && <p className="canonical-guidance-contact">{guidance.contact}</p>}
       </section>}
 
       {document.additionalNotes && <section className="canonical-general canonical-report-notes"><h2>{labels.additionalNotes}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.additionalNotes}</p></section>}
       {document.generalInstructions && <section className="canonical-general canonical-general-instructions"><h2>{labels.general}</h2><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.generalInstructions}</p></section>}
+      {followUpSession && <section className="canonical-follow-up-appointment" aria-label={followUpSession.title}>
+        <h2>{followUpSession.title}</h2>
+        <time dateTime={followUpSession.date}>{followUpSession.displayDate}</time>
+        <p>{followUpSession.description}</p>
+      </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
       <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
