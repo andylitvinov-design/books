@@ -29,6 +29,9 @@
 .liveIndicator{font-size:14px;font-weight:750;color:#ad253d}
 .liveIndicator span{color:#cc233d}
 .feedback{color:#556d7a;font-size:14px}
+.uploadProgress{display:grid;gap:5px;margin:12px 0}
+.uploadProgress .feedback{margin:0}
+.uploadProgress progress{width:100%;height:9px;accent-color:#173957}
 .audio{display:block;width:100%;margin:14px 0}
 .video{display:block;width:100%;border-radius:12px;margin:12px 0;max-height:420px;background:#132e34}
 .success{display:flex;align-items:center;gap:9px;margin:13px 0;color:#166650!important;font-weight:650}
