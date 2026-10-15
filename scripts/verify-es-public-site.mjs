@@ -51,9 +51,11 @@ try {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
-        // Do not abort in-flight Next link prefetches with the next hard goto.
-        // All page errors still fail; no CORS or JavaScript errors are filtered.
-        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
+        // networkidle is not a meaningful readiness signal for a hydrated Next.js
+        // application: recurring prefetch/analytics requests can keep it busy forever.
+        // Wait for the document load event, then use the existing route-specific
+        // Playwright assertions below. Keep pageerror collection strict.
+        const settle = () => page.waitForLoadState('load', {timeout:30000});
         async function navigate(path) {
           await settle();
           const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:60000});
@@ -108,7 +110,10 @@ try {
             // explicit continuation action and remains available below it.
             const preloginPicker=page.locator('[data-prelogin-test-picker]');
             await expect(preloginPicker).toBeVisible();
-            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Подберите свои тесты':'Choose your tests'})).toBeVisible();
+            // This is now the accessible region label; the current page H1
+            // explains the value of the selection rather than repeating it.
+            await expect(preloginPicker).toHaveAttribute('aria-label',language==='ru'?'Подберите свои тесты':'Choose your tests');
+            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Лучше понять себя и свою жизнь':'Understand yourself and your life better'})).toBeVisible();
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Рекомендуем для вас':'Recommended for you'})).toBeVisible();
             assert.equal(await preloginPicker.locator('details').first().evaluate(element=>element.open),false,'advanced filter starts folded');
             await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Начать бесплатный мониторинг/:/Start free monitoring/})).toBeVisible();

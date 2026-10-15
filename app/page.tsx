@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
+import { SiteVideoPlayer } from "@/components/site-video-player";
 import type { Locale } from "@/data/remedies";
 import { videoKey } from "@/lib/site-videos/model";
 import { getPublishedSiteVideos } from "@/lib/site-videos/public";
@@ -23,8 +25,35 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const locale = await homeLocale(searchParams);
   return { ...meta[locale], alternates: { canonical: locale === "ru" ? "/?lang=ru" : "/", languages: { en: "/?lang=en", ru: "/?lang=ru", es: "/es", "x-default": "/" } } };
 }
+// Public marketing HTML still uses a per-request CSP nonce and locale cookie.
+// Stream only the separately cached, approved video metadata: the hero is not
+// held up by a cold Redis connection or the 60-second cache revalidation.
+async function HomeIntroVideo({ locale }: { locale: Locale }) {
+  const publishedVideos = await getPublishedSiteVideos();
+  const introVideo = publishedVideos[videoKey("home-intro", locale)];
+  if (!introVideo) return null;
+  const heading = locale === "ru"
+    ? { kicker: "Короткое знакомство", title: "О Holistic House за полминуты" }
+    : { kicker: "A short introduction", title: "Holistic House in half a minute" };
+  return (
+    <section className="service-home-video" aria-labelledby="service-home-video-title">
+      <header>
+        <p className="service-home-kicker">{heading.kicker}</p>
+        <h2 id="service-home-video-title">{heading.title}</h2>
+      </header>
+      <div className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
+        <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" />
+      </div>
+    </section>
+  );
+}
 export default async function HomePage({ searchParams }: PageProps) {
-  const [locale, publishedVideos] = await Promise.all([homeLocale(searchParams), getPublishedSiteVideos()]);
-  const introVideos = { en: publishedVideos[videoKey("home-intro", "en")], ru: publishedVideos[videoKey("home-intro", "ru")] };
-  return <HolisticHouseHome key={locale} locale={locale} introVideos={introVideos} />;
+  const locale = await homeLocale(searchParams);
+  return (
+    <HolisticHouseHome key={locale} locale={locale} introVideoContent={
+      <Suspense fallback={null}>
+        <HomeIntroVideo locale={locale} />
+      </Suspense>
+    } />
+  );
 }
