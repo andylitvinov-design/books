@@ -25,7 +25,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Открытая лицензия ВОЗ рассчитана на некоммерческий контекст. Для коммерческого сайта и перевода нужно разрешение."
     },
     "source": "https://www.who.int/publications/m/item/WHO-UCN-MSD-MHE-2024.01",
-    "registryKey": "who-5"
+    "registryKey": "who-5",
+    "scoring": {
+      "en": "Five responses scored 0–5; raw 0–25 sum is multiplied by 4 to yield 0–100.",
+      "ru": "Пять ответов по 0–5; сумму 0–25 умножают на 4, итог 0–100."
+    }
   },
   {
     "key": "pss-10",
@@ -50,7 +54,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "CMU направляет заявки через Mapi/ePROVIDE. Заявка бесплатна; стоимость возможной лицензии определяется отдельно."
     },
     "source": "https://www.cmu.edu/dietrich/psychology/stress-immunity-disease-lab/scales/index.html",
-    "registryKey": "pss-10"
+    "registryKey": "pss-10",
+    "scoring": {
+      "en": "Ten responses scored 0–4 with the source-specified reversals; sum 0–40.",
+      "ru": "Десять ответов по 0–4, часть пунктов обратные; сумма 0–40."
+    }
   },
   {
     "key": "isi-7",
@@ -75,7 +83,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Требуется проверить права Morin/ISI и условия электронного использования через правообладателя."
     },
     "source": "https://eprovide.mapi-trust.org/isi-insomnia-severity-index/",
-    "registryKey": "isi"
+    "registryKey": "isi",
+    "scoring": {
+      "en": "Seven responses scored 0–4; total 0–28.",
+      "ru": "Семь ответов по 0–4; сумма 0–28."
+    }
   },
   {
     "key": "ecr-s-12",
@@ -100,7 +112,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Это ECR-S Wei и соавт., 2007, не ECR-RS и не ECR-R. Права на форму, онлайн и перевод не подтверждены."
     },
     "source": "https://pubmed.ncbi.nlm.nih.gov/17437384/",
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Two six-item attachment factor means; check reverse-keying against the exact 2007 short form.",
+      "ru": "Среднее по двум шести-пунктным факторам; обратные пункты сверяются с редакцией 2007 года."
+    }
   },
   {
     "key": "ucla-3",
@@ -125,7 +141,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Краткая форма Hughes и соавт. найдена; права на коммерческое электронное использование и перевод ещё уточняются."
     },
     "source": "https://pubmed.ncbi.nlm.nih.gov/18504506/",
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Three responses scored 1–3; total 3–9, higher means more loneliness.",
+      "ru": "Три ответа по 1–3; сумма 3–9, больше — сильнее одиночество."
+    }
   },
   {
     "key": "audit-10",
@@ -151,7 +171,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
     },
     "source": "https://apps.who.int/iris/bitstream/10665/67205/1/WHO_MSD_MSB_01.6a.pdf",
     "registryKey": "audit",
-    "sensitive": true
+    "sensitive": true,
+    "scoring": {
+      "en": "Ten scored answers; published 0–40 total. No automated diagnostic judgement.",
+      "ru": "Десять оценённых ответов; сумма 0–40. Не автоматический диагноз."
+    }
   },
   {
     "key": "dast-10",
@@ -177,7 +201,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
     },
     "source": null,
     "registryKey": null,
-    "sensitive": true
+    "sensitive": true,
+    "scoring": {
+      "en": "Ten yes/no scored answers; published key yields 0–10; verify any reversed items.",
+      "ru": "Десять ответов «да/нет»; по оригинальному ключу 0–10, проверить обратные пункты."
+    }
   },
   {
     "key": "scoff-5",
@@ -203,7 +231,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
     },
     "source": "https://pubmed.ncbi.nlm.nih.gov/10582927/",
     "registryKey": null,
-    "sensitive": true
+    "sensitive": true,
+    "scoring": {
+      "en": "Count five yes/no risk signals, 0–5; no automatic diagnostic interpretation.",
+      "ru": "Подсчёт пяти ответов «да/нет», 0–5; без автоматического диагноза."
+    }
   },
   {
     "key": "cfpb-fwbs-10",
@@ -229,7 +261,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
     },
     "source": "https://www.consumerfinance.gov/consumer-tools/financial-well-being/about/",
     "registryKey": null,
-    "relatedRunnableKey": "cfpb-financial-wellbeing-5"
+    "relatedRunnableKey": "cfpb-financial-wellbeing-5",
+    "scoring": {
+      "en": "Ten scored items plus age and administration-mode qualifiers; official calibrated conversion to 0–100, not raw percentage.",
+      "ru": "Десять оценочных пунктов и два уточнения (возраст, способ заполнения); официальный перевод в 0–100, не простой процент."
+    }
   },
   {
     "key": "uwes-3",
@@ -254,7 +290,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Требуется проверить договор на коммерческое онлайн-использование и условия передачи данных авторам."
     },
     "source": null,
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Three 0–6 items, mean 0–6; confirm exact source version before use.",
+      "ru": "Три пункта по 0–6, среднее 0–6; нужно сверить конкретную редакцию."
+    }
   },
   {
     "key": "mlq-10",
@@ -279,7 +319,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Доступность для исследований не означает права на коммерческий сайт; нужно письменное разрешение."
     },
     "source": "https://steger.socialpsychology.org/publications",
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Presence and Search are separate five-item totals, 5–35 each, with source reversal where required.",
+      "ru": "Две отдельные шкалы «Наличие» и «Поиск», по 5–35; обратный пункт по ключу автора."
+    }
   },
   {
     "key": "gse-10",
@@ -304,7 +348,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Для отдельных версий встречаются открытые лицензии. Нужно подтвердить точную редакцию, перевод и коммерческое онлайн-использование."
     },
     "source": "https://userpage.fu-berlin.de/~health/selfscal.htm",
-    "registryKey": "gse-10"
+    "registryKey": "gse-10",
+    "scoring": {
+      "en": "Ten 1–4 items; published total 10–40.",
+      "ru": "Десять ответов по 1–4; сумма 10–40."
+    }
   },
   {
     "key": "ips-9",
@@ -329,7 +377,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Нужно подтвердить девятипунктную версию, ключ подсчёта и права на коммерческое размещение."
     },
     "source": null,
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Nine 1–5 items; published reverse items; total 9–45.",
+      "ru": "Девять ответов по 1–5 с обратными пунктами; сумма 9–45."
+    }
   },
   {
     "key": "gq-6",
@@ -354,7 +406,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Доступность для исследований не подтверждает права на коммерческий онлайн-опросник или перевод."
     },
     "source": "https://doi.org/10.1037/0022-3514.82.1.112",
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Six 1–7 items with reverse-keyed statements; total 6–42.",
+      "ru": "Шесть ответов по 1–7, включая обратные пункты; сумма 6–42."
+    }
   },
   {
     "key": "ffmq-15",
@@ -379,7 +435,11 @@ export const PRIORITY_METHODS_2026 = Object.freeze([
       "ru": "Нужно определить конкретную 15-пунктную валидированную редакцию и популяцию, подтвердить права на сайт и перевод."
     },
     "source": "https://www.mindfulnesslab.pitt.edu/measures/",
-    "registryKey": null
+    "registryKey": null,
+    "scoring": {
+      "en": "Five facet scores from three 1–5 items each; validate edition-specific keys before using.",
+      "ru": "Пять шкал по три пункта 1–5; ключ и нормы зависят от конкретной редакции."
+    }
   }
 ].map((item) => Object.freeze(item)))
 
