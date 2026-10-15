@@ -729,7 +729,7 @@ export default function CourseSlidePlayer({
               </div>
               {phraseResponse&&<p className={styles.helper}>{learning.phraseHints[phraseResponse]}</p>}
             </div>}
-          </>
+          </>}
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
