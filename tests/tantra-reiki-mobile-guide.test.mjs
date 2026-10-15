@@ -28,3 +28,28 @@ test("Reiki Yggdrasil retains the existing A4 layout", () => {
 test("Kundalini Reiki remains the user's unmodified original, not a generated PDF", () => {
   assert.throws(() => buildReikiCourseGuidePdf({ course: "kundalini", locale: "en", source: "" }), /original Paul Crick PDF/);
 });
+
+test("Tantra Reiki keeps the same working PDF route in both upper and lower capture", () => {
+  const page = readFileSync("components/academy-record-page.tsx", "utf8");
+  const lower = readFileSync("components/tantra-reiki-lead-forms.tsx", "utf8");
+  const chooser = readFileSync("components/reiki-choice-capture.tsx", "utf8");
+  const style = readFileSync("components/reiki-choice-capture.module.css", "utf8");
+  const endpoint = readFileSync("app/api/academy/reiki-guide/route.js", "utf8");
+  assert.match(page, /<ReikiChoiceCapture locale=\{locale\} course="tantra" placement="top"/);
+  assert.match(page, /<TantraReikiLeadForms locale=\{locale\}/);
+  assert.match(lower, /<ReikiChoiceCapture locale=\{locale\} course="tantra"/);
+  assert.match(chooser, /const guideUrl = "\/api\/academy\/reiki-guide\?course=" \+ course \+ "&locale=" \+ locale/);
+  assert.match(chooser, /const \[selected, setSelected\] = useState<Choice>\(isTop \? "guide" : "express"\)/);
+  assert.match(chooser, /data-reiki-capture-placement=\{placement\}/);
+  assert.match(chooser, /href=\{guideUrl\}/);
+  assert.match(chooser, /course === "tantra" && !download/);
+  assert.match(chooser, /download=\{download \? true : undefined\}/);
+  assert.match(chooser, /id=\{isTop \? undefined : "reiki-free-consultation"\}/);
+  assert.match(style, /\.topCapture \.choices/);
+  assert.match(style, /\.alwaysDownload/);
+  assert.match(endpoint, /tantra-reiki-mobile-study-guide-/);
+  assert.match(endpoint, /"Content-Type": "application\/pdf"/);
+  assert.match(endpoint, /"Content-Disposition": 'attachment/);
+  assert.match(endpoint, /"Cache-Control": "no-store/);
+});
+
