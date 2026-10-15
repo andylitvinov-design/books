@@ -789,3 +789,9 @@
   background:#6f2c43!important;border-color:#6f2c43!important
 }
 .explorer :is(button,input,select,summary):focus-visible{outline-color:#315c7f}
+
+
+/* Scale selection inside the detailed measured-scales guide uses the same navy states. */
+.explorer [data-scale-guide] button{background:#fff;color:var(--choice-navy);border-color:var(--choice-border)}
+.explorer [data-scale-guide] button[aria-pressed=true]{background:var(--choice-navy);color:#fff;border-color:var(--choice-navy)}
+.explorer [data-scale-guide] button:focus-visible{outline-color:#315c7f}
