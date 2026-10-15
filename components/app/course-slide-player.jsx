@@ -335,7 +335,12 @@ export default function CourseSlidePlayer({
   const [associationWords,setAssociationWords]=useState('')
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
-    setDayOneAnswers(previous=>({...previous,[field]:value}))
+    setDayOneAnswers(previous=>{
+      const next={...previous,[field]:value}
+      if(field==='anchor'&&value!=='colour')delete next.anchorTone
+      if(field==='transferCue'&&['no_plan','skip'].includes(value))delete next.transferAction
+      return next
+    })
     if(field==='comfort')setComfort(value)
     if(field==='adaptation')setAdaptationChoice(value)
     if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
@@ -491,7 +496,7 @@ export default function CourseSlidePlayer({
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.8":undefined} ref={frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
