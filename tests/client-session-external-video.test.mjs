@@ -1,9 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {
-  configuredVideoUploadStore,signPrivateVideoRequest,createVideoUploadUrl,createVideoReadUrl
-} from '../lib/clients/private-video-object-store.js'
+import {createHash,createHmac} from 'node:crypto'
+// Evaluate the known module with its server-only import stripped so this test
+// runs under ordinary node --test as well as --conditions=react-server.
+class AppError extends Error {constructor(code,status){super(code);this.code=code;this.status=status}}
+const source=readFileSync(new URL('../lib/clients/private-video-object-store.js',import.meta.url),'utf8')
+const {configuredVideoUploadStore,signPrivateVideoRequest,createVideoUploadUrl,createVideoReadUrl}=
+  new Function('createHash','createHmac','AppError',
+    source.replace(/^import .*\n/gm,'').replace(/^export /gm,'')+
+    '\nreturn {configuredVideoUploadStore,signPrivateVideoRequest,createVideoUploadUrl,createVideoReadUrl}'
+  )(createHash,createHmac,AppError)
 const env={
   HH_CLIENT_VIDEO_EXTERNAL_ENABLED:'true',HH_CLIENT_VIDEO_BACKEND:'r2',
   HH_CLIENT_VIDEO_R2_ACCOUNT_ID:'abcdef0123456789abcdef0123456789',
