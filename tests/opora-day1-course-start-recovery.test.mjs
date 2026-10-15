@@ -43,14 +43,36 @@ test('on a transient failed transaction, retry exactly once after a matching own
   assert.deepEqual(calls, [payload, undefined, payload])
 })
 
-test('a second failure remains visible instead of spinning or silently failing', async () => {
-  let calls = 0
+test('a second failure remains visible after one final reconciliation, never a third POST', async () => {
+  const calls = []
   await assert.rejects(startCourseWithRecovery(async body => {
-    calls++
+    calls.push(body)
     if (!body) return waiting
     throw serviceError()
   }, payload), {code: 'SERVICE_UNAVAILABLE'})
-  assert.equal(calls, 3)
+  assert.deepEqual(calls, [payload, undefined, payload, undefined])
+})
+
+test('a lost response from the retry is recovered without a third POST', async () => {
+  const calls = []
+  const result = await startCourseWithRecovery(async body => {
+    calls.push(body)
+    if (!body) return calls.length === 2 ? waiting : success
+    throw serviceError()
+  }, payload)
+  assert.equal(result.course.stage, 4)
+  assert.deepEqual(calls, [payload, undefined, payload, undefined])
+})
+
+test('a final read must not claim another module has started', async () => {
+  const calls = []
+  await assert.rejects(startCourseWithRecovery(async body => {
+    calls.push(body)
+    if (!body) return calls.length === 2 ? waiting :
+      {course:{stage:4,revision:7,moduleChoice:{id:'AS3'}}}
+    throw serviceError()
+  }, payload), {code:'COURSE_STATE_CHANGED'})
+  assert.deepEqual(calls, [payload, undefined, payload, undefined])
 })
 
 test('do not retry if another tab has changed the course revision', async () => {
@@ -98,4 +120,11 @@ test('the UI clearly distinguishes saved test reports from an unconfirmed course
   assert.match(step,/startCourseWithRecovery\(body=>appFetch\('course',body\),payload\)/)
   assert.match(route,/HH_COURSE_START_UNEXPECTED/)
   assert.doesNotMatch(route,/console\.error\('HH_COURSE_START_UNEXPECTED', error\)/)
+})
+
+test('new Anti-Stress cycles keep default practice and tracking preferences', () => {
+  const server = readFileSync(new URL('../lib/app/growth-daily.js',import.meta.url),'utf8')
+  assert.match(server, /length:'standard',imagery:'optional',checkinFrequency:'daily'/)
+  assert.match(server, /oporaModuleId:selected,oporaModuleRouter:ANTISTRESS_ROUTER_VERSION/)
+  assert.match(server, /JSON\.stringify\(preferences\)/)
 })
