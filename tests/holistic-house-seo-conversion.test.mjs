@@ -57,12 +57,11 @@ test("home SEO preserves visible photo offers and bottom blue free capture in EN
   for (const comp of ["HomeFreeTestsBanner", "ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
     assert.ok(home.includes("<" + comp), comp);
   }
-  assert.match(spanish, /Tres opciones gratuitas/);
   assert.match(spanish, /href="\/es\/services\/free-situation-review"/);
-  assert.match(spanish, /href="\/es\/wu-xing"/);
-  assert.match(spanish, /href="\/es\/client"/);
-  assert.match(spanish, /disponibles actualmente en inglés o ruso/);
-  assert.match(spanish, /service-home-more/);
+  assert.match(spanish, /className="service-home-card-photo"/);
+  assert.match(spanish, /<PublicConsultationCta locale="es" \/>/);
+  assert.ok(spanish.indexOf("service-home-services") < spanish.indexOf("<PublicConsultationCta locale=\"es\" />"));
+  assert.doesNotMatch(spanish, /service-home-more|service-home-progress/);
 });
 
 test("linked data represents actual organization/person without invented regulated credentials or location", () => {
