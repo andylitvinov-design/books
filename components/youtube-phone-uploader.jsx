@@ -318,9 +318,12 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
       if (!result.ok) throw new Error(result.error)
       setHistory(old => mergeHistory(old,result.record))
       update(entryId,{saved:true,saveError:false})
+      setHistoryStatus(true)
       return true
     } catch {
       update(entryId,{saved:false,saveError:true})
+      // Fail closed: never start another YouTube upload while durable link saving is broken.
+      setHistoryStatus(false)
       setError(t.historyError)
       return false
     }
