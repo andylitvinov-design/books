@@ -286,7 +286,6 @@ export default function CourseToday({locale='en',accountId=null,onExit=null}){
  // The thought and everyday action are separate cards; do not make the
  // guided timer repeat their text as additional meditation steps.
  const guidedSections=(lesson?.sections||[]).filter(section=>['arrive','meditation','finish'].includes(section.kind))
- const beforeValue=v=>v===null||v===undefined?null:v
  function startFocusLesson(){
    setFocusOpen(false)
    if(paused){void submit('resume',{expectedRevision:cycle.revision});return}
