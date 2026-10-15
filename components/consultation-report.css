@@ -3036,3 +3036,122 @@
     line-height:1.38;
   }
 }
+
+
+/* Phone-first personal report reader. Reading comfort outranks page-count and
+   dense multi-column mockup fidelity; printing remains independent below. */
+@media screen and (max-width:700px) {
+  .prescription-shell.canonical-shell {
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+    padding:0 8px 22px;
+  }
+  .prescription-shell .canonical-document--editorial {
+    padding:22px 16px 32px;
+    width:100%;
+    min-width:0;
+    border-radius:13px;
+    font-size:19px;
+    line-height:1.55;
+    overflow-wrap:break-word;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(30px,8vw,39px);
+    line-height:1.18;
+    max-width:none;
+    hyphens:none;
+    word-break:normal;
+  }
+  .prescription-shell .canonical-document--editorial :is(
+    .canonical-report-analysis p,
+    .canonical-report-notes p,
+    .canonical-general-instructions p,
+    .canonical-guidance p,
+    .canonical-guidance li,
+    .canonical-remedy-fields dd,
+    .canonical-remedy-schedule,
+    .canonical-follow-up-appointment p,
+    .canonical-follow-up p,
+    .canonical-remedy-profile .remedy-content-body,
+    .canonical-remedy-profile .remedy-content-body p,
+    .canonical-remedy-profile .remedy-content-body li
+  ) {
+    font-size:18.5px;
+    line-height:1.56;
+    letter-spacing:normal;
+    overflow-wrap:break-word;
+  }
+  .prescription-shell .canonical-document--editorial :is(
+    .canonical-report-analysis h2,
+    .canonical-report-notes h2,
+    .canonical-general-instructions h2,
+    .canonical-guidance h2,
+    .canonical-remedy-profiles > h2
+  ) {
+    font-size:23px;
+    line-height:1.25;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-title h3 {
+    font-size:25px;
+    line-height:1.27;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile .remedy-content-section h3 {
+    font-size:21px;
+    line-height:1.3;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client > div,
+  .prescription-shell .canonical-document--editorial .canonical-client > div + div {
+    grid-column:auto;
+    border:1px solid #e5d9d4;
+    padding:13px 15px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-client dd {
+    font-size:19px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-note {
+    grid-column:1/-1;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-dial {
+    width:82px;
+    height:82px;
+    flex-basis:82px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-dial strong {
+    font-size:23px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-progress-note span {
+    font-size:17px;
+    line-height:1.45;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-card-photo {
+    max-width:110px;
+    width:30%;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-card-photo img {
+    height:auto;
+    aspect-ratio:1;
+    object-fit:contain;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile-photo {
+    float:none;
+    width:min(100%,260px);
+    max-width:100%;
+    margin:12px auto 20px;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile-photo img {
+    width:100%;
+    max-height:300px;
+    object-fit:contain;
+  }
+  .prescription-shell .canonical-document--editorial .canonical-remedy-profile::after {
+    display:none;
+  }
+}

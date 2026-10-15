@@ -3,8 +3,8 @@ import { spanishMetadata } from "@/lib/spanish-metadata";
 
 export const metadata = spanishMetadata(
   "/es/courses/antistress",
-  "OPORA Antiestrés — 14 días, 7 habilidades | Holistic House",
-  "Curso gratuito OPORA Antiestrés: 14 lecciones interactivas, siete habilidades prácticas, apoyo personal y una forma amable de observar tu evolución."
+  "OPORA Antiestrés — Seis módulos de 14 días | Holistic House",
+  "Un programa de Antiestrés con seis módulos de 14 días, evaluaciones iniciales breves, elección personal y ejercicios educativos."
 );
 
 export default function SpanishAntiStressPage() {
