@@ -382,7 +382,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
             <small>{item.measurementAxes.slice(0,3).join(' · ')}</small>
             <small className={resultValid?styles.completed:styles.pending}>
               {resultValid?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
-                :outdated?t.stressRetake:<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
+                :outdated&&isAntistress?t.stressRetake:<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
