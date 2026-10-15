@@ -52,7 +52,7 @@ test('seven approaches are transparent about educational scope and link to real 
  const evidence=source('components/public-antistress-evidence.tsx')
  const overview=source('components/app/course-14-day-overview.jsx')
  assert.match(landing,/programme.skills.map/)
- assert.match(landing,/programme.days\[index \* 2\]/)
+ assert.match(landing,/previewDay\(index \* 2 \+ 1\)/)
  assert.match(landing,/PublicAntistressEvidence/)
  assert.match(evidence,/data-antistress-measurements/)
  assert.match(evidence,/data-antistress-test=/)
