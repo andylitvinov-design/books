@@ -334,7 +334,7 @@ export function SimpleTestPicker({
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
                    <span className={styles.duration}><Clock3 size={13} aria-hidden="true" /> ~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
-                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>
+                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>}
                    {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
                  </span>
                </label>
