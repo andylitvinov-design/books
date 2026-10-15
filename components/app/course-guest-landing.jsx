@@ -16,7 +16,7 @@ const COPY = {
     brand: 'ОПОРА', title: 'Антистресс',
     headline: 'Меньше борьбы с собой. Больше внутренней опоры.',
     introduction: '14 небольших занятий, чтобы лучше понимать своё состояние и находить простые способы поддержки в повседневной жизни.',
-    facts: ['14 занятий', '5 маршрутов', '5–12 минут в день'],
+    facts: ['14 занятий', '6 курсов', '5–12 минут в день'],
     start: 'Начать курс бесплатно', startTests: 'Войти и пройти стартовые тесты',
     programme: 'Посмотреть программу',
     privacy: 'Сначала вход и стартовая оценка состояния. Выбор тестов и участие — только с вашего согласия.',
@@ -30,7 +30,7 @@ const COPY = {
       { title: 'Выбирать, а не заставлять', text: 'Развивать гибкость и право остановиться, изменить или пропустить упражнение.' },
     ],
     planEyebrow: 'ПРОГРАММА КУРСА', planTitle: 'Ваш путь за 14 дней',
-    planLead: 'В каждом из пяти маршрутов — семь этапов: от безопасности и стабилизации до восстановления ресурсов и интеграции. Выберите маршрут выше, чтобы посмотреть его занятия.',
+    planLead: 'Шесть 14-дневных курсов соответствуют разным учебным задачам; в каждом — семь двухдневных навыковых блоков. Четвёртый курс требует специалиста. Выберите маршрут выше, чтобы посмотреть его занятия.',
     howEyebrow: 'КАК ЭТО РАБОТАЕТ', howTitle: 'Просто начать. Удобно продолжать.',
     how: [
       { title: 'Определите точку старта', text: 'После входа заполните HH Weekly Pulse — 8 коротких вопросов. Дополнительные тесты по желанию.' },
@@ -62,7 +62,7 @@ const COPY = {
       { title: 'Choose rather than force', text: 'Build flexibility and permission to pause, adjust or skip an exercise.' },
     ],
     planEyebrow: 'COURSE CURRICULUM', planTitle: 'Your 14-day journey',
-    planLead: 'Each of five routes follows seven stages: from safety and stabilization to resources and integration. Choose a route above to preview its lessons.',
+    planLead: 'Six 14-day courses target different learning goals; each has seven two-day skill pairs. The fourth requires clinician support. Choose a route above to preview its lessons.',
     howEyebrow: 'HOW IT WORKS', howTitle: 'Easy to start. Simple to keep going.',
     how: [
       { title: 'See your starting point', text: 'After signing in, complete the 8-question HH Weekly Pulse. Extra assessments are optional.' },

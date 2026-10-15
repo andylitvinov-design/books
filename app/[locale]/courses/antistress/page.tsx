@@ -7,16 +7,16 @@ import { metadataBaseFor } from "@/data/site-metadata";
 type Props = { params: Promise<{ locale: string }> };
 const seo = {
   ru: {
-    title: "ОПОРА Антистресс — 5 уровней стресса · 14 занятий | Holistic House",
-    description: "Адаптивная программа ОПОРА Антистресс: два коротких опроса, персональная рекомендация одного из 5 маршрутов по 14 дней, интерактивные практики и добровольная проверка результатов."
+    title: "ОПОРА Антистресс — 6 учебных этапов · 14 занятий | Holistic House",
+    description: "Адаптивная программа ОПОРА Антистресс: два коротких опроса, персональная рекомендация одного из 6 курсов по 14 дней, интерактивные практики и добровольная проверка результатов."
   },
   en: {
-    title: "OPORA Anti-Stress — Five 14-Day Routes | Holistic House",
-    description: "Explore one adaptive Anti-Stress programme: two short questionnaires, a choice of five stress-informed 14-day learning routes, interactive exercises and optional outcome tracking."
+    title: "OPORA Anti-Stress — Six 14-Day Courses | Holistic House",
+    description: "Explore one adaptive Anti-Stress programme: two short questionnaires, a choice of six learning-phase 14-day courses, interactive exercises and optional outcome tracking."
   },
   es: {
-    title: "OPORA Antiestrés — Cinco rutas de 14 días | Holistic House",
-    description: "Un programa de Antiestrés con cinco rutas de 14 días, dos evaluaciones breves, una recomendación personalizada y prácticas educativas."
+    title: "OPORA Antiestrés — Seis cursos de 14 días | Holistic House",
+    description: "Un programa de Antiestrés con seis cursos de 14 días, dos evaluaciones breves, una recomendación personalizada y prácticas educativas."
   }
 } as const;
 

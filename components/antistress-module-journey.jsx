@@ -1,13 +1,13 @@
 import { ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
 import styles from './antistress-module-journey.module.css'
 
-// The five choices are stress-informed learning routes, never medical or trauma severity stages.
+// Six educational learning phases; stage AS4 requires qualified clinical care.
 // Public content deliberately contains no scores, diagnosis or individual data.
 const WORDS = {
   ru: {
-    overline: 'ОДНА ПРОГРАММА · ПЯТЬ МАРШРУТОВ',
+    overline: 'ОДНА ПРОГРАММА · ШЕСТЬ ЭТАПОВ',
     title: 'Сначала тесты — затем ваш Антистресс',
-    intro: 'После регистрации пройдите недельный опрос о состоянии и восемь коротких вопросов о навыках. Система предложит подходящий 14-дневный модуль, объяснит почему и спросит ваше согласие. Маршрут определяется по авторским диапазонам двух шкал субъективной нагрузки; это не стадия травмы или диагноз.',
+    intro: 'После регистрации пройдите недельный опрос о состоянии и восемь коротких вопросов о навыках. Система предложит подходящий 14-дневный модуль, объяснит почему и спросит ваше согласие. Курс предлагается по целям и доступности навыков; нагрузка влияет на темп. Четвёртый этап доступен только с квалифицированным специалистом.',
     process: [
       ['01', 'Знакомство', 'Запись в одну программу «Антистресс»'],
       ['02', 'Стартовые тесты', 'HH Weekly Pulse — 8 вопросов, затем Module Finder — 8'],
@@ -19,9 +19,9 @@ const WORDS = {
     example: 'Ниже — подробный пример модуля «Антистресс 2». Остальные модули имеют собственные темы и упражнения.',
   },
   en: {
-    overline: 'ONE PROGRAMME · FIVE ROUTES',
+    overline: 'ONE PROGRAMME · SIX COURSES',
     title: 'Assess first. Then find your Anti-Stress module.',
-    intro: 'After enrolling, complete your seven-day self-report and eight short skill questions. The system suggests a 14-day module, explains why and asks for your choice. The five routes are based on original stress-load ranges, not clinical trauma stages.',
+    intro: 'After enrolling, complete your seven-day self-report and eight short skill questions. The system suggests a 14-day module, explains why and asks for your choice. The six courses address learning goals, not diagnosed trauma stages; the fourth requires qualified clinician support.',
     process: [
       ['01', 'Join', 'One Anti-Stress programme enrollment'],
       ['02', 'Starting assessments', '8 Weekly Pulse questions, then 8 Module Finder items'],
@@ -33,9 +33,9 @@ const WORDS = {
     example: 'The detailed 14-day curriculum below previews Anti-Stress 2. Each other module has its own exercises and themes.',
   },
   es: {
-    overline: 'UN PROGRAMA · CINCO RUTAS',
+    overline: 'UN PROGRAMA · SEIS CURSOS',
     title: 'Primero evalúa tus necesidades. Después elige tu módulo.',
-    intro: 'Tras inscribirte, completa ocho preguntas sobre la última semana y ocho sobre habilidades. El sistema sugiere un módulo de 14 días, explica por qué y te pide confirmación. Las cinco rutas representan niveles orientativos de estrés percibido, no etapas clínicas.',
+    intro: 'Tras inscribirte, completa ocho preguntas sobre la última semana y ocho sobre habilidades. El sistema sugiere un módulo de 14 días, explica por qué y te pide confirmación. Los seis cursos se eligen según habilidades y objetivos; el cuarto requiere especialista.',
     process: [
       ['01', 'Inscripción', 'Un solo programa de Antiestrés'],
       ['02', 'Evaluaciones', '8 preguntas Weekly Pulse y 8 de Module Finder'],
@@ -51,7 +51,7 @@ export default function AntiStressModuleJourney({locale='en',sectionId='antistre
   const lang = ['ru','en','es'].includes(locale) ? locale : 'en'
   const t = WORDS[lang]
   return (
-    <section className={styles.root} id={sectionId} aria-labelledby={sectionId+'-heading'} data-opora-five-modules>
+    <section className={styles.root} id={sectionId} aria-labelledby={sectionId+'-heading'} data-opora-six-modules>
       <header className={styles.header}>
         <p className={styles.overline}>{t.overline}</p>
         <h2 id={sectionId+'-heading'}>{t.title}</h2>

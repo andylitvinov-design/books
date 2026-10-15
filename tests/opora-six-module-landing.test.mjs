@@ -6,7 +6,7 @@ import {moduleDayOutline} from '../lib/inner-growth/antistress-module-lessons.js
 import {OPORA_RECOVERY_STAGES} from '../lib/inner-growth/antistress-recovery-pathway.js'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 
-test('guest and public entries explain five routes, T0 assessment and seven recovery stages',()=>{
+test('guest and public entries explain six distinct course phases, T0 assessment and seven recovery stages',()=>{
  const publicPage=read('components/public-antistress-landing.tsx')
  const guest=read('components/app/course-guest-landing.jsx')
  const map=read('components/public-antistress-route-map.tsx')
@@ -14,11 +14,11 @@ test('guest and public entries explain five routes, T0 assessment and seven reco
  const styles=read('components/public-antistress-route-map.module.css')
  assert.match(publicPage,/PublicAntistressRouteMap/)
  assert.match(guest,/PublicAntistressRouteMap/)
- assert.match(map,/data-antistress-five-routes/)
+ assert.match(map,/data-antistress-six-routes/)
  assert.match(map,/ANTISTRESS_MODULE_GOALS\.map/)
  assert.match(map,/onSelect\(route.id\)/)
  assert.match(map,/HH Weekly Pulse|Weekly Pulse/)
- assert.match(journey,/data-opora-five-modules/)
+ assert.match(journey,/data-opora-six-modules/)
  assert.match(publicPage,/oporaRecoveryStages/)
  assert.match(guest,/Course14DayOverview/)
  assert.equal(OPORA_RECOVERY_STAGES.length,7)
@@ -26,8 +26,8 @@ test('guest and public entries explain five routes, T0 assessment and seven reco
  assert.doesNotMatch(map,/localStorage|sessionStorage|fetch\(/)
 })
 
-test('exactly five new routes are available; four have different fourteen-day learning prompts',()=>{
- assert.deepEqual(ANTISTRESS_ACTIVE_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5'])
+test('exactly six course phases are published, with four active interactive self-guided previews',()=>{
+ assert.deepEqual(ANTISTRESS_ACTIVE_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5','AS6'])
  assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(m=>m.id),ANTISTRESS_ACTIVE_MODULE_IDS)
  for(const lang of ['ru','en']){
   for(const mod of ANTISTRESS_MODULE_GOALS.filter(m=>m.id!=='AS2')){
@@ -47,10 +47,10 @@ test('My Courses keeps the selected route without overriding legacy lesson versi
  const daily=read('lib/app/growth-daily.js')
  const seo=read('app/[locale]/courses/antistress/page.tsx')
  assert.match(selector,/course\?\.moduleChoice\?\.id/)
- assert.match(selector,/antistressModuleTitle\(moduleId,locale\)/)
+ assert.match(selector,/antistressModuleTitle\(moduleId,locale,course\.moduleChoice\.version\|\|''\)/)
  assert.match(selector,/moduleId=\{course\?\.moduleChoice\?\.id\|\|null\}/)
  assert.match(selector,/routerVersion=\{course\?\.moduleChoice\?\.version\|\|null\}/)
  assert.match(daily,/oporaModuleRouter/)
- assert.match(seo,/5 уровней стресса/)
- assert.doesNotMatch(seo,/6 модулей|Six 14-Day Modules/)
+ assert.match(seo,/6 учебных этапов/)
+ assert.match(seo,/6 курсов по 14 дней|Six 14-Day Courses/)
 })

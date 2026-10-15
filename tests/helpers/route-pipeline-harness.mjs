@@ -134,8 +134,18 @@ export function repositoryHarness({ presetId, storedCycle } = {}) {
   } })
   return { course, queries, writes, get cycle() { return cycle }, get sessions() { return sessions },
     async create(moduleId) {
+      // This legacy regression harness deliberately models a persisted NAV-2.0
+      // cycle. New NAV-3 enrollments (including clinician-only AS4 gating) are
+      // tested separately; historical cycles must never be silently rewritten.
       const id = await runtime.exports.createNewCycle(db, { id: OWNER }, course, config,
-        { problemLabel: 'Synthetic ordinary workload', intention: 'Synthetic manageable step', timeZone: 'UTC', moduleId })
+        { problemLabel: 'Synthetic ordinary workload', intention: 'Synthetic manageable step', timeZone: 'UTC',
+          moduleId: moduleId==='AS4'?'AS2':moduleId })
+      if (!presetId) {
+        cycle.preferences = {length:'standard',imagery:'optional',checkinFrequency:'daily',
+          oporaModuleId:moduleId,oporaModuleRouter:router.ANTISTRESS_PREVIOUS_ROUTER_VERSION}
+        cycle.content_version = moduleId==='AS2'
+          ? lessons.COURSE_ANTISTRESS_OUTCOME_V3 : lessons.COURSE_CONTENT_V4
+      }
       clock.now = now; assert.equal(id, cycle.id); return clone(cycle)
     },
     seedDay(day) {

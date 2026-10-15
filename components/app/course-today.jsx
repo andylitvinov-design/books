@@ -13,6 +13,7 @@ import CourseFinalRetest from './course-final-retest'
 import Course14DayOverview from './course-14-day-overview'
 import { appFetch } from '@/lib/app/client-fetch'
 import { startOrResumeCourseFinalRetest, startOrResumeCourseWeeklyCheckpoint } from '@/lib/app/course-test-flow'
+import { ANTISTRESS_MODULE_FINDER_ITEMS } from '@/lib/inner-growth/antistress-module-router'
 import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
@@ -188,6 +189,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const [questOpen,setQuestOpen]=useState(false)
  const [focusOpen,setFocusOpen]=useState(true)
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
+ const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
  const retestLock=useRef(false)
  useEffect(()=>{if(questOpen)return promotion.dismiss},[questOpen,promotion.dismiss])
  const [view,setView]=useState('today')
@@ -469,6 +471,50 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   </section>}
   <CourseFinalRetest locale={locale} plan={data.finalRetest}
     onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
+  {data.moduleMeasurements&&<section className={styles.weeklyCheckpoint}
+    data-opora-module-measurements aria-label={ru?'Мои измерения навыков курса':'My course skill assessments'}>
+    <div>
+      <strong>{ru?'Мои сохранённые показатели курса':'My saved course measures'}</strong>
+      <p>{ru?'Основной показатель этого этапа':'Primary learning outcome'}: <code>{data.moduleMeasurements.primaryMetric||'clinician-led'}</code></p>
+      <small>{ru?'Измерение F1–F8 относится к последним 7 дням; это авторские самооценки, не диагноз.':'F1–F8 refer to the last seven days; these are non-diagnostic self-ratings.'}</small>
+      {!!data.moduleMeasurements.relevantItems?.length&&<div data-opora-module-history>
+        {data.moduleMeasurements.relevantItems.map(key=>{
+          const before=data.moduleMeasurements.baseline?.answers?.[key]
+          const after=data.moduleMeasurements.followUp?.answers?.[key]
+          return <p key={key}><b>{key}:</b> {ru?'до':'before'} {Number.isInteger(before)?before+'/10':'—'} →
+            {ru?' после ':' after '}{Number.isInteger(after)?after+'/10':'—'}
+            {Number.isInteger(before)&&Number.isInteger(after)&&<span> ({after-before>0?'+':''}{after-before})</span>}
+          </p>
+        })}
+      </div>}
+      {data.moduleMeasurements.retestDueAt&&!data.moduleMeasurements.retestAvailable&&!data.moduleMeasurements.followUp&&
+        <small>{ru?'Самооценка после курса будет доступна по завершении 14-го дня и по правилам интервала':'The follow-up opens after day 14 and the required recall interval'}: {data.moduleMeasurements.retestDueAt.slice(0,10)}</small>}
+      {data.moduleMeasurements.followUp&&<p>{ru?'Итоговые ответы сохранены приватно в вашем курсе.':'Follow-up answers are saved privately in your course.'}</p>}
+      {data.moduleMeasurements.retestAvailable&&<details data-opora-module-finder-follow-up>
+        <summary>{ru?'Повторить 8 вопросов о навыках':'Repeat eight skill questions'}</summary>
+        <p>{ru?'Ответьте за последние 7 дней. Можно пропускать пункты; результаты сохраняются в вашем кабинете.':'Answer for the last seven days. You can skip items; scores stay in your private cabinet.'}</p>
+        {ANTISTRESS_MODULE_FINDER_ITEMS.map(item=><label key={item.id} style={{display:'block',margin:'12px 0'}}>
+          <span>{item.id} · {item.text[locale]||item.text.en}</span>
+          <div><input type="range" min="0" max="10" step="1" style={{width:'100%'}}
+            aria-label={item.text[locale]||item.text.en}
+            value={moduleFollowUpAnswers[item.id]??5} disabled={busy}
+            onChange={e=>setModuleFollowUpAnswers(v=>({...v,[item.id]:Number(e.target.value)}))}/>
+            <small>{Number.isInteger(moduleFollowUpAnswers[item.id])?moduleFollowUpAnswers[item.id]+'/10':ru?'Не отвечено':'Unanswered'}</small>
+            <button type="button" disabled={busy} onClick={()=>setModuleFollowUpAnswers(v=>({...v,[item.id]:null}))}>
+              {ru?'Пропустить':'Skip'}
+            </button>
+          </div>
+        </label>)}
+        <button type="button" className={'hh-primary '+styles.weeklyStart} disabled={busy||!
+          Object.values(moduleFollowUpAnswers).some(Number.isInteger)}
+          onClick={()=>void submit('module-retest',{moduleAnswers:Object.fromEntries(
+            ANTISTRESS_MODULE_FINDER_ITEMS.map(item=>[item.id,moduleFollowUpAnswers[item.id]??null]))})}>
+          {busy?(ru?'Сохраняем…':'Saving…'):ru?'Сохранить итоговые оценки':'Save follow-up scores'}
+        </button>
+      </details>}
+    </div>
+  </section>}
+
   </>}
   {view==='details'&&<>
   {(isV3||lesson?.workbook?.skill)&&<details className={styles.focusDetails}>

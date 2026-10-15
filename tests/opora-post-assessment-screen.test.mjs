@@ -33,7 +33,7 @@ test('the first post-test viewport is a recommendation that requires explicit sc
   assert.match(root,/stage >= 1 && stage <= 3 && <CourseR3Steps/)
 })
 
-test('all five selectable routes fit small screens without vertical words',()=>{
+test('all six visible course phases fit small screens without vertical words',()=>{
   const ui=read('components/app/antistress-module-finder.jsx')
   const css=read('components/app/antistress-module-finder.module.css')
   assert.match(ui,/ANTISTRESS_MODULE_GOALS\.map/)
@@ -48,10 +48,10 @@ test('all five selectable routes fit small screens without vertical words',()=>{
   assert.doesNotMatch(css,/word-break:break-all/)
 })
 
-test('assessment data and the optional skill refinement are collapsed by default',()=>{
+test('assessment data remain collapsed while skill questions are offered openly',()=>{
   const ui=read('components/app/antistress-module-finder.jsx')
   assert.match(ui,/<details className=\{styles\.results\} data-opora-results>/)
-  assert.match(ui,/<details className=\{styles\.skills\} data-opora-skills>/)
+  assert.match(ui,/<details className=\{styles\.skills\} data-opora-skills open>/)
   assert.match(ui,/ANTISTRESS_MODULE_FINDER_ITEMS\.map/)
   assert.match(ui,/answers\[item\.id\]\?\?null/)
   assert.match(ui,/item\.recent&&Number\.isFinite\(item\.score\)/)

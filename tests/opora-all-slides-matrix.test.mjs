@@ -15,16 +15,16 @@ const version=id=>id==='AS2'?COURSE_ANTISTRESS_OUTCOME_V3:COURSE_CONTENT_V4
 const lesson=(id,day,locale='en',router=ANTISTRESS_ROUTER_VERSION)=>
   moduleLesson(lessonFor('calm_regulation',day,locale,'standard',version(id)),id,day,locale,router)
 const hasNoBloat=value=>typeof value==='string'&&value.trim().length>12
-const moduleIds=ANTISTRESS_ACTIVE_MODULE_IDS.filter(id=>id!=='AS2')
+const moduleIds=ANTISTRESS_ACTIVE_MODULE_IDS.filter(id=>id!=='AS2'&&id!=='AS4')
 
-test('exactly five routes × 14 days × 15 screens have complete authored sequences in both languages',()=>{
-  assert.equal(ANTISTRESS_ACTIVE_MODULE_IDS.length,5)
+test('five self-guided routes × 14 days × 15 screens and a gated sixth have complete authored sequences in both languages',()=>{
+  assert.equal(ANTISTRESS_ACTIVE_MODULE_IDS.length,6)
   assert.equal(DAY_ONE_SLIDES.length,15)
   assert.equal(new Set(DAY_ONE_SLIDES.map(row=>row.key)).size,15)
   assert.deepEqual(DAY_ONE_SLIDES.slice(0,5).map(row=>row.kind),
     ['welcome','baseline','checkin','recall','idea'])
   let lessonCount=0,screenCount=0
-  for(const id of ANTISTRESS_ACTIVE_MODULE_IDS){
+  for(const id of ANTISTRESS_ACTIVE_MODULE_IDS.filter(id=>id!=='AS4')){
     const seen=new Set()
     for(const locale of ['ru','en']){
       for(let day=1;day<=14;day++){
@@ -54,7 +54,7 @@ test('exactly five routes × 14 days × 15 screens have complete authored sequen
   assert.equal(screenCount,5*14*2*15)
 })
 
-test('all 56 level-specific days align the title, main exercise, arrival, quote, reflection and optional transfer',()=>{
+test('all 56 phase-specific days align the title, main exercise, arrival, quote, reflection and optional transfer',()=>{
   for(const id of moduleIds){
     for(const locale of ['ru','en']){
       for(let day=1;day<=14;day++){
@@ -107,8 +107,8 @@ test('approved AS2 stays version-pinned with all 14 unique titles and days 2–1
 })
 
 test('legacy NAV-1.3 courses do not receive changed lesson ids or newly authored NAV-2.0 slides',()=>{
-  const original=lesson('AS4',4,'en','opora-nav-1.3-20261014')
-  const current=lesson('AS4',4,'en')
+  const original=lesson('AS3',4,'en','opora-nav-1.3-20261014')
+  const current=lesson('AS3',4,'en')
   assert.equal(original.oporaModule,undefined)
   assert.notEqual(original.id,current.id)
   assert.notEqual(original.aphorism,current.aphorism)

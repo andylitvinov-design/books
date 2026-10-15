@@ -79,7 +79,7 @@ function courseTitle(course, locale, t) {
   if (program) {
     const moduleId=course?.moduleChoice?.id
     if(program.id==='stress' && ANTISTRESS_MODULE_IDS.includes(moduleId)) {
-      return (locale==='ru'?'Антистресс ':'Anti-Stress ')+moduleId.slice(2)+' · '+antistressModuleTitle(moduleId,locale)
+      return (locale==='ru'?'Антистресс ':'Anti-Stress ')+moduleId.slice(2)+' · '+antistressModuleTitle(moduleId,locale,course.moduleChoice.version||'')
     }
     return program.title[locale]
   }
