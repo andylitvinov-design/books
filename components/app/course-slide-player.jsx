@@ -471,7 +471,7 @@ export default function CourseSlidePlayer({
         {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
           <ShieldCheck size={36} aria-hidden="true"/>
           <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
-          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); if(isDayOne)setIndex(current=>Math.max(5,current)); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
           <button type="button" onClick={onClose}>{words.discomfortExit}</button>
           <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
           <small>{words.discomfortEmergency}</small>
@@ -805,6 +805,7 @@ export default function CourseSlidePlayer({
             kind={slide.kind} locale={locale} lesson={lesson} answers={dayOneAnswers}
             onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
             onAssociationWords={setAssociationWords} selectedFocus={dayOneFocus}
+            neutralMode={neutralMode} onReturnToPractice={()=>setNeutralMode(false)}
             onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
 
           {slide.kind === 'feedback' && <>
