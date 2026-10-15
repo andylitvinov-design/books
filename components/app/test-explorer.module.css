@@ -702,3 +702,96 @@
 @media (max-width: 600px) {
   .explorerHero { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* 2026-10-15 — Full test selection: navy choices, burgundy test starts only.
+   Preserve white inactive choices and accessible active/pressed contrast. */
+.explorer{
+  --choice-navy:#173957;--choice-hover:#102d47;
+  --choice-soft:#edf3f8;--choice-border:#b9cad9;
+  --wine-start:#873a53;
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button,
+  .kindChoice,.axisRing button,.secondaryAxes button){
+  border-color:var(--choice-border);color:var(--choice-navy);background:#fff
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button):hover{
+  background:var(--choice-soft);border-color:#7190a9
+}
+.explorer :is(.quickFilterChips button,.quickFilterExtras button,.scaleRail button,
+  .filterGroup button,.filterGrid .filter button,.guidedChoices .filter button,
+  .axisRing button,.secondaryAxes button)[aria-pressed=true],
+.explorer .kindChoice[data-checked=true]{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff;
+  box-shadow:0 2px 8px rgba(23,55,83,.12)
+}
+.explorer .kindChoice[data-checked=true] svg{color:#fff}
+.explorer .kindChoice input,.explorer .rowSelect input,
+.explorer .guidedChoices .check input{accent-color:var(--choice-navy)}
+.explorer .kindChoice[data-checked=true] input{accent-color:#d2e6f5}
+.explorer .guidedCategory{border-color:var(--choice-border);color:var(--choice-navy)}
+.explorer .guidedCategory:hover,.explorer .guidedCategory[data-active=true]{
+  background:var(--choice-soft);border-color:#7798b1
+}
+.explorer .guidedCategoryAction,.explorer .guidedCategory[data-active=true] .guidedCategoryAction{
+  background:#dde8f2;color:var(--choice-navy)
+}
+.explorer .guidedCategoryIcon,.explorer .guidedCategory:nth-child(3n) .guidedCategoryIcon,
+.explorer .guidedCategory:nth-child(3n+2) .guidedCategoryIcon{
+  background:#e6eef5;color:var(--choice-navy)
+}
+.explorer .catalogTopbar .availability button[aria-selected=true]{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff
+}
+.explorer .catalogTopbar .availability button[aria-selected=false]{color:var(--choice-navy)}
+.explorer :is(.simpleBack,.customizeButton,.resumeButton,.guidedBack,.guidedClear,.showMore,.filterStatus button){
+  background:#f1f5f9;color:var(--choice-navy);border-color:var(--choice-border)
+}
+.explorer :is(.simpleBack,.customizeButton,.resumeButton,.guidedBack,.guidedClear,.showMore,.filterStatus button):hover{
+  background:#e2ebf3;border-color:#7b98b0
+}
+.explorer .guidedResults,.explorer .databaseHeader button{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff
+}
+.explorer .guidedResults:hover,.explorer .databaseHeader button:hover{
+  background:var(--choice-hover);border-color:var(--choice-hover)
+}
+.explorer .guidedDescription .concernPanel button{
+  background:#eaf0f6;border-color:var(--choice-border);color:var(--choice-navy)
+}
+.explorer .battery button:not(.primary){
+  background:#fff;color:var(--choice-navy);border-color:var(--choice-border)
+}
+.explorer .battery button:not(.primary):hover{background:var(--choice-soft)}
+.explorer .rowSelected{border-color:#99b2c6;background:#f1f6fa;box-shadow:inset 3px 0 var(--choice-navy)}
+.explorer .catalogHeading .eyebrow,.explorer .catalogHeading h2{color:var(--choice-navy)}
+.explorer :is(.guide,.scaleFirst) strong,.explorer .scaleRail button:focus-visible{color:var(--choice-navy)}
+/* Saving a test selection is not starting a test. */
+.explorer .quickPrimary[data-test-action=save],
+.explorer .battery .primary[data-test-action=save]{
+  background:var(--choice-navy)!important;border-color:var(--choice-navy)!important;
+  color:#fff!important;box-shadow:0 6px 16px rgba(19,48,76,.18)
+}
+.explorer .quickPrimary[data-test-action=save]:hover:not(:disabled),
+.explorer .battery .primary[data-test-action=save]:hover:not(:disabled){
+  background:var(--choice-hover)!important;border-color:var(--choice-hover)!important
+}
+/* Only buttons that begin selected questionnaires remain wine-colored. */
+.explorer .quickPrimary[data-test-action=start],
+.explorer .battery .primary[data-test-action=start]{
+  background:var(--wine-start)!important;border-color:var(--wine-start)!important;
+  color:#fff!important;box-shadow:0 7px 19px rgba(127,52,76,.19)
+}
+.explorer .quickPrimary[data-test-action=start]:hover:not(:disabled),
+.explorer .battery .primary[data-test-action=start]:hover:not(:disabled){
+  background:#6f2c43!important;border-color:#6f2c43!important
+}
+.explorer :is(button,input,select,summary):focus-visible{outline-color:#315c7f}
+
+
+/* Scale selection inside the detailed measured-scales guide uses the same navy states. */
+.explorer [data-scale-guide] button{background:#fff;color:var(--choice-navy);border-color:var(--choice-border)}
+.explorer [data-scale-guide] button[aria-pressed=true]{background:var(--choice-navy);color:#fff;border-color:var(--choice-navy)}
+.explorer [data-scale-guide] button:focus-visible{outline-color:#315c7f}

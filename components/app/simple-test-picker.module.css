@@ -619,3 +619,79 @@
 .testDetails[open] summary svg:first-child{transform:none}
 .testDetails[open]>summary svg:last-child{transform:rotate(180deg)}
 .testDetails[open] .researchDetails:not([open])>summary svg:last-child{transform:none}
+
+
+/* Test picker 2026-10-15: all selection actions navy, only start-test CTAs wine.
+   Unselected choices are outlined to preserve clear visual selection states. */
+.shell{
+  --choice-navy:#173957;--choice-hover:#102d47;--choice-soft:#edf3f8;
+  --choice-border:#b9cad9;--start-wine:#873a53;--sage:var(--choice-navy);
+}
+.shell :is(.eyebrow,.promoKicker,.heroSaying,.themeRefinements strong){color:var(--choice-navy)}
+.shell .promoKicker{background:#e8eef5;color:var(--choice-navy)}
+.shell :is(.benefits>div>svg,.filterIcon){background:#e9f0f7;color:var(--choice-navy);border-color:#d5e0ea}
+.shell .step{background:#e9eff6;color:var(--choice-navy)}
+.shell :is(.filterText strong,.advancedBody h3,.appliedMark,.chevron){color:var(--choice-navy)}
+.shell :is(.topic,.problemChip,.depthOption,.timeButtons button,.kindChoice,.fullDatabase){
+  background:#fff;color:var(--choice-navy);border-color:var(--choice-border)
+}
+.shell :is(.topic,.problemChip,.depthOption,.timeButtons button,.kindChoice,.fullDatabase):hover{
+  background:var(--choice-soft);border-color:#6988a2
+}
+.shell :is(.topic,.problemChip,.depthOption)[aria-pressed=true],
+.shell .timeButtons button[aria-pressed=true],.shell .kindChoice[data-checked=true]{
+  background:var(--choice-navy);border-color:var(--choice-navy);color:#fff;
+  box-shadow:0 2px 8px rgba(21,48,76,.10)
+}
+.shell .topic svg,.shell .depthOption svg{color:var(--choice-navy)}
+.shell .topic[aria-pressed=true] svg,.shell .depthOption[aria-pressed=true] svg,
+.shell .kindChoice[data-checked=true] svg{color:#fff}
+.shell .depthOption[aria-pressed=true] small{color:#e1ebf3}
+.shell .kindChoice input,.shell .testEntry .testRow input{accent-color:var(--choice-navy)}
+.shell .kindChoice[data-checked=true] input{accent-color:#d2e6f5}
+.shell .kindChoice:focus-within{outline-color:var(--choice-navy)}
+.shell .themeRefinements button{background:var(--choice-navy);color:#fff;border-color:var(--choice-navy)}
+.shell .themeRefinements button:hover{background:var(--choice-hover)}
+.shell :is(.problemActions button,.clearFilters,.showFiveMore,.selectedSummary button,.why summary){
+  color:var(--choice-navy)
+}
+.shell :is(.problemActions button,.showFiveMore,.selectedSummary button):hover{background:var(--choice-soft)}
+.shell .modeSwitch{background:#edf2f7;border-color:#d8e2ea}
+.shell .modeSwitch button{background:transparent;color:var(--choice-navy)}
+.shell .modeSwitch button[aria-pressed=true]{background:var(--choice-navy);color:#fff;box-shadow:0 2px 8px rgba(18,47,74,.12)}
+.shell .modeHint,.shell .syncedConcernNote{background:#f0f4f8;border-color:#d9e4ed;color:#3c5a73}
+.shell .matchCount,.shell .selectedSummary,.shell .moreTests{
+  background:#ecf2f7;border-color:#d8e2eb;color:var(--choice-navy)
+}
+.shell .selectedSummary svg{color:var(--choice-navy)}
+.shell .testEntry[data-selected=true]{border-color:#95aec4;box-shadow:0 3px 12px rgba(23,57,87,.07)}
+.shell .testEntry .testRow[data-selected=true]{background:#f0f5f9}
+.shell .testInfo .testKindBadge,.shell .testFacts .testKindBadge{
+  background:#eaf0f6;border-color:#d9e4ed;color:var(--choice-navy)
+}
+.shell :is(.testInfo,.testFacts) .testKindBadge[data-test-kind-badge=hobby]{
+  background:#edf1f7;border-color:#dee4ec;color:#385574
+}
+.shell :is(.testDetails>summary,.researchDetails>summary){color:var(--choice-navy)}
+.shell .testFacts svg,.shell .scaleOverview>strong svg,.shell .researchBody>a{color:var(--choice-navy)}
+.shell .fullDatabase{background:#f9fbfd;border-color:#b9cad9;color:var(--choice-navy)}
+.shell .fullDatabase:hover{background:#e8f0f7;border-color:#7895af}
+/* Choosing topics or a support course is navigation, not a test start. */
+.shell .promoAction,.shell .cta[data-test-start-mode=course],
+.shell .section[data-recommendation-mode=course] .cta{
+  background:var(--choice-navy);border-color:var(--choice-navy);
+  color:#fff!important;box-shadow:0 5px 15px rgba(20,48,77,.17)
+}
+.shell .promoAction:hover,.shell .cta[data-test-start-mode=course]:hover:not(:disabled),
+.shell .section[data-recommendation-mode=course] .cta:hover:not(:disabled){
+  background:var(--choice-hover);border-color:var(--choice-hover)
+}
+/* Only individual Take Test and multi-test Start Monitoring retain burgundy. */
+.shell .takeTest,.shell .cta[data-test-start-mode=tests]{
+  background:linear-gradient(105deg,#914159,var(--start-wine));
+  border-color:#792e47;color:#fff!important;box-shadow:0 5px 15px rgba(125,48,74,.17)
+}
+.shell .takeTest:hover:not(:disabled),.shell .cta[data-test-start-mode=tests]:hover:not(:disabled){
+  background:#6f2c43;border-color:#6f2c43
+}
+.shell :is(button,a,summary,input):focus-visible{outline-color:#315c7f}
