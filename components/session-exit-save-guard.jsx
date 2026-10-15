@@ -19,8 +19,6 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
   const [error,setError]=useState('')
   const [savedSessionId,setSavedSessionId]=useState(null)
   const agreeRef=useRef(null),priorFocus=useRef(null)
-  const pendingRef=useRef(null)
-  pendingRef.current=pending
 
   // Already saved to the *current verified* Google Account? Skip repeated
   // prompts, but never infer identity from a name or the guest share link.
@@ -63,7 +61,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
     function intercept(event){
       if(event.defaultPrevented || event.button!==0 ||
         event.metaKey||event.ctrlKey||event.shiftKey||event.altKey ||
-        pendingRef.current) return
+        pending) return
       const link=event.target?.closest?.('a[href]')
       if(!link||link.closest('[data-hh-session-save-modal]')||
         link.hasAttribute('download')||
@@ -77,7 +75,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
     }
     document.addEventListener('click',intercept,true)
     return ()=>document.removeEventListener('click',intercept,true)
-  },[appAvailable,savedSessionId])
+  },[appAvailable,savedSessionId,pending])
 
   useEffect(()=>{
     if(!pending)return
