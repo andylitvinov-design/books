@@ -722,7 +722,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
-      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded /></div>}
+      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded onGuestStartSingle={(entry) => begin(entry.key, null)} /></div>}
       {phase === 'catalog' && (
       <section className="cabinet-signin-strip cabinet-signin-hero" aria-labelledby="cabinet-title">
         <div className="cabinet-signin-copy">
