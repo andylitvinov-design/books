@@ -153,8 +153,11 @@ const copy = {
   },
 } as const;
 
-export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; course: Course }) {
-  const [selected, setSelected] = useState<Choice>("express");
+export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { locale: PublicLocale; course: Course; placement?: "top" | "bottom" }) {
+  // The upper Tantra Reiki selector offers the study guide immediately; the
+  // lower consultation selector retains the existing express-initiation default.
+  const isTop = placement === "top" && course === "tantra";
+  const [selected, setSelected] = useState<Choice>(isTop ? "guide" : "express");
   const t = copy[locale];
   const c = t[course];
   const personalPrice = formatReikiLevelPrice(course, locale);
@@ -162,18 +165,19 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
   useEffect(() => {
     const syncHash = () => {
       // Preserve historical deep links to the now renamed personal pathway.
-      if (course === "tantra" && window.location.hash === "#tantra-master-course") setSelected("personal");
+      if (course === "tantra" && !isTop && window.location.hash === "#tantra-master-course") setSelected("personal");
       if (course === "yggdrasil" && window.location.hash === "#reiki-free-level-one") setSelected("express");
     };
     syncHash();
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, [course]);
+  }, [course, isTop]);
 
   const download = selected === "guide";
   const pagePath = "/" + locale + "/academy/reiki/" + (course === "tantra" ? "tantra-reiki" : "yggdrasil");
+  const guideUrl = "/api/academy/reiki-guide?course=" + course + "&locale=" + locale;
   const actionUrl = download
-    ? "/api/academy/reiki-guide?course=" + course + "&locale=" + locale
+    ? guideUrl
     : whatsappEnquiryUrl({
         locale,
         service: c.courseName,
@@ -189,19 +193,21 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
     option: t.common.consultation,
     pagePath,
   });
-  const sectionId = course === "tantra" ? "tantra-next-steps" : "reiki-free-level-one";
+  const sectionId = isTop ? "tantra-top-capture" : course === "tantra" ? "tantra-next-steps" : "reiki-free-level-one";
+  const titleId = course + "-" + placement + "-capture-title";
 
   return (
     <section
-      className={styles.capture}
+      className={styles.capture + (isTop ? " " + styles.topCapture : "")}
       id={sectionId}
       data-reiki-choice-capture={course}
-      aria-labelledby={course + "-capture-title"}
+      data-reiki-capture-placement={placement}
+      aria-labelledby={titleId}
     >
-      {course === "tantra" ? <span id="tantra-master-course" className={styles.anchor} aria-hidden="true" /> : null}
+      {course === "tantra" && !isTop ? <span id="tantra-master-course" className={styles.anchor} aria-hidden="true" /> : null}
       <div className={styles.eyebrow}><HeartHandshake size={20} aria-hidden="true" /><span>{t.common.eyebrow}</span></div>
-      <h2 className={styles.title} id={course + "-capture-title"}>{c.title}</h2>
-      <p className={styles.lead}>{c.lead}</p>
+      <h2 className={styles.title} id={titleId}>{isTop ? (locale === "ru" ? "Выберите, как начать Тантра Рейки" : locale === "es" ? "Elige cómo comenzar Tantra Reiki" : "Choose how to begin Tantra Reiki") : c.title}</h2>
+      <p className={styles.lead}>{isTop ? (locale === "ru" ? "Сначала изучите бесплатную методичку для телефона или выберите формат инициации первой ступени." : locale === "es" ? "Descarga la guía móvil gratuita o elige una iniciación de nivel 1." : "Read the free phone-friendly study guide, or choose your Level 1 initiation.") : c.lead}</p>
       <p className={styles.priceLine} data-reiki-initiation-price={course}>{t.common.personalPrice}: <strong>{personalPrice}</strong></p>
       <p className={styles.question}>{t.common.choose}</p>
 
@@ -216,7 +222,9 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
             onClick={() => setSelected(choice)}
           >
             {selected === choice ? <Check size={18} strokeWidth={2.7} aria-hidden="true" /> : <span className={styles.unselected} aria-hidden="true" />}
-            <span>{t.common.options[choice]}</span>
+            <span>{course === "tantra" && choice === "guide"
+              ? (locale === "ru" ? "Скачать методичку PDF для телефона" : locale === "es" ? "Descargar guía PDF móvil" : "Download mobile study PDF")
+              : t.common.options[choice]}</span>
           </button>
         ))}
       </div>
@@ -232,10 +240,27 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
         onClick={() => emitPublicAnalyticsEvent(download ? "academy_study_material_request_click" : selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click")}
       >
         {download ? <Download size={21} aria-hidden="true" /> : <WhatsAppMark size={22} />}
-        <span>{t.common.action[selected]}</span>
+        <span>{download && course === "tantra"
+          ? (locale === "ru" ? "Скачать PDF Тантра Рейки" : locale === "es" ? "Descargar PDF Tantra Reiki" : "Download Tantra Reiki mobile PDF")
+          : t.common.action[selected]}</span>
         <ArrowUpRight size={20} aria-hidden="true" />
       </a>
-      <p className={styles.note}>{download ? t.common.downloadNote : t.common.messageNote}</p>
+      <p className={styles.note}>{download && course === "tantra"
+        ? (locale === "ru" ? "PDF для телефона: крупный шрифт, девять ступеней, практики и актуальная стоимость инициации." : locale === "es" ? "PDF para móvil: letra grande, nueve etapas, prácticas y precio de iniciación." : "Phone-friendly PDF: larger type, nine levels, practice ideas and Level 1 pricing.")
+        : download ? t.common.downloadNote : t.common.messageNote}</p>
+      {course === "tantra" && !download ? (
+        <a
+          className={styles.alwaysDownload}
+          data-reiki-choice-action="guide-secondary"
+          href={guideUrl}
+          download
+          onClick={() => emitPublicAnalyticsEvent("academy_study_material_request_click")}
+        >
+          <Download size={19} aria-hidden="true" />
+          <span>{locale === "ru" ? "Или скачайте бесплатную методичку PDF" : locale === "es" ? "O descarga la guía PDF gratuita" : "Or download the free mobile PDF guide"}</span>
+          <ArrowUpRight size={17} aria-hidden="true" />
+        </a>
+      ) : null}
       {course === "yggdrasil" && selected === "express" ? (
         <a className={styles.checklistLink} href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>
           {locale === "ru" ? "Как начать бесплатно: чтение и 7 вопросов →" : locale === "es" ? "Cómo comenzar gratis: lecturas y 7 preguntas →" : "How to begin for free: reading guide and 7 questions →"}
@@ -244,7 +269,9 @@ export function ReikiChoiceCapture({ locale, course }: { locale: PublicLocale; c
       <div className={styles.footer}>
         <div className={styles.trust}><span><Check size={15} aria-hidden="true" /> {t.common.reply}</span><span><Check size={15} aria-hidden="true" /> {t.common.obligation}</span></div>
         <div className={styles.secondary}>
-          <a href={consultationUrl} id="reiki-free-consultation" target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
+          {isTop
+            ? <a href={consultationUrl} target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
+            : <a href={consultationUrl} id="reiki-free-consultation" target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>}
           <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer"><Send size={14} aria-hidden="true" /> {t.common.telegram}</a>
         </div>
       </div>

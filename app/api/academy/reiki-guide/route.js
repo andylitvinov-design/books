@@ -68,12 +68,14 @@ export async function GET(request) {
   }
 
   const buffer = buildReikiCourseGuidePdf({ course, locale, source: guide });
-  const basename = course === "tantra" ? "tantra-reiki" : "reiki-yggdrasil";
+  const downloadFilename = course === "tantra"
+    ? "tantra-reiki-mobile-study-guide-" + locale + ".pdf"
+    : "reiki-yggdrasil-study-prices-" + locale + ".pdf";
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="' + basename + "-study-prices-" + locale + '.pdf"',
+      "Content-Disposition": 'attachment; filename="' + downloadFilename + '"',
       "Content-Length": String(buffer.length),
       "Cache-Control": "no-store, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
