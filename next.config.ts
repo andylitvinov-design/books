@@ -53,6 +53,7 @@ const nextConfig: NextConfig = {
     return [
       // The canonical English homepage is /; /en must not fall through to a 404.
       { source: "/en", destination: "/?lang=en", permanent: true },
+      { source: "/ru", destination: "/?lang=ru", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
       { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
       { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },
