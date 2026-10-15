@@ -1521,6 +1521,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
 // session insert for the non-primary selected scale. This suite is loopback-only.
 test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
   const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { buildCourseSlides } = await import('../lib/inner-growth/course-slide-sequence.js')
   const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
   const dailyRepo = createDailyCourseRepository(config)
   for (const locale of ['en','ru']) {
@@ -1547,8 +1548,9 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
       const originalLessonId = value.lesson.id
-      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID(),visitedSlideKeys:[]},locale),{code:'COURSE_SLIDES_INCOMPLETE'})
       const firstSaved = await dailyRepo.command(who,'session',first,locale)
       assert.equal(firstSaved.cycle.day,1)
       assert.ok(firstSaved.currentSession.completedAt)
@@ -1563,7 +1565,7 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
-      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
       const secondSaved = await dailyRepo.command(who,'session',second,locale)
       assert.equal(secondSaved.cycle.day,2)
