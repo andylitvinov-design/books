@@ -1,0 +1,240 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+import { createRequire } from 'node:module'
+import test from 'node:test'
+const require = createRequire(import.meta.url)
+const ts = require(process.env.PICKER_TYPESCRIPT || 'typescript')
+const source = readFileSync(new URL('../components/app/account-test-battery.jsx', import.meta.url), 'utf8')
+const explorerSource = readFileSync(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8')
+const elements = (node) => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(elements) : [node, ...elements(node.props?.children)]
+test('actual easy picker clears guest scale filters by default and preserves account opt-in filters', async () => {
+  const modules = {}
+  const root = process.env.PICKER_LIBRARY_ROOT ? new URL('file://' + process.env.PICKER_LIBRARY_ROOT + '/') : new URL('../', import.meta.url)
+  for (const [, name] of explorerSource.matchAll(/from ['"](@\/[^'"]+)['"]/g)) modules[name] = await import(new URL(name.slice(2) + '.js', root))
+  for (const preserve of [false, true]) {
+    let slots = [], cursor = 0, submitted
+    const hooks = {
+      useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], v => { slots[i] = typeof v === 'function' ? v(slots[i]) : v }] },
+      useMemo(fn) { return fn() }, useEffect() {},
+    }
+    const exported = {}, jsx = (type, props) => ({ type, props })
+    vm.runInNewContext(ts.transpileModule(explorerSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+      exports: exported, window: {}, console, URLSearchParams,
+      require(name) {
+        if (modules[name]) return modules[name]
+        if (name === 'react') return hooks
+        if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+        if (name === 'next/link') return { default: 'Link' }
+        if (name.endsWith('.css')) return { default: new Proxy({}, { get: (_, key) => String(key) }) }
+        if (name === 'lucide-react') return {}
+        return { SimpleTestPicker: 'SimpleTestPicker', TestExplorerVisual: 'TestExplorerVisual', TestScaleGuide: 'TestScaleGuide' }
+      },
+    })
+    const p = {
+      locale: 'en', audience: preserve ? 'account' : 'guest', simpleMode: true,
+      initialPreferences: { axes: ['anxiety'] },
+      ...(preserve ? { preserveScaleFilters: true } : {}),
+      onStart: (_entries, preferences) => { submitted = preferences },
+    }
+    const render = () => { cursor = 0; return exported.TestExplorer(p) }
+    let tree = render()
+    await tree.props.onStart()
+    assert.deepEqual(Array.from(submitted.axes), preserve ? ['anxiety'] : [], 'initial saved axes follow the opt-in')
+    tree.props.onBrowseFull()
+    tree = render()
+    const scaleGroup = elements(tree).find(n => n.props?.['aria-label'] === 'Scales for selecting tests')
+    const extraScale = elements(scaleGroup).find(n => n.type === 'button' && n.props['aria-pressed'] === false)
+    assert.ok(extraScale)
+    extraScale.props.onClick()
+    tree = render()
+    const updatedScales = elements(tree).find(n => n.props?.['aria-label'] === 'Scales for selecting tests')
+    const selectedBefore = elements(updatedScales).filter(n => n.type === 'button' && n.props['aria-pressed'] === true)
+    assert.equal(selectedBefore.length, preserve ? 2 : 1, 'full view accepts another scale')
+    elements(tree).find(n => n.props?.className === 'simpleBack').props.onClick()
+    tree = render()
+    assert.equal(tree.type, 'SimpleTestPicker')
+    await tree.props.onStart()
+    if (preserve) {
+      assert.equal(submitted.axes.length, 2)
+      assert.ok(submitted.axes.includes('anxiety'))
+    } else assert.deepEqual(Array.from(submitted.axes), [], 'public easy view clears full-view axes by default')
+  }
+})
+function batteryHarness({ failSave = false, failCourse = null } = {}) {
+  let slots = [], cursor = 0, effects = [], query = new URLSearchParams()
+  const hooks = {
+    useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], v => { slots[i] = typeof v === 'function' ? v(slots[i]) : v }] },
+    useRef(initial) { const [ref] = hooks.useState({ current: initial }); return ref },
+    useMemo(fn) { return fn() },
+    useEffect(fn, deps) { const i = cursor++; if (!slots[i] || deps.some((v,j) => v !== slots[i][j])) { slots[i] = deps; effects.push(fn) } },
+  }
+  const definition = { id: 'saved-v1', key: 'saved', questions: [] }
+  const lib = {
+    coverageForFocus: () => ({}), buildPsychPortrait: () => ({}), getDefinitionById: () => definition,
+    monitoringCatalogItem: () => ({ title: { en: 'Saved' } }), assessmentMethodology: () => ({ text: '' }),
+    buildExplorerEntries: () => [{ key: 'saved', selectable: true, definition }], filterExplorerEntries: () => [], rankExplorerEntries: x => x,
+    TEST_EXPLORER_AXIS_LABELS: {}, TEST_RECOMMENDATION_FOCUS: [{ key: 'stress' }], INSIGHTS_TEST_CATEGORIES: [{ key: 'stress' }],
+    readTestSelectionIntent: () => null, validTestKeys: x => x,
+    courseTestKeys: () => [], coursePendingKeys: () => [], groupCourseTestRows: rows => ({ course: [], other: rows }),
+  }
+  const exported = {}, requests = []
+  const jsx = (type, props, key) => ({ type, props, key })
+  const window = { requestAnimationFrame: () => 0, cancelAnimationFrame() {}, sessionStorage: { getItem: () => null, removeItem() {} } }
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+    exports: exported, window, AbortController, console, crypto: { randomUUID: () => 'operation' },
+    fetch: async (path, options) => { requests.push({ path, options }); return { ok: !(failSave && options.method === 'POST') && !(path.endsWith('course') && failCourse === options.method), json: async () => path.endsWith('test-plans') ? { id: 'plan', status: 'active', definitionIds: ['saved-v1'] } : path.endsWith('course') ? { course: { stage: 2, revision: 1 } } : {} } },
+    require(name) {
+      if (name === 'react') return hooks
+      if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+      if (name === 'next/navigation') return { useRouter: () => ({ replace() {}, push() {} }), useSearchParams: () => query }
+      if (name === 'next/link' || name.endsWith('.css')) return { default: name.endsWith('.css') ? {} : 'Link' }
+      if (name.startsWith('@/')) return lib
+      if (name === 'lucide-react') return {}
+      return { TestExplorer: 'TestExplorer', TestExplorerVisual: 'TestExplorerVisual', MyTestsDashboard: 'MyTestsDashboard' }
+    },
+  })
+  return {
+    requests, query(value) { query = new URLSearchParams(value) },
+    render(props) { cursor = 0; const tree = exported.AccountTestBattery(props); const pending = effects; effects = []; pending.forEach(fn => fn()); return elements(tree) },
+  }
+}
+const props = (owner = 'a') => ({ data: { account: { id: owner }, activeTestPlan: { id: 'plan', status: 'active', definitionIds: ['saved-v1'] }, results: [], runs: [] }, locale: 'en', reload: async () => {} })
+test('outer collapse retains the same picker key without a write; reopen restores its mounted draft', () => {
+  const h = batteryHarness(); const p = props(); let tree = h.render(p)
+  assert.equal(tree.some(n => n.type === 'TestExplorer'), false, 'lazy mount until first open')
+  tree.find(n => n.type === 'MyTestsDashboard').props.onOpenFilters()
+  tree = h.render(p); const first = tree.find(n => n.type === 'TestExplorer')
+  assert.equal(first.props.simpleMode, true)
+  assert.equal(first.props.preserveScaleFilters, true)
+  tree.find(n => n.type === 'MyTestsDashboard').props.onOpenFilters()
+  tree = h.render(p)
+  assert.equal(tree.find(n => n.type === 'TestExplorer').key, first.key)
+  assert.equal(tree.find(n => n.props?.id === 'my-test-explorer').props.hidden, true)
+  assert.equal(tree.find(n => n.props?.id === 'my-test-explorer').props.style.display, 'none')
+  tree.find(n => n.type === 'MyTestsDashboard').props.onOpenFilters()
+  tree = h.render(p)
+  assert.equal(tree.find(n => n.type === 'TestExplorer').key, first.key)
+  assert.equal(tree.find(n => n.props?.id === 'my-test-explorer').props.hidden, false)
+  assert.equal(h.requests.some(r => r.options.method === 'POST'), false)
+  h.query('course=1')
+  assert.notEqual(h.render(p).find(n => n.type === 'TestExplorer').key, first.key, 'course entry resets implicit picks')
+  h.query('course=1&courseId=course-a')
+  const courseKey = h.render(p).find(n => n.type === 'TestExplorer').key
+  h.query('course=1&courseId=course-b')
+  assert.notEqual(h.render(p).find(n => n.type === 'TestExplorer').key, courseKey, 'different course IDs isolate draft choices')
+  h.query('')
+  assert.notEqual(h.render({ ...p, recommendedKey: 'saved' }).find(n => n.type === 'TestExplorer').key, first.key, 'recommendation entry gets its own selection')
+  assert.notEqual(h.render(props('b')).find(n => n.type === 'TestExplorer').key, first.key, 'owner changes reset the draft')
+})
+test('specialized course, recommendation and Insights entries retain their full-picker contracts', () => {
+  for (const [query, extra, compact, full] of [['course=1&explore=1', {}, false, true], ['explore=1', { recommendedKey: 'saved' }, false, true], ['explore=1&category=stress', {}, false, true]]) {
+    const h = batteryHarness(); h.query(query); const picker = h.render({ ...props(), ...extra }).find(n => n.type === 'TestExplorer')
+    assert.equal(picker.props.simpleMode, compact); assert.equal(picker.props.initialBrowseFull, full)
+    assert.equal(picker.props.explicitSelectionOnly, query.includes('course=1'))
+  }
+})
+test('successful explicit save replaces the draft even when the plan id stays the same', async () => {
+  const h = batteryHarness(); h.query('explore=1'); const p = props()
+  const before = h.render(p).find(n => n.type === 'TestExplorer')
+  await before.props.onStart([{ key: 'saved' }], { focus: ['stress'] })
+  const after = h.render(p).find(n => n.type === 'TestExplorer')
+  assert.notEqual(after.key, before.key)
+  assert.equal(h.requests.filter(r => r.options.method === 'POST').length, 1)
+})
+test('account compact/full switching retains saved scale filters; public behavior is unchanged', () => {
+  assert.match(explorerSource, /simpleMode && !preserveScaleFilters \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
+  assert.match(explorerSource, /if \(!preserveScaleFilters\) setAxes\(\[\]\); setBrowseFull\(false\)/)
+  assert.match(source, /function keepSavedSet\(\) \{[\s\S]*?setExplorerRevision\(\(revision\) => revision \+ 1\)/)
+})
+
+test('failed save leaves the same unsaved draft mounted for retry', async () => {
+  const h = batteryHarness({ failSave: true }); h.query('explore=1'); const p = props()
+  const before = h.render(p).find(n => n.type === 'TestExplorer')
+  await before.props.onStart([{ key: 'saved' }], { focus: ['stress'] })
+  const after = h.render(p).find(n => n.type === 'TestExplorer')
+  assert.equal(after.key, before.key)
+  assert.equal(h.requests.filter(r => r.options.method === 'POST').length, 1)
+})
+
+test('actual full Insights picker: first unchecked row selects only that test', async () => {
+  const modules = {}
+  const root = process.env.PICKER_LIBRARY_ROOT ? new URL('file://' + process.env.PICKER_LIBRARY_ROOT + '/') : new URL('../', import.meta.url)
+  for (const [, name] of explorerSource.matchAll(/from ['"](@\/[^'"]+)['"]/g)) modules[name] = await import(new URL(name.slice(2) + '.js', root))
+  let slots = [], cursor = 0
+  const hooks = {
+    useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], v => { slots[i] = typeof v === 'function' ? v(slots[i]) : v }] },
+    useMemo(fn) { return fn() }, useEffect() {},
+  }
+  const exported = {}
+  const jsx = (type, props, key) => ({ type, props, key })
+  vm.runInNewContext(ts.transpileModule(explorerSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+    exports: exported, window: {}, console, URLSearchParams,
+    require(name) {
+      if (modules[name]) return modules[name]
+      if (name === 'react') return hooks
+      if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+      if (name === 'next/link') return { default: 'Link' }
+      if (name.endsWith('.css')) return { default: {} }
+      if (name === 'lucide-react') return {}
+      return { SimpleTestPicker: 'SimpleTestPicker', TestExplorerVisual: 'TestExplorerVisual', TestScaleGuide: 'TestScaleGuide' }
+    },
+  })
+  const h = batteryHarness(); h.query('explore=1&category=stress')
+  const pickerProps = h.render(props()).find(n => n.type === 'TestExplorer').props
+  const render = () => { cursor = 0; return elements(exported.TestExplorer(pickerProps)) }
+  const checks = tree => tree.filter(n => n.type === 'input' && n.props.type === 'checkbox' && n.props['aria-label'])
+  let tree = render(); assert.equal(checks(tree).filter(n => n.props.checked).length, 0)
+  const first = checks(tree)[0]; assert.ok(first); first.props.onChange()
+  tree = render(); const selected = checks(tree).filter(n => n.props.checked)
+  assert.equal(selected.length, 1); assert.equal(selected[0].props['aria-label'], first.props['aria-label'])
+})
+
+test('partial save failure keeps explicit course choices for retry', async () => {
+  for (const failCourse of ['GET', 'POST']) {
+    const h = batteryHarness({ failCourse }); h.query('explore=1&course=1'); const p = props()
+    const before = h.render(p).find(n => n.type === 'TestExplorer')
+    await before.props.onStart([{ key: 'saved' }], { focus: ['stress'] })
+    const tree = h.render(p); const after = tree.find(n => n.type === 'TestExplorer')
+    assert.equal(after.key, before.key, failCourse + ' failure must not discard the checked choices')
+    assert.equal(tree.find(n => n.props?.id === 'my-test-explorer').props.hidden, false)
+    assert.equal(h.requests.filter(r => r.path.endsWith('test-plans') && r.options.method === 'POST').length, 1)
+  }
+})
+test('reload failure after plan save keeps the draft available', async () => {
+  const h = batteryHarness(); h.query('explore=1'); const p = { ...props(), reload: async () => { throw Error('reload unavailable') } }
+  const before = h.render(p).find(n => n.type === 'TestExplorer')
+  await before.props.onStart([{ key: 'saved' }], { focus: ['stress'] })
+  const tree = h.render(p)
+  assert.equal(tree.find(n => n.type === 'TestExplorer').key, before.key)
+  assert.equal(tree.find(n => n.props?.id === 'my-test-explorer').props.hidden, false)
+})
+
+test('compact account copy is opt-in and leaves explicit save callbacks intact in EN/RU/ES', async () => {
+  const source = readFileSync(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8')
+  const modules = {}
+  const root = process.env.PICKER_LIBRARY_ROOT ? new URL('file://' + process.env.PICKER_LIBRARY_ROOT + '/') : new URL('../', import.meta.url)
+  for (const [, name] of source.matchAll(/from ['"](@\/[^'"]+)['"]/g)) modules[name] = await import(new URL(name.slice(2) + '.js', root))
+  const exported = {}, jsx = (type, props) => ({ type, props })
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+    exports: exported,
+    require(name) {
+      if (modules[name]) return modules[name]
+      if (name === 'react') return { useState: value => [value, () => {}], useEffect() {} }
+      if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+      if (name === 'next/link') return { default: 'Link' }
+      if (name.endsWith('.css')) return { default: {} }
+      return {}
+    },
+  })
+  for (const [locale, label] of [['en', 'Add selected tests'], ['ru', 'Добавить выбранные тесты'], ['es', 'Añadir pruebas seleccionadas']]) {
+    const p = { locale, focus: [], depth: 'balanced', maxMinutes: 0, recommendations: [{ key: 'sample', title: 'Sample', topics: [], durationMinutes: 2 }], activeBattery: [{ key: 'sample', title: 'Sample' }], matchCount: 1, onStart() {}, onStartSingle() {} }
+    const publicTree = exported.SimpleTestPicker(p)
+    assert.equal(JSON.stringify(publicTree), JSON.stringify(exported.SimpleTestPicker({ ...p, authenticated: false })))
+    assert.ok(JSON.stringify(publicTree).includes('Google'), 'public sign-in requirement remains explicit')
+    const accountTree = exported.SimpleTestPicker({ ...p, authenticated: true })
+    assert.ok(!JSON.stringify(accountTree).includes('Google'))
+    assert.ok(JSON.stringify(accountTree).includes(label))
+    assert.equal(elements(accountTree).find(n => n.props?.['data-test-start-mode'] === 'tests').props.onClick, p.onStart)
+  }
+})

@@ -119,7 +119,7 @@ function artworkFor(entry) {
 }
 
 export function SimpleTestPicker({
-  locale = 'en', initialMode = 'tests',
+  locale = 'en', authenticated = false, initialMode = 'tests',
   focus, onToggleFocus,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
@@ -129,7 +129,13 @@ export function SimpleTestPicker({
   matchCount, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
-  const c = TEXT[locale] || TEXT.en
+  const publicCopy = TEXT[locale] || TEXT.en
+  const accountCopy = {
+    en: { kicker: 'MY TESTS', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Add test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
+    ru: { kicker: 'МОИ ТЕСТЫ', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Добавить тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
+    es: { kicker: 'MIS PRUEBAS', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Añadir prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
+  }
+  const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
   const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
