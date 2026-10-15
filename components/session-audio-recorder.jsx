@@ -80,9 +80,9 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setStage('preparing')
     let sid
     try {
-      sid=await ensureSession()
       const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})
       streamRef.current=stream
+      sid=await ensureSession()
       const type=recordingTypes.find(t=>MediaRecorder.isTypeSupported(t))
       const recorder=type?new MediaRecorder(stream,{mimeType:type}):new MediaRecorder(stream)
       chunksRef.current=[]
