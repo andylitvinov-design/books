@@ -255,7 +255,8 @@ test('stale revision and missing consent stop choose-goals before mutation and c
 
 test('invalid finder answers or module id cannot activate a course', async () => {
   for (const overrides of [{ moduleAnswers: { F1: 99 }, moduleId: 'AS4' },
-    { moduleAnswers: finderAnswers, moduleId: 'AS7' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS7' }]) {
+    { moduleAnswers: finderAnswers, moduleId: 'AS7' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS7' },
+    { moduleAnswers: finderAnswers, moduleId: 'AS6' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS6' }]) {
     const h = harness()
     await assert.rejects(h.repo.command(actor, { ...h.body, ...overrides }),
       { code: 'COURSE_MODULE_FINDER_INVALID', status: 400 })
@@ -277,3 +278,13 @@ test('cycle creation failure rolls back the chosen module envelope with the cour
   assert.deepEqual(h.transactions, ['rolled-back']); assert.equal(h.rows[0].stage, 3)
   assert.equal(crypto.openSealed(h.rows[0].concerns_ciphertext, context(), config), plainConcern)
 })
+
+for (const preset of presets.COURSE_PRESETS) {
+  test(`actual fixed preset ${preset.id} still rejects an incomplete mandatory battery`, async () => {
+    const row = courseRow({ stage: 2, focus_tags: presets.coursePresetTags(preset.id), test_keys: [...preset.testKeys] })
+    const h = harness({ row, results: [] })
+    await assert.rejects(h.repo.command(actor, { action: 'confirm-tests', courseId: COURSE,
+      expectedRevision: row.revision, testKeys: preset.testKeys.slice(1) }), { code: 'COURSE_PRESET_TESTS_FIXED', status: 409 })
+    assert.equal(h.cycles.length, 0); assert.equal(h.queries.some(q => q.sql.startsWith('update ')), false)
+  })
+}

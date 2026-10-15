@@ -125,7 +125,7 @@ function assertCreated(h, id, expectedVersion, expectedPreferences, cycleNumber 
 }
 const preferences = id => ({ oporaModuleId: id, oporaModuleRouter: router.ANTISTRESS_ROUTER_VERSION })
 
-for (const id of router.ANTISTRESS_MODULE_IDS) {
+for (const id of router.ANTISTRESS_ACTIVE_MODULE_IDS) {
   test(`real createNewCycle persists personal ${id} with the correct content version`, async () => {
     const h = harness()
     const cycleId = await h.create({ moduleId: id })
@@ -146,14 +146,14 @@ test('real createNewCycle uses the encrypted personal selection when no new modu
 test('an explicit personal choice overrides the prior encrypted module without mutating prior storage', async () => {
   const course = courseRow({ storedModule: 'AS3' }), original = course.concerns_ciphertext
   const h = harness(course)
-  assertCreated(h, await h.create({ moduleId: 'AS6' }), COURSE_CONTENT_V4, preferences('AS6'))
+  assertCreated(h, await h.create({ moduleId: 'AS5' }), COURSE_CONTENT_V4, preferences('AS5'))
   assert.equal(course.concerns_ciphertext, original)
 })
 
-test('invalid direct module ids fall back to the saved selection or legacy AS2', async () => {
-  for (const storedModule of [undefined, 'AS4']) {
+test('inactive AS6 and invalid direct ids fall back to an active saved selection or AS2', async () => {
+  for (const moduleId of ['AS6', 'AS7']) for (const storedModule of [undefined, 'AS4']) {
     const h = harness(courseRow({ storedModule }))
-    assertCreated(h, await h.create({ moduleId: 'AS7' }),
+    assertCreated(h, await h.create({ moduleId }),
       storedModule ? COURSE_CONTENT_V4 : COURSE_ANTISTRESS_OUTCOME_V3, preferences(storedModule || 'AS2'))
   }
 })
@@ -186,4 +186,11 @@ test('real cycle guards reject existing cycles and exhausted cycle numbers befor
 test('real cycle continuation increments its own course number and preserves routing', async () => {
   const h = harness(courseRow({ storedModule: 'AS3' }), { maxCycle: 2 })
   assertCreated(h, await h.create(), COURSE_CONTENT_V4, preferences('AS3'), 3)
+})
+
+test('new cycles cannot resurrect stored legacy AS6 as a new NAV2 route', async () => {
+  const course = courseRow({ storedModule: 'AS6' }), ciphertext = course.concerns_ciphertext
+  const h = harness(course)
+  assertCreated(h, await h.create(), COURSE_ANTISTRESS_OUTCOME_V3, preferences('AS2'))
+  assert.equal(course.concerns_ciphertext, ciphertext, 'legacy stored choice is never rewritten')
 })

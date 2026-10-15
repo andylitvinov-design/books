@@ -64,7 +64,7 @@ const WORDS = {
     cbtText: 'What supports this thought? What else could be true? Find a believable alternative without forcing positivity.',
     actText: 'I notice I am having this thought. I do not have to argue with it or follow it now.',
     neutralText: 'Notice the colour or shape of a neutral object. You do not need to work with your thoughts.',
-    discomfortAction: 'I feel uncomfortable', discomfortTitle: 'You may stop the exercise',
+    discomfortTitle: 'You may stop the exercise',
     discomfortIntro: 'You do not need to push through discomfort. No specialist monitors this lesson or journal in real time.',
     discomfortNeutral: 'Choose a neutral practice', discomfortExit: 'Stop and return',
     discomfortHelp: 'Find a human helpline', discomfortEmergency: 'If there is immediate danger, contact your local emergency services.',
@@ -157,7 +157,7 @@ const WORDS = {
     cbtText: 'Что подтверждает мысль? Что ещё может быть верно? Можно найти правдоподобный взгляд без принудительного оптимизма.',
     actText: 'Я замечаю, что появилась такая мысль. Не обязательно спорить с ней или следовать ей.',
     neutralText: 'Заметьте цвет или форму нейтрального предмета. Работать с мыслью не обязательно.',
-    discomfortAction: 'Мне некомфортно', discomfortTitle: 'Вы можете остановить упражнение',
+    discomfortTitle: 'Вы можете остановить упражнение',
     discomfortIntro: 'Не нужно заставлять себя продолжать. Специалист не наблюдает за уроком или дневником в реальном времени.',
     discomfortNeutral: 'Нейтральная практика', discomfortExit: 'Остановить и вернуться',
     discomfortHelp: 'Найти помощь человека', discomfortEmergency: 'Если есть непосредственная опасность, обратитесь в местные экстренные службы.',
@@ -1012,8 +1012,7 @@ export default function CourseSlidePlayer({
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
-        {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
+        {/* Close/skip stay available; voluntary comfort feedback can open neutral support. */}
         {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))

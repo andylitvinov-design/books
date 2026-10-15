@@ -330,9 +330,10 @@ export function MyCourse({ data, locale = 'en' }) {
     readVersion.current += 1; readController.current?.abort()
     try {
       newCourseId.current ||= crypto.randomUUID()
-      const requestedCourseId=newCourseId.current
+      const restartingClosed = state?.course?.status === 'closed' && access?.multiCourseEnabled !== true
+      const requestedCourseId=restartingClosed ? state.course.id : newCourseId.current
       const started = await request(accountId, { action: 'start', consent: true, courseId: requestedCourseId,
-        newCourse: true, ...(values.presetId ? { presetId: values.presetId } : {}),
+        newCourse: !restartingClosed, ...(restartingClosed ? { expectedRevision: state.course.revision } : {}), ...(values.presetId ? { presetId: values.presetId } : {}),
       })
       if (!isSelected(targetCourseId,epoch)) return
       if (started.course?.id !== requestedCourseId) throw new Error('COURSE_SELECTION_CHANGED')
@@ -367,11 +368,27 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { if (actionLock.current === token) { actionLock.current = null; if (mounted.current && currentAccount.current === accountId && generation.current === epoch) setBusy(false) } }
   }
 
+  async function closeCourse() {
+    const courseId = state?.course?.id, epoch = viewGeneration
+    if (!courseId || !isSelected(courseId, epoch) || actionLock.current) return false
+    try {
+      const updated = await courseCommand('close')
+      if (!isSelected(courseId, epoch) || updated.course?.id !== courseId) return false
+      acceptState(updated)
+      clearPendingProgram(courseId)
+      setShowCourse(false)
+      return true
+    } catch (e) {
+      if (isSelected(courseId, epoch)) setError(e.message || 'COURSE_CLOSE_UNAVAILABLE')
+      return false
+    }
+  }
+
   function openStartDialog(presetId = null, programId = null) {
     if (programId !== null && programId !== ACTIVE_COURSE_PROGRAM_ID) return
     if (busy || (presetId !== null && !getCoursePreset(presetId)) || (programId !== null && !getCourseProgram(programId)) ||
         (presetId && programId) || (view === 'switch' && programId)) return
-    if (view !== 'switch' && (atLimit || (courses.length > 0 && !access?.multiCourseEnabled))) return
+    if (view !== 'switch' && (atLimit || (courses.some(course => course.status !== 'closed') && !access?.multiCourseEnabled))) return
     setSelectedPreset(presetId);setSelectedProgram(programId);setOptIn(false)
     startIntent.current={accountId,courseId:selectedCourse.current,epoch:viewGeneration,presetId,programId,switching:view==='switch'}
     startDialogRef.current?.showModal()
@@ -442,7 +459,7 @@ export function MyCourse({ data, locale = 'en' }) {
   const canAddCourse = Boolean(access?.multiCourseEnabled && !atLimit)
   const showDashboard = courses.length > 0 && view === 'list'
   const isHistory = ['completed', 'archived'].includes(state?.course?.status)
-  const stage = view === 'new' || view === 'switch' ? 0 : state?.course?.stage || 0
+  const stage = view === 'new' || view === 'switch' || state?.course?.status === 'closed' ? 0 : state?.course?.stage || 0
   const visibleStep = stage === 1 ? 2 : stage === 2
     ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
@@ -458,6 +475,7 @@ export function MyCourse({ data, locale = 'en' }) {
     key={accountId + ':' + (state.course?.id || '')}
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
+    onCloseCourse={closeCourse} closing={busy}
     onOpen={() => setShowCourse(true)}/>
 
   return <div className={styles.root} data-my-course>

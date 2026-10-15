@@ -243,11 +243,8 @@
 }
 .overlay .scenicImage{
   display:block;width:100%;max-width:none;height:100%;
-  object-fit:cover;object-position:center 48%;
+  object-fit:contain;object-position:center;
 }
-.overlay [data-scene-kind=guided] .scenicImage,
-.overlay [data-scene-kind=reflection] .scenicImage,
-.overlay [data-scene-kind=moment] .scenicImage{object-position:center 60%}
 .overlay .photoSparkle{
   z-index:2;right:15px;top:14px;width:46px;height:46px;
   border-radius:15px;background:#f4ffffe8;color:#078b9d;
@@ -344,14 +341,7 @@
   .overlay .primary,.overlay .paceChoices button{animation:none!important;transition:none!important}
 }
 
-/* OPORA 1.1: a visible safety path while practising. No progress or XP is saved by these controls. */
-.discomfortShortcut {
-  width:100%; min-height:42px; border:1px solid #d2a2a2; border-radius:14px;
-  background:#fff9f7; color:#824747; padding:9px 15px;
-  font-size:14px; font-weight:650; cursor:pointer;
-}
-.discomfortShortcut:hover { background:#fff0ed; }
-.discomfortShortcut:focus-visible,
+/* Optional neutral support remains reachable through practice feedback. */
 .discomfortPanel button:focus-visible,
 .discomfortPanel a:focus-visible { outline:3px solid #edac51; outline-offset:3px; }
 .discomfortPanel {
@@ -652,4 +642,19 @@
 @media(max-width:540px){
   .overlay[data-opora-first-lesson] .content{padding:16px 16px 19px;gap:12px}
   .overlay[data-opora-first-lesson] .footer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+}
+
+
+/* Approved course artwork: display the full 705×411 photograph on every
+   lesson slide, including compact-height phones. The lesson body scrolls
+   independently, so controls stay accessible without clipping the artwork. */
+.overlay .content[data-slide-kind] .illustration[data-art=scenic],
+.overlay .content[data-slide-kind] .photoMoment{
+  height:auto;
+  min-height:0;
+  aspect-ratio:705 / 411;
+}
+.overlay .scenicImage{
+  object-fit:contain;
+  object-position:center;
 }

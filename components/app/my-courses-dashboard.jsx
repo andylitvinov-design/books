@@ -116,7 +116,7 @@ export default function MyCoursesDashboard({
     else closeRef.current?.close()
   },[closing])
   const active=courses.filter(c=>['draft','active','paused'].includes(c.status))
-  const history=courses.filter(c=>['completed','archived'].includes(c.status))
+  const history=courses.filter(c=>['completed','archived','closed'].includes(c.status))
   const main=active.find(c=>c.isPrimary)||active[0]
   const others=active.filter(c=>c.id!==main?.id)
   const limit=membership.maxActiveCourses||1

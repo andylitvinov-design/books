@@ -495,9 +495,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>}
-  {view==='path'&&lesson?.antiStress&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
+  {view==='path'&&data.programme?.id==='stress'&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
     <summary>{ru?'Все упражнения, результаты и слайды 14 дней':'Every exercise, outcome and slide across 14 days'}</summary>
-    <Course14DayOverview locale={locale} programId="stress" />
+    <Course14DayOverview locale={locale} programId="stress" moduleId={data.programme?.moduleId} routerVersion={cycle.preferences?.oporaModuleRouter} />
   </details>}
   {view==='path'&&data.learningSkills?.length===7&&<section className={styles.antiStressSkills} data-antistress-seven-skill-progress>
     <h3>{ru?'Семь навыков самоподдержки':'Seven self-support skills'}</h3>

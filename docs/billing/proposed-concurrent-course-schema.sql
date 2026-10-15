@@ -6,7 +6,7 @@ BEGIN;
 ALTER TABLE app_private.growth_courses DROP CONSTRAINT growth_courses_account_id_key;
 ALTER TABLE app_private.growth_courses DROP CONSTRAINT growth_courses_status_check;
 ALTER TABLE app_private.growth_courses ADD CONSTRAINT growth_courses_status_check
-  CHECK(status IN ('active','paused','completed','archived'));
+  CHECK(status IN ('active','paused','completed','archived','closed'));
 ALTER TABLE app_private.growth_courses ADD COLUMN is_primary boolean NOT NULL DEFAULT false,
   ADD COLUMN finished_at timestamptz;
 CREATE UNIQUE INDEX growth_courses_one_active_primary ON app_private.growth_courses(account_id)

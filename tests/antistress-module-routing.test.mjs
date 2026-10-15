@@ -2,19 +2,25 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
- ANTISTRESS_MODULE_GOALS, ANTISTRESS_MODULE_FINDER_ITEMS,
+ ANTISTRESS_MODULE_GOALS, ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_ACTIVE_MODULE_IDS, ANTISTRESS_MODULE_IDS,
  ANTISTRESS_ROUTER_VERSION,validateModuleFinderAnswers,
  recommendAntistressModule,weeklyAxesFromResults,
  packCourseModuleContext,unpackCourseModuleContext,
 } from '../lib/inner-growth/antistress-module-router.js'
-import {moduleLesson,moduleCurriculumComplete,OPORA_MODULE_DAY_COUNT} from '../lib/inner-growth/antistress-module-lessons.js'
+import {moduleLesson,moduleDayMeta,moduleCurriculumComplete,OPORA_MODULE_DAY_COUNT} from '../lib/inner-growth/antistress-module-lessons.js'
+import {OPORA_RECOVERY_STAGES,OPORA_ENTRY_AND_EXIT} from '../lib/inner-growth/antistress-recovery-pathway.js'
+import {fiveLevelContentComplete} from '../lib/inner-growth/antistress-module-lessons-v2.js'
 import {lessonFor,COURSE_CONTENT_V4,COURSE_ANTISTRESS_OUTCOME_V3} from '../lib/inner-growth/lesson-library.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const goodWeekly={ 'weekly.load':8,'weekly.tension':6,'weekly.functioning':5 }
 const empty=()=>Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(({id})=>[id,null]))
 const moduleDecision=(o={})=>recommendAntistressModule({weekly:goodWeekly,answers:empty(),...o})
-test('one programme offers six stable, bilingual, different 14-day learning modules',()=>{
- assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(x=>x.id),['AS1','AS2','AS3','AS4','AS5','AS6'])
+test('one programme offers five different bilingual 14-day routes while preserving the legacy sixth',()=>{
+ assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(x=>x.id),['AS1','AS2','AS3','AS4','AS5'])
+ assert.deepEqual(ANTISTRESS_ACTIVE_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5'])
+ assert.deepEqual(ANTISTRESS_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5','AS6'])
+ assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(x=>x.range),[[9,10],[7,8],[5,6],[3,4],[0,2]])
+ assert.equal(fiveLevelContentComplete(),true)
  assert.equal(ANTISTRESS_MODULE_FINDER_ITEMS.length,8)
  assert.equal(new Set(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>x.id)).size,8)
  assert.equal(OPORA_MODULE_DAY_COUNT,14)
@@ -23,7 +29,7 @@ test('one programme offers six stable, bilingual, different 14-day learning modu
    assert.ok(mod.title.en && mod.title.ru && mod.title.es)
    const a=Array.from({length:14},(_,i)=>{
     const base=lessonFor('calm_regulation',i+1,'en','standard',mod.id==='AS2'?COURSE_ANTISTRESS_OUTCOME_V3:COURSE_CONTENT_V4)
-    return moduleLesson(base,mod.id,i+1,'en')
+    return moduleLesson(base,mod.id,i+1,'en',ANTISTRESS_ROUTER_VERSION)
    })
    assert.equal(new Set(a.map(x=>x.id)).size,14)
    assert.equal(a.every(x=>x.title && x.sections?.length===5),true)
@@ -51,18 +57,24 @@ test('safety and gentle start is suggested when both grounding and ability to pa
  assert.equal(d.reason,'gentle_start')
  assert.ok(d.evidence.some(e=>e.id==='F1'&&e.value===1))
 })
-test('personal focus wins when compatible, other high-load result becomes alternative',()=>{
+test('user focus is a separate voluntary choice, not a replacement for measured recommendation',()=>{
  const d=moduleDecision({answers:{...empty(),F3:2,F4:3},goal:'AS3'})
- assert.equal(d.moduleId,'AS3')
- assert.equal(d.reason,'personal_goal')
- assert.equal(d.alternativeId,'AS2')
+ assert.equal(d.moduleId,'AS2')
+ assert.equal(d.reason,'reported_overload')
+ assert.equal(d.goal,'AS3')
+ assert.equal(d.alternativeId,'AS1')
 })
-test('overload and functioning have transparent independent thresholds',()=>{
- assert.equal(moduleDecision({goal:'undecided'}).moduleId,'AS2')
- assert.equal(moduleDecision({weekly:{'weekly.load':4,'weekly.tension':3,'weekly.functioning':2}}).moduleId,'AS6')
- assert.equal(moduleDecision({weekly:{'weekly.load':6,'weekly.tension':7,'weekly.functioning':8}}).moduleId,'AS2')
- assert.equal(moduleDecision({weekly:{'weekly.load':6,'weekly.tension':6,'weekly.functioning':8},answers:{...empty(),F5:1},goal:'AS4'}).moduleId,'AS4')
- assert.equal(moduleDecision({weekly:{'weekly.load':4,'weekly.tension':4,'weekly.functioning':8},answers:{...empty(),F7:3},goal:'AS5'}).moduleId,'AS5')
+test('explicit stress bands are educational, and low function chooses a gentler route',()=>{
+ const c=(load,tension,functioning)=>moduleDecision({weekly:{'weekly.load':load,'weekly.tension':tension,'weekly.functioning':functioning}})
+ assert.equal(c(10,2,7).moduleId,'AS1')
+ assert.equal(c(8,3,8).moduleId,'AS2')
+ assert.equal(c(5,6,8).moduleId,'AS3')
+ assert.equal(c(4,3,8).moduleId,'AS4')
+ assert.equal(c(1,2,9).moduleId,'AS5')
+ assert.equal(c(4,3,2).moduleId,'AS3')
+ assert.equal(c(6,6,2).moduleId,'AS2')
+ assert.equal(moduleDecision({weekly:{'weekly.load':6,'weekly.tension':6,'weekly.functioning':8},goal:'AS4'}).moduleId,'AS3')
+ assert.equal(moduleDecision({weekly:{'weekly.load':4,'weekly.tension':4,'weekly.functioning':8},goal:'AS5'}).moduleId,'AS4')
 })
 test('weak data are labelled provisional, are not silently filled and do not create clinical stages',()=>{
  const d=recommendAntistressModule({weekly:{},answers:{},goal:null})
@@ -93,6 +105,7 @@ test('encrypted envelope payload logic preserves legacy user concern and module 
  const choice={id:'AS4',recommendedId:'AS3',goal:'AS4',answers:{...empty(),F5:2}}
  assert.deepEqual(unpackCourseModuleContext(packCourseModuleContext('Private goal',choice)),{concerns:'Private goal',moduleChoice:choice})
  assert.throws(()=>packCourseModuleContext('x',{id:'AS7'}))
+ assert.equal(unpackCourseModuleContext(packCourseModuleContext('Legacy course',{id:'AS6'})).moduleChoice.id,'AS6')
 })
 test('connected intake screens and server enforce the owner-scoped selection',()=>{
  const ui=read('components/app/course-r3-steps.jsx')
@@ -114,4 +127,42 @@ test('connected intake screens and server enforce the owner-scoped selection',()
  assert.match(day, /moduleLesson\(/)
  assert.match(day, /\.\.\.cycle\.preferences/)
  assert.match(day, /COURSE_ANTISTRESS_OUTCOME_V3/)
+ assert.match(repo, /ANTISTRESS_ACTIVE_MODULE_IDS\.includes\(selected\)/)
+ assert.match(day, /oporaModuleRouter:ANTISTRESS_ROUTER_VERSION/)
+ assert.match(day, /activePreferences\.oporaModuleRouter/)
+ assert.match(day, /cycle\.preferences\?\.oporaModuleRouter/)
+ assert.match(day, /primaryTestKey=isActiveStress && selected\.includes\('hh-weekly-pulse'\)/)
+ assert.match(day, /antiStress:isActiveStress/)
+})
+
+test('seven pairs of trauma-informed educational stages sit inside each of five routes',()=>{
+ assert.equal(OPORA_RECOVERY_STAGES.length,7)
+ assert.deepEqual(OPORA_RECOVERY_STAGES.map(x=>x.days),[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14]])
+ assert.ok(OPORA_ENTRY_AND_EXIT.entry.ru.includes('Тестирование'))
+ for(const route of ANTISTRESS_MODULE_GOALS){
+   for(let day=1;day<=14;day++){
+     if(route.id==='AS2')continue
+     const lesson=moduleDayMeta(route.id,day,'ru',ANTISTRESS_ROUTER_VERSION)
+     assert.ok(lesson?.title?.length>5)
+     assert.ok(lesson?.exercise?.length>40)
+   }
+ }
+ const old=moduleDayMeta('AS4',1,'ru','opora-nav-1.3-20261014')
+ const current=moduleDayMeta('AS4',1,'ru',ANTISTRESS_ROUTER_VERSION)
+ assert.notEqual(old.title,current.title)
+ assert.notEqual(old.exercise,current.exercise)
+})
+test('public and personal maps show five routes and precise phase cards',()=>{
+ const publicLanding=read('components/public-antistress-landing.tsx')
+ const publicRoute=read('components/public-antistress-route-map.tsx')
+ const personalOverview=read('components/app/course-14-day-overview.jsx')
+ const personalCourse=read('components/app/course-today.jsx')
+ assert.match(publicLanding, /PublicAntistressRouteMap/)
+ assert.match(publicLanding, /oporaRecoveryStages/)
+ assert.match(publicRoute, /ANTISTRESS_MODULE_GOALS\.map/)
+ assert.match(publicRoute, /data-antistress-five-routes/)
+ assert.match(personalOverview, /moduleDayMeta\(moduleId,day\.day,locale,routerVersion\)/)
+ assert.match(personalOverview, /oporaRecoveryStages/)
+ assert.match(personalCourse, /moduleId=\{data\.programme\?\.moduleId\}/)
+ assert.match(personalCourse, /routerVersion=\{cycle\.preferences\?\.oporaModuleRouter\}/)
 })

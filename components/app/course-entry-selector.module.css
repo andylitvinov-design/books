@@ -261,3 +261,28 @@
  .plusIcon{width:40px;height:40px}
  .addTileText strong{font-size:15px}
 }
+
+
+/* Per-course action menu: discrete top-right control, 44px touch target. */
+.current{position:relative}
+.courseMenu{position:absolute;top:10px;right:10px;z-index:6}
+.courseMenuTrigger{display:grid!important;place-items:center;width:44px;height:44px;padding:0!important;border:1px solid #c2e2e8!important;border-radius:13px!important;background:#f9ffffed!important;color:#245d75!important;box-shadow:0 3px 12px #27697a17;cursor:pointer}
+.courseMenuTrigger:hover,.courseMenuTrigger[aria-expanded=true]{background:#e5f8fa!important;border-color:#8bcdd9!important}
+.courseMenuTrigger:disabled,.courseMenuAction:disabled{opacity:.55;cursor:wait}
+.courseMenuPopup{position:absolute;top:50px;right:0;min-width:186px;max-width:min(260px,calc(100vw - 42px));padding:6px;border:1px solid #c7e0e5;border-radius:14px;background:#fff;box-shadow:0 12px 34px #194f6540}
+.courseMenuAction{display:flex!important;align-items:center;gap:10px;min-height:44px;width:100%;padding:10px 12px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#933f50!important;font-size:13px;font-weight:750;text-align:left;cursor:pointer}
+.courseMenuAction:hover{background:#fff0f0!important}
+.courseMenuTrigger:focus-visible,.courseMenuAction:focus-visible{outline:3px solid #0a7c9e!important;outline-offset:2px}
+.closeCourseDialog{width:min(440px,calc(100vw - 26px));max-height:85dvh;overflow-y:auto;padding:clamp(19px,4vw,27px);border:1px solid #bfdde5;border-radius:21px;background:#fdffff;color:#174663;box-shadow:0 22px 80px #092f4666}
+.closeCourseDialog::backdrop{background:#0e314e99;backdrop-filter:blur(3px)}
+.closeCourseDialog h2{margin:0 0 11px;color:#164663;font:700 clamp(23px,5vw,27px)/1.15 Georgia,serif}
+.closeCourseDialog p{margin:0 0 12px;font-size:14px;line-height:1.55;color:#567487}
+.closeCourseDialog p strong{color:#174663}
+.closeCourseError{color:#a03545!important}
+.closeCourseActions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin-top:21px}
+.closeCourseActions button{min-height:44px;padding:10px 15px!important;border-radius:12px!important;font-size:13px;font-weight:750;cursor:pointer}
+.keepCourseButton{border:1px solid #bfdce4!important;background:#f2f9fb!important;color:#285a71!important}
+.confirmCloseButton{border:1px solid #a14756!important;background:#993e50!important;color:#fff!important}
+.closeCourseActions button:disabled{opacity:.55;cursor:wait}
+.closeCourseActions button:focus-visible{outline:3px solid #0a7c9e!important;outline-offset:2px}
+@media(max-width:420px){.courseMenu{top:8px;right:8px}.courseMenuPopup{top:47px}.closeCourseActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.closeCourseActions button{padding:9px!important}}

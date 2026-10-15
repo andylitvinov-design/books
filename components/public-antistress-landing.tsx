@@ -5,7 +5,10 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
-import AntiStressModuleJourney from "@/components/antistress-module-journey";
+import { PublicAntistressRouteMap } from "@/components/public-antistress-route-map";
+import { oporaRecoveryStages } from "@/lib/inner-growth/antistress-recovery-pathway";
+import { ANTISTRESS_ROUTER_VERSION, antistressModuleTitle } from "@/lib/inner-growth/antistress-module-router";
+import { moduleDayMeta } from "@/lib/inner-growth/antistress-module-lessons";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
 import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -17,14 +20,14 @@ const copy = {
     "brand": "ОПОРА",
     "heroTitle": "Антистресс",
     "heroLine": "Меньше борьбы с собой. Больше внутренней опоры.",
-    "heroText": "Одна программа, шесть 14-дневных модулей. Сначала два коротких опроса помогут понять, что для вас сейчас важнее, затем вы самостоятельно подтвердите подходящий модуль и начнёте практики.",
+    "heroText": "14 коротких занятий, чтобы замечать напряжение раньше, находить посильную паузу и пробовать способы поддержки, которые подходят именно вам.",
     "heroImageAlt": "Человек на фоне спокойного горного пейзажа — образ паузы и личной опоры",
     "heroImageLine": "Спокойствие не нужно заслуживать.",
     "free": "Первый курс бесплатно",
-    "factDays": "14 дней в модуле",
-    "factSkills": "6 модулей",
+    "factDays": "14 занятий",
+    "factSkills": "5 маршрутов",
     "factTime": "В своём темпе",
-    "start": "Подобрать мой модуль",
+    "start": "Начать курс бесплатно",
     "explore": "Посмотреть программу",
     "howLink": "Как проходит курс",
     "subtle": "Без автоматической записи. Выбор тестов и сохранение прогресса — после вашего согласия.",
@@ -72,9 +75,9 @@ const copy = {
         "text": "Отобрать 2–3 способа, которые реально пригодились вам."
       }
     ],
-    "skillsEyebrow": "ПРИМЕР · АНТИСТРЕСС 2",
-    "skillsTitle": "Семь навыков. По два занятия на каждый.",
-    "skillsLead": "Сначала знакомство и безопасная проба, затем повторение в новой повседневной ситуации. Нажмите на навык, чтобы увидеть темы двух занятий.",
+    "skillsEyebrow": "ПРОГРАММА НА 14 ДНЕЙ",
+    "skillsTitle": "От безопасности к устойчивости: 7 этапов восстановления.",
+    "skillsLead": "Каждый этап занимает два занятия и включает практику, а не заучивание теории. Названия показывают общую последовательность; упражнения различаются в пяти вариантах курса.",
     "daysWord": "Дни",
     "dayWord": "День",
     "skills": [
@@ -223,14 +226,14 @@ const copy = {
     "brand": "OPORA",
     "heroTitle": "Stress Relief",
     "heroLine": "Less pressure on yourself. More room to find your footing.",
-    "heroText": "One programme with six different 14-day modules. Two short assessments help identify a useful starting point; you review the reasons, choose a module and practise at your own pace.",
+    "heroText": "Fourteen short lessons to notice tension earlier, make a manageable pause and explore forms of support that work for you.",
     "heroImageAlt": "A person in a calm mountain landscape, illustrating a moment of pause and steadiness",
     "heroImageLine": "You do not have to earn a moment of calm.",
     "free": "Your first course is free",
-    "factDays": "14 days per module",
-    "factSkills": "6 modules",
+    "factDays": "14 lessons",
+    "factSkills": "5 learning routes",
     "factTime": "At your own pace",
-    "start": "Find my module",
+    "start": "Start the free course",
     "explore": "Explore the 14 days",
     "howLink": "How it works",
     "subtle": "Opening the course will not enroll you. Your choices and progress are only saved after consent.",
@@ -278,9 +281,9 @@ const copy = {
         "text": "Choose two or three approaches you have genuinely tried."
       }
     ],
-    "skillsEyebrow": "EXAMPLE · ANTI-STRESS 2",
-    "skillsTitle": "Seven skills. Two lessons for each.",
-    "skillsLead": "Explore a skill gently, then revisit it in a new everyday situation. Open any skill to see its two lessons.",
+    "skillsEyebrow": "YOUR 14-DAY PATH",
+    "skillsTitle": "From safety to resilience: seven recovery steps.",
+    "skillsLead": "Two practical lessons per step, with activities adapted to your selected stress route. This is trauma-informed education, not trauma treatment.",
     "daysWord": "Days",
     "dayWord": "Day",
     "skills": [
@@ -429,14 +432,14 @@ const copy = {
     "brand": "OPORA",
     "heroTitle": "Antiestrés",
     "heroLine": "Menos exigencia contigo. Más espacio para encontrar apoyo.",
-    "heroText": "Un programa con seis módulos diferentes de 14 días. Dos evaluaciones breves ayudan a encontrar un punto de partida; tú eliges el módulo y practicas a tu ritmo.",
+    "heroText": "Catorce lecciones breves para reconocer antes la tensión, hacer una pausa posible y explorar formas de apoyo que se adapten a ti.",
     "heroImageAlt": "Una persona ante un paisaje tranquilo de montaña, imagen de pausa y estabilidad",
     "heroImageLine": "No necesitas ganarte un momento de calma.",
     "free": "Tu primer curso es gratis",
-    "factDays": "14 días por módulo",
-    "factSkills": "6 módulos",
+    "factDays": "14 lecciones",
+    "factSkills": "5 rutas",
     "factTime": "A tu propio ritmo",
-    "start": "Elegir mi módulo",
+    "start": "Empezar el curso gratis",
     "explore": "Ver los 14 días",
     "howLink": "Cómo funciona",
     "subtle": "Abrir el curso no te inscribe. Tus elecciones y avances solo se guardan con tu consentimiento. El espacio personal se abre en inglés.",
@@ -484,9 +487,9 @@ const copy = {
         "text": "Seleccionar dos o tres recursos que hayas probado realmente."
       }
     ],
-    "skillsEyebrow": "EJEMPLO · ANTIESTRÉS 2",
-    "skillsTitle": "Siete habilidades. Dos lecciones por habilidad.",
-    "skillsLead": "Primero una práctica sencilla y después una repetición en otra situación cotidiana. Abre cada habilidad para conocer sus lecciones.",
+    "skillsEyebrow": "TU CAMINO DE 14 DÍAS",
+    "skillsTitle": "De la seguridad a la resiliencia: siete etapas.",
+    "skillsLead": "Dos prácticas por etapa. Los ejercicios varían según el nivel de estrés percibido. No es un tratamiento del trauma.",
     "daysWord": "Días",
     "dayWord": "Día",
     "skills": [
@@ -634,9 +637,9 @@ const copy = {
 
 const challengeIcons = [Waves, PauseCircle, Leaf, ShieldCheck] as const;
 const chapterLinks = {
-  ru: { label: "Разделы курса", links: [{ id: "antistress-modules", title: "6 модулей" }, { id: "for-whom", title: "Для кого" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
-  en: { label: "Course sections", links: [{ id: "antistress-modules", title: "6 modules" }, { id: "for-whom", title: "Who it is for" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
-  es: { label: "Secciones del curso", links: [{ id: "antistress-modules", title: "6 módulos" }, { id: "for-whom", title: "Para quién" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
+  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "stress-levels", title: "5 уровней" }, { id: "programme", title: "7 этапов" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
+  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "stress-levels", title: "5 routes" }, { id: "programme", title: "7 stages" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
+  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "stress-levels", title: "5 rutas" }, { id: "programme", title: "7 etapas" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
 } as const;
 const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
@@ -648,6 +651,10 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
     days: {title:string}[];
   };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
+  const [previewModuleId,setPreviewModuleId]=useState('AS2');
+  const previewDay=(day:number)=>moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
+  const previewTitle=antistressModuleTitle(previewModuleId,locale);
+  const recoveryStages = oporaRecoveryStages(locale);
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
   const aboutPath = "/" + locale + "/courses";
@@ -675,7 +682,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             </div>
             <div className={styles.heroActions}>
               <Link href={enrollmentPath} prefetch={false} className={styles.mainCta} data-antistress-start>{t.start}<ArrowRight size={19} aria-hidden="true" /></Link>
-              <a className={styles.outlineCta} href="#antistress-modules">{t.explore}<ArrowRight size={17} aria-hidden="true" /></a>
+              <a className={styles.outlineCta} href="#programme">{t.explore}<ArrowRight size={17} aria-hidden="true" /></a>
             </div>
             <p className={styles.heroSubtle}><LockKeyhole size={15} aria-hidden="true" />{t.subtle}</p>
           </div>
@@ -701,8 +708,6 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             </a>
           ))}
         </nav>
-
-        <AntiStressModuleJourney locale={locale} sectionId="antistress-modules" />
 
         <section className={styles.section} id="for-whom" aria-labelledby="antistress-for-whom">
           <div className={styles.sectionIntro}>
@@ -737,6 +742,8 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
+        <PublicAntistressRouteMap locale={locale} selectedId={previewModuleId} onSelect={setPreviewModuleId} />
+
         <section className={styles.section} id="programme" aria-labelledby="antistress-programme">
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>{t.skillsEyebrow}</p>
@@ -746,21 +753,22 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.pathIllustration} aria-hidden="true">
             <img src="/images/holistic-house/course-journey-landscape.svg" width={860} height={245} alt="" loading="lazy" decoding="async" />
           </div>
+          <p className={styles.previewLabel} data-antistress-preview-module>{locale==="ru"?"Просмотр программы":locale==="es"?"Vista previa de la ruta":"Route preview"}: <strong>{previewTitle}</strong></p>
           <div className={styles.skills}>
             {programme.skills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
                   <small>{t.daysWord} {skill.days[0]}–{skill.days[1]}</small>
-                  <strong>{skill.title}</strong>
-                  <span>{skill.description}</span>
+                  <strong>{recoveryStages[index]?.title||skill.title}</strong>
+                  <span>{recoveryStages[index]?.description||skill.description}</span>
                 </span>
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
               <div className={styles.lessonPair}>
-                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{programme.days[index * 2].title}</strong></p>
-                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{programme.days[index * 2 + 1].title}</strong></p>
-                <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{skill.outcome}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{previewDay(index * 2 + 1)}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{previewDay(index * 2 + 2)}</strong></p>
+                <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{previewModuleId==='AS2'?skill.outcome:(recoveryStages[index]?.description||skill.outcome)}</strong></p>
               </div>
             </details>)}
           </div>
@@ -769,7 +777,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.detailedDays} id="daily-programme"
           aria-label={locale==="ru"?"Практики, результаты и измерения каждого дня":locale==="es"?"Ejercicios, resultados y medidas de cada día":"Exercises, outcomes and measurements for all 14 days"}
           data-antistress-full-day-scheme data-antistress-detailed-14-day-scheme>
-          <Course14DayOverview locale={locale} programId="stress" compact />
+          <Course14DayOverview locale={locale} programId="stress" moduleId={previewModuleId} routerVersion={ANTISTRESS_ROUTER_VERSION} compact />
         </section>
         <section className={styles.process} id="how" aria-labelledby="antistress-how">
           <div className={styles.sectionIntro}>

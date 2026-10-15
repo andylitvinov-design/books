@@ -110,6 +110,7 @@ test('the voluntary exercises and result use the existing private server workflo
  assert.match(client,/onSaveReflection\(text\.slice\(0,440\)\)/)
  assert.match(player,/setReflection\(previous=>/)
  assert.match(server,/seal\(reflection,context\(actor,id,'course\.session_note'\),config\)/)
- assert.match(player,/data-course-global-discomfort/)
+ assert.doesNotMatch(player,/data-course-global-discomfort|discomfortShortcut|discomfortAction/)
+ assert.match(player,/data-course-discomfort-support/)
  assert.doesNotMatch(client,/fetch\(|localStorage|sessionStorage|speechSynthesis|analytics/i)
 })

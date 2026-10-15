@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVertical, Archive, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '@/lib/billing/public-plan'
 import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
-import { moduleDayOutline } from '@/lib/inner-growth/antistress-module-lessons'
 import styles from './course-entry-selector.module.css'
 
 const COPY = {
@@ -24,7 +23,7 @@ const COPY = {
     lesson: 'Day', of: 'of', completed: 'Lessons completed', finished: 'Course completed', loading: 'Loading progress…', progressUnavailable: 'Progress temporarily unavailable',
     continue: 'Continue course', completeSetup: 'Continue setup', review: 'Review my course',
     add: 'Add a new course', first: 'Start OPORA Anti-Stress',
-    addNote: 'A new topic and its own 14-day journey', firstNote: '6 modules · 14 days each · your choice',
+    addNote: 'A new topic and its own 14-day journey', firstNote: '5 stress routes · 14 lessons each · your choice',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
     upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
     plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
@@ -34,6 +33,12 @@ const COPY = {
     unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
     conditions: 'Premium session scheduling and included-test terms will be confirmed before purchase.',
     close: 'Not now',
+    courseOptions: 'Course options', closeCourse: 'Close course',
+    closeCourseTitle: 'Close this course?',
+    closeCourseExplanation: 'The course will disappear from My courses:',
+    closeCourseSaved: 'Your completed tests and practice records will remain in your private account. You can start a new course later.',
+    keepCourse: 'Keep course', closingCourse: 'Closing…',
+    closeCourseFailed: 'The course could not be closed. Please try again.',
   },
   ru: {
     eyebrow: 'МОИ КУРСЫ · HOLISTIC HOUSE',
@@ -46,7 +51,7 @@ const COPY = {
     lesson: 'День', of: 'из', completed: 'Уроков завершено', finished: 'Курс завершён', loading: 'Загружаем прогресс…', progressUnavailable: 'Прогресс временно недоступен',
     continue: 'Продолжить курс', completeSetup: 'Продолжить настройку', review: 'Посмотреть мой курс',
     add: 'Добавить новый курс', first: 'Начать «ОПОРА — Антистресс»',
-    addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '6 модулей · 14 дней каждый · ваш выбор',
+    addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '5 маршрутов · по 14 занятий · ваш выбор',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
     upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
     plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
@@ -56,6 +61,12 @@ const COPY = {
     unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
     conditions: 'Условия записи на сессию и перечень включённых тестов будут подтверждены до оплаты.',
     close: 'Не сейчас',
+    courseOptions: 'Меню курса', closeCourse: 'Закрыть курс',
+    closeCourseTitle: 'Закрыть этот курс?',
+    closeCourseExplanation: 'Курс исчезнет из раздела «Мои курсы»: ',
+    closeCourseSaved: 'Результаты пройденных тестов и записи занятий останутся в вашем личном кабинете. Позже можно начать новый курс.',
+    keepCourse: 'Оставить курс', closingCourse: 'Закрываем…',
+    closeCourseFailed: 'Не удалось закрыть курс. Попробуйте ещё раз.',
   },
 }
 
@@ -80,9 +91,9 @@ const PLANS = ['free', ...PAID_PLAN_KEYS].map(id => {
     items: [...(plan.adFree ? ['noAds'] : ['ads']), ...(plan.freeTests ? ['tests'] : []), ...(plan.monthlySessions ? ['session'] : [])] }
 })
 
-export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd }) {
+export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
-  const hasCourse = Boolean(course?.stage > 0)
+  const hasCourse = Boolean(course?.stage > 0 && !['closed','archived'].includes(course?.status))
   const [progressSnapshot, setProgressSnapshot] = useState(null)
   const scope = accountId + ':' + (course?.id || '')
   const daily = progressSnapshot?.scope === scope ? progressSnapshot.value : null
@@ -92,6 +103,10 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
   const canAdd = access?.multiCourseEnabled === true && activeCount < activeLimit
   const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [closeError, setCloseError] = useState(false)
+  const menuRef = useRef(null)
+  const closeCourseDialogRef = useRef(null)
   const dialogRef = useRef(null)
   const searchParams = useSearchParams()
   const requestedAdd = searchParams.get('add') === '1'
@@ -99,6 +114,36 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
   if (!requestedAdd) addIntent.current = null
   else if (!addIntent.current) addIntent.current = { accountId, courseId: course?.id, consumed: false, invalidated: false }
   else if (addIntent.current.accountId !== accountId || addIntent.current.courseId !== course?.id) addIntent.current.invalidated = true
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onOutsideClick(event) {
+      if (!menuRef.current?.contains(event.target)) setMenuOpen(false)
+    }
+    function onEscape(event) {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onOutsideClick)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('pointerdown', onOutsideClick)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [menuOpen])
+
+  function openCloseConfirmation() {
+    setMenuOpen(false)
+    setCloseError(false)
+    closeCourseDialogRef.current?.showModal()
+  }
+
+  async function confirmCloseCourse() {
+    if (closing) return
+    setCloseError(false)
+    const success = await onCloseCourse?.()
+    if (success) closeCourseDialogRef.current?.close()
+    else setCloseError(true)
+  }
 
   // A public link gets the same server-confirmed choice as the Add button,
   // once for its original account/course. Opening the consent flow never writes.
@@ -160,6 +205,19 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
 
     <section className={styles.tiles} aria-label={t.title}>
       {hasCourse && <article className={styles.current} data-current-course-card>
+        <div className={styles.courseMenu} ref={menuRef} data-course-actions>
+          <button type="button" className={styles.courseMenuTrigger} data-course-menu-trigger
+            aria-label={t.courseOptions} aria-expanded={menuOpen} aria-controls="my-course-actions-menu"
+            onClick={() => setMenuOpen(open => !open)} disabled={closing}>
+            <MoreVertical size={22} strokeWidth={2.2} aria-hidden="true"/>
+          </button>
+          {menuOpen && <div id="my-course-actions-menu" className={styles.courseMenuPopup} data-course-actions-menu>
+            <button type="button" className={styles.courseMenuAction}
+              onClick={openCloseConfirmation} disabled={closing}>
+              <Archive size={17} aria-hidden="true"/>{t.closeCourse}
+            </button>
+          </div>}
+        </div>
         <div className={styles.currentTop}>
           <div className={styles.currentPhoto} aria-hidden="true">
             <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
@@ -198,18 +256,9 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
           </button>
         </div>
         {showPlan && <div className={styles.planDetails} id="my-course-plan">
-          {course?.moduleChoice?.id && course.moduleChoice.id!=='AS2' && moduleDayOutline(course.moduleChoice.id,locale).length
-            ? <section data-opora-module-day-outline aria-label={t.plan}>
-                <h3>{name}</h3>
-                <p>{locale==='ru'?'Это план вашего выбранного модуля, а не общий список занятий.':
-                  'This is your selected module plan, not a generic lesson list.'}</p>
-                <ol>{moduleDayOutline(course.moduleChoice.id,locale).map(day=>
-                  <li key={day.day}>
-                    <strong>{t.lesson} {day.day} · {day.title}</strong>
-                    <p>{day.practice}</p>
-                  </li>)}</ol>
-              </section>
-            : <Course14DayOverview locale={locale} programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}/>}
+          <Course14DayOverview locale={locale} programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}
+            moduleId={course?.moduleChoice?.id||null}
+            routerVersion={course?.moduleChoice?.version||null}/>
         </div>}
       </article>}
 
@@ -240,6 +289,23 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
     <p className={styles.footnote}><LockKeyhole size={15} aria-hidden="true"/>
       {access ? tier + ' · ' + activeCount + ' / ' + activeLimit : hasCourse ? t.freeLimit + ' · ' + t.currentLimit : t.freeLimit}
     </p>
+
+    <dialog ref={closeCourseDialogRef} className={styles.closeCourseDialog}
+      aria-labelledby="close-course-title" aria-describedby="close-course-description"
+      onClose={() => setCloseError(false)} data-close-course-dialog>
+      <h2 id="close-course-title">{t.closeCourseTitle}</h2>
+      <p id="close-course-description">{t.closeCourseExplanation} <strong>{name}</strong></p>
+      <p>{t.closeCourseSaved}</p>
+      {closeError && <p role="alert" className={styles.closeCourseError}>{t.closeCourseFailed}</p>}
+      <div className={styles.closeCourseActions}>
+        <button type="button" className={styles.keepCourseButton}
+          onClick={() => closeCourseDialogRef.current?.close()} disabled={closing}>{t.keepCourse}</button>
+        <button type="button" className={styles.confirmCloseButton}
+          onClick={() => void confirmCloseCourse()} disabled={closing} data-confirm-close-course>
+          {closing ? t.closingCourse : t.closeCourse}
+        </button>
+      </div>
+    </dialog>
 
     <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="course-upgrade-title"
       data-course-subscription-dialog>

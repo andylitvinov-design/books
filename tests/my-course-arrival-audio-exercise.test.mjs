@@ -59,5 +59,6 @@ test('spoken guide is voluntary and stops on hidden tab, screen change or discom
   assert.match(player,/words\.fullInstructions/)
   assert.match(css,/\.arrivalExercise\{/)
   assert.match(css,/@media\(max-width:540px\)/)
-  assert.match(player,/data-course-global-discomfort/)
+  assert.doesNotMatch(player,/data-course-global-discomfort|discomfortShortcut|discomfortAction/)
+  assert.match(player,/data-course-discomfort-support/)
 })
