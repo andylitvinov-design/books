@@ -1,5 +1,5 @@
 import { ownerDelivery,privateJson } from '@/lib/clients/delivery-http'
-import { createPrivateMediaIntent,completePrivateMedia,privateMediaPlayback,cleanupPendingSessionMedia } from '@/lib/clients/session-delivery-storage'
+import { createPrivateMediaIntent,completePrivateMedia,privateMediaPlayback,cleanupPendingSessionMedia,deleteUnusedPrivateSessionVideo,retryUnusedVideoDeletion } from '@/lib/clients/session-delivery-storage'
 import { getOwnerSession } from '@/lib/clients/session-delivery-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -8,6 +8,8 @@ export async function POST(request,{params}) {
   return ownerDelivery(request,async({config,store,data})=>{
     switch(data.action) {
       case 'cleanup':return privateJson(await cleanupPendingSessionMedia(config,store,id,sessionId))
+      case 'delete-unused-video':return privateJson(await deleteUnusedPrivateSessionVideo(config,store,id,sessionId,data.assetId))
+      case 'retry-video-deletions':return privateJson(await retryUnusedVideoDeletion(config,store,id,sessionId))
       case 'intent':return privateJson(await createPrivateMediaIntent(config,store,id,sessionId,data),201)
       case 'complete':return privateJson(await completePrivateMedia(config,store,id,sessionId,data.assetId,{durationSeconds:data.durationSeconds}))
       case 'play':
