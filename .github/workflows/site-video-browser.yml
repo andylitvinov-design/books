@@ -28,6 +28,7 @@ on:
       - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/verify-homepage-video-playback.mjs'
       - 'scripts/verify-page-video-release.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
@@ -61,6 +62,7 @@ on:
       - 'middleware.ts'
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/verify-homepage-video-playback.mjs'
       - 'scripts/verify-page-video-release.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
@@ -130,6 +132,10 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check complete Spanish About page in Chromium and WebKit
         run: node scripts/verify-es-about.mjs
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Verify real EN/RU homepage playback on published site
+        run: node scripts/verify-homepage-video-playback.mjs
         env:
           NEXT_TELEMETRY_DISABLED: '1'
       - name: Check all Spanish public destinations and remedy routes
