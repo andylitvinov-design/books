@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
-import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
+import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
@@ -155,7 +155,9 @@ export function MyCourse({ data, locale = 'en' }) {
   const startDialogRef = useRef(null)
   // A direct Anti-Stress CTA is not an invitation to repeat the catalogue/wizard.
   const fastAntistressEntry = Boolean(requestedProgram) ||
-    (showCourse && (state?.course?.stage || 0) <= 2 && searchParams.get('entry') !== 'personal')
+    (showCourse && [1, 2].includes(state?.course?.stage) &&
+      courseProgramFromTopics(state?.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID &&
+      searchParams.get('entry') !== 'personal')
   useEffect(() => {
     // OAuth may return without a programme query. A separate navigation helper
     // restores validated public choices, never stored course state.
