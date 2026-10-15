@@ -2,7 +2,7 @@
 -- Review exact target / role grants / RLS and apply through a controlled migration.
 -- Pending orders NEVER grant entitlements; those require a separately reviewed
 -- receipt-confirmation + multi-course rollout. No bank account or PII stored.
-DO $ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $;
+DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $$;
 BEGIN;
 
 create table app_private.manual_billing_orders (

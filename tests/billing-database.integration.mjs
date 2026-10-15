@@ -270,7 +270,7 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
       await admin.query(await readFile(new URL('../supabase/migrations/'+migration,import.meta.url),'utf8'))
     }
     await applyIsolatedProposal(admin, 'proposed-manual-order-schema.sql',
-      "DO $ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $;")
+      "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $$;")
     await t.test('manual invoice RLS, duplicate request key and reviewer-only payment writes', async () => {
       const owner = await createOwner(admin), foreign = await createOwner(admin)
       const op = randomUUID()

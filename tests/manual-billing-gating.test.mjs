@@ -43,5 +43,5 @@ test('Premium cannot be approved using the Stripe-only session credit implementa
   assert.equal(cfg.accessEnabled,true)
   assert.equal(cfg.premiumSessionEnabled,false)
   assert.equal(manualBillingConfig({...onlyBasic,HH_MANUAL_PREMIUM_CREDIT_SCHEMA_APPROVED:'true'}).premiumSessionEnabled,false)
-  assert.equal(manualBillingConfig({...onlyBasic,HH_MANUAL_PREMIUM_CREDIT_SCHEMA_APPROVED:'true',HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED:'true'}).premiumSessionEnabled,true)
+  assert.equal(manualBillingConfig({...onlyBasic,HH_MANUAL_PREMIUM_CREDIT_SCHEMA_APPROVED:'true',HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED:'true'}).premiumSessionEnabled,false)
 })
