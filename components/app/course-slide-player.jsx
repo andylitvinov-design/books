@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
 import CoursePracticeVoice from './course-practice-voice'
+import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
+import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
@@ -311,7 +313,8 @@ export default function CourseSlidePlayer({
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
-  const slides = useMemo(() => buildSlides(lesson), [lesson])
+  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id==='stress')
+  const slides=useMemo(()=>isDayOne?DAY_ONE_SLIDES:buildSlides(lesson),[isDayOne,lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
@@ -328,6 +331,16 @@ export default function CourseSlidePlayer({
   const [symbolMode, setSymbolMode] = useState('words')
   const [thoughtChoice, setThoughtChoice] = useState(session?.signals?.thoughtPath || 'neutral')
   const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
+  const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
+  const [associationWords,setAssociationWords]=useState('')
+  const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
+  function recordDayOne(field,value){
+    setDayOneAnswers(previous=>({...previous,[field]:value}))
+    if(field==='comfort')setComfort(value)
+    if(field==='adaptation')setAdaptationChoice(value)
+    if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
+    if(field==='experience'&&value==='unchanged')setFlexibility('same')
+  }
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
   const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
@@ -440,6 +453,8 @@ export default function CourseSlidePlayer({
           phraseResponse:phraseResponse||null,
         } : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
+        ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
+          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{})
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -447,7 +462,25 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.kind === 'arrive' ? words.arrivalTitle : slide.section.title || words.guided) : words[slide.kind]
+  const dayOneTitles=locale==='ru'?{
+    recall:'Мой личный фокус',idea:'Одна мысль для размышления',
+    'day1-prepare':'Подготовка к практике','day1-notice':'Замечаю настоящее',
+    'day1-practice':'Главная практика','day1-exit':'Мягкое завершение',
+    'day1-anchor':'Моя точка опоры','day1-association':'Практика ассоциаций',
+    'day1-independent':'Попробую самостоятельно','day1-experience':'Что я заметил(а)?',
+    'day1-adapt':'Выбираю подходящий формат','day1-transfer':'Мой следующий шаг',
+  }:{
+    recall:'My personal focus',idea:'A thought to consider',
+    'day1-prepare':'Preparing to practise','day1-notice':'Noticing the present',
+    'day1-practice':'Main practice','day1-exit':'A gentle finish',
+    'day1-anchor':'My point of support','day1-association':'Associations',
+    'day1-independent':'Trying it by myself','day1-experience':'What did I notice?',
+    'day1-adapt':'Choosing what fits','day1-transfer':'My next step',
+  }
+  const title=promoOpen?words.promoTitle:finished?words.finished
+    :isDayOne&&dayOneTitles[slide.kind]?dayOneTitles[slide.kind]
+    :slide.kind==='guided'?(slide.section.kind==='arrive'?words.arrivalTitle:slide.section.title||words.guided)
+    :words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
@@ -458,7 +491,7 @@ export default function CourseSlidePlayer({
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player ref={frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.8":undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -843,6 +876,11 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.momentHint}</p>
           </>}
 
+          {isDayOne && slide.kind.startsWith('day1-') && <DayOneExercise
+            kind={slide.kind} locale={locale} lesson={lesson} answers={dayOneAnswers}
+            onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
+            onAssociationWords={setAssociationWords} selectedFocus={dayOneFocus}
+            onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {slide.kind === 'feedback' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.helper}>{words.feedbackHint}</p>
@@ -904,7 +942,8 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
+          {(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
+            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
