@@ -6,6 +6,7 @@ import * as coursePrograms from '../../lib/inner-growth/course-programs.js'
 import * as momentTrends from '../../lib/inner-growth/course-moment-trends.js'
 import * as adaptation from '../../lib/inner-growth/course-adaptation.js'
 import * as welcome from '../../lib/inner-growth/course-welcome.js'
+import * as dayOne from '../../lib/inner-growth/anti-stress-day-one.js'
 import * as courseTestFlow from '../../lib/app/course-test-flow.js'
 import * as billingPlan from '../../lib/billing/public-plan.js'
 import * as coursePlans from '../../lib/inner-growth/course-plans.js'
@@ -56,7 +57,8 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     './course-entry-selector': moduleFor('CourseEntrySelector'), './my-courses-dashboard': moduleFor('MyCoursesDashboard'), './course-preset-catalog': moduleFor('CoursePresetCatalog'),
     './course-focus-entry': moduleFor('CourseFocusEntry'),
     './course-today': moduleFor('CourseToday'), './course-14-day-overview': moduleFor('Course14DayOverview'), './course-r3-steps': moduleFor('CourseR3Steps'),
-    '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome,
+    '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome, '@/lib/inner-growth/anti-stress-day-one':dayOne,
+    './anti-stress-day-one': { default: stub('DayOneExercise'), DayOneChoices: stub('DayOneChoices'), DayOneFocusPicker: stub('DayOneFocusPicker') },
     './course-moment-trends': moduleFor('CourseMomentTrends'), './course-final-retest': moduleFor('CourseFinalRetest'),
     './use-course-promotion': { useCoursePromotion: () => ({ show: false, checkoutReady: false, dismiss: () => {} }) },
     '@/lib/app/course-test-flow': courseTestFlow,

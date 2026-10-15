@@ -96,7 +96,7 @@ test('three additive versions: 135 runnable, 68 source-backed, 67 HH after exact
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,67)
  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:135,registered:135,uncovered:[],obsolete:[]})
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-three-registration.json',import.meta.url))),added)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'7635478d0c3762d2af209716cef82788c786504fc097895d786d4115604108f1')
 })
 

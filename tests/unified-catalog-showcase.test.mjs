@@ -14,7 +14,7 @@ test("Services keeps three free paths while Home restores four illustrated offer
   const library = read("components", "library-hub.tsx");
   assert.match(services, /<ServicesSolutions locale=/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
-  assert.match(solutions, /const visibleOffers = isHome \? allOffers : personalOffers/);
+  assert.match(solutions, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer.id !== "business"\) : personalOffers/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.doesNotMatch(services, /<CatalogShowcase/);

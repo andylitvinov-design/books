@@ -190,7 +190,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
           </button>
         </div>
         {showPlan && <div className={styles.planDetails} id="my-course-plan">
-          <Course14DayOverview locale={locale}/>
+          <Course14DayOverview locale={locale} programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}/>
         </div>}
       </article>}
 

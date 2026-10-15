@@ -24,7 +24,7 @@ const UI = {
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
     testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
-    programmeLabel: 'Your chosen course', programmeBattery: 'Starter tests for this programme',
+    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) and GAD-7 (7 items); Resource Pulse is optional. Russian GAD-7 is a separate, not independently validated translation.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
     showMore: 'Add or remove more tests', showLess: 'Show the five suggestions',
@@ -75,7 +75,7 @@ const UI = {
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
     testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
-    programmeLabel: 'Ваш курс', programmeBattery: 'Стартовые тесты программы',
+    programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) + GAD-7 (7 вопросов), тест опоры — по желанию. Русский перевод GAD-7 не валидирован отдельно.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
     showMore: 'Добавить или убрать другие тесты', showLess: 'Показать только пять первых',
@@ -271,8 +271,13 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const available = new Set(ranked.map(item=>item.key))
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
-    setChosenTests(preset ? [...preset.testKeys] : confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : ranked.slice(0,5).map(item=>item.key))
-  },[stage,testsTouched,confirmedKeys,ranked,preset])
+    const starter=programme?.id==='stress'
+      ? ['hh-weekly-pulse','gad-7'].filter(key=>ranked.some(item=>item.key===key))
+      : ranked.slice(0,5).map(item=>item.key)
+    // A short stress course starts with one 7-day questionnaire and one
+    // 14-day anxiety instrument. Resource Pulse remains an opt-in third test.
+    setChosenTests(preset ? [...preset.testKeys] : confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter)
+  },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
     if (preset) return
     setTestsTouched(true)

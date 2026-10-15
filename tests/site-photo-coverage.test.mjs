@@ -29,7 +29,7 @@ test("critical photo-first sections use existing local image files, never placeh
   ]) validateFiles(file);
 });
 
-test("three personal services show three distinct local illustrations or photos on EN/RU and Spanish routes", () => {
+test("personal services retain three shared images and four Spanish cards with three canonical service images including business", () => {
   const shared = read("components/personal-work-journey.tsx");
   const es = read("app/es/services/page.tsx");
   const photos = shared.match(/const photos = \[([\s\S]*?)\];/)?.[1]?.match(/"\/[^"]+\.(?:jpg|webp|png|svg)"/g) || [];
@@ -39,8 +39,10 @@ test("three personal services show three distinct local illustrations or photos 
   assert.match(shared, /<Image src=\{photos\[index\]\}/);
   assert.match(shared, /styles\.servicePhoto/);
   const images = [...es.matchAll(/image: "(\/[^"]+\.(?:jpg|png|webp))"/g)].map(m => m[1]);
-  assert.equal(images.length, 3);
-  assert.equal(new Set(images).size, 3);
+  assert.equal(images.length, 4);
+  assert.equal(new Set(images).size, 3); // Canonical business card deliberately shares the constellation image.
+  assert.ok(es.includes("/es/services/business-consulting"));
+  for (const image of images) assert.ok(readImage(image), "Missing Spanish service image: " + image);
   assert.match(es, /services-studio-card-photo/);
   const esHome = read("app/es/page.tsx");
   const esHomePhotos = [...esHome.matchAll(/image: '([^']+)'/g)].map(x => x[1]);

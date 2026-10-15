@@ -28,7 +28,7 @@ test("Services retains free paths; Home uses only the bottom blue capture for th
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
   assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);
-  assert.match(solutions, /const visibleOffers = isHome \? allOffers : personalOffers/);
+  assert.match(solutions, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer.id !== "business"\) : personalOffers/);
   assert.match(solutions, /visibleOffers.map/);
   assert.match(solutions, /homeTitle: "How I can help"/);
   assert.match(hero, /href="#free-insights"/);

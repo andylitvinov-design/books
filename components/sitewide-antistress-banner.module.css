@@ -9,3 +9,5 @@
 @media(max-width:680px){.inner{min-height:51px;justify-content:space-between;gap:8px;padding:5px 12px}.detail{display:none}.name{font-size:11px;white-space:normal;letter-spacing:.015em}.cta{font-size:12px;min-height:44px;padding:7px 11px;text-align:center;white-space:nowrap}}
 @media(max-width:350px){.name{font-size:10px}.cta{font-size:11px;gap:4px;padding:6px 9px}}
 @media print{.ribbon{display:none!important}}
+
+.name{text-decoration:none!important}.name:hover{color:#fff;text-decoration:underline!important;text-underline-offset:3px}.name:focus-visible{outline:3px solid #f3b5a4;outline-offset:3px}
