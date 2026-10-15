@@ -7,6 +7,7 @@ on:
       - 'app/admin/youtube-upload/**'
       - 'tests/youtube-phone-upload.test.mjs'
       - 'tests/youtube-upload-history.test.mjs'
+      - 'tests/youtube-upload-readback.test.mjs'
       - '.github/workflows/youtube-phone-uploader.yml'
   workflow_dispatch:
 jobs:
@@ -21,7 +22,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Protocol + persistent history unit tests
-        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs
+        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-upload-readback.test.mjs
       - name: Browser transport and server history syntax
         run: |
           node --check lib/youtube/phone-upload-protocol.mjs
