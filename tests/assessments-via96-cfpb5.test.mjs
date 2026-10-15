@@ -138,3 +138,17 @@ test('new SQL registrations match exact definition ids/hashes and additive boots
   assert.ok(bootstrap.includes('20261015221000_hh_ipip_via_r_strengths_96.sql'))
   assert.ok(bootstrap.includes('20261015222000_hh_cfpb_financial_wellbeing_short.sql'))
 })
+
+
+test('advanced Explorer groups 27 VIA-R standalone cards without hiding saved selections or search hits', async () => {
+  const source = await readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8')
+  assert.match(source, /showStandaloneVia, setShowStandaloneVia/)
+  assert.match(source, /const visibleCatalog = visible\.filter/)
+  assert.match(source, /selectedKeys\.includes\(entry\.key\) \|\| !isStandaloneVia\(entry\.key\)/)
+  assert.match(source, /data-via-family-collapsed=\{collapsedViaCount\}/)
+  assert.match(source, /aria-expanded=\{showStandaloneVia\}/)
+  assert.match(source, /\(showAll \? visibleCatalog : visibleCatalog\.slice\(0, 8\)\)/)
+  assert.match(source, /query\.trim\(\) \|\| selectedKeys\.includes\(entry\.key\)/)
+  assert.ok(!/^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(via.key), 'full 96 item card is never collapsed')
+  assert.equal(sourceScales.length + IPIP_VIA_R_COMPLETION_DEFINITIONS.filter(d => d.questions.length===6).length,27)
+})
