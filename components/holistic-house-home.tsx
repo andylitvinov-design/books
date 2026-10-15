@@ -12,10 +12,8 @@ import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
-import { SiteVideoPlayer } from "@/components/site-video-player";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
-import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 
 const copy = {
   ru: {
@@ -88,14 +86,14 @@ const copy = {
 
 type HolisticHouseHomeProps = {
   locale?: Locale;
-  introVideos?: Partial<Record<Locale, PublishedSiteVideo>>;
+  /** Streamed published video section: never blocks the first HTML byte on Redis. */
+  introVideoContent?: React.ReactNode;
 };
 
-export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale = "en", introVideoContent }: HolisticHouseHomeProps) {
   const router = useRouter();
   const text = copy[locale];
   const entry = LOCAL_ACQUISITION[locale];
-  const introVideo = introVideos[locale];
 
   function selectLocale(nextLocale: Locale) {
     const target = new URL(window.location.href);
@@ -190,17 +188,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </p>
       </section>
 
-      {introVideo ? (
-        <section className="service-home-video" aria-labelledby="service-home-video-title">
-          <header>
-            <p className="service-home-kicker">{text.videoKicker}</p>
-            <h2 id="service-home-video-title">{text.videoTitle}</h2>
-          </header>
-          <div className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
-            <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" />
-          </div>
-        </section>
-      ) : null}
+      {introVideoContent}
 
       <PersonalTestimonials locale={locale} variant="home" />
 
