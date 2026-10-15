@@ -64,7 +64,8 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(playerCss,/object-fit:contain/)
   assert.match(playerCss,/\.welcomeChoices button\[aria-pressed=true\]/)
   assert.doesNotMatch(player,/key: 'pace', kind: 'pace'/)
-  assert.match(player,/slide\.kind === 'checkin' \? \(lesson\.antiStress \? goNext : \(\) => void saveCheckin\(\)\)/)
+  // Genuine NAV-2.0 OPORA lessons are practice-led, not a second daily questionnaire.
+  assert.match(player,/slide\.kind === 'checkin' \? \(lesson\.antiStress\|\|isOporaModule \? goNext : \(\) => void saveCheckin\(\)\)/)
   assert.match(player,/day:cycle\.day,lessonId:lesson\.id,operationId:sessionOp\.current/)
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
