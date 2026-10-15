@@ -474,7 +474,7 @@
   .testInfo strong{font-size:.83rem;line-height:1.22}
   .testInfo>small{font-size:.68rem;line-height:1.25;-webkit-line-clamp:1;line-clamp:1}
   .testChips{gap:3px 5px;margin-top:1px}
-  .testInfo .testKindBadge{display:none}
+  .testInfo .testKindBadge{display:inline-flex}
   .testChips .matchBadge{min-height:auto;padding:3px 4px;font-size:.68rem}
   .testChips .matchBadge span{font-size:.59rem}
   .duration{font-size:.62rem;gap:2px}
@@ -498,3 +498,119 @@
   .testDetailsBody{padding-left:65px}
 }
 @media(prefers-reduced-motion:reduce){.testDetails summary svg,.takeTest{transition:none}}
+
+
+/* 2026-10-15: Soft navy & burgundy My Tests, with compact, readable disclosures.
+   Scoped to the public/simple picker; no account-data or questionnaire changes. */
+.shell{
+  --ink:#172f4b;--muted:#62778a;--sage:#873d56;--line:#dfe5e9;--paper:#fffdfa;
+  background:linear-gradient(145deg,#fcfaf8 0%,#f6f8fa 56%,#fcf8f8 100%);
+  border-color:#e3e5e8;color:var(--ink);
+  box-shadow:0 9px 27px rgba(19,42,67,.055)
+}
+.hero h1,.sectionHeader h2,.promoCopy h2{color:#172f4b}
+.hero .lead,.sectionHeader p,.promoCopy>p:not(.promoKicker){color:#61778a}
+.eyebrow{color:#823e55}
+.benefits>div{color:#344f66}
+.benefits>div>svg{color:#8a415c;background:#f7edf1;border-color:#eedde3}
+.promo{background:linear-gradient(120deg,#f5f3f2,#fffcfa);border-color:#e6e2e5;box-shadow:0 6px 20px rgba(27,52,76,.05)}
+.promoKicker{color:#783850;background:#f4e9ed}
+.promoAction,.cta,.section[data-recommendation-mode='course'] .cta{
+  background:linear-gradient(105deg,#914159,#7d314a);border-color:#782c43;
+  box-shadow:0 5px 15px rgba(125,49,74,.16)
+}
+.section,.problemSection{background:#fffefa;border-color:#e0e5e9;box-shadow:0 4px 14px rgba(23,47,75,.035)}
+.sectionHeader h2{letter-spacing:-.025em}
+.topic{background:#fffefd;border-color:#e0e5e9;color:#24445e}
+.topic[aria-pressed=true],.problemChip[aria-pressed=true]{background:#f8edf1;border-color:#cea9b6;color:#80384f}
+.step{background:#f3e6eb;color:#7d354e}
+.modeSwitch{background:#eef1f4;border-color:#dce3e8}
+.modeSwitch button[aria-pressed=true]{background:#823951;color:#fff}
+.matchCount{background:#eaf0f4;color:#1c4562}
+.testList{gap:9px}
+.testEntry{border:1px solid #dee4e8;border-radius:15px;background:#fff;box-shadow:0 3px 12px rgba(21,51,74,.045)}
+.testEntry[data-selected=true]{border-color:#d5b4c1;box-shadow:0 3px 12px rgba(107,52,74,.065)}
+.testEntry .testRow[data-selected=true]{background:#fcf8fa}
+.testEntry .testRow{min-height:84px}
+.testInfo strong{color:#17334d}
+.testInfo>small{color:#64798b}
+.testChips{gap:4px 7px}
+.testInfo .testKindBadge,.testFacts .testKindBadge{
+  display:inline-flex;align-items:center;gap:4px;max-width:100%;width:max-content;
+  padding:3px 7px;font-size:.68rem;line-height:1.25;font-weight:720;
+  border:1px solid #e5d9df;border-radius:8px;background:#f5eef1;color:#733c52
+}
+.testInfo .testKindBadge[data-test-kind-badge=professional],.testFacts .testKindBadge[data-test-kind-badge=professional]{color:#214762;background:#eaf0f5;border-color:#dbe5eb}
+.testInfo .testKindBadge[data-test-kind-badge=monitoring],.testFacts .testKindBadge[data-test-kind-badge=monitoring]{color:#365d70;background:#eaf3f4;border-color:#dce9e9}
+.testInfo .testKindBadge[data-test-kind-badge=hobby],.testFacts .testKindBadge[data-test-kind-badge=hobby]{color:#774c68;background:#f5eef4;border-color:#ebdeea}
+.testInfo .testKindBadge svg,.testFacts .testKindBadge svg{flex:0 0 auto}
+.testChips .matchBadge{background:#eef2f6;color:#244e6a;font-weight:800}
+.duration,.questionCount{display:inline-flex;align-items:center;gap:3px;color:#617688;font-size:.71rem;white-space:nowrap}
+.takeTest{border-color:#793047;background:linear-gradient(105deg,#914159,#7b3149);box-shadow:0 4px 11px rgba(125,48,74,.16)}
+.takeTest:hover:not(:disabled){background:linear-gradient(105deg,#82354e,#6e2c41)}
+.testDetails{border-top:1px solid #ebeff2}
+.testDetails>summary{
+  display:flex;align-items:center;gap:7px;width:100%;min-height:42px;
+  padding:8px 16px;color:#793b53;text-decoration:none;text-align:left;
+  font-size:.79rem!important;font-weight:750!important
+}
+.testDetails>summary svg:last-child{margin-left:auto}
+.testDetails[open]>summary{background:#fcfafb;border-bottom:1px solid #edf0f3}
+.testDetailsBody{
+  display:grid;gap:11px;padding:13px 16px 16px;min-width:0;color:#506779;
+  background:linear-gradient(#fff,#fdfdfd)
+}
+.testDetailsBody .testPurpose{margin:0;font-size:.82rem;line-height:1.48;color:#506a7d}
+.testFacts{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
+.testFacts>span:not(.testKindBadge){display:inline-flex;align-items:center;gap:5px;font-size:.73rem;color:#536b7e}
+.testFacts svg{color:#7e435a;flex:0 0 auto}
+.scaleOverview{padding:10px 12px;background:#f5f7f9;border:1px solid #e3e8ec;border-radius:12px}
+.scaleOverview>strong{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#203f58;margin-bottom:7px}
+.scaleOverview>strong svg{color:#824259}
+.scalePills{display:flex;gap:6px;flex-wrap:wrap}
+.scalePills span{display:inline-flex;max-width:100%;align-items:center;border:1px solid #dfe6eb;border-radius:999px;background:#fff;
+  color:#36546a;padding:4px 9px;font-size:.72rem;line-height:1.3;overflow-wrap:anywhere}
+.researchDetails{border-top:1px solid #e9edf0;padding-top:2px}
+.researchDetails>summary{display:flex;gap:7px;align-items:center;min-height:37px;padding:5px 0;color:#793e56;
+  font-size:.75rem!important;font-weight:700!important;cursor:pointer;list-style:none}
+.researchDetails>summary::-webkit-details-marker{display:none}
+.researchDetails>summary svg:last-child{margin-left:auto;transition:transform .16s}
+.researchDetails[open]>summary svg:last-child{transform:rotate(180deg)}
+.researchBody{padding:7px 0 0}
+.researchBody .methodology{margin:2px 0 8px;font-size:.76rem;line-height:1.5;color:#607281;overflow-wrap:anywhere}
+.researchBody>a{color:#813d56;font-size:.76rem;font-weight:700;text-underline-offset:3px}
+.testDetailsBody .testGuide{padding:0!important;margin-top:8px;min-width:0}
+.testDetailsBody .testGuide :is(strong,summary){color:#234c66}
+@media(max-width:600px){
+  .shell{background:linear-gradient(150deg,#fcfaf9,#f7f9fb 60%,#fdf9f9)}
+  .hero h1{font-size:clamp(1.82rem,7.5vw,2.17rem)!important;line-height:1.09}
+  .testEntry .testRow{grid-template-columns:17px 44px minmax(0,1fr) 78px;gap:6px;padding:10px 8px;min-height:82px}
+  .testArt,.testEntry .testArt{width:44px;height:51px}
+  .testInfo strong{font-size:.83rem;line-height:1.25}
+  .testInfo>small{font-size:.68rem}
+  .testChips{gap:4px}
+  .testInfo .testKindBadge{display:inline-flex;padding:3px 5px;font-size:.61rem}
+  .testInfo .testKindBadge svg{width:12px;height:12px}
+  .testChips .questionCount{display:none}
+  .testChips .matchBadge{font-size:.66rem;padding:3px 5px}
+  .duration{font-size:.63rem}
+  .takeTest{min-height:40px;font-size:.73rem!important}
+  .testDetails>summary{padding:8px 12px;min-height:41px;font-size:.78rem!important}
+  .testDetailsBody{padding:12px;gap:10px}
+  .testDetailsBody .testPurpose{font-size:.81rem;line-height:1.5}
+  .scaleOverview{padding:9px 10px}
+  .scalePills span{font-size:.71rem}
+  .testFacts{gap:6px 10px}
+}
+@media(max-width:370px){
+  .testEntry .testRow{grid-template-columns:16px 40px minmax(0,1fr) 70px;gap:5px;padding:9px 6px}
+  .testArt,.testEntry .testArt{width:40px;height:47px}
+  .testInfo .testKindBadge{display:inline-flex}
+  .testInfo .testKindBadge span{display:none}
+  .testInfo .testKindBadge{min-height:22px;justify-content:center;padding:3px 6px}
+  .testInfo strong{font-size:.79rem}
+  .takeTest{font-size:.7rem!important;padding-inline:3px}
+  .testDetails>summary{padding:8px 10px}
+  .testDetailsBody{padding:10px}
+}
+@media(prefers-reduced-motion:reduce){.researchDetails>summary svg:last-child{transition:none}}
