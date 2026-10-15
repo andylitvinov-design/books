@@ -473,7 +473,7 @@ async function handle(request, { params }) {
       const saved = await readSavedDocument(config, store, actor, path[1], locale)
       const payment = saved.kind === 'invoice' || saved.kind === 'receipt'
       const [
-        { buildPaymentPdf, buildPrescriptionPdf },
+        { buildPaymentPdf, buildPrescriptionPdf, buildPrescriptionMobilePdf },
         { reportPdfFilename },
         { metadataBaseFor },
       ] = await Promise.all([
@@ -481,7 +481,10 @@ async function handle(request, { params }) {
         import('@/lib/documents/report-filename'),
         import('@/data/site-metadata'),
       ])
-      const pdf = await (payment ? buildPaymentPdf : buildPrescriptionPdf)(
+      const preview = new URL(request.url).searchParams.get('preview') === '1'
+      const layout = new URL(request.url).searchParams.get('layout')
+      const mobile = !payment && (preview || layout === 'mobile') && layout !== 'a4'
+      const pdf = await (payment ? buildPaymentPdf : mobile ? buildPrescriptionMobilePdf : buildPrescriptionPdf)(
         saved.document, locale, metadataBaseFor().origin,
       )
       const filename = payment
@@ -491,7 +494,7 @@ async function handle(request, { params }) {
         headers: {
           ...PRIVATE_HEADERS,
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `${preview ? 'inline' : 'attachment'}; filename="${filename}"`,
         },
       }))
     }
