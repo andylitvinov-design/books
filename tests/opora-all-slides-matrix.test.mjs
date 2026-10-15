@@ -8,6 +8,7 @@ import {DAY_ONE_SLIDES} from '../lib/inner-growth/anti-stress-day-one.js'
 import {buildCourseSlides,OPORA_EXPECTED_SLIDES} from '../lib/inner-growth/course-slide-sequence.js'
 import {antiStressLabFor} from '../lib/inner-growth/anti-stress-practice-lab.js'
 import {antiStressMethodActivity} from '../lib/inner-growth/anti-stress-method-activities.js'
+import {oporaModuleActivity,validateOporaModuleActivityChoice,oporaModuleActivityComplete,OPORA_MODULE_ACTIVITY_PLAN} from '../lib/inner-growth/opora-module-exercise.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const version=id=>id==='AS2'?COURSE_ANTISTRESS_OUTCOME_V3:COURSE_CONTENT_V4
@@ -125,4 +126,47 @@ test('client and API permit only voluntary bounded NAV-2.0 learning choices',()=
   assert.match(server,/interactionSchema:'opora-level-2'/)
   assert.match(server,/optionalChoice\(input\.practiceAttempt,practiceAttemptOptions\)/)
   assert.match(server,/!isOporaModule&&\['aphorismResponse','practiceAttempt','phraseResponse'\]/)
+})
+
+test('all 56 level days have distinct, translated hands-on practice interactions',()=>{
+  assert.equal(oporaModuleActivityComplete(),true)
+  assert.equal(new Set(OPORA_MODULE_ACTIVITY_PLAN.map(x=>x.kind)).size,14)
+  for(const id of moduleIds){
+    for(const locale of ['ru','en']){
+      for(let day=1;day<=14;day++){
+        const a=oporaModuleActivity(id,day,locale,ANTISTRESS_ROUTER_VERSION)
+        assert.equal(a.day,day)
+        assert.equal(a.moduleId,id)
+        assert.equal(a.title,lesson(id,day,locale).title)
+        assert.equal(a.practice,lesson(id,day,locale).oporaModule.practice)
+        assert.ok(a.prompt.length>15)
+        assert.equal(a.options.length,4)
+        assert.equal(new Set(a.options.map(x=>x.id)).size,4)
+        assert.ok(a.options.every(x=>x.label.length>3))
+        for(const option of a.options){
+          assert.equal(validateOporaModuleActivityChoice(id,day,option.id,ANTISTRESS_ROUTER_VERSION),option.id)
+        }
+        assert.equal(validateOporaModuleActivityChoice(id,day,null,ANTISTRESS_ROUTER_VERSION),null)
+      }
+    }
+  }
+  assert.throws(()=>validateOporaModuleActivityChoice('AS2',1,'object',ANTISTRESS_ROUTER_VERSION),/INVALID_OPORA_MODULE_ACTIVITY/)
+  assert.throws(()=>validateOporaModuleActivityChoice('AS1',1,'invented',ANTISTRESS_ROUTER_VERSION),/INVALID_OPORA_MODULE_ACTIVITY/)
+  assert.throws(()=>validateOporaModuleActivityChoice('AS1',1,'object','opora-nav-1.3-20261014'),/INVALID_OPORA_MODULE_ACTIVITY/)
+  assert.throws(()=>validateOporaModuleActivityChoice('AS1',1,'x'.repeat(30),ANTISTRESS_ROUTER_VERSION),/INVALID_OPORA_MODULE_ACTIVITY/)
+})
+
+test('activity uses an uncropped neutral visual and only voluntary private free-text saving',()=>{
+  const ui=read('components/app/opora-module-activity.jsx')
+  const style=read('components/app/opora-module-activity.module.css')
+  const player=read('components/app/course-slide-player.jsx')
+  const server=read('lib/app/growth-daily.js')
+  assert.match(ui,/course-journey-landscape\.svg/)
+  assert.match(style,/object-fit:contain/)
+  assert.match(ui,/onAddReflection\(/)
+  assert.match(player,/data-opora-module/)
+  assert.match(player,/isOporaModule&&<OporaModuleActivity/)
+  assert.match(player,/moduleActivityChoice:moduleActivityChoice\|\|null/)
+  assert.match(server,/validateOporaModuleActivityChoice\(/)
+  assert.match(server,/moduleActivityChoice:|moduleActivityChoice,/)
 })
