@@ -159,3 +159,25 @@ test('owner media preflight exposes safe size/provider metadata, never credentia
   assert.match(recorder,/videoReady===false/)
   assert.match(recorder,/await checkReady\(\)/)
 })
+
+test('new MP4 uploads fail closed without approved external storage, never silently filling Supabase',async()=>{
+  let sessionReads=0,dbReads=0
+  const create=loadStorage(
+    ['AppError','SESSION_MEDIA_TYPES','configuredVideoUploadStore','getOwnerSession','transaction','process'],
+    [AppError,{'video/mp4':{kind:'video',ext:'mp4',max:45_000_000}},
+      ()=>null,async()=>{sessionReads++;return {}},
+      async()=>{dbReads++;throw Error('Unexpected DB operation')},{env:{}}],
+    'createPrivateMediaIntent'
+  )
+  await assert.rejects(create({},null,'client-a','session-a',{
+    mime:'video/mp4',kind:'video',scope:'client',bytes:2048,
+  }),{code:'MEDIA_STORAGE_NOT_CONFIGURED'})
+  assert.equal(sessionReads,0)
+  assert.equal(dbReads,0)
+})
+test('admin client media preflight reports fail-closed MP4, while keeping audio separate',()=>{
+  const route=readFileSync(new URL('../app/api/admin/clients/[id]/sessions/status/route.js',import.meta.url),'utf8')
+  assert.match(route,/videoProvider='unavailable',videoLimitBytes=0,videoReady=false/)
+  assert.match(route,/HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED==='true'/)
+  assert.match(route,/videoReady=true/)
+})
