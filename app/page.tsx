@@ -1,30 +1,26 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
-import type { Locale } from "@/data/remedies";
+import { homeMetadataFor } from "@/lib/home-seo";
 import { videoKey } from "@/lib/site-videos/model";
 import { getPublishedSiteVideos } from "@/lib/site-videos/public";
-import { uiLocaleCookie } from "@/lib/ui-locale";
-import { publicLocaleCookie } from "@/lib/public-locales";
-type PageProps = { searchParams: Promise<{ lang?: string | string[] }> };
-const meta = {
-  en: { title: "Holistic House — inner development, practice and personal work", description: "Holistic House: personal sessions, free mental wellbeing and inner resources monitoring, Academy programs, books, and a practical reference library." },
-  ru: { title: "Holistic House — развитие, практики и индивидуальная работа", description: "Holistic House: индивидуальная работа, бесплатный мониторинг психологического состояния и внутренних ресурсов, программы Academy, книги и библиотека." },
-} as const;
-async function homeLocale(searchParams: PageProps["searchParams"]): Promise<Locale> {
-  const [{ lang }, cookieStore] = await Promise.all([searchParams, cookies()]);
-  if (lang === "es") redirect('/es');
-  if (lang === "en" || lang === "ru") return lang;
-  if (cookieStore.get(publicLocaleCookie)?.value === 'es') redirect('/es');
-  return cookieStore.get(uiLocaleCookie)?.value === "ru" ? "ru" : "en";
+
+type Props = { searchParams: Promise<{ lang?: string | string[] }> };
+
+export async function generateMetadata(): Promise<Metadata> {
+  return homeMetadataFor("en");
 }
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const locale = await homeLocale(searchParams);
-  return { ...meta[locale], alternates: { canonical: locale === "ru" ? "/?lang=ru" : "/", languages: { en: "/?lang=en", ru: "/?lang=ru", es: "/es", "x-default": "/" } } };
-}
-export default async function HomePage({ searchParams }: PageProps) {
-  const [locale, publishedVideos] = await Promise.all([homeLocale(searchParams), getPublishedSiteVideos()]);
-  const introVideos = { en: publishedVideos[videoKey("home-intro", "en")], ru: publishedVideos[videoKey("home-intro", "ru")] };
-  return <HolisticHouseHome key={locale} locale={locale} introVideos={introVideos} />;
+
+export default async function HomePage({ searchParams }: Props) {
+  const { lang } = await searchParams;
+  const requested = Array.isArray(lang) ? lang[0] : lang;
+  // Preserve existing shared links, but keep locale content on stable URLs.
+  if (requested === "ru" || requested === "es") redirect(`/${requested}`);
+  const publishedVideos = await getPublishedSiteVideos();
+  return (
+    <HolisticHouseHome
+      locale="en"
+      introVideos={{ en: publishedVideos[videoKey("home-intro", "en")] }}
+    />
+  );
 }
