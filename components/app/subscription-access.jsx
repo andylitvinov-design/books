@@ -218,14 +218,14 @@ function Price({ t, status, planId }) {
 }
 
 function CheckoutAction({ t, planId }) {
-  const { status, phase, busy, startCheckout, locale } = useSubscription()
+  const { status, phase, busy, startCheckout, locale, accountId } = useSubscription()
   if (planId === 'free') return <p className={styles.fine} role="status">{t.freeSelected}</p>
   return <div className={styles.purchase}>
     <p className={styles.selectedPrice} aria-live="polite">{t.plans[planId].name}: {t.plans[planId].price}</p>
     <p className={styles.fine}>{t.terms}</p>
     {!canStartCheckout(status, phase, planId) && <p className={styles.notice}>{t.planUnavailable}</p>}
     {phase === 'ready' && status && !status.entitlement.active && !status.subscription &&
-      !canStartCheckout(status, phase, planId) && <ManualBillingRequest planId={planId} locale={locale}/>}
+      !canStartCheckout(status, phase, planId) && <ManualBillingRequest planId={planId} locale={locale} accountId={accountId}/>}
     <button type="button" className={'hh-primary ' + styles.primary}
       disabled={Boolean(busy) || !canStartCheckout(status, phase, planId)} onClick={() => startCheckout(planId)}>
       {busy === 'checkout' ? t.working : t.subscribe + ' · ' + t.plans[planId].name}
@@ -355,6 +355,9 @@ export function SubscriptionSettings() {
       <Benefits t={t} planId={planId}/>
       <p className={styles.fine}>{t.history}</p>
       {status.entitlement.adFree && <p>{t.adFree}</p>}
+      {status.manual?.autoRenew === false && <p className={styles.fine}>{locale === 'ru'
+        ? 'Оплата подтверждена на один месяц. Автоматического продления нет — следующий месяц оплачивается отдельно.'
+        : 'This payment covers one month only. There is no automatic renewal; another payment is needed for the next month.'}</p>}
       {status.entitlement.monthlySessions > 0 && <SessionBenefit key={status.sessionBenefit?.periodEnd || status.entitlement.paidThrough} t={t}/>}
       {subscription?.cancelAtPeriodEnd ? <p>{date ? t.renewalEnds + ' ' + date + '.' : t.scheduled}</p> :
         date && status.entitlement.active ? <p>{t.paidThrough} {date}.</p> : null}
