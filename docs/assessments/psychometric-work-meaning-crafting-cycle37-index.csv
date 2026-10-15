@@ -1,0 +1,15 @@
+key,instrument,locale,item_count,research_source,status
+wos-ferris2008-en10,WOS,en,10,https://doi.org/10.1037/a0012743,research_only
+tps-edmondson1999-en7,TPS,en,7,https://doi.org/10.2307/2666999,research_only
+tps-eses-navarro2025-pilot7,TPS,es-ES,7,https://doi.org/10.23668/psycharchives.16452,research_only
+jcs-tims2012-nl21,JCS,nl,21,https://doi.org/10.1016/j.jvb.2011.05.009,research_only
+jcs-eses-bakker2018-21,JCS,es-ES,21,https://doi.org/10.7334/psicothema2016.293,research_only
+jcs-ru-manichev2023-21,JCS,ru,21,https://doi.org/10.17323/2312-5942-2023-13-1-92-116,research_only
+jcs-zh-cheng2020-21,JCS,zh,21,https://doi.org/10.1111/jonm.12998,research_only
+wami-steger2012-en10,WAMI,en,10,https://doi.org/10.1177/1069072711436160,research_only
+wami-eses-2022-10,WAMI,es-ES,10,https://doi.org/10.1007/s12144-021-02569-8,research_only
+wami-ptbr-zanotelli2022-10,WAMI,pt-BR,10,https://doi.org/10.1590/1982-4327e3225,research_only
+jcq-slemp2013-en15,JCQ,en,15,https://internationaljournalofwellbeing.org/index.php/ijow/article/view/217,research_only
+jcq-de-schachler2019-15,JCQ,de,15,https://doi.org/10.3389/fpsyg.2019.00991,research_only
+wbns-vandenbroeck2010-nl18,W-BNS,nl,18,https://doi.org/10.1348/096317909X481382,research_only
+wbns-en-tiffin2024-18,W-BNS,en,18,https://doi.org/10.3389/fpsyg.2024.1304309,research_only
