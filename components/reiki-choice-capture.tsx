@@ -269,7 +269,9 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
       <div className={styles.footer}>
         <div className={styles.trust}><span><Check size={15} aria-hidden="true" /> {t.common.reply}</span><span><Check size={15} aria-hidden="true" /> {t.common.obligation}</span></div>
         <div className={styles.secondary}>
-          <a href={consultationUrl} id={isTop ? undefined : "reiki-free-consultation"} target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
+          {isTop
+            ? <a href={consultationUrl} target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
+            : <a href={consultationUrl} id="reiki-free-consultation" target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>}
           <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer"><Send size={14} aria-hidden="true" /> {t.common.telegram}</a>
         </div>
       </div>
