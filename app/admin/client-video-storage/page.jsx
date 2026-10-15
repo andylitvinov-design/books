@@ -53,12 +53,14 @@ export default async function ClientVideoStorageSetup(){
     back:'Go to clients',provider:'Selected provider'
   }
   const envs=[
-    'HH_CLIENT_VIDEO_EXTERNAL_ENABLED=true',
-    'HH_CLIENT_VIDEO_BACKEND=r2 | s3_ca',
+    'HH_CLIENT_DELIVERY_ENABLED',
+    'HH_APP_SUPABASE_SECRET_KEY',
+    'HH_CLIENT_VIDEO_EXTERNAL_ENABLED',
+    'HH_CLIENT_VIDEO_BACKEND (r2 or s3_ca)',
     'HH_CLIENT_VIDEO_BUCKET',
     'HH_CLIENT_VIDEO_ACCESS_KEY_ID',
     'HH_CLIENT_VIDEO_SECRET_ACCESS_KEY',
-    ...(isR2?['HH_CLIENT_R2_ACCOUNT_ID']:[]),
+    'HH_CLIENT_R2_ACCOUNT_ID (Cloudflare only)',
   ]
   return <main className="prescription-admin-shell" style={{minHeight:'100vh',background:'#f7f9fc'}}>
     <PrescriptionAdminHeader title={{en:'Private client video storage',ru:'Хранилище клиентских видео'}}
