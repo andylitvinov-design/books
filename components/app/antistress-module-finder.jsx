@@ -128,7 +128,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
      <div className={styles.moduleGrid}>{ANTISTRESS_MODULE_GOALS.map(mod=>
        <button type="button" key={mod.id} className={styles.moduleChoice}
          data-selected={chosen===mod.id} aria-pressed={chosen===mod.id} disabled={busy}
-         onClick={()=>setOverride(mod.id===recommendation.moduleId?null:mod.id)}>
+         onClick={()=>setOverride(mod.id)}>
          <strong>{mod.id.replace('AS','№ ')} · {mod.range[0]}–{mod.range[1]}/10</strong><span>{mod.title[language]||mod.title.en}</span>
        </button>
      )}</div>
