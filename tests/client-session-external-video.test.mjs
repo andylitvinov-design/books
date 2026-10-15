@@ -146,3 +146,16 @@ test('a ready external asset never issues another signed PUT or exposes its obje
   assert.equal(result.objectKey,undefined)
   assert.equal(presigned,0)
 })
+
+test('owner media preflight exposes safe size/provider metadata, never credentials',()=>{
+  const route=readFileSync(new URL('../app/api/admin/clients/[id]/sessions/status/route.js',import.meta.url),'utf8')
+  const recorder=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  assert.match(route,/requireAdminRequest/)
+  assert.match(route,/checkPrivateMediaStorage/)
+  assert.match(route,/videoProvider,videoLimitBytes/)
+  assert.match(route,/videoReady/)
+  assert.doesNotMatch(route,/secretAccessKey|HH_CLIENT_VIDEO_SECRET_ACCESS_KEY/)
+  assert.match(recorder,/availability\.videoLimitBytes/)
+  assert.match(recorder,/videoReady===false/)
+  assert.match(recorder,/await checkReady\(\)/)
+})
