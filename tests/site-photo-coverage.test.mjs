@@ -39,8 +39,10 @@ test("three personal services show three distinct local illustrations or photos 
   assert.match(shared, /<Image src=\{photos\[index\]\}/);
   assert.match(shared, /styles\.servicePhoto/);
   const images = [...es.matchAll(/image: "(\/[^"]+\.(?:jpg|png|webp))"/g)].map(m => m[1]);
-  assert.equal(images.length, 3);
+  assert.equal(images.length, 4);
   assert.equal(new Set(images).size, 3);
+  // The new business service reuses the already-approved constellation poster.
+  assert.match(es, /business-consulting/);
   assert.match(es, /services-studio-card-photo/);
   const esHome = read("app/es/page.tsx");
   const esHomePhotos = [...esHome.matchAll(/image: '([^']+)'/g)].map(x => x[1]);
