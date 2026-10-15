@@ -5,15 +5,16 @@ export function spanishMetadata(path: string, title: string, description: string
   const suffix = path === '/es' ? '' : path.slice(3);
   const absolute = (pathname: string) => new URL(pathname, base).href;
   return {
-    // All URLs below are absolute strings. Next 15.5's alternate resolver drops
-    // root-path query strings when metadataBase converts them to URL objects.
-    // An explicit null keeps the distinct EN/RU homepage language parameters.
+    // Use absolute locale URLs, including the distinct Russian /ru homepage.
     metadataBase: null, title, description,
     alternates: { canonical: absolute(path), languages: {
       es: absolute(path),
-      en: absolute(suffix ? '/en' + suffix : '/?lang=en'),
-      ru: absolute(suffix ? '/ru' + suffix : '/?lang=ru'),
+      en: absolute(suffix ? '/en' + suffix : '/'),
+      ru: absolute(suffix ? '/ru' + suffix : '/ru'),
       'x-default': absolute(suffix ? '/en' + suffix : '/'),
     } },
+    openGraph: { type: 'website', siteName: 'Holistic House', locale: 'es_ES', url: absolute(path), title, description,
+      images: [{ url: absolute('/images/holistic-house/andy-about.png'), alt: 'Andrey Litvinov — Holistic House' }] },
+    twitter: { card: 'summary_large_image', title, description, images: [absolute('/images/holistic-house/andy-about.png')] },
   };
 }

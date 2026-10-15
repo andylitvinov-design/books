@@ -41,5 +41,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Keep the static sitemap healthy during a temporary app-database outage.
   }
   const priorityEntries = getPrioritySitemapEntries(base);
-  return [...new Map([...existing, ...entries, ...priorityEntries, ...network].map(entry => [entry.url, entry])).values()];
+  const homepageLanguages = { en: base + '/', ru: base + '/ru', es: base + '/es', 'x-default': base + '/' };
+  const homes: MetadataRoute.Sitemap = (['en', 'ru', 'es'] as const).map(locale => ({
+    url: homepageLanguages[locale], changeFrequency: 'weekly', priority: locale === 'es' ? 0.8 : 1,
+    alternates: { languages: homepageLanguages },
+  }));
+  return [...new Map([...existing, ...entries, ...priorityEntries, ...network, ...homes].map(entry => [entry.url, entry])).values()];
 }

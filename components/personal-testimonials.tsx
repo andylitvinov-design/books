@@ -80,7 +80,7 @@ export function PersonalTestimonials({
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
-  const videos = isHome ? testimonialVideos[locale] : testimonialVideos[locale].slice(0, 3);
+  const videos = isHome ? testimonialVideos[locale].slice(0, 2) : testimonialVideos[locale].slice(0, 3);
   const titleId = isHome ? "home-testimonials-title" : "services-testimonials-title";
 
   return (
