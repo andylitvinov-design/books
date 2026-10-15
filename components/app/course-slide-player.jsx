@@ -548,7 +548,7 @@ export default function CourseSlidePlayer({
           phraseResponse:phraseResponse||null,
         } : {}),
         ...(isOporaModule&&!routePlan
-          ? {moduleActivityChoice:moduleActivityChoice||null}
+          ? {moduleActivityChoice:moduleActivityChoice||null,practiceAttempt:practiceAttempt||null}
           : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
