@@ -41,9 +41,12 @@ test('daily lesson number comes from saved lessons, not elapsed dates', () => {
 
 test('Free paywall is informational until verified server billing is live', () => {
   assert.match(entry, /data-course-subscription-dialog/)
-  assert.match(entry, /price: 10, spots: 'one'/)
-  assert.match(entry, /price: 20, spots: 'five'/)
-  assert.match(entry, /price: 100, spots: 'five'/)
+  const membership = read('lib/inner-growth/course-membership.js')
+  assert.match(entry, /const PLANS = COURSE_PUBLIC_PLANS/)
+  assert.match(membership, /regularMonthlyEUR: 20/)
+  assert.match(membership, /introFirstMonthEUR: 10/)
+  assert.match(membership, /introDiscountPercent: 50/)
+  assert.doesNotMatch(membership, /price: 100|price: 10, spots:/)
   assert.match(entry, /Subscription checkout is not available yet/)
   assert.match(entry, /Оформление подписки пока недоступно/)
   assert.doesNotMatch(entry, /checkout\/start|localStorage|sessionStorage|stripe\.redirect/)

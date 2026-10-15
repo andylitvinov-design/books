@@ -579,6 +579,12 @@ export default function CourseSlidePlayer({
           <button type="button" onClick={onClose}>{words.discomfortExit}</button>
           <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
           <small>{words.discomfortEmergency}</small>
+        </section> : !finished && isDayOne && neutralMode && index<5 ? <section
+          className={styles.discomfortPanel} data-course-day-one-neutral-early>
+          <ShieldCheck size={36} aria-hidden="true"/>
+          <h2 tabIndex={-1} ref={headingRef}>{words.discomfortNeutral}</h2>
+          <p>{words.neutralPractice}</p>
+          <p>{words.discomfortIntro}</p>
         </section> : !finished && slide.kind==='course-offer' ? <div className={styles.promoSlide} data-course-post-lesson-promo>
           <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
           <p className={styles.promoBrand}>{words.promoBrand}</p>
