@@ -6,11 +6,24 @@ import { documentActionUrls, remedyCountLabel, resultLocale, createDocumentLinkC
 test('all admin actions explicitly carry selected locale for either document',()=>{
  for(const id of ['receipt-id','recommendation-id'])for(const locale of ['en','ru']){
   const urls=documentActionUrls(id,locale)
-  assert.equal(urls.open,`/admin/documents/${id}/view?locale=${locale}`)
+  assert.equal(urls.open,`/admin/documents/${id}/session-preview?locale=${locale}`)
+  assert.equal(documentActionUrls(id,locale,'payment').open,`/admin/documents/${id}/view?locale=${locale}`)
   assert.equal(urls.pdf,`/admin/api/documents/${id}/pdf?locale=${locale}`)
   assert.equal(urls.print,`/admin/documents/${id}/view?locale=${locale}&print=1`)
  }
 })
+test('session invitations copy the full client page while legacy document links remain separate',async()=>{
+ const load=async()=>({selector:'session-selector',secret:'session-only-secret'})
+ const session=createDocumentLinkCache(load,{scope:'session'})
+ assert.equal(await session.url('ru','https://preview.invalid'),
+   'https://preview.invalid/ru/client/session/session-selector#session-only-secret')
+ assert.equal(await session.url('en','https://preview.invalid'),
+   'https://preview.invalid/en/client/session/session-selector#session-only-secret')
+ const legacy=createDocumentLinkCache(load)
+ assert.equal(await legacy.url('ru','https://preview.invalid'),
+   'https://preview.invalid/ru/prescriptions/session-selector#session-only-secret')
+})
+
 test('preference defaults and remedy grammar',()=>{
  assert.equal(resultLocale('ru'),'ru');assert.equal(resultLocale('en'),'en');assert.equal(resultLocale(undefined),'en');assert.equal(resultLocale('invalid'),'en')
  assert.equal(remedyCountLabel(1),'1 remedy');assert.equal(remedyCountLabel(2),'2 remedies')

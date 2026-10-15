@@ -11,10 +11,20 @@ async function post(url,body) {
   const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),
     credentials:'same-origin',cache:'no-store'})
   const result=await response.json()
-  if(!response.ok) throw new Error(result.error==='MEDIA_STORAGE_NOT_CONFIGURED'?
-    'Private media storage needs server configuration before recording can be saved.':
-    result.error||'Unable to save this recording')
+  if(!response.ok) throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
   return result
+}
+function recordingError(error,ru) {
+  const code=error?.message||String(error)
+  const messages={
+    ADMIN_SIGN_IN_REQUIRED:ru?'Вход в кабинет специалиста истёк. Войдите снова и повторите.':'Your practitioner sign-in expired. Sign in again before recording.',
+    SESSION_UNAVAILABLE:ru?'Сервис приватных консультаций пока отключён или сессия недоступна. Запись не была загружена.':'Private consultation delivery is disabled or this session is unavailable. Nothing was uploaded.',
+    MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище для аудио и видео ещё не настроено. Файл не отправлен.':'Secure audio/video storage is not configured. Nothing was uploaded.',
+    MEDIA_STORAGE_UNAVAILABLE:ru?'Хранилище записей сейчас недоступно. Попробуйте позже или проверьте настройки сервера.':'Private recording storage is unavailable. Try again or check server settings.',
+    MEDIA_TYPE_NOT_ALLOWED:ru?'Этот формат файла не поддерживается.':'This file format is not supported.',
+    MEDIA_SIZE_NOT_ALLOWED:ru?'Запись слишком большая для безопасной загрузки.':'Recording is too large to upload.',
+  }
+  return messages[code]||code
 }
 export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved}) {
   const ru=locale==='ru'
@@ -40,6 +50,14 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     streamRef.current?.getTracks().forEach(track=>track.stop());xhrRef.current?.abort()}},[])
   useEffect(()=>{const warn=e=>{if(busyRef.current||jobRef.current){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
   useEffect(()=>()=>{if(playback) URL.revokeObjectURL(playback)},[playback])
+  async function checkReady() {
+    const response=await fetch('/api/admin/clients/'+clientId+'/sessions/status',{
+      method:'GET',credentials:'same-origin',cache:'no-store',
+    })
+    const data=await response.json().catch(()=>({}))
+    if(!response.ok||data.ready!==true)
+      throw new Error(data.error||'MEDIA_STORAGE_UNAVAILABLE')
+  }
   async function ensureSession() {
     if(sessionId) return sessionId
     const info=await post('/api/admin/clients/'+clientId+'/sessions',{documentId,assessmentId})
@@ -85,7 +103,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         'Material saved to this session. Your client sees it after you publish.')
       onSaved?.(job.sessionId)
     } catch(e) {
-      if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(e.message||String(e))}
+      if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(recordingError(e,ru))}
     } finally {busyRef.current=false}
   }
   async function startRecording(kind='audio') {
@@ -104,10 +122,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setStage('preparing')
     let sid
     try {
+      await checkReady()
+      sid=await ensureSession()
       const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},...(kind==='video'?{video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{})})
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
       streamRef.current=stream
-      sid=await ensureSession()
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
       const type=kind==='video'?'video/mp4':recordingTypes.find(t=>MediaRecorder.isTypeSupported(t))
       const recorder=type?new MediaRecorder(stream,{mimeType:type,...(kind==='video'?{videoBitsPerSecond:600000,audioBitsPerSecond:64000}:{audioBitsPerSecond:64000})}):new MediaRecorder(stream)
@@ -148,7 +167,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       },1000)
     } catch(e) {
       streamRef.current?.getTracks().forEach(track=>track.stop())
-      setError(e.message||String(e))
+      setError(recordingError(e,ru))
       busyRef.current=false
       if(mountedRef.current)setStage('error')
     }
@@ -173,6 +192,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     try {
       if(file.type==='video/quicktime'||file.name.toLowerCase().endsWith('.mov'))
         throw new Error(ru?'Для просмотра на любом телефоне требуется MP4 (H.264). Запишите MP4 или преобразуйте MOV перед загрузкой.':'Use H.264 MP4 for reliable playback. Convert this MOV before uploading.')
+      await checkReady()
       const sid=await ensureSession()
       if(file.type.startsWith('video/')||file.type.startsWith('audio/')){
         setPlaybackKind(file.type.startsWith('video/')?'video':'audio')
@@ -181,7 +201,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       const job=recordingUpload({file,clientId,sessionId:sid,scope})
       jobRef.current=job;setRetryFile(file)
       await upload(job)
-    } catch(e) {busyRef.current=false;setStage('error');setError(e.message||String(e))}
+    } catch(e) {busyRef.current=false;setStage('error');setError(recordingError(e,ru))}
     event.target.value=''
   }
   const busy=['preparing','uploading','finalizing'].includes(stage)
