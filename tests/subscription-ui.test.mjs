@@ -236,6 +236,7 @@ function harness({ initialStatus = freeStatus(), search = '', request, statusReq
   const modules = {
     react: hooks, 'react/jsx-runtime': runtime, 'lucide-react': {}, '@/lib/billing/public-plan': billingPublic, '@/lib/billing/read-lifecycle': { billingReadLifecycle },
     './subscription-copy': { SUBSCRIPTION_COPY }, './subscription-access.module.css': { default: new Proxy({}, { get: (_, key) => key }) },
+    './manual-billing-request': { default: () => null },
     '@/lib/billing/client-session': {
       requestBilling: async (owner, action, body) => {
         calls.push({ owner, action, body })

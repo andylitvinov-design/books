@@ -561,3 +561,8 @@
 @media(prefers-reduced-motion:reduce){
   .addTile{transition:none}
 }
+
+/* Currency-specific manual invoice enquiry: no checkout or entitlement mutation. */
+.paymentChoiceButton{min-height:44px;margin-top:auto;padding:9px 11px;border:1px solid #7b3853;border-radius:11px;background:#fff7fa;color:#682a44;font:inherit;font-weight:700;cursor:pointer}
+.paymentChoiceButton[aria-pressed=true]{background:#752c49;color:#fff;border-color:#752c49}
+.paymentChoiceButton:focus-visible{outline:3px solid #b84b80;outline-offset:2px}
