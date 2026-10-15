@@ -61,8 +61,7 @@ const copy = {
 export function ServicesSolutions({ locale, variant = "services" }: { locale: Locale; variant?: "services" | "home" }) {
   const t = copy[locale];
   const isHome = variant === "home";
-  // Keep the approved four image-left cards on Home. The Services page already displays
-  // the three free options above, so only personal-work cards repeat there.
+  // Home keeps its four approved photo cards. Services uses the same image-left treatment\n  // and lists all five real offers below the compact free-tests introduction.
   const allOffers = coreServiceOffers(locale);
   const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;
   return (
