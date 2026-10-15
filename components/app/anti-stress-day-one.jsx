@@ -343,9 +343,9 @@ export default function DayOneExercise({
 
   if(kind==='day1-transfer') {
     const cues={
-      after_task:text('после окончания обычного дела','after completing an ordinary task'),
-      hurry:text('когда замечу внутреннюю спешку','when I notice inner rushing'),
-      before_rest:text('перед отдыхом','before resting'),
+      after_task:text('я закончу обычное дело','I finish an ordinary task'),
+      hurry:text('я замечу внутреннюю спешку','I notice inner rushing'),
+      before_rest:text('я соберусь отдохнуть','I am about to rest'),
     }
     const actions={
       look:text('посмотреть на нейтральный предмет','look at a neutral object'),
