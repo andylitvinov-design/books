@@ -48,5 +48,5 @@ export const GAD7_RU_V1 = deepFreeze({
   questions: TEXT.map((text,i)=>({id:'gad7.'+String(i+1).padStart(2,'0'),text,required:true})),
   optionalContext: [],
   suggestedRepeatDays: 14,
-  contentHash:"sha256:aa5b9c76459c929972279aaf144249f7dcdec2797ade31180298de939e51811e",
+  contentHash:"sha256:428caeaa35b9fd1f3a6c4495ee1e8596fe1fce6ce30cb7b65bc33a03f5680233",
 })
