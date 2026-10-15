@@ -3,8 +3,8 @@ import {useEffect,useMemo,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {Video,UploadCloud,ShieldCheck,RotateCcw,HardDrive,CheckCircle2} from 'lucide-react'
 import {recordingUpload,saveRecording} from '../lib/clients/recording-upload'
-import {VIDEO_MAX_BYTES,VIDEO_PER_SESSION_MAX_FILES,VIDEO_PER_SESSION_MAX_BYTES,
-  sessionVideoUsage,formatMediaSize,preparePhoneVideo,ECONOMY_VIDEO_MAX_SECONDS} from '../lib/clients/video-budget'
+import {VIDEO_PER_SESSION_MAX_FILES,VIDEO_PER_SESSION_MAX_BYTES,
+  sessionVideoUsage,formatMediaSize,preparePhoneVideo} from '../lib/clients/video-budget'
 import styles from './client-session.module.css'
 
 async function post(url,body){
