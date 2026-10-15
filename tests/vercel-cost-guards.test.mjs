@@ -31,6 +31,13 @@ test("ignored-build comparison fails open on missing SHAs or git failures", () =
   }), ["README.md", "app/page.tsx"]);
 });
 
+test("service hero WebP posters bypass billed Vercel transformations", () => {
+  const component = readFileSync("components/personal-service-landing.tsx", "utf8");
+  const images = readFileSync("data/personal-service-pages.ts", "utf8");
+  assert.match(component, /unoptimized=\\{personalServiceImages\\[service\\]\\.endsWith\\("\\.webp"\\)\\}/);
+  assert.match(images, /"business-consulting": "\\/images\\/holistic-house\\/video-posters\\/constellations-en-v1\\.webp"/);
+});
+
 test("Vercel source controls contain the known spend guards", () => {
   const v = JSON.parse(readFileSync("vercel.json", "utf8"));
   const n = readFileSync("next.config.ts", "utf8");
