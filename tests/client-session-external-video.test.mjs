@@ -18,7 +18,7 @@ test('external video is disabled by default and credentials are never needed for
   assert.equal(configuredVideoUploadStore(env).provider,'r2')
 })
 test('only exact approved private R2 or Canada S3 endpoint may be signed',()=>{
-  const url=new URL(createVideoUploadUrl('r2',key))
+  const url=new URL(createVideoUploadUrl('r2',key,env))
   assert.equal(url.hostname,env.HH_CLIENT_VIDEO_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com')
   assert.equal(url.pathname,'/hh-private-video-test/'+key)
   assert.equal(url.searchParams.get('X-Amz-Expires'),'900')
