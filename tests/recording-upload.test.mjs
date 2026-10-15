@@ -53,3 +53,42 @@ test('an extra private PDF can be attached, but never as HTML or beyond 15 MB',a
    await assert.rejects(saveRecording(attempt,{post:()=>assert.fail('must not issue'),upload:()=>assert.fail('must not upload')}))
  }
 })
+
+test('an unusable partial video gets a new key on explicit retry, never overwriting old bytes',async()=>{
+  const job=make()
+  job.file={type:'video/mp4',size:1024}
+  const firstId=job.intentId,ids=[]
+  let uploads=0,finalizes=0
+  const deps={
+    post:async(_url,data)=>{
+      if(data.action==='intent'){ids.push(data.intentId);return {assetId:'video-'+ids.length,provider:'external'}}
+      if(data.action==='complete'&&++finalizes===1)throw Error('MEDIA_SIZE_NOT_ALLOWED')
+    },
+    upload:async()=>{if(++uploads===1)throw Error('412 PreconditionFailed')},
+  }
+  await assert.rejects(saveRecording(job,deps),/412 PreconditionFailed/)
+  assert.notEqual(job.intentId,firstId)
+  assert.equal(job.file.size,1024)
+  assert.equal(job.uploaded,false)
+  await saveRecording(job,deps)
+  assert.equal(ids.length,2)
+  assert.notEqual(ids[0],ids[1])
+  assert.equal(job.uploaded,true)
+})
+test('transient finalize error keeps the same intent on retry',async()=>{
+  const job=make(),initialId=job.intentId,ids=[]
+  let finalized=0,uploads=0
+  const deps={
+    post:async(_url,data)=>{
+      if(data.action==='intent'){ids.push(data.intentId);return {assetId:'same'} }
+      if(data.action==='complete'&&++finalized===1)throw Error('MEDIA_STORAGE_UNAVAILABLE')
+    },
+    upload:async()=>{if(++uploads===1)throw Error('network timeout')},
+  }
+  await assert.rejects(saveRecording(job,deps),/network timeout/)
+  assert.equal(job.intentId,initialId)
+  await saveRecording(job,deps)
+  assert.equal(ids.length,2)
+  assert.equal(ids[0],ids[1])
+  assert.equal(job.uploaded,true)
+})
