@@ -147,6 +147,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
   const [copiedId, setCopiedId] = useState('')
   const oauthClient = useRef(null)
   const authToken = useRef(null)
+  // Separate volatile credentials for each owner-authorized channel; never persist OAuth tokens.
+  const authorizedChannels = useRef(new Map())
   const pendingTarget = useRef(null)
   const targetRef = useRef(target)
   const channelsRef = useRef(channels)
@@ -205,6 +207,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
               setConnected(null)
             } else {
               setCandidate(null)
+              authorizedChannels.current.set(requested,{details,token})
               setConnected({...details,target:requested})
             }
             setError('')
@@ -246,8 +249,13 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
     setMessage('')
     setCandidate(null)
     setPairConfirmed(false)
-    if (connected && channels[next]?.id && connected.id === channels[next].id
+    const cached = authorizedChannels.current.get(next)
+    if (cached?.details.id === channels[next]?.id && cached.token.expiresAt > Date.now() + 30_000) {
+      authToken.current = cached.token
+      setConnected({...cached.details,target:next})
+    } else if (connected && channels[next]?.id && connected.id === channels[next].id
       && authToken.current?.expiresAt > Date.now() + 30_000) {
+      authorizedChannels.current.set(next,{details:connected,token:authToken.current})
       setConnected({...connected,target:next})
     } else {
       authToken.current = null
@@ -263,6 +271,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
     setCandidate(null)
     setConnected(null)
     authToken.current = null
+    authorizedChannels.current.delete(target)
     oauthClient.current.requestAccessToken({prompt:'select_account'})
   }
   async function pairEnglish() {
@@ -272,6 +281,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
       const result = await pairEnglishYoutubeChannelAction({...candidate,confirmed:true})
       if (!result.ok) throw new Error(result.error)
       setChannels(previous => ({...previous,en:result.channel}))
+      authorizedChannels.current.set('en',{details:candidate,token:authToken.current})
       setConnected({...candidate,target:'en'})
       setCandidate(null)
       setPairConfirmed(false)
