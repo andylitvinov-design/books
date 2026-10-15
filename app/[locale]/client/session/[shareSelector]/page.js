@@ -7,6 +7,7 @@ import { readSessionViewerCookie,authorizeSessionGuest } from '@/lib/clients/ses
 import { getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionShareGate } from '@/components/client-session-share-gate'
 import { ClientSessionPage } from '@/components/client-session-page'
+import { sharedGranulesGuideReady } from '@/lib/clients/shared-education-video'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
 import { PaymentDocument } from '@/components/payment-document'
@@ -34,7 +35,8 @@ export default async function ClientSessionSharePage({params}) {
     const client=await store.findClientById(session.clientId)
     return <ClientSessionPage locale={locale} session={guestSessionProjection(session)} selector={shareSelector}
       mode="guest" appAvailable={appEnabled()} clientName={recommendation?.patientName||client?.fullName||''}
-      recommendation={recommendation} reportContent={reportContent}/>
+      recommendation={recommendation} reportContent={reportContent}
+      sharedGuideReady={sharedGranulesGuideReady()}/>
   } catch{return <ClientSessionShareGate locale={locale} selector={shareSelector}/>}
 }
 

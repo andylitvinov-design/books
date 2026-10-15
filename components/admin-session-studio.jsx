@@ -13,6 +13,7 @@ async function api(url,method='GET',body) {
 }
 function mediaTitle(row,locale) {
   if(row?.kind==='pdf') return locale==='ru'?'PDF-материал':'PDF resource'
+  if(row?.kind==='image') return locale==='ru'?'Фотография':'Photo'
   if(row?.kind==='video') return locale==='ru'?'Видеообращение':'Video message'
   return locale==='ru'?'Голосовое сообщение':'Voice message'
 }
@@ -223,9 +224,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
-      {!draft.media.length&&<p>{ru?'Запишите аудио или загрузите MP4, чтобы прикрепить материал.':
-        'Record audio or upload an MP4 to attach media here.'}</p>}
-      <p>{ru?'Расшифровка вводится вручную, до 12 000 символов. Автоматическая отправка аудио сервисам распознавания не настроена.':'Transcripts are entered manually, up to 12,000 characters. Audio is not automatically sent to a transcription service.'}</p>
+      {!draft.media.length&&<p>{ru?'Запишите аудио или добавьте видео, PDF или фотографии.':
+        'Record audio or attach video, PDF or photos.'}</p>}
+      <p>{ru?'Для фото измените подпись и порядок. Расшифровка аудио и видео вводится вручную, без стороннего распознавания.':'For photos, edit captions and order. Audio/video transcripts are entered manually; nothing is sent to external transcription.'}</p>
       {draft.media.map((row,index)=>{
         const asset=activeAssets.get(row.assetId)
         return <div key={row.assetId} className={styles.mediaEditor}>
@@ -236,9 +237,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             <button aria-label={ru?'Опустить ниже':'Move down'} onClick={()=>moveMedia(index,1)} disabled={index===draft.media.length-1||block}><ChevronDown size={18}/></button>
             <button aria-label={ru?'Убрать из сессии':'Detach from draft'} onClick={()=>discardMedia(row.assetId)} disabled={block}><Trash2 size={18}/></button>
           </div>
-          <label className={styles.field}>{ru?'Название записи':'Recording title'}
+          <label className={styles.field}>{asset?.kind==='image'?(ru?'Подпись к фотографии':'Photo caption'):(ru?'Название записи':'Recording title')}
             <input value={row.title} maxLength={160} onChange={e=>setMedia(row.assetId,{title:e.target.value})}/></label>
-          {row.scope==='client'&&asset?.kind!=='pdf'&&<label className={styles.field}>
+          {row.scope==='client'&&!['pdf','image'].includes(asset?.kind)&&<label className={styles.field}>
             {ru?'Где показывать запись клиенту':'Where this recording appears'}
             <select value={row.role||'personal'} onChange={e=>setMedia(row.assetId,{role:e.target.value})}>
               <option value="personal">{ru?'Личное обращение вверху':'Personal message (top)'}</option>
@@ -247,9 +248,12 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
               <option value="additional">{ru?'Другие материалы':'Other materials'}</option>
             </select>
           </label>}
-                    <label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
-            <textarea rows={2} maxLength={12000} value={row.transcript||''} onChange={e=>setMedia(row.assetId,{transcript:e.target.value})}/></label>
-          {playerUrls[row.assetId] ? asset?.kind==='video'?
+          {asset?.kind!=='image'&&<label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
+            <textarea rows={2} maxLength={12000} value={row.transcript||''} onChange={e=>setMedia(row.assetId,{transcript:e.target.value})}/></label>}
+          {asset?.kind==='image' ? <div className={styles.adminPhotoPreview}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={base+'/media/'+row.assetId} alt={row.title||(ru?'Фотография':'Photo')} loading="lazy"/>
+          </div> : playerUrls[row.assetId] ? asset?.kind==='video'?
             <video controls playsInline preload="metadata" className={styles.video} src={playerUrls[row.assetId]}/>:
             asset?.kind==='pdf'?<a href={playerUrls[row.assetId]} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>
               {ru?'Открыть PDF':'Open PDF'}
@@ -279,7 +283,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         {draft.media.some(item=>item.scope==='client')&&<>
           <h4>{ru?'Личные медиа':'Client media'}</h4>
           {draft.media.filter(item=>item.scope==='client').map(item=>
-            <p key={item.assetId}>♫ {item.title||mediaTitle(activeAssets.get(item.assetId),locale)}
+            <p key={item.assetId}>{activeAssets.get(item.assetId)?.kind==='image'?'▧ ':'♫ '}{item.title||mediaTitle(activeAssets.get(item.assetId),locale)}
               {item.transcript&&<small> · {ru?'Есть текст записи':'Transcript available'}</small>}
             </p>)}
         </>}

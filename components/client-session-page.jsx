@@ -1,8 +1,10 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
+import { recommendationItemType } from '@/lib/documents/recommendation'
+import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
 import styles from './client-session.module.css'
@@ -13,7 +15,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
-  const isVideo=item.kind==='video',ru=locale==='ru'
+  const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
   const route=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'+item.assetId
@@ -56,7 +58,8 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
       <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-        <small>{isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
+        <small>{educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+          isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     </div>
     {!source?<button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
       <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}</button>
@@ -65,11 +68,11 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
         <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
           onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
-      <p>{item.transcript}</p></details>}
+      <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null}) {
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
@@ -81,9 +84,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
     .sort((a,b)=>(a.kind==='audio'?0:1)-(b.kind==='audio'?0:1))
   const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
-  const supplementary=media.filter(item=>item.kind==='pdf'||['meditation','additional'].includes(item.role)||
-    (item.role==='instruction'&&item.kind==='audio'))
+  const photos=media.filter(item=>item.kind==='image')
+  const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
+    (item.role==='instruction'&&item.kind==='audio')))
   const hasRecommendation=Boolean(recommendation?.items?.length)
+  const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
+    recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
   const pdfPath=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/pdf?locale='+locale:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
@@ -91,7 +97,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
   const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
@@ -162,6 +168,25 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </details>}
     </section>}
 
+    {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Images size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ФОТОМАТЕРИАЛЫ':'PHOTO ATTACHMENTS'}</span>
+          <h2>{ru?'Фотографии к вашей консультации':'Photos from your consultation'}</h2></div>
+      </header>
+      <div className={styles.sessionPhotoGallery}>
+        {photos.map(item=><figure key={item.assetId} className={styles.sessionPhotoCard}>
+          <a href={assetBase+encodeURIComponent(item.assetId)} target="_blank" rel="noopener noreferrer"
+            aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={assetBase+encodeURIComponent(item.assetId)}
+              alt={item.title||(ru?'Фото консультации':'Consultation photo')} loading="lazy" decoding="async"/>
+          </a>
+          {item.title&&<figcaption>{item.title}</figcaption>}
+        </figure>)}
+      </div>
+    </section>}
+
     {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><Video size={21}/></span>
@@ -219,6 +244,30 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <ExternalLink size={17} aria-hidden="true"/>
       </a>)}
     </section>}
+
+    {hasHomeopathyRecommendation&&sharedGuideReady&&
+      <section id="session-granules-guide" className={styles.clientSection+' '+styles.sharedEducationSection}
+        aria-labelledby="session-granules-guide-title">
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionIcon}><Video size={21}/></span>
+          <div><span className={styles.sectionKicker}>{ru?'ПОЛЕЗНО ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
+            <h2 id="session-granules-guide-title">{ru?'Видео: сколько гранул гомеопатии принимать?':
+              'Video: How many homeopathic pellets?'}</h2></div>
+        </header>
+        <p className={styles.sectionIntro}>{ru?
+          'Короткое общее объяснение от Андрея Литвинова. Ваша индивидуальная схема указана выше в отчёте.':
+          'A short explanation from Andrey Litvinov, in Russian. Your personal instructions are in the report above.'}</p>
+        <div className={styles.mediaList}>
+          <PrivatePlayer item={{
+            assetId:GRANULES_GUIDE_ID,kind:'video',role:'education',
+            title:ru?'Сколько гранул принимать?':'How many pellets? (Russian audio)',
+            transcript:GRANULES_GUIDE_TRANSCRIPT_RU,
+          }} session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>
+        </div>
+        <p className={styles.sharedGuideCaution}>{ru?
+          'Сравнения количества гранул в видео — личные наблюдения, а не научно подтверждённая зависимость эффекта от дозы. Не меняйте назначение по этому ролику и следуйте рекомендациям в вашем отчёте.':
+          'The video’s comparisons are personal impressions and do not prove that more pellets have a stronger effect. Do not change your amount based on this video; follow your individual written instructions.'}</p>
+      </section>}
 
     {mode!=='saved'&&<SaveClientSessionToAccount locale={locale} selector={selector}
       sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}/>}

@@ -420,3 +420,98 @@
 .savedSessionBack{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;
   border:1px solid #d8e3d2;border-radius:12px;color:#3c785f;text-decoration:none;font-size:14px;font-weight:750}
 @media(max-width:550px){.saveSessionBox{padding:17px}.saveSessionButton{width:100%}}
+
+/* A single reusable educational MP4, streamed through session-authorized
+   first-party media endpoints; separate from personal consultation videos. */
+.sharedEducationSection{padding:clamp(17px,3vw,25px);border:1px solid #bddfe4;
+  border-radius:21px;background:linear-gradient(145deg,#f9fffe,#eaf7f7);
+  box-shadow:0 9px 28px #17576c10}
+.sharedEducationSection .clientMediaCard{margin:0;border-color:#c9e4e6}
+.sharedGuideCaution{font-size:14px;line-height:1.55;color:#526b71;
+  margin:15px 0 0;padding:12px 14px;border-left:3px solid #65a4ad;
+  background:#ffffffc9;border-radius:0 10px 10px 0}
+@media(max-width:580px){
+  .sharedEducationSection{padding:15px;border-radius:16px}
+  .sharedGuideCaution{font-size:14px}
+}
+
+/* Private report photos: compact owner uploader and accessible client gallery. */
+.photoUploader{margin-top:12px;background:linear-gradient(135deg,#f4faf9,#fffdfa)}
+.photoUploader .sectionHeading h3{display:flex;align-items:center;gap:9px}
+.photoUploader .recordControls{display:flex;flex-wrap:wrap;gap:10px}
+.photoUploader .filePicker{min-height:46px;display:inline-flex;align-items:center;gap:10px;cursor:pointer}
+.photoHint{font-size:13px!important;line-height:1.55!important;color:#627c80!important}
+.photoProgress{display:grid;gap:8px;margin-top:13px;color:#356976;font-weight:650}
+.photoProgress progress{width:100%;height:9px;accent-color:#468a86}
+.sessionPhotoGallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sessionPhotoCard{min-width:0;margin:0;padding:8px 8px 11px;border-radius:16px;
+  border:1px solid #dfebe6;background:#fffefa;box-shadow:0 4px 14px #324f4710}
+.sessionPhotoCard a{display:block;overflow:hidden;border-radius:12px;background:#edf5f2;
+  outline-offset:3px;min-height:90px}
+.sessionPhotoCard img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;
+  background:#edf5f2}
+.sessionPhotoCard figcaption{padding:9px 5px 0;color:#405a58;font-size:15px;line-height:1.4;
+  overflow-wrap:anywhere}
+.adminPhotoPreview{margin:12px 0 0;border:1px solid #d7e8e6;background:#eef6f4;
+  border-radius:13px;overflow:hidden;max-width:360px}
+.adminPhotoPreview img{display:block;width:100%;max-height:260px;object-fit:contain}
+@media(max-width:500px){
+  .sessionPhotoGallery{gap:9px}
+  .sessionPhotoCard{padding:6px 6px 9px;border-radius:12px}
+  .sessionPhotoCard img{aspect-ratio:1/1}
+  .sessionPhotoCard figcaption{font-size:14px;padding:8px 3px 0}
+  .photoUploader .filePicker{flex:1;justify-content:center}
+}
+
+
+/* Consent before leaving a private consultation, aligned with Google Cabinet. */
+.sessionSaveBackdrop{
+  position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;
+  background:rgba(27,34,30,.68);backdrop-filter:blur(5px);
+  padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right))
+    max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))
+}
+.sessionSaveDialog{
+  position:relative;width:min(100%,520px);max-height:min(92svh,830px);overflow-y:auto;
+  border-radius:25px;border:1px solid #d8decf;background:#fffdf8;
+  box-shadow:0 26px 80px rgba(13,24,17,.33);
+  color:#473c35;padding:clamp(20px,4vw,32px);
+  font:16px/1.55 system-ui,-apple-system,sans-serif
+}
+.sessionSaveDialog h2{font:600 clamp(25px,5vw,32px)/1.15 Georgia,serif;
+  letter-spacing:-.03em;color:#413b33;margin:7px 0 13px;text-wrap:balance}
+.sessionSaveClose{
+  position:absolute;right:15px;top:15px;min-height:44px;min-width:44px;
+  background:#f4f0e9;border:1px solid #e6dfd4;border-radius:13px;
+  display:grid;place-items:center;color:#62554a;cursor:pointer
+}
+.sessionSaveModalIcon{display:grid;place-items:center;height:57px;width:57px;border-radius:18px;
+  color:#34765b;background:#e8f3e7;border:1px solid #cadfce;margin-bottom:15px}
+.sessionSaveEyebrow{font-size:11px!important;letter-spacing:.12em;font-weight:800;
+  color:#856e5d;margin:0!important}
+.sessionSaveDescription{font-size:16px;line-height:1.62;color:#695e52;margin:0 0 17px}
+.sessionSaveModalSafety,.sessionSaveAfterHint,.sessionSaveModalFootnote{
+  display:flex;align-items:flex-start;gap:9px;line-height:1.55}
+.sessionSaveModalSafety{background:#f0f6ef;border:1px solid #d4e5d4;border-radius:14px;
+  padding:14px;font-size:14px;color:#4d6554}
+.sessionSaveModalSafety svg,.sessionSaveAfterHint svg,.sessionSaveModalFootnote svg{
+  flex:none;margin-top:2px;color:#42775b}
+.sessionSaveAfterHint{margin:13px 0 0;color:#6b6359;font-size:13px}
+.sessionSaveModalActions{display:grid;gap:9px;margin:22px 0 11px}
+.sessionSaveModalActions button{min-height:49px;display:inline-flex;align-items:center;justify-content:center;
+  gap:10px;width:100%;cursor:pointer;font-size:15px;font-weight:780;border-radius:13px;
+  padding:11px 15px}
+.sessionSaveModalPrimary{background:#b65034;color:#fff;border:1px solid #a1442c;
+  box-shadow:0 4px 11px rgba(164,68,44,.14)}
+.sessionSaveModalPrimary:hover{background:#98402a}
+.sessionSaveModalSecondary{background:#eef5ed;color:#3e6c54;border:1px solid #c9dfcb}
+.sessionSaveModalCancel{background:#fffdf8;color:#695e52;border:1px solid #ded8cc}
+.sessionSaveModalActions button:disabled,.sessionSaveClose:disabled{opacity:.55;cursor:wait}
+.sessionSaveModalFootnote{font-size:12px;color:#877d70;margin:11px 0 0}
+.sessionSaveDialog :is(button,a):focus-visible{outline:3px solid #377b61;outline-offset:3px}
+@media(max-width:540px){
+ .sessionSaveBackdrop{align-items:flex-end;padding-left:0;padding-right:0;padding-bottom:0}
+ .sessionSaveDialog{max-height:92svh;width:100%;border-radius:24px 24px 0 0;
+   padding:25px 19px calc(22px + env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:reduce){.sessionSaveBackdrop{backdrop-filter:none}}
