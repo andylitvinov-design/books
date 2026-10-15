@@ -1,7 +1,7 @@
+/* eslint-disable @next/next/no-img-element -- Public video posters are pre-encoded stills or direct YouTube images; avoid paid Vercel transformations. */
 "use client";
 
 import { ChevronDown, ExternalLink, Film, Play } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./site-video-minimal.module.css";
@@ -147,14 +147,14 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
-              <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+              <img className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" onError={() => setLocalPosterFailed(true)} loading="lazy" decoding="async" />
             )}
             {approvedPoster && poster ? (
-              <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
+              <img className="site-video-poster" src={approvedPoster} alt="" loading={posterPriority ? "eager" : "lazy"} fetchPriority={posterPriority ? "high" : "auto"} decoding="async" onError={() => setPoster(null)} />
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster && (!fallbackPoster || localPosterFailed) ? (
-              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={poster === "direct"} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
+              <img key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" loading="lazy" decoding="async" onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
                 <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />
