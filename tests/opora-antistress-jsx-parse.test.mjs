@@ -11,6 +11,8 @@ test('OPORA slideshow and schedule keep syntactically valid JSX after interactiv
     'components/app/course-today.jsx',
     'components/app/course-14-day-overview.jsx',
     'components/public-antistress-landing.tsx',
+    'components/public-antistress-evidence.tsx',
+    'components/app/anti-stress-method-activity.jsx',
   ]
   for(const file of files){
     const source=readFileSync(new URL('../'+file,import.meta.url),'utf8')

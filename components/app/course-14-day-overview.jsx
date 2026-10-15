@@ -1,6 +1,6 @@
 import { BookOpen, ChevronDown, Clock3, Leaf } from 'lucide-react'
 import { coursePreEnrolmentPlan } from '@/lib/inner-growth/course-pre-enrolment'
-import { antiStressPublicPlan, antiStressPublicSkills } from '@/lib/inner-growth/anti-stress-day-scheme'
+import { antiStressBlueprint } from '@/lib/inner-growth/anti-stress-blueprint'
 import styles from './course-14-day-overview.module.css'
 
 const COPY = {
@@ -54,10 +54,11 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
   const t = COPY[locale] || COPY.en
   const st=STRESS[locale]||STRESS.en
   const stress=programId==='stress'
-  const groups=stress ? antiStressPublicSkills(locale).map(skill=>({
-    id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:st.hint,
+  const blueprint=stress?antiStressBlueprint(locale):null
+  const groups=stress ? blueprint.skills.map(skill=>({
+    id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:skill.description,
   })) : coursePreEnrolmentPlan(locale)
-  const days=stress ? antiStressPublicPlan(locale) : groups.flatMap(group=>group.days)
+  const days=stress ? blueprint.days : groups.flatMap(group=>group.days)
   return <section className={styles.overview} data-course-14-day-overview
     data-course-before-signup={compact ? 'guest' : 'intro'}
     aria-label={stress?st.title:t.title}>
@@ -97,6 +98,8 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
             <div className={styles.dayExerciseContent}>
               <p><strong>{st.practice}:</strong> {day.exercise}</p>
               <p><strong>{st.result}:</strong> {day.result}</p>
+              <p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>
+              {day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
               <div className={styles.axisList} aria-label={st.scales}>
                 {day.scales.map(axis=><span key={axis.id}>{axis.label}</span>)}
               </div>
