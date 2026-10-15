@@ -60,7 +60,7 @@ es:{
 function savedWeekly(profile){
  const ids=['weekly.load','weekly.tension','weekly.functioning']
  const relevant=ids.map(id=>profile?.scales?.find(s=>s.testKey==='hh-weekly-pulse'&&s.id==='hh-weekly-pulse::'+id &&
- Number.isInteger(s.score)&&s.min===0&&s.max===10&&s.recent) )
+ Number.isInteger(s.score)&&s.min===0&&s.max===10&&s.recent && Number.isFinite(Date.parse(s.measuredAt||'')) && Date.parse(s.measuredAt)<=Date.now() && Date.now()-Date.parse(s.measuredAt)<=7*86400000) )
  if(relevant.some(row=>!row)||new Set(relevant.map(row=>row.resultId)).size!==1)return null
  return Object.fromEntries(ids.map((id,index)=>[id,relevant[index].score]))
 }
