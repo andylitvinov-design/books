@@ -287,5 +287,5 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     </footer>
   </main>
   return mode==='saved'?content:<SessionExitSaveGuard locale={locale} selector={selector}
-    sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}>{content}</SessionExitSaveGuard>
+    sessionId={session.id} cabinetMode={mode==='cabinet'} appAvailable={appAvailable}>{content}</SessionExitSaveGuard>
 }

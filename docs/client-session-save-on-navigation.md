@@ -15,3 +15,4 @@ DB invariants stay unchanged: the guest invitation authorizes only one session; 
 Release: The page remains behind HH_CLIENT_DELIVERY_ENABLED, and real private media use requires server-only HH_APP_SUPABASE_SECRET_KEY. Do not silently enable before actual iPhone/Android mic, PDF, A/B session isolation and revoke tests.
 
 Acceptance: invited Session A → My Tests → modal Save → Google → Session A appears in My Reports and target My Tests opens; already signed-in Account works; decline continues without saving; in-page links do not prompt; malicious return target rejected; repeated save does not transfer ownership.
+An already saved session is detected only by a verified Google Account bootstrap and the exact sourceSessionId in savedSessions. It no longer asks again; its Save button opens the authenticated saved-session reader. Unavailable/outdated revisions still require new confirmation. The guest grant never auto-authorizes a different Account.

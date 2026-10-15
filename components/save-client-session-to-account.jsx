@@ -17,10 +17,13 @@ export function SaveClientSessionToAccount({locale='en',appAvailable=true}){
     <button className={styles.saveSessionButton} type="button"
       disabled={!appAvailable||!navigation} onClick={()=>navigation?.requestSave()}>
       <BookmarkCheck size={19} aria-hidden="true"/>
-      {ru?'Сохранить эту консультацию':'Save this consultation'}
+      {navigation?.savedSessionId?(ru?'Открыть сохранённую консультацию':'Open saved consultation'):
+        (ru?'Сохранить эту консультацию':'Save this consultation')}
     </button>
     <p className={styles.saveSessionPrivacy}><ShieldCheck size={15} aria-hidden="true"/>
-      {ru?'Сохранится только эта сессия. Перед Google-входом вы подтвердите действие во всплывающем окне.':
-        'Only this session is saved. Confirm in the dialog before Google sign-in.'}</p>
+      {navigation?.savedSessionId
+        ? (ru?'Уже сохранено в этом Google-кабинете.':'Already saved to this Google Cabinet.')
+        : (ru?'Сохранится только эта сессия. Перед Google-входом вы подтвердите действие во всплывающем окне.':
+          'Only this session is saved. Confirm in the dialog before Google sign-in.')}</p>
   </section>
 }

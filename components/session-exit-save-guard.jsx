@@ -12,18 +12,37 @@ export const useSessionExitNavigation=()=>useContext(NavigationContext)
 // While the secure session page is mounted, intercept same-tab links to other
 // FIRST-PARTY pages, including the site's global header outside this component.
 // No browser can promise a custom confirmation on tab close/OS shutdown.
-export function SessionExitSaveGuard({children,locale='en',selector,sessionId=null,appAvailable=true}) {
+export function SessionExitSaveGuard({children,locale='en',selector,sessionId=null,cabinetMode=false,appAvailable=true}) {
   const ru=locale==='ru'
   const [pending,setPending]=useState(null)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
+  const [savedSessionId,setSavedSessionId]=useState(null)
   const agreeRef=useRef(null),priorFocus=useRef(null)
   const pendingRef=useRef(null)
   pendingRef.current=pending
 
+  // Already saved to the *current verified* Google Account? Skip repeated
+  // prompts, but never infer identity from a name or the guest share link.
+  useEffect(()=>{
+    if(!appAvailable||!sessionId)return
+    let live=true
+    appFetch('bootstrap').then(data=>{
+      if(!live)return
+      const found=(data.savedSessions||[]).find(item=>
+        item.sourceSessionId===sessionId && item.available!==false)
+      setSavedSessionId(found?.id||null)
+    }).catch(()=>{if(live)setSavedSessionId(null)})
+    return()=>{live=false}
+  },[sessionId,appAvailable])
+
   const ask=useCallback((next=null)=>{
     if(!appAvailable){
       if(next)window.location.assign(next)
+      return
+    }
+    if(savedSessionId){
+      window.location.assign(next||'/'+locale+'/app/sessions/'+savedSessionId)
       return
     }
     const target=next?safeSessionExitTarget(next,window.location.origin,window.location.href):null
@@ -31,7 +50,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
     if(next&&!target){window.location.assign(next);return}
     setError('')
     setPending({next:target})
-  },[appAvailable])
+  },[appAvailable,savedSessionId,locale])
   const requestExit=useCallback(url=>ask(url),[ask])
   const requestSave=useCallback(()=>ask(),[ask])
   const close=useCallback(()=>{
@@ -40,7 +59,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
   },[busy])
 
   useEffect(()=>{
-    if(!appAvailable)return
+    if(!appAvailable||savedSessionId)return
     function intercept(event){
       if(event.defaultPrevented || event.button!==0 ||
         event.metaKey||event.ctrlKey||event.shiftKey||event.altKey ||
@@ -58,7 +77,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
     }
     document.addEventListener('click',intercept,true)
     return ()=>document.removeEventListener('click',intercept,true)
-  },[appAvailable])
+  },[appAvailable,savedSessionId])
 
   useEffect(()=>{
     if(!pending)return
@@ -95,7 +114,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
       // OAuth never receives the guest selector, secret or medical details.
       const intent=await appFetch('save-intents',{
         sourceKind:'client_session',selector,
-        ...(sessionId?{sourceId:sessionId}:{}),
+        ...(cabinetMode&&sessionId?{sourceId:sessionId}:{}),
         operationId:crypto.randomUUID()
       })
       if(pending?.next){
@@ -120,7 +139,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
     }
   }
 
-  return <NavigationContext.Provider value={{requestExit,requestSave}}>
+  return <NavigationContext.Provider value={{requestExit,requestSave,savedSessionId}}>
     {children}
     {pending&&<div className={styles.sessionSaveBackdrop} data-hh-session-save-modal>
       <section className={styles.sessionSaveDialog} role="dialog" aria-modal="true"
