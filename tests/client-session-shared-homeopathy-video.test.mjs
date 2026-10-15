@@ -48,5 +48,5 @@ test('all three session readers receive the availability gate',()=>{
   assert.match(page,/hasHomeopathyRecommendation&&sharedGuideReady/)
   assert.match(page,/GRANULES_GUIDE_ID/)
   assert.match(page,/не научно подтверждённая/)
-  assert.match(page,/does not prove/)
+  assert.match(page,/do not prove/)
 })
