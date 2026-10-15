@@ -7,7 +7,7 @@ import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-tes
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
-import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales } from '@/lib/inner-growth/course-programs'
+import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS, isAntistressBaselineRecent, hasAntistressRequiredBaseline, withAntistressRequiredBaseline } from '@/lib/inner-growth/course-programs'
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import CourseFocusPicker from './course-focus-picker'
@@ -22,14 +22,19 @@ const UI = {
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
     testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
-    stressTestsTitle:'Anti-Stress · baseline questionnaires',
-    stressTestsIntro:'Weekly Pulse (8 questions about the past 7 days) and GAD-7 (7 questions about the past 2 weeks) are suggested. You can change your selection; only tests taken before the course can be compared with the end-of-course results.',
+    stressTestsTitle: 'First, your Anti-Stress starting assessments',
+    stressBaselineTitle: 'Before lesson 1: establish your starting point',
+    stressBaselineText: 'HH Weekly Pulse (8 questions about the past week) is required. GAD-7 (7 questions about the past two weeks) and Resource Pulse (6 current-state questions) are optional. Recent compatible results count — no duplicate tests.',
+    stressRequired: 'Core starting measurement · required', stressOptional: 'Optional',
+    stressRetake: 'Previous result is too old for the baseline; please repeat this test.',
+    stressMissingBaseline: 'Add and complete Weekly Pulse before opening lesson 1.',
+    stressExtraNote: 'Only tests you confirm are saved to the course. GAD-7 is a symptom screen, not a diagnosis.',
     stressMeasuresTitle:'Your T0 measures before lesson one',
-    stressMeasuresIntro:'The same original questionnaires will be offered again after lesson 14. Results are separate from daily skill practice and never combined into one clinical score.',
-    stressPrimaryMeasure:'MAIN · ',
-    stressWindowWeek:'Past 7 days',stressWindowFortnight:'Past 14 days',stressWindowNow:'Right now',
+    stressMeasuresIntro:'The same selected questionnaires are offered after lesson 14 when their repeat interval is met. All measures are separate from skill practice and never combined into a diagnostic score.',
+    stressPrimaryMeasure:'MAIN · ',stressWindowWeek:'Past 7 days',
+    stressWindowFortnight:'Past 14 days',stressWindowNow:'Right now',
     stressScalesUnit:'separate scales',
-    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) and GAD-7 (7 items); Resource Pulse is optional. Russian GAD-7 is a separate, not independently validated translation.',
+    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse is required before lessons; GAD-7 and Resource Pulse are optional. The Russian GAD-7 translation is not independently validated.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
     showMore: 'Add or remove more tests', showLess: 'Show the five suggestions',
@@ -79,14 +84,19 @@ const UI = {
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
     testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
-    stressTestsTitle:'Антистресс · исходные тесты перед первым уроком',
-    stressTestsIntro:'Предлагаем Weekly Pulse (8 вопросов за последние 7 дней) и GAD-7 (7 вопросов за последние 14 дней). Вы можете изменить выбор. Для итогового сравнения нужны исходные результаты, сохранённые до начала курса.',
+    stressTestsTitle: 'Сначала — стартовые тесты Антистресс',
+    stressBaselineTitle: 'Перед уроком 1: измеряем исходное состояние',
+    stressBaselineText: 'HH Weekly Pulse (8 вопросов о последних 7 днях) — обязательный основной замер. GAD-7 (7 вопросов за 14 дней) и ресурсный опросник (6 вопросов о текущем состоянии) — по желанию. Недавние совместимые результаты учитываются без повторного прохождения.',
+    stressRequired: 'Основной замер · обязателен', stressOptional: 'По желанию',
+    stressRetake: 'Ранее пройденный тест устарел для исходного замера — пройдите ещё раз.',
+    stressMissingBaseline: 'Добавьте и пройдите Weekly Pulse перед началом занятий.',
+    stressExtraNote: 'В курс включаются только подтверждённые вами тесты. GAD-7 — скрининг симптомов, а не диагноз.',
     stressMeasuresTitle:'Исходное измерение T0 · до первого занятия',
-    stressMeasuresIntro:'После 14-го занятия будут предложены те же тесты. Их показатели сравниваются отдельно от практических навыков, без искусственного общего «индекса здоровья».',
-    stressPrimaryMeasure:'ГЛАВНЫЙ · ',
-    stressWindowWeek:'Последние 7 дней',stressWindowFortnight:'Последние 14 дней',stressWindowNow:'Прямо сейчас',
+    stressMeasuresIntro:'После 14-го урока предлагаются те же подтверждённые тесты при соблюдении интервалов повторения. Шкалы состояния и освоение навыков не смешиваются в общий клинический балл.',
+    stressPrimaryMeasure:'ГЛАВНЫЙ · ',stressWindowWeek:'Последние 7 дней',
+    stressWindowFortnight:'Последние 14 дней',stressWindowNow:'Прямо сейчас',
     stressScalesUnit:'отдельных шкал',
-    programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) + GAD-7 (7 вопросов), тест опоры — по желанию. Русский перевод GAD-7 не валидирован отдельно.',
+    programmeLabel: 'Ваш курс', programmeBattery: 'До первого урока нужен Weekly Pulse; GAD-7 и тест ресурсов — по желанию. Русский GAD-7 не прошёл самостоятельную валидацию.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
     showMore: 'Добавить или убрать другие тесты', showLess: 'Показать только пять первых',
@@ -176,6 +186,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }),[data.results,current.testKeys,locale])
   const confirmed=(current.testKeys||[]).length>0
   const confirmedKeys=current.testKeys||[]
+  const isAntistress=programme?.id==='stress'
+  const baselineConfirmed=hasAntistressRequiredBaseline(confirmedKeys,programme?.id)
   const optionByKey=new Map(ranked.map(item=>[item.key,item]))
   const savedCount=assessment.completedSelectedCount||0
   const confirmedStatuses=assessment.selectedTests||[]
@@ -272,9 +284,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       : ranked.slice(0,5).map(item=>item.key)
     // A short stress course starts with one 7-day questionnaire and one
     // 14-day anxiety instrument. Resource Pulse remains an opt-in third test.
-    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter)
-  },[stage,testsTouched,current.testKeys,ranked])
+    setChosenTests(withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
+  },[stage,testsTouched,current.testKeys,ranked,programme?.id])
   function toggleTest(key) {
+    if(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY) return
     setTestsTouched(true)
     setChosenTests(previous=>previous.includes(key)
       ? previous.filter(value=>value!==key)
@@ -288,6 +301,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   async function saveTestSelection() {
     if(localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(!hasAntistressRequiredBaseline(chosenTests,programme?.id)) {
+      onError('COURSE_ANTISTRESS_BASELINE_REQUIRED')
+      return
+    }
     setLocalBusy(true);onError('')
     try {
       const selected=chosenTests.map(key=>optionByKey.get(key))
@@ -331,7 +348,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       onClick={()=>onAct('intake',{concerns,focusTags})}>{t.confirmFocus}<ArrowRight size={17}/></button>
   </section>
 
-  if(stage===2 && confirmed && pending.length===0 && !showCompletedOptions) {
+  if(stage===2 && confirmed && baselineConfirmed && pending.length===0 && !showCompletedOptions) {
     return <CourseCompletionReview
       t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
       optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
@@ -345,25 +362,38 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
-      <div className={styles.sectionHeading}><h2>{programme?.id==='stress'?t.stressTestsTitle:t.testsTitle}</h2>
+      {isAntistress && <section className={styles.stressBaselineIntro} data-course-antistress-pretests aria-label={t.stressBaselineTitle}>
+        <span className={styles.baselineIcon}><ClipboardList size={23} aria-hidden="true"/></span>
+        <div><strong>{t.stressBaselineTitle}</strong><p>{t.stressBaselineText}</p></div>
+      </section>}
+      <div className={styles.sectionHeading}><h2>{isAntistress?t.stressTestsTitle:t.testsTitle}</h2>
         <button type="button" className={styles.secondary} disabled={busy}
           onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
-      <p>{programme?.id==='stress'?t.stressTestsIntro:t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
-      <div className={styles.testList} aria-label={t.testsTitle}>
+      <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
+      <div className={styles.testList} aria-label={isAntistress?t.stressTestsTitle:t.testsTitle}>
         {visible.map((item,index)=>{
-          const actual=confirmedStatuses.find(status=>status.key===item.key)
-          const hasBaseline=actual?actual.completed:item.completed
-          return <label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
-          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
+          const required=isAntistress && item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
+          const serverStatus=confirmedStatuses.find(row=>row.key===item.key)
+          const recencyDays=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
+          const resultValid=serverStatus?Boolean(serverStatus.completed)
+            :(isAntistress&&recencyDays?Boolean(item.completed &&
+              isAntistressBaselineRecent(item.key,item.completedAt)):Boolean(item.completed))
+          const outdated=Boolean(item.completed&&!resultValid)
+          return <label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}
+            data-course-required-baseline={required?'true':undefined}>
+          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||required||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
+            {isAntistress && ['hh-weekly-pulse','gad-7','hh-resource-pulse'].includes(item.key) &&
+              <small className={required?styles.requiredBadge:styles.optionalBadge}>
+                {required?t.stressRequired:t.stressOptional}
+              </small>}
             <small>{item.measurementAxes.slice(0,3).join(' · ')}</small>
-            <small className={hasBaseline?styles.completed:styles.pending}>
-              {hasBaseline?<><Check size={13}/> {t.completed} · {formatDate(actual?.completedAt||item.completedAt,locale)}</>
-                :<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
-              {actual?.outdated&&<em> · {ru?'Нужен свежий исходный замер':'Fresh baseline needed'}</em>}
-              {actual?.instrumentLocale&&<em> · {actual.instrumentLocale.toUpperCase()}</em>}
+            <small className={resultValid?styles.completed:styles.pending}>
+              {resultValid?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
+                :outdated&&isAntistress?t.stressRetake:<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
+              {serverStatus?.instrumentLocale&&<> · {serverStatus.instrumentLocale.toUpperCase()}</>}
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
@@ -376,6 +406,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}<ArrowRight size={15}/></Link>
       </div>
       <p className={styles.small}>{t.saveNotice}</p>
+      {isAntistress && <p className={styles.small} data-course-antistress-battery-note>{t.stressExtraNote}</p>}
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
         <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
           type="button" disabled={busy||localBusy||!chosenTests.length}
@@ -389,14 +420,14 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
             const meta=optionByKey.get(item.key)
             return <div key={item.key}><span>{item.completed?<Check size={15}/>:<ClipboardList size={15}/>}
               {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}
-                {item.outdated&&<> · {ru?'нужен свежий результат':'fresh baseline required'}</>}
+                {item.outdated&&<> · {ru?'Нужен свежий исходный замер':'Fresh baseline needed'}</>}
                 {item.instrumentLocale&&<> · {item.instrumentLocale.toUpperCase()}</>}</small></div>
           })}
         </div>
-        {pending.length===0?<p className={styles.completed}>{t.allDone}</p>:
+        {pending.length===0?<p className={baselineConfirmed?styles.completed:styles.pending}>{baselineConfirmed?t.allDone:t.stressMissingBaseline}</p>:
           <button type="button" className={'hh-primary '+styles.ctaLink} disabled={busy||localBusy||openingTest}
             onClick={openFirstCourseTest}>{t.pendingTitle}<ArrowRight size={17}/></button>}
-        {pending.length===0&&<button type="button" disabled={busy||localBusy}
+        {pending.length===0&&baselineConfirmed&&<button type="button" disabled={busy||localBusy}
           className={'hh-primary '+styles.cta} onClick={()=>onAct('review')}>{t.review}<ArrowRight size={17}/></button>}
         {pending.length>0&&<p className={styles.small}>{t.reviewDisabled}</p>}
       </section>}
