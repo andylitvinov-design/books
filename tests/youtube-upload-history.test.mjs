@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {RUSSIAN_CHANNEL_ID, validateHistoryRecord, normalizeChannelConfig, parseHistoryRecord,
-  sortHistory} from '../lib/youtube/upload-history-model.mjs'
+  sortHistory, normalizeGoogleOauthClientId} from '../lib/youtube/upload-history-model.mjs'
 import {createMemoryYoutubeHistoryStore, createYoutubeHistoryStore} from '../lib/youtube/upload-history-store.js'
 
 const ENGLISH_ID = 'UCaaaaaaaaaaaaaaaaaaaaaa'
@@ -84,4 +84,23 @@ test('history sorts newest first and applies a bounded result', () => {
 })
 test('missing persistent Redis configuration fails closed', () => {
   assert.equal(createYoutubeHistoryStore({environment:{}}),null)
+})
+
+test('owner-configured public OAuth Client ID is durable, editable and never mistaken for a client secret', async () => {
+  const first = '123456789012-exampleone.apps.googleusercontent.com'
+  const second = '123456789012-exampletwo.apps.googleusercontent.com'
+  assert.equal(normalizeGoogleOauthClientId(first),first)
+  assert.equal(normalizeGoogleOauthClientId(' '+first+' '),first)
+  assert.equal(normalizeGoogleOauthClientId('fake-google-secret'),null)
+  assert.equal(normalizeGoogleOauthClientId('https://evil.example/auth'),null)
+  const store = createMemoryYoutubeHistoryStore()
+  assert.equal(await store.oauthConfig(),null)
+  await assert.rejects(store.configureOauthClientId('not-a-client-id'),/invalid_oauth_client/)
+  assert.equal(await store.oauthConfig(),null)
+  assert.equal(await store.configureOauthClientId(first),true)
+  assert.equal(await store.oauthConfig(),first)
+  assert.equal(await store.configureOauthClientId(second),true)
+  assert.equal(await store.oauthConfig(),second)
+  assert.deepEqual((await store.channels()).ru.id,RU_ID)
+  assert.deepEqual(await store.list(),[])
 })
