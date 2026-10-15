@@ -28,3 +28,15 @@
 .client-entry-shell .cabinet-signin-hero :is(h2,h3){color:#183c55}
 .client-entry-shell .cabinet-signin-hero p{color:#617688}
 .client-entry-shell .cabinet-signin-hero :is(button,a):focus-visible{outline-color:#873e54}
+
+
+/* My Tests site chrome: navy for navigation/sign-in; never wine for choosing. */
+.client-entry-shell .house-header .site-navigation .site-cabinet-link,
+.client-entry-shell .cabinet-signin-hero .cabinet-google-button{
+  background:#173957;border-color:#173957;color:#fff;
+}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link:hover,
+.client-entry-shell .cabinet-signin-hero .cabinet-google-button:hover:not(:disabled){
+  background:#102d47;border-color:#102d47;color:#fff;
+}
+.client-entry-shell .cabinet-signin-hero :is(button,a):focus-visible{outline-color:#315c7f}

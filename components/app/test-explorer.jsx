@@ -390,7 +390,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       <p className={styles.quickIntro}>{quick.intro}</p>
       {activePlan?.status === 'active' && <button className={styles.resumeButton} type="button" onClick={() => onResume?.(activePlan)}>{locale === 'ru' ? `Продолжить набор: шаг ${activePlan.currentIndex + 1}` : locale === 'es' ? `Continuar selección: paso ${activePlan.currentIndex + 1}` : `Resume set: step ${activePlan.currentIndex + 1}`}</button>}
       <div className={styles.quickActions}>
-        <button type="button" className={styles.quickPrimary} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
+        <button type="button" className={styles.quickPrimary} data-test-action={explicitSelectionOnly ? 'save' : 'start'} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
@@ -541,7 +541,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         </div>
         <div>
           <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>
-          <button className={styles.primary} type="button" disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
+          <button className={styles.primary} type="button" data-test-action={explicitSelectionOnly ? 'save' : 'start'} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
         </div>
       </footer>
   </section>
