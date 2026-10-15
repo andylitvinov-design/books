@@ -277,7 +277,7 @@ export function MyCourse({ data, locale = 'en' }) {
   </div>
 
   return <div className={styles.root} data-my-course>
-    <button type="button" className={styles.backToCourses} onClick={() => {
+    <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
       setShowCourse(false)
       if (testReturn || programmeEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button>
@@ -329,7 +329,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <summary>{t.how}</summary>
       <Course14DayOverview locale={locale} />
     </details>}
-    {stage >= 1 && stage <= 3 && !fastAntistressEntry && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+    {stage >= 1 && stage <= 2 && !fastAntistressEntry && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
