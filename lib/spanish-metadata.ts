@@ -6,7 +6,7 @@ export function spanishMetadata(path: string, title: string, description: string
   const absolute = (pathname: string) => new URL(pathname, base).href;
   return {
     // Use absolute locale URLs, including the distinct Russian /ru homepage.
-    metadataBase: null, title, description,
+    metadataBase: base, title, description,
     alternates: { canonical: absolute(path), languages: {
       es: absolute(path),
       en: absolute(suffix ? '/en' + suffix : '/'),
