@@ -69,7 +69,22 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(landing, /guest\/results/)
   assert.match(landing, /save-intents/)
   assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
-  assert.doesNotMatch(workspace, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY|sessionStorage/)
+  // PR613 stores only a short-lived session navigation target, never results.
+  // Allow exactly the two reviewed target-consumption calls; reject every
+  // other browser-storage use and retain the assessment-import prohibitions.
+  const sessionTargetCall = 'consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)'
+  const assertNoAssessmentStorage = source => {
+    assert.doesNotMatch(source, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY/)
+    assert.equal(source.split(sessionTargetCall).length - 1, 2)
+    assert.doesNotMatch(source.replaceAll(sessionTargetCall, ''), /sessionStorage|localStorage/)
+  }
+  assertNoAssessmentStorage(workspace)
+  for (const forbidden of [
+    "window.sessionStorage.setItem('assessment-result', JSON.stringify(result))",
+    "window.localStorage.setItem('guest-results', JSON.stringify(results))",
+    "appFetch('guest/import', result)", "appFetch('report/claim', result)",
+    'GUEST_RESULT_STORAGE_KEY',
+  ]) assert.throws(() => assertNoAssessmentStorage(workspace + '\n' + forbidden))
   assert.match(workspace, /SaveContinuation/)
   assert.match(workspace, /confirmed: true/)
   assert.match(guestRepo, /app_private\.guest_sessions/)

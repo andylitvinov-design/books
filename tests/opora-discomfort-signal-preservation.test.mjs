@@ -1,3 +1,4 @@
+import * as phaseCatalog from '../lib/inner-growth/trauma-phase-catalog.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -8,6 +9,7 @@ import * as adaptation from '../lib/inner-growth/course-adaptation.js'
 import * as welcome from '../lib/inner-growth/course-welcome.js'
 import * as courseSequence from '../lib/inner-growth/course-slide-sequence.js'
 import * as dayOne from '../lib/inner-growth/anti-stress-day-one.js'
+import * as oporaStateJourney from '../lib/inner-growth/opora-state-journey.js'
 import { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } from '../lib/inner-growth/lesson-library.js'
 
 // Self-contained actual-component harness: reusable on canonical and billing branches.
@@ -23,9 +25,9 @@ function mount(_name,{props}){
     useMemo(fn,deps){const i=index++;if(!same(slots[i]?.deps,deps))slots[i]={value:fn(),deps};return slots[i].value},
     useEffect(fn,deps){const i=index++;if(!same(slots[i]?.deps,deps))pending.push(()=>{slots[i]?.cleanup?.();slots[i]={deps,cleanup:fn()}})},
   }
-  const dependencies={react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
+  const dependencies={'@/lib/inner-growth/trauma-phase-catalog':phaseCatalog,react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:(_,key)=>String(key)}),'./course-guided-timer':{default:()=>null},'./course-practice-voice':{default:()=>null},
-    '@/lib/inner-growth/course-slide-sequence':courseSequence,'@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./opora-module-activity':{default:()=>null},'./anti-stress-practice-lab':{default:'AntiStressPracticeLab'},'./course-lesson-result':{default:'CourseLessonResult'},'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
+    '@/lib/inner-growth/course-slide-sequence':courseSequence,'@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'@/lib/inner-growth/opora-state-journey':oporaStateJourney,'./opora-state-journey':{default:()=>null},'./opora-module-activity':{default:()=>null},'./anti-stress-practice-lab':{default:'AntiStressPracticeLab'},'./course-lesson-result':{default:'CourseLessonResult'},'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
   const runtime={exports:{},require:name=>{assert.ok(dependencies[name],name);return dependencies[name]},
     document:{body:{style:{overflow:''}},addEventListener(){},removeEventListener(){}},
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}

@@ -15,6 +15,7 @@ const root = process.env.GROWTH_COURSE_ROOT
 const appRoot = resolve(root, 'lib/app')
 const ts = createRequire(resolve(root, 'package.json'))('typescript')
 const pureImports = [
+  '../inner-growth/trauma-phase-catalog.js','../inner-growth/trauma-phase-outcomes.js',
   '../inner-growth/course-presets.js', './course-access.js', '../assessments/contracts.js', './crypto.js',
   '../inner-growth/course-model.js', '../inner-growth/course-programs.js', '../../data/assessments/catalog.js',
   '../inner-growth/course-final-retest.js', '../inner-growth/anti-stress-weekly-checkpoint.js',
@@ -22,6 +23,7 @@ const pureImports = [
   '../../data/inner-growth/course-journey.js', '../inner-growth/course-strategy.js',
   '../inner-growth/course-adaptation.js', '../inner-growth/antistress-module-lessons.js',
   '../inner-growth/antistress-module-router.js', '../inner-growth/anti-stress-day-one.js',
+  '../inner-growth/opora-state-journey.js',
   '../inner-growth/anti-stress-practice-lab.js', '../inner-growth/anti-stress-method-activities.js',
   '../inner-growth/course-slide-sequence.js',
   '../inner-growth/course-progress.js', '../inner-growth/opora-module-exercise.js',

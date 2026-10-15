@@ -2,7 +2,7 @@
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
@@ -337,7 +337,20 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
-  const definition = useMemo(() => (active ? definitionFor(active, locale) : null), [active, locale])
+  const runLifetime = useRef(0)
+  const saveOperation = useRef(null)
+  const saving = useRef(false)
+  const completion = useRef(null)
+  const submitting = useRef(false)
+  const recoveryPending = Boolean(saveOperation.current || completion.current)
+  // A resumed attempt keeps its exact registered version and instrument language.
+  // UI language changes only labels; a new selection may use the UI locale.
+  const definition = useMemo(() => {
+    if (run) {
+      try { return getDefinitionById(run.definitionId) } catch { return null }
+    }
+    return active ? definitionFor(active, locale) : null
+  }, [run, active, locale])
   const question = definition?.questions[index]
   const selected = question ? answers[question.id] : undefined
   const answeredCount = definition ? definition.questions.filter(item => Object.prototype.hasOwnProperty.call(answers, item.id)).length : 0
@@ -436,12 +449,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   }
 
   async function startRun(def) {
+    const epoch = runLifetime.current
     const created = await guestFetch('guest/runs', {
       definitionKey: def.key,
       definitionVersion: def.version,
       instrumentLocale: def.instrumentLocale,
       operationId: crypto.randomUUID(),
     })
+    if (runLifetime.current !== epoch) return
+    runLifetime.current += 1
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
     setRun(created)
     setAnswers(created.answers || {})
     setContext(created.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
@@ -452,6 +472,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setIndex(nextIndex)
     setMode(null)
     setPhase('mode')
+    setBusy(false)
   }
 
   async function begin(id, moodPayload = pendingMood) {
@@ -460,6 +481,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       setError(c.error)
       return
     }
+    setRun(null)
     setActive(id)
     setGuestResult(null)
     setError('')
@@ -518,33 +540,116 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function saveTraumaContext() {
-    if (!run || busy) return
+  async function saveGuestRun(body) {
+    if (saving.current) throw new Error('SAVE_IN_PROGRESS')
+    if (completion.current) throw new Error('IMMUTABLE_RUN')
+    const epoch = runLifetime.current
+    const pending = saveOperation.current || { runId: run.id, body }
+    if (pending.runId !== run.id) throw new Error('RUN_CHANGED')
+    saveOperation.current = pending
+    saving.current = true
+    try {
+      const saved = await guestFetch('guest/runs/' + pending.runId + '/save', pending.body)
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      saveOperation.current = null
+      return saved
+    } catch (error) {
+      pending.errorCode = error.code
+      throw error
+    } finally {
+      if (runLifetime.current === epoch) saving.current = false
+    }
+  }
+
+  async function retryGuestSave() {
+    const epoch = runLifetime.current
+    if (busy || saving.current || !saveOperation.current) return
     setBusy(true)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun(saveOperation.current.body)
+      if (runLifetime.current !== epoch) return
+      setRun(saved)
+      setAnswers(saved.answers || {})
+      setContext(saved.context || {})
+      setSaveState(c.saved)
+    } catch {
+      if (runLifetime.current === epoch) setError(c.error)
+    } finally {
+      if (runLifetime.current === epoch) setBusy(false)
+    }
+  }
+
+  async function reloadGuestRun() {
+    const epoch = runLifetime.current
+    if (busy || saving.current || !run) return
+    setBusy(true)
+    setError('')
+    try {
+      const fresh = await guestFetch('guest/runs/' + run.id)
+      if (runLifetime.current !== epoch) return
+      saveOperation.current = null
+      setRun(fresh)
+      setAnswers(fresh.answers || {})
+      setContext(fresh.context || {})
+      setIndex(Math.min(fresh.progress || 0, definition.questions.length - 1))
+      setSaveState('')
+      if (!['draft', 'in_progress'].includes(fresh.status)) resetToCatalog()
+    } catch {
+      if (runLifetime.current === epoch) setError(c.error)
+    } finally {
+      if (runLifetime.current === epoch) setBusy(false)
+    }
+  }
+
+  async function saveTraumaContext() {
+    const epoch = runLifetime.current
+    if (!run || busy || saving.current || saveOperation.current) return
+    setBusy(true)
+    setError('')
+    try {
+      const saved = await saveGuestRun({
         answers: {}, context, progress: index, expectedRevision: run.revision, operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setContext(saved.context || {})
-    } catch { setError(c.error) } finally { setBusy(false) }
+    } catch {
+      if (runLifetime.current === epoch) setError(c.error)
+    } finally {
+      if (runLifetime.current === epoch) setBusy(false)
+    }
   }
 
   async function submitSavedRun(currentRun, destination = 'report') {
-    const result = await guestFetch('guest/runs/' + currentRun.id + '/submit', {
-      expectedRevision: currentRun.revision,
+    const epoch = runLifetime.current
+    const request = async (path, body) => {
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      const response = await guestFetch(path, body)
+      if (runLifetime.current !== epoch) throw new Error('RUN_CHANGED')
+      return response
+    }
+    if (!completion.current) completion.current = { run: currentRun, destination, result: null }
+    const pending = completion.current
+    if (pending.run.id !== currentRun.id) throw new Error('RUN_CHANGED')
+    destination = pending.destination
+    const result = pending.result || await request('guest/runs/' + pending.run.id + '/submit', {
+      expectedRevision: pending.run.revision,
     })
+    pending.result = result
     setGuestResult(result)
     let advanced = null
-    if (activePlan?.status === 'active') {
-      advanced = await guestFetch('guest/test-plans/' + activePlan.id + '/advance', {
+    if (activePlan) {
+      // A lost advance response may have already credited this exact run.
+      const fresh = await request('guest/test-plans/' + encodeURIComponent(activePlan.id))
+      if (!fresh) throw new Error('PLAN_UNAVAILABLE')
+      advanced = fresh.completedRunIds?.includes(result.runId) ? fresh : await request('guest/test-plans/' + fresh.id + '/advance', {
         completedRunId: result.runId,
-        expectedRevision: activePlan.revision,
+        expectedRevision: fresh.revision,
       })
       setActivePlan(advanced)
-      const bootstrap = await guestFetch('guest/bootstrap')
-      const rows = (bootstrap.results || []).filter(item => advanced.completedRunIds?.includes(item.runId))
+      const refreshed = await request('guest/bootstrap')
+      const rows = (refreshed.results || []).filter(item => advanced.completedRunIds?.includes(item.runId))
       setPlanResults(rows)
     }
     if (destination === 'next') {
@@ -564,11 +669,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       // Always display this saved attempt's full recommendations.
       setPhase('result')
     }
+    if (completion.current === pending) completion.current = null
     return result
   }
 
   async function choose(value, targetQuestion = question) {
-    if (!run || !targetQuestion || busy) return
+    const epoch = runLifetime.current
+    if (!run || !targetQuestion || busy || saving.current || recoveryPending) return
     const nextAnswers = { ...answers, [targetQuestion.id]: value }
     const quick = mode === 'quick'
     const firstMissing = definition.questions.findIndex(item => !Object.prototype.hasOwnProperty.call(nextAnswers, item.id))
@@ -578,52 +685,59 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setSaveState(c.saving)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: { [targetQuestion.id]: value },
         context: run.context || {},
         progress,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setAnswers(saved.answers || nextAnswers)
       setSaveState(c.saved)
       // Quick remains on the full questionnaire; Guided advances with the Next action.
     } catch {
+      if (runLifetime.current !== epoch) return
       setAnswers(run.answers || {})
       setError(c.error)
       setSaveState('')
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
   async function submitResult(currentRun = run, destination = 'report') {
-    if (!currentRun || busy) return
+    const epoch = runLifetime.current
+    if (!currentRun || busy || submitting.current || saving.current || saveOperation.current) return
+    submitting.current = true
     setBusy(true)
     setError('')
     try {
       await submitSavedRun(currentRun, destination)
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) { submitting.current = false; setBusy(false) }
     }
   }
 
   async function next() {
-    if (selected === undefined || busy || !run) return
+    const epoch = runLifetime.current
+    if (selected === undefined || busy || !run || saving.current || recoveryPending) return
     setBusy(true)
     setSaveState(c.saving)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: {},
         context: run.context || {},
         progress: Math.min(index + 1, definition.questions.length),
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setSaveState(c.saved)
       if (index < definition.questions.length - 1) {
@@ -634,29 +748,34 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         await submitSavedRun(saved)
       }
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
       setSaveState('')
     } finally {
-      setBusy(false)
+      if (runLifetime.current === epoch) setBusy(false)
     }
   }
 
   async function saveContextAndFinish(destination = 'report') {
-    if (!run || busy) return
+    const epoch = runLifetime.current
+    if (!run || busy || saving.current || saveOperation.current) return
+    if (completion.current) { await submitResult(completion.current.run, completion.current.destination); return }
     setBusy(true)
     setError('')
     try {
-      const saved = await guestFetch('guest/runs/' + run.id + '/save', {
+      const saved = await saveGuestRun({
         answers: {},
         context,
         progress: definition.questions.length,
         expectedRevision: run.revision,
         operationId: crypto.randomUUID(),
       })
+      if (runLifetime.current !== epoch) return
       setRun(saved)
       setBusy(false)
       await submitResult(saved, destination)
     } catch {
+      if (runLifetime.current !== epoch) return
       setError(c.error)
       setBusy(false)
     }
@@ -700,6 +819,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   }
 
   function resetToCatalog() {
+    setBusy(false)
+    runLifetime.current += 1
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
     setActive(null)
     setRun(null)
     setAnswers({})
@@ -754,7 +879,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       />
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
-        {phase === 'questions' ? (
+        {phase === 'questions' && definition ? (
           <header className="cabinet-tests-heading cabinet-tests-heading--compact">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>
           </header>
@@ -788,12 +913,17 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           </div>
         )}
 
+        {run && !definition && <div className="cabinet-guest-runner" role="alert">
+          <p>{locale === 'ru' ? 'Эта сохранённая версия теста сейчас недоступна. Ответы не изменены.' : 'This saved test version is currently unavailable. Your answers have not been changed.'}</p>
+          <button type="button" disabled={busy} onClick={resetToCatalog}>{c.back}</button>
+        </div>}
+
         {['mode', 'questions'].includes(phase) && definition && run && hasTraumaAdministration(definition) && !traumaContextReady(definition, run.context || {}) && (
           <TraumaFrontMatter definition={definition} context={context} onChange={setContext}
-            onContinue={saveTraumaContext} onExit={resetToCatalog} busy={busy} error={error} />
+            onContinue={saveTraumaContext} onExit={resetToCatalog} busy={busy || recoveryPending} error={error} />
         )}
 
-        {phase === 'mode' && traumaContextReady(definition, run?.context || {}) && definition && run && (
+        {phase === 'mode' && definition && run && traumaContextReady(definition, run.context || {}) && (
           <div className="cabinet-guest-runner hh-test-mode-picker">
             <div className="hh-test-mode-intro">
               <p className="cabinet-test-progress">{definitionTitle(definition, locale)}</p>
@@ -856,7 +986,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             {mode === 'quick' ? (
               <div className="cabinet-quick-form">
                 {definition.questions.map((item, step) => (
-                  <fieldset key={item.id} className="cabinet-quick-question" disabled={busy}>
+                  <fieldset key={item.id} className="cabinet-quick-question" disabled={busy || recoveryPending}>
                     <legend>
                       <span className="cabinet-question-number">{c.question} {step + 1} / {definition.questions.length}</span>
                       <TraumaSectionInstructions question={item} />
@@ -867,7 +997,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                       <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
                     )}
                     <GuestAnswerChoices definition={definition} question={item} selected={answers[item.id]}
-                      onChoose={value => choose(value, item)} disabled={busy} locale={locale} />
+                      onChoose={value => choose(value, item)} disabled={busy || recoveryPending} locale={locale} />
                   </fieldset>
                 ))}
                 <p className="cabinet-test-note hh-quick-hint">{c.tapContinue}</p>
@@ -883,7 +1013,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                       ['note', c.note],
                     ].map(([key, label]) => (
                       <label key={key}>{label}
-                        <textarea value={context[key] || ''} maxLength={1000}
+                        <textarea disabled={busy || recoveryPending} value={context[key] || ''} maxLength={1000}
                           onChange={event => setContext(value => ({ ...value, [key]: event.target.value }))} />
                       </label>
                     ))}
@@ -899,27 +1029,27 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                   <p className="cabinet-test-note">{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, здесь выберите 0.' : 'CDC guidance: if physical and mental unhealthy days were both 0, select 0 here.'}</p>
                 )}
                 <GuestAnswerChoices definition={definition} question={question} selected={selected}
-                  onChoose={value => choose(value)} disabled={busy} locale={locale} />
+                  onChoose={value => choose(value)} disabled={busy || recoveryPending} locale={locale} />
               </div>
             )}
             <p className="cabinet-test-note hh-runner-save-state" role="status" aria-live="polite">{saveState}</p>
             <div className="cabinet-test-actions">
               {mode === 'guided' && (
-                <button type="button" disabled={busy || index === 0}
+                <button type="button" disabled={busy || recoveryPending || index === 0}
                   onClick={() => { setIndex(value => value - 1); setSaveState('') }}>
                   {c.back}
                 </button>
               )}
               {mode === 'guided' &&
                 (index !== definition.questions.length - 1 || definition.optionalContext?.length > 0) && (
-                <button type="button" disabled={busy || selected === undefined} onClick={next}>
+                <button type="button" disabled={busy || recoveryPending || selected === undefined} onClick={next}>
                   {c.next}
                 </button>
               )}
             </div>
             {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
               (mode === 'quick' && allAnswered)) && (
-              <TestFinishActions locale={locale} disabled={busy} temporary
+              <TestFinishActions locale={locale} disabled={busy || recoveryPending} temporary
                 onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
                 onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
             )}
@@ -930,15 +1060,15 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           <div className="cabinet-guest-runner">
             <h3>{c.contextTitle}</h3>
             <p>{c.contextText}</p>
-            <label>{c.focus}<textarea value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
-            <label>{c.trigger}<textarea value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
-            <label>{c.helps}<textarea value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
-            <label>{c.desiredChange}<textarea value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
-            <label>{c.note}<textarea value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
+            <label>{c.focus}<textarea disabled={busy || recoveryPending} value={context.current_focus} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, current_focus: e.target.value }))} /></label>
+            <label>{c.trigger}<textarea disabled={busy || recoveryPending} value={context.trigger} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, trigger: e.target.value }))} /></label>
+            <label>{c.helps}<textarea disabled={busy || recoveryPending} value={context.what_helps} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, what_helps: e.target.value }))} /></label>
+            <label>{c.desiredChange}<textarea disabled={busy || recoveryPending} value={context.desired_change} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, desired_change: e.target.value }))} /></label>
+            <label>{c.note}<textarea disabled={busy || recoveryPending} value={context.note} maxLength={1000} onChange={(e) => setContext((v) => ({ ...v, note: e.target.value }))} /></label>
             <div className="cabinet-test-actions">
-              <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
+              <button type="button" disabled={busy || recoveryPending} onClick={() => setPhase('questions')}>{c.back}</button>
             </div>
-            <TestFinishActions locale={locale} disabled={busy} temporary
+            <TestFinishActions locale={locale} disabled={busy || recoveryPending} temporary
               onReport={() => saveContextAndFinish('report')}
               onNext={() => saveContextAndFinish('next')} />
           </div>
@@ -1044,7 +1174,16 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <footer className="cabinet-result-footer"><p className="cabinet-test-note">{locale === 'ru' ? 'Каждый тест имеет отдельный результат. Вы можете по желанию сохранить конкретные результаты в личном кабинете через Google.' : 'Each test has a separate result. Choose which results to save to your private Cabinet with Google.'}</p><div className="cabinet-test-actions"><button className="cabinet-text-button" type="button" onClick={resetToCatalog}>{c.restart}</button></div></footer>
           </article>
         )}
-        {error && phase !== 'catalog' && <p className="client-entry-error" role="alert">{error}</p>}
+        {error && phase !== 'catalog' && <div className="client-entry-error" role="alert">
+          <p>{error}</p>
+          {(saveOperation.current || completion.current) && <button type="button" disabled={busy}
+            onClick={() => completion.current ? submitResult(completion.current.run, completion.current.destination) : retryGuestSave()}>
+            {locale === 'ru' ? 'Повторить' : 'Retry'}
+          </button>}
+          {['REVISION_CONFLICT', 'IMMUTABLE_RUN', 'IDEMPOTENCY_CONFLICT'].includes(saveOperation.current?.errorCode) && <button type="button" disabled={busy} onClick={reloadGuestRun}>
+            {locale === 'ru' ? 'Загрузить сохранённые ответы' : 'Reload saved answers'}
+          </button>}
+        </div>}
         <p className="cabinet-test-note">{c.nonDiagnostic}</p>
       </section>}
 

@@ -6,6 +6,7 @@ import { canShowHousePromotion, canStartCheckout, EMPTY_LESSON_OFFERS, lessonCom
 import { requestBilling, requestBillingStatus, verifiedBillingRedirect } from '@/lib/billing/client-session'
 import { billingReadLifecycle } from '@/lib/billing/read-lifecycle'
 import { SUBSCRIPTION_COPY } from './subscription-copy'
+import ManualBillingRequest from './manual-billing-request'
 import styles from './subscription-access.module.css'
 
 const noAction = () => {}
@@ -217,12 +218,14 @@ function Price({ t, status, planId }) {
 }
 
 function CheckoutAction({ t, planId }) {
-  const { status, phase, busy, startCheckout } = useSubscription()
+  const { status, phase, busy, startCheckout, locale } = useSubscription()
   if (planId === 'free') return <p className={styles.fine} role="status">{t.freeSelected}</p>
   return <div className={styles.purchase}>
     <p className={styles.selectedPrice} aria-live="polite">{t.plans[planId].name}: {t.plans[planId].price}</p>
     <p className={styles.fine}>{t.terms}</p>
     {!canStartCheckout(status, phase, planId) && <p className={styles.notice}>{t.planUnavailable}</p>}
+    {phase === 'ready' && status && !status.entitlement.active && !status.subscription &&
+      !canStartCheckout(status, phase, planId) && <ManualBillingRequest planId={planId} locale={locale}/>}
     <button type="button" className={'hh-primary ' + styles.primary}
       disabled={Boolean(busy) || !canStartCheckout(status, phase, planId)} onClick={() => startCheckout(planId)}>
       {busy === 'checkout' ? t.working : t.subscribe + ' · ' + t.plans[planId].name}

@@ -2,6 +2,7 @@
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
+import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
@@ -320,7 +321,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     let advanced = null
     if (planId) {
       const plan = await appFetch('test-plans/' + encodeURIComponent(planId))
-      advanced = await appFetch('test-plans/' + encodeURIComponent(planId) + '/advance', {
+      advanced = plan.completedRunIds?.includes(result.runId) ? plan : await appFetch('test-plans/' + encodeURIComponent(planId) + '/advance', {
         completedRunId: result.runId,
         expectedRevision: plan.revision,
       })
@@ -637,7 +638,12 @@ function SaveContinuation({ data, locale, reload }) {
     try {
       const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
       await reload()
-      router.replace(savedResourcePath(locale, saved.sourceKind, saved.resource.id))
+      // A confirmed session Save may have been initiated by a navigation click.
+      // Continue to exactly the first-party section selected before OAuth.
+      const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      router.replace(next||savedResourcePath(locale,saved.sourceKind,saved.resource.id))
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -665,7 +671,10 @@ function SaveContinuation({ data, locale, reload }) {
     if (autoStarted.current === intentId) return
     autoStarted.current = intentId
     if (intent.status === 'committed' && intent.resourceId) {
-      router.replace(savedResourcePath(locale, intent.sourceKind, intent.resourceId))
+      const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      router.replace(next||savedResourcePath(locale,intent.sourceKind,intent.resourceId))
       return
     }
     void commit()
@@ -1221,7 +1230,9 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [mode, setMode] = useState(initialMode === 'guided' && courseMode ? 'guided' : initialMode === 'quick' ? 'quick' : null),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
-    inflight = useRef(false)
+    inflight = useRef(false),
+    completion = useRef(null),
+    finishing = useRef(false)
   const modeCopy =
     locale === 'ru'
       ? {
@@ -1261,6 +1272,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     setError(null)
     try {
       const value = await appFetch('runs/' + id)
+      operation.current = null
+      completion.current = null
       setRun(value)
       if (value.safetySignal) setSafetyAcknowledged(false)
       setContext(value.context || {})
@@ -1297,7 +1310,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
             ? (locale === 'ru' ? 'Как вы чувствуете себя сейчас' : 'How you feel right now')
             : (locale === 'ru' ? 'В целом, не только сегодня' : 'In general, not only today')
   async function save(answers = {}, progress = index) {
-    if (inflight.current) return null
+    if (inflight.current || completion.current) return null
     inflight.current = true
     setBusy(true)
     setError(null)
@@ -1340,17 +1353,28 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     await save({}, index + 1)
   }
   async function finish(destination = 'report') {
-    const saved = await save({}, def.questions.length)
-    if (!saved) return
-    setBusy(true)
+    if (finishing.current || inflight.current) return
+    finishing.current = true
     try {
-      const result = await appFetch(`runs/${id}/submit`, { expectedRevision: saved.revision })
+      // Keep the exact submitted revision across an uncertain response. Never
+      // attempt to edit an already completed run just to recover its report.
+      if (!completion.current) {
+        const saved = await save({}, def.questions.length)
+        if (!saved) return
+        completion.current = { revision: saved.revision, destination, result: null }
+      }
+      setBusy(true)
+      setError(null)
+      const pending = completion.current
+      const result = pending.result || await appFetch(`runs/${id}/submit`, { expectedRevision: pending.revision })
+      pending.result = result
       // The offer is queued only after server persistence. Course sequencing stays nonblocking.
       if (result?.id) offerAfterCompletion(`test:${result.id}`)
-      await onComplete(result, destination)
+      await onComplete(result, pending.destination)
     } catch (e) {
       setError(e)
     } finally {
+      finishing.current = false
       setBusy(false)
     }
   }
@@ -1358,6 +1382,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     if (await save()) await onExit()
   }
   async function discard() {
+    if (completion.current || inflight.current || finishing.current) return
     setBusy(true)
     try {
       await appFetch(`runs/${id}/discard`, { expectedRevision: run.revision })
@@ -1410,7 +1435,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
 
   if (hasTraumaAdministration(def) && !traumaContextReady(def, run.context || {})) {
     return <TraumaFrontMatter definition={def} context={context} onChange={setContext}
-      onContinue={() => save({}, index)} onExit={onExit} busy={busy || Boolean(operation.current)} error={error} />
+      onContinue={() => save({}, index)} onExit={onExit} busy={busy || Boolean(operation.current) || Boolean(completion.current)} error={error} />
   }
 
   const min = question?.min ?? def.answerScale?.min,
@@ -1457,7 +1482,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
         </div>
         <p className="hh-fine hh-test-mode-same">{modeCopy.same}</p>
         <div className="hh-actions hh-test-mode-exit">
-          <button disabled={busy || Boolean(operation.current)} onClick={exit}>
+          <button disabled={busy || Boolean(operation.current) || Boolean(completion.current)} onClick={exit}>
             {c.saveExit}
           </button>
         </div>
@@ -1510,7 +1535,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       {mode === 'quick' ? (
         <div className="hh-quick-form" aria-label={locale === 'ru' ? 'Все вопросы теста' : 'All test questions'}>
           {def.questions.map((item, step) => (
-            <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current)}>
+            <fieldset className="hh-quick-question" key={item.id} disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
               <legend>
                 <span className="hh-quick-number">{modeCopy.question} {step + 1} / {def.questions.length}</span>
                 {def.key === 'hh-bach-flower-profile' && <span className="hh-kicker">{bachSectionName(item.section)}</span>}
@@ -1522,13 +1547,13 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
               )}
               <RunnerAnswerChoices definition={def} question={item}
                 selected={run.answers[item.id]} onChoose={value => chooseAnswer(value, item.id)}
-                locale={locale} disabled={busy || Boolean(operation.current)} />
+                locale={locale} disabled={busy || Boolean(operation.current) || Boolean(completion.current)} />
             </fieldset>
           ))}
           <p className="hh-quick-hint">{modeCopy.tap}</p>
         </div>
       ) : question ? (
-        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current)}>
+        <fieldset className="hh-runner-question" disabled={busy || Boolean(operation.current) || Boolean(completion.current)}>
           <legend>
             {def.key === 'hh-bach-flower-profile' && <p className="hh-kicker">{bachSectionName(question.section)}</p>}
             <TraumaSectionInstructions question={question} />
@@ -1539,7 +1564,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
           )}
           <RunnerAnswerChoices definition={def} question={question}
             selected={run.answers[question.id]} onChoose={value => chooseAnswer(value)}
-            locale={locale} disabled={busy || Boolean(operation.current)} />
+            locale={locale} disabled={busy || Boolean(operation.current) || Boolean(completion.current)} />
         </fieldset>
       ) : (
         <div className="hh-runner-complete">
@@ -1564,7 +1589,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
                 <textarea
                   maxLength={1000}
                   value={context[key] || ''}
-                  disabled={busy}
+                  disabled={busy || Boolean(operation.current) || Boolean(completion.current)}
                   onChange={e => { setContext(value => ({ ...value, [key]: e.target.value })); setStatus(c.unsaved) }}
                 />
               </label>
@@ -1586,7 +1611,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
               {c.reload}
             </button>
           ) : (
-            <button disabled={busy} onClick={() => save()}>
+            <button disabled={busy} onClick={() => completion.current ? finish(completion.current.destination) : save()}>
               {c.retry}
             </button>
           )}
@@ -1595,13 +1620,13 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       {(isContext || (mode === 'quick' && allAnswered) ||
         (mode === 'guided' && index === def.questions.length - 1 && allAnswered && !def.optionalContext.length)) && (
         <TestFinishActions locale={locale} courseMode={courseMode}
-          disabled={busy || Boolean(operation.current) || !allAnswered}
+          disabled={busy || Boolean(operation.current) || Boolean(completion.current) || !allAnswered}
           onReport={() => finish('report')} onNext={() => finish('next')} />
       )}
       <div className="hh-actions hh-runner-actions">
         {mode !== 'quick' && (
           <button
-            disabled={busy || index === 0 || Boolean(operation.current)}
+            disabled={busy || index === 0 || Boolean(operation.current) || Boolean(completion.current)}
             onClick={() => save({}, index - 1)}
           >
             {c.back}
@@ -1611,13 +1636,13 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
           !(index === def.questions.length - 1 && allAnswered && !def.optionalContext.length) && (
           <button
             className="hh-primary"
-            disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current)}
+            disabled={busy || run.answers[question.id] === undefined || Boolean(operation.current) || Boolean(completion.current)}
             onClick={next}
           >
             {c.next}
           </button>
         )}
-        <button disabled={busy || Boolean(operation.current)} onClick={exit}>
+        <button disabled={busy || Boolean(operation.current) || Boolean(completion.current)} onClick={exit}>
           {c.saveExit}
         </button>
       </div>
@@ -3632,4 +3657,3 @@ function Privacy({ locale, logout, onDeleted }) {
     </section>
   )
 }
-

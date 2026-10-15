@@ -105,7 +105,7 @@ test('the voluntary exercises and result use the existing private server workflo
  const player=read('components/app/course-slide-player.jsx')
  assert.match(server,/validateAntiStressLabAnswers\(input\.practiceLab,today\.day,routePlan\?\.practiceLab\)/)
  assert.match(server,/input\.practiceLab!==undefined/)
- assert.match(server,/practiceLab,practiceLabVersion:routePlan\?'opora-nav2-lab-1':'opora-lab-1'/)
+ assert.match(server,/practiceLab,practiceLabVersion:routePlan\?\(routePlan\.version\|\|'opora-nav2-lab-1'\):'opora-lab-1'/)
  assert.match(player,/onSession\(\{/)
  assert.match(client,/data-course-five-associations/)
  assert.match(client,/const accepted=onSaveReflection\(text\)/)

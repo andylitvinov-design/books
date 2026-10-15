@@ -45,3 +45,66 @@ test('the public client page uses navy text, burgundy controls, and narrow-scree
   assert.match(routeCss, /\.client-entry-shell \.house-header/)
   assert.doesNotMatch(routeCss, /\.client-cabinet\s*\{/)
 })
+
+test('compact navy/wine test details show type, time and measured scales before optional methodology', () => {
+  assert.match(picker, /const COMPACT_KIND_LABELS/)
+  assert.match(picker, /data-test-kind-badge/)
+  assert.match(picker, /data-compact-test-scales/)
+  assert.match(picker, /entry\.scaleGuide\.scales\.slice\(0, 3\)/)
+  assert.match(picker, /<details className=\{styles\.researchDetails\}>/)
+  assert.match(picker, /entry\.methodology/)
+  assert.match(picker, /methodDetails:'Method & sources'/)
+  assert.match(picker, /methodDetails:'Методика и источники'/)
+  assert.match(picker, /methodDetails:'Método y fuentes'/)
+  assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
+  assert.match(picker, /<ListChecks size=\{14\}/)
+  assert.match(css, /\.testDetailsBody\{padding:12px/)
+  assert.match(css, /\.testInfo \.testKindBadge\{display:inline-flex\}/)
+  assert.doesNotMatch(css, /\.testInfo \.testKindBadge\{display:none\}/)
+  assert.match(css, /\.scalePills\{/)
+  assert.match(css, /\.researchDetails\{/)
+});
+
+test('softer palette does not remove the original single-test action or its authenticated flow', () => {
+  assert.match(css, /Soft navy & burgundy My Tests/)
+  assert.match(css, /--ink:#172f4b/)
+  assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
+  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(publicFlow, /request\('auth\/start'/)
+});
+
+
+const fullExplorerCss = read('components/app/test-explorer.module.css')
+
+test('simple test picker uses navy choice states and reserves wine for launching tests', () => {
+  assert.match(css, /Test picker 2026-10-15: all selection actions navy/)
+  assert.match(css, /--choice-navy:#173957/)
+  assert.match(css, /\.shell :is\(\.topic,\.problemChip,\.depthOption\)\[aria-pressed=true\]/)
+  assert.match(css, /\.shell \.kindChoice\[data-checked=true\]/)
+  assert.match(css, /\.shell \.modeSwitch button\[aria-pressed=true\]\{background:var\(--choice-navy\)/)
+  assert.match(css, /\.shell \.timeButtons button\[aria-pressed=true\]/)
+  assert.match(css, /\.shell \.themeRefinements button\{background:var\(--choice-navy\)/)
+  assert.match(css, /\.shell \.promoAction,\.shell \.cta\[data-test-start-mode=course\]/)
+  assert.match(css, /\.shell \.takeTest,\.shell \.cta\[data-test-start-mode=tests\]/)
+  assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
+  assert.match(picker, /onClick=\{journeyMode === 'course' \? onStartCourse : onStart\}/)
+  assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
+  assert.match(routeCss, /My Tests site chrome: navy for navigation\/sign-in/)
+  assert.match(routeCss, /site-cabinet-link:hover/)
+})
+
+test('full test catalog differentiates selection and save buttons from actual test start', () => {
+  assert.equal((explorer.match(/data-test-action=\{explicitSelectionOnly \? 'save' : 'start'\}/g) || []).length, 2)
+  assert.match(fullExplorerCss, /Full test selection: navy choices, burgundy test starts only/)
+  assert.match(fullExplorerCss, /\.explorer \.guidedResults,\.explorer \.databaseHeader button/)
+  assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=save\]/)
+  assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=start\]/)
+  assert.match(fullExplorerCss, /\.explorer \.battery \.primary\[data-test-action=start\]/)
+  assert.match(explorer, /onStart\(\[entry\]/)
+})
+
+
+test('each recommended test has a single visible test-kind badge, not a duplicate hidden in details', () => {
+  assert.equal((picker.match(/<KindBadge entry=\{entry\} locale=\{locale\} \/>/g) || []).length, 1)
+  assert.match(picker, /<div className=\{styles\.testFacts\}>/)
+})

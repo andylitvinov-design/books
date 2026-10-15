@@ -11,6 +11,7 @@ import {getClientPrescription} from '@/lib/prescriptions/service'
 import {getClientPaymentDocument} from '@/lib/documents/payment'
 import {PaymentDocument} from '@/components/payment-document'
 import {ClientSessionPage} from '@/components/client-session-page'
+import {sharedGranulesGuideReady} from '@/lib/clients/shared-education-video'
 import {SavedSessionManagement} from '@/components/app/saved-session-management'
 import '../../[[...path]]/workspace.css'
 
@@ -61,7 +62,8 @@ export default async function SavedSessionPage({params}){
     <ClientSessionPage mode="saved" locale={locale} selector="" savedId={id}
       session={saved.session} clientName={doc?.patientName||clientName}
       recommendation={!payment?doc:null}
-      reportContent={payment&&doc?<PaymentDocument locale={locale} document={doc}/>:null}/>
+      reportContent={payment&&doc?<PaymentDocument locale={locale} document={doc}/>:null}
+      sharedGuideReady={sharedGranulesGuideReady()}/>
     <SavedSessionManagement locale={locale} savedId={id} savedAt={saved.savedAt}/>
   </>
 }

@@ -28,3 +28,5 @@ jobs:
         run: node --test tests/opora-all-slides-matrix.test.mjs tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs
       - name: Verify AS2 day-one state-first practice and lesson receipt
         run: node --test tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-antistress-outcomes-v3.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs
+      - name: Verify all remaining OPORA state-to-support screens and receipts
+        run: node --test tests/opora-all-days-state-journey.test.mjs tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs

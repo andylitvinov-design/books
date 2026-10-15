@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import {phaseOutcomeContext,phaseScaleRole,phaseOrderScales} from '@/lib/inner-growth/trauma-phase-outcomes'
 import { orderAntistressScales, antistressRoleForScale, antistressSelectedMeasures } from '@/lib/inner-growth/anti-stress-measurement-contract'
 import { ArrowRight, Check, Pencil } from 'lucide-react'
 import styles from './course-r3-steps.module.css'
@@ -9,8 +10,10 @@ import styles from './course-r3-steps.module.css'
 // and after returning from the optional manual focus picker. No fake measurements.
 export default function CourseCompletionReview({
   t, root, confirmedStatuses, optionByKey, profile, suggested,
-  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en', compactResults=false,
+  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en', compactResults=false, moduleId=null, routerVersion=null,
 }) {
+  const phase=phaseOutcomeContext(moduleId,routerVersion)
+  const role=(testKey,scaleKey)=>phaseScaleRole(phase,testKey,scaleKey)??antistressRoleForScale(testKey,scaleKey)
   const resultSummary = (
     <section className={styles.briefSummary} aria-label={t.briefSummary}>
       <h3>{t.briefSummary}</h3>
@@ -34,7 +37,7 @@ export default function CourseCompletionReview({
         // exact owner-scoped saved result if this summary has no matching row.
         const allScales=profile.scales.filter(scale=>scale.testKey===item.key &&
           (programId!=='stress'||!item.resultId||scale.resultId===item.resultId))
-        const scales=programId==='stress'?orderAntistressScales(item.key,allScales):allScales
+        const scales=programId==='stress'?(phaseOrderScales(phase,item.key,allScales)??orderAntistressScales(item.key,allScales)):allScales
         const meta = optionByKey.get(item.key)
         return <article key={item.key} className={styles.summaryTest}>
           <div className={styles.summaryHeading}>
@@ -49,10 +52,10 @@ export default function CourseCompletionReview({
           {scales.length ? <ul className={styles.briefScales}>
             {scales.map(scale => <li key={scale.id}
               data-antistress-measure-role={programId==='stress'
-                ?antistressRoleForScale(item.key,scale.id.split('::')[1])||undefined:undefined}
+                ?role(item.key,scale.id.split('::')[1])||undefined:undefined}
               data-course-screening-scale={scale.testKey === 'asrs-6' && scale.type === 'screening_count' ? 'true' : undefined}>
               <span>{programId==='stress'&&
-                antistressRoleForScale(item.key,scale.id.split('::')[1])==='primary'&&
+                role(item.key,scale.id.split('::')[1])==='primary'&&
                 <em className={styles.primaryOutcomeTag}>{t.stressPrimaryMeasure}</em>}
                 {scale.label}
               </span>

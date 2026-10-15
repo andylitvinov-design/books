@@ -4,6 +4,8 @@ import {createRequestAuth} from '@/lib/app/session'
 import {getPrescriptionStore} from '@/lib/prescriptions/store'
 import {readSavedSession} from '@/lib/app/client-session-save-flow'
 import {privateMediaStream} from '@/lib/clients/session-delivery-storage'
+import {GRANULES_GUIDE_ID} from '@/lib/clients/shared-education-model'
+import {sharedGranulesGuideReady,streamSharedGranulesGuide} from '@/lib/clients/shared-education-video'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 
@@ -19,12 +21,14 @@ async function handle(request,{params}){
     const auth=createRequestAuth(request,config)
     const actor=await auth.verified()
     const saved=await readSavedSession(config,getPrescriptionStore(),actor,id,{markOpened:false})
-    if(!saved.session.media.some(item=>item.assetId===assetId&&['audio','video','pdf'].includes(item.kind)))
+    const sharedGuide=assetId===GRANULES_GUIDE_ID&&sharedGranulesGuideReady()
+    if(!sharedGuide&&!saved.session.media.some(item=>item.assetId===assetId&&['audio','video','pdf','image'].includes(item.kind)))
       return fail()
     if(request.method==='POST')
       return auth.apply(NextResponse.json({url:'/api/app/saved-sessions/'+id+'/media/'+assetId,expiresIn:300},
         {headers:PRIVATE_HEADERS}))
-    const response=await privateMediaStream(config,saved.source.clientId,saved.source.sessionId,assetId,request)
+    const response=await (sharedGuide?streamSharedGranulesGuide(config,request):
+      privateMediaStream(config,saved.source.clientId,saved.source.sessionId,assetId,request))
     return auth.apply(response)
   }catch{return fail()}
 }

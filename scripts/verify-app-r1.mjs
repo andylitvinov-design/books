@@ -426,7 +426,16 @@ try {
  await expect(typeChoices).toHaveCount(3)
  await expect(typeChoices.locator('xpath=..').first()).toBeVisible()
  assert.deepEqual(await typeChoices.evaluateAll(nodes=>nodes.map(node=>node.value)),['professional','monitoring','hobby'])
- assert.equal(await picker.locator('[data-test-kind-badge]').count(),5,'Every displayed test needs a visible category icon and label')
+ // Collapsed test details repeat the category; validate the visible card label itself.
+ for(const card of await rankedCards.all()){
+  const category=card.locator('label [data-test-kind-badge]')
+  await expect(category).toHaveCount(1)
+  await expect(category).toBeVisible()
+  await expect(category.locator('svg')).toBeVisible()
+  await expect(category.locator('span')).toBeVisible()
+  await expect(category.locator('span')).toHaveText(/\S/)
+  await expect(category).toHaveAttribute('aria-label',/^Test type: \S/)
+ }
  const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
  await expect(selectedSummary).toHaveCount(3)
  const defaultKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))

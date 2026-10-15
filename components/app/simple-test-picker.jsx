@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, GraduationCap, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
@@ -30,7 +30,7 @@ const TEXT = {
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
     modeLabel:'Choose your next step', modeTests:'Tests', modeCourse:'Tests + support course', courseHint:'A personal, self-guided 14-day support course. Review your selected tests and explicitly consent before saving.', courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
-    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'Details & measured scales',
+    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'Save your selection and get started',
     browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
@@ -57,7 +57,7 @@ const TEXT = {
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
     modeLabel:'Как хотите продолжить', modeTests:'Тесты', modeCourse:'Тесты + коррекция', courseHint:'Персональный курс поддержки на 14 дней с ежедневными упражнениями. Перед сохранением вы подтвердите выбор и согласие.', courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
-    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Подробнее о тесте и шкалах',
+    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Сохранить подборку и начать',
     browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
@@ -84,7 +84,7 @@ const TEXT = {
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
     modeLabel:'Elige cómo continuar', modeTests:'Pruebas', modeCourse:'Pruebas + apoyo', courseHint:'Curso personal de apoyo de 14 días. Revisa las pruebas y da tu consentimiento antes de guardar.', courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
-    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Detalles y escalas',
+    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Guardar selección y empezar',
     browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
@@ -100,13 +100,22 @@ const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
   body: Sun, relationships: Users, resources: Leaf, attention: Target }
 const TOPICS = HOME_TEST_TOPICS.map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
 
+// A pictogram and a short, non-clinical type label, including on phones.
+const COMPACT_KIND_LABELS = {
+  professional: { en: 'Sourced', ru: 'Методика', es: 'Con fuente' },
+  monitoring: { en: 'Check-in', ru: 'Состояние', es: 'Estado' },
+  hobby: { en: 'Explore', ru: 'Самопознание', es: 'Explorar' },
+}
+
 function KindBadge({ entry, locale }) {
   const kind = TEST_KINDS.find((type) => type.key === entry.testKind)
   if (!kind) return null
   const Icon = TEST_KIND_ICONS[kind.key]
+  const label = COMPACT_KIND_LABELS[kind.key]?.[locale] || COMPACT_KIND_LABELS[kind.key]?.en || kind.label.en
   return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
-    title={kind.description[locale] || kind.description.en}>
-    <Icon size={14} aria-hidden="true" /> {kind.label[locale] || kind.label.en}
+    title={kind.description[locale] || kind.description.en}
+    aria-label={`${locale === 'ru' ? 'Тип теста' : locale === 'es' ? 'Tipo de prueba' : 'Test type'}: ${kind.label[locale] || kind.label.en}`}>
+    <Icon size={14} aria-hidden="true" /><span>{label}</span>
   </span>
 }
 
@@ -324,7 +333,8 @@ export function SimpleTestPicker({
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
-                   <span className={styles.duration}><Clock3 size={13} aria-hidden="true" /> ~{entry.durationMinutes ?? '—'} min</span>
+                   <span className={styles.duration}><Clock3 size={13} aria-hidden="true" /> ~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
+                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>}
                    {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
                  </span>
                </label>
@@ -335,11 +345,28 @@ export function SimpleTestPicker({
                </button>
              </div>
              <details className={styles.testDetails}>
-               <summary>{c.expandTest}<ChevronDown size={15} aria-hidden="true" /></summary>
+               <summary><Activity size={15} aria-hidden="true" />{c.expandTest}<ChevronDown size={15} aria-hidden="true" /></summary>
                <div className={styles.testDetailsBody}>
-                 <p>{entry.description || entry.category}</p>
-                 {entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}</p>}
-                 <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>
+                 <p className={styles.testPurpose}>{entry.description || entry.category}</p>
+                 <div className={styles.testFacts}>
+                   <span><Clock3 size={14} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
+                   {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span><ListChecks size={14} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
+                 </div>
+                 {entry.scaleGuide?.scales?.length > 0 && <div className={styles.scaleOverview} data-compact-test-scales>
+                   <strong><Activity size={15} aria-hidden="true" />{c.scalesLabel}</strong>
+                   <div className={styles.scalePills}>
+                     {entry.scaleGuide.scales.slice(0, 3).map((scale) => <span key={scale.key}>{scale.label}</span>)}
+                     {entry.scaleGuide.scales.length > 3 && <span>+{entry.scaleGuide.scales.length - 3}</span>}
+                   </div>
+                 </div>}
+                 {((entry.methodology && entry.methodologyStatus !== 'original') || entry.scaleGuide?.scales?.length > 0) && <details className={styles.researchDetails}>
+                   <summary><BookOpen size={15} aria-hidden="true" />{c.methodDetails}<ChevronDown size={14} aria-hidden="true" /></summary>
+                   <div className={styles.researchBody}>
+                     {entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}</p>}
+                     {entry.methodologySourceUrl && <a href={entry.methodologySourceUrl} target="_blank" rel="noopener noreferrer">{c.sourceLink} ↗</a>}
+                     {entry.scaleGuide?.scales?.length > 0 && <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>}
+                   </div>
+                 </details>}
                </div>
              </details>
            </article>

@@ -1,0 +1,26 @@
+.panel{display:grid;gap:12px;min-width:0;padding:17px;border:1px solid #c8b7bf;border-radius:17px;background:linear-gradient(135deg,#f9f9fc,#faf5f8);color:#26334a;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.panel *{box-sizing:border-box}
+.panel h4{margin:0;color:#263755;font-size:18px;font-weight:700;line-height:1.25}
+.panel p{margin:0}
+.intro{color:#4e5970}
+.methods{min-width:0;margin:0;padding:0;border:0}
+.methods legend{padding:0 0 8px;font-weight:700;color:#263755}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.option{display:flex;align-items:flex-start;gap:10px;min-height:56px;padding:11px;border:1px solid #d5d6df;border-radius:12px;background:#fff;cursor:pointer}
+.option[data-selected=true]{border-color:#782944;background:#fcf3f7}
+.option input{flex:none;margin:3px 0 0;width:18px;height:18px;accent-color:#782944}
+.option span{display:grid;gap:3px;min-width:0}
+.option strong{font-size:13px;line-height:1.25}
+.option small{font-size:12px;line-height:1.4;color:#62677a}
+.important{padding:10px 12px;border-radius:10px;background:#f1eef3;color:#4e4050;font-size:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions button,.actions a{display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:10px 12px;border-radius:11px;text-align:center;text-decoration:none;font:inherit;font-weight:650;line-height:1.35;cursor:pointer}
+.copy{border:1px solid #243c5c;background:#243c5c;color:#fff}
+.contact{border:1px solid #782944;background:#782944;color:#fff}
+.feedback{font-size:12px;font-weight:650;color:#71324c}
+.preview summary{padding:9px 0;min-height:44px;cursor:pointer;font-weight:650;color:#6e2c44}
+.preview textarea{width:100%;min-height:120px;padding:10px;border:1px solid #dad7df;border-radius:8px;background:#fff;color:#24334a;font-size:12px;line-height:1.5;resize:vertical}
+.renewal{font-size:12px;color:#555c70}
+.panel :is(button,a,input,summary,textarea):focus-visible{outline:3px solid #b4467d;outline-offset:3px}
+@media(max-width:560px){.panel{padding:13px}.grid{grid-template-columns:1fr}.actions button,.actions a{width:100%}}
+@media print{.panel{display:none}}
