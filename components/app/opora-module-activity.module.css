@@ -1,0 +1,30 @@
+.activity{display:grid;gap:15px;min-width:0;padding:clamp(15px,3vw,23px);border:1px solid #c7e5ed;border-radius:22px;background:linear-gradient(155deg,#f9fdff 0%,#eefaff 49%,#f8fffc 100%);box-shadow:0 13px 35px #225f7d0d;color:#234b63}
+.heading{display:grid;gap:8px}
+.kicker{display:inline-flex;align-items:center;gap:7px;width:max-content;max-width:100%;padding:6px 10px;border-radius:99px;background:#e0f2fb;color:#0b7795;font-size:12px;font-weight:800}
+.heading h3{font-size:clamp(19px,4vw,24px);line-height:1.25;letter-spacing:-.03em;margin:0;color:#183f5c}
+.instruction{font-size:15px;line-height:1.65;color:#365d71;margin:0;white-space:pre-wrap}
+.photo{min-height:120px;max-height:190px;display:grid;place-items:center;overflow:hidden;border:1px solid #cce8f1;border-radius:17px;background:linear-gradient(130deg,#d8f4fe,#e7faf7)}
+.photo img{max-width:100%;height:clamp(118px,22vh,186px);width:100%;object-fit:contain;object-position:center}
+.question{display:flex;align-items:flex-start;gap:9px;padding:13px 14px;border-radius:14px;border:1px solid #d3eaf1;background:#fff;color:#24516d;font-size:15px;line-height:1.5}
+.question svg{flex:none;color:#078fb0;margin-top:2px}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.options button{display:flex;align-items:center;gap:9px;min-height:65px;padding:13px!important;border-radius:15px!important;border:1px solid #c8e3eb!important;background:#fff!important;color:#29526c!important;text-align:left;font-weight:650;font-size:14px;line-height:1.43;box-shadow:0 4px 10px #21567908;transition:border-color .18s,background .18s,box-shadow .18s}
+.options button:hover:not(:disabled){border-color:#67b5cd!important;box-shadow:0 5px 16px #21567918}
+.options button[aria-pressed=true]{border:2px solid #1088ad!important;background:#dff5ff!important;color:#0c5473!important}
+.options button:disabled{opacity:.65;cursor:wait}
+.optionDot{display:grid;place-items:center;flex:none;width:24px;height:24px;border:1px solid #b4dbe8;border-radius:50%;background:#f2fbfe;color:#088a9e}
+.options button[aria-pressed=true] .optionDot{background:#0b91b6;color:white;border-color:#0b91b6}
+.associations{display:grid;gap:13px;padding:15px;border:1px solid #c9e3ee;border-radius:17px;background:#fff}
+.associationTitle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:750}
+.associationTitle svg{color:#008cac}
+.words{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.words label{display:grid;gap:5px;font-size:12px;font-weight:730}
+.words input{width:100%;min-width:0;min-height:44px;border:1px solid #c9e5ee;border-radius:11px;padding:10px;background:#faffff;color:#214864;font:inherit}
+.saveNote{min-height:43px;border:0;border-radius:12px;background:#137eab;color:#fff;padding:9px 15px;font-weight:750;cursor:pointer}
+.saveNote:disabled{opacity:.6;cursor:default}
+.associations p,.note{font-size:12px;line-height:1.55;color:#59768b;margin:0}
+.note{display:flex;align-items:flex-start;gap:7px}
+.note svg{flex:none;margin-top:1px;color:#168eaa}
+.activity button:focus-visible,.activity input:focus-visible{outline:3px solid #0b99c0;outline-offset:3px}
+@media(max-width:420px){.activity{padding:14px;border-radius:18px}.options{grid-template-columns:1fr}.options button{min-height:54px}.words{grid-template-columns:1fr 1fr}.heading h3{font-size:20px}.photo{max-height:150px}.photo img{height:138px}}
+@media(prefers-reduced-motion:reduce){.options button{transition:none}}
