@@ -191,54 +191,80 @@ export default function DayOneExercise({
   }
 
   if(kind==='day1-exit')return <section className={styles.section} data-day-one-activity="exit">
-    <div className={styles.visualIcon}><PauseCircle size={42}/></div>
-    <p className={styles.headline}>{text(
-      'Как вы хотели бы завершить эту короткую паузу?',
-      'How would you like to complete this short pause?')}</p>
+    <div className={styles.overline}><PauseCircle size={16}/>{text('ШАГ 09 · МЯГКИЙ ВЫХОД','STEP 09 · GENTLE FINISH')}</div>
+    <div className={styles.softIllustration}><PauseCircle size={37}/><span>{text('Завершайте в своём темпе','Finish at your own pace')}</span></div>
+    <p className={styles.headline}>{text('Как хотелось бы закончить эту паузу?','How would you like to end this pause?')}</p>
     {choice('exit',[
-      {value:'keep',label:text('Ещё немного посмотреть на выбранную деталь','Stay with my chosen detail a little longer')},
-      {value:'change',label:text('Сменить предмет и спокойно оглядеться','Choose another object and look around')},
-      {value:'stop',label:text('Закончить и отдохнуть','Finish and rest')},
-      {value:'skip',label:text('Ничего не выбирать','No choice for now')},
-    ])}
+      {value:'keep',label:text('Остаться с деталью','Stay with the detail'),detail:text('Ещё немного смотреть, если комфортно','Look a little longer if comfortable'),icon:Eye},
+      {value:'change',label:text('Сменить ориентир','Change the anchor'),detail:text('Спокойно перевести взгляд','Move my gaze gently'),icon:Compass},
+      {value:'stop',label:text('Закончить и отдохнуть','Stop and rest'),detail:text('Не нужно ничего продолжать','Nothing more is required'),icon:PauseCircle},
+      {value:'skip',label:text('Не выбирать','Make no choice'),detail:text('Перейти дальше без оценки','Continue without a rating'),icon:CircleHelp},
+    ],{cards:true})}
+    {answers.exit&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Вы сами выбираете момент завершения.','You are in charge of when to finish.')}</p>}
     {helper}
   </section>
 
   if(kind==='day1-anchor')return <section className={styles.section} data-day-one-activity="anchor">
-    <div className={styles.visualIcon}><Compass size={42}/></div>
-    <p className={styles.headline}>{text(
-      'Что могло бы стать вашей простой точкой опоры?',
-      'What might be a simple anchor for you?')}</p>
+    <div className={styles.overline}><Compass size={16}/>{text('ШАГ 10 · СОЗДАЮ КАРТОЧКУ ОПОРЫ','STEP 10 · BUILD MY ANCHOR CARD')}</div>
+    <p className={styles.headline}>{text('Что вам было бы проще заметить снова?','Which simple thing could you notice again?')}</p>
     {choice('anchor',[
-      {value:'colour',label:text('Один нейтральный цвет','An ordinary colour')},
-      {value:'shape',label:text('Форма или контур','A shape or outline')},
-      {value:'object',label:text('Знакомый предмет','A familiar object')},
-      {value:'word',label:text('Небольшое слово-подсказка','A simple cue word')},
-      {value:'none',label:text('Пока ничего не подходит','Nothing fits yet')},
-      {value:'skip',label:text('Не сохранять опору','No anchor today')},
-    ])}
-    {answers.anchor&&['colour','shape','object','word'].includes(answers.anchor)&&
-      <div className={styles.resourceCard}><Leaf size={19}/>{text('Мой вариант: ','My choice: ')}<strong>{anchorLabels[answers.anchor]}</strong></div>}
+      {value:'colour',label:text('Цвет','A colour'),detail:text('Один оттенок вокруг','A familiar shade'),icon:Sparkles},
+      {value:'shape',label:text('Форма','A shape'),detail:text('Линия или контур','An outline or line'),icon:Compass},
+      {value:'object',label:text('Предмет','An object'),detail:text('Что-то реальное рядом','Something real nearby'),icon:MapPin},
+      {value:'word',label:text('Слово','A word'),detail:text('Нейтральная подсказка','A neutral reminder'),icon:BookOpen},
+      {value:'none',label:text('Пока ничего','Nothing fits yet'),icon:PauseCircle},
+      {value:'skip',label:text('Не сохранять','Do not select'),icon:CircleHelp},
+    ],{cards:true})}
+    {answers.anchor==='colour'&&<div className={styles.swatchPanel} role="group" aria-label={text('Цвет без психологической интерпретации','A neutral colour, with no interpretation')}>
+      <span>{text('Можно выбрать оттенок для карточки','Choose a shade for your card')}</span>
+      {[
+        {value:'blue',label:text('Голубой','Blue')},
+        {value:'green',label:text('Зелёный','Green')},
+        {value:'sand',label:text('Песочный','Sand')},
+      ].map(item=><button type="button" key={item.value} data-tone={item.value}
+        disabled={locked} aria-label={item.label} title={item.label}
+        aria-pressed={answers.anchorTone===item.value}
+        onClick={()=>onAnswer('anchorTone',item.value)}><span className={styles.swatchDot}/>{item.label}</button>)}
+    </div>}
+    <div className={styles.personalCard} data-anchor-preview>
+      <span><Leaf size={16}/>{text('МОЙ НЕЙТРАЛЬНЫЙ ОРИЕНТИР','MY NEUTRAL ANCHOR')}</span>
+      <strong>{answers.anchor&&anchorLabels[answers.anchor]?anchorLabels[answers.anchor]
+        :text('Пока не выбрано — это нормально','Nothing selected yet — that is okay')}</strong>
+      {answers.anchor==='colour'&&answers.anchorTone&&<div className={styles.anchorPreviewTone} data-tone={answers.anchorTone}/>}
+      <small>{text('Карточка отражает только ваш выбор, а не значение или диагностику цвета.','This card reflects your choice, not a diagnostic meaning of a colour.')}</small>
+    </div>
   </section>
 
   if(kind==='day1-association')return <section className={styles.section} data-day-one-activity="association">
-    {photo}
-    <p className={styles.headline}>{text(
-      'Какие три слова приходят вам в голову, когда вы смотрите на это изображение?',
-      'Which three words come to mind when you look at this scene?')}</p>
-    <label className={styles.wordsLabel}>
-      <span>{text('Мои слова · необязательно','My words · optional')}</span>
-      <textarea rows={3} maxLength={160} value={associationWords} disabled={locked}
-        placeholder={text('Например: простор, тишина, дерево','For example: space, stillness, tree')}
-        onChange={event=>onAssociationWords(event.target.value)}/>
-    </label>
-    <p className={styles.hint}>{text(
-      'Это упражнение на свободные ассоциации — не психологический тест. Написанные слова остаются на этом экране и не передаются в аналитику.',
-      'This is an open association exercise, not a psychological test. These words stay on this screen and are not sent to analytics.')}</p>
+    <div className={styles.overline}><Sparkles size={16}/>{text('ШАГ 11 · ТВОРЧЕСКАЯ АССОЦИАЦИЯ','STEP 11 · CREATIVE ASSOCIATIONS')}</div>
+    <Scene locale={locale} caption={text('Посмотрите на изображение целиком, без поиска скрытого значения.','See the whole picture without looking for hidden meanings.')}/>
+    <p className={styles.headline}>{text('Если хочется, напишите до трёх слов, которые приходят в голову','If you wish, write up to three words that come to mind')}</p>
+    <div className={styles.wordTokens} role="group" aria-label={text('Три необязательных слова','Three optional words')}>
+      {[0,1,2].map(i=><label key={i} className={styles.wordToken}>
+        <span>{text('Слово','Word')} {i+1}</span>
+        <input type="text" maxLength={40} disabled={locked} value={wordTokens[i]||''}
+          placeholder={text('Любая ассоциация','Any association')}
+          onChange={event=>changeWord(i,event.target.value)}/>
+      </label>)}
+    </div>
+    <p className={styles.wordCount}>{text('Моих слов:','My words:')} <strong>{wordCount} / 3</strong></p>
+    {wordCount>0&&<div className={styles.qualityPanel}>
+      <p>{text('Какое качество вам хочется связать с одним из слов?','Which quality, if any, would you connect with a word?')}</p>
+      <div className={styles.qualityOptions} role="group" aria-label={text('Необязательное качество','Optional quality')}>
+        {[
+          {value:'openness',label:text('Простор','Openness')},
+          {value:'gentleness',label:text('Мягкость','Gentleness')},
+          {value:'clarity',label:text('Ясность','Clarity')},
+          {value:'other',label:text('Своё','My own')},
+        ].map(item=><button type="button" key={item.value} disabled={locked}
+          aria-pressed={wordQuality===item.value} onClick={()=>setWordQuality(item.value)}>{item.label}</button>)}
+      </div>
+    </div>}
+    <p className={styles.hint}>{text('Слова и выбранное качество остаются только в этом открытом упражнении. Они не используются для диагностики и не отправляются в аналитику.','Your words and chosen quality stay in this open exercise. They are not diagnostic or sent to analytics.')}</p>
     {choice('associations',[
-      {value:'tried',label:text('Я отметил(а) свои слова','I noted my words')},
-      {value:'skip',label:text('Не хочу писать','I prefer not to write')},
-    ])}
+      {value:'tried',label:text('Я попробовал(а) упражнение','I tried the exercise')},
+      {value:'skip',label:text('Предпочитаю пропустить','Prefer to skip')},
+    ],{compact:true})}
   </section>
 
   if(kind==='day1-independent')return <section className={styles.section} data-day-one-activity="independent">
