@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpenCheck, Check, ChevronDown, Compass, Eye, Heart, Lightbulb, PauseCircle, ShieldCheck, Sparkles } from 'lucide-react'
+import { BookOpenCheck, Check, ChevronDown, Compass, Eye, Heart, Lightbulb, ShieldCheck } from 'lucide-react'
 import { antiStressMethodActivity } from '@/lib/inner-growth/anti-stress-method-activities'
 import styles from './anti-stress-method-activity.module.css'
 
