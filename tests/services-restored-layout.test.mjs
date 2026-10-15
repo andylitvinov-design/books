@@ -13,8 +13,9 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   const heroPos = page.indexOf("<ServicesConversionHero locale={locale as Locale} />");
   const introPos = page.indexOf("<ServicesTestsIntro locale={locale as Locale} />");
   const cardPos = page.indexOf("<ServicesSolutions locale={locale as Locale} />");
-  const cartPos = page.indexOf("<ServiceCart locale={locale as Locale} />");
-  assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && cartPos > cardPos);
+  const aboutPos = page.indexOf("<ServicesAboutEntry locale={locale as Locale} />");
+  assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && aboutPos > cardPos);
+  assert.doesNotMatch(page, /ServiceCart|service-cart/);
   assert.doesNotMatch(page, /<FreeInsightsPaths/);
   assert.match(read("components/services-conversion-hero.module.css"), /background:#243b32/);
   assert.match(banner, /data-services-tests-intro/);
@@ -31,7 +32,7 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   assert.match(services, /data-core-service-id=\{offer.id\}/);
   assert.match(style, /\.home \.card\s*\{/);
   assert.match(style, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
-  assert.match(page, /<ServiceCart locale=\{locale as Locale\} \/>/);
+  assert.doesNotMatch(page, /<ServiceCart/);
   assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
   assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking \/>/);
 });
@@ -48,7 +49,7 @@ test("Services Spanish retains its routes with a compact photographic treatment"
   for (const route of ["psychohomeopathy", "imagery-therapy", "business-consulting", "systemic-constellations"]) {
     assert.ok(page.includes("/es/services/" + route), route);
   }
-  assert.match(page, /<ServiceCart locale="es" \/>/);
+  assert.doesNotMatch(page, /ServiceCart|service-cart/);
   assert.match(page, /<PublicConsultationCta locale="es" \/>/);
   assert.doesNotMatch(page, /services-studio-hero|services-studio-grid/);
 });
