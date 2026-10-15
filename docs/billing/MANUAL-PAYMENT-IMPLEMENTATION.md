@@ -76,3 +76,42 @@ The isolated PostgreSQL 17 tests apply the guarded proposal only in
 disposable CI and check select/insert/update RLS ownership, reviewer scope
 and contract compatibility. Existing tests and paid Stripe webhooks remain
 unchanged.
+
+
+## 2026-10-15 production schema compatibility check — applied
+
+After code PR #624 had already been released, production inspection found its
+request-only `app_private.manual_billing_orders` table, no other recurring
+billing tables, no manual audit table or expiration function, and **0 orders**.
+
+Safety-hardening PR [#635](https://github.com/andylitvinov-design/books/pull/635)
+merged as `8ea956092b367c5f95a5962bd38a274ebfdca738`. That build reached
+**Vercel READY** and was assigned to `holistichouse.vercel.app`.
+
+A bounded, additive Supabase migration named
+`hh_manual_billing_refund_audit_expiry_20261015` was applied to project
+`shervdixkaxurnaecioe` after verifying the exact table, PostgreSQL 17,
+the current migration principal, FORCE RLS, existing grants and zero orders.
+It added refund-proof constraints, the append-only owner-scoped audit table,
+a trusted audit trigger and a limited, authenticated owner-expiry function.
+
+Production readback confirmed:
+- `manual_billing_orders` and `manual_billing_events` both have FORCE RLS.
+- Both held **0 records** immediately after migration.
+- The audit trigger was enabled and the app backend had SELECT-only access
+  to audit events (never direct INSERT, UPDATE or DELETE).
+- Only `hh_app_backend` can execute the narrow expiry function;
+  `anon` and `authenticated` cannot.
+- Supabase security advisors found no new issue in the payment schemas.
+  Remaining external advisories concerned unrelated password protection and
+  two existing private tables without policies.
+
+The precise execution receipt is recorded in the
+[PR #635 conversation](https://github.com/andylitvinov-design/books/pull/635#issuecomment-6203743739)
+and in Supabase migration history.
+
+**Not activated or verified:** merchant acceptance/beneficiary identity,
+bank or PayPal collection, owner receipt confirmation, recurring billing,
+multi-course paid benefits, manual Premium credit fulfillment and real-payment
+end-to-end tests. Adding this schema did not make those services live. Native
+GitHub Actions for PR #635 were queued, not passed, during the rollout.
