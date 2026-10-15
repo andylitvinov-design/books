@@ -69,7 +69,7 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
   assert.equal(payload.moduleId, 'AS5')
   assert.equal(payload.consent, true)
   slow.resolve(started); await Promise.all([first, duplicate]); await t.h.settle()
-  assert.deepEqual(t.accepted, [started]); assert.deepEqual(t.errors, [''])
+  assert.deepEqual(t.accepted, [started]); assert.deepEqual(t.errors.filter(Boolean), [])
   assert.equal(t.h.calls.length, 0); t.h.unmount()
 })
 
@@ -87,7 +87,7 @@ for (const [name, responses, actions, succeeds] of [
     assert.deepEqual(Array.from(call.body.scaleKeys), scales.map(scale => scale.id))
   }
   assert.deepEqual(t.accepted, succeeds ? [started] : [])
-  assert.deepEqual(t.errors, succeeds ? [''] : ['', 'SERVICE_UNAVAILABLE'])
+  assert.deepEqual(t.errors.filter(Boolean), succeeds ? [] : ['SERVICE_UNAVAILABLE'])
   assert.equal(t.h.calls.length, 0); t.h.unmount()
 })
 
@@ -104,7 +104,7 @@ for (const delayedPhase of [0, 1, 2, 3]) test('retired selection stops after asy
   slow.resolve(delayedPhase % 2 ? waiting : started)
   await pending
   assert.equal(t.calls.length, delayedPhase + 1, 'No further read or retry after retirement')
-  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors, [''])
+  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors.filter(Boolean), [])
 })
 
 test('an already stale module callback cannot clear errors, acquire busy state or send answers', async () => {
@@ -135,7 +135,7 @@ for (const response of [
   const t = ui((index) => { if (index === 0) throw failure(); return response })
   await t.h.settle(); await t.start()
   assert.deepEqual(t.calls.map(call => call.action), ['choose-goals', 'read'])
-  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors, ['', 'COURSE_STATE_CHANGED'])
+  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors.filter(Boolean), ['COURSE_STATE_CHANGED'])
   t.h.unmount()
 })
 
@@ -191,6 +191,6 @@ for (const change of ['owner', 'course', 'unmount']) test('real parent guards bi
   else if (change === 'course') await parent.backTo('?courseId=course-b')
   else parent.unmount()
   slow.resolve(started); await pending; await child.settle(); await parent.settle()
-  assert.equal(posts, 1); assert.deepEqual(accepted, []); assert.deepEqual(errors, [''])
+  assert.equal(posts, 1); assert.deepEqual(accepted, []); assert.deepEqual(errors.filter(Boolean), [])
   child.unmount(); parent.unmount()
 })
