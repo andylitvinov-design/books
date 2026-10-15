@@ -14,13 +14,22 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Keep optimization for existing book/media redirect paths.
   // Verified static course photographs and the hot-path portrait opt out locally.
-  images: { remotePatterns: [
+  // Bound the number of public image variants to contain future Vercel
+  // transformation usage. Keep Next optimization available for book readers.
+  // Already-optimized portraits, courses and posters opt out at call sites.
+  images: {
+    deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
+    imageSizes: [32, 64, 96, 160, 256, 384],
+    formats: ["image/webp"],
+    minimumCacheTTL: 86400,
+    remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
     // The site owns the original course photographs; proxy them same-origin
     // so iOS Safari does not have to hotlink PsiTrends directly.
     { protocol: "https", hostname: "psitrends.com", pathname: "/images/**" },
     { protocol: "https", hostname: "www.psitrends.com", pathname: "/images/**" },
-  ] },
+    ],
+  },
   async headers() {
     return [
       // Versioned public video artwork is safe to cache; never apply this policy
