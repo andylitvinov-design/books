@@ -150,6 +150,7 @@ test('closing is owner-scoped, revision-checked, and archives past cycles withou
   assert.match(server, /stage=1, concerns_ciphertext=null/)
   assert.match(server, /consented_at=now\(\)/)
   assert.match(daily, /course\.status==='closed'/)
+  assert.match(daily, /if\(!course\|\|course\.stage!==4\|\|course\.status==='closed'\)notAllowed/)
   assert.match(migration, /status in \('active','paused','closed'\)/)
   assert.doesNotMatch(server, /delete from app_private\.growth_(?:cycles|sessions|courses)/i)
 })
