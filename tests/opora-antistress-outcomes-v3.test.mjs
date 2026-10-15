@@ -66,7 +66,8 @@ test('server limits new version to newly created stress cycles and validates sav
   assert.match(server,/resolveCycleVersion.*COURSE_ANTISTRESS_OUTCOME_V3/)
   assert.match(server,/INVALID_ANTISTRESS_PROBE/)
   assert.match(server,/skillProbeChoice:probeChoice/)
-  assert.match(server,/learningSkills=contentVersion===COURSE_ANTISTRESS_OUTCOME_V3/)
+  assert.match(server,/const usesOporaOutcomeChecks=isAntiStressV3\|\|isOporaNav2/)
+  assert.match(server,/learningSkills=usesOporaOutcomeChecks/)
   assert.match(server,/last\?\.signals\?\.skillProbeChoice/)
 })
 
@@ -74,7 +75,7 @@ test('course UI offers an optional skill-choice card and a separate qualitative 
   const player=read('components/app/course-slide-player.jsx')
   const journey=read('components/app/course-today.jsx')
   assert.match(player,/data-antistress-skill-probe/)
-  assert.match(player,/lesson\.antiStress \? <>/)
+  assert.match(player,/lesson\.antiStress\|\|isOporaModule \? <>/)
   assert.match(player,/skillProbeChoice:skillProbeChoice\|\|null/)
   assert.match(player,/skillProbeHintUsed/)
   assert.match(journey,/data-antistress-seven-skill-progress/)
