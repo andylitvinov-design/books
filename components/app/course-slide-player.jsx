@@ -329,12 +329,19 @@ export default function CourseSlidePlayer({
   const session = data.currentSession
   const focusLabel = cycle.activeScaleLabel || data.roadmap?.find(item => item.day === cycle.day)?.focusTitle || data.target?.label || words.todaySkill
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
-  const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
+  const standardBaselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
   const routePlan=lesson.antiStress?.routePlan
   const MethodActivityComponent=routePlan?RouteMethodActivity:AntiStressMethodActivity
   const PracticeLabComponent=routePlan?RoutePracticeLab:AntiStressPracticeLab
   const isDayOne=Boolean(lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
+  // The pinned lesson body is immutable. This momentary prompt is only a
+  // voluntary state-first UI observation, not an additional clinical scale.
+  const baselinePrompt=isDayOne
+    ? (locale==='ru'
+      ? 'Насколько сейчас доступна небольшая пауза, чтобы заметить себя и выбрать действие?'
+      : 'How available is a small pause to notice yourself and choose a response right now?')
+    : standardBaselinePrompt
   const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
     data.programme?.id === 'stress')
   const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
@@ -748,12 +755,9 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'baseline' && <>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt} data-course-baseline-presence>{isDayOne
-              ? (locale==='ru'?'Насколько сейчас доступна небольшая пауза, чтобы заметить себя и выбрать действие?':
-                'How available is a small pause to notice yourself and choose a response right now?')
-              : baselinePrompt}</p>
+            <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
             <MomentScale value={entryNow} onChange={setEntryNow} words={words}
-              label={(isDayOne?(locale==='ru'?'Доступность паузы и выбора':'Availability of pause and choice'):baselinePrompt) + ': ' + focusLabel} lowLabel={words.baselineLow}
+              label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
               highLabel={words.baselineHigh} disabled={locked}/>
             <p className={styles.helper}>{isDayOne
               ? (locale==='ru'?'Необязательная моментная оценка — не диагностический тест и не требование улучшить показатель.':
