@@ -9,7 +9,8 @@ const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 test("home presents four photo-left offer cards before videos", () => {
   const home = source("components", "holistic-house-home.tsx");
   const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const video = home.indexOf("{introVideo ? (");
+  const video = home.indexOf("{introVideoContent}");
+  assert.match(source("app", "page.tsx"), /className="service-home-video"/);
   assert.ok(cards > 0 && video > cards);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
