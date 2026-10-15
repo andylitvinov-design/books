@@ -24,6 +24,9 @@ for (const [engine, browserType] of [['chromium', chromium], ['webkit', webkit]]
         const block = page.locator(`[data-video-slot="home-intro"][data-video-locale="${locale}"]`);
         await expect(block).toBeVisible({ timeout: 60000 });
         const poster = block.locator('img.site-video-poster');
+        // Posters are intentionally lazy loaded below the fold on mobile.
+        // Scroll into view before testing decoding, just as a visitor would.
+        await poster.scrollIntoViewIfNeeded();
         await expect.poll(() => poster.evaluate(el => el.complete && el.naturalWidth >= 320), { timeout: 30000 }).toBe(true);
         const play = block.locator('button.site-video-play');
         await expect(play).toBeEnabled({ timeout: 30000 });
