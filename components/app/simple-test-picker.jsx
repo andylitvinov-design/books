@@ -196,8 +196,11 @@ export function SimpleTestPicker({
   const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
   const viaCopy = VIA_COPY[locale] || VIA_COPY.en
   const groupedRecommendations = via.visible
-  const visibleRecommendations = groupedRecommendations.slice(0, visibleCount)
-  const remainingCount = Math.max(0, groupedRecommendations.length - visibleCount)
+  const browseRecommendations = browseTab === 'all' ? groupedRecommendations
+    : browseTab === 'closest' ? groupedRecommendations.slice(0, 12)
+    : groupedRecommendations.filter((entry) => matchesBrowseTab(entry, browseTab))
+  const visibleRecommendations = browseRecommendations.slice(0, visibleCount)
+  const remainingCount = Math.max(0, browseRecommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
   const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
@@ -365,34 +368,24 @@ export function SimpleTestPicker({
         <button type="button" aria-pressed={journeyMode === 'course'} onClick={() => setJourneyMode('course')}>{c.modeCourse}</button>
       </div>}
       {journeyMode === 'course' && <p className={styles.modeHint}>{c.courseHint}</p>}
-      <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
-      <details className={styles.why}>
-        <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
-        <p>{c.whyText}</p>
-      </details>
-      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
-        <div className={styles.viaFamilyIntro}>
-          <strong>{viaCopy.title}</strong>
-          <p>{viaCopy.description}</p>
-        </div>
-        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
-          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
-          <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
-            onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
-            {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
-          </button>
-          <button type="button" className={styles.takeTest} data-test-action="start"
-            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
-            {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
-          </button>
-        </div>}
-        {via.individualCount > 0 && <button type="button" className={styles.viaToggle}
-          aria-expanded={showIndividualVia} aria-controls="hh-public-recommended-tests"
-          onClick={() => { setShowIndividualVia((value) => !value); setVisibleCount(5) }}>
-          {showIndividualVia ? viaCopy.collapse : viaCopy.expand} ({via.individualCount})
-        </button>}
-      </section>}
-      {recommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
+      <div className={styles.recommendationMeta}>
+        <div className={styles.matchCount} role="status" aria-live="polite">{browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
+        <details className={styles.why}>
+          <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
+          <p>{c.whyText}</p>
+        </details>
+      </div>
+      <div className={styles.browseTabs} role="group" aria-label={c.filterTitle}>
+        {BROWSE_TABS.map((tab) => <button key={tab.key} type="button" aria-pressed={browseTab === tab.key}
+          onClick={() => { setBrowseTab(tab.key); setVisibleCount(5) }}>{tab.label[locale] || tab.label.en}</button>)}
+        <button type="button" className={styles.moreFilterButton} title={c.filters} aria-label={c.filters}
+          onClick={() => {
+            const details = document.getElementById('hh-more-test-filters')
+            if (details) { details.open = true; details.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+          }}><SlidersHorizontal size={18} aria-hidden="true" /></button>
+      </div>
+
+      {browseRecommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
          {visibleRecommendations.map((entry, index) => {
            const checked = selectedKeys.has(entry.key)
            const inputId = `hh-public-test-${entry.key}`
@@ -450,16 +443,38 @@ export function SimpleTestPicker({
            </article>
          })}
        </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
-       {groupedRecommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
+       {browseRecommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
         <span role="status" aria-live="polite">
-          {format(c.showing, { shown: visibleRecommendations.length, total: groupedRecommendations.length })}
+          {format(c.showing, { shown: visibleRecommendations.length, total: browseRecommendations.length })}
         </span>
         {remainingCount > 0 && <button type="button" className={styles.showFiveMore}
           aria-controls="hh-public-recommended-tests" aria-expanded={visibleCount > 5}
-          onClick={() => setVisibleCount((current) => Math.min(groupedRecommendations.length, current + 5))}>
+          onClick={() => setVisibleCount((current) => Math.min(browseRecommendations.length, current + 5))}>
           {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
         </button>}
       </div>}
+      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+        <div className={styles.viaFamilyIntro}>
+          <strong>{viaCopy.title}</strong>
+          <p>{viaCopy.description}</p>
+        </div>
+        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
+          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
+          <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
+            onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
+            {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
+          </button>
+          <button type="button" className={styles.takeTest} data-test-action="start"
+            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
+            {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </div>}
+        {via.individualCount > 0 && <button type="button" className={styles.viaToggle}
+          aria-expanded={showIndividualVia} aria-controls="hh-public-recommended-tests"
+          onClick={() => { setShowIndividualVia((value) => !value); setVisibleCount(5) }}>
+          {showIndividualVia ? viaCopy.collapse : viaCopy.expand} ({via.individualCount})
+        </button>}
+      </section>}
       <p className={styles.fitNote}>{c.fitInfo}</p>
 
       <div className={styles.selectedSummary} role="status" aria-live="polite">
