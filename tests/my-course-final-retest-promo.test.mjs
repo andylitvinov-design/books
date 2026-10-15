@@ -20,7 +20,7 @@ const result = (id,at,value,over={}) => ({
 const meta=[{key:'hh-weekly-pulse',version:'v1',title:'Weekly Pulse',startable:true,
   rightsStatus:'cleared',suggestedRepeatDays:7,scaleLabels:{'weekly.tension':'Tension'}}]
 const period={testKeys:['hh-weekly-pulse'],metadata:meta,
-  startedAt:'2026-10-13T12:00:00Z',completedAt:'2026-10-26T18:00:00Z'}
+  startedAt:'2026-10-13T12:00:00Z',completedAt:'2026-10-26T18:00:00Z',now:'2026-10-28T20:00:00Z'}
 
 test('exact original selected test is re-offered after day 14, using a fixed before-cycle result',()=>{
   const results=[
@@ -289,4 +289,85 @@ test('a suggested retest date is calculated from actual as-of time, not a frozen
   assert.equal(early.tests[0].canRepeat,true)
   const later=buildFinalCourseRetest({...args,now:'2026-11-20T11:00:00Z'})
   assert.equal(later.tests[0].repeatSuggestedLater,false)
+})
+
+test('GAD-7 cannot be repeated early to manufacture a two-week symptom change',()=>{
+  const baseline=result('gad-before','2026-10-13T11:00:00Z',8,{definitionKey:'gad-7'})
+  const gadMeta={key:'gad-7',version:'v1',title:'GAD-7',startable:true,
+    rightsStatus:'cleared',suggestedRepeatDays:14,scaleLabels:{}}
+  const early=buildFinalCourseRetest({...period,testKeys:['gad-7'],metadata:[gadMeta],
+    now:'2026-10-26T20:00:00Z',results:[baseline]})
+  assert.equal(early.tests[0].hardBlocked,true)
+  assert.equal(early.tests[0].canRepeat,false)
+  assert.equal(early.tests[0].hardDueAt,'2026-10-27T11:00:00.000Z')
+  const allowed=buildFinalCourseRetest({...period,testKeys:['gad-7'],metadata:[gadMeta],
+    now:'2026-10-27T12:00:00Z',results:[baseline]})
+  assert.equal(allowed.tests[0].canRepeat,true)
+})
+
+test('all eight original weekly dimensions remain visible in an honest after-course comparison',()=>{
+  const dims8=['weekly.load','weekly.tension','weekly.recovery','weekly.functioning',
+    'weekly.connection','weekly.mood','weekly.energy','weekly.clarity']
+  const make=(id,at,shift)=>result(id,at,5,{dimensions:dims8.map((key,i)=>({
+    key,value:5+shift,min:0,max:10,direction:i<2?'lower-reported-load':'higher-reported-resource',
+  }))})
+  const out=buildFinalCourseRetest({...period,
+    results:[make('before','2026-10-13T11:00:00Z',0),make('after','2026-10-27T13:00:00Z',-1)]})
+  assert.equal(out.tests[0].comparison.length,8)
+  assert.ok(out.tests[0].comparison.some(row=>row.key==='weekly.load'))
+  assert.ok(out.tests[0].comparison.some(row=>row.key==='weekly.clarity'))
+})
+
+test('identical values from different language, translation or content versions are not equivalent',()=>{
+  const before=result('a','2026-10-13T11:00:00Z',5,{
+    timeframe:'past-2-weeks',translationVersion:'validated-en-v1',contentHash:'sha256:a',
+  })
+  for(const patch of [
+    {instrumentLocale:'ru'}, {translationVersion:'hh-ru-v1'},
+    {contentHash:'sha256:b'}, {timeframe:'right-now'},
+  ]){
+    const after=result('b','2026-10-27T13:00:00Z',5,{
+      timeframe:'past-2-weeks',translationVersion:'validated-en-v1',contentHash:'sha256:a',...patch,
+    })
+    assert.equal(compareFinalCourseTests(before,after),null)
+  }
+})
+
+// Weekly checkpoints use the same account/course/cycle contract as final retests.
+const weeklyPlan={available:true,canStart:true,key:entry.key,definitionVersion:entry.definitionVersion,instrumentLocale:entry.definition.instrumentLocale}
+const weeklyToday=()=>dailyView('course-a','cycle-a',{weeklyCheckpoint:weeklyPlan})
+const weeklyStart=async options=>(await import('../lib/app/course-test-flow.js')).startOrResumeCourseWeeklyCheckpoint(options)
+test('weekly checkpoint binds every read/write and rejects mismatched owner, course, cycle and read-only data',async()=>{
+ const calls=[]
+ const run=await weeklyStart({...scoped,request:async(path,body,method,options)=>{calls.push({path,body,options});return path==='bootstrap'?{account:{id:'owner-a'},runs:[]}:path==='runs'?{id:'weekly-run'}:weeklyToday()}})
+ assert.equal(run.id,'weekly-run');assert.match(calls[0].path,/courseId=course-a$/);assert.ok(calls.every(c=>c.options.accountId==='owner-a'))
+ for(const change of [{courseId:'other'},{cycle:{id:'other'}},{readOnly:true},{weeklyCheckpoint:{...weeklyPlan,canStart:false}}]){
+  const seen=[];await assert.rejects(weeklyStart({...scoped,request:async path=>{seen.push(path);return {...weeklyToday(),...change}}}),/COURSE_(SELECTION_CHANGED|WEEKLY_CHECKPOINT_NOT_DUE)/);assert.equal(seen.length,1)
+ }
+ await assert.rejects(weeklyStart({...scoped,request:async path=>path==='bootstrap'?{account:{id:'other'},runs:[]}:weeklyToday()}),/ACCOUNT_CHANGED/)
+ await assert.rejects(weeklyStart({request(){throw Error('No request allowed')}}),/COURSE_SELECTION_REQUIRED/)
+})
+test('weekly checkpoint invalidates each deferred boundary without later dispatch or stale run exposure',async()=>{
+ for(let holdAt=0;holdAt<3;holdAt++){
+  let current=true;const slow=deferred(),calls=[],values=[weeklyToday(),{account:{id:'owner-a'},runs:[]},{id:'weekly-run'}]
+  const pending=weeklyStart({...scoped,isCurrent:()=>current,request:async path=>{const at=calls.length;calls.push(path);return at===holdAt?slow.promise:values[at]}})
+  for(let i=0;i<30;i++)await Promise.resolve();assert.equal(calls.length,holdAt+1);current=false;slow.resolve(values[holdAt]);await assert.rejects(pending,/COURSE_SELECTION_CHANGED/);assert.equal(calls.length,holdAt+1)
+ }
+})
+test('weekly checkpoint reuses an existing ordinary run without a duplicate write',async()=>{
+ const calls=[];const run=await weeklyStart({...scoped,request:async path=>{calls.push(path);return path==='bootstrap'?{account:{id:'owner-a'},runs:[{id:'existing',definitionId:entry.definition.id,status:'draft'}]}:weeklyToday()}})
+ assert.equal(run.id,'existing');assert.equal(calls.length,2)
+})
+test('daily weekly checkpoint serializes repeated clicks and returns to captured course/cycle',async()=>{
+ const slow=deferred();const h=mount('course-today',{props:{locale:'en',accountId:'owner-a',courseId:'course-a'},fetcher:path=>path==='bootstrap'?slow.promise:path==='runs'?{id:'weekly-run'}:weeklyToday()})
+ await h.settle();const start=findButton(h.tree,'Repeat Weekly Pulse').props.onClick;start();start();await h.settle();assert.equal(h.calls.filter(c=>c.path==='bootstrap').length,1)
+ slow.resolve({account:{id:'owner-a'},runs:[]});await h.settle();assert.deepEqual(h.navigations,['/en/app/runs/weekly-run?mode=guided&course=retest&courseId=course-a&cycleId=cycle-a']);h.unmount()
+})
+test('daily weekly checkpoint cannot navigate or create runs after owner/course switches or unmount',async()=>{
+ for(const change of ['owner','course','unmount']){
+  const slow=deferred();const h=mount('course-today',{props:{locale:'en',accountId:'owner-a',courseId:'course-a'},fetcher:path=>path==='bootstrap'?slow.promise:weeklyToday()})
+  await h.settle();findButton(h.tree,'Repeat Weekly Pulse').props.onClick();await h.settle()
+  if(change==='unmount')h.unmount();else h.render({locale:'en',accountId:change==='owner'?'owner-b':'owner-a',courseId:change==='course'?'course-b':'course-a'})
+  await h.settle();slow.resolve({account:{id:'owner-a'},runs:[]});await h.settle();assert.equal(h.navigations.length,0);assert.equal(h.calls.filter(c=>c.path==='runs').length,0);h.unmount()
+ }
 })

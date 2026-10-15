@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CheckCircle2, CircleHelp, Clock3, ShieldCheck, SlidersHorizontal, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicCourseCabinet } from "@/components/public-course-cabinet";
+import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-growth-courses.module.css";
 
@@ -11,7 +12,7 @@ const copy = {
     title: "Мои курсы",
     lead: "Небольшие шаги к спокойствию и внутренней опоре.",
     intro: "14 дней в вашем темпе. Один урок, одна практика и возможность замечать свои изменения.",
-    start: "Начать бесплатно", learn: "Посмотреть программы",
+    start: "Начать бесплатно", learn: "Подробнее об Антистрессе",
     heroTag: "14 дней · личный темп", visualTitle: "Ваша точка опоры",
     visualText: "Один урок, одна практика, один небольшой шаг.",
     badge: "Первый курс бесплатно",
@@ -55,7 +56,7 @@ const copy = {
     title: "My courses",
     lead: "Small steps towards calm and inner support.",
     intro: "Fourteen days at your own pace. One lesson, one practice, and room to notice how you feel.",
-    start: "Start for free", learn: "Explore the programmes",
+    start: "Start for free", learn: "About Stress Relief",
     heroTag: "14 days · your pace", visualTitle: "Find your footing",
     visualText: "One lesson, one practice, one small step.",
     badge: "Your first course is free",
@@ -99,7 +100,7 @@ const copy = {
     title: "Mis cursos",
     lead: "Pequeños pasos hacia la calma y tu apoyo interior.",
     intro: "Catorce días a tu ritmo. Una lección, una práctica y espacio para observar los cambios.",
-    start: "Empezar gratis", learn: "Ver los programas",
+    start: "Empezar gratis", learn: "Conocer Antiestrés",
     heroTag: "14 días · a tu ritmo", visualTitle: "Tu punto de apoyo",
     visualText: "Una lección, una práctica, un pequeño paso.",
     badge: "Tu primer curso es gratis",
@@ -149,7 +150,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
   const courseUrl = `/${appLocale}/app/course?program=stress`;
 
   return <main className={styles.root} lang={locale} data-public-my-courses>
-    <PublicSiteHeader locale={locale} />
+    <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
     <section className={styles.hero} aria-labelledby="courses-title">
       <div className={styles.heroCopy}>
         <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
@@ -158,7 +159,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         <p className={styles.heroIntro}>{t.intro}</p>
         <div className={styles.heroActions}>
           <Link className={styles.primary} href={courseUrl} prefetch={false}>{t.start}<ArrowRight size={18} aria-hidden="true" /></Link>
-          <a className={styles.secondary} href="#course-programmes">{t.learn}<ArrowRight size={18} aria-hidden="true" /></a>
+          <Link className={styles.secondary} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={18} aria-hidden="true" /></Link>
         </div>
         <span className={styles.freeNote}><CheckCircle2 size={17} aria-hidden="true" />{t.badge}</span>
       </div>
@@ -191,6 +192,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
             <p className={styles.programmeText}>{programme.description}</p>
             <p className={styles.programmeResult}>{programme.result}</p>
             <Link href={courseUrl} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className={styles.programmeMore} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={15} aria-hidden="true" /></Link>
           </article>;
         })}
       </div>
@@ -213,6 +215,9 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
+      <div className={styles.dailyPlanPreview} data-opora-14-day-public-plan>
+        <Course14DayOverview locale={locale} programId="stress" compact />
+      </div>
       <div className={styles.personal}>
         <span className={styles.personalIcon}><SlidersHorizontal size={27} aria-hidden="true" /></span>
         <div><h3>{t.personal}</h3><p>{t.personalDesc}</p></div>

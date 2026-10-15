@@ -12,10 +12,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const ru = locale === "ru";
   return {
     metadataBase: metadataBaseFor(),
-    title: ru ? "Мои курсы — бесплатные 14-дневные программы | Holistic House" : "My Courses — free 14-day learning programmes | Holistic House",
+    title: ru ? "Мои курсы — ОПОРА Антистресс, 14 занятий | Holistic House" : "My Courses — OPORA Stress Relief, 14 lessons | Holistic House",
     description: ru
-      ? "Антистресс, уверенность, фокус и персональный курс. Выберите направление, пройдите тесты и двигайтесь по одному уроку в день."
-      : "Stress relief, inner confidence, focus and a personal course. Start with a free programme, assessments and one lesson at a time.",
+      ? "Сейчас доступен курс ОПОРА Антистресс: 14 занятий, семь навыков самоподдержки, практика и наблюдение за изменениями. Другие курсы в разработке."
+      : "OPORA Stress Relief is the currently available free learning course: 14 lessons, seven practical skills, gentle exercises and honest progress tracking.",
     alternates: { canonical: `/${locale}/courses`, languages: { en: "/en/courses", ru: "/ru/courses", es: "/es/courses" } },
   };
 }

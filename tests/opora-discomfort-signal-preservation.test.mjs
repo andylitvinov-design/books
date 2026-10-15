@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as moments from '../lib/inner-growth/course-moment-trends.js'
 import * as adaptation from '../lib/inner-growth/course-adaptation.js'
 import * as welcome from '../lib/inner-growth/course-welcome.js'
+import * as dayOne from '../lib/inner-growth/anti-stress-day-one.js'
 import { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } from '../lib/inner-growth/lesson-library.js'
 
 // Self-contained actual-component harness: reusable on canonical and billing branches.
@@ -23,7 +24,7 @@ function mount(_name,{props}){
   }
   const dependencies={react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:(_,key)=>String(key)}),'./course-guided-timer':{default:()=>null},'./course-practice-voice':{default:()=>null},
-    '@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
+    '@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
   const runtime={exports:{},require:name=>{assert.ok(dependencies[name],name);return dependencies[name]},
     document:{body:{style:{overflow:''}},addEventListener(){},removeEventListener(){}},
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}
@@ -82,3 +83,13 @@ for(const locale of ['en','ru']) for(const version of [COURSE_CONTENT_VERSION,CO
     }
   })
 }
+
+for(const locale of ['en','ru'])test(`AS1.8 explicit return from neutral support refocuses the lesson (${locale})`,async()=>{
+ const h=mount('course-slide-player',{props:{locale,data:{cycle:{day:1},programme:{id:'stress'},lesson:{id:'first',title:'First',antiStress:{},sections:[]},progress:{}},onClose(){},onCheckin(){throw Error('No write')},onSession(){throw Error('No write')}}})
+ const byData=key=>nodes(h.tree).find(n=>n.props?.[key]!==undefined)
+ byData('data-course-global-discomfort').props.onClick();await h.settle()
+ nodes(byData('data-course-discomfort-support')).find(n=>n.type==='button').props.onClick();await h.settle()
+ const child=nodes(h.tree).find(n=>typeof n.props?.onReturnToPractice==='function');assert.ok(child);assert.equal(child.props.neutralMode,true)
+ const before=h.focusCount;child.props.onReturnToPractice();await h.settle()
+ assert.equal(h.focusCount,before+1);assert.equal(h.focused?.type,'h2');assert.ok(nodes(h.tree).includes(h.focused));assert.equal(h.network,0);h.unmount()
+})

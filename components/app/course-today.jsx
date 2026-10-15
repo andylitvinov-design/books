@@ -10,8 +10,9 @@ import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
 import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
+import Course14DayOverview from './course-14-day-overview'
 import { appFetch } from '@/lib/app/client-fetch'
-import { startOrResumeCourseFinalRetest } from '@/lib/app/course-test-flow'
+import { startOrResumeCourseFinalRetest, startOrResumeCourseWeeklyCheckpoint } from '@/lib/app/course-test-flow'
 import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
 import styles from './course-today.module.css'
@@ -306,6 +307,19 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   }catch(e){if(isCurrent())setRetestError(e.message||'COURSE_RETEST_UNAVAILABLE')}
   finally{if(retestLock.current===token){retestLock.current=null;if(isCurrent())setRetestBusyKey('')}}
  }
+ async function openWeeklyCheckpoint(){
+  const epoch=viewGeneration,cycleId=data?.cycle?.id
+  const isCurrent=()=>mounted.current&&generation.current===epoch&&currentScope.current.accountId===accountId&&currentScope.current.courseId===courseId&&currentScope.current.cycleId===cycleId
+  if(retestLock.current||!data||data.readOnly||!cycleId||!isCurrent())return
+  const token={};retestLock.current=token
+  setRetestBusyKey('hh-weekly-pulse');setRetestError('')
+  try{
+   const run=await startOrResumeCourseWeeklyCheckpoint({locale,accountId,courseId,cycleId,isCurrent,request:appFetch})
+   if(!isCurrent())return
+   router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=retest&courseId='+encodeURIComponent(courseId)+'&cycleId='+encodeURIComponent(cycleId))
+  }catch(e){if(isCurrent())setRetestError(e.message||'COURSE_WEEKLY_CHECKPOINT_UNAVAILABLE')}
+  finally{if(retestLock.current===token){retestLock.current=null;if(isCurrent())setRetestBusyKey('')}}
+ }
  function showFinalRetest(){
   setQuestOpen(false);setView('today')
   requestAnimationFrame(()=>document.getElementById('course-final-retest')?.scrollIntoView({behavior:'smooth',block:'start'}))
@@ -435,6 +449,24 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     <CourseMomentTrends key={cycle.id} locale={locale} cycle={cycle}
       progress={progress} roadmap={data.roadmap||[]}/>
   </details>
+  {data.weeklyCheckpoint?.available&&<section className={styles.weeklyCheckpoint}
+    data-opora-weekly-checkpoint aria-labelledby="opora-weekly-checkpoint-title">
+    <div>
+      <strong id="opora-weekly-checkpoint-title">{ru?'Промежуточный замер после первой недели':'Optional check after week one'}</strong>
+      <p>{ru?'Weekly Pulse · 8 вопросов о последних семи днях. Это отдельный необязательный тест, а не часть сегодняшнего упражнения.':'Weekly Pulse · 8 questions covering the previous seven days. This is a separate optional test, not part of today’s exercise.'}</p>
+      {data.weeklyCheckpoint.baselineDate&&<small>{ru?'Исходный замер':'Baseline'}: {data.weeklyCheckpoint.baselineDate.slice(0,10)}</small>}
+      {!data.weeklyCheckpoint.completed&&!data.weeklyCheckpoint.canStart&&data.weeklyCheckpoint.dueAt&&
+        <small>{ru?'Повтор доступен с':'Next valid date'}: {data.weeklyCheckpoint.dueAt.slice(0,10)}</small>}
+    </div>
+    {data.weeklyCheckpoint.completed
+      ? <span className={styles.weeklyDone}><CheckCircle2 size={17}/>{ru?'Повтор сохранён':'Retest saved'}</span>
+      : data.weeklyCheckpoint.canStart&&<button type="button" className={styles.weeklyStart}
+        disabled={Boolean(retestBusyKey)||busy} onClick={()=>void openWeeklyCheckpoint()}>
+        {retestBusyKey==='hh-weekly-pulse'?(ru?'Открываем…':'Opening…'):(ru?'Повторить Weekly Pulse':'Repeat Weekly Pulse')}
+        <ArrowRight size={17}/>
+      </button>}
+    {retestError&&<p role="alert" className={styles.error}>{retestError}</p>}
+  </section>}
   <CourseFinalRetest locale={locale} plan={data.finalRetest}
     onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
   </>}
@@ -463,6 +495,10 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   {view==='path'&&<CourseQuestMap locale={locale} cycle={cycle} progress={progress}
     roadmap={data.roadmap||[]} paused={paused} finished={isFinished}
     onPlay={()=>setQuestOpen(true)}/>}
+  {view==='path'&&lesson?.antiStress&&<details className={styles.antiStressDailyScheme} data-course-full-14-day-scheme>
+    <summary>{ru?'Все упражнения, результаты и слайды 14 дней':'Every exercise, outcome and slide across 14 days'}</summary>
+    <Course14DayOverview locale={locale} programId="stress" />
+  </details>}
   {view==='path'&&data.learningSkills?.length===7&&<section className={styles.antiStressSkills} data-antistress-seven-skill-progress>
     <h3>{ru?'Семь навыков самоподдержки':'Seven self-support skills'}</h3>
     <p>{ru?'Здесь отмечены только реальные учебные попытки и выборы. Это не шкала психического здоровья и не тест на «успешность».':'Only actual learning attempts and choices are shown. This is not a mental-health score or performance test.'}</p>

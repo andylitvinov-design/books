@@ -10,7 +10,7 @@ const copy = {
     description: "Fourteen gentle lessons and seven practical skills for managing everyday stress. Optional check-ins and short exercises, at your own pace.",
     duration: "14 days",
     daily: "5–12 min a day",
-    cta: "Start my free course",
+    cta: "Start my free course", learn: "Learn about the course",
     note: "Your choices and progress are only saved with your consent.",
     caution: "Self-guided education and support, not a diagnosis, psychotherapy or emergency care.",
     visualTitle: "A small step every day",
@@ -23,7 +23,7 @@ const copy = {
     description: "Четырнадцать занятий и семь навыков саморегуляции повседневного стресса. Необязательные замеры и короткие упражнения в вашем темпе.",
     duration: "14 дней",
     daily: "5–12 мин в день",
-    cta: "Начать бесплатный курс",
+    cta: "Начать бесплатный курс", learn: "Подробнее о курсе",
     note: "Ваш выбор и прогресс сохраняются только с вашего согласия.",
     caution: "Самостоятельная программа поддержки, не диагностика, психотерапия или экстренная помощь.",
     visualTitle: "Маленький шаг каждый день",
@@ -36,7 +36,7 @@ const copy = {
     description: "Catorce lecciones y siete habilidades para afrontar el estrés cotidiano, con cuestionarios opcionales y prácticas breves a tu ritmo.",
     duration: "14 días",
     daily: "5–12 min al día",
-    cta: "Empezar gratis",
+    cta: "Empezar gratis", learn: "Conocer el curso",
     note: "El curso se abrirá en inglés. Tus datos solo se guardan con tu consentimiento.",
     caution: "Aprendizaje y apoyo autónomo; no sustituye el diagnóstico, la psicoterapia ni la atención urgente.",
     visualTitle: "Un pequeño paso cada día",
@@ -64,6 +64,7 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
           <Link href={`/${courseLocale}/app/course?program=stress`} prefetch={false} className={styles.cta}>
             {t.cta}<ArrowRight aria-hidden="true" size={19} />
           </Link>
+          <Link href={"/" + locale + "/courses/antistress"} className={styles.learn}>{t.learn}<ArrowRight aria-hidden="true" size={16} /></Link>
           <span className={styles.note}>{t.note}</span>
         </div>
         <p className={styles.caution}>{t.caution}</p>
