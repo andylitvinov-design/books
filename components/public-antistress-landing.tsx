@@ -199,7 +199,7 @@ const copy = {
       },
       {
         "q": "Будут ли тесты?",
-        "a": "На старте предлагаются подходящие тесты, чтобы определить исходную точку. Вы видите предложения и делаете осознанный выбор. Повторное сравнение возможно только для совместимых результатов."
+        "a": "Да. Перед первым уроком нужно пройти исходный HH Weekly Pulse (8 вопросов о последней неделе). GAD-7 и ресурсный опросник — по желанию. Если недавний совместимый результат Weekly Pulse уже есть, повторять тест не требуется. Позднее сравниваются только совместимые измерения."
       },
       {
         "q": "Что делать, если практика вызывает дискомфорт?",
@@ -405,7 +405,7 @@ const copy = {
       },
       {
         "q": "Will I take questionnaires?",
-        "a": "At the start you can review suggested assessments to establish a starting point. You make informed choices. Later comparisons require genuinely comparable results."
+        "a": "Yes. Before the first lesson, complete HH Weekly Pulse (8 questions about the past week). GAD-7 and Resource Pulse are optional. A recent compatible Weekly Pulse result counts without repeating the test; later comparisons require comparable results."
       },
       {
         "q": "What if an exercise feels uncomfortable?",
@@ -611,7 +611,7 @@ const copy = {
       },
       {
         "q": "¿Hay cuestionarios?",
-        "a": "Al inicio se proponen evaluaciones para conocer el punto de partida. Tú decides de forma informada. Las comparaciones posteriores requieren resultados realmente comparables."
+        "a": "Sí. Antes de la primera lección necesitas completar HH Weekly Pulse (8 preguntas sobre los últimos 7 días). GAD-7 y Resource Pulse son opcionales. Si ya tienes un resultado reciente compatible, no hace falta repetirlo. Las comparaciones posteriores requieren mediciones equivalentes."
       },
       {
         "q": "¿Y si una práctica me incomoda?",

@@ -22,7 +22,7 @@ const UI = {
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
     testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
-    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) is the required measurable baseline; GAD‑7 (7 items) and Resource Pulse are optional. The Russian GAD‑7 translation is not independently validated.',
+    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) and GAD-7 (7 items); Resource Pulse is optional. Russian GAD-7 is a separate, not independently validated translation.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
     showMore: 'Add or remove more tests', showLess: 'Show the five suggestions',
@@ -72,7 +72,7 @@ const UI = {
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
     testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
-    programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) — обязательная база измеряемого курса; GAD‑7 (7 вопросов) и Resource Pulse — по желанию. Русский перевод GAD‑7 не валидирован отдельно.',
+    programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) + GAD-7 (7 вопросов), тест опоры — по желанию. Русский перевод GAD-7 не валидирован отдельно.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
     showMore: 'Добавить или убрать другие тесты', showLess: 'Показать только пять первых',
@@ -254,16 +254,13 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
     const starter=programme?.id==='stress'
-      ? ['hh-weekly-pulse'].filter(key=>ranked.some(item=>item.key===key))
+      ? ['hh-weekly-pulse','gad-7'].filter(key=>ranked.some(item=>item.key===key))
       : ranked.slice(0,5).map(item=>item.key)
     // A short stress course starts with one 7-day questionnaire and one
     // 14-day anxiety instrument. Resource Pulse remains an opt-in third test.
-    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : programme?.id==='stress'
-      ? [...new Set([...starter,...preferred])] : preferred.length ? preferred : starter)
+    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter)
   },[stage,testsTouched,current.testKeys,ranked])
   function toggleTest(key) {
-    // A measured Anti-Stress cycle cannot omit the primary Weekly Pulse baseline.
-    if(programme?.id==='stress'&&key==='hh-weekly-pulse')return
     setTestsTouched(true)
     setChosenTests(previous=>previous.includes(key)
       ? previous.filter(value=>value!==key)
@@ -341,7 +338,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       <div className={styles.testList} aria-label={t.testsTitle}>
         {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
           <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
-            (programme?.id==='stress'&&item.key==='hh-weekly-pulse')||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
