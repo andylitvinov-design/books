@@ -59,3 +59,56 @@ test('existing session readers always use server-authorized streaming; not R2 be
     assert.doesNotMatch(text,/createVideoReadUrl/)
   }
 })
+
+const storageSource=readFileSync(new URL('../lib/clients/session-delivery-storage.js',import.meta.url),'utf8')
+const loadStorage=(names,values,symbol)=>new Function(...names,
+  storageSource.replace(/^import .*\n/gm,'').replace(/^export /gm,'')+'\nreturn '+symbol
+)(...values)
+test('gated external intent accepts larger MP4 without invoking Supabase Storage and binds one session',async()=>{
+  const inserted=[]
+  const query=async(sql,params)=>{
+    if(sql.startsWith('select count'))return {rows:[{n:0}]}
+    if(sql.startsWith('insert into')){inserted.push({sql,params});return {rows:[]}}
+    throw Error('Unexpected SQL: '+sql)
+  }
+  const create=loadStorage(
+    ['AppError','SESSION_MEDIA_TYPES','randomUUID','getOwnerSession','configuredVideoUploadStore','createVideoUploadUrl','transaction','validUuid'],
+    [AppError,{'video/mp4':{kind:'video',ext:'mp4',max:45_000_000}},
+      ()=>'12345678-1234-4234-8234-123456789abc',
+      async()=>({status:'draft',assets:[],draft:{media:[]}}),
+      ()=>({provider:'r2'}),()=> 'https://private.invalid/signed',
+      async(_config,_actor,fn)=>fn({query}),()=>true],
+    'createPrivateMediaIntent'
+  )
+  const result=await create({},null,'client-a','session-a',{kind:'video',mime:'video/mp4',bytes:90_000_000,scope:'client'})
+  assert.equal(result.provider,'external')
+  assert.equal(result.maxBytes,200_000_000)
+  assert.equal(result.uploadUrl,'https://private.invalid/signed')
+  assert.equal(result.supabaseUrl,undefined)
+  assert.equal(inserted.length,1)
+  assert.match(inserted[0].sql,/storage_provider/)
+  assert.deepEqual(inserted[0].params.slice(1,5),['client-a','session-a','video','client'])
+  assert.equal(inserted[0].params.at(-1),'r2')
+})
+test('external media HEAD/ftyp confirmation must match exact intended bytes before attachment',async()=>{
+  let attached=0,inspected=0,sniffed=0,updated=0
+  const asset={id:'asset',legacy_client_id:'client-a',session_id:'session-a',status:'pending',
+    storage_provider:'r2',object_key:'synthetic.mp4',max_bytes:90_000_000,mime:'video/mp4'}
+  const run=(size=90_000_000)=>loadStorage(
+    ['AppError','validUuid','getOwnerSession','transaction','inspectUploadedVideo','verifyUploadedVideoHeader','attachSessionAsset'],
+    [AppError,()=>true,async()=>({}),
+      async(_cfg,_actor,fn)=>fn({query:async sql=>{
+        if(sql.startsWith('select *'))return {rows:[asset]}
+        if(sql.startsWith('update')){updated++;return {rowCount:1}}
+        return {rows:[]}
+      }}),
+      async()=>{inspected++;return {bytes:size,mime:'video/mp4'}},
+      async()=>{sniffed++;return true},
+      async()=>{attached++;return {attached:true}}],'completePrivateMedia'
+  )
+  await assert.rejects(run(80_000_000)({},null,'client-a','session-a','asset'),{code:'MEDIA_SIZE_NOT_ALLOWED'})
+  assert.equal(sniffed,0);assert.equal(attached,0)
+  await run()({},null,'client-a','session-a','asset')
+  assert.equal(inspected,2)
+  assert.equal(sniffed,1);assert.equal(updated,1);assert.equal(attached,1)
+})
