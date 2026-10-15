@@ -9,7 +9,8 @@ const css = read('components/app/course-entry-selector.module.css')
 
 test('My Course first renders the selection slide and keeps the existing course wizard', () => {
   assert.match(wrapper, /<CourseEntrySelector/)
-  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry\) return/)
+  // Direct banner entry skips the selector; generic My Courses still has its current-course cards.
+  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry\) return/)
   assert.match(wrapper, /personalEntry = stage === 0 &&/)
   assert.match(wrapper, /onOpen=\{\(\) => setShowCourse\(true\)\}/)
   assert.match(wrapper, /stage === 0 && <header/)

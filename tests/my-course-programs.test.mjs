@@ -59,7 +59,7 @@ test('the new UI uses one consented start and private existing test/lesson endpo
   assert.match(shell, /data-course-program-selection/)
   assert.match(shell, /data-course-program-id=\{program.id\}/)
   assert.match(shell, /data-course-personal-program/)
-  assert.match(shell, /async function confirmStart\(\)/)
+  assert.match(shell, /async function confirmStart\(quickConsent = false\)/)
   assert.match(shell, /request\(\{ action: 'start', consent: true \}\)/)
   assert.match(shell, /action: 'intake'/)
   assert.match(shell, /expectedRevision: started.course.revision/)

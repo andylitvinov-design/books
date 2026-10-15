@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight, BookOpen, Check, LockKeyhole, Sparkles, Waves, ShieldCheck, Target, SlidersHorizontal } from 'lucide-react'
 import { COURSE_STEPS } from '@/lib/inner-growth/course-model'
-import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram } from '@/lib/inner-growth/course-programs'
+import { ACTIVE_COURSE_PROGRAM_ID, COURSE_PROGRAMS, getCourseProgram, courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { courseTagsForExplorerFocus, courseConcernsFromIntent } from '@/lib/inner-growth/course-entry-intent'
 import { readCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseToday from './course-today'
@@ -153,6 +153,11 @@ export function MyCourse({ data, locale = 'en' }) {
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [courseEntry, setCourseEntry] = useState(null)
   const startDialogRef = useRef(null)
+  // A direct Anti-Stress CTA is not an invitation to repeat the catalogue/wizard.
+  const fastAntistressEntry = Boolean(requestedProgram) ||
+    (showCourse && [1, 2].includes(state?.course?.stage) &&
+      courseProgramFromTopics(state?.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID &&
+      searchParams.get('entry') !== 'personal')
   useEffect(() => {
     // OAuth may return without a programme query. A separate navigation helper
     // restores validated public choices, never stored course state.
@@ -204,15 +209,15 @@ export function MyCourse({ data, locale = 'en' }) {
 
   // A named track takes the learner straight to its EXISTING fixed-topic
   // starter assessment list. Server revisions and opt-in are authoritative.
-  async function confirmStart() {
-    if (busy || !optIn) return
+  async function confirmStart(quickConsent = false) {
+    if (busy || (!optIn && !quickConsent)) return
     setBusy(true)
     setError('')
     startDialogRef.current?.close()
     try {
       const started = await request({ action: 'start', consent: true })
       setState(started)
-      const programme = getCourseProgram(selectedProgram)
+      const programme = getCourseProgram(selectedProgram || requestedProgram?.id || ACTIVE_COURSE_PROGRAM_ID)
       const focusTags = programme?.focusTags || courseTagsForExplorerFocus(courseEntry?.focus)
       const concerns = courseConcernsFromIntent(courseEntry, locale)
       // Server-owned course creation and intake happen only AFTER explicit
@@ -247,9 +252,29 @@ export function MyCourse({ data, locale = 'en' }) {
   const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
   const programmeEntry = stage === 0 && Boolean(requestedProgram)
   const personalEntry = stage === 0 && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
-  if (!showCourse && !testReturn && !programmeEntry && !personalEntry) return <CourseEntrySelector
+  if (!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry) return <CourseEntrySelector
     course={state.course} locale={locale} onOpen={() => setShowCourse(true)}
     onCloseCourse={closeCourse} closing={busy}/>
+
+  // One explicit consent action, then the existing private intake. No catalogue,
+  // six-step presentation, duplicate assessment or bypass of server validation.
+  if (stage === 0 && fastAntistressEntry) return <div className={styles.root} data-my-course>
+    <section className={styles.fastEntry} data-opora-fast-start>
+      <span className={styles.fastKicker}>{ru ? 'ОПОРА · АНТИСТРЕСС' : 'OPORA · STRESS RELIEF'}</span>
+      <h1>{ru ? 'Начните с короткого теста' : 'Start with one short check-in'}</h1>
+      <p>{ru ? '8 вопросов Weekly Pulse помогут подобрать один из 5 уровней программы. Дополнительные тесты — только по желанию.' :
+        'Eight Weekly Pulse questions help suggest one of five learning levels. Extra questionnaires are optional.'}</p>
+      <p className={styles.fastConsent}><LockKeyhole size={18} aria-hidden="true" />{t.consent}</p>
+      {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
+      <button type="button" className={'hh-primary ' + styles.fastStartButton}
+        disabled={busy} onClick={() => void confirmStart(true)} data-opora-fast-consent>
+        {busy ? (ru ? 'Подготавливаем тест…' : 'Preparing your test…')
+          : (ru ? 'Согласен, к тесту' : 'Agree & continue to the test')}
+        <ArrowRight size={19} aria-hidden="true" />
+      </button>
+      <small>{t.note}</small>
+    </section>
+  </div>
 
   return <div className={styles.root} data-my-course>
     <button type="button" className={styles.backToCourses} onClick={() => {
@@ -304,7 +329,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <summary>{t.how}</summary>
       <Course14DayOverview locale={locale} />
     </details>}
-    {stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+    {stage >= 1 && stage <= 3 && !fastAntistressEntry && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:t.issue} ({error}) <button type="button" onClick={refresh}>{t.retry}</button></p>}
@@ -334,7 +359,7 @@ export function MyCourse({ data, locale = 'en' }) {
     {stage >= 1 && stage <= 3 && <CourseR3Steps
       stage={stage} locale={locale} data={data} state={state} busy={busy}
       onAct={act} onCourseCommand={courseCommand}
-      onState={setState} onError={setError} root={root}
+      onState={setState} onError={setError} root={root} quickEntry={fastAntistressEntry}
     />}
 
     {stage === 4 && <CourseToday locale={locale} accountId={data?.account?.id||null} onExit={() => setShowCourse(false)} />}
