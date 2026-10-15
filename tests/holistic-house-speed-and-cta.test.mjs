@@ -49,11 +49,13 @@ test("homepage keeps genuine paid consultation navigation while free services li
 test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {
   const player = read("components/site-video-player.tsx");
   const services = read("components/services-solutions.tsx");
-  assert.match(player, /unoptimized=\{approvedPoster\.endsWith\("\.webp"\)\}/);
-  assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
+  assert.match(player, /<img className="site-video-poster" src=\{approvedPoster\}/);
+  assert.match(player, /<img className="site-video-poster site-video-fallback-poster" src=\{fallbackPoster\}/);
+  assert.doesNotMatch(player, /from "next\/image"/);
+  assert.match(read("app/site-videos.css"), /\.site-video-play \.site-video-poster \{[\s\S]*?position: absolute;/);
   assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
-  // The verified portrait uses its static component; third-party YouTube stills keep optimization.
+  // The verified portrait uses its static component; approved YouTube stills load natively, not through /_next/image.
   assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
   assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
@@ -69,6 +71,7 @@ test("known first-party testimonial stills avoid speculative YouTube thumbnail t
   assert.match(testimonials, /locallyArchivedVideoPosterIds/);
   assert.match(testimonials, /testimonial-posters\/\$\{item\.id\}\.webp/);
   assert.match(source, /https:\/\/www\.youtube-nocookie\.com\/embed/);
+  assert.match(source, /<img key=\{poster\} className="site-video-poster"/);
 });
 
 test("only immutable-by-name public poster folders have a bounded CDN policy", () => {
@@ -79,4 +82,30 @@ test("only immutable-by-name public poster folders have a bounded CDN policy", (
   assert.doesNotMatch(config, /source: "\/(?:api|admin|client|app)\//);
   const privateMiddleware = read("middleware.ts");
   assert.match(privateMiddleware, /private, no-store, max-age=0, must-revalidate/);
+});
+
+
+test("public home video metadata streams separately from the personalized CSP-bearing shell", () => {
+  const route = read("app/page.tsx");
+  const shell = read("components/holistic-house-home.tsx");
+  const layout = read("app/layout.tsx");
+  assert.match(route, /<Suspense fallback=\{null\}>/);
+  assert.match(route, /async function HomeIntroVideo/);
+  assert.ok(route.indexOf("const locale = await homeLocale(searchParams)") < route.indexOf("<HolisticHouseHome"));
+  assert.doesNotMatch(route, /Promise\.all\(\[homeLocale\(searchParams\), getPublishedSiteVideos\(\)\]\)/);
+  assert.match(shell, /\{introVideoContent\}/);
+  assert.match(layout, /nonce=\{nonce\}/);
+  assert.doesNotMatch(route, /force-static|revalidate = 60|s-maxage/);
+});
+
+test("all public homepage languages expose real paid booking before secondary free actions", () => {
+  const enRu = read("components/holistic-house-home.tsx");
+  const spanish = read("app/es/page.tsx");
+  const spanishServices = read("app/es/services/page.tsx");
+  const style = read("app/holistic-house-home.css");
+  assert.ok(enRu.indexOf('service-home-button--consultation') < enRu.indexOf('service-home-button--primary'));
+  assert.ok(spanish.indexOf('service-home-button--consultation') < spanish.indexOf('service-home-button--primary'));
+  assert.match(spanish, /Reservar consulta/);
+  assert.match(spanishServices, /id="consultation" serviceBooking/);
+  assert.match(style, /service-home-button--consultation \{ min-height: 48px/);
 });
