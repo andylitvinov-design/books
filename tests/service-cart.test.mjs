@@ -86,9 +86,16 @@ test('checkout route enforces verified session, same origin, bounded body and pr
   assert.doesNotMatch(route, /export (?:async )?function GET|request\.json\(\)/)
 })
 
-test('cart is integrated into RU/EN and ES services without replacing free offers', () => {
-  assert.match(read('app/[locale]/services/page.tsx'), /<ServiceCart locale=\{locale as Locale\}/)
-  assert.match(read('app/es/services/page.tsx'), /<ServiceCart locale="es"/)
+test('oversized cart is absent from public Services in all languages; payment logic remains isolated', () => {
+  const services = read('app/[locale]/services/page.tsx')
+  const spanish = read('app/es/services/page.tsx')
+  assert.doesNotMatch(services, /ServiceCart|service-cart/)
+  assert.doesNotMatch(spanish, /ServiceCart|service-cart/)
+  assert.match(services, /<ServicesConversionHero/)
+  assert.match(services, /<ServicesTestsIntro/)
+  assert.match(services, /<ServicesSolutions/)
+  assert.match(services, /<PublicConsultationCta[\s\S]*serviceBooking/)
+  assert.match(spanish, /<PublicConsultationCta/)
   assert.match(read('app/[locale]/services/page.tsx'), /<ServicesTestsIntro/)
   assert.match(read('app/[locale]/services/page.tsx'), /<ServicesSolutions/)
   const component = read('components/commerce/service-cart.tsx')
