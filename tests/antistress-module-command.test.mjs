@@ -172,28 +172,36 @@ function assertScoped(h, id = COURSE) {
   for (const query of assessmentReads) { assert.match(query.sql, /where account_id=\$1/); assert.deepEqual(query.args, [OWNER]) }
 }
 
-test('actual choose-goals command persists selected AS4 and reaches createNewCycle after the branch', async () => {
+test('actual choose-goals command persists selected AS3 and reaches createNewCycle after the branch', async () => {
   const h = harness()
-  const response = await h.repo.command(actor, { ...h.body, moduleAnswers: finderAnswers, moduleGoal: 'AS4', moduleId: 'AS4' })
-  assert.equal(h.cycles.length, 1); assert.equal(h.cycles[0].payload.moduleId, 'AS4')
+  const response = await h.repo.command(actor, { ...h.body, moduleAnswers: finderAnswers, moduleGoal: 'AS3', moduleId: 'AS3' })
+  assert.equal(h.cycles.length, 1); assert.equal(h.cycles[0].payload.moduleId, 'AS3')
   assert.equal(h.cycles[0].row.id, COURSE); assert.equal(h.cycles[0].actorId, OWNER)
   assert.equal(response.course.stage, 4); assert.equal(response.course.revision, 8)
   assert.equal(response.course.concerns, plainConcern); assert.equal(response.courses[0].title, plainConcern)
-  assert.equal(response.course.moduleChoice.id, 'AS4')
+  assert.equal(response.course.moduleChoice.id, 'AS3')
   const persisted = router.unpackCourseModuleContext(crypto.openSealed(h.rows[0].concerns_ciphertext, context(), config))
-  assert.equal(persisted.concerns, plainConcern); assert.equal(persisted.moduleChoice.id, 'AS4')
+  assert.equal(persisted.concerns, plainConcern); assert.equal(persisted.moduleChoice.id, 'AS3')
   assert.equal(persisted.moduleChoice.weeklyResultId, RESULT)
   assert.equal(persisted.moduleChoice.version, router.ANTISTRESS_ROUTER_VERSION)
   assert.equal(h.seals.length, 1); assert.deepEqual(h.seals[0].context, context())
   assert.deepEqual(h.transactions, ['committed']); assertScoped(h)
 })
 
-test('actual choose-goals command retains AS2 for a pre-finder Anti-Stress client', async () => {
-  const h = harness()
-  const response = await h.repo.command(actor, h.body)
-  assert.equal(h.cycles.length, 1); assert.equal(h.cycles[0].payload.moduleId, 'AS2')
-  assert.equal(response.course.moduleChoice, null); assert.equal(response.course.concerns, plainConcern)
-  assert.equal(h.seals.length, 0); assertScoped(h)
+test('new personal Anti-Stress requires a skill questionnaire before a new cycle',async()=>{
+  const h=harness()
+  await assert.rejects(h.repo.command(actor,h.body),
+    {code:'COURSE_MODULE_FINDER_REQUIRED',status:409})
+  assert.equal(h.cycles.length,0)
+  assert.deepEqual(h.transactions,['rolled-back'])
+})
+
+test('clinician-supported AS4 cannot be started from a self-guided test',async()=>{
+  const h=harness()
+  await assert.rejects(h.repo.command(actor,{...h.body,moduleAnswers:finderAnswers,moduleId:'AS4'}),
+    {code:'COURSE_PROFESSIONAL_SUPPORT_REQUIRED',status:403})
+  assert.equal(h.cycles.length,0)
+  assert.deepEqual(h.transactions,['rolled-back'])
 })
 
 test('actual legacy non-Anti-Stress command needs no module finder or assessment battery', async () => {
@@ -256,7 +264,7 @@ test('stale revision and missing consent stop choose-goals before mutation and c
 test('invalid finder answers or module id cannot activate a course', async () => {
   for (const overrides of [{ moduleAnswers: { F1: 99 }, moduleId: 'AS4' },
     { moduleAnswers: finderAnswers, moduleId: 'AS7' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS7' },
-    { moduleAnswers: finderAnswers, moduleId: 'AS6' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS6' }]) {
+    { moduleAnswers: finderAnswers, moduleId: 'AS7' }, { moduleAnswers: finderAnswers, moduleGoal: 'AS7' }]) {
     const h = harness()
     await assert.rejects(h.repo.command(actor, { ...h.body, ...overrides }),
       { code: 'COURSE_MODULE_FINDER_INVALID', status: 400 })
@@ -274,7 +282,7 @@ test('personal Anti-Stress still rejects stale Weekly Pulse at actual activation
 
 test('cycle creation failure rolls back the chosen module envelope with the course activation', async () => {
   const h = harness({ beforeCycle() { throw new Error('SYNTHETIC_CYCLE_FAILURE') } })
-  await assert.rejects(h.repo.command(actor, { ...h.body, moduleAnswers: finderAnswers, moduleId: 'AS4' }), /SYNTHETIC_CYCLE_FAILURE/)
+  await assert.rejects(h.repo.command(actor, { ...h.body, moduleAnswers: finderAnswers, moduleId: 'AS3' }), /SYNTHETIC_CYCLE_FAILURE/)
   assert.deepEqual(h.transactions, ['rolled-back']); assert.equal(h.rows[0].stage, 3)
   assert.equal(crypto.openSealed(h.rows[0].concerns_ciphertext, context(), config), plainConcern)
 })
