@@ -10,6 +10,8 @@ import CourseGuidedTimer from './course-guided-timer'
 import CoursePracticeVoice from './course-practice-voice'
 import AntiStressMethodActivity from './anti-stress-method-activity'
 import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
+import AntiStressPracticeLab from './anti-stress-practice-lab'
+import CourseLessonResult from './course-lesson-result'
 import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
@@ -315,6 +317,8 @@ export default function CourseSlidePlayer({
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
   const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
+  const isExtendedStress=Boolean(lesson.antiStress && cycle.day>=2 && cycle.day<=14 &&
+    data.programme?.id === 'stress')
   const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
@@ -334,6 +338,8 @@ export default function CourseSlidePlayer({
   const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
   const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
   const [associationWords,setAssociationWords]=useState('')
+  const [practiceLab,setPracticeLab]=useState(session?.signals?.practiceLab||{})
+  const updatePracticeLab=(key,value)=>setPracticeLab(previous=>({...previous,[key]:value}))
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
     setDayOneAnswers(previous=>{
@@ -466,7 +472,8 @@ export default function CourseSlidePlayer({
           data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
         ...(lesson.antiStress&&cycle.day>1&&data.programme?.id==='stress'
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
-          : {})
+          : {}),
+        ...(isExtendedStress ? {practiceLab} : {})
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -498,6 +505,16 @@ export default function CourseSlidePlayer({
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
+  const lessonOutcomeProps={locale,lesson,day:cycle.day,beforeNow:alreadyDone?session?.beforeNow:beforeNow,
+    afterNow:alreadyDone?session?.afterNow:afterNow,
+    comfort:alreadyDone?session?.signals?.comfort:comfort,usefulness:alreadyDone?session?.signals?.usefulness:usefulness,
+    flexibility:alreadyDone?session?.signals?.flexibility:flexibility,
+    adaptationChoice:alreadyDone?session?.signals?.adaptationChoice:adaptationChoice,
+    transferStage:alreadyDone?session?.signals?.transferStage:transferStage,
+    practiceAttempt:isExtendedStress?(practiceLab.attempt||practiceAttempt):practiceAttempt,
+    practiceLab:isExtendedStress?practiceLab:null,dayOne:isDayOne?dayOneAnswers:null}
+  const minutesEstimate=isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
+    :(cycle.preferences?.length==='quick'?'5–8':'9–13')
   const scenicBaseline = !finished && !promoOpen && !discomfortOpen &&
     (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
 
@@ -518,7 +535,7 @@ export default function CourseSlidePlayer({
             aria-valuenow={progress} aria-label={words.step}>
             <div className={styles.progressValue} style={{width:progress + '%'}} />
           </div>
-          <small>{finished ? words.completed : words.step + ' ' + (index + 1) + ' ' + words.of + ' ' + slides.length}</small>
+          <small>{finished ? words.completed : words.step + ' ' + (index + 1) + ' ' + words.of + ' ' + slides.length} · ≈ {minutesEstimate} {locale==='ru'?'мин':'min'}</small>
         </div>
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
@@ -560,6 +577,7 @@ export default function CourseSlidePlayer({
               changeAmount(paired.change,locale)+' '+(paired.change<0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>}
           <p>{words.rewardIntro}</p>
+          <CourseLessonResult {...lessonOutcomeProps}/>
         </div> : finished && earned && rewardStep===1 ? <div className={styles.rewardStage}
           data-course-slide-completion data-course-reward-stage="xp" aria-live="polite">
           <div className={styles.rewardMedal}><Star size={74} fill="currentColor" aria-hidden="true"/></div>
@@ -590,6 +608,8 @@ export default function CourseSlidePlayer({
               changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>)}
           <p>{earned ? words.rewardPathNote : words.celebration}</p>
+          {!earned&&<CourseLessonResult {...lessonOutcomeProps}/>}
+
           {finalRetestReady && <div className={styles.finalRetestCue}>
             <p>{words.retestInvitation}</p>
             <button type="button" onClick={onOpenRetest} disabled={locked||typeof onOpenRetest!=='function'}>
@@ -835,6 +855,11 @@ export default function CourseSlidePlayer({
               {skillProbeHintUsed&&<p className={styles.helper}>{lesson.antiStress.probe.hint}</p>}
               <p className={styles.helper}>{locale==='ru'?'Можно не отвечать. Выбор — учебная проба, а не показатель психического здоровья.':'You may skip this. A choice here is an educational attempt, not a mental-health score.'}</p>
             </section>}
+            {isExtendedStress&&<AntiStressPracticeLab key={'lab-main-'+cycle.day}
+              day={cycle.day} locale={locale} part="main" disabled={locked}
+              value={practiceLab.main||''} onChange={value=>updatePracticeLab('main',value)}
+              attempt={practiceLab.attempt||''}
+              onAttempt={value=>updatePracticeLab('attempt',value)}/>}
           </>}
 
           {slide.kind === 'transfer' && <>
@@ -885,6 +910,14 @@ export default function CourseSlidePlayer({
             <p className={styles.prompt}>{symbolMode === 'image' && cycle.preferences?.imagery !== 'no_imagery'
               ? lesson.practiceV4?.invitation : lesson.practiceV4?.withoutImagery}</p>
             <p className={styles.helper}>{words.symbolHint}</p>
+            {isExtendedStress&&<AntiStressPracticeLab key={'lab-reflect-'+cycle.day}
+              day={cycle.day} locale={locale} part="reflect" disabled={locked}
+              value={practiceLab.reflect||''} onChange={value=>updatePracticeLab('reflect',value)}
+              onSaveReflection={addition=>setReflection(previous=>{
+                const clean=String(addition||'').slice(0,430)
+                if(!clean||previous.includes(clean))return previous
+                return [previous.trim(),clean].filter(Boolean).join('\n').slice(0,500)
+              })}/>}
           </>}
 
           {slide.kind === 'reflection' && <>
