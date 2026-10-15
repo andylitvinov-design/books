@@ -1,0 +1,26 @@
+name: YouTube phone uploader checks
+on:
+  pull_request:
+    paths:
+      - 'lib/youtube/**'
+      - 'components/youtube-phone-uploader*'
+      - 'app/admin/youtube-upload/**'
+      - 'tests/youtube-phone-upload.test.mjs'
+      - '.github/workflows/youtube-phone-uploader.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Protocol unit tests
+        run: node --test tests/youtube-phone-upload.test.mjs
+      - name: Browser transport syntax
+        run: |
+          node --check lib/youtube/phone-upload-protocol.mjs
+          node --check lib/youtube/browser-upload.js
