@@ -88,7 +88,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
   const assetBase=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
-    '/api/client/'+selector+'/sessions/'+session.id+'/media/
+    '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
     session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
