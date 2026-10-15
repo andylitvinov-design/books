@@ -57,7 +57,7 @@ export default function ManualBillingRequest({ planId, locale = 'en', accountId 
   const currentOrder=activeOrder || registry?.orders?.find(item=>item.planId===planId) || null
   const ownOrder=currentOrder?.planId===planId&&currentOrder?.methodId===methodId?currentOrder:null
   const baseRequest=buildManualPaymentRequest({planId,methodId,locale:lang})
-  const message=baseRequest+(ownOrder?'\n'+t.ref+': '+ownOrder.id+'.':'')
+  const message=baseRequest+(currentOrder?'\n'+t.ref+': '+currentOrder.id+'.':'')
   const pending=Boolean(activeOrder)
   const canCreate=Boolean(accountId&&registry?.enabled&&!busy&&!pending&&baseRequest)
 
@@ -122,7 +122,7 @@ export default function ManualBillingRequest({ planId, locale = 'en', accountId 
       <div className={styles.grid}>{MANUAL_PAYMENT_METHODS.map(method=><label key={method.id}
         className={styles.option} data-selected={method.id===methodId}>
         <input type="radio" name={'manual-method-'+planId} value={method.id} checked={methodId===method.id}
-          onChange={()=>{setMethodId(method.id);setFeedback('')}}/>
+          disabled={pending} onChange={()=>{setMethodId(method.id);setFeedback('')}}/>
         <span><strong>{method[lang]}</strong><small>{method[lang+'Hint']}</small></span>
       </label>)}</div>
     </fieldset>

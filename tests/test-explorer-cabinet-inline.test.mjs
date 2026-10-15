@@ -8,7 +8,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   const publicExplorer = read('components/app/public-test-explorer.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const styles = read('components/app/test-explorer.module.css')
-  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/>/)
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('className="cabinet-signin-strip'), 'one-click start must precede secondary account entry')
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('<MoodCheckIn'), 'mood check-in is optional and must not block test start')
   assert.doesNotMatch(cabinet, /without signing in|можно подобрать и пройти без входа/)
@@ -22,7 +22,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(explorer, /\[activeFilterGroup, setActiveFilterGroup\] = useState\(initialFilterGroup\)/)
   assert.match(explorer, /onStart\(activeBattery, \{/)
   assert.match(explorer, /aria-expanded=\{customizeOpen\}/)
-  assert.match(explorer, /showAll \? visible : visible\.slice\(0, 8\)/)
+  assert.match(explorer, /showAll \? visibleCatalog : visibleCatalog\.slice\(0, 8\)/)
   assert.match(explorer, /if \(aSelected !== bSelected\) return aSelected \? -1 : 1/)
   assert.match(explorer, /selectedKeys\.includes\(a\.key\)/)
   assert.match(explorer, /selectedKeys\.includes\(b\.key\)/)
@@ -163,4 +163,17 @@ test('signed-in and full database test selector use the same monitoring CTA as t
     assert.ok(simple.includes(label), 'Simple explorer: ' + label)
   }
   assert.doesNotMatch(full, /Start free testing|Пройти тестирование бесплатно|Comenzar pruebas gratuitas/)
+})
+
+ test('VIA family collapse preserves explicit selections and search, with independent expansion',()=>{
+ const explorer=read('components/app/test-explorer.jsx')
+ const expression=explorer.match(/const visibleCatalog = visible\.filter\(\(entry\) =>\s*([^\n]+)\)/)[1]
+ const filter=new Function('visible','showStandaloneVia','query','selectedKeys','isStandaloneVia',`return visible.filter(entry=>${expression})`)
+ const rows=[{key:'ipip-via-r-curiosity-4'},{key:'ipip-via-r-strengths-96'},{key:'gad-7'}]
+ const standalone=key=>/^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(key)
+ assert.deepEqual(filter(rows,false,'',[],standalone),rows.slice(1))
+ assert.deepEqual(filter(rows,false,'',['ipip-via-r-curiosity-4'],standalone),rows)
+ assert.deepEqual(filter(rows,false,'curiosity',[],standalone),rows)
+ assert.deepEqual(filter(rows,true,'',[],standalone),rows)
+ assert.match(explorer,/aria-expanded=\{showStandaloneVia\} onClick=\{\(\) => setShowStandaloneVia\(\(value\) => !value\)\}/)
 })

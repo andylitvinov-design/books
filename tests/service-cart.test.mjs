@@ -89,7 +89,8 @@ test('checkout route enforces verified session, same origin, bounded body and pr
 test('cart is integrated into RU/EN and ES services without replacing free offers', () => {
   assert.match(read('app/[locale]/services/page.tsx'), /<ServiceCart locale=\{locale as Locale\}/)
   assert.match(read('app/es/services/page.tsx'), /<ServiceCart locale="es"/)
-  assert.match(read('app/[locale]/services/page.tsx'), /<FreeInsightsPaths/)
+  assert.match(read('app/[locale]/services/page.tsx'), /<ServicesTestsIntro/)
+  assert.match(read('app/[locale]/services/page.tsx'), /<ServicesSolutions/)
   const component = read('components/commerce/service-cart.tsx')
   assert.match(component, /services\/free-situation-review/)
   assert.match(component, /locale !== "es"[\s\S]*services\/dao-health-profile/)

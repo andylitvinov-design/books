@@ -35,6 +35,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   const [sessionId,setSessionId]=useState(providedSessionId)
   const [stage,setStage]=useState('idle')
   const [uploadProgress,setUploadProgress]=useState(null)
+  const [videoStatus,setVideoStatus]=useState(null)
   const [seconds,setSeconds]=useState(0)
   const [scope,setScope]=useState('client')
   const [error,setError]=useState('')
@@ -49,6 +50,24 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     if(recorder){recorder.onstop=null;recorder.ondataavailable=null;recorder.onerror=null;if(recorder.state!=='inactive')recorder.stop()}
     streamRef.current?.getTracks().forEach(track=>track.stop());xhrRef.current?.abort()}},[])
   useEffect(()=>{const warn=e=>{if(busyRef.current||jobRef.current){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
+  // Show real video readiness *before* an iPhone tries to record. This is an
+  // owner-only status check; no camera prompt, object key or credentials.
+  useEffect(()=>{
+    let active=true
+    fetch('/api/admin/clients/'+clientId+'/sessions/status',{credentials:'same-origin',cache:'no-store'})
+      .then(async response=>{
+        if(!response.ok)throw new Error('MEDIA_STORAGE_UNAVAILABLE')
+        const result=await response.json()
+        if(result.ready!==true)throw new Error('MEDIA_STORAGE_UNAVAILABLE')
+        return result
+      })
+      .then(result=>{
+        if(active)setVideoStatus({provider:result.videoProvider||'unavailable',
+          limit:Number(result.videoLimitBytes)||0,ready:result.videoReady===true})
+      })
+      .catch(()=>{if(active)setVideoStatus({provider:'unavailable',limit:0,ready:false})})
+    return ()=>{active=false}
+  },[clientId])
   useEffect(()=>()=>{if(playback) URL.revokeObjectURL(playback)},[playback])
   async function checkReady() {
     const response=await fetch('/api/admin/clients/'+clientId+'/sessions/status',{
@@ -57,6 +76,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     const data=await response.json().catch(()=>({}))
     if(!response.ok||data.ready!==true)
       throw new Error(data.error||'MEDIA_STORAGE_UNAVAILABLE')
+    if(mountedRef.current)setVideoStatus({provider:data.videoProvider||'supabase',limit:data.videoLimitBytes||0,ready:data.videoReady!==false})
+    return data
   }
   async function ensureSession() {
     if(sessionId) return sessionId
@@ -80,6 +101,9 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
             xhr.withCredentials=false
             xhr.timeout=900000
             xhr.setRequestHeader('Content-Type',mime)
+            // Signed create-only condition: an expired/retried upload cannot
+            // overwrite an earlier completed consultation video.
+            xhr.setRequestHeader('If-None-Match','*')
             xhr.upload.onprogress=event=>{
               if(event.lengthComputable&&mountedRef.current)
                 setUploadProgress(Math.min(100,Math.round(100*event.loaded/event.total)))
@@ -122,7 +146,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setStage('preparing')
     let sid
     try {
-      await checkReady()
+      const availability=await checkReady()
+      if(kind==='video'&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
       sid=await ensureSession()
       const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},...(kind==='video'?{video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{})})
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
@@ -192,7 +217,12 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     try {
       if(file.type==='video/quicktime'||file.name.toLowerCase().endsWith('.mov'))
         throw new Error(ru?'Для просмотра на любом телефоне требуется MP4 (H.264). Запишите MP4 или преобразуйте MOV перед загрузкой.':'Use H.264 MP4 for reliable playback. Convert this MOV before uploading.')
-      await checkReady()
+      const availability=await checkReady()
+      const video=file.type.startsWith('video/')||/\.mp4$/i.test(file.name)
+      if(video&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
+      if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
+        throw new Error(ru?('Видео превышает лимит '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' МБ.'):
+          ('Video exceeds the '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' MB storage limit.'))
       const sid=await ensureSession()
       if(file.type.startsWith('video/')||file.type.startsWith('audio/')){
         setPlaybackKind(file.type.startsWith('video/')?'video':'audio')
@@ -229,9 +259,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       </> : <>
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
-        <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать видео':'Record video'}</button>
+        <button type="button" onClick={()=>startRecording('video')}
+          disabled={busy||Boolean(retryFile)||videoStatus?.ready===false}>
+          <Video size={20}/>{ru?'Записать видео':'Record video'}</button>
         <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить из телефона':'Choose from phone'}
-          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,application/pdf,.m4a,.mp3,.webm,.mp4,.pdf"
+          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf"
             onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
       </>}
     </div>
@@ -243,7 +275,16 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {uploadProgress!==null?' '+uploadProgress+'%':''}</p>
       {uploadProgress!==null&&<progress value={uploadProgress} max="100" aria-label={ru?'Прогресс загрузки':'Upload progress'}/>}
     </div>}
-    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}</p>
+    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}
+      {videoStatus&&<span> {videoStatus.ready?
+        (ru?'Лимит видео: ':'Video limit: ')+Math.floor(videoStatus.limit/1_000_000)+' MB ('+(videoStatus.provider==='supabase'?'Supabase':videoStatus.provider==='s3_ca'?'S3 Canada':'R2')+')':
+        (ru?'Внешнее видеохранилище пока не настроено; аудио и документы доступны.':'External video storage is not configured; audio and documents remain available.')}</span>}
+    </p>
+    {videoStatus?.ready===false&&<p className={styles.photoHint}>
+      <a className={styles.inlineLink} href="/admin/client-video-storage">
+        {ru?'Настроить приватное видеохранилище →':'Configure private video storage →'}
+      </a>
+    </p>}
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&

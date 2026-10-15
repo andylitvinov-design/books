@@ -10,7 +10,8 @@ const text={
     accessDisabled:'Paid access has not been approved. Verification is blocked until billing, multi-course and session-delivery checks pass.',
     amount:'Invoice amount in the selected currency (enter cents, not euros/dollars)',first:'Eligible first-month Advanced discount (only after checking history)',
     fx:'I independently checked conversion and final quote',receipt:'Exact transaction reference from merchant statement (not a customer screenshot)',
-    quote:'Confirm invoice amount',verify:'I checked the received payment — activate',reject:'Reject request',refund:'Record refund and withdraw coverage',
+    quote:'Confirm invoice amount',verify:'I checked the received payment — activate',reject:'Reject request',refund:'Record a refund already completed (does not send money)',
+    refundRef:'Independent refund reference from merchant statement',refundAmount:'Verified full refund amount in cents',
     reference:'Reference',owner:'Google account ID',status:'Status',method:'Method',plan:'Membership',
     refresh:'Refresh requests',success:'Updated after server confirmation.',failed:'Action rejected; no access changed.',
     confirm:'Confirm this exact reviewer action?',noAccess:'Additional provider/merchant configuration is required.',
@@ -21,7 +22,8 @@ const text={
     accessDisabled:'Выдача платного доступа не одобрена. Подтверждение блокируется до проверки подписок, курсов и оказания услуг.',
     amount:'Сумма счёта в выбранной валюте — в копейках/центах',first:'Скидка первого месяца Advanced (проверьте историю)',
     fx:'Я независимо проверил(а) валютный курс и итоговую сумму',receipt:'Уникальный номер операции из выписки получателя (не скриншот клиента)',
-    quote:'Подтвердить сумму счёта',verify:'Деньги проверены в выписке — активировать',reject:'Отклонить заявку',refund:'Оформить возврат и отозвать доступ',
+    quote:'Подтвердить сумму счёта',verify:'Деньги проверены в выписке — активировать',reject:'Отклонить заявку',refund:'Подтвердить уже выполненный возврат по выписке (деньги здесь не переводятся)',
+    refundRef:'Номер возврата из выписки получателя',refundAmount:'Сумма полного возврата в копейках/центах',
     reference:'Номер',owner:'ID Google-аккаунта',status:'Статус',method:'Способ',plan:'Подписка',
     refresh:'Обновить список',success:'Изменения подтверждены сервером.',failed:'Операция отклонена. Доступ не изменён.',
     confirm:'Подтвердить это действие мастера?',noAccess:'Нужны одобрение получателя и настройки платёжной системы.',
@@ -32,11 +34,14 @@ function Item({order,locale,refresh,accessApproved,payeeApproved}) {
   const t=text[locale]
   const [amount,setAmount]=useState(String(order.invoiceAmountMinor??(order.planId==='premium'?10000:order.firstMonthCandidate?1000:2000)))
   const [receipt,setReceipt]=useState('')
+  const [refundRef,setRefundRef]=useState('')
+  const [refundAmount,setRefundAmount]=useState(String(order.invoiceAmountMinor??''))
   const [promo,setPromo]=useState(order.planId==='advanced'&&order.firstMonthCandidate)
   const [fx,setFx]=useState(false)
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
-  const canChange=payeeApproved&&!busy
+  const canChange=!busy
+  const canQuoteOrVerify=canChange&&payeeApproved
   async function act(action){
     if(busy||!window.confirm(t.confirm))return
     setBusy(true);setNotice('')
@@ -44,7 +49,9 @@ function Item({order,locale,refresh,accessApproved,payeeApproved}) {
       const payload={orderId:order.id,expectedRevision:order.revision,action,confirmed:true,
         ...(action==='quote'?{amountMinor:Number(amount),firstMonthDiscount:promo,fxReviewed:fx}:{}),
         ...(action==='verify'?{amountMinor:Number(order.invoiceAmountMinor),receiptReference:receipt.trim(),
-          receiptSource:order.methodId.startsWith('paypal')?'paypal_transaction':'bank_statement'}:{})}
+          receiptSource:order.methodId.startsWith('paypal')?'paypal_transaction':'bank_statement'}:{}),
+        ...(action==='refund'?{refundAmountMinor:Number(refundAmount),refundReference:refundRef.trim(),
+          refundSource:order.methodId.startsWith('paypal')?'paypal_transaction':'bank_statement'}:{})}
       const res=await fetch('/admin/api/manual-billing',{method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       const data=await res.json()
@@ -68,20 +75,26 @@ function Item({order,locale,refresh,accessApproved,payeeApproved}) {
         checked={promo} onChange={event=>setPromo(event.target.checked)}/>{t.first}</label>}
       {order.currency!=='EUR'&&<label className={styles.check}><input type="checkbox"
         checked={fx} onChange={event=>setFx(event.target.checked)}/>{t.fx}</label>}
-      <button type="button" disabled={!canChange} onClick={()=>act('quote')}>{t.quote}</button>
+      <button type="button" disabled={!canQuoteOrVerify} onClick={()=>act('quote')}>{t.quote}</button>
       <button type="button" disabled={!canChange} onClick={()=>act('reject')}>{t.reject}</button>
     </div>}
     {order.status==='quoted'&&<div className={styles.controls}>
       <p>{order.invoiceCurrency} {(order.invoiceAmountMinor/100).toFixed(2)} · {order.firstMonthDiscountApplied?'−50%':''}</p>
       <label>{t.receipt}<input value={receipt} autoComplete="off" minLength={6}
         onChange={event=>setReceipt(event.target.value)} placeholder="Provider / statement transaction ID"/></label>
-      <button type="button" disabled={!canChange||!accessApproved||receipt.trim().length<6}
+      <button type="button" disabled={!canQuoteOrVerify||!accessApproved||receipt.trim().length<6}
         onClick={()=>act('verify')}>{t.verify}</button>
       <button type="button" disabled={!canChange} onClick={()=>act('reject')}>{t.reject}</button>
     </div>}
     {order.status==='paid'&&<div className={styles.controls}>
       <p>Paid through: {order.paidThrough?.slice(0,10)||'—'}</p>
-      <button type="button" disabled={!canChange} onClick={()=>act('refund')}>{t.refund}</button>
+      <label>{t.refundRef}<input value={refundRef} autoComplete="off"
+        onChange={event=>setRefundRef(event.target.value)} placeholder="Independent refund ID"/></label>
+      <label>{t.refundAmount}<input type="number" min="100" step="1" value={refundAmount}
+        onChange={event=>setRefundAmount(event.target.value)}/></label>
+      <button type="button" disabled={busy||refundRef.trim().length<6||
+          !Number.isSafeInteger(Number(refundAmount))||Number(refundAmount)!==order.invoiceAmountMinor}
+        onClick={()=>act('refund')}>{t.refund}</button>
     </div>}
     {notice&&<p role="status" className={styles.notice}>{notice}</p>}
   </article>

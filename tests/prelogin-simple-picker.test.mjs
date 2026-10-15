@@ -12,7 +12,7 @@ test('the approved simple picker replaces the intimidating embedded explorer onl
   const explorer = read('components/app/test-explorer.jsx')
 
   assert.match(page, /<CabinetLanding/)
-  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/>/)
   assert.match(wrapper, /simpleMode=\{embedded\}/)
   assert.match(explorer, /if \(simpleMode && !browseFull\)/)
   assert.match(explorer, /return <SimpleTestPicker/)

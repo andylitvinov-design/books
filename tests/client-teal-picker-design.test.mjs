@@ -32,7 +32,7 @@ test('the new entrance leads to the functioning first step, not a fake action', 
 })
 
 test('test recommendations, scale guide, course switch and sign in remain wired to data', () => {
-  assert.match(picker, /recommendations\.slice\(0, visibleCount\)/)
+  assert.match(picker, /groupedRecommendations\.slice\(0, visibleCount\)/)
   assert.match(picker, /entry\.matchPercent/)
   assert.match(picker, /entry\.durationMinutes/)
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)

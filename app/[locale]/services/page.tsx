@@ -3,13 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
-import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { ServiceCart } from "@/components/commerce/service-cart";
 import { ServicesSolutions } from "@/components/services-solutions";
-import { FreeInsightsPaths } from "@/components/free-insights-paths";
+import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import solutionStyles from "@/components/services-solutions.module.css";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
@@ -27,13 +26,13 @@ export const revalidate = 0;
 const copy = {
   ru: {
     title: "Индивидуальные услуги — Holistic House",
-    description: "Бесплатная диагностика ситуации, дао-диагностика ресурса, сессия «Алхимия души» и курс гипнотерапии. Четыре варианта личной работы с Андреем.",
+    description: "Личные сессии в Торонто и онлайн. Три бесплатных способа начать: тесты, письменный анализ ситуации и символический профиль ресурсов У-Син.",
     about: "Об Андрее",
     note: "Символические практики не заменяют медицинскую диагностику и лечение. Гомеопатия не имеет надёжных доказательств эффективности для лечения заболеваний; конкретные результаты не гарантируются.",
   },
   en: {
     title: "Personal services — Holistic House",
-    description: "Explore four Holistic House offers: a free situation review, a free DAO resource profile, Alchemy of the Soul and guided imagery hypnotherapy.",
+    description: "Personal sessions in Toronto or online, plus three free entry points: self-check tests, a written situation review, and a symbolic Wu Xing resource profile.",
     about: "About Andrey",
     note: "These symbolic approaches do not replace medical assessment or treatment. Homeopathy lacks reliable evidence for treating health conditions. Individual results are not guaranteed.",
   },
@@ -51,8 +50,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.description,
     alternates: {
       canonical: "/" + locale + "/services",
-      languages: { ru: "/ru/services", en: "/en/services" },
+      languages: { ru: "/ru/services", en: "/en/services", es: "/es/services", "x-default": "/en/services" },
     },
+    openGraph: { type: "website", siteName: "Holistic House", locale: locale === "ru" ? "ru_RU" : "en_CA",
+      url: "/" + locale + "/services", title: current.title, description: current.description,
+      images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
+    twitter: { card: "summary_large_image", title: current.title, description: current.description,
+      images: ["/images/holistic-house/andy-about.png"] },
   };
 }
 
@@ -73,12 +77,10 @@ export default async function ServicesPage({ params }: PageProps) {
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
 
-      <ServicesConversionHero locale={locale as Locale} />
-      <ServicesAboutEntry locale={locale as Locale} />
-
-      <FreeInsightsPaths locale={locale as Locale} />
+      <ServicesTestsIntro locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
       <ServiceCart locale={locale as Locale} />
+      <ServicesAboutEntry locale={locale as Locale} />
 
       <details className={solutionStyles.extra} id="method-videos" open>
         <summary className={solutionStyles.extraSummary}>

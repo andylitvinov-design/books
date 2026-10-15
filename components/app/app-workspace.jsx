@@ -2273,7 +2273,7 @@ function PortfolioPage({ data, locale }) {
             <div className="hh-insights-advanced-metrics">
               <h2>{ru ? 'Все измеренные шкалы' : 'All recorded scales'}</h2>
               <div className="hh-metrics">
-                {dimensions.map(d => <MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />)}
+                {dimensions.map(d => <MetricCard key={`${d.sourceDefinitionId}::${d.key}`} dimension={d} locale={locale} onSelect={setSelected} />)}
               </div>
               <PortraitGuide locale={locale} dimensions={dimensions} />
               <LatestChange locale={locale} results={data.results} />
@@ -2349,7 +2349,7 @@ function ProfileOverview({ profile, locale }) {
         {rows.length ? (
           <div className="hh-profile-chart-list">
             {rows.map((row) => (
-              <div className="hh-profile-chart-row" key={row.key}>
+              <div className="hh-profile-chart-row" key={`${row.sourceDefinitionId}::${row.key}`}>
                 <div className="hh-profile-chart-label">
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
                   <strong>{readableScaleName(row, locale)}</strong>
@@ -2423,7 +2423,7 @@ function ProfileOverview({ profile, locale }) {
                 {rows.map((row) => {
                   const definition = getDefinitionById(row.sourceDefinitionId)
                   return (
-                    <tr key={row.key}>
+                    <tr key={`${row.sourceDefinitionId}::${row.key}`}>
                       <th scope="row">
                         <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
                         <strong>{readableScaleName(row, locale)}</strong>

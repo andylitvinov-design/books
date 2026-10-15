@@ -28,3 +28,26 @@ test('owner preview contains client-scope materials only, not practitioner notes
  assert.match(studio,/Owner-only notes are omitted/)
  assert.match(studio,/action==='publish'/)
 })
+
+
+test('recording permission is granted only on authenticated practitioner editor URLs',()=>{
+  const config=read('next.config.ts')
+  assert.ok(config.includes('const practitionerRecordingSources = ['))
+  const values=config.split('const practitionerRecordingSources = [')[1].split('];')[0]
+  const sources=[...values.matchAll(/"([^"]+)"/g)].map(match=>match[1])
+  assert.deepEqual(sources,[
+    '/admin/consultations/:id/edit',
+    '/admin/documents/:id',
+    '/admin/prescriptions/:id',
+    '/admin/clients/:id/assessments/:assessmentId/edit',
+    '/admin/clients/:id/sessions/:path*',
+  ])
+  assert.ok(!sources.some(path=>/^\/(?:en|ru|es|api)/.test(path)))
+  assert.ok(config.includes('value: "camera=(), microphone=(), geolocation=()"'))
+  assert.ok(config.includes('value: "camera=(self), microphone=(self), geolocation=()"'))
+  const global=config.indexOf('source: "/:path*"')
+  const override=config.indexOf('...practitionerRecordingSources.map((source)')
+  assert.ok(global!==-1 && override>global,'scoped policy must override the global denial last')
+  const recorder=read('components/session-audio-recorder.jsx')
+  assert.ok(recorder.includes('navigator.mediaDevices.getUserMedia'))
+})

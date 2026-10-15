@@ -1,40 +1,52 @@
 import Image from "next/image";
 import { ServiceCart } from "@/components/commerce/service-cart";
-import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { ArrowUpRight, HeartHandshake, Flower2, Compass } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
+import { ServicesTestsIntro } from "@/components/services-tests-intro";
+import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { spanishMetadata } from "@/lib/spanish-metadata";
 
 export const metadata = spanishMetadata("/es/services", "Servicios y evaluación gratuita mediante dibujo — Holistic House", "Completa un formulario de coaching, dibuja YO, META y PROBLEMA a mano y recibe un informe escrito personal. Las consultas en directo son de pago. También ofrecemos consultoría empresarial con constelaciones y activación de metas.");
 
 const approaches = [
-  { id: "psychohomeopathy", image: "/images/holistic-house/distance-homeopathy.webp", icon: Flower2, title: "Psicohomeopatía", situation: "¿Cansancio, falta de energía, molestias físicas o síntomas psicosomáticos?", detail: "Puedes empezar con el formulario y un dibujo a mano para recibir un informe gratuito; las sesiones individuales de psicohomeopatía son de pago. No sustituyen la atención médica.", action: "Ver sesiones de psicohomeopatía", href: "/es/services/psychohomeopathy" },
-  { id: "imagery", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", icon: HeartHandshake, title: "Psicoterapia con imágenes", situation: "¿Tristeza, soledad o falta de claridad sobre qué hacer después?", detail: "En las sesiones individuales trabajaremos con imágenes del inconsciente, emociones y patrones para desarrollar apoyo interior, estabilidad y claridad.", action: "Conocer las sesiones", href: "/es/services/imagery-therapy" },
-  { id: "business", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", icon: Compass, title: "Consultoría de negocios y activación de metas", situation: "¿Tu negocio tiene una meta, pero el próximo paso no está claro?", detail: "Explora un mapa simbólico de tu negocio, activa una meta concreta y crea un plan de acción de 14 días. Sin promesas financieras.", action: "Explorar consultoría empresarial", href: "/es/services/business-consulting" },
-  { id: "constellations", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", icon: Compass, title: "Constelaciones y acompañamiento arquetípico", situation: "¿Tienes objetivos, pero no sabes cómo llegar a ellos?", detail: "Exploramos las dinámicas de tu situación mediante constelaciones sistémicas e imágenes arquetípicas para descubrir nuevas perspectivas y pasos prácticos.", action: "Ver sesiones de constelaciones", href: "/es/services/systemic-constellations" },
+  { id: "situation", image: "/images/holistic-house/hero-olive-incense.webp", title: "Revisión gratuita de tu situación", situation: "¿Quieres comprender mejor tu problema y tus próximos pasos?", detail: "Completa un cuestionario breve y comparte un dibujo YO / META / PROBLEMA. Puedes solicitar una reflexión personal por escrito. No es una llamada gratuita ni un diagnóstico médico.", action: "Solicitar revisión escrita gratuita", href: "/es/services/free-situation-review" },
+  { id: "psychohomeopathy", image: "/images/holistic-house/distance-homeopathy.webp", title: "Psicohomeopatía", situation: "¿Cansancio, falta de energía, molestias físicas o síntomas psicosomáticos?", detail: "Puedes empezar con el formulario y un dibujo a mano para recibir un informe gratuito; las sesiones individuales de psicohomeopatía son de pago. No sustituyen la atención médica.", action: "Ver sesiones de psicohomeopatía", href: "/es/services/psychohomeopathy" },
+  { id: "imagery", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", title: "Psicoterapia con imágenes", situation: "¿Tristeza, soledad o falta de claridad sobre qué hacer después?", detail: "En las sesiones individuales trabajaremos con imágenes del inconsciente, emociones y patrones para desarrollar apoyo interior, estabilidad y claridad.", action: "Conocer las sesiones", href: "/es/services/imagery-therapy" },
+  { id: "business", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Consultoría de negocios y activación de metas", situation: "¿Tu negocio tiene una meta, pero el próximo paso no está claro?", detail: "Explora un mapa simbólico de tu negocio, activa una meta concreta y crea un plan de acción de 14 días. Sin promesas financieras.", action: "Explorar consultoría empresarial", href: "/es/services/business-consulting" },
+  { id: "constellations", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Constelaciones y acompañamiento arquetípico", situation: "¿Tienes objetivos, pero no sabes cómo llegar a ellos?", detail: "Exploramos las dinámicas de tu situación mediante constelaciones sistémicas e imágenes arquetípicas para descubrir nuevas perspectivas y pasos prácticos.", action: "Ver sesiones de constelaciones", href: "/es/services/systemic-constellations" },
 ] as const;
 
 export default function SpanishServicesPage() {
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" />
-  <section className="services-studio-hero">
-    <div className="services-studio-hero-copy">
-      <p className="homeopathy-kicker">Evaluación gratuita por dibujo · informe escrito</p>
-      <h1>¿Sientes que estás estancado/a? Descubramos por dónde empezar.</h1>
-      <p>Completa un breve formulario de coaching y dibuja YO, MI META y MI PROBLEMA con bolígrafo en papel. Revisaré los materiales y te enviaré un informe escrito personal.</p>
-      <Link className="services-studio-primary" href="/es/services/free-situation-review">Iniciar evaluación gratuita por dibujo <ArrowUpRight size={20} /></Link>
-      <p>Gratis · informe escrito · sin llamada · sin compromiso</p>
+  <ServicesTestsIntro locale="es" />
+  <section className={offerStyles.section} id="solutions" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>
+    <header className={offerStyles.heading}>
+      <p>SERVICIOS · HOLISTIC HOUSE</p>
+      <h2 id="services-es-offers-title">Cómo puedo ayudarte</h2>
+    </header>
+    <div className={offerStyles.grid}>
+      {approaches.map(({id,image,title,situation,detail,action,href}) => (
+        <article className={offerStyles.card} key={id} id={id}>
+          <Link className={offerStyles.photo} href={href} tabIndex={-1} aria-hidden="true">
+            <Image unoptimized src={image} alt="" fill sizes="(max-width: 760px) 45vw, 230px" loading="lazy" />
+          </Link>
+          <div className={offerStyles.content}>
+            <h3><Link href={href}>{title}</Link></h3>
+            <p className={offerStyles.situation}>{situation}</p>
+            <details className={offerStyles.more}>
+              <summary>Más información</summary>
+              <p>{detail}</p>
+            </details>
+            <Link className={offerStyles.action} href={href}>{action}<span aria-hidden="true">→</span></Link>
+          </div>
+        </article>
+      ))}
     </div>
-    <div className="services-studio-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, 44vw" /></div>
   </section>
-  
   <ServicesAboutEntry locale="es" />
-  <section className="services-studio-approach" aria-labelledby="directions-heading"><div><p className="homeopathy-kicker">Cuatro enfoques</p><h2 id="directions-heading">¿Qué necesitas ahora?</h2></div><p>Elige la situación que más se acerque a la tuya. No necesitas conocer de antemano los métodos de trabajo.</p></section>
-  <section className="services-studio-grid services-studio-grid--four" aria-label="Cuatro enfoques de atención">{approaches.map(({id,icon:Icon,image,title,situation,detail,action,href})=><article className="services-studio-card services-studio-card--detailed" id={id} key={id}><div className="services-studio-card-photo"><Image unoptimized src={image} alt="" fill sizes="(max-width: 800px) 100vw, 370px" loading="lazy" /></div><span className="services-studio-icon" aria-hidden="true"><Icon /></span><h2>{title}</h2><p className="services-studio-card-subtitle">{situation}</p><p>{detail}</p><Link href={href}>{action}<span aria-hidden="true"> →</span></Link></article>)}</section>
-  <section className="services-studio-approach"><div><p className="homeopathy-kicker">Tu primera evaluación por dibujo</p><h2>Dibuja tu situación y recibe un informe</h2></div><div><p>Describe tu situación en el formulario, dibuja a mano y envía la foto. La consulta exprés de 30 minutos cuesta €50 y la sesión de 60 minutos cuesta €100.</p><Link href="/es/services/free-situation-review">Abrir el formulario gratuito →</Link></div></section>
   <ServiceCart locale="es" />
   <PublicConsultationCta locale="es" />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>

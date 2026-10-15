@@ -51,14 +51,23 @@
   until a separate manual credit ledger and schedule/fulfilment procedures
   are independently reviewed and the explicit
   HH_MANUAL_PREMIUM_CREDIT_SCHEMA_APPROVED /
-  HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED gates are authorized. **Never
+  HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED gates are authorized **and the
+  separate manual credit workflow is genuinely implemented and tested**.
+  Flags alone cannot activate manual Premium in this release. **Never
   collect €100 if the promised service cannot be provided.**
 - PRICE: Advanced €20 per one month (candidate first month €10 only if
   eligibility confirmed); Premium €100 per month. Cross-currency invoice
   amount requires independent FX and recipient verification. Do not reuse
   EzoHata's legacy payee, bank details, region-specific processors or fees.
-- REFUNDS/DISPUTES: recorded manually, with a reviewer audit trail and
-  paid-coverage revocation. Provider-verified automated matching, chargebacks,
+- REFUNDS/DISPUTES: only a refund already completed and independently confirmed
+  on the bank/PayPal statement can be recorded. The reviewer must supply its
+  separate unique reference and exact full amount. This admin UI never sends
+  or executes a refund. Revocation is backed by the verified refund evidence.
+  An append-only status transition table (owner-scoped read, no direct INSERT,
+  UPDATE or DELETE privileges) stores opaque action/reviewer references.
+  Owner self-service expiry of stale unpaid requests is performed by a narrow
+  verified-session SECURITY DEFINER function, not a broad owner UPDATE.
+  Provider-verified automated matching, chargebacks,
   refunds, notifications and entitlement reconciliation after external
   account approval remain later work. Bank transfer does not authorize a
   future recurring debit.
@@ -67,3 +76,42 @@ The isolated PostgreSQL 17 tests apply the guarded proposal only in
 disposable CI and check select/insert/update RLS ownership, reviewer scope
 and contract compatibility. Existing tests and paid Stripe webhooks remain
 unchanged.
+
+
+## 2026-10-15 production schema compatibility check — applied
+
+After code PR #624 had already been released, production inspection found its
+request-only `app_private.manual_billing_orders` table, no other recurring
+billing tables, no manual audit table or expiration function, and **0 orders**.
+
+Safety-hardening PR [#635](https://github.com/andylitvinov-design/books/pull/635)
+merged as `8ea956092b367c5f95a5962bd38a274ebfdca738`. That build reached
+**Vercel READY** and was assigned to `holistichouse.vercel.app`.
+
+A bounded, additive Supabase migration named
+`hh_manual_billing_refund_audit_expiry_20261015` was applied to project
+`shervdixkaxurnaecioe` after verifying the exact table, PostgreSQL 17,
+the current migration principal, FORCE RLS, existing grants and zero orders.
+It added refund-proof constraints, the append-only owner-scoped audit table,
+a trusted audit trigger and a limited, authenticated owner-expiry function.
+
+Production readback confirmed:
+- `manual_billing_orders` and `manual_billing_events` both have FORCE RLS.
+- Both held **0 records** immediately after migration.
+- The audit trigger was enabled and the app backend had SELECT-only access
+  to audit events (never direct INSERT, UPDATE or DELETE).
+- Only `hh_app_backend` can execute the narrow expiry function;
+  `anon` and `authenticated` cannot.
+- Supabase security advisors found no new issue in the payment schemas.
+  Remaining external advisories concerned unrelated password protection and
+  two existing private tables without policies.
+
+The precise execution receipt is recorded in the
+[PR #635 conversation](https://github.com/andylitvinov-design/books/pull/635#issuecomment-6203743739)
+and in Supabase migration history.
+
+**Not activated or verified:** merchant acceptance/beneficiary identity,
+bank or PayPal collection, owner receipt confirmation, recurring billing,
+multi-course paid benefits, manual Premium credit fulfillment and real-payment
+end-to-end tests. Adding this schema did not make those services live. Native
+GitHub Actions for PR #635 were queued, not passed, during the rollout.

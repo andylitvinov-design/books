@@ -441,6 +441,14 @@ async function handle(request, { params }) {
       const saved=await readSavedSession(config,store,actor,path[1])
       return json({id:saved.id,savedAt:saved.savedAt,session:saved.session})
     }
+    // Lightweight, account-authorized freshness check for the Save-on-exit UI.
+    // Do not mark an item as opened or disclose private session content.
+    // An archived, withdrawn, republished, or foreign Account session fails closed.
+    if(path[0]==='saved-sessions' && path.length===3 && path[2]==='status' && method==='GET'){
+      if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
+      const saved=await readSavedSession(config,getPrescriptionStore(),actor,path[1],{markOpened:false})
+      return json({id:saved.id,available:true})
+    }
     if(path[0]==='saved-sessions' && path.length===3 && path[2]==='remove' && method==='POST'){
       if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
       onlyKeys(await readBody(request),[])

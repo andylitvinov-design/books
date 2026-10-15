@@ -108,3 +108,41 @@ test('each recommended test has a single visible test-kind badge, not a duplicat
   assert.equal((picker.match(/<KindBadge entry=\{entry\} locale=\{locale\} \/>/g) || []).length, 1)
   assert.match(picker, /<div className=\{styles\.testFacts\}>/)
 })
+
+
+test('editorial polish reduces top-of-page bulk without losing the three-step picker', () => {
+  assert.match(css, /My Tests editorial spacing & mobile card readability/)
+  assert.match(css, /\.shell \.benefits>div\{/)
+  assert.match(css, /\.shell \.promoImage\{/)
+  assert.match(css, /\.shell \.promoCopy h2\{/)
+  assert.match(css, /\.shell \.sectionHeader\{/)
+  assert.match(css, /@media\(max-width:600px\)/)
+  assert.match(css, /\.shell \.promoImage\{width:76px;height:100px/)
+  assert.match(css, /\.shell \.benefits>div\{min-height:37px/)
+  assert.match(picker, /id="hh-simple-topic-title"/)
+  assert.match(picker, /id="hh-simple-recommendations"/)
+  assert.match(picker, /data-client-tests-promo/)
+})
+
+test('mobile cards give full width to labels and keep a 44px burgundy launch button below metadata', () => {
+  assert.match(css, /\.shell \.testEntry \.testRow\{\s*grid-template-columns:20px 50px minmax\(0,1fr\);\s*grid-template-rows:auto auto/)
+  assert.match(css, /\.shell \.testInfo,\.shell \.testEntry \.testInfo\{\s*grid-column:3;grid-row:1/)
+  assert.match(css, /\.shell \.takeTest\{\s*grid-column:3;grid-row:2;justify-self:end;min-height:44px/)
+  assert.match(css, /\.shell \.testInfo>small\{font-size:\.73rem;line-height:1\.35;-webkit-line-clamp:2/)
+  assert.match(css, /\.shell \.testDetails>summary\{padding:9px 12px;min-height:44px/)
+  assert.match(css, /@media\(max-width:370px\)/)
+  assert.match(css, /\.shell \.testInfo \.testKindBadge span\{display:inline\}/)
+  assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
+  assert.match(picker, /<details className=\{styles\.researchDetails\}>/)
+  assert.match(css, /\.shell \.takeTest,\.shell \.cta\[data-test-start-mode=tests\]/)
+})
+
+test('brief introductions remain localized and their topic action still jumps to the real picker', () => {
+  assert.match(picker, /promoTitle:'Start with what matters to you'/)
+  assert.match(picker, /promoTitle:'Начните с того, что важно вам'/)
+  assert.match(picker, /promoTitle:'Empieza por lo que te importa'/)
+  assert.match(picker, /href="#hh-simple-topic-title"/)
+  assert.match(picker, /aria-pressed=\{checked\}/)
+  assert.match(picker, /onToggleFocus\(key\)/)
+  assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
+})

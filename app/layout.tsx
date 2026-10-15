@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   title: "Holistic House",
   description: "Holistic House — индивидуальные сессии, практики, программы, препараты и авторские материалы для внутреннего развития.",
   verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
+  openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
+  twitter: { card: "summary_large_image", images: ["/images/holistic-house/andy-about.png"] },
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -37,12 +39,29 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const cspClass = (await headers()).get("x-csp-class") ?? "restricted";
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
+  const publicOrigin = metadataBaseFor().toString().replace(/\/$/, "");
+  // No invented business address, regulated practitioner credentials, or review ratings.
   const websiteSchema = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Holistic House",
-    url: metadataBaseFor().toString(),
-    inLanguage: ["en", "ru", "es"],
+    "@graph": [
+      {
+        "@type": "WebSite", "@id": publicOrigin + "/#website",
+        name: "Holistic House", url: publicOrigin + "/",
+        inLanguage: ["en", "ru", "es"],
+      },
+      {
+        "@type": "Organization", "@id": publicOrigin + "/#organization",
+        name: "Holistic House", url: publicOrigin + "/",
+        areaServed: { "@type": "City", name: "Toronto" },
+      },
+      {
+        "@type": "Person", "@id": publicOrigin + "/#andrey-litvinov",
+        name: "Andrey Litvinov", url: publicOrigin + "/en/about",
+        worksFor: { "@id": publicOrigin + "/#organization" },
+        knowsAbout: ["Systemic constellations", "Guided imagery", "Personal development"],
+        areaServed: { "@type": "City", name: "Toronto" },
+      },
+    ],
   };
   return (
     <html lang={lang}>

@@ -37,7 +37,7 @@ test('published report helper returns exact fingerprint-validated record',async(
 test('unpublished report edit is denied instead of rendered',async()=>{await assert.rejects(reportFixture(true)(),{code:'SESSION_UNAVAILABLE'})});
 function intentFixture(overrides={}){
  const existing={id:'intent',legacy_client_id:'client-a',session_id:'session-a',scope:'practitioner',mime:'audio/mp4',asset_kind:'audio',max_bytes:512,status:'pending',object_key:'same-key',created_at:new Date().toISOString(),...overrides};let signed=0;
- const create=load(source,['AppError','transaction','createClient','PRIVATE_MEDIA_BUCKET','SESSION_MEDIA_TYPES','validUuid','getOwnerSession'],[AppError,async(c,a,fn)=>fn({query:async()=>({rows:[existing]})}),()=>({storage:{from:()=>({createSignedUploadUrl:async()=>{signed++;return {data:{token:'synthetic'}}}})}}),'private',{'audio/mp4':{kind:'audio',max:20_000_000}},()=>true,async()=>({status:'draft'})],'createPrivateMediaIntent');
+ const create=load(source,['AppError','transaction','createClient','PRIVATE_MEDIA_BUCKET','SESSION_MEDIA_TYPES','validUuid','getOwnerSession','configuredVideoUploadStore'],[AppError,async(c,a,fn)=>fn({query:async()=>({rows:[existing]})}),()=>({storage:{from:()=>({createSignedUploadUrl:async()=>{signed++;return {data:{token:'synthetic'}}}})}}),'private',{'audio/mp4':{kind:'audio',max:20_000_000}},()=>true,async()=>({status:'draft'}),()=>null],'createPrivateMediaIntent');
  return {run:()=>create({secretKey:'synthetic',supabaseUrl:'https://synthetic.invalid'},null,'client-a','session-a',{intentId:'intent',mime:'audio/mp4',kind:'audio',scope:'practitioner',bytes:512}),signed:()=>signed};
 }
 test('reused intent rejects client, session, scope, MIME, kind and byte mismatches',async()=>{

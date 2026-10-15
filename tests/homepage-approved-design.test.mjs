@@ -106,10 +106,12 @@ test("home restores four approved image-left service cards and their titles", ()
   const css = read("components/services-solutions.module.css");
   assert.match(cards, /homeTitle: "How I can help"/);
   assert.match(cards, /homeTitle: "Чем я могу помочь"/);
-  assert.match(cards, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
+  assert.ok(cards.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
-  assert.match(home, /href="#core-services"/);
+  assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
+  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"), "Photo-left services must be visible before bottom capture");
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
 });

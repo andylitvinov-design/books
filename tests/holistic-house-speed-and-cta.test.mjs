@@ -30,13 +30,17 @@ test("homepage keeps genuine paid consultation navigation while free services li
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Book a consultation"/);
-  assert.match(home, /heroBook: "Записаться на консультацию"/);
+  assert.match(home, /heroBook: "Request a consultation"/);
+  assert.match(home, /heroBook: "Запросить время консультации"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--consultation"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
+  assert.match(freeCapture, /selected === "situation" \? `\/\$\{locale\}\/services\/free-situation-review`/);
+  assert.match(freeCapture, /selected === "wu" \? `\/\$\{locale\}\/services\/dao-health-profile`/);
+  assert.match(freeCapture, /`\/\$\{locale\}\/client#cabinet-tests`/);
+  assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href="#core-services"/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
@@ -44,6 +48,7 @@ test("homepage keeps genuine paid consultation navigation while free services li
   const book = home.indexOf('className="service-home-button service-home-button--consultation"');
   const belowFold = home.indexOf("<ServicesSolutions");
   assert.ok(firstScreen < book && book < belowFold, "Paid CTA must stay inside the hero");
+  assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 
 test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {

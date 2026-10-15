@@ -47,7 +47,9 @@ export function middleware(request: NextRequest) {
         : null
   const preference = request.cookies.get('holistic_house_public_locale')?.value === 'es' ? 'es'
     : request.cookies.get('holistic_house_ui_locale')?.value === 'ru' ? 'ru' : 'en'
-  const pageLocale = urlLocale ?? (['en', 'ru', 'es'].includes(queryLocale ?? '') ? queryLocale : preference) ?? 'en'
+  // The canonical unprefixed home always renders English; /ru renders Russian.
+  // Legacy ?lang=ru links redirect at the page boundary, never emit mixed-language HTML.
+  const pageLocale = pathname === '/' ? 'en' : (urlLocale ?? (['en', 'ru', 'es'].includes(queryLocale ?? '') ? queryLocale : preference) ?? 'en')
   requestHeaders.set('x-public-page-locale', pageLocale)
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''

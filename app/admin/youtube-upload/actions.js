@@ -40,3 +40,23 @@ export async function saveYoutubeUploadHistoryAction(input) {
     return {ok:true,record}
   } catch (error) {return {ok:false,error:errorCode(error)}}
 }
+
+/**
+ * Configure only a public OAuth Client ID after the owner has registered the
+ * Holistic House origin in Google Cloud. Never accept client secrets/tokens.
+ */
+export async function configureYoutubeWebOauthAction(input) {
+  if (!await requireAdminRequest()) return {ok:false,error:'unauthorized'}
+  if (!input || input.confirmed !== true || typeof input.clientId !== 'string') {
+    return {ok:false,error:'invalid_oauth_client'}
+  }
+  try {
+    const store = getYoutubeHistoryStore()
+    if (!store) return unavailable()
+    await store.configureOauthClientId(input.clientId)
+    return {ok:true}
+  } catch (error) {
+    return {ok:false,error:error instanceof Error && error.message === 'invalid_oauth_client'
+      ? 'invalid_oauth_client' : 'history_unavailable'}
+  }
+}

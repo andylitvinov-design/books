@@ -3,6 +3,22 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
+function assertUploadPreflight(recorder) {
+  const start=recorder.indexOf('async function chooseFile(event) {')
+  const end=recorder.indexOf('  const busy=',start)
+  assert.ok(start>=0&&end>start,'upload function must be bounded')
+  const upload=recorder.slice(start,end)
+  const preflight=upload.indexOf('const availability=await checkReady()')
+  const ready=upload.indexOf("if(video&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')")
+  const size=upload.indexOf('if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))')
+  const sizeThrow=upload.indexOf('throw new Error(',size)
+  const session=upload.indexOf('const sid=await ensureSession()')
+  const send=upload.indexOf('await upload(job)')
+  assert.ok(preflight>=0&&preflight<ready&&ready<size&&size<sizeThrow&&sizeThrow<session&&session<send,
+    'await storage readiness and both rejecting video guards before creating a session or uploading')
+}
+
+
 test('preview / open is owner-only complete consultation HTML, PDF is a distinct action',()=>{
   const owner=src('app/admin/documents/[id]/session-preview/page.js')
   const page=src('components/client-session-page.jsx')
@@ -65,7 +81,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
   assert.match(storage,/getBucket\(PRIVATE_MEDIA_BUCKET\)/)
   assert.match(storage,/data\.public!==false/)
   assert.ok(recorder.indexOf('await checkReady()')<recorder.indexOf('navigator.mediaDevices.getUserMedia'))
-  assert.match(recorder.slice(recorder.indexOf('async function chooseFile(event)')),/await checkReady\(\)\s*;?\s*const sid=await ensureSession\(\)/)
+  assertUploadPreflight(recorder)
   assert.match(recorder,/recordingError\(e,ru\)/)
   const media=src('app/api/admin/clients/[id]/sessions/[sessionId]/media/[assetId]/route.js')
   assert.match(media,/ownerDelivery/)

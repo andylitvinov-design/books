@@ -18,7 +18,7 @@ test("three free paths use real, existing local service and test routes", () => 
   assert.match(offer, /prefetch=\{false\}/);
 });
 
-test("Services retains free paths; Home uses only the bottom blue capture for the free trio", () => {
+test("Services uses compact free-test entry plus all five photo offers; Home keeps its bottom capture", () => {
   const home = read("components/holistic-house-home.tsx");
   const services = read("app/[locale]/services/page.tsx");
   const solutions = read("components/services-solutions.tsx");
@@ -26,13 +26,14 @@ test("Services retains free paths; Home uses only the bottom blue capture for th
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   assert.match(read("components/homepage-contact-cta.tsx"), /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
-  assert.match(solutions, /offer.id === "alchemy" \|\| offer.id === "hypnotherapy"/);
-  assert.match(solutions, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
+  assert.match(services, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
+  assert.doesNotMatch(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
+  assert.match(solutions, /data-core-service-id=\{offer.id\}/);
+  assert.ok(solutions.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
   assert.match(solutions, /offer.id === "business"/);
   assert.match(solutions, /visibleOffers.map/);
   assert.match(solutions, /homeTitle: "How I can help"/);
-  assert.match(hero, /href="#free-insights"/);
+  assert.match(read("components/services-tests-intro.tsx"), /href="#solutions"/);
   assert.match(home, /heroSecondary: "Explore four services"/);
   assert.doesNotMatch(hero, /two free assessments/i);
 });
@@ -49,7 +50,7 @@ test("integrated private Profile links to Services without cloning public free o
 
 test("the homepage test link has a real target before a visitor starts any questionnaire", () => {
   const landing = read("components/app/cabinet-landing.jsx");
-  assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded \/><\/div>/);
+  assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/><\/div>/);
   assert.match(landing, /phase !== 'catalog' && <section[^>]+id="cabinet-tests"/);
 });
 
@@ -62,12 +63,13 @@ test("the public and cabinet offers describe free wellbeing and resources monito
   assert.deepEqual([...offer.matchAll(/id: "(situation|wu|stress)"/g)].map(match => match[1]), ["situation", "wu", "stress", "situation", "wu", "stress"]);
 });
 
-test("Services hero advertises wellbeing monitoring alongside the two other distinct free offers", () => {
-  const hero = read("components/services-conversion-hero.tsx");
-  assert.match(hero, /free mental wellbeing and inner resources monitoring/);
-  assert.match(hero, /мониторинг психологического состояния и внутренних ресурсов/);
-  assert.match(hero, /a personal situation review/);
-  assert.match(hero, /профиль У-Син/);
+test("Services active light-blue entry provides free self-checks in both languages", () => {
+  const banner = read("components/services-tests-intro.tsx");
+  assert.match(banner, /FREE TESTS/);
+  assert.match(banner, /БЕСПЛАТНЫЕ ТЕСТЫ/);
+  assert.match(banner, /href: "\/en\/client\/tests"/);
+  assert.match(banner, /href: "\/ru\/client\/tests"/);
+  assert.match(read("components/services-tests-intro.module.css"), /#e7f3fb/);
 });
 
 test("the design stays compact, accessible and mobile-first in the existing warm palette", () => {

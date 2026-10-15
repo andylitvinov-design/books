@@ -9,6 +9,16 @@ const reportPdfAssets = [
   "./public/media/remedies/**/*",
 ];
 
+// MediaRecorder uses getUserMedia() only inside authenticated practitioner
+// editors. All public pages and client report readers remain blocked.
+const practitionerRecordingSources = [
+  "/admin/consultations/:id/edit",
+  "/admin/documents/:id",
+  "/admin/prescriptions/:id",
+  "/admin/clients/:id/assessments/:assessmentId/edit",
+  "/admin/clients/:id/sessions/:path*",
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -47,13 +57,20 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // The global policy blocks camera/mic. Last matching rule overrides it
+      // only for the practitioner editors that actually offer recording.
+      ...practitionerRecordingSources.map((source) => ({
+        source,
+        headers: [
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+        ],
+      })),
     ];
   },
   async redirects() {
     return [
-      // The canonical English homepage is /; /en must not fall through to a 404.
-      { source: "/en", destination: "/?lang=en", permanent: true },
-      { source: "/ru", destination: "/?lang=ru", permanent: true },
+      // English has one canonical root. Russian is served at its own /ru URL.
+      { source: "/en", destination: "/", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
       { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
       { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },

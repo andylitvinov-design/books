@@ -71,3 +71,9 @@ The connected Supabase organization uses Free (single-file maximum **50 MB**; eg
   proxy Range 200/206/416 including >4.5MB synthetic video on Vercel, grant
   expiry/revocation/cross-client checks, and physical iPhone capture acceptance.
   Keep HH_CLIENT_DELIVERY_ENABLED OFF until approved acceptance is complete.
+
+## Browser microphone/camera permission fix (2026-10-15)
+
+The site's default `Permissions-Policy: camera=(), microphone=()` blocked `navigator.mediaDevices.getUserMedia()` even on authenticated practitioner consultation editors. The fix keeps this default for all public, guest and Google-saved client pages, but sets `camera=(self), microphone=(self), geolocation=()` only on the existing practitioner recording editor routes in `next.config.ts`. The individual browser/OS permission prompt still applies. This permits recording; it does not auto-start a microphone/camera or grant a client access to practitioner media.
+
+Validation requirements: verify the live response header on representative admin editor and private client routes after deployment; then use real iPhone Safari/Android Chrome hardware with permission allowed/denied, pause/resume, camera preview, and secure draft upload into a synthetic unpublished consultation. No production patient media should be used for testing.

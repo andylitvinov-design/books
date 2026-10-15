@@ -3,7 +3,6 @@
 import { ClipboardCheck, GraduationCap } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
@@ -24,7 +23,7 @@ const copy = {
     heroTitle: "Найдите больше ясности и внутренней опоры",
     heroIntro: "Три бесплатных способа начать: анализ ситуации, профиль У-Син и тесты стресса и личности. Личные консультации — по желанию.",
     heroPrimary: "Бесплатный разбор ситуации",
-    heroBook: "Записаться на консультацию",
+    heroBook: "Запросить время консультации",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -57,7 +56,7 @@ const copy = {
     heroTitle: "Explore your question. Find a clearer way forward.",
     heroIntro: "Three free ways to begin: a situation review, a Wu Xing resource profile, or stress and personality tests. Personal sessions are optional.",
     heroPrimary: "Free situation review",
-    heroBook: "Book a consultation",
+    heroBook: "Request a consultation",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -92,25 +91,18 @@ type HolisticHouseHomeProps = {
 };
 
 export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticHouseHomeProps) {
-  const router = useRouter();
   const text = copy[locale];
   const entry = LOCAL_ACQUISITION[locale];
   const introVideo = introVideos[locale];
 
-  function selectLocale(nextLocale: Locale) {
-    const target = new URL(window.location.href);
-    target.searchParams.set("lang", nextLocale);
-    router.replace(target.pathname + target.search + target.hash, { scroll: false });
-  }
-
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
-        <Link className="house-wordmark" href="/" aria-label={text.homeLabel}>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel}>
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
-        <SiteNavigation locale={locale} onLocaleChange={selectLocale} />
+        <SiteNavigation locale={locale} />
       </header>
 
       <section className="service-home-hero" aria-labelledby="house-title">
@@ -135,7 +127,11 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
             >
               {text.heroBook}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
-            <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
+            <AcquisitionEventLink
+              className="service-home-button service-home-button--primary"
+              href={`/${locale}/services/free-situation-review`}
+              event="service_request_start"
+            >
               {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
@@ -232,7 +228,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
       <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
-        <Link className="house-wordmark" href="/">Holistic House</Link>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"}>Holistic House</Link>
         <p>{text.footer}</p>
         <Link href={`/${locale}/services`}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
         <p className="service-home-footer__legal">

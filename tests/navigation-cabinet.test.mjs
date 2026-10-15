@@ -37,9 +37,11 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
-  const [home, page] = await Promise.all([
+  const [home, page, russianPage, metadata] = await Promise.all([
     readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('app/page.tsx', 'utf8'),
+    readFile('app/[locale]/page.tsx', 'utf8'),
+    readFile('lib/home-seo.ts', 'utf8'),
   ])
 
   assert.match(home, /восстановление · практика · поддержка/)
@@ -48,9 +50,13 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /Explore at your own pace/)
   assert.match(home, /Курсы и библиотека/)
   assert.match(home, /Courses & Library/)
-  assert.match(page, /uiLocale/)
-  assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
-  assert.match(page, /Holistic House — inner development, practice and personal work/)
+  assert.match(page, /locale="en"/)
+  assert.match(page, /requested === "ru" \|\| requested === "es"/)
+  assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
+  assert.match(russianPage, /locale="ru"/)
+  assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
+  assert.match(metadata, /Holistic House — free self-checks and personal guidance in Toronto/)
+  assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
 test('mobile navigation keeps six usable shared destinations and reserves space for forms', async () => {

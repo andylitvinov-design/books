@@ -13,10 +13,10 @@ test("home presents four photo-left offer cards before videos", () => {
   assert.ok(cards > 0 && video > cards);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
-  assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
+  assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with three free entrances plus two personal services, without prices in the overview", () => {
+test("Services leads with free-test banner and five compact photo offers, without prices in the overview", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -26,7 +26,8 @@ test("Services leads with three free entrances plus two personal services, witho
   const extra = page.indexOf('id="available-services"');
   assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
   assert.match(ui, /allOffers\.filter/);
-  assert.match(page, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
+  assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
+  assert.doesNotMatch(page, /<FreeInsightsPaths|<ServicesConversionHero/);
   for(const id of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + id + '"'), id);
   for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])

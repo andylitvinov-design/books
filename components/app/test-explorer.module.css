@@ -795,3 +795,19 @@
 .explorer [data-scale-guide] button{background:#fff;color:var(--choice-navy);border-color:var(--choice-border)}
 .explorer [data-scale-guide] button[aria-pressed=true]{background:var(--choice-navy);color:#fff;border-color:var(--choice-navy)}
 .explorer [data-scale-guide] button:focus-visible{outline-color:#315c7f}
+
+
+/* Optional IPIP-VIA-R disclosure: one full 96-item card by default, 27 source-cleared standalones on request. */
+.viaFamilyNote{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  margin:8px 0 14px;padding:11px 13px;border:1px solid #b8c9d5;
+  border-radius:13px;background:#f1f5f8;color:#16334d;font-size:13px;line-height:1.45;
+}
+.viaFamilyNote span{flex:1 1 270px}
+.viaFamilyNote button{
+  border:1px solid #264863;border-radius:10px;background:#fff;color:#16334d;
+  padding:8px 12px;font:inherit;font-weight:650;cursor:pointer;
+}
+.viaFamilyNote button:hover,.viaFamilyNote button:focus-visible{
+  background:#16334d;color:#fff;outline-offset:3px;
+}

@@ -25,3 +25,17 @@ test('nonce, complete schema, live URL and navigation stability checks remain ma
  for(const fragment of ["assert.equal(response.url(),page.url())","assert.equal(rendered.nonce,nonce",'assert.deepEqual(rendered.schema,JSON.parse(serialized[1])',"assert.equal(documents.at(-1),document,'document must remain stable",'assert.deepEqual(errors,[])'])assert.ok(source.includes(fragment),fragment)
  const stable=new Function('documents','document','assert',source.match(/assert\.equal\(documents\.at\(-1\),document,'document must remain stable during its assertions'\)/)[0]);const old={};assert.throws(()=>stable([{}],old,assert));stable([old],old,assert)
 })
+
+test('actual schema assertions accept one WebSite in a graph and reject missing, duplicate or wrong nodes',()=>{
+ const fragment=source.slice(source.indexOf("  assert.equal(rendered.schema['@context']"),source.indexOf("  assert.equal(await page.locator('html')"))
+ const validate=new Function('rendered','assert',fragment)
+ const website={'@type':'WebSite',name:'Holistic House',inLanguage:['en','ru','es']}
+ const schema=nodes=>({'@context':'https://schema.org','@graph':nodes})
+ validate({schema:schema([website,{'@type':'Organization',name:'Holistic House'},{'@type':'Person',name:'Andrey Litvinov'}])},assert)
+ validate({schema:{'@context':'https://schema.org',...website}},assert)
+ for(const invalid of [
+  schema([]),schema([{'@type':'Organization',name:'Holistic House'}]),schema([website,{...website}]),
+  schema([{...website,name:'Wrong site'}]),schema([{...website,inLanguage:['en']}]),
+  {...schema([website]),'@context':'https://wrong.invalid'},
+ ])assert.throws(()=>validate({schema:invalid},assert),assert.AssertionError)
+})

@@ -9,15 +9,17 @@ import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS } from '@/lib/assessments/test-kinds'
+import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
 
 const TEXT = {
   en: {
     kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
     heroKicker:'MY TESTS · HOLISTIC HOUSE', heroHeadline:'Understand yourself and your life better',
-    heroDescription:'Select what matters to you and explore suitable questionnaires at your own pace.',
+    heroDescription:'Choose a topic, find a suitable test and notice changes over time.',
+    accessNote:'Choose topics freely. Eligible individual tests can be taken without Google; creating and saving a multi-test plan requires Google sign-in.', guestAction:'Try guest tests',
     benefitOne:'Track changes', benefitTwo:'Understand yourself', benefitThree:'Relevant guidance', benefitFour:'Your own pace',
-    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Begin with your personal starting point',
-    promoText:'Explore stress, mood and your inner resources with a selection of self-checks.', promoAction:'Choose my topics',
+    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Start with what matters to you',
+    promoText:'Check in with stress, mood and your inner resources.', promoAction:'Choose my topics',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
@@ -41,10 +43,11 @@ const TEXT = {
   ru: {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
     heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
-    heroDescription:'Выберите важные темы, пройдите подходящие тесты и наблюдайте за изменениями в своём темпе.',
+    heroDescription:'Выберите тему, найдите подходящий тест и наблюдайте за изменениями.',
+    accessNote:'Выбирайте темы свободно. Отдельные доступные тесты можно пройти без Google; для составления и сохранения набора нужен вход через Google.', guestAction:'Попробовать без регистрации',
     benefitOne:'Динамика результатов', benefitTwo:'Понимание себя', benefitThree:'Подбор по запросу', benefitFour:'Удобный темп',
-    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с базового исследования себя',
-    promoText:'Узнайте больше о стрессе, настроении и ресурсах с помощью опросников для самонаблюдения.', promoAction:'Выбрать темы',
+    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с того, что важно вам',
+    promoText:'Оцените стресс, настроение и свои ресурсы с помощью коротких опросников.', promoAction:'Выбрать темы',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
@@ -68,10 +71,11 @@ const TEXT = {
   es: {
     kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
     heroKicker:'MIS PRUEBAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor y comprende tu vida',
-    heroDescription:'Elige los temas importantes, explora los cuestionarios y observa tus cambios a tu ritmo.',
+    heroDescription:'Elige un tema, encuentra una prueba adecuada y observa tus cambios.',
+    accessNote:'Elige temas libremente. Puedes realizar pruebas individuales aptas sin Google; crear y guardar un conjunto requiere iniciar sesión con Google.', guestAction:'Probar sin registrarse',
     benefitOne:'Sigue tus cambios', benefitTwo:'Autoconocimiento', benefitThree:'Opciones personalizadas', benefitFour:'A tu ritmo',
-    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza a explorar tu bienestar',
-    promoText:'Conoce mejor tu estrés, estado de ánimo y recursos personales mediante cuestionarios.', promoAction:'Elegir temas',
+    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza por lo que te importa',
+    promoText:'Explora el estrés, el ánimo y tus recursos con breves cuestionarios.', promoAction:'Elegir temas',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
@@ -119,6 +123,12 @@ function KindBadge({ entry, locale }) {
   </span>
 }
 
+const VIA_COPY = {
+  en: { title: 'Character strengths · IPIP-VIA-R', description: 'One optional 96-question profile of 24 strengths, using original English IPIP items. Not the proprietary VIA Survey.', select: 'Select full profile', selected: 'Remove full profile', expand: 'Show individual strengths', collapse: 'Hide individual strengths' },
+  ru: { title: 'Сильные стороны · IPIP-VIA-R', description: 'Один дополнительный тест: 96 английских вопросов и 24 шкалы сильных сторон. Не является официальным опросником VIA Survey.', select: 'Выбрать полный профиль', selected: 'Убрать полный профиль', expand: 'Показать отдельные шкалы', collapse: 'Свернуть отдельные шкалы' },
+  es: { title: 'Fortalezas · IPIP-VIA-R', description: 'Un perfil opcional de 96 preguntas originales en inglés y 24 fortalezas. No es la encuesta propietaria VIA.', select: 'Seleccionar perfil completo', selected: 'Quitar perfil completo', expand: 'Ver escalas individuales', collapse: 'Ocultar escalas individuales' },
+}
+
 // Lightweight images already in the site bundle; avoid additional image transformations.
 function artworkFor(entry) {
   const topics = entry.topics || []
@@ -135,7 +145,7 @@ export function SimpleTestPicker({
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
+  matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
@@ -148,6 +158,7 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
+  const [showIndividualVia, setShowIndividualVia] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
   const testKindsKey = [...testKinds].sort().join('|')
@@ -160,11 +171,15 @@ export function SimpleTestPicker({
     setVisibleCount(5)
     setShowAllProblems(false)
   }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
-  const visibleRecommendations = recommendations.slice(0, visibleCount)
-  const remainingCount = Math.max(0, recommendations.length - visibleCount)
+  const selectedKeys = new Set(activeBattery.map((item) => item.key))
+  const via = groupViaRecommendations(recommendations, selectedKeys, showIndividualVia)
+  const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
+  const viaCopy = VIA_COPY[locale] || VIA_COPY.en
+  const groupedRecommendations = via.visible
+  const visibleRecommendations = groupedRecommendations.slice(0, visibleCount)
+  const remainingCount = Math.max(0, groupedRecommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
   const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
-  const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
   const hasExtraFilters = maxMinutes > 0 || testKinds.length > 0 || depth !== 'balanced'
   const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
@@ -182,6 +197,10 @@ export function SimpleTestPicker({
         <Heart size={22} strokeWidth={1.5}/>
       </div>
     </header>
+    {!authenticated && <p className={styles.privacy} data-prelogin-google-notice>
+      {c.accessNote}{' '}
+      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
+    </p>}
     <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
       <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
       <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
@@ -314,6 +333,28 @@ export function SimpleTestPicker({
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
         <p>{c.whyText}</p>
       </details>
+      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+        <div className={styles.viaFamilyIntro}>
+          <strong>{viaCopy.title}</strong>
+          <p>{viaCopy.description}</p>
+        </div>
+        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
+          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
+          <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
+            onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
+            {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
+          </button>
+          <button type="button" className={styles.takeTest} data-test-action="start"
+            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
+            {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </div>}
+        {via.individualCount > 0 && <button type="button" className={styles.viaToggle}
+          aria-expanded={showIndividualVia} aria-controls="hh-public-recommended-tests"
+          onClick={() => { setShowIndividualVia((value) => !value); setVisibleCount(5) }}>
+          {showIndividualVia ? viaCopy.collapse : viaCopy.expand} ({via.individualCount})
+        </button>}
+      </section>}
       {recommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
          {visibleRecommendations.map((entry, index) => {
            const checked = selectedKeys.has(entry.key)
@@ -372,13 +413,13 @@ export function SimpleTestPicker({
            </article>
          })}
        </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
-       {recommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
+       {groupedRecommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
         <span role="status" aria-live="polite">
-          {format(c.showing, { shown: visibleRecommendations.length, total: recommendations.length })}
+          {format(c.showing, { shown: visibleRecommendations.length, total: groupedRecommendations.length })}
         </span>
         {remainingCount > 0 && <button type="button" className={styles.showFiveMore}
           aria-controls="hh-public-recommended-tests" aria-expanded={visibleCount > 5}
-          onClick={() => setVisibleCount((current) => Math.min(recommendations.length, current + 5))}>
+          onClick={() => setVisibleCount((current) => Math.min(groupedRecommendations.length, current + 5))}>
           {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
         </button>}
       </div>}

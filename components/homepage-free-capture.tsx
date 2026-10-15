@@ -15,24 +15,27 @@ const offerIcons = { situation: FileText, wu: Flower2, stress: Brain };
 const copy = {
   en: {
     eyebrow: "THREE FREE SERVICES · HOLISTIC HOUSE",
-    title: "Choose your free assessment",
-    lead: "Begin with the question that matters to you. Choose one of three free options below — no paid appointment is required.",
+    title: "Choose a free starting point",
+    lead: "Three simple ways to begin — no paid appointment needed.",
     question: "What would you like to explore?",
     offers: {
       situation: {
         title: "Free situation analysis",
+        compactTitle: "Situation review",
         description: "Short questionnaire + hand drawing of Me / Goal / Problem. Request a personal written review.",
         action: "Start free situation analysis",
         note: "Next: complete the form and send your hand drawing. You will receive a written review, not a free live call.",
       },
       wu: {
         title: "Free Wu Xing resources & wellbeing analysis",
+        compactTitle: "Wu Xing profile",
         description: "Explore your energy, balance and resources through a symbolic Five Elements profile.",
         action: "Explore my free Wu Xing profile",
         note: "Next: request the personal resource overview. Wu Xing is a symbolic self-reflection model, not a medical diagnosis.",
       },
       stress: {
         title: "Stress check & personality portrait",
+        compactTitle: "Stress & personality tests",
         description: "Take free wellbeing and personality questionnaires. Get results, explanations and practical guidance.",
         action: "Start free stress & personality tests",
         note: "Next: choose and take your tests. You can view the results first and optionally sign in to keep a history.",
@@ -46,24 +49,27 @@ const copy = {
   },
   ru: {
     eyebrow: "ТРИ БЕСПЛАТНЫЕ УСЛУГИ · HOLISTIC HOUSE",
-    title: "Выберите бесплатный анализ",
-    lead: "Начните с того, что важно именно вам. Выберите один из трёх вариантов — платная консультация не требуется.",
+    title: "С чего начать бесплатно?",
+    lead: "Три простых варианта — без обязательной платной консультации.",
     question: "Что вы хотите исследовать?",
     offers: {
       situation: {
         title: "Бесплатный анализ ситуации",
+        compactTitle: "Анализ ситуации",
         description: "Короткая анкета и рисунок «Я / Цель / Проблема». Запросите персональный письменный разбор.",
         action: "Начать бесплатный анализ ситуации",
         note: "Далее: заполните анкету и отправьте рисунок. Вы получите письменный разбор, не бесплатный звонок.",
       },
       wu: {
         title: "Бесплатный анализ ресурсов и самочувствия по У-Син",
+        compactTitle: "Профиль У-Син",
         description: "Исследуйте энергию, баланс и ресурсы через символическую модель пяти стихий.",
         action: "Получить бесплатный профиль У-Син",
         note: "Далее: запросите личный обзор ресурсов. У-Син — символическая модель самопознания, не медицинская диагностика.",
       },
       stress: {
         title: "Анализ стресса и психологический портрет",
+        compactTitle: "Тесты стресса и личности",
         description: "Пройдите бесплатные тесты самочувствия и личности. Получите результаты, пояснения и рекомендации.",
         action: "Пройти бесплатные психологические тесты",
         note: "Далее: выберите и пройдите тесты. Результаты можно посмотреть сразу и при желании сохранить в кабинете.",
@@ -89,7 +95,7 @@ export function HomepageFreeCapture({ locale }: { locale: Locale }) {
 
   return (
     <section
-      className={styles.capture}
+      className={`${styles.capture} ${styles.homeCapture}`}
       data-home-free-capture="true"
       data-consultation-capture="home-free"
       data-consultation-cta="true"
@@ -112,13 +118,13 @@ export function HomepageFreeCapture({ locale }: { locale: Locale }) {
               data-home-free-option={id}
               data-selected={selected === id}
               aria-pressed={selected === id}
+              aria-label={`${t.offers[id].title}. ${t.offers[id].description}`}
               onClick={() => setSelected(id)}
             >
               <span className={styles.homeFreeNumber} aria-hidden="true">0{index + 1}</span>
               <Icon size={21} strokeWidth={1.7} aria-hidden="true" />
               <span className={styles.homeFreeOptionText}>
-                <strong>{t.offers[id].title}</strong>
-                <small>{t.offers[id].description}</small>
+                <strong>{t.offers[id].compactTitle}</strong>
               </span>
               {selected === id ? <Check className={styles.homeFreeCheck} size={18} strokeWidth={2.6} aria-hidden="true" /> : null}
             </button>

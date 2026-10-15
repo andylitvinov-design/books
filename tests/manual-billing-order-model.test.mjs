@@ -46,4 +46,8 @@ test('reviewed private migration enforces ownership and reviewer-only paid mutat
   assert.match(sql,/current_setting\('hh\.moderator',true\)='1'/)
   assert.match(sql,/receipt_digest text unique/)
   assert.match(sql,/manual_one_pending_per_owner/)
+  assert.match(sql,/manual_billing_events/)
+  assert.match(sql,/refund_digest text unique/)
+  assert.match(sql,/expire_my_manual_billing_orders/)
+  assert.match(sql,/^DO \$\$ BEGIN RAISE EXCEPTION/m)
 })
