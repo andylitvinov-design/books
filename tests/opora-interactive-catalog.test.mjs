@@ -11,8 +11,11 @@ test('fourteen-day interactive methods align with the live anti-stress content s
   for(let day=1;day<=14;day++){
     const lesson=antiStressDay(day,'ru','standard')
     const plan=antistressInteractiveDay(day,'ru')
+    const enLesson=antiStressDay(day,'en','standard')
+    const enPlan=antistressInteractiveDay(day,'en')
     assert.equal(plan.skill,lesson.skillId)
     assert.equal(plan.title,lesson.title)
+    assert.equal(enPlan.title,enLesson.title)
     assert.ok(plan.expectedResponse.length>25)
     assert.ok(plan.methods.every(key=>Boolean(INTERACTIVE_METHODS[key])))
   }
