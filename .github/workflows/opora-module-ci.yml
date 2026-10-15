@@ -1,0 +1,28 @@
+name: OPORA module recommendation unit checks
+on:
+  push:
+    branches:
+      - codex/opora-module-router-20261014
+  pull_request:
+    branches:
+      - codex/public-book-library
+permissions:
+  contents: read
+concurrency:
+  group: opora-modules-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  module-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - name: Verify six-module router, baseline reuse and 84 curricula
+        run: node --test tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs
