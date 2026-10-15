@@ -305,6 +305,28 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
       const foreignChange = await rawAs(foreign,'hh_app_backend',db=>db.query(
         "update app_private.manual_billing_orders set status='rejected' where id=$1",[order.id]))
       assert.equal(foreignChange.rowCount,0,'another account cannot alter the order')
+      const ownerEvents = (await rawAs(owner,'hh_app_backend', db => db.query(
+        'select action from app_private.manual_billing_events order by recorded_at'))).rows.map(x=>x.action)
+      assert.deepEqual(ownerEvents,['requested','quoted'])
+      const foreignEvents = (await rawAs(foreign,'hh_app_backend', db => db.query(
+        'select action from app_private.manual_billing_events'))).rows
+      assert.equal(foreignEvents.length,0)
+      await assert.rejects(rawAs(owner,'hh_app_backend',db=>db.query(
+        "insert into app_private.manual_billing_events(order_id,account_id,actor_id,action,revision) values($1,$2,$2,'paid',999)",
+        [order.id,owner.id])),errorCode('42501'))
+      await admin.query("update app_private.manual_billing_orders set expires_at=now()-interval '2 minutes' where id=$1",[order.id])
+      const foreignExpiry = (await rawAs(foreign,'hh_app_backend',db=>db.query(
+        'select app_private.expire_my_manual_billing_orders() as changed'))).rows[0].changed
+      assert.equal(foreignExpiry,0)
+      const ownExpiry = (await rawAs(owner,'hh_app_backend',db=>db.query(
+        'select app_private.expire_my_manual_billing_orders() as changed'))).rows[0].changed
+      assert.equal(ownExpiry,1)
+      const expired = (await rawAs(owner,'hh_app_backend',db=>db.query(
+        'select status from app_private.manual_billing_orders where id=$1',[order.id]))).rows[0]
+      assert.equal(expired.status,'expired')
+      const trail=(await rawAs(owner,'hh_app_backend',db=>db.query(
+        'select action from app_private.manual_billing_events order by recorded_at'))).rows.map(x=>x.action)
+      assert.deepEqual(trail,['requested','quoted','expired'])
     })
     await applyIsolatedProposal(admin, 'proposed-premium-session-schema.sql',
       "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL: explicit approval required'; END $$;")

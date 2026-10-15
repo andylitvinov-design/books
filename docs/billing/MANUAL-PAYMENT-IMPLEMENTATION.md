@@ -51,14 +51,23 @@
   until a separate manual credit ledger and schedule/fulfilment procedures
   are independently reviewed and the explicit
   HH_MANUAL_PREMIUM_CREDIT_SCHEMA_APPROVED /
-  HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED gates are authorized. **Never
+  HH_MANUAL_PREMIUM_FULFILLMENT_APPROVED gates are authorized **and the
+  separate manual credit workflow is genuinely implemented and tested**.
+  Flags alone cannot activate manual Premium in this release. **Never
   collect €100 if the promised service cannot be provided.**
 - PRICE: Advanced €20 per one month (candidate first month €10 only if
   eligibility confirmed); Premium €100 per month. Cross-currency invoice
   amount requires independent FX and recipient verification. Do not reuse
   EzoHata's legacy payee, bank details, region-specific processors or fees.
-- REFUNDS/DISPUTES: recorded manually, with a reviewer audit trail and
-  paid-coverage revocation. Provider-verified automated matching, chargebacks,
+- REFUNDS/DISPUTES: only a refund already completed and independently confirmed
+  on the bank/PayPal statement can be recorded. The reviewer must supply its
+  separate unique reference and exact full amount. This admin UI never sends
+  or executes a refund. Revocation is backed by the verified refund evidence.
+  An append-only status transition table (owner-scoped read, no direct INSERT,
+  UPDATE or DELETE privileges) stores opaque action/reviewer references.
+  Owner self-service expiry of stale unpaid requests is performed by a narrow
+  verified-session SECURITY DEFINER function, not a broad owner UPDATE.
+  Provider-verified automated matching, chargebacks,
   refunds, notifications and entitlement reconciliation after external
   account approval remain later work. Bank transfer does not authorize a
   future recurring debit.
