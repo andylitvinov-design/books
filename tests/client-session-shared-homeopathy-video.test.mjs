@@ -47,6 +47,6 @@ test('all three session readers receive the availability gate',()=>{
   const page=source('components/client-session-page.jsx')
   assert.match(page,/hasHomeopathyRecommendation&&sharedGuideReady/)
   assert.match(page,/GRANULES_GUIDE_ID/)
-  assert.match(page,/не подтвержден/)
+  assert.match(page,/не научно подтверждённая/)
   assert.match(page,/does not prove/)
 })
