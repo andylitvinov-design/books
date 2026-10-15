@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves, MapPin, BookOpen, CircleHelp, MousePointerClick } from 'lucide-react'
 import CoursePracticeVoice from './course-practice-voice'
+import { DAY_ONE_PRACTICE_GUIDE } from '@/lib/inner-growth/anti-stress-day-one'
 import styles from './anti-stress-day-one.module.css'
 
 const PHOTO = '/images/holistic-house/course-focus-mountain-boy.webp'
@@ -76,9 +77,26 @@ export default function DayOneExercise({
   const helper=<p className={styles.hint}>{text(
     'Правильного ответа нет. Вы можете пропустить шаг или остановиться. Ваши чувства не обязаны измениться.',
     'There is no correct answer. You may skip or stop. Your feelings do not have to change.')}</p>
-  const skill=selectedFocus?.label||text('Одна доступная опора','One available anchor')
+  const skill=selectedFocus?.label||text('Осознанная пауза и поддержка','A mindful pause and support')
   const anchorLabels={
     colour:text('цвет','colour'),shape:text('форма','shape'),object:text('предмет','object'),word:text('слово','word'),
+  }
+  const signalLabels={
+    tension:text('напряжение','tension'),rushing:text('внутренняя спешка','inner rushing'),
+    fatigue:text('усталость','tiredness'),steady:text('ровное состояние','a steady state'),
+    unclear:text('пока трудно определить','not clear yet'),
+  }
+  const needLabels={
+    space:text('чуть больше пространства','a little more space'),
+    rest:text('отдых','rest'),support:text('поддержка','support'),
+    clarity:text('ясность','clarity'),none:text('пока не знаю','not sure yet'),
+  }
+  const actionLabels={
+    orient:text('заметить предмет вокруг','notice something around me'),
+    pause:text('сделать мягкую паузу','take a gentle pause'),
+    rest:text('отдохнуть','rest'),
+    ask:text('обратиться за поддержкой','ask for support'),
+    none:text('ничего не менять сейчас','change nothing right now'),
   }
   // An explicit safe-stop choice must lead to a genuinely neutral branch,
   // not merely return to the triggering image/audio or exercise.
@@ -99,62 +117,79 @@ export default function DayOneExercise({
       onClick={onReturnToPractice}>{text('Вернуться к обычному уроку по желанию','Return to the usual lesson if I choose')}</button>
   </section>
   if(kind==='day1-prepare')return <section className={styles.section} data-day-one-activity="prepare">
-    <div className={styles.overline}><Compass size={16}/>{text('ШАГ 06 · ВЫБИРАЮ СВОЙ ФОРМАТ','STEP 06 · I CHOOSE MY FORMAT')}</div>
-    <Scene locale={locale}/>
-    <p className={styles.headline}>{text('Как вам удобнее начать?','How would you prefer to begin?')}</p>
-    <p className={styles.hint}>{text('Выбирайте комфортный способ. Это уже ваше первое решение в практике.','Choose a comfortable approach. This is your first choice in the exercise.')}</p>
+    <div className={styles.overline}><Compass size={16}/>{text('ШАГ 06 · МОЙ СПОСОБ НАЧАТЬ','STEP 06 · HOW I BEGIN')}</div>
+    <p className={styles.headline}>{text('Сегодня попробуем встретиться со своим состоянием — без требования изменить его','Today we will notice how we are, without needing to change anything')}</p>
+    <p className={styles.hint}>{text('Можно наблюдать за мыслями или чувствами, опереться на предмет рядом либо только читать. Необязательно закрывать глаза или следить за дыханием.',
+      'You may notice a thought or feeling, focus on an ordinary object, or simply read. No need to close your eyes or monitor breathing.')}</p>
     {choice('preparation',[
-      {value:'look',label:text('Посмотреть вокруг','Look around'),detail:text('Глаза открыты, внимание на окружающем','Eyes open, noticing the room'),icon:Eye},
-      {value:'photo',label:text('Посмотреть на изображение','Look at the picture'),detail:text('Ничего не надо представлять','No need to imagine anything'),icon:MapPin},
-      {value:'read',label:text('Только читать','Read only'),detail:text('Собственный темп, без звука','My pace, no audio'),icon:BookOpen},
-      {value:'rest',label:text('Сначала отдохнуть','Rest first'),detail:text('Можно ничего не делать','Doing nothing is okay'),icon:PauseCircle},
-      {value:'skip',label:text('Сейчас не готов(а)','Not ready yet'),detail:text('Перейти дальше без оценки','Continue without being rated'),icon:CircleHelp},
+      {value:'look',label:text('Замечать себя и окружающее','Notice myself and the room'),detail:text('Коротко, без анализа причин','Briefly, without analysing causes'),icon:Eye},
+      {value:'photo',label:text('С опорой на фотографию','Use a neutral picture'),detail:text('Можно смотреть только наружу','Looking outward is enough'),icon:MapPin},
+      {value:'read',label:text('Только читать','Read only'),detail:text('Не исследовать ощущения','No need to explore sensations'),icon:BookOpen},
+      {value:'rest',label:text('Сначала отдохнуть','Rest first'),detail:text('Отдых тоже доступный выбор','Rest is an option'),icon:PauseCircle},
+      {value:'skip',label:text('Сейчас не готов(а)','Not ready yet'),detail:text('Продолжить без выполнения','Continue without practising'),icon:CircleHelp},
     ],{cards:true})}
-    {answers.preparation&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Ваш выбор принят. Его можно изменить.','Your choice is recorded. You can change it.')}</p>}
+    {answers.preparation==='photo'&&<Scene locale={locale} caption={text('Изображение — только необязательный внешний ориентир.','This picture is an optional external anchor only.')}/>}
+    {answers.preparation&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Формат можно изменить в любой момент.','You can change your approach at any time.')}</p>}
   </section>
 
   if(kind==='day1-notice')return <section className={styles.section} data-day-one-activity="notice">
-    <div className={styles.overline}><Eye size={16}/>{text('ШАГ 07 · ИССЛЕДУЮ ИЗОБРАЖЕНИЕ','STEP 07 · EXPLORE THE SCENE')}</div>
-    <p className={styles.headline}>{text('Выберите участок изображения, куда хочется направить взгляд','Choose an area you would like to look at')}</p>
-    <Scene locale={locale} caption={text('Нажмите на область под изображением — или посмотрите на окружающие предметы.','Tap an area below the picture, or observe your own surroundings.')}/>
-    <div className={styles.photoRegions} role="group" aria-label={text('Участок фотографии','Image region')}>
-      {[
-        {value:'left',label:text('Слева','Left')},
-        {value:'center',label:text('В центре','Centre')},
-        {value:'right',label:text('Справа','Right')},
-      ].map(item=><button key={item.value} type="button" disabled={locked}
-        aria-pressed={answers.visualZone===item.value} onClick={()=>onAnswer('visualZone',item.value)}>
-        <span className={styles.photoRegionMark}><MousePointerClick size={16}/></span>{item.label}
-      </button>)}
-    </div>
-    <p className={styles.headline}>{text('А что именно вы заметили?','And what did you notice?')}</p>
-    {choice('noticed',[
-      {value:'colour',label:text('Цвет','A colour'),icon:Sparkles},
-      {value:'shape',label:text('Форма','A shape'),icon:Compass},
-      {value:'object',label:text('Предмет','An object'),icon:MapPin},
-      {value:'nothing',label:text('Пока ничего','Nothing yet'),icon:PauseCircle},
-      {value:'skip',label:text('Предпочитаю пропустить','Prefer to skip'),icon:CircleHelp},
+    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 07 · ЗАМЕЧАЮ СОСТОЯНИЕ','STEP 07 · NOTICE MY STATE')}</div>
+    <p className={styles.headline}>{text('Что сейчас заметно внутри?','What do you notice inside right now?')}</p>
+    <p className={styles.hint}>{text('Выберите только один знакомый сигнал: в чувствах, мыслях или общем самочувствии. Не нужно искать причину, усиливать ощущения или рассказывать личную историю. Можно не смотреть внутрь.',
+      'Choose one familiar cue in your mood, thoughts or overall experience. No searching for causes or intense body awareness. You may stay with the outside world instead.')}</p>
+    {choice('innerSignal',[
+      {value:'tension',label:text('Есть напряжение','Some tension'),icon:Waves},
+      {value:'rushing',label:text('Внутренняя спешка','Inner rushing'),icon:Compass},
+      {value:'fatigue',label:text('Мало сил','Low energy'),icon:Leaf},
+      {value:'steady',label:text('Довольно ровно','Fairly steady'),icon:HeartHandshake},
+      {value:'unclear',label:text('Пока не понимаю','Not sure yet'),icon:CircleHelp},
+      {value:'skip',label:text('Не хочу исследовать','Prefer not to check'),icon:PauseCircle},
     ],{compact:true})}
-    {answers.visualZone&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Вы выбрали область для внимания. Это наблюдение, не тест.','You chose where to look. This is an observation, not a test.')}</p>}
+    <details className={styles.transcript}>
+      <summary><Eye size={17}/>{text('Вместо внимания внутрь — внешний ориентир','Prefer an external anchor?')}<ChevronDown size={16}/></summary>
+      {answers.preparation==='photo'&&<Scene locale={locale} caption={text('Посмотрите на одну нейтральную деталь, если удобно.','Look at one ordinary detail if you like.')}/>}
+      <p>{text('Можно просто заметить предмет в комнате: его цвет, форму или положение. Это равноправный вариант, если внимание к ощущениям неприятно.',
+        'You may simply notice an object in the room: its colour, shape or position. This is equally valid if checking inside feels unpleasant.')}</p>
+      <div className={styles.photoRegions} role="group" aria-label={text('Внешний ориентир','External anchor')}>
+        {[
+          {value:'left',label:text('Слева','Left')},
+          {value:'center',label:text('По центру','Centre')},
+          {value:'right',label:text('Справа','Right')},
+        ].map(item=><button key={item.value} type="button" disabled={locked}
+          aria-pressed={answers.visualZone===item.value} onClick={()=>onAnswer('visualZone',item.value)}>
+          <span className={styles.photoRegionMark}><MousePointerClick size={16}/></span>{item.label}
+        </button>)}
+      </div>
+      {choice('noticed',[
+        {value:'colour',label:text('Цвет','Colour'),icon:Sparkles},
+        {value:'shape',label:text('Форма','Shape'),icon:Compass},
+        {value:'object',label:text('Предмет','Object'),icon:MapPin},
+        {value:'nothing',label:text('Пока ничего','Nothing yet'),icon:PauseCircle},
+        {value:'skip',label:text('Не выбирать','Skip'),icon:CircleHelp},
+      ],{compact:true})}
+    </details>
+    {answers.innerSignal&&answers.innerSignal!=='skip'&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Вы назвали наблюдение, а не диагноз. Менять состояние сейчас необязательно.',
+      'You named an observation, not a diagnosis. No change is required.')}</p>}
     {helper}
   </section>
 
   if(kind==='day1-practice') {
     const steps=ru?[
-      {title:'Оглянитесь',body:'Можно оставить глаза открытыми. Дыхание не нужно менять. Заметьте пространство вокруг.'},
-      {title:'Найдите нейтральную деталь',body:'Выберите обычный предмет или цвет. Если удобно, обратите внимание на форму и края.'},
-      {title:'Выберите свой темп',body:'Останьтесь на этой детали или спокойно переведите взгляд. Никаких обязательных секунд.'},
-      {title:'Решите, продолжать ли',body:'Можете отдохнуть, остановиться или мягко оглядеть комнату. Всё это допустимые результаты.'},
+      {title:'Замечаю',body:'Вспомните одно слово о своём состоянии — или пропустите внутреннее наблюдение. Не ищите причину и не заставляйте себя расслабляться.'},
+      {title:'Ориентируюсь',body:'Если удобно, на миг посмотрите на обычный предмет вокруг. Заметьте его форму или цвет. Глаза можно оставить открытыми.'},
+      {title:'Выбираю поддержку',body:'Спросите себя: чего мне сейчас чуть-чуть не хватает — паузы, отдыха, пространства или помощи? Можно не отвечать.'},
+      {title:'Делаю небольшой выбор',body:'Если хочется, сделайте маленькое доступное действие. Затем просто заметьте свой опыт. Он может не измениться — и это нормально.'},
     ]:[
-      {title:'Look around',body:'You may keep your eyes open. No need to change your breathing. Notice the space around you.'},
-      {title:'Find a neutral detail',body:'Choose an ordinary object or colour. If comfortable, notice its shape and edges.'},
-      {title:'Set your own pace',body:'Stay with the detail or gently move your gaze. There is no required number of seconds.'},
-      {title:'Choose how to finish',body:'You can rest, stop or look around again. Each is an acceptable outcome.'},
+      {title:'Notice',body:'Use one word for your present state — or skip checking inside. Do not search for causes or force relaxation.'},
+      {title:'Orient',body:'If comfortable, briefly look at an ordinary object. Notice its shape or colour. Keep your eyes open if you prefer.'},
+      {title:'Choose support',body:'Ask yourself: would a pause, rest, space or help be useful right now? You may leave that unanswered.'},
+      {title:'Make a small choice',body:'If you wish, try one manageable response, then simply notice your experience. It may stay unchanged, and that is okay.'},
     ]
     return <section className={styles.section} data-day-one-activity="practice">
-      <div className={styles.overline}><Waves size={16}/>{text('ШАГ 08 · ГЛАВНАЯ ПРАКТИКА','STEP 08 · MAIN PRACTICE')}</div>
-      <div className={styles.practiceHeading}><Waves size={23}/><strong>{text('Одна опора в настоящем','One anchor in the present')}</strong></div>
-      <p className={styles.headline}>{text('Вы можете выполнять инструкцию в своём темпе','You can practise at your own pace')}</p>
+      <div className={styles.overline}><Waves size={16}/>{text('ШАГ 08 · ОСНОВНАЯ ПРАКТИКА','STEP 08 · MAIN PRACTICE')}</div>
+      <div className={styles.practiceHeading}><HeartHandshake size={23}/><strong>{text('Состояние → потребность → доступная поддержка','State → need → possible support')}</strong></div>
+      <p className={styles.hint}>{text('Это короткая проба внимания и выбора, не упражнение на обязательное успокоение. Каждый шаг можно пропустить.',
+        'This is a brief experiment in awareness and choice, not a demand to become calm. You can skip any step.')}</p>
       <DayOneChoices compact label={text('Как удобнее заниматься','Choose a format')}
         disabled={locked} value={answers.practiceMode||'text'}
         onSelect={value=>onAnswer('practiceMode',value)}
@@ -163,7 +198,7 @@ export default function DayOneExercise({
           {value:'audio',label:text('Системная озвучка','Device voice'),icon:Waves},
         ]}/>
       {answers.practiceMode==='audio'&&<CoursePracticeVoice key={locale+'-'+String(answers.practiceMode)}
-        locale={locale} text={lesson.sections?.find(part=>part.kind==='meditation')?.text}/>}
+        locale={locale} text={DAY_ONE_PRACTICE_GUIDE[ru?'ru':'en']}/>}
       <div className={styles.practiceStepper} data-interactive-practice-stepper>
         <div className={styles.practiceStepHeader}><small>{text('ЭТАП','STEP')} {guidedStep+1} / {steps.length}</small>
           <div className={styles.stepDots} aria-hidden="true">{steps.map((item,i)=><i key={item.title} data-active={i===guidedStep}/>)}</div>
@@ -173,114 +208,144 @@ export default function DayOneExercise({
         <div className={styles.stepControls}>
           <button type="button" disabled={locked||guidedStep===0} onClick={()=>setGuidedStep(value=>Math.max(0,value-1))}><ChevronLeft size={17}/>{text('Назад','Back')}</button>
           <button type="button" disabled={locked} onClick={()=>setGuidedStep(value=>(value+1)%steps.length)}>
-            {guidedStep===steps.length-1?text('Повторить шаги','Repeat steps'):text('Следующий шаг','Next step')}<ChevronRight size={17}/>
+            {guidedStep===steps.length-1?text('Повторить по желанию','Repeat if useful'):text('Следующий шаг','Next step')}<ChevronRight size={17}/>
           </button>
         </div>
       </div>
       <button type="button" disabled={locked} onClick={onStopPractice} data-day-one-stop-practice>
-        <PauseCircle size={17}/>{text('Остановить практику','Stop practice')}
+        <PauseCircle size={17}/>{text('Закончить практику','Stop practice')}
       </button>
-      <details className={styles.transcript}><summary>{text('Полная текстовая инструкция','Complete written guide')} <ChevronDown size={16}/></summary>
-        <p>{lesson.sections?.find(part=>part.kind==='meditation')?.text}</p></details>
-      <p className={styles.headline}>{text('Как прошла ваша попытка?','How did the attempt go?')}</p>
+      <p className={styles.headline}>{text('Какую поддержку вы решили попробовать — если пробовали?','What support did you choose to try, if any?')}</p>
+      {choice('innerAction',[
+        {value:'pause',label:text('Небольшая пауза','A small pause'),icon:PauseCircle},
+        {value:'orient',label:text('Нейтральный ориентир','An ordinary object'),icon:Eye},
+        {value:'rest',label:text('Отдых','Rest'),icon:Leaf},
+        {value:'ask',label:text('Идея попросить помощи','Consider asking for help'),icon:HeartHandshake},
+        {value:'none',label:text('Ничего не менял(а)','No action taken'),icon:Compass},
+        {value:'skip',label:text('Не отвечать','Skip'),icon:CircleHelp},
+      ],{compact:true})}
+      <details className={styles.transcript}><summary>{text('Полная текстовая инструкция','Full written guide')} <ChevronDown size={16}/></summary>
+        <p>{DAY_ONE_PRACTICE_GUIDE[ru?'ru':'en']}</p></details>
+      <p className={styles.headline}>{text('Насколько вы участвовали?','How much did you try?')}</p>
       {choice('practiceAttempt',[
-        {value:'tried',label:text('Попробовал(а)','I tried it')},
-        {value:'partly',label:text('Только часть','Only part of it')},
+        {value:'tried',label:text('Попробовал(а)','I tried')},
+        {value:'partly',label:text('Часть шагов','Some steps')},
         {value:'stopped',label:text('Остановил(а)','I stopped')},
-        {value:'skip',label:text('Не пробовал(а)','Did not try')},
+        {value:'skip',label:text('Не пробовал(а)','I did not try')},
       ],{compact:true})}
       {helper}
     </section>
   }
 
   if(kind==='day1-exit')return <section className={styles.section} data-day-one-activity="exit">
-    <div className={styles.overline}><PauseCircle size={16}/>{text('ШАГ 09 · МЯГКИЙ ВЫХОД','STEP 09 · GENTLE FINISH')}</div>
-    <div className={styles.softIllustration}><PauseCircle size={37}/><span>{text('Завершайте в своём темпе','Finish at your own pace')}</span></div>
-    <p className={styles.headline}>{text('Как хотелось бы закончить эту паузу?','How would you like to end this pause?')}</p>
+    <div className={styles.overline}><PauseCircle size={16}/>{text('ШАГ 09 · ЗАВЕРШАЮ БЕРЕЖНО','STEP 09 · END GENTLY')}</div>
+    <div className={styles.softIllustration}><PauseCircle size={37}/><span>{text('Вы сами выбираете момент остановки','You decide when to finish')}</span></div>
+    <p className={styles.headline}>{text('Что подходит вашему состоянию сейчас?','What suits your state right now?')}</p>
     {choice('exit',[
-      {value:'keep',label:text('Остаться с деталью','Stay with the detail'),detail:text('Ещё немного смотреть, если комфортно','Look a little longer if comfortable'),icon:Eye},
-      {value:'change',label:text('Сменить ориентир','Change the anchor'),detail:text('Спокойно перевести взгляд','Move my gaze gently'),icon:Compass},
-      {value:'stop',label:text('Закончить и отдохнуть','Stop and rest'),detail:text('Не нужно ничего продолжать','Nothing more is required'),icon:PauseCircle},
-      {value:'skip',label:text('Не выбирать','Make no choice'),detail:text('Перейти дальше без оценки','Continue without a rating'),icon:CircleHelp},
+      {value:'keep',label:text('Ещё мгновение побыть здесь','Stay for another moment'),icon:Eye},
+      {value:'change',label:text('Перевести внимание наружу','Move attention to the room'),icon:Compass},
+      {value:'stop',label:text('Закончить и отдохнуть','Finish and rest'),icon:PauseCircle},
+      {value:'skip',label:text('Перейти дальше','Move on'),icon:CircleHelp},
     ],{cards:true})}
-    {answers.exit&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Вы сами выбираете момент завершения.','You are in charge of when to finish.')}</p>}
+    {answers.exit&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Ваш выбор важнее длительности или «правильного» результата.','Your choice matters more than duration or a “correct” result.')}</p>}
     {helper}
   </section>
 
   if(kind==='day1-anchor')return <section className={styles.section} data-day-one-activity="anchor">
-    <div className={styles.overline}><Compass size={16}/>{text('ШАГ 10 · СОЗДАЮ КАРТОЧКУ ОПОРЫ','STEP 10 · BUILD MY ANCHOR CARD')}</div>
-    <p className={styles.headline}>{text('Что вам было бы проще заметить снова?','Which simple thing could you notice again?')}</p>
-    {choice('anchor',[
-      {value:'colour',label:text('Цвет','A colour'),detail:text('Один оттенок вокруг','A familiar shade'),icon:Sparkles},
-      {value:'shape',label:text('Форма','A shape'),detail:text('Линия или контур','An outline or line'),icon:Compass},
-      {value:'object',label:text('Предмет','An object'),detail:text('Что-то реальное рядом','Something real nearby'),icon:MapPin},
-      {value:'word',label:text('Слово','A word'),detail:text('Нейтральная подсказка','A neutral reminder'),icon:BookOpen},
-      {value:'none',label:text('Пока ничего','Nothing fits yet'),icon:PauseCircle},
-      {value:'skip',label:text('Не сохранять','Do not select'),icon:CircleHelp},
+    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 10 · МОЯ МАЛЕНЬКАЯ ОПОРА','STEP 10 · MY SMALL SUPPORT')}</div>
+    <p className={styles.headline}>{text('Что вашему состоянию сейчас больше всего нужно?','What might help your present state?')}</p>
+    {choice('innerNeed',[
+      {value:'space',label:text('Пространство и меньше спешки','More space and less rushing'),icon:Compass},
+      {value:'rest',label:text('Отдых','Rest'),icon:Leaf},
+      {value:'support',label:text('Чья-то поддержка','Someone’s support'),icon:HeartHandshake},
+      {value:'clarity',label:text('Немного ясности','A bit of clarity'),icon:Lightbulb},
+      {value:'none',label:text('Пока не знаю','Not sure yet'),icon:CircleHelp},
+      {value:'skip',label:text('Не выбирать','Skip'),icon:PauseCircle},
     ],{cards:true})}
-    {answers.anchor==='colour'&&<div className={styles.swatchPanel} role="group" aria-label={text('Цвет без психологической интерпретации','A neutral colour, with no interpretation')}>
-      <span>{text('Можно выбрать оттенок для карточки','Choose a shade for your card')}</span>
-      {[
-        {value:'blue',label:text('Голубой','Blue')},
-        {value:'green',label:text('Зелёный','Green')},
-        {value:'sand',label:text('Песочный','Sand')},
-      ].map(item=><button type="button" key={item.value} data-tone={item.value}
-        disabled={locked} aria-label={item.label} title={item.label}
-        aria-pressed={answers.anchorTone===item.value}
-        onClick={()=>onAnswer('anchorTone',item.value)}><span className={styles.swatchDot}/>{item.label}</button>)}
-    </div>}
+    <details className={styles.transcript}>
+      <summary>{text('Необязательный внешний ориентир','Optional external anchor')} <ChevronDown size={16}/></summary>
+      <p>{text('Если смотреть внутрь неприятно, можно просто сохранить нейтральный предмет, цвет, форму или слово.','If inner awareness is uncomfortable, you can keep an ordinary object, colour, shape or word instead.')}</p>
+      {choice('anchor',[
+        {value:'colour',label:text('Цвет','A colour'),icon:Sparkles},
+        {value:'shape',label:text('Форма','A shape'),icon:Compass},
+        {value:'object',label:text('Предмет','An object'),icon:MapPin},
+        {value:'word',label:text('Слово','A word'),icon:BookOpen},
+        {value:'none',label:text('Пока ничего','Nothing yet'),icon:PauseCircle},
+        {value:'skip',label:text('Не выбирать','Skip'),icon:CircleHelp},
+      ],{compact:true})}
+      {answers.anchor==='colour'&&<div className={styles.swatchPanel} role="group" aria-label={text('Цвет без толкования','Colour without interpretation')}>
+        <span>{text('Необязательный оттенок для напоминания','An optional shade for your reminder')}</span>
+        {[
+          {value:'blue',label:text('Голубой','Blue')},
+          {value:'green',label:text('Зелёный','Green')},
+          {value:'sand',label:text('Песочный','Sand')},
+        ].map(item=><button type="button" key={item.value} data-tone={item.value} disabled={locked}
+          aria-label={item.label} title={item.label} aria-pressed={answers.anchorTone===item.value}
+          onClick={()=>onAnswer('anchorTone',item.value)}><span className={styles.swatchDot}/>{item.label}</button>)}
+      </div>}
+    </details>
     <div className={styles.personalCard} data-anchor-preview>
-      <span><Leaf size={16}/>{text('МОЙ НЕЙТРАЛЬНЫЙ ОРИЕНТИР','MY NEUTRAL ANCHOR')}</span>
-      <strong>{answers.anchor&&anchorLabels[answers.anchor]?anchorLabels[answers.anchor]
-        :text('Пока не выбрано — это нормально','Nothing selected yet — that is okay')}</strong>
+      <span><HeartHandshake size={16}/>{text('МОЯ КАРТА СОСТОЯНИЯ И ОПОРЫ','MY STATE AND SUPPORT CARD')}</span>
+      <strong>{signalLabels[answers.innerSignal]||text('Можно начать с любого состояния','Any starting state is okay')}</strong>
+      {needLabels[answers.innerNeed]&&<p>{text('Мне сейчас могло бы помочь: ','What might help me: ')}{needLabels[answers.innerNeed]}</p>}
+      {actionLabels[answers.innerAction]&&<p>{text('Возможный ответ: ','A possible response: ')}{actionLabels[answers.innerAction]}</p>}
+      {anchorLabels[answers.anchor]&&<small>{text('Внешний ориентир: ','External anchor: ')}{anchorLabels[answers.anchor]}</small>}
       {answers.anchor==='colour'&&answers.anchorTone&&<div className={styles.anchorPreviewTone} data-tone={answers.anchorTone}/>}
-      <small>{text('Карточка отражает только ваш выбор, а не значение или диагностику цвета.','This card reflects your choice, not a diagnostic meaning of a colour.')}</small>
+      <small>{text('Это ваши добровольные наблюдения и выборы — не диагноз и не обещание перемен.',
+        'These are your own observations and choices, not a diagnosis or a promise of change.')}</small>
     </div>
   </section>
 
   if(kind==='day1-association')return <section className={styles.section} data-day-one-activity="association">
-    <div className={styles.overline}><Sparkles size={16}/>{text('ШАГ 11 · ТВОРЧЕСКАЯ АССОЦИАЦИЯ','STEP 11 · CREATIVE ASSOCIATIONS')}</div>
-    <Scene locale={locale} caption={text('Посмотрите на изображение целиком, без поиска скрытого значения.','See the whole picture without looking for hidden meanings.')}/>
-    <p className={styles.headline}>{text('Если хочется, напишите до трёх слов, которые приходят в голову','If you wish, write up to three words that come to mind')}</p>
-    <div className={styles.wordTokens} role="group" aria-label={text('Три необязательных слова','Three optional words')}>
+    <div className={styles.overline}><Sparkles size={16}/>{text('ШАГ 11 · СОЕДИНЯЮ ТРИ ПОДСКАЗКИ','STEP 11 · CONNECT THREE CUES')}</div>
+    <p className={styles.headline}>{text('Если хочется, запишите по одному короткому слову: что со мной, что мне нужно и что доступно',
+      'If you wish, use one short word for how you feel, what you need and what is available')}</p>
+    <p className={styles.hint}>{text('Например: «спешка — пространство — пауза». Это не скрытые символы и не психологический тест. Если писать не хочется, просто прочитайте пример.',
+      'For example: “rushing — space — pause”. These are not hidden symbols or a personality test. Reading the example is enough.')}</p>
+    <div className={styles.wordTokens} role="group" aria-label={text('Три необязательных слова о моём состоянии','Three optional words about my state')}>
       {[0,1,2].map(i=><label key={i} className={styles.wordToken}>
-        <span>{text('Слово','Word')} {i+1}</span>
+        <span>{[text('Что замечаю','What I notice'),text('Что мне нужно','What I need'),text('Что доступно','What I can try')][i]}</span>
         <input type="text" maxLength={40} disabled={locked} value={wordTokens[i]||''}
-          placeholder={text('Любая ассоциация','Any association')}
+          placeholder={[text('Напряжение','Tension'),text('Пауза','Pause'),text('Отдых','Rest')][i]}
           onChange={event=>changeWord(i,event.target.value)}/>
       </label>)}
     </div>
-    <p className={styles.wordCount}>{text('Моих слов:','My words:')} <strong>{wordCount} / 3</strong></p>
+    <p className={styles.wordCount}>{text('Заполнено:','Filled:')} <strong>{wordCount} / 3</strong></p>
     {wordCount>0&&<div className={styles.qualityPanel}>
-      <p>{text('Какое качество вам хочется связать с одним из слов?','Which quality, if any, would you connect with a word?')}</p>
-      <div className={styles.qualityOptions} role="group" aria-label={text('Необязательное качество','Optional quality')}>
+      <p>{text('Какую бережную интонацию вы бы добавили к этим словам?','What kind tone would you add to these words?')}</p>
+      <div className={styles.qualityOptions} role="group" aria-label={text('Необязательная интонация','Optional kind tone')}>
         {[
-          {value:'openness',label:text('Простор','Openness')},
+          {value:'openness',label:text('Простор','Space')},
           {value:'gentleness',label:text('Мягкость','Gentleness')},
           {value:'clarity',label:text('Ясность','Clarity')},
-          {value:'other',label:text('Своё','My own')},
+          {value:'other',label:text('Свою','My own')},
         ].map(item=><button type="button" key={item.value} disabled={locked}
           aria-pressed={wordQuality===item.value} onClick={()=>setWordQuality(item.value)}>{item.label}</button>)}
       </div>
     </div>}
-    <p className={styles.hint}>{text('Слова и выбранное качество остаются только в этом открытом упражнении. Они не используются для диагностики и не отправляются в аналитику.','Your words and chosen quality stay in this open exercise. They are not diagnostic or sent to analytics.')}</p>
+    <p className={styles.hint}>{text('Эти личные слова остаются на открытом экране и не отправляются на сервер. В кабинете сохраняются только явно выбранные коды поддержки.',
+      'These personal words stay on this open screen and are not sent to the server. Only explicitly selected support choices are saved.')}</p>
     {choice('associations',[
-      {value:'tried',label:text('Я попробовал(а) упражнение','I tried the exercise')},
-      {value:'skip',label:text('Предпочитаю пропустить','Prefer to skip')},
+      {value:'tried',label:text('Попробовал(а)','I tried')},
+      {value:'skip',label:text('Пропустить','Skip')},
     ],{compact:true})}
   </section>
 
   if(kind==='day1-independent')return <section className={styles.section} data-day-one-activity="independent">
-    <div className={styles.overline}><Eye size={16}/>{text('ШАГ 12 · ПРИМЕНЯЮ НАВЫК','STEP 12 · TRYING THE SKILL')}</div>
-    <div className={styles.softIllustration}><Eye size={38}/><span>{text('Моя проба без экзамена','My attempt, not an exam')}</span></div>
-    <p className={styles.headline}>{text('Попробуйте выбрать нейтральную деталь без длинной инструкции','Try choosing one neutral detail without a long guide')}</p>
-    <p className={styles.hint}>{text('Что было бы проще найти вокруг прямо сейчас?','What would be easiest to find near you now?')}</p>
+    <div className={styles.overline}><Eye size={16}/>{text('ШАГ 12 · ПРОБУЮ САМ(А)','STEP 12 · TRY IT MYSELF')}</div>
+    <div className={styles.softIllustration}><HeartHandshake size={38}/><span>{text('Три простых движения внимания','Three simple choices')}</span></div>
+    <p className={styles.headline}>{text('Можно попробовать без подробных подсказок: заметить состояние → спросить, что нужно → выбрать поддержку',
+      'Try without detailed instructions: notice your state → consider what you need → choose one support')}</p>
+    <p className={styles.hint}>{text('Несколько комфортных мгновений достаточно. Внутреннее наблюдение можно заменить внешним предметом.',
+      'A few comfortable moments are enough. You may use an ordinary object instead of looking inward.')}</p>
     {choice('independentCue',[
-      {value:'colour',label:text('Цвет','A colour'),icon:Sparkles},
-      {value:'shape',label:text('Форму','A shape'),icon:Compass},
-      {value:'object',label:text('Предмет','An object'),icon:MapPin},
-      {value:'rest',label:text('Лучше отдохнуть','Prefer rest'),icon:PauseCircle},
-      {value:'skip',label:text('Не выбирать','No choice'),icon:CircleHelp},
+      {value:'pause',label:text('Выбрал(а) паузу','Chose a pause'),icon:PauseCircle},
+      {value:'support',label:text('Подумал(а) о поддержке','Considered support'),icon:HeartHandshake},
+      {value:'colour',label:text('Заметил(а) цвет','Noticed colour'),icon:Sparkles},
+      {value:'shape',label:text('Заметил(а) форму','Noticed shape'),icon:Compass},
+      {value:'object',label:text('Заметил(а) предмет','Noticed an object'),icon:MapPin},
+      {value:'rest',label:text('Выбрал(а) отдых','Chose rest'),icon:Leaf},
+      {value:'skip',label:text('Пока без пробы','Not trying now'),icon:CircleHelp},
     ],{compact:true})}
     <button type="button" className={styles.hintToggle} disabled={locked}
       aria-expanded={hintOpen} onClick={()=>{setHintOpen(value=>!value);if(!hintOpen){setHintEverUsed(true);onAnswer('hintUsed','yes')}}}>
@@ -288,60 +353,63 @@ export default function DayOneExercise({
       <ChevronDown size={16} aria-hidden="true"/>
     </button>
     {hintOpen&&<div className={styles.resourceCard} role="status"><Lightbulb size={21}/>
-      <span>{text('Посмотрите на ближайший предмет. Можно выбрать один видимый цвет или линию. Дыхание не меняйте специально.',
-        'Look at the nearest ordinary object. You may choose one visible colour or line. No need to change your breathing.')}</span>
+      <span>{text('Можно заметить один сигнал — или только предмет в комнате. Затем решить: пауза, отдых, поддержка или ничего. Результат не обязан быть приятным.',
+        'Notice one cue — or only an object nearby. Then choose a pause, rest, support or no action. The experience does not have to be pleasant.')}</span>
     </div>}
-    <p className={styles.headline}>{text('Как вы попробовали?','How did you try?')}</p>
+    <p className={styles.headline}>{text('Как прошла эта самостоятельная попытка?','How did this personal attempt go?')}</p>
     {choice('independent',[
-      ...(!hintEverUsed?[{value:'independent',label:text('Самостоятельно','Independently')}]:[]),
+      ...(!hintEverUsed?[{value:'independent',label:text('Без подсказки','Without a hint')}]:[]),
       {value:'guided',label:text('С подсказкой','With a hint')},
-      {value:'deferred',label:text('Попробую позже','I will try later')},
-      {value:'skip',label:text('Пропустить','Skip')},
+      {value:'deferred',label:text('Оставил(а) на потом','Deferred')},
+      {value:'skip',label:text('Не пробовал(а)','Did not try')},
     ],{compact:true})}
     {helper}
   </section>
 
   if(kind==='day1-experience')return <section className={styles.section} data-day-one-activity="experience">
-    <div className={styles.overline}><Sparkles size={16}/>{text('ШАГ 13 · МОЁ НАБЛЮДЕНИЕ','STEP 13 · MY OBSERVATION')}</div>
-    <div className={styles.softIllustration}><Sparkles size={36}/><span>{text('Каждый честный ответ подходит','Every honest response is valid')}</span></div>
-    <p className={styles.headline}>{text('Что действительно изменилось — или осталось прежним?','What actually changed, or stayed the same?')}</p>
+    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 13 · ЗАМЕЧАЮ ИТОГ ВНУТРИ','STEP 13 · NOTICE THE INNER EXPERIENCE')}</div>
+    <div className={styles.softIllustration}><Leaf size={36}/><span>{text('Любой честный ответ подходит','Every honest answer is valid')}</span></div>
+    <p className={styles.headline}>{text('Что вы замечаете в своём состоянии сейчас?','What do you notice about your state now?')}</p>
+    <p className={styles.hint}>{text('Это добровольное наблюдение после упражнения, не повторный диагностический тест. Причину изменений определять не нужно.',
+      'This is an optional observation after the exercise, not another diagnostic test. You do not need to explain any change.')}</p>
     {choice('experience',[
-      {value:'easier',label:text('Мне немного легче','A little easier'),detail:text('Только если вы это действительно заметили','Only if that is what you noticed'),icon:Leaf},
-      {value:'more_choice',label:text('Чувство прежнее, выбирать проще','Same feeling, more choice'),detail:text('Это отдельный возможный результат','A separate possible outcome'),icon:Compass},
-      {value:'unchanged',label:text('Без изменений','No change'),detail:text('Такой результат тоже нормален','This response is equally valid'),icon:PauseCircle},
-      {value:'unsure',label:text('Не могу пока сказать','Not sure yet'),icon:CircleHelp},
-      {value:'uncomfortable',label:text('Стало некомфортно','I felt uncomfortable'),icon:HeartHandshake},
-      {value:'skip',label:text('Предпочитаю не отвечать','Prefer not to answer'),icon:BookOpen},
+      {value:'clearer',label:text('Лучше понимаю, что со мной','I understand my state better'),detail:text('Появилось название или ясность','A clearer name or sense of it'),icon:Lightbulb},
+      {value:'more_choice',label:text('Могу выбрать следующий шаг','I have a little more choice'),detail:text('Даже если чувство осталось','Even if the feeling is unchanged'),icon:Compass},
+      {value:'easier',label:text('Стало немного легче','I feel a little better'),detail:text('Если действительно так ощущается','Only if that is what you feel'),icon:Leaf},
+      {value:'unchanged',label:text('Осталось примерно так же','It feels about the same'),detail:text('Это тоже полезное наблюдение','That is also useful information'),icon:PauseCircle},
+      {value:'unsure',label:text('Не могу определить','Not sure'),icon:CircleHelp},
+      {value:'uncomfortable',label:text('Стало неприятнее','It felt uncomfortable'),icon:HeartHandshake},
+      {value:'skip',label:text('Не хочу оценивать','Prefer not to answer'),icon:BookOpen},
     ],{cards:true})}
-    {answers.experience&&answers.experience!=='uncomfortable'&&<div className={styles.reflectionCard} role="status">
-      <span>{text('Ваше наблюдение — не экзаменационная оценка','Your observation is not a test result')}</span>
-      <p>{answers.experience==='easier'?text('Вы отметили некоторое облегчение.','You reported some relief.')
-        :answers.experience==='more_choice'?text('Вы отметили больше доступного выбора.','You reported more available choice.')
+    {answers.experience&&answers.experience!=='uncomfortable'&&answers.experience!=='skip'&&<div className={styles.reflectionCard} role="status">
+      <span>{text('Ваше наблюдение, не доказательство эффекта','Your observation, not proof of an effect')}</span>
+      <p>{answers.experience==='clearer'?text('Вы отметили больше ясности о своём состоянии.','You reported clearer awareness of your state.')
+        :answers.experience==='more_choice'?text('Вы отметили, что выбор стал доступнее.','You reported more choice.')
+        :answers.experience==='easier'?text('Вы отметили некоторое облегчение.','You reported some relief.')
         :answers.experience==='unchanged'?text('Вы отметили отсутствие заметных изменений.','You reported no noticeable change.')
-        :text('Не обязательно знать ответ прямо сейчас.','You do not have to know right now.')}</p>
+        :text('Не обязательно знать прямо сейчас.','You do not have to know right now.')}</p>
     </div>}
   </section>
 
   if(kind==='day1-adapt')return <section className={styles.section} data-day-one-activity="adapt">
-    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 14 · НАСТРАИВАЮ ПРАКТИКУ','STEP 14 · ADJUSTING THE PRACTICE')}</div>
-    <div className={styles.softIllustration}><HeartHandshake size={36}/><span>{text('Вы определяете удобный формат','You choose what fits')}</span></div>
-    <p className={styles.headline}>{text('Насколько комфортно вам было?','How comfortable did it feel?')}</p>
+    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 14 · УЧИТЫВАЮ СВОИ ГРАНИЦЫ','STEP 14 · RESPECT MY LIMITS')}</div>
+    <p className={styles.headline}>{text('Подошёл ли вам способ замечать состояние?','Did this way of noticing your state suit you?')}</p>
     {choice('comfort',[
-      {value:'comfortable',label:text('Комфортно','Comfortable')},
+      {value:'comfortable',label:text('Подошёл','It suited me')},
       {value:'neutral',label:text('Нейтрально','Neutral')},
-      {value:'uncomfortable',label:text('Некомфортно','Uncomfortable')},
+      {value:'uncomfortable',label:text('Не подошёл','It did not suit me')},
       {value:'skip',label:text('Не отвечать','Skip')},
     ],{compact:true})}
     <div className={styles.verticalRule}/>
-    <p className={styles.headline}>{text('Что оставить для следующего раза?','What would you choose for next time?')}</p>
+    <p className={styles.headline}>{text('Что было бы бережнее в следующий раз?','What would be gentler next time?')}</p>
     {choice('adaptation',[
-      {value:'keep',label:text('Оставить','Keep'),detail:text('Тот же способ и темп','Same approach and pace'),icon:Check},
-      {value:'simplify',label:text('Упростить','Simplify'),detail:text('Короче и с меньшей нагрузкой','Shorter and with less effort'),icon:PauseCircle},
-      {value:'neutral',label:text('Заменить','Replace'),detail:text('Только внешняя нейтральная опора','Only neutral external orientation'),icon:Compass},
+      {value:'keep',label:text('Оставить','Keep'),detail:text('Тот же темп и выбор','Same pace and choice'),icon:Check},
+      {value:'simplify',label:text('Сделать короче','Make it shorter'),detail:text('Меньше внимания к ощущениям','Less attention to sensations'),icon:PauseCircle},
+      {value:'neutral',label:text('Только внешний ориентир','External anchor only'),detail:text('Без обращения внутрь','No inward awareness needed'),icon:Eye},
       {value:'skip',label:text('Решу позже','Decide later'),icon:CircleHelp},
     ],{cards:true})}
-    {answers.adaptation&&!['skip'].includes(answers.adaptation)&&<p className={styles.selectedNotice} role="status">
-      <Check size={16}/>{text('Изменение будет применено только после сохранения урока.','This change will apply only after the lesson is saved.')}</p>}
+    {answers.adaptation&&answers.adaptation!=='skip'&&<p className={styles.selectedNotice} role="status">
+      <Check size={16}/>{text('Ваш выбор будет учтён после сохранения урока.','Your choice is applied only once the lesson is saved.')}</p>}
   </section>
 
   if(kind==='day1-transfer') {
@@ -349,44 +417,52 @@ export default function DayOneExercise({
       after_task:text('я закончу обычное дело','I finish an ordinary task'),
       hurry:text('я замечу внутреннюю спешку','I notice inner rushing'),
       before_rest:text('я соберусь отдохнуть','I am about to rest'),
+      tension:text('я замечу напряжение','I notice tension'),
+      fatigue:text('я замечу усталость','I notice tiredness'),
     }
     const actions={
-      look:text('посмотреть на нейтральный предмет','look at a neutral object'),
-      pause:text('сделать короткую паузу','take a short pause'),
+      look:text('найти нейтральный ориентир','find an ordinary anchor'),
+      pause:text('сделать короткую паузу','take a brief pause'),
       rest:text('отдохнуть','rest'),
       ask:text('попросить поддержки','ask for support'),
-      none:text('ничего не предпринимать','do nothing'),
+      none:text('ничего не предпринимать','take no action for now'),
     }
     const hasPlan=Boolean(cues[answers.transferCue]&&actions[answers.transferAction])
     return <section className={styles.section} data-day-one-activity="transfer">
-      <div className={styles.overline}><Leaf size={16}/>{text('ШАГ 15 · СОЗДАЮ ПЛАН ПОДДЕРЖКИ','STEP 15 · MY SUPPORT PLAN')}</div>
-      <p className={styles.headline}>{text('Когда в обычном дне может пригодиться опора?','When might a simple anchor be useful?')}</p>
+      <div className={styles.overline}><Leaf size={16}/>{text('ШАГ 15 · ЗАБИРАЮ НАВЫК С СОБОЙ','STEP 15 · TAKE THIS SKILL WITH ME')}</div>
+      <p className={styles.headline}>{text('Когда внутреннее состояние подскажет, что нужна поддержка?','When might your inner state signal that support could help?')}</p>
       {choice('transferCue',[
-        {value:'after_task',label:text('После дела','After a task'),icon:Check},
-        {value:'hurry',label:text('Когда спешу','When rushing'),icon:Waves},
-        {value:'before_rest',label:text('Перед отдыхом','Before rest'),icon:PauseCircle},
+        {value:'tension',label:text('Когда чувствую напряжение','When I feel tension'),icon:Waves},
+        {value:'hurry',label:text('Когда внутри спешка','When I feel rushed'),icon:Compass},
+        {value:'fatigue',label:text('Когда мало сил','When I feel tired'),icon:Leaf},
+        {value:'after_task',label:text('После обычного дела','After a task'),icon:Check},
+        {value:'before_rest',label:text('Перед отдыхом','Before resting'),icon:PauseCircle},
         {value:'no_plan',label:text('Пока без плана','No plan now'),icon:HeartHandshake},
         {value:'skip',label:text('Пропустить','Skip'),icon:CircleHelp},
       ],{compact:true})}
       {cues[answers.transferCue]&&<>
-        <p className={styles.headline}>{text('Что вы МОЖЕТЕ выбрать?','What COULD you choose?')}</p>
+        <p className={styles.headline}>{text('Какой небольшой ответ был бы доступен?','What small response might be possible?')}</p>
         {choice('transferAction',[
-          {value:'look',label:text('Посмотреть вокруг','Look around'),icon:Eye},
-          {value:'pause',label:text('Пауза','Pause'),icon:PauseCircle},
+          {value:'pause',label:text('Небольшая пауза','A brief pause'),icon:PauseCircle},
+          {value:'look',label:text('Внешний ориентир','An outside anchor'),icon:Eye},
           {value:'rest',label:text('Отдых','Rest'),icon:Leaf},
-          {value:'ask',label:text('Поддержка','Support'),icon:HeartHandshake},
-          {value:'none',label:text('Ничего','Nothing'),icon:CircleHelp},
+          {value:'ask',label:text('Обратиться за помощью','Ask for help'),icon:HeartHandshake},
+          {value:'none',label:text('Пока ничего','Nothing for now'),icon:CircleHelp},
         ],{compact:true})}
       </>}
       <div className={styles.personalCard} data-personal-transfer-preview>
-        <span><Leaf size={16}/>{text('МОЯ ПЕРВАЯ КАРТОЧКА ОПОРЫ','MY FIRST SUPPORT CARD')}</span>
+        <span><HeartHandshake size={16}/>{text('МОЯ КАРТОЧКА: СОСТОЯНИЕ → ПОДДЕРЖКА','MY CARD: STATE → SUPPORT')}</span>
         <strong>{skill}</strong>
-        {answers.anchor&&anchorLabels[answers.anchor]&&<p>{text('Мой ориентир: ','My anchor: ')}{anchorLabels[answers.anchor]}</p>}
+        {signalLabels[answers.innerSignal]&&<p>{text('Замечаю: ','I notice: ')}{signalLabels[answers.innerSignal]}</p>}
+        {needLabels[answers.innerNeed]&&<p>{text('Мне может помочь: ','What could help: ')}{needLabels[answers.innerNeed]}</p>}
+        {actionLabels[answers.innerAction]&&<p>{text('Пробовал(а) или выбрал(а): ','I considered or chose: ')}{actionLabels[answers.innerAction]}</p>}
+        {anchorLabels[answers.anchor]&&<p>{text('Внешняя опора: ','External anchor: ')}{anchorLabels[answers.anchor]}</p>}
         {hasPlan?<p className={styles.planSentence}>{text('Когда ','When ')}{cues[answers.transferCue]},
           {text(' я могу ',' I could ')}{actions[answers.transferAction]}.</p>
-          :<p className={styles.planSentence}>{text('План пока не выбран. Это допустимо.','No plan selected yet. That is okay.')}</p>}
-        <small>{text('Это только возможный план, а не обещание выполнить его. Курс будет сохранён после подтверждения сервера.',
-          'This is only a possible plan, not a promise. The course will be saved after server confirmation.')}</small>
+          :<p className={styles.planSentence}>{text('План пока не выбран. Сохранить урок всё равно можно.',
+            'No plan chosen yet. You can still save the lesson.')}</p>}
+        <small>{text('Это план, а не обещание действий или лечения. Сохранение подтвердится после ответа сервера.',
+          'This is a plan, not a promise of action or treatment. Saving is confirmed by the server.')}</small>
       </div>
     </section>
   }
