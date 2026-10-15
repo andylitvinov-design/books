@@ -65,7 +65,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
   assert.match(storage,/getBucket\(PRIVATE_MEDIA_BUCKET\)/)
   assert.match(storage,/data\.public!==false/)
   assert.ok(recorder.indexOf('await checkReady()')<recorder.indexOf('navigator.mediaDevices.getUserMedia'))
-  assert.match(recorder,/await checkReady\(\);const sid=await ensureSession\(\)/)
+  assert.match(recorder,/await checkReady\(\)\s+const sid=await ensureSession\(\)/)
   assert.match(recorder,/recordingError\(e,ru\)/)
   const media=src('app/api/admin/clients/[id]/sessions/[sessionId]/media/[assetId]/route.js')
   assert.match(media,/ownerDelivery/)
