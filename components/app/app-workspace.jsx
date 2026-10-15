@@ -502,7 +502,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} savedSessions={data.savedSessions || []}
                 overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
                 reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded />}>
                 <Portrait data={data} locale={locale} />
@@ -672,7 +672,9 @@ function SaveContinuation({ data, locale, reload }) {
   }, [autoSave, authFailure, intent, intentId, commit, locale, router])
 
   const sourceTitle =
-    intent?.sourceKind === 'delivered_report'
+    intent?.sourceKind === 'client_session'
+      ? (ru?'Персональная консультация':'Personal consultation')
+      : intent?.sourceKind === 'delivered_report'
       ? ru
         ? 'Полученный отчёт'
         : 'Received report'
@@ -708,7 +710,11 @@ function SaveContinuation({ data, locale, reload }) {
             {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
-            {intent?.sourceKind === 'guest_result'
+            {intent?.sourceKind === 'client_session'
+              ? (ru
+                  ? 'В этот Google-аккаунт будет сохранена только выбранная консультация. Другие сессии и личные документы останутся закрытыми.'
+                  : 'Only this selected consultation will be saved to your Google Account. Other sessions and private documents stay separate.')
+              : intent?.sourceKind === 'guest_result'
               ? (ru
                   ? 'Будет сохранён только этот выбранный результат.'
                   : 'Only this selected result will be saved.')
@@ -3054,6 +3060,13 @@ function HistoryView({ data, locale, reload }) {
       title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
+    })),
+    ...(data.savedSessions || []).map(session=>({
+      id:session.id,
+      date:session.occurredOn+'T00:00:00.000Z',
+      title:locale==='ru'?'Сохранённая консультация':'Saved consultation',
+      href:'/'+locale+'/app/sessions/'+session.id,
+      note:(locale==='ru'?'Сохранено: ':'Saved: ')+dateLabel(session.savedAt,locale),
     })),
     ...(data.savedDocuments || []).map((document) => ({
       id: document.id,

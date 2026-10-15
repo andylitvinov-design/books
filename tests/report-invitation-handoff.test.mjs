@@ -19,6 +19,7 @@ test('automatic handoff is limited to explicit, unexpired private document invit
     assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { ...intent, status: 'committed' } }), false)
   }
   assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { sourceKind: 'guest_result', status: 'pending' } }), false)
+  assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { sourceKind: 'client_session', status: 'pending' } }), false)
   assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: null }), false)
 })
 
@@ -26,6 +27,7 @@ test('saved items navigate to their authenticated, exact-ID account viewer', () 
   assert.equal(savedResourcePath('en', 'delivered_report', id), '/en/app/reports/' + id)
   assert.equal(savedResourcePath('ru', 'legacy_document', id), '/ru/app/document-view/' + id)
   assert.equal(savedResourcePath('en', 'guest_result', id), '/en/app/results/' + id)
+  assert.equal(savedResourcePath('ru', 'client_session', id), '/ru/app/sessions/' + id)
   assert.throws(() => savedResourcePath('en', 'delivered_report', '../history'))
   assert.throws(() => savedResourcePath('en', 'other', id))
 })

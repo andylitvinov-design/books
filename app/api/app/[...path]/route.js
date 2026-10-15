@@ -21,6 +21,7 @@ import {
   createGuestSaveIntent,
   createLegacyDocumentSaveIntent,
   createReportSaveIntent,
+  sessionSaveIntentBrowserHash,
   readSaveIntent,
   saveIntentBrowserProof,
   setSaveIntentCookie,
@@ -28,6 +29,9 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import {deliveryEnabled} from '@/lib/clients/delivery-model'
+import {authorizeSessionGuest,readSessionViewerCookie} from '@/lib/clients/session-delivery-access'
+import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession} from '@/lib/app/session-save-flow'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
@@ -225,6 +229,14 @@ async function handle(request, { params }) {
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         const opened = await authorizeReportViewer(config, store, body.selector, viewer)
         intent = await createReportSaveIntent(config, opened.grant, body.operationId)
+      } else if (body.sourceKind === 'client_session') {
+        if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',404)
+        if(typeof body.selector!=='string')throw new AppError('SESSION_UNAVAILABLE',404)
+        const store=getPrescriptionStore()
+        const access=await authorizeSessionGuest(config,store,body.selector,
+          readSessionViewerCookie(request.cookies,body.selector))
+        intent=await createSessionSaveIntent(config,access,body.operationId,
+          id=>sessionSaveIntentBrowserHash(id,config))
       } else if (body.sourceKind === 'legacy_document') {
         if (typeof body.selector !== 'string') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         const store = getPrescriptionStore()
@@ -352,6 +364,9 @@ async function handle(request, { params }) {
         const store = getPrescriptionStore()
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         resource = await commitReportSaveIntent(config, store, actor, path[1], proof)
+      } else if (intent.sourceKind === 'client_session') {
+        if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',404)
+        resource=await commitSessionSaveIntent(config,getPrescriptionStore(),actor,path[1],proof)
       } else if (intent.sourceKind === 'legacy_document') {
         const store = getPrescriptionStore()
         if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
@@ -408,6 +423,15 @@ async function handle(request, { params }) {
       throw new AppError('NOT_FOUND', 404)
     }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
+    if(path[0]==='saved-sessions' && path.length===2 && method==='GET'){
+      if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',404)
+      return json(await readSavedSession(config,getPrescriptionStore(),actor,path[1]))
+    }
+    if(path[0]==='saved-sessions' && path.length===3 && path[2]==='remove' && method==='POST'){
+      if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',404)
+      onlyKeys(await readBody(request),[])
+      return json(await removeSavedSession(config,actor,path[1]))
+    }
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
     if (joined === 'shared-materials' && method === 'GET') {

@@ -399,3 +399,18 @@
   .cabinetBridgeLinks button{min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){.cabinetSessionPage *{scroll-behavior:auto}}
+
+.saveSessionCard{margin:25px 0 16px;padding:clamp(18px,3vw,26px);border:1px solid #d7dece;
+  border-radius:21px;background:linear-gradient(128deg,#f9fbf2,#fffdf7 82%);box-shadow:0 6px 20px #3c513211}
+.saveSessionCardTitle{display:flex;align-items:start;gap:12px;color:#427a61}
+.saveSessionCardTitle>svg{flex:none;margin-top:3px}
+.saveSessionCardTitle h2{font:600 clamp(21px,3vw,26px)/1.23 Georgia,serif;color:#3a4338;margin:0 0 7px}
+.saveSessionCardTitle p{color:#6e756b;font-size:14px;line-height:1.55;margin:0 0 12px}
+.saveSessionButton{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:50px;padding:12px 18px;border:1px solid #a44830;border-bottom:3px solid #923e29;
+  border-radius:13px;color:#fff;background:#b75236;font-size:15px;font-weight:800;cursor:pointer}
+.saveSessionButton:hover{background:#98412b}.saveSessionButton:disabled{opacity:.58;cursor:default}
+.saveSessionPrivacy{display:flex;gap:8px;align-items:flex-start;color:#6d776f;
+  font-size:12px;line-height:1.55;margin:12px 0 0}
+.saveSessionPrivacy svg{flex:none;margin-top:1px;color:#4c8a70}
+@media(max-width:580px){.saveSessionButton{width:100%}.saveSessionCard{border-radius:18px}}

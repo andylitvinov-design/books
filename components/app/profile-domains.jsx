@@ -160,7 +160,7 @@ function ProfileServiceOffer({ area, locale }) {
  */
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, assessments = [], homeopathyUpdates = [],
-  results = [], savedReports = [], savedDocuments = [], children = null,
+  results = [], savedReports = [], savedDocuments = [], savedSessions = [], children = null,
   overviewContent = null, reportsContent = null, focusReports = false,
 }) {
   const ru = locale === 'ru'
@@ -303,6 +303,18 @@ export function ProfileDomains({
         <div><p className="hh-domain-eyebrow">HOLISTIC HOUSE</p><h2 id="hh-profile-reports-title">{t.archiveTitle}</h2><p>{t.archiveHint}</p></div>
         <ArrowRight size={21} aria-hidden="true" />
       </header>
+      {!external && savedSessions.length>0 && <div className="hh-saved-session-archive" aria-label={ru?'Сохранённые консультации':'Saved consultations'}>
+        <h3>{ru?'Мои сохранённые консультации':'My saved consultations'}</h3>
+        <div className="hh-saved-session-archive-grid">
+          {ordered(savedSessions).map(item=><Link key={item.id}
+            href={'/'+locale+'/app/sessions/'+encodeURIComponent(item.id)} prefetch={false}>
+            <span className="hh-saved-session-archive-icon"><LockKeyhole size={18}/></span>
+            <span><strong>{ru?'Консультация':'Consultation'}</strong>
+              <small>{readableDate(item.occurredOn,locale)}</small></span>
+            <ArrowRight size={18} aria-hidden="true"/>
+          </Link>)}
+        </div>
+      </div>}
       {reportsContent}
     </section>}
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>

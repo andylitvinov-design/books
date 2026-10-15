@@ -1,0 +1,7 @@
+.wrap{max-width:900px;margin:0 auto 35px;padding:0 16px;color:#73695e;font:14px/1.55 system-ui,sans-serif}
+.wrap details{border:1px solid #e3dacf;border-radius:15px;background:#fffdf8;padding:10px 17px}
+.wrap summary{cursor:pointer;min-height:45px;display:flex;align-items:center;color:#685348;font-weight:700}
+.wrap button{min-height:44px;border:1px solid #cbbbae;border-radius:11px;background:#fff8f2;color:#8f4331;
+  cursor:pointer;font-weight:750;padding:10px 14px}
+.wrap button:disabled{opacity:.55;cursor:default}
+.wrap p{font-size:13px;line-height:1.6}

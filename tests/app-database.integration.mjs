@@ -1917,3 +1917,51 @@ test('private session share grants enforce per-consultation ownership under real
   }finally{await db.end()}
 })
 
+
+
+test('saving exactly one consultation in Google Cabinet uses owner-bound RLS and composite session grants',async()=>{
+  // Runs only against the isolated synthetic app database; never live client data.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    const ddl=await readFile(new URL('../sql/client-session-account-save-20261015.sql',import.meta.url),'utf8')
+    await db.query(ddl)
+    const sa=randomUUID(),sb=randomUUID(),clientA=randomUUID(),clientB=randomUUID(),grantA=randomUUID()
+    for(const [id,owner] of [[sa,clientA],[sb,clientB]])
+      await db.query(
+        "insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic','draft')",
+        [id,owner])
+    await db.query(
+      "insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '7 days')",
+      [grantA,sa,clientA,'cccccccccccccccccccccc','c'.repeat(64)])
+    const intent=randomUUID(),operation=randomUUID(),hash='sha256:'+'e'.repeat(64)
+    await db.query(
+      "insert into app_private.save_intents(id,browser_secret_hash,source_kind,source_id,source_revision,source_legacy_client_id,source_hash,source_session_grant_id,source_session_access_version,status,operation_id,operation_hash,expires_at) values($1,$2,'client_session',$3,1,$4,$5,$6,1,'pending',$7,$8,now()+interval '10 minutes')",
+      [intent,'d'.repeat(64),sa,clientA,hash,grantA,operation,'f'.repeat(64)])
+    await assert.rejects(
+      db.query("insert into app_private.save_intents(id,browser_secret_hash,source_kind,source_id,source_revision,source_legacy_client_id,source_hash,source_session_grant_id,source_session_access_version,status,operation_id,operation_hash,expires_at) values($1,$2,'client_session',$3,1,$4,$5,$6,1,'pending',$7,$8,now()+interval '10 minutes')",
+        [randomUUID(),'d'.repeat(64),sb,clientB,hash,grantA,randomUUID(),'f'.repeat(64)]),
+      error=>error.code==='23503')
+    const saved=randomUUID()
+    await db.query(
+      "insert into app.saved_sessions(id,account_id,session_id,legacy_client_id,source_revision,occurred_on) values($1,$2,$3,$4,1,'2026-10-15')",
+      [saved,a.id,sa,clientA])
+    await assert.rejects(db.query(
+      "insert into app.saved_sessions(account_id,session_id,legacy_client_id,source_revision,occurred_on) values($1,$2,$3,1,'2026-10-15')",
+      [b.id,sa,clientA]),error=>error.code==='23505')
+    await assert.rejects(db.query(
+      "insert into app.saved_sessions(account_id,session_id,legacy_client_id,source_revision,occurred_on) values($1,$2,$3,1,'2026-10-15')",
+      [b.id,sb,clientA]),error=>error.code==='23503')
+    const own=await rawAs(a,'authenticated',x=>x.query('select id from app.saved_sessions'))
+    const other=await rawAs(b,'authenticated',x=>x.query('select id from app.saved_sessions'))
+    assert.deepEqual(own.rows.map(row=>row.id),[saved])
+    assert.equal(other.rows.length,0)
+    await assert.rejects(rawAs(a,'authenticated',x=>x.query(
+      "insert into app.saved_sessions(account_id,session_id,legacy_client_id,source_revision,occurred_on) values($1,$2,$3,1,'2026-10-15')",
+      [a.id,sb,clientB])),error=>error.code==='42501')
+    const updated=await rawAs(a,'hh_app_backend',x=>x.query(
+      'update app.saved_sessions set removed_at=now() where id=$1 and account_id=$2 returning id',[saved,a.id]))
+    assert.equal(updated.rowCount,1)
+    assert.equal((await db.query("select relrowsecurity from pg_class where oid='app.saved_sessions'::regclass")).rows[0].relrowsecurity,true)
+  }finally{await db.end()}
+})
