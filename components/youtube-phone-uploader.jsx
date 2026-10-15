@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from 'react'
 import Link from 'next/link'
 import styles from './youtube-phone-uploader.module.css'
 import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl} from '@/lib/youtube/phone-upload-protocol.mjs'
-import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedVisibility} from '@/lib/youtube/browser-upload'
+import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedDetails} from '@/lib/youtube/browser-upload'
 import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction, configureYoutubeWebOauthAction} from '@/app/admin/youtube-upload/actions'
 
 const copy = {
@@ -39,6 +39,7 @@ const copy = {
     retrySave:'Повторить сохранение ссылки',
     channelUnlisted:'YouTube подтвердил Unlisted', channelPrivate:'YouTube вернул Private. Ролик может быть недоступен по ссылке — проверьте в Studio.',
     channelPublic:'YouTube вернул Public! Срочно проверьте доступ в Studio.', channelUnknown:'Проверьте фактическую видимость в YouTube Studio.',
+    wrongResult:'YouTube разместил ролик в другом канале! Загрузка остановлена, ссылка не сохранена в журнал. Проверьте Google-аккаунт и YouTube Studio.',
     stay:'Оставляйте Safari открытым, а экран активным до завершения передачи. После обновления страницы файлы придётся выбрать заново.',
     more:'Для нового канала сначала завершите или уберите незаконченные файлы из очереди.',
     errors:{
@@ -96,6 +97,7 @@ const copy = {
     retrySave:'Retry saving the link',
     channelUnlisted:'YouTube confirmed Unlisted', channelPrivate:'YouTube returned Private. The link may not work for viewers. Check Studio.',
     channelPublic:'YouTube returned Public! Review this immediately in Studio.', channelUnknown:'Verify actual visibility in YouTube Studio.',
+    wrongResult:'YouTube uploaded the video to a different channel! Upload stopped and link not archived. Check your Google account and YouTube Studio.',
     stay:'Keep Safari open and the phone awake until transfer finishes. A page reload requires choosing the files again.',
     more:'Finish or remove incomplete uploads before changing channels.',
     errors:{
@@ -361,8 +363,15 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   async function finish(entry, resultId, auth, channelId) {
-    const actual = await readUploadedVisibility(resultId,auth.value)
-    update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual || 'unknown',saved:false})
+    const details = await readUploadedDetails(resultId,auth.value)
+    const actual = details?.privacyStatus || 'unknown'
+    const wrongChannel = Boolean(details?.channelId && details.channelId !== channelId)
+    // Always show the YouTube video ID even if Google placed it in an unexpected channel.
+    update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual,saved:false,wrongChannel})
+    if (wrongChannel) {
+      setHistoryStatus(false)
+      throw new Error('wrong_channel')
+    }
     const archived = await saveLink(entry.id,resultId,actual,entry.title,entry.target,channelId)
     if (!archived) throw new Error('history_unavailable')
   }
@@ -534,7 +543,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
                   <a href={videoWatchUrl(item.videoId)} target="_blank" rel="noreferrer">{t.open} ↗</a>
                   <button type="button" onClick={() => copyLink(item.videoId)}>{copiedId === item.videoId ? t.copied : t.copy}</button>
                 </div>
-                {!item.saved && <div className={styles.caution}>
+                {item.wrongChannel && <p className={styles.error}>{t.wrongResult}</p>}
+                {!item.saved && !item.wrongChannel && <div className={styles.caution}>
                   <p>{t.historyError}</p>
                   <button type="button" disabled={busy} onClick={() =>
                     saveLink(item.id,item.videoId,item.privacyStatus,item.title,item.target,
