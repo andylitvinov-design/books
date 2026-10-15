@@ -12,21 +12,21 @@ import styles from './antistress-module-finder.module.css'
 const words={
   ru:{
     kicker:'ОПОРА · АНТИСТРЕСС',eyebrow:'ВАШ РЕКОМЕНДОВАННЫЙ МАРШРУТ',
-    title:'Рекомендуем начать с модуля',route:'Антистресс',day:'День 1 из 14',
+    title:'Рекомендуем начать с курса',route:'ОПОРА',day:'День 1 из 14',
     based:'Мы учли ваши ответы за последние 7 дней. Вы можете выбрать другой модуль.',
     start:'Начать курс · День 1',starting:'Открываем занятие…',
-    modules:'Пять модулей программы',modulesHint:'Рекомендуемый модуль уже выбран. При желании измените выбор одним нажатием.',
+    modules:'Шесть этапов программы',modulesHint:'Рекомендуемый модуль уже выбран. При желании измените выбор одним нажатием.',
     recommended:'Рекомендуем',chosen:'Ваш выбор',reset:'Вернуться к рекомендации',
     results:'Результаты моего тестирования',resultsHint:'Свернуть / развернуть оценки',weekly:'Weekly Pulse · последние 7 дней',
     load:'Перегрузка',tension:'Напряжение',functioning:'Повседневная активность',
     otherTests:'Другие пройденные тесты',moreDetails:'Показаны только доступные совместимые результаты. Полные отчёты остаются в «Моих тестах».',
     why:'Почему этот модуль',weekMissing:'Нужен актуальный Weekly Pulse, чтобы открыть первый урок.',
     skills:'Уточнить рекомендацию · 8 вопросов по желанию',
-    skillsHint:'Это дополнительная самооценка доступности навыков, а не повторное обязательное тестирование.',
+    skillsHint:'Рекомендуем пройти до выбора этапа: 8 кратких пунктов помогут подобрать цель курса. Пропуски допустимы.',
     question:'За последние 7 дней, когда было нужно, насколько вам удавалось следующее?',
     low:'0 · не удавалось',high:'10 · почти всегда',skip:'Не знаю / не было ситуации',
     footerTitle:'Готовы перейти к практике?',footerText:'Первое занятие начнётся сразу после подтверждения. Далее — 14 дней упражнений в удобном темпе.',
-    note:'Модули отражают субъективную нагрузку, а не стадии травмы. Более высокий номер не означает лучший результат.',
+    note:'Этап — учебная задача, а не диагноз или подтверждённая стадия травмы. Уровень стресса влияет на темп занятий, а не определяет этап автоматически.',
     preliminary:'Подбор ориентировочный. У авторских шкал HH нет клинически подтверждённых порогов.',
     measurement:'Шкалы HH не предназначены для постановки диагноза. Можно пропустить вопросы о навыках.',
     safety:'Курс не отслеживается в реальном времени. При непосредственной опасности или серьёзном ухудшении обратитесь к специалисту либо в экстренную службу.',
@@ -37,7 +37,12 @@ const words={
       reported_mild:'Ваши ответы отражают относительно небольшую нагрузку.',
       maintenance:'Нагрузка невысока; можно укреплять устойчивость.',
       reported_functioning:'Оценка повседневной активности говорит в пользу более мягкого начала.',
-      exploratory:'Полный актуальный замер пока не найден; предложен вводный маршрут.',
+      exploratory:'Недостаточно данных о навыках. Предлагаем стабилизацию как безопасный старт; выбор остаётся за вами.',
+      goal_preference:'Вы выбрали это направление обучения. Рекомендация учитывает вашу цель, а не объявляет диагноз.',
+      emotional_skills:'В ответах отмечена низкая доступность эмоциональной опоры. Можно начать с навыков работы с чувствами.',
+      self_support:'В ответах мало доступной самоподдержки. Можно начать с интеграции и мягкого отношения к себе.',
+      daily_function:'Больше всего затруднены повседневные дела при переносимой нагрузке. Подойдут небольшие реальные шаги.',
+      general_stabilization:'При отсутствии явного приоритета предлагаем общую саморегуляцию как обратимый начальный навык.',
     },
   },
   en:{
@@ -45,18 +50,18 @@ const words={
     title:'We recommend starting with',route:'Anti-Stress',day:'Day 1 of 14',
     based:'Based on your last seven days. You can always choose another module.',
     start:'Start course · Day 1',starting:'Opening your lesson…',
-    modules:'All five programme modules',modulesHint:'Your recommended route is selected. Choose a different one if you prefer.',
+    modules:'All six programme courses',modulesHint:'Your recommended route is selected. Choose a different one if you prefer.',
     recommended:'Recommended',chosen:'Your choice',reset:'Use recommended module',
     results:'My assessment results',resultsHint:'Expand to see your scores',weekly:'Weekly Pulse · last 7 days',
     load:'Overload',tension:'Tension',functioning:'Daily functioning',
     otherTests:'Other completed assessments',moreDetails:'Only available compatible results are shown. Full reports remain in My Tests.',
     why:'Why this module',weekMissing:'A current Weekly Pulse is needed to start your first lesson.',
     skills:'Refine this recommendation · 8 optional questions',
-    skillsHint:'A short self-rating of available skills, not another required assessment.',
+    skillsHint:'Recommended before choosing a course: eight skill questions help match your learning goal. Skips are allowed.',
     question:'In the last 7 days, when needed, how often could you do the following?',
     low:'0 · not at all',high:'10 · almost always',skip:'Not sure / no opportunity',
     footerTitle:'Ready for your first practice?',footerText:'Your first lesson opens after you confirm. Continue through 14 days of practices at your own pace.',
-    note:'Modules are based on reported strain, not trauma stages. A higher number does not mean better performance.',
+    note:'Courses reflect learning goals, not diagnosed trauma stages. Stress ratings guide pace, not treatment selection.',
     preliminary:'This is an educational suggestion. HH scales do not have validated clinical cut-offs.',
     measurement:'HH scores are non-diagnostic self-reports. The skill questions can be skipped.',
     safety:'This course is not monitored in real time. For immediate danger or serious deterioration, seek human or emergency support.',
@@ -67,7 +72,12 @@ const words={
       reported_mild:'Your ratings suggest relatively mild strain.',
       maintenance:'Strain is low; resilience practice may be a good fit.',
       reported_functioning:'Reported difficulty with daily functioning suggests a gentler start.',
-      exploratory:'No complete current baseline was found; an introductory route is suggested.',
+      exploratory:'Skill information is incomplete; stabilization is a safe starting suggestion, not a diagnosis.',
+      goal_preference:'Your stated learning goal informed this suggestion; it is not a clinical classification.',
+      emotional_skills:'Emotion support skills appear less accessible; the emotion-learning course may fit.',
+      self_support:'Self-support feels less accessible; the integration course may fit your goal.',
+      daily_function:'Everyday functioning is harder despite manageable load; practical small steps may help.',
+      general_stabilization:'With no clear priority, stabilization is a flexible educational starting point.',
     },
   },
   es:{
@@ -75,18 +85,18 @@ const words={
     title:'Te recomendamos comenzar con',route:'Antiestrés',day:'Día 1 de 14',
     based:'Según tus respuestas de los últimos siete días. Puedes elegir otro módulo.',
     start:'Comenzar curso · Día 1',starting:'Abriendo tu clase…',
-    modules:'Los cinco módulos del programa',modulesHint:'La ruta recomendada está seleccionada. Puedes cambiarla.',
+    modules:'Los seis cursos de la programa',modulesHint:'La ruta recomendada está seleccionada. Puedes cambiarla.',
     recommended:'Recomendado',chosen:'Tu elección',reset:'Volver a la recomendación',
     results:'Resultados de mis evaluaciones',resultsHint:'Desplegar las puntuaciones',weekly:'Weekly Pulse · últimos 7 días',
     load:'Sobrecarga',tension:'Tensión',functioning:'Actividad cotidiana',
     otherTests:'Otras evaluaciones completadas',moreDetails:'Se muestran resultados compatibles disponibles. Los informes completos siguen en Mis tests.',
     why:'Por qué este módulo',weekMissing:'Necesitas un Weekly Pulse reciente antes del día 1.',
     skills:'Afinar la recomendación · 8 preguntas opcionales',
-    skillsHint:'Autoevaluación breve de habilidades, no otra prueba obligatoria.',
+    skillsHint:'Ocho preguntas de habilidades recomendadas antes de elegir; puedes omitir respuestas.',
     question:'Durante los últimos 7 días, cuando lo necesitabas, ¿con qué frecuencia podías hacer lo siguiente?',
     low:'0 · nada',high:'10 · casi siempre',skip:'No sé / no hubo ocasión',
     footerTitle:'¿Listo para tu primera práctica?',footerText:'La primera clase se abre al confirmar. Continúa con 14 días de ejercicios a tu ritmo.',
-    note:'Los módulos describen carga percibida, no etapas del trauma. Un número mayor no significa un resultado mejor.',
+    note:'Los cursos responden a objetivos educativos, no a un diagnóstico del trauma. El estrés ayuda a elegir el ritmo.',
     preliminary:'Orientación educativa. Las escalas HH no tienen umbrales clínicos validados.',
     measurement:'Las puntuaciones HH no son diagnósticas. Puedes omitir las preguntas de habilidades.',
     safety:'El curso no se supervisa en tiempo real. Ante peligro inmediato o deterioro grave, busca ayuda humana o de urgencias.',
@@ -97,7 +107,12 @@ const words={
       reported_mild:'La carga descrita es relativamente leve.',
       maintenance:'La carga es baja; puede ayudar practicar resiliencia.',
       reported_functioning:'La dificultad cotidiana sugiere un inicio más suave.',
-      exploratory:'Falta una evaluación reciente completa; sugerimos una ruta introductoria.',
+      exploratory:'Faltan datos de habilidades; la estabilización es una sugerencia inicial.',
+      goal_preference:'Tu objetivo elegido orienta la recomendación, no es un diagnóstico.',
+      emotional_skills:'Pueden ayudar las habilidades de reconocer emociones y buscar apoyo.',
+      self_support:'Puede convenir aprender autocompasión y apoyo interior.',
+      daily_function:'Una meta de pasos pequeños puede ayudar en las tareas cotidianas.',
+      general_stabilization:'La estabilización es un posible primer paso educativo.',
     },
   },
 }
@@ -121,7 +136,8 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
   const chosen=chosenRoute||recommendation.moduleId
   const selected=ANTISTRESS_MODULE_GOALS.find(item=>item.id===chosen)
   const recommended=ANTISTRESS_MODULE_GOALS.find(item=>item.id===recommendation.moduleId)
-  const canStart=Boolean(weekly)&&!busy&&typeof onStart==='function'
+  const canStart=Boolean(weekly)&&chosen!=='AS4'&&!busy&&typeof onStart==='function'
+  const clinicianNotice=language==='ru'?'Курс 4 проводится только при подтверждённом сопровождении квалифицированного специалиста; самостоятельный запуск недоступен.':language==='es'?'El curso 4 requiere acompañamiento profesional verificado; no se puede iniciar sin especialista.':'Course 4 needs verified qualified clinician support and cannot be started independently.'
   const extraResults=(Array.isArray(profile?.scales)?profile.scales:[]).filter(item=>
     item.testKey!=='hh-weekly-pulse'&&item.recent&&Number.isFinite(item.score)&&
     Number.isFinite(item.min)&&Number.isFinite(item.max)).slice(0,8)
@@ -152,6 +168,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
       <p className={styles.heroHint}>{chosenRoute?t.chosen+': '+t.based:t.based}</p>
       {startButton}
       {!weekly&&<p className={styles.unavailable} role="status">{t.weekMissing}</p>}
+      {chosen==='AS4'&&<p className={styles.unavailable} role="status">{clinicianNotice}</p>}
     </section>
 
     <section className={styles.moduleSection} aria-labelledby="opora-module-options" data-opora-route-picker>
@@ -171,7 +188,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
             </span>
             <span className={styles.moduleSide}>
               {item.id===recommendation.moduleId&&<span className={styles.recommendedBadge}>{t.recommended}</span>}
-              <span className={styles.band}>{item.range[0]}–{item.range[1]}/10</span>
+              <span className={styles.band}>{item.clinicalOnly?(language==='ru'?'Со специалистом':language==='es'?'Con especialista':'Clinician only'):(language==='ru'?'14 дней':language==='es'?'14 días':'14 days')}</span>
               {chosen===item.id&&<CheckCircle2 size={20} aria-hidden="true"/>}
             </span>
           </button>
@@ -205,7 +222,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
       </div>
     </details>
 
-    <details className={styles.skills} data-opora-skills>
+    <details className={styles.skills} data-opora-skills open>
       <summary><span className={styles.summaryIcon}><SlidersHorizontal size={19} aria-hidden="true"/></span>
         <span className={styles.summaryText}><strong>{t.skills}</strong>
           <small>{t.skillsHint}</small></span>
@@ -239,6 +256,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
         <span>{busy?t.starting:t.start}</span><ArrowRight size={21} aria-hidden="true"/>
       </button>
       {!weekly&&<small className={styles.unavailable}>{t.weekMissing}</small>}
+      {chosen==='AS4'&&<small className={styles.unavailable}>{clinicianNotice}</small>}
       <small className={styles.smallPrint}>{t.note} {t.safety}</small>
     </section>
   </section>
