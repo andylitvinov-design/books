@@ -9,16 +9,16 @@ test('public test picker explains Google sign-in before asking visitors to selec
   const notice = source.indexOf('data-prelogin-google-notice')
   const firstTopic = source.indexOf('id="hh-simple-topic-title"')
   assert.ok(notice > 0 && firstTopic > notice, 'access information must precede topic selection')
-  assert.match(source, /Starting a selected test set requires Google sign-in/)
-  assert.match(source, /Для запуска выбранного набора тестов потребуется Google/)
-  assert.match(source, /Para iniciar una selección de pruebas se requiere Google/)
+  assert.match(source, /creating and saving a multi-test plan requires Google sign-in/)
+  assert.match(source, /для составления и сохранения набора нужен вход через Google/)
+  assert.match(source, /crear y guardar un conjunto requiere iniciar sesión con Google/)
   assert.match(source, /\/client\x60\} prefetch=\{false\}>\{c\.guestAction\}/)
 })
 
 test('homepage advertises the real login requirement and an optional guest entry', () => {
   const source = read('components/home-free-tests-banner.tsx')
-  assert.match(source, /starting a full test set requires Google sign-in/)
-  assert.match(source, /для запуска полного набора тестов нужен Google/)
+  assert.match(source, /Saving a test set requires Google/)
+  assert.match(source, /Для сохранения набора нужен Google/)
   assert.match(source, /href=\{\x60\/\$\{locale\}\/client\x60\}/)
 })
 
