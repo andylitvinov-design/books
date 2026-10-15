@@ -614,3 +614,8 @@
   .testDetailsBody{padding:10px}
 }
 @media(prefers-reduced-motion:reduce){.researchDetails>summary svg:last-child{transition:none}}
+
+/* Disclosure chevrons rotate, never the category or methodology pictograms. */
+.testDetails[open] summary svg:first-child{transform:none}
+.testDetails[open]>summary svg:last-child{transform:rotate(180deg)}
+.testDetails[open] .researchDetails:not([open])>summary svg:last-child{transform:none}
