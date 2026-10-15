@@ -10,13 +10,14 @@ import {ANTISTRESS_ACTIVE_MODULE_IDS,ANTISTRESS_ROUTER_VERSION} from '../lib/inn
 import {moduleLesson} from '../lib/inner-growth/antistress-module-lessons.js'
 import {DAY_ONE_SLIDES} from '../lib/inner-growth/anti-stress-day-one.js'
 import {buildCourseSlides} from '../lib/inner-growth/course-slide-sequence.js'
+import {oporaModuleActivity} from '../lib/inner-growth/opora-module-exercise.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('all 70 current Anti-Stress lessons retain authored 15-slide routes and their pinned IDs',()=>{
+test('six phase-aware courses keep 84×15 slide programmes; five self-guided phases have real exercises',()=>{
   assert.equal(OPORA_STATE_JOURNEY_SCHEMA,'opora-state-journey-v1')
-  assert.equal(ANTISTRESS_ACTIVE_MODULE_IDS.length,5)
-  let routes=0
+  assert.equal(ANTISTRESS_ACTIVE_MODULE_IDS.length,6)
+  let listed=0,selfGuided=0
   for(const id of ANTISTRESS_ACTIVE_MODULE_IDS){
     for(const locale of ['ru','en']){
       for(let day=1;day<=14;day++){
@@ -26,17 +27,29 @@ test('all 70 current Anti-Stress lessons retain authored 15-slide routes and the
         assert.ok(enriched?.title,id+' '+day+' '+locale)
         assert.equal(enriched.sections.length,5,id+' '+day+' '+locale)
         assert.ok(enriched.sections.find(s=>s.kind==='meditation')?.text?.length>25)
-        assert.ok(enriched.antiStress?.learningOutcome?.length>25)
         const slides=id==='AS2'&&day===1?DAY_ONE_SLIDES:buildCourseSlides(enriched)
         assert.equal(slides.length,15,id+' '+day+' '+locale)
         assert.equal(new Set(slides.map(s=>s.key)).size,15)
-        if(id!=='AS2')assert.ok(enriched.antiStress?.routePlan?.practiceLab?.main,
-          'The real method must remain available for '+id+' '+day)
-        routes++
+        if(id==='AS4'){
+          assert.equal(enriched.id,base.id,'Clinician-only trauma work is never rewritten as a self-guided lesson')
+          assert.equal(oporaModuleActivity(id,day,locale,ANTISTRESS_ROUTER_VERSION),null)
+        }else if(id==='AS2'){
+          assert.ok(enriched.antiStress?.learningOutcome?.length>25)
+          selfGuided++
+        }else{
+          assert.equal(enriched.oporaModule?.version,ANTISTRESS_ROUTER_VERSION)
+          assert.equal(enriched.oporaModule?.day,day)
+          const activity=oporaModuleActivity(id,day,locale,ANTISTRESS_ROUTER_VERSION)
+          assert.equal(activity?.options.length,4,'Actual activity for '+id+' '+day)
+          assert.ok(activity.practice.length>25)
+          selfGuided++
+        }
+        listed++
       }
     }
   }
-  assert.equal(routes,140)
+  assert.equal(listed,168)
+  assert.equal(selfGuided,140)
 })
 
 test('the state-to-need-to-support-to-experience bridge is optional and uses only bounded IDs',()=>{
@@ -93,6 +106,8 @@ test('all route screens share one visible state card, compact optional feedback 
   assert.match(journey,/data-opora-state-plan/)
   assert.match(journey,/data-opora-state-experience/)
   assert.match(journey,/data-opora-state-preview/)
+  assert.match(player,/moduleActivityChoice:moduleActivityChoice\|\|null,practiceAttempt:practiceAttempt\|\|null/)
+  assert.match(player,/<OporaModuleActivity moduleId=\{lesson\.oporaModule\.id\}/)
   assert.doesNotMatch(journey,/localStorage|fetch\(|analytics|speechSynthesis/)
   assert.match(server,/onlyKeys\(input,\[\.\.\.rules\[action\]/)
 })
@@ -116,4 +131,5 @@ test('clinician-only fourth trauma phase is not silently assigned a self-guided 
   assert.match(lessons,/moduleId==='AS4'&&routerVersion===TRAUMA_PHASE_VERSION/)
   assert.match(player,/lesson\.antiStress \|\|/)
   assert.match(server,/!coursePresetForTags\(course\.focus_tags\)/)
+  assert.match(server,/key==='practiceAttempt'&&isOporaModule/)
 })
