@@ -683,3 +683,16 @@
  .overlay[data-opora-module] .primary{min-height:53px}
  .welcomeModule{font-size:14px;padding:7px 11px}
 }
+
+/* OPORA: concise follow-up instead of three obligatory feedback panels. */
+.oporaExtraDetails{display:grid;gap:10px;padding:13px 14px;border:1px solid #d8e1e8;border-radius:16px;background:linear-gradient(135deg,#f8fbfc,#fffafb)}
+.oporaExtraDetails>summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;color:#65374c;font-size:13px;font-weight:740;line-height:1.4;list-style:none}
+.oporaExtraDetails>summary::-webkit-details-marker{display:none}
+.oporaExtraDetails>summary svg{margin-left:auto;flex:none}
+.oporaExtraDetails[open]>summary{margin-bottom:10px;border-bottom:1px solid #eadfe4;padding-bottom:10px}
+.oporaExtraDetails>summary:focus-visible{outline:3px solid #168e97;outline-offset:3px}
+.oporaSafeStop{display:inline-flex;align-items:center;gap:6px;justify-content:center;min-height:44px;max-width:100%;border:1px solid #dcc6cf!important;border-radius:12px!important;background:#fff9fb!important;color:#843d57!important;padding:10px 12px!important;font-size:12px!important;font-weight:700!important;cursor:pointer}
+.oporaSafeStop:hover{background:#f7edf1!important}
+.oporaSafeStop:focus-visible{outline:3px solid #168e97;outline-offset:2px}
+.oporaSafeStop:disabled{opacity:.55;cursor:wait}
+@media(max-width:540px){.oporaExtraDetails{padding:10px 12px}.oporaSafeStop{font-size:11px!important;padding:8px 10px!important}}
