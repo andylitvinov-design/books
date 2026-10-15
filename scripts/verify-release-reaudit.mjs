@@ -446,10 +446,26 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          await cspPage.locator('.mobile-bottom-navigation a[href="/en/about"]').click();
+          // Private pages intentionally omit the public bottom bar. Leave through
+          // the visible header wordmark, then use the public About content link.
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
+          const privateWordmark = cspPage.locator('.client-entry-shell .house-wordmark');
+          await expect(privateWordmark).toBeVisible();
+          await expect(privateWordmark).toHaveAttribute('href', '/');
+          await privateWordmark.click();
+          await expect(cspPage).toHaveURL(origin + '/');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
+          const publicAbout = cspPage.locator('a[href="/en/about"]');
+          await expect(publicAbout).toBeVisible();
+          await publicAbout.click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'public-home-before-about', 'Home to About must retain same-policy soft navigation');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
@@ -467,10 +483,21 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
+          historyPhase = 'back-to-public-home';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/client');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          historyPhase = 'forward-to-public-home';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
@@ -491,7 +518,7 @@ async function exercise(engine, browserType, width) {
           });
           if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
           assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
