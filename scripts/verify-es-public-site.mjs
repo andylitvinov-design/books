@@ -110,7 +110,10 @@ try {
             // explicit continuation action and remains available below it.
             const preloginPicker=page.locator('[data-prelogin-test-picker]');
             await expect(preloginPicker).toBeVisible();
-            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Подберите свои тесты':'Choose your tests'})).toBeVisible();
+            // This is now the accessible region label; the current page H1
+            // explains the value of the selection rather than repeating it.
+            await expect(preloginPicker).toHaveAttribute('aria-label',language==='ru'?'Подберите свои тесты':'Choose your tests');
+            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Лучше понять себя и свою жизнь':'Understand yourself and your life better'})).toBeVisible();
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Рекомендуем для вас':'Recommended for you'})).toBeVisible();
             assert.equal(await preloginPicker.locator('details').first().evaluate(element=>element.open),false,'advanced filter starts folded');
             await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Начать бесплатный мониторинг/:/Start free monitoring/})).toBeVisible();
