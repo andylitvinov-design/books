@@ -420,3 +420,17 @@
 .savedSessionBack{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;
   border:1px solid #d8e3d2;border-radius:12px;color:#3c785f;text-decoration:none;font-size:14px;font-weight:750}
 @media(max-width:550px){.saveSessionBox{padding:17px}.saveSessionButton{width:100%}}
+
+/* A single reusable educational MP4, streamed through session-authorized
+   first-party media endpoints; separate from personal consultation videos. */
+.sharedEducationSection{padding:clamp(17px,3vw,25px);border:1px solid #bddfe4;
+  border-radius:21px;background:linear-gradient(145deg,#f9fffe,#eaf7f7);
+  box-shadow:0 9px 28px #17576c10}
+.sharedEducationSection .clientMediaCard{margin:0;border-color:#c9e4e6}
+.sharedGuideCaution{font-size:14px;line-height:1.55;color:#526b71;
+  margin:15px 0 0;padding:12px 14px;border-left:3px solid #65a4ad;
+  background:#ffffffc9;border-radius:0 10px 10px 0}
+@media(max-width:580px){
+  .sharedEducationSection{padding:15px;border-radius:16px}
+  .sharedGuideCaution{font-size:14px}
+}

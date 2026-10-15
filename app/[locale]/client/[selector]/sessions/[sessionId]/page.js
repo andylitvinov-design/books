@@ -4,6 +4,7 @@ import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getPublishedClientSession,getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionPage } from '@/components/client-session-page'
+import { sharedGranulesGuideReady } from '@/lib/clients/shared-education-video'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
 import { PaymentDocument } from '@/components/payment-document'
@@ -29,6 +30,7 @@ export default async function CabinetSession({params}) {
   }
   return <ClientSessionPage locale={locale} session={session} selector={selector}
     mode="cabinet" appAvailable={appEnabled()} clientName={recommendation?.patientName||access.client.fullName||''}
-    recommendation={recommendation} reportContent={reportContent}/>
+    recommendation={recommendation} reportContent={reportContent}
+    sharedGuideReady={sharedGranulesGuideReady()}/>
 }
 

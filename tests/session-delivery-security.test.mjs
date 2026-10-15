@@ -56,13 +56,13 @@ test('cleanup commits claim before object deletion, then removes successful tomb
 test('failed object deletion retains tombstone for retry',async()=>{const f=cleanupFixture(true);await assert.rejects(f.run(),{code:'MEDIA_CLEANUP_RETRY_REQUIRED'});assert.deepEqual(f.events,['claim','commit','remove-storage'])});
 const guestRoute=await readFile(new URL('app/api/client-session-viewer/[selector]/media/[assetId]/route.js',root),'utf8');
 const cabinetRoute=await readFile(new URL('app/api/client/[selector]/sessions/[sessionId]/media/[assetId]/route.js',root),'utf8');
-function routeFixture(src,{denied=false,media=[{assetId:'asset',scope:'client'}],wrongSession=false}={}){
- let streams=0,auths=0;
+function routeFixture(src,{denied=false,media=[{assetId:'asset',scope:'client'}],wrongSession=false,sharedReady=false,assetId='asset'}={}){
+ let streams=0,auths=0,sharedStreams=0;
  const json=(body,status=200)=>Response.json(body,{status});
  const auth=async()=>{auths++;if(denied)throw new AppError('SESSION_UNAVAILABLE',404);return {client:{id:'client-a'},clientId:'client-a',sessionId:'session-a',session:{media}}};
  const published=async(c,s,clientId,sessionId)=>{assert.equal(clientId,'client-a');if(wrongSession)throw new AppError('SESSION_UNAVAILABLE',404);return {media}};
- const handle=load(src,['privateDelivery','privateJson','smallJson','authorizeSessionGuest','readSessionViewerCookie','authorizeCabinetRequest','getPublishedClientSession','privateMediaStream'],[async fn=>{try{return await fn({config:{},store:{}})}catch(e){return json({error:e.code},e.status)}},json,async()=>{},auth,()=>({}),auth,published,async(c,client,session,asset)=>{streams++;assert.equal(client,'client-a');assert.equal(session,'session-a');assert.equal(asset,'asset');return new Response('synthetic')}],'handle');
- return {run:method=>handle(new Request('https://synthetic.invalid/media',{method}),{params:{selector:'selector',sessionId:'session-a',assetId:'asset'}}),stats:()=>({streams,auths})};
+ const handle=load(src,['privateDelivery','privateJson','smallJson','authorizeSessionGuest','readSessionViewerCookie','authorizeCabinetRequest','getPublishedClientSession','privateMediaStream','GRANULES_GUIDE_ID','sharedGranulesGuideReady','streamSharedGranulesGuide'],[async fn=>{try{return await fn({config:{},store:{}})}catch(e){return json({error:e.code},e.status)}},json,async()=>{},auth,()=>({}),auth,published,async(c,client,session,asset)=>{streams++;assert.equal(client,'client-a');assert.equal(session,'session-a');assert.equal(asset,'asset');return new Response('synthetic')},'homeopathy-granules-ru-v2',()=>sharedReady,async()=>{sharedStreams++;return new Response('educational')}],'handle');
+ return {run:method=>handle(new Request('https://synthetic.invalid/media',{method}),{params:{selector:'selector',sessionId:'session-a',assetId}}),stats:()=>({streams,auths}),sharedStreams:()=>sharedStreams};
 }
 test('guest and cabinet GET HEAD POST all stop before stream when authorization denies',async()=>{
  for(const src of [guestRoute,cabinetRoute])for(const method of ['GET','HEAD','POST']){
@@ -72,6 +72,23 @@ test('guest and cabinet GET HEAD POST all stop before stream when authorization 
 test('guest and cabinet reject unpublished, foreign and practitioner media for every method',async()=>{
  for(const src of [guestRoute,cabinetRoute])for(const media of [[],[{assetId:'foreign',scope:'client'}],[{assetId:'asset',scope:'practitioner'}]])for(const method of ['GET','HEAD','POST']){
   const f=routeFixture(src,{media});assert.equal((await f.run(method)).status,404);assert.equal(f.stats().streams,0)
+ }
+});
+test('shared educational video is never an authorization bypass and stays hidden until explicitly ready',async()=>{
+ for(const src of [guestRoute,cabinetRoute]){
+  for(const method of ['GET','HEAD','POST']){
+   const denied=routeFixture(src,{denied:true,sharedReady:true,assetId:'homeopathy-granules-ru-v2',media:[]});
+   assert.equal((await denied.run(method)).status,404);
+   assert.equal(denied.sharedStreams(),0);
+   const off=routeFixture(src,{sharedReady:false,assetId:'homeopathy-granules-ru-v2',media:[]});
+   assert.equal((await off.run(method)).status,404);
+   assert.equal(off.sharedStreams(),0);
+   const ready=routeFixture(src,{sharedReady:true,assetId:'homeopathy-granules-ru-v2',media:[]});
+   const response=await ready.run(method);
+   assert.equal(response.status,200);
+   assert.equal(ready.sharedStreams(),method==='POST'?0:1);
+   assert.equal(ready.stats().auths,1);
+  }
  }
 });
 test('cabinet rejects other session before invoking stream',async()=>{const f=routeFixture(cabinetRoute,{wrongSession:true});assert.equal((await f.run('GET')).status,404);assert.equal(f.stats().streams,0)});
