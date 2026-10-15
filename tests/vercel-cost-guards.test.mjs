@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { maySkipBuild, changedFilesBetween } from "../scripts/vercel-ignore-build.mjs";
+import { maySkipBuild, changedFilesBetween, changedFilesViaGithub } from "../scripts/vercel-ignore-build.mjs";
 
 test("ignore only internal documentation, README, and CI workflow edits", () => {
   assert.equal(maySkipBuild(["docs/myspace/opora/notes.md", "README.md"]), true);
@@ -29,6 +29,34 @@ test("ignored-build comparison fails open on missing SHAs or git failures", () =
     assert.deepEqual(args, ["diff", "--name-only", "--no-renames", good, next]);
     return "README.md\napp/page.tsx\n";
   }), ["README.md", "app/page.tsx"]);
+});
+
+test("Vercel shallow clones use a bounded public GitHub compare without downloading history", async () => {
+  const prev = "a".repeat(40), head = "b".repeat(40);
+  const compare = ({ status = "ahead", files = ["docs/myspace/README.md"], ahead_by = 1, base_commit = {sha:prev}, head_commit={sha:head} } = {}) => ({
+    status, files:files.map(filename => ({ filename, status:"modified" })), ahead_by, base_commit, head_commit,
+  });
+  let called = 0;
+  const fakeFetch = async (url, options) => {
+    called++;
+    assert.match(url, /^https:\/\/api\.github\.com\/repos\/andylitvinov-design\/books\/compare\//);
+    assert.ok(options.signal);
+    return {ok:true,json:async()=>compare()};
+  };
+  assert.deepEqual(await changedFilesViaGithub(prev,head,fakeFetch),["docs/myspace/README.md"]);
+  assert.equal(called,1);
+  const fake = data => async () => ({ok:true,json:async()=>data});
+  assert.equal((await changedFilesViaGithub(prev,head,fake(compare({files:["docs/myspace/README.md","components/site-navigation.tsx"]})))).length,2);
+  assert.equal(await changedFilesViaGithub(prev,head,fake(compare({status:"diverged"}))),null);
+  assert.equal(await changedFilesViaGithub(prev,head,fake(compare({ahead_by:251}))),null);
+  assert.equal(await changedFilesViaGithub(prev,head,fake(compare({base_commit:{sha:"c".repeat(40)}}))),null);
+  assert.equal(await changedFilesViaGithub(prev,head,async()=>({ok:false})),null);
+  assert.equal(await changedFilesViaGithub(prev,head,async()=>{throw Error("Network disabled")}),null);
+  assert.equal(await changedFilesViaGithub("invalid",head,fakeFetch),null);
+  const renamed = compare(); renamed.files[0].status="renamed";
+  assert.equal(await changedFilesViaGithub(prev,head,fake(renamed)),null);
+  assert.equal(maySkipBuild(["docs/myspace/README.md"]),true);
+  assert.equal(maySkipBuild(["docs/myspace/README.md","components/site-navigation.tsx"]),false);
 });
 
 test("service hero WebP posters bypass billed Vercel transformations", () => {
