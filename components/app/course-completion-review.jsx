@@ -9,19 +9,9 @@ import styles from './course-r3-steps.module.css'
 // and after returning from the optional manual focus picker. No fake measurements.
 export default function CourseCompletionReview({
   t, root, confirmedStatuses, optionByKey, profile, suggested,
-  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en',
+  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en', compactResults=false,
 }) {
-  return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
-    data-course-testing-complete>
-    <header className={styles.completeHero} role="status">
-      <span className={styles.completeSymbol}><Check size={25} aria-hidden="true"/></span>
-      <h2>{t.congratulations}</h2>
-      <p>{t.completeDescription}</p>
-      <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
-      {onEditTests && <button type="button" className={styles.textEdit}
-        disabled={busy} onClick={onEditTests}><Pencil size={14} aria-hidden="true"/>{t.reviseSelection}</button>}
-    </header>
-
+  const resultSummary = (
     <section className={styles.briefSummary} aria-label={t.briefSummary}>
       <h3>{t.briefSummary}</h3>
       {programId==='stress'&&<div className={styles.stressMeasureProtocol}
@@ -76,6 +66,20 @@ export default function CourseCompletionReview({
         </article>
       })}
     </section>
+  )
+
+  return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
+    data-course-testing-complete>
+    <header className={styles.completeHero} role="status">
+      <span className={styles.completeSymbol}><Check size={25} aria-hidden="true"/></span>
+      <h2>{t.congratulations}</h2>
+      <p>{t.completeDescription}</p>
+      <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
+      {onEditTests && <button type="button" className={styles.textEdit}
+        disabled={busy} onClick={onEditTests}><Pencil size={14} aria-hidden="true"/>{t.reviseSelection}</button>}
+    </header>
+
+    {!compactResults && resultSummary}
 
     <section className={styles.recommendedPanel} aria-label={t.recommendedFocusTitle}
       data-course-recommended-focus>
@@ -111,5 +115,9 @@ export default function CourseCompletionReview({
         {t.chooseDifferent}<ArrowRight size={17} aria-hidden="true"/>
       </button>
     </div>
+    {compactResults && <details className={styles.collapsibleSummary} data-course-compact-test-summary>
+      <summary>{t.briefSummary}</summary>
+      {resultSummary}
+    </details>}
   </section>
 }
