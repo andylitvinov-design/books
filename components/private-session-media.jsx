@@ -1,6 +1,7 @@
 'use client'
 import {useState} from 'react'
-export function PrivateSessionMedia({kind,title,itemId,playBase,mime}){
+export function PrivateSessionMedia({kind,title,itemId,playBase,mime,locale='en'}){
+  const ru=locale==='ru'
   const [url,setUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(false)
   const video=kind==='video',pdf=kind==='pdf'
   async function load(){
@@ -21,13 +22,13 @@ export function PrivateSessionMedia({kind,title,itemId,playBase,mime}){
     finally{setBusy(false)}
   }
   return <div className={'hh-session-media hh-session-media--'+kind}>
-    {!url&&!pdf?<button type="button" onClick={load} disabled={busy} className="hh-session-play" aria-label={'Play '+title}>
+    {!url&&!pdf?<button type="button" onClick={load} disabled={busy} className="hh-session-play" aria-label={(ru?'Воспроизвести ':'Play ')+title}>
       <span aria-hidden="true">{video?'▶':'♫'}</span>
-      <span>{busy?'Opening…':video?'Play personal video':'Play audio practice'}</span>
+      <span>{busy?(ru?'Открываем…':'Opening…'):video?(ru?'Смотреть личное видео':'Play personal video'):(ru?'Слушать практику':'Play audio practice')}</span>
     </button>:null}
     {url&&video?<video src={url} controls playsInline preload="metadata" controlsList="nodownload" onError={()=>{setUrl('');setError(true)}} aria-label={title}/>:null}
     {url&&!video?<audio src={url} controls preload="metadata" onError={()=>{setUrl('');setError(true)}} aria-label={title}/>:null}
-    {pdf?<button type="button" onClick={load} disabled={busy}>{busy?'Opening…':'Open private PDF ↗'}</button>:null}
-    {error?<p role="alert" className="hh-session-error">Media unavailable. You can retry or contact your practitioner.</p>:null}
+    {pdf?<button type="button" onClick={load} disabled={busy}>{busy?(ru?'Открываем…':'Opening…'):(ru?'Открыть приватный PDF ↗':'Open private PDF ↗')}</button>:null}
+    {error?<p role="alert" className="hh-session-error">{ru?'Файл недоступен. Попробуйте ещё раз или свяжитесь со специалистом.':'Media unavailable. Retry or contact your practitioner.'}</p>:null}
   </div>
 }

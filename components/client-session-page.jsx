@@ -23,14 +23,14 @@ export function ClientSessionPage({session,locale='en',playBase,backHref=null,pd
       <h2>{ru?'Видео от специалиста':'A personal message'}</h2>
       {videos.map(item=><article className="hh-session-card" key={item.id}><h3>{item.title}</h3>
         {item.body?<p>{item.body}</p>:null}
-        <PrivateSessionMedia kind="video" title={item.title} itemId={item.id} playBase={playBase}/>
+        <PrivateSessionMedia kind="video" title={item.title} itemId={item.id} playBase={playBase} locale={locale}/>
       </article>)}
     </section>:null}
     {audio.length>0?<section className="hh-session-section">
       <h2>{ru?'Аудиопрактики':'Audio practices'}</h2>
       {audio.map(item=><article className="hh-session-card" key={item.id}><h3>{item.title}</h3>
         {item.body?<p>{item.body}</p>:null}
-        <PrivateSessionMedia kind="audio" title={item.title} itemId={item.id} playBase={playBase}/>
+        <PrivateSessionMedia kind="audio" title={item.title} itemId={item.id} playBase={playBase} locale={locale}/>
       </article>)}
     </section>:null}
     {reports.length>0?<section className="hh-session-section">
@@ -43,7 +43,7 @@ export function ClientSessionPage({session,locale='en',playBase,backHref=null,pd
         </div>:null}
         {item.kind==='document'&&pdfBase?<a className="hh-session-action" href={pdfBase+'/'+item.id+'?locale='+locale} download>{ru?'Скачать PDF документа':'Download document PDF'}</a>:null}
         {item.kind==='document'&&!pdfBase?<p>{ru?'PDF доступен в опубликованной сессии.':'PDF is available in the published session.'}</p>:null}
-        {item.kind==='pdf'?<PrivateSessionMedia kind="pdf" title={item.title} itemId={item.id} playBase={playBase}/>:null}
+        {item.kind==='pdf'?<PrivateSessionMedia kind="pdf" title={item.title} itemId={item.id} playBase={playBase} locale={locale}/>:null}
       </article>)}
     </section>:null}
     {texts.length>0?<section className="hh-session-section">

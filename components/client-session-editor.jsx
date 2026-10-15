@@ -11,7 +11,8 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
   const ru=locale==='ru'
   const [sessions,setSessions]=useState([]),[current,setCurrent]=useState(null)
   const [busy,setBusy]=useState(false),[status,setStatus]=useState('')
-  const [selectedConsult,setSelectedConsult]=useState(''),[title,setTitle]=useState(''),[summary,setSummary]=useState('')
+  const [selectedConsult,setSelectedConsult]=useState(''),[newSessionTitle,setNewSessionTitle]=useState(''),[newSessionDate,setNewSessionDate]=useState(new Date().toISOString().slice(0,10))
+  const [title,setTitle]=useState(''),[summary,setSummary]=useState('')
   const [items,setItems]=useState([]),[newKind,setNewKind]=useState('text')
   const [newName,setNewName]=useState(''),[newBody,setNewBody]=useState(''),[newRef,setNewRef]=useState('')
   const [fileKind,setFileKind]=useState('audio'),[uploading,setUploading]=useState(false)
@@ -54,12 +55,12 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
     setBusy(true);setStatus('')
     try{
       const match=uniqueConsults.find(c=>c.id===selectedConsult)
-      const date=match?.date||new Date().toISOString().slice(0,10)
-      const chosen=title.trim()||text('Персональная консультация','Personal consultation',ru)
+      const date=match?.date||newSessionDate
+      const chosen=newSessionTitle.trim()||text('Персональная консультация','Personal consultation',ru)
       const result=await api(base,'POST',{date,locale,consultationId:match?.id||null,title:chosen})
       const list=await refresh()
       select(list.find(x=>x.id===result.session.id)||result.session)
-      setSelectedConsult('')
+      setSelectedConsult('');setNewSessionTitle('')
     }catch(e){setStatus(e.message)}finally{setBusy(false)}
   }
   function inputItem(){
@@ -175,10 +176,16 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
     </div></div>
     <div className="hh-owner-sessions-new">
       <label>{text('Связать с консультацией','Link to consultation',ru)}
-        <select value={selectedConsult} onChange={e=>{setSelectedConsult(e.target.value);if(e.target.value)setTitle(text('Материалы консультации','Consultation materials',ru))}}>
-          <option value="">{text('Новая сессия без привязки','Independent session (today)',ru)}</option>
+        <select value={selectedConsult} onChange={e=>{setSelectedConsult(e.target.value)}}>
+          <option value="">{text('Новая сессия без привязки','Independent session',ru)}</option>
           {uniqueConsults.map(c=><option value={c.id} key={c.id}>{c.date} · {c.id.slice(0,8)}</option>)}
         </select>
+      </label>
+      {!selectedConsult?<label>{text('Дата новой сессии','Session date',ru)}
+        <input type="date" value={newSessionDate} onChange={e=>setNewSessionDate(e.target.value)} required/>
+      </label>:null}
+      <label>{text('Название новой сессии','New session title',ru)}
+        <input maxLength={160} value={newSessionTitle} onChange={e=>setNewSessionTitle(e.target.value)} placeholder={text('Материалы консультации','Consultation materials',ru)}/>
       </label>
       <button disabled={busy} onClick={create} type="button">{text('+ Новая сессия','+ New session',ru)}</button>
     </div>
@@ -195,7 +202,14 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
       <div className="hh-owner-session-items">
         <h4>{text('Материалы этой сессии','Materials for this session',ru)}</h4>
         {items.map((item,index)=><div className="hh-owner-session-item" key={item.id}>
-          <div><strong>{item.title}</strong><small>{item.kind}</small></div>
+          <div className="hh-owner-session-item-fields">
+            <small>{item.kind}</small>
+            <input aria-label={text('Название материала','Item title',ru)} maxLength={160} value={item.title}
+              onChange={event=>setItems(a=>a.map((value,i)=>i===index?{...value,title:event.target.value}:value))}/>
+            <textarea aria-label={text('Описание материала','Item description',ru)} rows={2} maxLength={7000}
+              value={item.body||''}
+              onChange={event=>setItems(a=>a.map((value,i)=>i===index?{...value,body:event.target.value}:value))}/>
+          </div>
           <div><button type="button" disabled={index===0} onClick={()=>setItems(a=>{const b=[...a];[b[index-1],b[index]]=[b[index],b[index-1]];return b})} aria-label="Move up">↑</button>
             <button type="button" onClick={()=>setItems(a=>a.filter(i=>i.id!==item.id))} aria-label="Remove">×</button></div>
         </div>)}
