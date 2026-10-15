@@ -366,6 +366,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onToggleTestKind={(key) => setKinds((current) => toggle(current, key))}
       onClearTestKinds={() => setKinds([])}
       recommendations={simpleRecommendations}
+      viaProfileEntry={entries.find((entry) => entry.key === 'ipip-via-r-strengths-96' && entry.selectable) || null}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
       onResetSuggested={() => { setSelectedKeys([]); setSimpleSelectionChanged(false) }}
