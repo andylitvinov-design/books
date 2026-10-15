@@ -31,7 +31,7 @@ export function PublicAntistressRouteMap({locale,selectedId,onSelect,onStart,bus
   <div className={styles.routes}>
    {ANTISTRESS_MODULE_GOALS.map((route,index)=><details className={styles.route} key={route.id} data-stress-route={route.id} data-selected={route.id===selectedId}>
     <summary><span className={styles.number}>{String(index+1).padStart(2,'0')}</span>
-     <span className={styles.routeCopy}><small>{t.number} {index+1} · {route.clinicalOnly?(locale==='ru'?'Только специалист':locale==='es'?'Especialista':'Clinician only'):(locale==='ru'?'14 дней':locale==='es'?'14 días':'14 days')}</small>
+     <span className={styles.routeCopy}><small>{t.number} {index+1} · {route.id==='AS4'?(locale==='ru'?'Только специалист':locale==='es'?'Especialista':'Clinician only'):(locale==='ru'?'14 дней':locale==='es'?'14 días':'14 days')}</small>
       <strong>{route.title[locale]}</strong></span><ChevronDown size={18} aria-hidden="true"/></summary>
     <div className={styles.routeDetail}><p>{route.short[locale]}</p><small>{t.goal}</small><a href="#daily-programme" className={styles.preview} aria-current={selectedId===route.id?'true':undefined} onClick={()=>onSelect(route.id)}>{selectedId===route.id?t.active:t.preview}<ArrowRight size={14} aria-hidden="true"/></a></div>
    </details>)}
