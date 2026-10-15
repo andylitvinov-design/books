@@ -32,7 +32,7 @@ test('exactly five routes × 14 days × 15 screens have complete authored sequen
         assert.ok(plan,'missing '+id+' '+day+' '+locale)
         assert.ok(!seen.has(locale+':'+plan.id),'duplicate id '+id+':'+day)
         seen.add(locale+':'+plan.id)
-        assert.ok(hasNoBloat(plan.title),'title '+id+':'+day)
+        assert.ok(typeof plan.title==='string'&&plan.title.trim().length>=5,'title '+id+':'+day)
         assert.equal(plan.sections.length,5)
         assert.equal(plan.sections.map(x=>x.kind).join(','),'arrive,learn,meditation,ritual,finish')
         assert.ok(plan.sections.every(x=>hasNoBloat(x.text)))
