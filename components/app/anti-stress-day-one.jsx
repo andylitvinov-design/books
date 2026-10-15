@@ -99,69 +99,96 @@ export default function DayOneExercise({
       onClick={onReturnToPractice}>{text('Вернуться к обычному уроку по желанию','Return to the usual lesson if I choose')}</button>
   </section>
   if(kind==='day1-prepare')return <section className={styles.section} data-day-one-activity="prepare">
-    {photo}
-    <p className={styles.headline}>{text('Выберите, как вам удобнее начать','Choose your most comfortable starting point')}</p>
+    <div className={styles.overline}><Compass size={16}/>{text('ШАГ 06 · ВЫБИРАЮ СВОЙ ФОРМАТ','STEP 06 · I CHOOSE MY FORMAT')}</div>
+    <Scene locale={locale}/>
+    <p className={styles.headline}>{text('Как вам удобнее начать?','How would you prefer to begin?')}</p>
+    <p className={styles.hint}>{text('Выбирайте комфортный способ. Это уже ваше первое решение в практике.','Choose a comfortable approach. This is your first choice in the exercise.')}</p>
     {choice('preparation',[
-      {value:'look',label:text('Оглядеться вокруг с открытыми глазами','Look around with eyes open')},
-      {value:'photo',label:text('Смотреть на спокойную фотографию','Look at the calm photograph')},
-      {value:'read',label:text('Только читать инструкции','Read the instructions only')},
-      {value:'rest',label:text('Сначала сделать маленькую паузу','Take a little rest first')},
-      {value:'skip',label:text('Пока не готов(а) — перейти дальше','Not ready, continue')},
-    ])}
-    {helper}
+      {value:'look',label:text('Посмотреть вокруг','Look around'),detail:text('Глаза открыты, внимание на окружающем','Eyes open, noticing the room'),icon:Eye},
+      {value:'photo',label:text('Посмотреть на изображение','Look at the picture'),detail:text('Ничего не надо представлять','No need to imagine anything'),icon:MapPin},
+      {value:'read',label:text('Только читать','Read only'),detail:text('Собственный темп, без звука','My pace, no audio'),icon:BookOpen},
+      {value:'rest',label:text('Сначала отдохнуть','Rest first'),detail:text('Можно ничего не делать','Doing nothing is okay'),icon:PauseCircle},
+      {value:'skip',label:text('Сейчас не готов(а)','Not ready yet'),detail:text('Перейти дальше без оценки','Continue without being rated'),icon:CircleHelp},
+    ],{cards:true})}
+    {answers.preparation&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Ваш выбор принят. Его можно изменить.','Your choice is recorded. You can change it.')}</p>}
   </section>
 
   if(kind==='day1-notice')return <section className={styles.section} data-day-one-activity="notice">
-    {photo}
-    <p className={styles.headline}>{text(
-      'Посмотрите на фотографию или вокруг себя. Какая нейтральная деталь привлекла внимание?',
-      'Look at the picture or around you. Which ordinary detail did you notice?')}</p>
+    <div className={styles.overline}><Eye size={16}/>{text('ШАГ 07 · ИССЛЕДУЮ ИЗОБРАЖЕНИЕ','STEP 07 · EXPLORE THE SCENE')}</div>
+    <p className={styles.headline}>{text('Выберите участок изображения, куда хочется направить взгляд','Choose an area you would like to look at')}</p>
+    <Scene locale={locale} caption={text('Нажмите на область под изображением — или посмотрите на окружающие предметы.','Tap an area below the picture, or observe your own surroundings.')}/>
+    <div className={styles.photoRegions} role="group" aria-label={text('Участок фотографии','Image region')}>
+      {[
+        {value:'left',label:text('Слева','Left')},
+        {value:'center',label:text('В центре','Centre')},
+        {value:'right',label:text('Справа','Right')},
+      ].map(item=><button key={item.value} type="button" disabled={locked}
+        aria-pressed={answers.visualZone===item.value} onClick={()=>onAnswer('visualZone',item.value)}>
+        <span className={styles.photoRegionMark}><MousePointerClick size={16}/></span>{item.label}
+      </button>)}
+    </div>
+    <p className={styles.headline}>{text('А что именно вы заметили?','And what did you notice?')}</p>
     {choice('noticed',[
-      {value:'colour',label:text('Цвет','A colour')},
-      {value:'shape',label:text('Форма или контур','A shape or outline')},
-      {value:'object',label:text('Обычный предмет','An ordinary object')},
-      {value:'nothing',label:text('Пока ничего не заметил(а)','Nothing in particular')},
-      {value:'skip',label:text('Не хочу выбирать','I prefer not to choose')},
-    ])}
+      {value:'colour',label:text('Цвет','A colour'),icon:Sparkles},
+      {value:'shape',label:text('Форма','A shape'),icon:Compass},
+      {value:'object',label:text('Предмет','An object'),icon:MapPin},
+      {value:'nothing',label:text('Пока ничего','Nothing yet'),icon:PauseCircle},
+      {value:'skip',label:text('Предпочитаю пропустить','Prefer to skip'),icon:CircleHelp},
+    ],{compact:true})}
+    {answers.visualZone&&<p className={styles.selectedNotice} role="status"><Check size={16}/>{text('Вы выбрали область для внимания. Это наблюдение, не тест.','You chose where to look. This is an observation, not a test.')}</p>}
     {helper}
   </section>
 
-  if(kind==='day1-practice')return <section className={styles.section} data-day-one-activity="practice">
-    <div className={styles.practiceHeading}><Waves size={23}/><strong>{text(
-      'Мягкое ориентирование · основная практика','Gentle orientation · main practice')}</strong></div>
-    <p className={styles.headline}>{text('Попробуйте найти одну нейтральную точку в настоящем.','Try to find one neutral point in the present.')}</p>
-    <DayOneChoices compact label={text('Способ практики','Practice format')} disabled={locked}
-      value={answers.practiceMode||'text'} onSelect={value=>onAnswer('practiceMode',value)}
-      options={[
-        {value:'text',label:text('Читать в своём темпе','Read at your pace')},
-        {value:'audio',label:text('Слушать системную озвучку','Listen using device voice')},
-      ]}/>
-    {answers.practiceMode==='audio'&&<CoursePracticeVoice key={locale+'-'+String(answers.practiceMode)}
-      locale={locale} text={lesson.sections?.find(part=>part.kind==='meditation')?.text}/>}
-    <ol className={styles.guidedList}>
-      {(ru?[
-        'Оставьте глаза открытыми. Не меняйте дыхание специально.',
-        'Найдите один обычный предмет или цвет рядом. Заметьте его форму и края.',
-        'Если комфортно, обратите внимание на расположение предмета в пространстве.',
-        'Можно выбрать другой предмет, отвести взгляд, отдохнуть или закончить в любой момент.',
-      ]:[
-        'Keep your eyes open. There is no need to change your breathing.',
-        'Find one ordinary object or colour nearby. Notice its edges and shape.',
-        'If comfortable, notice where it is located in the room.',
-        'You can switch objects, look away, rest, or stop whenever you choose.',
-      ]).map((line,index)=><li key={line}><span>{index+1}</span>{line}</li>)}
-    </ol>
-    <details className={styles.transcript}><summary>{text('Полный текст практики','Full practice transcript')} <ChevronDown size={16}/></summary>
-      <p>{lesson.sections?.find(part=>part.kind==='meditation')?.text}</p></details>
-    <p className={styles.headline}>{text('Как прошла ваша попытка?','How did this attempt go?')}</p>
-    {choice('practiceAttempt',[
-      {value:'tried',label:text('Попробовал(а) упражнение','I tried the exercise')},
-      {value:'partly',label:text('Попробовал(а) только часть','I tried part of it')},
-      {value:'stopped',label:text('Остановил(а) практику','I stopped the practice')},
-      {value:'skip',label:text('Пока не пробовал(а)','I did not try it yet')},
-    ])}
-    {helper}
-  </section>
+  if(kind==='day1-practice') {
+    const steps=ru?[
+      {title:'Оглянитесь',body:'Можно оставить глаза открытыми. Дыхание не нужно менять. Заметьте пространство вокруг.'},
+      {title:'Найдите нейтральную деталь',body:'Выберите обычный предмет или цвет. Если удобно, обратите внимание на форму и края.'},
+      {title:'Выберите свой темп',body:'Останьтесь на этой детали или спокойно переведите взгляд. Никаких обязательных секунд.'},
+      {title:'Решите, продолжать ли',body:'Можете отдохнуть, остановиться или мягко оглядеть комнату. Всё это допустимые результаты.'},
+    ]:[
+      {title:'Look around',body:'You may keep your eyes open. No need to change your breathing. Notice the space around you.'},
+      {title:'Find a neutral detail',body:'Choose an ordinary object or colour. If comfortable, notice its shape and edges.'},
+      {title:'Set your own pace',body:'Stay with the detail or gently move your gaze. There is no required number of seconds.'},
+      {title:'Choose how to finish',body:'You can rest, stop or look around again. Each is an acceptable outcome.'},
+    ]
+    return <section className={styles.section} data-day-one-activity="practice">
+      <div className={styles.overline}><Waves size={16}/>{text('ШАГ 08 · ГЛАВНАЯ ПРАКТИКА','STEP 08 · MAIN PRACTICE')}</div>
+      <div className={styles.practiceHeading}><Waves size={23}/><strong>{text('Одна опора в настоящем','One anchor in the present')}</strong></div>
+      <p className={styles.headline}>{text('Вы можете выполнять инструкцию в своём темпе','You can practise at your own pace')}</p>
+      <DayOneChoices compact label={text('Как удобнее заниматься','Choose a format')}
+        disabled={locked} value={answers.practiceMode||'text'}
+        onSelect={value=>onAnswer('practiceMode',value)}
+        options={[
+          {value:'text',label:text('Пошаговый текст','Step-by-step text'),icon:BookOpen},
+          {value:'audio',label:text('Системная озвучка','Device voice'),icon:Waves},
+        ]}/>
+      {answers.practiceMode==='audio'&&<CoursePracticeVoice key={locale+'-'+String(answers.practiceMode)}
+        locale={locale} text={lesson.sections?.find(part=>part.kind==='meditation')?.text}/>}
+      <div className={styles.practiceStepper} data-interactive-practice-stepper>
+        <div className={styles.practiceStepHeader}><small>{text('ЭТАП','STEP')} {guidedStep+1} / {steps.length}</small>
+          <div className={styles.stepDots} aria-hidden="true">{steps.map((item,i)=><i key={item.title} data-active={i===guidedStep}/>)}</div>
+        </div>
+        <strong>{steps[guidedStep].title}</strong>
+        <p>{steps[guidedStep].body}</p>
+        <div className={styles.stepControls}>
+          <button type="button" disabled={locked||guidedStep===0} onClick={()=>setGuidedStep(value=>Math.max(0,value-1))}><ChevronLeft size={17}/>{text('Назад','Back')}</button>
+          <button type="button" disabled={locked} onClick={()=>setGuidedStep(value=>(value+1)%steps.length)}>
+            {guidedStep===steps.length-1?text('Повторить шаги','Repeat steps'):text('Следующий шаг','Next step')}<ChevronRight size={17}/>
+          </button>
+        </div>
+      </div>
+      <details className={styles.transcript}><summary>{text('Полная текстовая инструкция','Complete written guide')} <ChevronDown size={16}/></summary>
+        <p>{lesson.sections?.find(part=>part.kind==='meditation')?.text}</p></details>
+      <p className={styles.headline}>{text('Как прошла ваша попытка?','How did the attempt go?')}</p>
+      {choice('practiceAttempt',[
+        {value:'tried',label:text('Попробовал(а)','I tried it')},
+        {value:'partly',label:text('Только часть','Only part of it')},
+        {value:'stopped',label:text('Остановил(а)','I stopped')},
+        {value:'skip',label:text('Не пробовал(а)','Did not try')},
+      ],{compact:true})}
+      {helper}
+    </section>
+  }
 
   if(kind==='day1-exit')return <section className={styles.section} data-day-one-activity="exit">
     <div className={styles.visualIcon}><PauseCircle size={42}/></div>
