@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { ArrowRight, BookOpenCheck, Check, ChevronDown, Crown, HeartHandshake, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, Star, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
-import { canStartCheckout } from '@/lib/billing/public-plan'
+import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
 import { useSubscription } from './subscription-access'
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
 import styles from './my-courses-dashboard.module.css'
@@ -116,7 +116,7 @@ export default function MyCoursesDashboard({
     else closeRef.current?.close()
   },[closing])
   const active=courses.filter(c=>['draft','active','paused'].includes(c.status))
-  const history=courses.filter(c=>['completed','archived'].includes(c.status))
+  const history=courses.filter(c=>['completed','archived','closed'].includes(c.status))
   const main=active.find(c=>c.isPrimary)||active[0]
   const others=active.filter(c=>c.id!==main?.id)
   const limit=membership.maxActiveCourses||1
@@ -160,7 +160,7 @@ export default function MyCoursesDashboard({
     </button>
     {openPlans&&<section className={styles.pricing} id="course-memberships">
       <p>{t.planIntro}</p>
-      <div className={styles.planGrid}>{Object.values(COURSE_PLANS).map(plan=><article key={plan.id} className={styles.planCard} data-plan-id={plan.id} data-current={plan.id===tier}>
+      <div className={styles.planGrid}>{['free', ...PURCHASABLE_PLAN_KEYS].map(id=>COURSE_PLANS[id]).map(plan=><article key={plan.id} className={styles.planCard} data-plan-id={plan.id} data-current={plan.id===tier}>
         <h3>{t[plan.id]}</h3><div className={styles.price}>{plan.euroMonthly===0?'€0':'€'+plan.euroMonthly}<span>{plan.euroMonthly?t.monthly:''}</span></div>
         <small>{plan.maxActiveCourses===1?t.one:t.five}</small>
         {plan.adFree&&<small><Check size={13}/>{t.adFree}</small>}

@@ -243,11 +243,8 @@
 }
 .overlay .scenicImage{
   display:block;width:100%;max-width:none;height:100%;
-  object-fit:cover;object-position:center 48%;
+  object-fit:contain;object-position:center;
 }
-.overlay [data-scene-kind=guided] .scenicImage,
-.overlay [data-scene-kind=reflection] .scenicImage,
-.overlay [data-scene-kind=moment] .scenicImage{object-position:center 60%}
 .overlay .photoSparkle{
   z-index:2;right:15px;top:14px;width:46px;height:46px;
   border-radius:15px;background:#f4ffffe8;color:#078b9d;
@@ -344,14 +341,7 @@
   .overlay .primary,.overlay .paceChoices button{animation:none!important;transition:none!important}
 }
 
-/* OPORA 1.1: a visible safety path while practising. No progress or XP is saved by these controls. */
-.discomfortShortcut {
-  width:100%; min-height:42px; border:1px solid #d2a2a2; border-radius:14px;
-  background:#fff9f7; color:#824747; padding:9px 15px;
-  font-size:14px; font-weight:650; cursor:pointer;
-}
-.discomfortShortcut:hover { background:#fff0ed; }
-.discomfortShortcut:focus-visible,
+/* Optional neutral support remains reachable through practice feedback. */
 .discomfortPanel button:focus-visible,
 .discomfortPanel a:focus-visible { outline:3px solid #edac51; outline-offset:3px; }
 .discomfortPanel {
@@ -613,4 +603,83 @@
  .antiStressProbe { margin-top:13px; padding:14px; border-radius:15px; }
  .antiStressProbe > strong { font-size:14px; }
  .antiStressProbeChoices button { padding:11px; font-size:12px; }
+}
+
+
+/* OPORA AS-1.9 visual pass: unify opening five with distinct interactive exercises 6–15.
+   Structure and existing course/testing logic stay unchanged. */
+.overlay[data-opora-first-lesson] .frame{
+  background:linear-gradient(170deg,#fafdff 0%,#f5fbfa 62%,#fcf9fa 100%);
+}
+.overlay[data-opora-first-lesson] .header{
+  border-bottom:1px solid #cde3e8;box-shadow:0 2px 14px #1539500a;
+}
+.overlay[data-opora-first-lesson] .progressTrack{height:8px;background:#dcebf0}
+.overlay[data-opora-first-lesson] .progressValue{background:linear-gradient(90deg,#2a8c9b,#138d88,#0e687f)}
+.overlay[data-opora-first-lesson] .dayPill{background:#e5f7f3;color:#1d7c86;border-color:#b9e0d7}
+.overlay[data-opora-first-lesson] .content{gap:14px}
+.overlay[data-opora-first-lesson] .identityTag{color:#833f5a;background:#fbeef1;border:1px solid #f0d7e0}
+.overlay[data-opora-first-lesson] .slideTitle{color:#173b58;letter-spacing:-.033em}
+.overlay[data-opora-first-lesson] .primary{
+  background:linear-gradient(112deg,#175269,#0e7e83)!important;
+  border-color:#126779!important;border-bottom-color:#0b555e!important;
+  border-radius:16px!important;box-shadow:0 11px 24px #0b67772b;
+}
+.overlay[data-opora-first-lesson] .footer{
+  background:linear-gradient(180deg,#fffffffa,#f7fbfc);
+  border-top:1px solid #d8e9ed;
+}
+.overlay[data-opora-first-lesson] .content[data-slide-kind=recall] .focusName,
+.overlay[data-opora-first-lesson] .content[data-slide-kind=baseline] .focusName{
+  background:#eff9f8;border-color:#cce9e7;color:#2c6175;
+}
+.overlay[data-opora-first-lesson] .content[data-slide-kind=idea] .quote{
+  border-left-color:#954963;background:linear-gradient(115deg,#fbf0f4,#f1fbf9);
+  color:#57394f;
+}
+.overlay[data-opora-first-lesson] button:focus-visible,
+.overlay[data-opora-first-lesson] input:focus-visible{outline:3px solid #109baa;outline-offset:3px}
+@media(max-width:540px){
+  .overlay[data-opora-first-lesson] .content{padding:16px 16px 19px;gap:12px}
+  .overlay[data-opora-first-lesson] .footer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+}
+
+
+/* Approved course artwork: display the full 705×411 photograph on every
+   lesson slide, including compact-height phones. The lesson body scrolls
+   independently, so controls stay accessible without clipping the artwork. */
+.overlay .content[data-slide-kind] .illustration[data-art=scenic],
+.overlay .content[data-slide-kind] .photoMoment{
+  height:auto;
+  min-height:0;
+  aspect-ratio:705 / 411;
+}
+.overlay .scenicImage{
+  object-fit:contain;
+  object-position:center;
+}
+
+/* Keep long slide content scrollable instead of shrinking details below their summaries. */
+.content > *{flex-shrink:0}
+/* OPORA NAV-2.0 · five-level Anti-Stress learning flow. Gentle sky-blue rather
+   than repeated assessment-heavy cards; preserve the legacy AS2 visual system. */
+.overlay[data-opora-module] .frame{background:linear-gradient(160deg,#fbfeff 0%,#f1f9fc 48%,#f9fefd 100%)}
+.overlay[data-opora-module] .content{gap:clamp(12px,2.6vw,18px)}
+.overlay[data-opora-module] .slideIdentity{min-height:32px}
+.overlay[data-opora-module] .identityTag{background:#e4f4fc;border:1px solid #c8e9f4;color:#137b9d}
+.overlay[data-opora-module] .identityLabel{font-size:12px;color:#53768b}
+.overlay[data-opora-module] .slideTitle{color:#193e5b;max-width:100%;overflow-wrap:anywhere}
+.overlay[data-opora-module] .prompt{line-height:1.56;color:#244b64}
+.overlay[data-opora-module] .quote{border-left-color:#16a7c4;background:linear-gradient(110deg,#e4f5ff,#f7feff);font-size:clamp(17px,3vw,21px);line-height:1.6}
+.overlay[data-opora-module] .feedbackOptions button{border-color:#d2e7ee!important;background:#fafdff!important;min-height:58px}
+.overlay[data-opora-module] .feedbackOptions button[aria-pressed=true]{background:#e0f4ff!important;border-color:#3aa9c8!important;color:#125e7a!important}
+.overlay[data-opora-module] .numberGrid button[aria-pressed=true]{background:#e4f5ff!important;border-color:#1591b7!important;color:#135e7e!important}
+.overlay[data-opora-module] .primary{background:linear-gradient(105deg,#167ba2,#1595b9)!important;border-color:#0e6b94!important;box-shadow:0 7px 21px #237fa32b}
+.welcomeModule{display:inline-flex;align-self:start;max-width:100%;padding:8px 13px;margin:0;border:1px solid #c7ebf2;border-radius:14px;background:#edfaffea;color:#185d78;font-size:clamp(13px,3vw,15px);font-weight:800;line-height:1.42;text-wrap:balance}
+@media(max-width:540px){
+ .overlay[data-opora-module] .content{padding:16px 15px}
+ .overlay[data-opora-module] .slideTitle{font-size:clamp(22px,6vw,28px)}
+ .overlay[data-opora-module] .footer{padding:10px 14px calc(11px + env(safe-area-inset-bottom))}
+ .overlay[data-opora-module] .primary{min-height:53px}
+ .welcomeModule{font-size:14px;padding:7px 11px}
 }

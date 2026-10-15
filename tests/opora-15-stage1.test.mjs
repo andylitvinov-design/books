@@ -17,8 +17,8 @@ test('OPORA v1.5 preserves the approved multi-slide sequence, not a four-slide c
   assert.match(block, /guided\.map\(\(section, index\) =>/)
   assert.match(block, /lesson\.practiceV3\?\.recall/)
   assert.match(block, /lesson\.practiceV4/)
-  assert.match(source, /data-course-global-discomfort/)
-  assert.match(source, /!finished && !discomfortOpen && !promoOpen/)
+  assert.doesNotMatch(source, /data-course-global-discomfort|discomfortShortcut|discomfortAction/)
+  assert.match(source, /data-course-discomfort-support/)
 })
 
 test('course history uses actual saved local dates and retains unsaved-day observations', () => {

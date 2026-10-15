@@ -1,0 +1,57 @@
+.section{padding:clamp(32px,5.5vw,65px) 0 20px;scroll-margin-top:80px;color:#173d57}
+.heading{display:grid;gap:10px;max-width:900px;margin-bottom:24px}
+.heading>p{margin:0;color:#8e4058;font-size:11px;font-weight:850;letter-spacing:.12em}
+.heading>h2{margin:0;color:#173b58;font:700 clamp(28px,4vw,39px)/1.17 Georgia,"Times New Roman",serif;letter-spacing:-.032em}
+.heading>span{max-width:800px;color:#537586;font-size:15px;line-height:1.7}
+.approachGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.approachCard{display:flex;flex-direction:column;gap:10px;min-height:220px;padding:21px 22px;border:1px solid #d7e6e6;border-radius:20px;background:linear-gradient(145deg,#fff,#f8fcfb);box-shadow:0 8px 22px #123e5c0a}
+.approachHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.approachIcon{display:grid;place-items:center;width:45px;height:45px;border-radius:15px;background:#e8f6f5;color:#127b8a}
+.approachIndex{color:#9d5770;font:700 16px Georgia,serif}
+.approachCard:nth-child(2n) .approachIcon{background:#faeef2;color:#8c455f}
+.approachCard h3{margin:0;font-size:17px;line-height:1.28;color:#1b4560}
+.approachCard p{margin:0;color:#607988;font-size:13px;line-height:1.58;flex:1}
+.approachCard a{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:750;color:#0d7e91;text-decoration:none}
+.approachCard a:hover{text-decoration:underline}
+.safetyLine{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;margin:18px 0 0;border-radius:14px;background:#eaf8f5;border:1px solid #c4e6e0;color:#316b73;font-size:12px;line-height:1.6}
+.safetyLine svg{flex:none;margin-top:1px}
+.primaryMetric{display:flex;align-items:flex-start;gap:19px;padding:24px;border:1px solid #b1d6d8;border-radius:24px;background:linear-gradient(110deg,#183e59,#236775);color:#f9ffff;box-shadow:0 14px 32px #123e5c1d}
+.primaryMetric>svg{flex:none;color:#b4e8df;margin-top:4px}
+.primaryMetric small{font-size:11px;font-weight:840;letter-spacing:.11em;color:#b5eae5}
+.primaryMetric h3{font:700 clamp(20px,2.8vw,27px) Georgia,serif;margin:8px 0;color:#fff}
+.primaryMetric p{color:#e0f1f2;font-size:13px;line-height:1.65;margin:0}
+.subheading{font-size:18px;margin:25px 0 15px}
+.metricGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-bottom:40px}
+.metricCard{display:flex;align-items:flex-start;gap:12px;padding:17px 14px;border:1px solid #d9e7e9;border-radius:16px;background:#fff}
+.metricCard>span{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:9px;font-size:22px}
+.arrowUp{color:#277e71;background:#e6f6ee}
+.arrowDown{color:#8f5065;background:#f9edf1}
+.metricCard h4{font-size:13px;line-height:1.38;margin:0;color:#25526a;font-weight:820}
+.metricCard p{font-size:11px;line-height:1.55;color:#5e7888;margin:7px 0}
+.metricCard small{font-size:10px;color:#748d98;line-height:1.4}
+.tests{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:22px 0}
+.testCard{display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;padding:21px;border:1px solid #d2e5e8;border-radius:21px;background:linear-gradient(150deg,#fafffe,#fff)}
+.testTop{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#188397}
+.testTop>span{display:inline-flex;padding:6px 10px;border-radius:30px;background:#e7f7f4;font-size:11px;font-weight:780;color:#24706d}
+.testCard:not(:first-child) .testTop>span{background:#f8edf2;color:#91506a}
+.testCard h3{font:700 18px/1.33 Georgia,serif;color:#1b475e;margin:0}
+.testCard p{font-size:13px;line-height:1.58;color:#5c7887;margin:0}
+.questionCount{display:inline-flex;width:max-content;padding:8px 11px;border-radius:10px;background:#edf8f8;color:#1d7485;font-size:12px;font-weight:790}
+.timeline{border:1px solid #cbdfe3;border-radius:24px;background:linear-gradient(120deg,#f2fafb,#fefcf9);padding:24px;margin:24px 0}
+.timeline>header{display:flex;align-items:center;gap:12px;color:#168797}
+.timeline>header small{font-size:10px;font-weight:850;color:#98546c;letter-spacing:.1em}
+.timeline h3{margin:4px 0 0;font:700 20px Georgia,serif;color:#21465b}
+.timeline ol{list-style:none;margin:20px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.timeline li{position:relative;display:grid;gap:6px;padding:16px 18px 16px 24px;border:1px solid #dce8e9;border-radius:14px;background:#fff}
+.timeline li::before{position:absolute;content:"";left:10px;top:16px;bottom:16px;width:3px;border-radius:5px;background:#39afa8}
+.timeline li strong{font-size:13px;color:#1c596f}
+.timeline li span{font-size:12px;line-height:1.6;color:#597785}
+.skillCheck{display:flex;align-items:flex-start;gap:17px;padding:22px;border:1px solid #dddfed;border-radius:20px;background:#faf7fa}
+.skillIcon{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:17px;background:#f4e6ed;color:#91506a}
+.skillCheck small{font-size:10px;font-weight:850;letter-spacing:.1em;color:#8b4b65}
+.skillCheck h3{font-size:18px;color:#22495e;margin:6px 0}
+.skillCheck p{font-size:13px;line-height:1.66;color:#5b7483;margin:0}
+.disclaimer{margin:17px 0 0;color:#677f8b;font-size:11px;line-height:1.7}
+@media(max-width:960px){.approachGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.section{padding:33px 0 13px}.approachGrid,.tests,.metricGrid,.timeline ol{grid-template-columns:1fr}.approachCard{min-height:0}.heading>h2{font-size:29px}.heading>span{font-size:13px}.primaryMetric{padding:20px 15px;gap:12px}.primaryMetric h3{font-size:22px}.timeline{padding:18px 13px}.metricCard{padding:14px}.skillCheck{padding:15px;gap:12px}.skillIcon{width:42px;height:42px}}
+@media(prefers-reduced-motion:reduce){.section *{transition:none!important;animation:none!important}}

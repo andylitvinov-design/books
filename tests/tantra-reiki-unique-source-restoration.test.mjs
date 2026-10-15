@@ -36,8 +36,13 @@ test("Tantra Reiki preserves newly recovered source-unique passages in the corre
 
   assert.ok(archive.blocks.en[93].text.toLowerCase().includes("love and connection"));
   assert.ok(archive.blocks.en[97].text.toLowerCase().includes("gods"));
-  assert.match(story, /tantraReikiArchive\.blocks\.en\.slice\(93, 98\)/);
-  assert.match(story, /id="tantra-original-event-themes"/);
+  // Original event fragments remain safely archived; the low-value expandable
+  // marketing disclosure is deliberately not displayed under the photo gallery.
+  assert.doesNotMatch(story, /tantraReikiArchive\.blocks\.en\.slice\(93, 98\)/);
+  assert.doesNotMatch(story, /id="tantra-original-event-themes"/);
+  assert.doesNotMatch(story, /eventSourceTitle|eventSourceNote|translatedEventThemes/);
+  assert.match(story, /className="tantra-festival-moments__gallery"/);
+  assert.match(story, /eventPhotos\.map/);
 
   const school = story.match(/const historicalSchoolIndices = \[([^\]]+)\]/);
   const bio = story.match(/const historicalBiographyIndices = \[([^\]]+)\]/);

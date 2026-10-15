@@ -33,6 +33,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
           </div>
           <div className={styles.heroMedia}>
             <Image src={personalServiceImages[service]} alt="" fill priority
+              unoptimized={personalServiceImages[service].endsWith(".webp")}
               sizes="(max-width: 800px) 100vw, 40vw" className={styles.heroImage} />
             <span className={styles.mediaCaption}>{t.title}</span>
           </div>

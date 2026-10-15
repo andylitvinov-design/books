@@ -312,7 +312,7 @@ export async function runTierDatabaseTests(t, { admin, pool, appConfig, billingC
     const courseConfig={...appConfig,multiCourseEnabled:true,billingEnvironment:'sandbox',encryptionKey:Buffer.alloc(32,7),encryptionKeyId:'synthetic-ci-only'}
     const courses=createGrowthCourseRepository(courseConfig,{runTransaction:(_config,actor,fn)=>asCourse(actor,fn)})
     const preset=COURSE_PRESETS[0],id=randomUUID()
-    let state=await courses.command(owner,{action:'start',consent:true,courseId:id,presetId:preset.id})
+    let state=await courses.command(owner,{action:'start',consent:true,courseId:id,newCourse:true,presetId:preset.id})
     await assert.rejects(courses.command(owner,{action:'confirm-tests',courseId:id,expectedRevision:state.course.revision,testKeys:preset.testKeys.slice(0,4)}),/COURSE_PRESET_TESTS_FIXED/)
     await assert.rejects(courses.command(owner,{action:'confirm-tests',courseId:id,expectedRevision:state.course.revision,testKeys:preset.testKeys}),/COURSE_TEST_SELECTION_REQUIRED/)
     const ids=preset.testKeys.map(key=>ASSESSMENT_DEFINITIONS.find(def=>def.key===key&&def.instrumentLocale==='en').id)

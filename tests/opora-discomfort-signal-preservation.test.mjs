@@ -6,6 +6,7 @@ import ts from 'typescript'
 import * as moments from '../lib/inner-growth/course-moment-trends.js'
 import * as adaptation from '../lib/inner-growth/course-adaptation.js'
 import * as welcome from '../lib/inner-growth/course-welcome.js'
+import * as courseSequence from '../lib/inner-growth/course-slide-sequence.js'
 import * as dayOne from '../lib/inner-growth/anti-stress-day-one.js'
 import { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } from '../lib/inner-growth/lesson-library.js'
 
@@ -24,7 +25,7 @@ function mount(_name,{props}){
   }
   const dependencies={react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:(_,key)=>String(key)}),'./course-guided-timer':{default:()=>null},'./course-practice-voice':{default:()=>null},
-    '@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
+    '@/lib/inner-growth/course-slide-sequence':courseSequence,'@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./opora-module-activity':{default:()=>null},'./anti-stress-practice-lab':{default:'AntiStressPracticeLab'},'./course-lesson-result':{default:'CourseLessonResult'},'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
   const runtime={exports:{},require:name=>{assert.ok(dependencies[name],name);return dependencies[name]},
     document:{body:{style:{overflow:''}},addEventListener(){},removeEventListener(){}},
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}
@@ -46,9 +47,11 @@ for(const locale of ['en','ru']) for(const version of [COURSE_CONTENT_VERSION,CO
       const h=mount('course-slide-player',{props:{locale,data,onClose(){},onCheckin:async()=>{otherSaves++;return true},onPreferences:async()=>{otherSaves++;return true},onSession:async body=>{saved.push(body);return true}}})
       const byData=key=>nodes(h.tree).find(n=>n.props?.[key]!==undefined)
       const click=async node=>{assert.ok(node);node.props.onClick();await h.settle()}
+      assert.equal(byData('data-course-global-discomfort'),undefined,'dedicated footer shortcut remains removed')
+      for(let i=0;i<40&&byData('data-slide-kind').props['data-slide-kind']!=='feedback';i++)await click(nodes(h.tree).find(n=>n.type==='button'&&n.props.className==='primary'))
       const initialFocusCount=h.focusCount
       assert.equal(h.focused?.type,'h2')
-      await click(byData('data-course-global-discomfort'))
+      await click(nodes(byData('data-course-comfort')).find(n=>n.type==='button'&&textOf(n).trim()===(locale==='ru'?'Было некомфортно':'Uncomfortable')))
       const panel=byData('data-course-discomfort-support')
       assert.ok(panel);assert.equal(saved.length,0)
       assert.equal(h.focusCount,initialFocusCount+1,'opening support refocuses its heading')
@@ -87,9 +90,33 @@ for(const locale of ['en','ru']) for(const version of [COURSE_CONTENT_VERSION,CO
 for(const locale of ['en','ru'])test(`AS1.8 explicit return from neutral support refocuses the lesson (${locale})`,async()=>{
  const h=mount('course-slide-player',{props:{locale,data:{cycle:{day:1},programme:{id:'stress'},lesson:{id:'first',title:'First',antiStress:{},sections:[]},progress:{}},onClose(){},onCheckin(){throw Error('No write')},onSession(){throw Error('No write')}}})
  const byData=key=>nodes(h.tree).find(n=>n.props?.[key]!==undefined)
- byData('data-course-global-discomfort').props.onClick();await h.settle()
+ assert.equal(byData('data-course-global-discomfort'),undefined)
+ for(let i=0;i<30&&!nodes(h.tree).some(n=>typeof n.props?.onDiscomfort==='function');i++){nodes(h.tree).find(n=>n.type==='button'&&n.props.className==='primary').props.onClick();await h.settle()}
+ nodes(h.tree).find(n=>typeof n.props?.onDiscomfort==='function').props.onDiscomfort();await h.settle()
  nodes(byData('data-course-discomfort-support')).find(n=>n.type==='button').props.onClick();await h.settle()
  const child=nodes(h.tree).find(n=>typeof n.props?.onReturnToPractice==='function');assert.ok(child);assert.equal(child.props.neutralMode,true)
  const before=h.focusCount;child.props.onReturnToPractice();await h.settle()
  assert.equal(h.focusCount,before+1);assert.equal(h.focused?.type,'h2');assert.ok(nodes(h.tree).includes(h.focused));assert.equal(h.network,0);h.unmount()
+})
+
+for(const locale of ['en','ru'])test(`neutral choice hides main and reflection labs without erasing earlier answers (${locale})`,async()=>{
+ const saved=[]
+ const h=mount('course-slide-player',{props:{locale,data:{cycle:{day:2},programme:{id:'stress'},lesson:{id:'lab',title:'Lab',antiStress:{},practiceV4:{},sections:[],workbook:{}},progress:{}},onClose(){},onCheckin(){throw Error('No early write')},onSession:async body=>{saved.push(body);return true}}})
+ const find=key=>nodes(h.tree).find(n=>n.props?.[key]!==undefined)
+ const advance=async()=>{const button=nodes(h.tree).find(n=>n.type==='button'&&n.props.className==='primary');assert.ok(button);await button.props.onClick();await h.settle()}
+ while(find('data-slide-kind').props['data-slide-kind']!=='ritual')await advance()
+ const main=nodes(h.tree).find(n=>n.type==='AntiStressPracticeLab'&&n.props.part==='main');assert.ok(main)
+ main.props.onChange('switched');await h.settle()
+ assert.equal(find('data-course-global-discomfort'),undefined)
+ while(find('data-slide-kind').props['data-slide-kind']!=='feedback')await advance()
+ nodes(find('data-course-comfort')).find(n=>n.type==='button'&&textOf(n).trim()===(locale==='ru'?'Было некомфортно':'Uncomfortable')).props.onClick();await h.settle()
+ nodes(find('data-course-discomfort-support')).find(n=>n.type==='button').props.onClick();await h.settle()
+ while(find('data-slide-kind').props['data-slide-kind']!=='ritual'){nodes(h.tree).find(n=>n.type==='button'&&n.props.className==='back').props.onClick();await h.settle()}
+ let sawSymbol=false
+ for(let i=0;i<12&&find('data-slide-kind').props['data-slide-kind']!=='completion';i++){
+   assert.equal(nodes(h.tree).some(n=>n.type==='AntiStressPracticeLab'),false)
+   if(find('data-slide-kind').props['data-slide-kind']==='symbol')sawSymbol=true
+   await advance()
+ }
+ assert.equal(sawSymbol,true);assert.equal(saved.length,1);assert.equal(saved[0].practiceLab.main,'switched');assert.equal(saved[0].feedback,'uncomfortable');assert.equal(h.network,0);h.unmount()
 })

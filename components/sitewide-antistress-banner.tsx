@@ -17,6 +17,7 @@ const copy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
 
@@ -33,7 +34,7 @@ export function SitewideAntistressBanner({ initialLocale = "en" }: { initialLoca
       <div className={styles.inner}>
         <Link className={styles.name} href={"/" + locale + "/courses/antistress"} prefetch={false} aria-label={t.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}<ArrowRight size={14} aria-hidden="true" /></Link>
         <span className={styles.detail}>{t.detail}</span>
-        <Link className={styles.cta} href={`/${targetLocale}/app/course?program=stress`} prefetch={false}>
+        <Link className={styles.cta} href={`/${targetLocale}/app/course?program=stress&entry=quick`} prefetch={false}>
           {t.cta}<ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>

@@ -50,3 +50,29 @@ export async function observePublicNavigation(page, { engine, origin, record }) 
     stop() { active = false; page.off('request', request); page.off('requestfailed', failed); page.off('response', response); page.off('pageerror', pageerror) },
   }
 }
+
+// Test-only navigation sequencing. Observe requests before resize so a previously
+// reached Playwright networkidle state cannot conceal newly scheduled prefetches.
+export async function resizePublicViewport(page, viewport, { quietMs = 500, timeoutMs = 30000 } = {}) {
+  const pending = new Set()
+  let quietTimer, timeoutTimer, ready = false, resolveQuiet, rejectQuiet
+  const quiet = new Promise((resolve, reject) => { resolveQuiet = resolve; rejectQuiet = reject })
+  const schedule = () => {
+    clearTimeout(quietTimer)
+    if (ready && pending.size === 0) quietTimer = setTimeout(resolveQuiet, quietMs)
+  }
+  const request = value => { pending.add(value); clearTimeout(quietTimer) }
+  const complete = value => { pending.delete(value); schedule() }
+  page.on('request', request); page.on('requestfinished', complete); page.on('requestfailed', complete)
+  try {
+    await page.setViewportSize(viewport)
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    ready = true
+    timeoutTimer = setTimeout(() => rejectQuiet(new Error('Viewport-triggered requests did not settle before navigation')), timeoutMs)
+    schedule()
+    await quiet
+  } finally {
+    clearTimeout(quietTimer); clearTimeout(timeoutTimer)
+    page.off('request', request); page.off('requestfinished', complete); page.off('requestfailed', complete)
+  }
+}

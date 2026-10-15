@@ -479,7 +479,7 @@ async function handle(request, { params }) {
       const saved = await readSavedDocument(config, store, actor, path[1], locale)
       const payment = saved.kind === 'invoice' || saved.kind === 'receipt'
       const [
-        { buildPaymentPdf, buildPrescriptionPdf },
+        { buildPaymentPdf, buildPrescriptionPdf, buildPrescriptionMobilePdf },
         { reportPdfFilename },
         { metadataBaseFor },
       ] = await Promise.all([
@@ -487,7 +487,10 @@ async function handle(request, { params }) {
         import('@/lib/documents/report-filename'),
         import('@/data/site-metadata'),
       ])
-      const pdf = await (payment ? buildPaymentPdf : buildPrescriptionPdf)(
+      const preview = new URL(request.url).searchParams.get('preview') === '1'
+      const layout = new URL(request.url).searchParams.get('layout')
+      const mobile = !payment && (preview || layout === 'mobile') && layout !== 'a4'
+      const pdf = await (payment ? buildPaymentPdf : mobile ? buildPrescriptionMobilePdf : buildPrescriptionPdf)(
         saved.document, locale, metadataBaseFor().origin,
       )
       const filename = payment
@@ -497,7 +500,7 @@ async function handle(request, { params }) {
         headers: {
           ...PRIVATE_HEADERS,
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `${preview ? 'inline' : 'attachment'}; filename="${filename}"`,
         },
       }))
     }
@@ -555,11 +558,21 @@ async function handle(request, { params }) {
     }
     throw new AppError('NOT_FOUND', 404)
   } catch (error) {
-    const safe = safeError(error),
-      response = NextResponse.json(
-        { error: safe.code },
-        { status: safe.status, headers: PRIVATE_HEADERS },
-      )
+    const safe = safeError(error)
+    // Production previously hid every unexpected course-start failure behind
+    // SERVICE_UNAVAILABLE, making it impossible to distinguish an application
+    // defect from a transient SQL connection error. Log only safe error-class
+    // metadata: never payloads, account IDs, assessment answers, or SQL text.
+    if (safe.code === 'SERVICE_UNAVAILABLE' &&
+        new URL(request.url).pathname === '/api/app/course') {
+      const name = /^[A-Za-z]{2,45}$/.test(error?.name || '') ? error.name : 'Error'
+      const code = /^[A-Za-z0-9_]{2,35}$/.test(error?.code || '') ? error.code : 'UNCLASSIFIED'
+      console.error('HH_COURSE_START_UNEXPECTED', name, code)
+    }
+    const response = NextResponse.json(
+      { error: safe.code },
+      { status: safe.status, headers: PRIVATE_HEADERS },
+    )
     return auth ? auth.apply(response) : response
   }
 }

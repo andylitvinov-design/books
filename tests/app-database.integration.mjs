@@ -1542,6 +1542,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
 // session insert for the non-primary selected scale. This suite is loopback-only.
 test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
   const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { buildCourseSlides } = await import('../lib/inner-growth/course-slide-sequence.js')
   const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
   const dailyRepo = createDailyCourseRepository(config)
   for (const locale of ['en','ru']) {
@@ -1568,8 +1569,9 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
       const originalLessonId = value.lesson.id
-      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID(),visitedSlideKeys:[]},locale),{code:'COURSE_SLIDES_INCOMPLETE'})
       const firstSaved = await dailyRepo.command(who,'session',first,locale)
       assert.equal(firstSaved.cycle.day,1)
       assert.ok(firstSaved.currentSession.completedAt)
@@ -1584,7 +1586,7 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
-      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
       const secondSaved = await dailyRepo.command(who,'session',second,locale)
       assert.equal(secondSaved.cycle.day,2)
@@ -1769,3 +1771,141 @@ test('push subscriptions and preferences are account-owned, RLS-protected and re
   const removed=await push.unsubscribe(a,{endpoint:null})
   assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
 })
+
+
+// End-to-end restricted-role OPORA handoff: a real synthetic Weekly Pulse
+// result, encrypted module choice, growth-course transaction and Day 1 read.
+// This runs only against the isolated Postgres CI fixture, never production.
+test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved testing', async () => {
+  const {createGrowthCourseRepository} = await import('../lib/app/growth-course.js')
+  const {createDailyCourseRepository} = await import('../lib/app/growth-daily.js')
+  const {courseMeasuredProfile} = await import('../lib/inner-growth/course-strategy.js')
+  const {ANTISTRESS_MODULE_FINDER_ITEMS} = await import('../lib/inner-growth/antistress-module-router.js')
+  const who=actor(randomUUID(),randomUUID())
+  const growth=createGrowthCourseRepository(config)
+  const daily=createDailyCourseRepository(config)
+  const db=await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-opora@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+    await repo.ensureAccount(who)
+    await repo.onboarding(who,{
+      adult:true,necessary:true,marketing:false,displayName:'Synthetic OPORA learner',
+      uiLocale:'en',timezone:'UTC',goal:'explore',
+    })
+    let course=await growth.command(who,{action:'start',consent:true})
+    course=await growth.command(who,{
+      action:'intake',expectedRevision:course.course.revision,
+      concerns:'Synthetic stress during ordinary activities',
+      focusTags:['stress','mood','energy'],
+    })
+    assert.equal(course.course.stage,2)
+    const run=await repo.startRun(who,{
+      definitionKey:weekly.key,definitionVersion:weekly.version,
+      instrumentLocale:weekly.instrumentLocale,operationId:randomUUID(),
+    })
+    const saved=await repo.saveRun(who,run.id,{
+      answers:answer(weekly,5),context:{},progress:weekly.questions.length,
+      expectedRevision:run.revision,operationId:randomUUID(),
+    })
+    const completed=await repo.submitRun(who,run.id,{expectedRevision:saved.revision})
+    const profile=courseMeasuredProfile({
+      results:[completed],testKeys:['hh-weekly-pulse'],locale:'en',
+    })
+    const selected=profile.eligible.slice(0,Math.min(3,profile.eligible.length)).map(x=>x.id)
+    assert.ok(selected.length>0,'Synthetic Weekly Pulse has current measured practice scales')
+    // Earlier stages are exercised by the existing plan tests; advance the
+    // synthetic course to the real module decision with its completed test.
+    await db.query(`update app_private.growth_courses
+      set stage=3,test_keys=ARRAY['hh-weekly-pulse']::text[],revision=revision+1,updated_at=now()
+      where account_id=$1`,[who.id])
+    course=await growth.read(who)
+    assert.equal(course.course.stage,3)
+    assert.equal(course.assessments.selectedTests[0].completed,true)
+    const request={
+      action:'choose-goals',expectedRevision:course.course.revision,
+      scaleKeys:selected,consent:true,durationDays:14,
+      moduleId:'AS5',moduleGoal:'undecided',
+      moduleAnswers:Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>[x.id,null])),
+      problemLabel:'Synthetic daily stress observation',intention:'',timeZone:'UTC',
+    }
+    const started=await growth.command(who,request)
+    assert.equal(started.course.stage,4)
+    assert.equal(started.course.moduleChoice.id,'AS5')
+    assert.equal(started.assessments.selectedTests[0].completed,true)
+    const today=await daily.read(who,'en')
+    assert.equal(today.cycle.moduleId,'AS5')
+    assert.equal(today.cycle.day,1)
+    assert.equal(today.cycle.preferences.length,'standard')
+    assert.equal(today.cycle.preferences.imagery,'optional')
+    assert.equal(today.cycle.preferences.checkinFrequency,'daily')
+    assert.equal(today.roadmap.length,14)
+    assert.ok(today.lesson?.id)
+    await assert.rejects(growth.command(who,request),{code:'REVISION_CONFLICT'})
+    const cycleCount=await db.query('select count(*)::int as n from app_private.growth_cycles where account_id=$1',[who.id])
+    const resultCount=await db.query('select count(*)::int as n from app.assessment_results where account_id=$1',[who.id])
+    assert.equal(cycleCount.rows[0].n,1)
+    assert.equal(resultCount.rows[0].n,1)
+  } finally {
+    await db.end()
+  }
+})
+
+
+test('private session share grants enforce per-consultation ownership under real Postgres roles', async()=>{
+  // Synthetic A/B test uses the exact deployed migration; never a production DB.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    await db.query('create schema if not exists storage')
+    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
+    await db.query(sql)
+    const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]
+    assert.ok(bucket)
+    assert.equal(bucket.public,false)
+    assert.equal(Number(bucket.file_size_limit),50_000_000)
+    const clientA=randomUUID(),clientB=randomUUID(),sessionA=randomUUID(),sessionB=randomUUID()
+    for(const [id,clientId] of [[sessionA,clientA],[sessionB,clientB]]){
+      await db.query("insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic-encrypted-fixture','draft')",[id,clientId])
+    }
+    const grant=randomUUID()
+    await db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[grant,sessionA,clientA,'aaaaaaaaaaaaaaaaaaaaaa','a'.repeat(64)])
+    // A grant for Session B cannot be spoofed as Client A, even with Session B's UUID.
+    await assert.rejects(db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[randomUUID(),sessionB,clientA,'bbbbbbbbbbbbbbbbbbbbbb','b'.repeat(64)]),e=>e.code==='23503')
+    await assert.rejects(db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status) values($1,$2,$3,'audio','practitioner','synthetic-path','audio/mp4',1024,'pending')",[randomUUID(),clientB,sessionA]),e=>e.code==='23503')
+    for(const table of ['client_delivery_sessions','client_delivery_assets','client_session_share_grants','client_session_viewer_sessions']){
+      await assert.rejects(rawAs(a,'authenticated',database=>database.query('select * from app_private.'+table)),e=>e.code==='42501')
+      assert.equal((await db.query('select relrowsecurity from pg_class where oid=$1::regclass',['app_private.'+table])).rows[0].relrowsecurity,true)
+    }
+    const permitted=await rawAs(a,'hh_app_backend',database=>database.query('select count(*)::int as total from app_private.client_delivery_sessions'))
+    assert.equal(permitted.rows[0].total,2)
+    // Two isolated connections exercise both winners of finalization vs cleanup.
+    // Only pending, never-ready rows may be claimed; published/ready keys survive.
+    const finishing=await adminClient(),cleaning=await adminClient()
+    const assetA=randomUUID(),assetB=randomUUID()
+    const claim="update app_private.client_delivery_assets set status='removed' where id in (select id from app_private.client_delivery_assets where legacy_client_id=$1 and session_id=$2 and ready_at is null and status in ('pending','removed') and created_at < now()-interval '24 hours' order by created_at limit 30 for update skip locked) and ready_at is null and status in ('pending','removed') returning object_key"
+    try {
+      for(const id of [assetA,assetB])await db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status,created_at) values($1,$2,$3,'audio','client',$4,'audio/mp4',512,'pending',now()-interval '2 days')",[id,clientA,sessionA,'synthetic-race-'+id])
+      await finishing.query('begin');await finishing.query('set local role hh_app_backend')
+      await finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending'",[assetA])
+      await cleaning.query('begin');await cleaning.query('set local role hh_app_backend')
+      await cleaning.query("set local statement_timeout='2s'")
+      const claimed=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(claimed.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      // A concurrent finalizer can no longer turn the claimed row ready.
+      const rejectedFinish=finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending' returning id",[assetB])
+      await cleaning.query('commit')
+      assert.equal((await rejectedFinish).rowCount,0)
+      await finishing.query('commit')
+      const retryClaim=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(retryClaim.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      assert.equal((await db.query('select status from app_private.client_delivery_assets where id=$1',[assetA])).rows[0].status,'ready')
+    } finally {
+      await cleaning.query('rollback');await finishing.query('rollback')
+      await finishing.end();await cleaning.end()
+    }
+
+  }finally{await db.end()}
+})
+
