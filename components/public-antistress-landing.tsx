@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
+import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
 
@@ -744,6 +745,9 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <Course14DayOverview locale={locale} programId="stress" compact />
         </section>
 
+        <section className={styles.detailedDays} aria-label={locale==="ru"?"Практики, результаты и измерения каждого дня":locale==="es"?"Ejercicios, resultados y medidas de cada día":"Exercises, outcomes and measurements for all 14 days"} data-antistress-detailed-14-day-scheme>
+          <Course14DayOverview locale={locale} programId="stress" compact />
+        </section>
         <section className={styles.process} id="how" aria-labelledby="antistress-how">
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>{t.processEyebrow}</p>
