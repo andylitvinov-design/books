@@ -102,3 +102,9 @@ test('full test catalog differentiates selection and save buttons from actual te
   assert.match(fullExplorerCss, /\.explorer \.battery \.primary\[data-test-action=start\]/)
   assert.match(explorer, /onStart\(\[entry\]/)
 })
+
+
+test('each recommended test has a single visible test-kind badge, not a duplicate hidden in details', () => {
+  assert.equal((picker.match(/<KindBadge entry=\{entry\} locale=\{locale\} \/>/g) || []).length, 1)
+  assert.match(picker, /<div className=\{styles\.testFacts\}>/)
+})
