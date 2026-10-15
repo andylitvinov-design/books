@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { metadataBaseFor } from '@/data/site-metadata'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
-import { buildPaymentPdf, buildPrescriptionPdf } from '@/lib/prescriptions/pdf'
+import { buildPaymentPdf, buildPrescriptionPdf, buildPrescriptionMobilePdf } from '@/lib/prescriptions/pdf'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
@@ -29,8 +29,15 @@ export async function GET(request, { params }) {
   const payment = record.kind === 'payment'
   const document = payment ? getClientPaymentDocument({ ...record, status: 'active' }, locale) : getClientPrescription({ ...record, status: 'active' }, locale)
   if (!document) return new NextResponse(null, { status: 404, headers: privateHeaders })
-  const pdf = await (payment ? buildPaymentPdf : buildPrescriptionPdf)(document, locale, metadataBaseFor().origin)
+  const params = new URL(request.url).searchParams
+  const preview = params.get('preview') === '1'
+  // Older saved recommendations use the SAME large-type mobile preview
+  // as newly shared client reports; A4 remains the explicit download.
+  const mobile = !payment && preview && params.get('layout') !== 'a4'
+  const pdf = await (payment ? buildPaymentPdf : mobile ? buildPrescriptionMobilePdf : buildPrescriptionPdf)(
+    document, locale, metadataBaseFor().origin,
+  )
   const filename = payment ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(document)
-  const disposition = new URL(request.url).searchParams.get('preview') === '1' ? 'inline' : 'attachment'
+  const disposition = preview ? 'inline' : 'attachment'
   return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `${disposition}; filename="${filename}"` } })
 }
