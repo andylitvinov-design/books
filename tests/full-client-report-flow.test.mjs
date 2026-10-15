@@ -65,7 +65,14 @@ test('mobile recording checks private bucket before camera / microphone permissi
   assert.match(storage,/getBucket\(PRIVATE_MEDIA_BUCKET\)/)
   assert.match(storage,/data\.public!==false/)
   assert.ok(recorder.indexOf('await checkReady()')<recorder.indexOf('navigator.mediaDevices.getUserMedia'))
-  assert.match(recorder,/await checkReady\(\)\s+const sid=await ensureSession\(\)/)
+  // The same preflight returns separate audio and video readiness. Video must
+  // fail closed before any session, camera prompt or private object upload.
+  assert.match(recorder,/const availability=await checkReady\(\)/)
+  assert.match(recorder,/if\(video&&availability\.videoReady===false\)throw new Error\('MEDIA_STORAGE_NOT_CONFIGURED'\)/)
+  assert.ok(recorder.indexOf('const availability=await checkReady()',recorder.indexOf('async function chooseFile'))<recorder.indexOf('const sid=await ensureSession()',recorder.indexOf('async function chooseFile')))
+  const readiness=src('lib/clients/recording-readiness.js')
+  assert.match(readiness,/\/api\/admin\/clients\//)
+  assert.match(readiness,/\/admin\/api\/recorder-auth/)
   assert.match(recorder,/recordingError\(e,ru\)/)
   const media=src('app/api/admin/clients/[id]/sessions/[sessionId]/media/[assetId]/route.js')
   assert.match(media,/ownerDelivery/)
