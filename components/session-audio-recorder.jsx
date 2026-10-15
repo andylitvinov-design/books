@@ -55,7 +55,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       jobRef.current=null
       if(!mountedRef.current)return
       setRetryFile(null);setStage('saved')
-      setMessage(ru?'Запись сохранена в этой сессии. Клиент её пока не видит.':'Saved to this session. Your client cannot see it until you publish.')
+      setMessage(ru?'Материал сохранён в этой сессии. Клиент увидит его после публикации.':
+        'Material saved to this session. Your client sees it after you publish.')
       onSaved?.(job.sessionId)
     } catch(e) {
       if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(e.message||String(e))}
@@ -171,8 +172,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
         <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать видео':'Record video'}</button>
-        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить аудио/видео':'Upload audio/video'}
-          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,.m4a,.mp3,.webm,.mp4"
+        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Добавить аудио, видео или PDF':'Add audio, video or PDF'}
+          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,application/pdf,.m4a,.mp3,.webm,.mp4,.pdf"
             onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
       </>}
     </div>

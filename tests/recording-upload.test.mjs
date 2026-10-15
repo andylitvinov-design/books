@@ -40,3 +40,16 @@ test('lost intent response retries same idempotency key',async()=>{
  await assert.rejects(saveRecording(job,deps),/lost response/);await saveRecording(job,deps)
  assert.equal(ids.length,2);assert.equal(ids[0],ids[1])
 })
+
+
+test('an extra private PDF can be attached, but never as HTML or beyond 15 MB',async()=>{
+ const job=make();job.file={type:'application/pdf',size:1024}
+ let intent
+ await saveRecording(job,{post:async(_,data)=>{if(data.action==='intent'){intent=data;return {assetId:'pdf-asset'}}},upload:async()=>{}})
+ assert.equal(intent.kind,'pdf')
+ assert.equal(intent.mime,'application/pdf')
+ for(const file of [{type:'application/pdf',size:15_000_001},{type:'text/html',size:1024}]){
+   const attempt=make();attempt.file=file
+   await assert.rejects(saveRecording(attempt,{post:()=>assert.fail('must not issue'),upload:()=>assert.fail('must not upload')}))
+ }
+})

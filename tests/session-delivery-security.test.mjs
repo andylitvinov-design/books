@@ -107,3 +107,12 @@ test('suffix open-ended and oversized-end ranges accept exact effective span',as
 });
 test('upstream 416 never forwards error body length or location',async()=>{const f=streamFixture({range:'bytes=0-9',status:416,upstreamHeaders:{'content-length':'187','content-range':'bytes */999'}}),r=await f.run();assert.equal(r.status,416);assert.equal(r.body,null);assert.equal(r.headers.get('content-length'),'0');assert.equal(r.headers.get('content-range'),'bytes */512');assert.equal(r.headers.get('location'),null);assert.equal(f.stats().cancelled,true)});
 test('full upstream response with wrong length is rejected',async()=>{const f=streamFixture({status:200,upstreamHeaders:{'content-length':'511'}});await assert.rejects(f.run(),{code:'MEDIA_STORAGE_UNAVAILABLE'});assert.equal(f.stats().cancelled,true)});
+
+
+test('private PDF validation checks actual PDF signature, not only the browser MIME',()=>{
+ const header=load(source,[],[],'headerMatches')
+ const pdf=new Uint8Array([37,80,68,70,45,49,46,55,10,37,0,0])
+ const html=new Uint8Array([60,104,116,109,108,62,0,0,0,0,0,0])
+ assert.equal(header(pdf,'application/pdf'),true)
+ assert.equal(header(html,'application/pdf'),false)
+})

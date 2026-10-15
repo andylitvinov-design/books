@@ -6,7 +6,6 @@ import { getPublishedClientSession,getPublishedSessionReport } from '@/lib/clien
 import { ClientSessionPage } from '@/components/client-session-page'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
-import { PrescriptionDocument } from '@/components/prescription-document'
 import { PaymentDocument } from '@/components/payment-document'
 export const dynamic='force-dynamic'
 export const metadata={title:'Your consultation · Holistic House',robots:{index:false,follow:false},referrer:'no-referrer'}
@@ -18,17 +17,18 @@ export default async function CabinetSession({params}) {
   let session
   try{session=await getPublishedClientSession(getAppConfig(),access.store,access.client.id,sessionId)}
   catch{notFound()}
-  let reportContent=null
+  let reportContent=null, recommendation=null
   if(session.report) {
     const record=await getPublishedSessionReport(getAppConfig(),access.store,access.client.id,sessionId).catch(()=>null)
     if(record?.status==='active'&&record.clientId===access.client.id) {
       const payment=record.kind==='payment'
       const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
-      if(projected) reportContent=payment?<PaymentDocument document={projected} locale={locale}/>:
-        <PrescriptionDocument document={projected} locale={locale}/>
+      if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={locale}/>
+        else recommendation=projected}
     }
   }
   return <ClientSessionPage locale={locale} session={session} selector={selector}
-    mode="cabinet" reportContent={reportContent}/>
+    mode="cabinet" clientName={recommendation?.patientName||access.client.fullName||''}
+    recommendation={recommendation} reportContent={reportContent}/>
 }
 
