@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
-import { getAppConfig } from '@/lib/app/config'
+import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getPublishedClientSession,getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionPage } from '@/components/client-session-page'
 import { getClientPrescription } from '@/lib/prescriptions/service'
@@ -28,7 +28,7 @@ export default async function CabinetSession({params}) {
     }
   }
   return <ClientSessionPage locale={locale} session={session} selector={selector}
-    mode="cabinet" clientName={recommendation?.patientName||access.client.fullName||''}
+    mode="cabinet" appAvailable={appEnabled()} clientName={recommendation?.patientName||access.client.fullName||''}
     recommendation={recommendation} reportContent={reportContent}/>
 }
 

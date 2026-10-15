@@ -1,0 +1,60 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('the session view offers a Cabinet button and gated account sections on both access paths',()=>{
+  const component=read('components/client-session-page.jsx')
+  const entry=read('components/client-session-cabinet-entry.jsx')
+  const guest=read('app/[locale]/client/session/[shareSelector]/page.js')
+  const cabinet=read('app/[locale]/client/[selector]/sessions/[sessionId]/page.js')
+  assert.match(component,/variant="header"/)
+  assert.match(component,/variant="footer"/)
+  assert.match(component,/cabinetSessionPage/)
+  for(const section of ["'my-tests'","'my-courses'","reports","cabinet"])
+    assert.ok(entry.includes(section),section)
+  assert.match(guest,/authorizeSessionGuest/)
+  assert.match(cabinet,/authorizeCabinetRequest/)
+  assert.match(guest,/appAvailable=\{appEnabled\(\)\}/)
+  assert.match(cabinet,/appAvailable=\{appEnabled\(\)\}/)
+})
+
+test('session buttons reuse verified OAuth, without creating a private-cabinet claim or leaking guest selectors',()=>{
+  const entry=read('components/client-session-cabinet-entry.jsx')
+  assert.match(entry,/appFetch\('bootstrap'\)/)
+  assert.match(entry,/e\?\.status!==401/)
+  assert.match(entry,/appFetch\('auth\/start',\{locale,continueTo:kind\}\)/)
+  assert.match(entry,/window\.location\.assign\(destination\.href\)/)
+  assert.match(entry,/Signing in with Google does not automatically import/)
+  assert.doesNotMatch(entry,/clientId|shareSelector|sourceConsultationId|shareSecret|sessionSecret|sessionId/)
+  // Known cabinet destinations only; no open redirect return URL accepted.
+  assert.match(entry,/cabinet:\{path:'portrait'/)
+  assert.match(entry,/'my-tests':\{path:'tests'/)
+  assert.match(entry,/'my-courses':\{path:'course'/)
+  assert.match(entry,/reports:\{path:'portrait#personal-reports'/)
+})
+
+test('OAuth server continues only to fixed first-party screens and preserves existing course/test handoff',()=>{
+ const route=read('app/api/app/[...path]/route.js')
+ for(const value of ["'tests'","'course'","'cabinet'","'my-tests'","'my-courses'","'reports'"])
+   assert.ok(route.includes(value),value)
+ assert.match(route,/INVALID_CONTINUATION/)
+ assert.match(route,/if \(program !== null/)
+ assert.match(route,/continueTo === 'reports'/)
+ assert.match(route,/new URL\(destination\)/)
+ assert.match(route,/scopes: 'openid email profile'/)
+ assert.doesNotMatch(route,/continueTo.*client\/session/)
+})
+
+test('recipe reuses warm paper/terra-cotta Google cabinet styling with compact mobile controls',()=>{
+ const css=read('components/client-session.module.css')
+ const workspace=read('app/[locale]/app/[[...path]]/workspace.css')
+ for(const token of ['#3e342e','#bf4f2e','#fffdf7','#e6dbcc'])
+   assert.ok(css.includes(token)&&workspace.includes(token),token)
+ for(const name of ['.cabinetHeaderButton','.cabinetBridge','.cabinetBridgeLinks',
+  '.cabinetBridgePrimary','.cabinetSessionPage','.cabinetBridgePrivacy'])
+   assert.ok(css.includes(name),name)
+ assert.match(css,/max-width:700px/)
+ assert.match(css,/min-height:48px/)
+})
