@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const cspClass = (await headers()).get("x-csp-class") ?? "restricted";
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
-  const publicOrigin = metadataBaseFor().toString().replace(/\\/$/, "");
+  const publicOrigin = metadataBaseFor().toString().replace(/\/$/, "");
   // No invented business address, regulated practitioner credentials, or review ratings.
   const websiteSchema = {
     "@context": "https://schema.org",
