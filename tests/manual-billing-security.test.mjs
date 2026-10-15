@@ -8,15 +8,17 @@ test('manual billing must fail closed until merchant, RLS, course and Premium fu
   assert.equal(manualBillingConfig({}).requestsEnabled,false)
   assert.equal(manualBillingConfig({HH_MANUAL_BILLING_REQUESTS_ENABLED:'true'}).requestsEnabled,true)
   for(const key of ['HH_MANUAL_BILLING_REQUESTS_ENABLED','HH_MANUAL_BILLING_REVIEW_ENABLED',
-    'HH_MANUAL_BILLING_PAYEE_APPROVED','HH_MANUAL_BILLING_ACCESS_APPROVED','HH_PREMIUM_SESSION_SCHEMA_APPROVED',
-    'HH_PREMIUM_SESSION_FULFILLMENT_APPROVED','HH_BILLING_SCHEMA_APPROVED','HH_MULTICOURSE_SCHEMA_APPROVED']) {
+    'HH_MANUAL_BILLING_PAYEE_APPROVED','HH_MANUAL_BILLING_ACCESS_APPROVED',
+    'HH_BILLING_SCHEMA_APPROVED','HH_MULTICOURSE_SCHEMA_APPROVED']) {
     const flags={HH_MANUAL_BILLING_REQUESTS_ENABLED:'true',HH_MANUAL_BILLING_REVIEW_ENABLED:'true',
       HH_MANUAL_BILLING_PAYEE_APPROVED:'true',HH_MANUAL_BILLING_ACCESS_APPROVED:'true',
       HH_PREMIUM_SESSION_SCHEMA_APPROVED:'true',HH_PREMIUM_SESSION_FULFILLMENT_APPROVED:'true',
-      HH_BILLING_SCHEMA_APPROVED:'true',HH_MULTICOURSE_SCHEMA_APPROVED:'true'}
+      HH_BILLING_SCHEMA_APPROVED:'true',HH_MULTICOURSE_SCHEMA_APPROVED:'true',
+      HH_BILLING_ENVIRONMENT:'live'}
     flags[key]='false'
     assert.equal(manualBillingConfig(flags).accessEnabled,false,key)
   }
+  assert.equal(manualBillingConfig({HH_BILLING_ENVIRONMENT:'sandbox',HH_MANUAL_BILLING_ACCESS_APPROVED:'true'}).accessEnabled,false)
 })
 test('owner account and rate scoping guard every request and reject cross-account headers',()=>{
   const source=file('app/api/app/manual-billing/[action]/route.js')

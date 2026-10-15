@@ -40,6 +40,8 @@ BEGIN
   IF current_setting('hh.manual_billing_access',true)='approved' THEN
     SELECT m.plan_id INTO manual_tier FROM app_private.manual_billing_orders m
       WHERE m.account_id=owner AND m.status='paid' AND m.paid_through_at>clock_timestamp()
+        AND (m.plan_id='advanced' OR (m.plan_id='premium'
+          AND current_setting('hh.manual_premium_access',true)='approved'))
       ORDER BY m.paid_through_at DESC LIMIT 1;
     IF manual_tier='premium' OR (manual_tier='advanced' AND paid_tier IS DISTINCT FROM 'premium') THEN
       paid_tier:=manual_tier;
