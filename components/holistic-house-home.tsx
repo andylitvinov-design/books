@@ -130,7 +130,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
-        <Link className="house-wordmark" href="/" aria-label={text.homeLabel}>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel}>
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
@@ -287,7 +287,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
       </section>
 
       <footer className="service-home-footer">
-        <Link className="house-wordmark" href="/">Holistic House</Link>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"}>Holistic House</Link>
         <p>{text.footer}</p>
         <Link href={`/${locale}/services`}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
         <p className="service-home-footer__legal">
