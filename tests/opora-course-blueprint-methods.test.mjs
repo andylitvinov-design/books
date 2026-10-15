@@ -97,6 +97,6 @@ test('server accepts only bounded activity codes for active stress days 2 to 14'
  assert.match(methods,/data-opora-method=.+/)
  assert.match(course,/COURSE_WEEKLY_BASELINE_REQUIRED/)
  assert.ok(picker.includes("['hh-weekly-pulse']"),'Weekly Pulse is the only default test')
- assert.match(picker,/\\['hh-weekly-pulse'\\]/)
+ assert.ok(picker.includes("if(programme?.id==='stress'&&key==='hh-weekly-pulse')return"),'Mandatory Weekly Pulse cannot be unchecked')
  assert.doesNotMatch(methods,/autoplay|traumatic memories|diagnosis from answers/)
 })
