@@ -126,6 +126,8 @@ test('client entry uses the existing server-backed consent-first guest runner an
   const css = src('components/app/simple-test-picker.module.css')
   assert.match(cabinet, /onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\}/)
   assert.match(cabinet, /setPhase\('consent'\)/)
+  assert.match(cabinet, /item\.rightsStatus !== 'cleared'/)
+  assert.match(cabinet, /item\.rightsStatus === 'cleared'/)
   assert.match(cabinet, /guestFetch\('guest\/session'/)
   assert.match(cabinet, /await startRun\(definition\)/)
   assert.match(publicFlow, /candidate\?\.rightsStatus === 'cleared'/)
