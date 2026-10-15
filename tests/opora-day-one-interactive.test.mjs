@@ -60,6 +60,10 @@ test('every optional day-one response has a safe explicit decline or honest fall
       assert.ok(values.includes('text'), 'Default accessible text mode must exist')
       continue
     }
+    if(field === 'hintUsed') {
+      assert.ok(DAY_ONE_ALLOWED.independent.includes('skip'), 'Hint interaction is optional, not proof of an attempt')
+      continue
+    }
     if(field === 'anchorTone') {
       assert.ok(DAY_ONE_ALLOWED.anchor.includes('skip'), 'Colour is an optional dependent choice')
       continue
@@ -115,4 +119,12 @@ test('each redesigned day-one screen is interactive with distinct visual practic
   assert.ok(!player.includes("associationWords:associationWords"), 'Do not upload word associations')
   assert.match(player,/if\(field==='anchor'&&value!=='colour'\)delete next\.anchorTone/)
   assert.match(player,/if\(field==='transferCue'/)
+})
+
+test('displaying a hint cannot by itself count as independent practice',()=>{
+  const ui=readFileSync('components/app/anti-stress-day-one.jsx','utf8')
+  assert.ok(ui.includes("onAnswer('hintUsed','yes')"))
+  assert.ok(!ui.includes("if(!hintOpen)onAnswer('independent','guided')"))
+  assert.throws(()=>validateDayOneAnswers({hintUsed:'yes',independent:'independent'}),/DEPENDENCY/)
+  assert.deepEqual(validateDayOneAnswers({hintUsed:'yes',independent:'guided'}),{hintUsed:'yes',independent:'guided'})
 })
