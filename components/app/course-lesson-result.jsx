@@ -24,6 +24,15 @@ export default function CourseLessonResult(props){
         <strong>{r.attempt}</strong>
         {r.mainPractice&&<small>{r.mainPractice}</small>}
       </span></div>
+      {r.innerObservation&&<div data-course-inner-state-result><Heart size={18} aria-hidden="true"/><span>
+        <small>{ru?'Моё внутреннее состояние и доступная поддержка':'My state and possible support'}</small>
+        {r.innerObservation.signal&&<strong>{ru?'Заметил(а): ':'Noticed: '}{r.innerObservation.signal}</strong>}
+        {r.innerObservation.need&&<small>{ru?'Могло бы помочь: ':'What might help: '}{r.innerObservation.need}</small>}
+        {r.innerObservation.selectedAction&&<small>{ru?'Выбранный вариант: ':'Selected option: '}{r.innerObservation.selectedAction}</small>}
+        {r.innerObservation.experience&&<small>{ru?'После упражнения: ':'After practising: '}{r.innerObservation.experience}</small>}
+        <small>{ru?'Это ваш добровольный самоотчёт, а не подтверждение изменения или освоения навыка.':
+          'This is your optional self-report, not proof of change or mastery.'}</small>
+      </span></div>}
       {r.savedActivity&&<div data-course-saved-module-choice><Compass size={18} aria-hidden="true"/><span>
         <small>{ru?'Сохранённый выбор практики':'Saved practice choice'}</small><strong>{r.savedActivity}</strong>
         <small>{ru?'Выбор не подтверждает выполненную попытку.':'A choice does not confirm an attempted practice.'}</small>
@@ -34,11 +43,11 @@ export default function CourseLessonResult(props){
         {r.anotherChoice&&<small>{r.anotherChoice}</small>}
       </span></div>}
       <div><ShieldCheck size={18} aria-hidden="true"/><span>
-        <small>{ru?'Моментное состояние — самооценка':'Momentary state — self-rating'}</small>
+        <small>{ru?'Моментное состояние — только при наличии замеров':'Momentary state — only when rated'}</small>
         {r.state?<strong className={styles.numbers}>{r.state.before}/10 → {r.state.after}/10</strong>:
-          <strong>{ru?'Без полной пары замеров':'No complete measurement pair'}</strong>}
+          <strong>{r.innerObservation?(ru?'Качественное наблюдение сохранено':'Qualitative observation saved'):(ru?'Без полной пары замеров':'No complete measurement pair')}</strong>}
         <small>{ru?'Два отдельных наблюдения; изменение не доказывает действие упражнения.':
-          'Two separate observations; a change does not prove the exercise caused it.'}</small>
+          'These observations are not diagnostic and do not prove an exercise caused a change.'}</small>
       </span></div>
       <div><Heart size={18} aria-hidden="true"/><span>
         <small>{ru?'Комфортность · субъективная полезность':'Comfort · subjective helpfulness'}</small>
