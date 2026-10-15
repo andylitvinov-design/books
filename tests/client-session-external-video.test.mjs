@@ -181,3 +181,13 @@ test('admin client media preflight reports fail-closed MP4, while keeping audio 
   assert.match(route,/HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED==='true'/)
   assert.match(route,/videoReady=true/)
 })
+
+test('iPhone editor shows gated video status immediately and checks each selected file once',()=>{
+  const source=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  const choose=source.slice(source.indexOf('async function chooseFile('),source.indexOf("const busy=['preparing'"))
+  assert.equal((choose.match(/await checkReady\(\)/g)||[]).length,1)
+  assert.match(source,/videoStatus\?\.ready===false/)
+  assert.match(source,/fetch\('\/api\/admin\/clients\/')
+  assert.match(source,/video\/quicktime/)
+  assert.match(source,/uploadProgress/)
+})
