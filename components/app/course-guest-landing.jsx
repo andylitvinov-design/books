@@ -1,9 +1,13 @@
+'use client'
 import Link from 'next/link'
+import { useState } from 'react'
 import {
   ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3,
   Compass, HeartHandshake, Leaf, LockKeyhole, ShieldCheck, Sparkles, Waves,
 } from 'lucide-react'
 import Course14DayOverview from './course-14-day-overview'
+import { PublicAntistressRouteMap } from '../public-antistress-route-map'
+import { ANTISTRESS_ROUTER_VERSION } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-guest-landing.module.css'
 
 const COPY = {
@@ -12,7 +16,7 @@ const COPY = {
     brand: 'ОПОРА', title: 'Антистресс',
     headline: 'Меньше борьбы с собой. Больше внутренней опоры.',
     introduction: '14 небольших занятий, чтобы лучше понимать своё состояние и находить простые способы поддержки в повседневной жизни.',
-    facts: ['14 дней', '7 навыков', '5–12 минут в день'],
+    facts: ['14 занятий', '5 маршрутов', '5–12 минут в день'],
     start: 'Начать курс бесплатно', startTests: 'Войти и пройти стартовые тесты',
     programme: 'Посмотреть программу',
     privacy: 'Сначала вход и стартовая оценка состояния. Выбор тестов и участие — только с вашего согласия.',
@@ -26,7 +30,7 @@ const COPY = {
       { title: 'Выбирать, а не заставлять', text: 'Развивать гибкость и право остановиться, изменить или пропустить упражнение.' },
     ],
     planEyebrow: 'ПРОГРАММА КУРСА', planTitle: 'Ваш путь за 14 дней',
-    planLead: 'Семь навыков, по два дня на каждый. Нажмите на этап, чтобы посмотреть занятия; подробные упражнения доступны отдельно.',
+    planLead: 'В каждом из пяти маршрутов — семь этапов: от безопасности и стабилизации до восстановления ресурсов и интеграции. Выберите маршрут выше, чтобы посмотреть его занятия.',
     howEyebrow: 'КАК ЭТО РАБОТАЕТ', howTitle: 'Просто начать. Удобно продолжать.',
     how: [
       { title: 'Определите точку старта', text: 'После входа заполните HH Weekly Pulse — 8 коротких вопросов. Дополнительные тесты по желанию.' },
@@ -44,7 +48,7 @@ const COPY = {
     brand: 'OPORA', title: 'Stress Relief',
     headline: 'Less pressure on yourself. More room to feel supported.',
     introduction: 'Fourteen short lessons to understand your responses and explore small, practical ways to support yourself each day.',
-    facts: ['14 days', '7 skills', '5–12 min a day'],
+    facts: ['14 lessons', '5 routes', '5–12 min a day'],
     start: 'Start the free course', startTests: 'Sign in and start the assessments',
     programme: 'Explore the programme',
     privacy: 'Sign in and take a starting assessment first. Tests and participation are always your choice.',
@@ -58,7 +62,7 @@ const COPY = {
       { title: 'Choose rather than force', text: 'Build flexibility and permission to pause, adjust or skip an exercise.' },
     ],
     planEyebrow: 'COURSE CURRICULUM', planTitle: 'Your 14-day journey',
-    planLead: 'Seven skills, two days per skill. Open a stage to see its lessons; detailed exercises are available separately.',
+    planLead: 'Each of five routes follows seven stages: from safety and stabilization to resources and integration. Choose a route above to preview its lessons.',
     howEyebrow: 'HOW IT WORKS', howTitle: 'Easy to start. Simple to keep going.',
     how: [
       { title: 'See your starting point', text: 'After signing in, complete the 8-question HH Weekly Pulse. Extra assessments are optional.' },
@@ -76,7 +80,7 @@ const COPY = {
     brand: 'OPORA', title: 'Menos estrés',
     headline: 'Menos exigencia. Más apoyo interior.',
     introduction: 'Catorce lecciones breves para comprender tus reacciones y explorar maneras sencillas de cuidarte cada día.',
-    facts: ['14 días', '7 habilidades', '5–12 min al día'],
+    facts: ['14 clases', '5 rutas', '5–12 min al día'],
     start: 'Empezar gratis', startTests: 'Iniciar sesión y hacer la evaluación inicial',
     programme: 'Ver el programa',
     privacy: 'Primero inicia sesión y completa la evaluación inicial. Participar es siempre tu elección.',
@@ -90,7 +94,7 @@ const COPY = {
       { title: 'Elegir sin forzarte', text: 'Poder detener, adaptar o saltar un ejercicio.' },
     ],
     planEyebrow: 'PROGRAMA', planTitle: 'Tu recorrido de 14 días',
-    planLead: 'Siete habilidades, dos días cada una. Abre una etapa para ver sus sesiones.',
+    planLead: 'Cada ruta contiene siete etapas, desde la seguridad y la estabilización hasta los recursos y la integración. Elige una ruta para ver sus lecciones.',
     howEyebrow: 'CÓMO FUNCIONA', howTitle: 'Fácil de empezar y continuar.',
     how: [
       { title: 'Conoce tu punto de partida', text: 'Después de iniciar sesión, completa el HH Weekly Pulse de 8 preguntas. El resto es opcional.' },
@@ -112,6 +116,7 @@ export default function CourseGuestLanding({
   errorMessage, onRetry, legacyText, nonDiagnostic,
 }) {
   const t = COPY[locale] || COPY.en
+  const [previewModuleId,setPreviewModuleId]=useState('AS2')
   return (
     <div className={styles.root} data-opora-guest-landing>
       <nav className={styles.breadcrumbs} aria-label={locale === 'ru' ? 'Навигация' : 'Breadcrumb'}>
@@ -170,13 +175,15 @@ export default function CourseGuestLanding({
         </div>
       </section>
 
+      {stressSignup&&<PublicAntistressRouteMap locale={locale} selectedId={previewModuleId} onSelect={setPreviewModuleId} onStart={onStart} busy={busy} />}
+
       <section className={styles.programme} id="opora-guest-plan" aria-labelledby="opora-guest-plan-title">
         <div className={styles.sectionIntro}>
           <p className={styles.eyebrow}>{t.planEyebrow}</p>
           <h2 id="opora-guest-plan-title">{t.planTitle}</h2>
           <p>{t.planLead}</p>
         </div>
-        <Course14DayOverview locale={locale} programId="stress" compact />
+        <Course14DayOverview locale={locale} programId="stress" moduleId={previewModuleId} routerVersion={ANTISTRESS_ROUTER_VERSION} compact />
       </section>
 
       <section className={styles.how} aria-labelledby="opora-guest-how">
