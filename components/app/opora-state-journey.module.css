@@ -1,0 +1,24 @@
+/* Compact state-first cards across 14 days; no extra slides or questionnaires. */
+.panel,.preview{display:grid;gap:12px;align-content:start;border:1px solid #d8e2e9;border-radius:20px;background:#fff;padding:17px;color:#16334f;min-width:0}
+.panel{background:linear-gradient(135deg,#fff 0%,#fafcfd 73%,#fff7f9 100%);box-shadow:0 6px 20px #16334f0b}
+.eyebrow{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.09em;color:#843d57}
+.panel h3{font-size:clamp(17px,3.8vw,20px);line-height:1.3;font-weight:760;color:#16334f;margin:0}
+.hint{color:#5b6f7b;font-size:12px;line-height:1.5;margin:0}
+.group{display:grid;gap:9px}
+.question{font-size:13px;line-height:1.4;color:#284758;font-weight:750}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.choices button{border:1px solid #d8e3eb!important;border-radius:12px!important;background:#fff!important;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:7px;padding:10px 11px!important;font-size:12px!important;font-weight:670!important;color:#284e61!important;text-align:left;line-height:1.4;cursor:pointer}
+.choices button:hover{border-color:#b67a8c!important;background:#fff8fa!important}
+.choices button[aria-pressed=true]{border:2px solid #843d57!important;background:#fbedf2!important;color:#6e2e47!important}
+.choices button:focus-visible{outline:3px solid #168e97;outline-offset:2px}
+.choices button:disabled{opacity:.57;cursor:wait}
+.choices button svg{flex:none}
+.preview{padding:14px 15px;background:linear-gradient(135deg,#f2f7fa,#fff8fa);border-color:#e1d5de;gap:8px}
+.previewTitle{font-size:15px;font-weight:750;line-height:1.35;color:#16334f}
+.summary{display:grid;gap:6px}
+.summary p{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin:0;padding-bottom:6px;border-bottom:1px solid #e7e2e9;color:#465f70;line-height:1.4}
+.summary p:last-child{border-bottom:0;padding-bottom:0}
+.summary p span{font-size:12px}
+.summary p strong{font-size:12px;color:#16334f;font-weight:740}
+@media(max-width:460px){.panel{padding:14px;gap:11px}.choices button{font-size:12px!important;min-height:48px;padding:9px!important}.preview{padding:12px}.summary p{display:grid;gap:2px}}
+@media(prefers-reduced-motion:reduce){.panel *,.preview *{transition:none!important}}
