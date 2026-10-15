@@ -69,7 +69,9 @@ export function middleware(request: NextRequest) {
   })()
   const privateSessionPage = /^\/(en|ru)\/client\/(?:session\/|[^/]+\/sessions\/)/.test(pathname)
   const sessionOwnerPage = /^\/admin\/clients\/[0-9a-f-]{36}\/?$/i.test(pathname)
-  const sessionMediaPolicy = privateSessionPage && sessionStorageOrigin ? `media-src 'self' ${sessionStorageOrigin}` : "media-src 'self'"
+  const sessionMediaPolicy = (privateSessionPage || sessionOwnerPage) && sessionStorageOrigin
+    ? `media-src 'self' ${sessionStorageOrigin}`
+    : tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'"
   const sessionConnectPolicy = sessionOwnerPage && sessionStorageOrigin
     ? `connect-src 'self' ${sessionStorageOrigin} https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com`
     : "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"

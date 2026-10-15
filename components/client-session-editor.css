@@ -28,3 +28,7 @@
 .hh-owner-upload-label input{padding:12px}
 .hh-owner-hint{font-size:12px;color:#5d7881}
 @media(max-width:560px){.hh-owner-sessions-new{grid-template-columns:1fr}.hh-owner-sessions-new button{width:100%}.hh-owner-session-actions button{width:100%}.hh-owner-session-list{display:grid;grid-template-columns:1fr}}
+
+.hh-owner-session-preview{margin-top:18px;border:1px solid #cce3e5;border-radius:18px;overflow:hidden}
+.hh-owner-session-preview .hh-session-page{min-height:0;max-width:100%;padding:20px}
+.hh-owner-session-preview>.hh-owner-hint{padding:12px}
