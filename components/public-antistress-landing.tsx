@@ -641,7 +641,11 @@ const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
 export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const programme = antiStressBlueprint(locale);
+  const programme = antiStressBlueprint(locale) as unknown as {
+    outcomes: {title:string;text:string}[];
+    skills: {id:string;title:string;days:[number,number];outcome:string}[];
+    days: {title:string}[];
+  };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
