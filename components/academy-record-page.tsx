@@ -157,6 +157,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <div className="tantra-course-hero__actions">
                   <a className="tantra-course-hero__cta" href="#tantra-master-course">{locale === "ru" ? "Узнать о ближайшем обучении ↗" : locale === "es" ? "Consultar la próxima formación ↗" : "Enquire about training ↗"}</a>
                   <a href="#tantra-levels">{locale === "ru" ? "Посмотреть 9 ступеней ↓" : locale === "es" ? "Explorar las 9 etapas ↓" : "Explore the 9 levels ↓"}</a>
+                  <a className="tantra-course-hero__guide" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать PDF для телефона ↓" : locale === "es" ? "Descargar guía móvil ↓" : "Get the mobile PDF ↓"}</a>
                 </div>
                 <p className="tantra-course-hero__note">{locale === "ru" ? "Даты, стоимость и формат участия уточняются лично. Все практики — по выбору и взаимному согласию." : locale === "es" ? "Consulta fechas, tarifas y formato. Todas las prácticas son voluntarias y consensuadas." : "Dates, fees and format are confirmed individually. All partner practices are optional and consent-based."}</p>
               </div>
@@ -167,6 +168,25 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </figure>
             </section>
             <TantraReikiFestivalMoments locale={locale} />
+            <section className="tantra-mobile-guide" aria-labelledby="tantra-mobile-guide-heading">
+              <div className="tantra-mobile-guide__cover" aria-hidden="true">
+                <span>HOLISTIC HOUSE</span>
+                <div className="tantra-mobile-guide__ornament"><span>✦</span></div>
+                <strong>Tantra<br />Reiki</strong>
+                <small>9 LEVELS · MOBILE EDITION</small>
+              </div>
+              <div className="tantra-mobile-guide__copy">
+                <p className="homeopathy-kicker">{locale === "ru" ? "БЕСПЛАТНАЯ МЕТОДИЧКА · PDF" : locale === "es" ? "GUÍA GRATUITA · PDF" : "YOUR FREE STUDY GUIDE · PDF"}</p>
+                <h2 id="tantra-mobile-guide-heading">{locale === "ru" ? "Все девять ступеней — удобно читать с телефона" : locale === "es" ? "Nueve etapas para leer cómodamente en tu móvil" : "Your nine-level journey, beautifully designed for your phone"}</h2>
+                <p>{locale === "ru" ? "Крупный шрифт, ясное описание каждой ступени, традиционные настройки, практики и вопросы для самостоятельного размышления. Без мелкого текста и неудобных страниц А4." : locale === "es" ? "Tipografía grande, explicación de cada etapa, sintonizaciones tradicionales, prácticas y preguntas para reflexionar. Un formato pensado para la lectura móvil." : "A larger, more legible type size. Explore each level's meaning, traditional attunements, practice ideas and reflection prompts in an easy-to-read phone-sized format."}</p>
+                <div className="tantra-mobile-guide__benefits" aria-label={locale === "ru" ? "Содержание пособия" : locale === "es" ? "Contenido de la guía" : "Guide highlights"}>
+                  <span>{locale === "ru" ? "9 ступеней" : locale === "es" ? "9 etapas" : "9 levels"}</span>
+                  <span>{locale === "ru" ? "Крупный шрифт" : locale === "es" ? "Texto grande" : "Readable text"}</span>
+                  <span>{locale === "ru" ? "Практические шаги" : locale === "es" ? "Prácticas" : "Practice ideas"}</span>
+                </div>
+                <a className="tantra-mobile-guide__download" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать мобильную методичку PDF ↓" : locale === "es" ? "Descargar guía PDF para móvil ↓" : "Download your free mobile guide ↓"}</a>
+              </div>
+            </section>
             <section className="tantra-level-summary" id="tantra-levels" aria-labelledby="tantra-level-summary-title"><TantraReikiJourney locale={locale} /></section>
             {locale === "en" ? <EnglishGuidedMeditations focus="tantra-reiki" /> : null}
             <TantraReikiTestimonials locale={locale} />
