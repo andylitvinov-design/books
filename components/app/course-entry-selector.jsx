@@ -7,7 +7,6 @@ import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
-import { moduleDayOutline } from '@/lib/inner-growth/antistress-module-lessons'
 import styles from './course-entry-selector.module.css'
 
 const COPY = {
@@ -22,7 +21,7 @@ const COPY = {
     lesson: 'Day', of: 'of', completed: 'Lessons completed', finished: 'Course completed', loading: 'Loading progress…', progressUnavailable: 'Progress temporarily unavailable',
     continue: 'Continue course', completeSetup: 'Continue setup', review: 'Review my course',
     add: 'Add a new course', first: 'Start OPORA Anti-Stress',
-    addNote: 'A new topic and its own 14-day journey', firstNote: '6 modules · 14 days each · your choice',
+    addNote: 'A new topic and its own 14-day journey', firstNote: '5 stress routes · 14 lessons each · your choice',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
     upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
     plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
@@ -44,7 +43,7 @@ const COPY = {
     lesson: 'День', of: 'из', completed: 'Уроков завершено', finished: 'Курс завершён', loading: 'Загружаем прогресс…', progressUnavailable: 'Прогресс временно недоступен',
     continue: 'Продолжить курс', completeSetup: 'Продолжить настройку', review: 'Посмотреть мой курс',
     add: 'Добавить новый курс', first: 'Начать «ОПОРА — Антистресс»',
-    addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '6 модулей · 14 дней каждый · ваш выбор',
+    addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '5 маршрутов · по 14 занятий · ваш выбор',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
     upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
     plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
@@ -180,18 +179,10 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
           </button>
         </div>
         {showPlan && <div className={styles.planDetails} id="my-course-plan">
-          {course?.moduleChoice?.id && course.moduleChoice.id!=='AS2' && moduleDayOutline(course.moduleChoice.id,locale).length
-            ? <section data-opora-module-day-outline aria-label={t.plan}>
-                <h3>{name}</h3>
-                <p>{locale==='ru'?'Это план вашего выбранного модуля, а не общий список занятий.':
-                  'This is your selected module plan, not a generic lesson list.'}</p>
-                <ol>{moduleDayOutline(course.moduleChoice.id,locale).map(day=>
-                  <li key={day.day}>
-                    <strong>{t.lesson} {day.day} · {day.title}</strong>
-                    <p>{day.practice}</p>
-                  </li>)}</ol>
-              </section>
-            : <Course14DayOverview locale={locale} programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}/>}
+          <Course14DayOverview locale={locale}
+            programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}
+            moduleId={course?.moduleChoice?.id||null}
+            routerVersion={course?.moduleChoice?.version||null}/>
         </div>}
       </article>}
 
