@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { Mic,Video,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
 import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
 import { SessionPhotoUploader } from './session-photo-uploader'
+import { SessionVideoUploader } from './session-video-uploader'
+import { ECONOMY_VIDEO_MAX_SECONDS } from '../lib/clients/video-budget'
 import styles from './client-session.module.css'
 
 const recordingTypes=['audio/mp4','audio/webm;codecs=opus','audio/webm']
@@ -117,7 +119,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
           durationRef.current+=(Date.now()-startedRef.current)/1000
           startedRef.current=Date.now()
           setSeconds(Math.floor(durationRef.current))
-          if(durationRef.current>=14390)stopRecording()
+          if(durationRef.current>=(kind==='video'?ECONOMY_VIDEO_MAX_SECONDS:14390))stopRecording()
         }
       },1000)
     } catch(e) {
@@ -150,7 +152,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   }
   const busy=['preparing','uploading','finalizing'].includes(stage)
   return <>
-  <section className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
+  <section id="session-camera-recorder" className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
     <div className={styles.sectionHeading}>
       <span className={styles.eyebrow}>{ru?'ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ':'VOICE MESSAGE'}</span>
       <h3>{ru?'Записать аудио или видео для сессии':'Record audio or video for this session'}</h3>
@@ -173,7 +175,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       </> : <>
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
-        <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать видео':'Record video'}</button>
+        <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать экономное видео (до 2:30)':'Record compact video (up to 2:30)'}</button>
         <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Добавить аудио, видео или PDF':'Add audio, video or PDF'}
           <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,application/pdf,.m4a,.mp3,.webm,.mp4,.pdf"
             onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
@@ -190,6 +192,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
+  <SessionVideoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
+    assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
   <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
   </>
