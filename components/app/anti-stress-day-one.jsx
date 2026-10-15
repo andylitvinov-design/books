@@ -46,6 +46,7 @@ export function DayOneFocusPicker({locale,options=[],value,onSelect,disabled=fal
 export default function DayOneExercise({
   kind,locale='en',lesson={},answers={},onAnswer,locked=false,
   associationWords='',onAssociationWords,selectedFocus=null,onDiscomfort,
+  neutralMode=false,onReturnToPractice,
 }) {
   const ru=locale==='ru'
   const text=(a,b)=>t(locale,a,b)
@@ -60,6 +61,24 @@ export default function DayOneExercise({
   const anchorLabels={
     colour:text('цвет','colour'),shape:text('форма','shape'),object:text('предмет','object'),word:text('слово','word'),
   }
+  // An explicit safe-stop choice must lead to a genuinely neutral branch,
+  // not merely return to the triggering image/audio or exercise.
+  if(neutralMode)return <section className={styles.section} data-day-one-activity="neutral-support">
+    <div className={styles.visualIcon}><PauseCircle size={42}/></div>
+    <p className={styles.headline}>{text('Можно остановиться и просто посмотреть вокруг.','You may stop and simply look around.')}</p>
+    <p className={styles.hint}>{text(
+      'Оставьте глаза открытыми. Если удобно, заметьте два обычных цвета или формы. Дыхание пусть остаётся естественным. В любой момент можно выйти.',
+      'Keep your eyes open. If comfortable, notice two ordinary colours or shapes. Let your breathing stay natural. You may leave at any time.')}</p>
+    <DayOneChoices label={text('Безопасный вариант','A safe option')} disabled={locked}
+      value={answers.preparation} onSelect={value=>onAnswer('preparation',value)}
+      options={[
+        {value:'look',label:text('Остаться с нейтральным окружением','Stay with neutral surroundings')},
+        {value:'rest',label:text('Отдохнуть','Rest')},
+        {value:'skip',label:text('Пропустить упражнение','Skip the exercise')},
+      ]}/>
+    <button type="button" className={styles.returnAction} disabled={locked}
+      onClick={onReturnToPractice}>{text('Вернуться к обычному уроку по желанию','Return to the usual lesson if I choose')}</button>
+  </section>
   if(kind==='day1-prepare')return <section className={styles.section} data-day-one-activity="prepare">
     {photo}
     <p className={styles.headline}>{text('Выберите, как вам удобнее начать','Choose your most comfortable starting point')}</p>
