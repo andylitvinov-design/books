@@ -52,15 +52,19 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
     return findPart(h.tree, 'CourseFocusPicker').props.onContinue()
   }
   return { h, calls, accepted, errors, retire: () => { active = false }, start }
-
+}
+async function untilCalls(t, count) {
+  // An explicit scale-review screen now precedes the first POST. Allow
+  // state and guarded recovery microtasks to reach the test boundary.
+  for (let n = 0; n < 30 && t.calls.length < count; n++) await t.h.settle()
+  assert.equal(t.calls.length, count, 'Expected recovery boundary before retirement')
 }
 
  test('module start with no measured scales retains the explicit general-goal fallback and token lock', async () => {
   const slow = deferred(), t = ui(() => slow.promise, { eligible: [] })
   await t.h.settle()
   const first = t.start(), duplicate = t.start()
-  await t.h.settle()
-  assert.equal(t.calls.length, 1)
+  await untilCalls(t, 1)
   assert.equal(t.calls[0].action, 'choose-goals')
   const payload = t.calls[0].body
   assert.deepEqual(Array.from(payload.goals), programs.getCourseProgram('stress').primaryGoals.slice(0, 1))
@@ -98,8 +102,8 @@ for (const delayedPhase of [0, 1, 2, 3]) test('retired selection stops after asy
     if (action === 'choose-goals') throw failure()
     return waiting
   })
-  await t.h.settle(); const pending = t.start(); await t.h.settle()
-  assert.equal(t.calls.length, delayedPhase + 1)
+  await t.h.settle(); const pending = t.start()
+  await untilCalls(t, delayedPhase + 1)
   t.retire(); t.h.unmount()
   slow.resolve(delayedPhase % 2 ? waiting : started)
   await pending
