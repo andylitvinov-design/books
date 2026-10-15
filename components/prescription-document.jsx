@@ -76,6 +76,9 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
               </div>
               <span>{label}</span>
             </div>)}
+            <aside className="canonical-progress-note">
+              <span>{locale === 'ru' ? 'Движение вперёд — уже результат.' : 'A small step forward still matters.'}</span>
+            </aside>
           </div>
         </section>}
       </header>

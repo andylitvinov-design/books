@@ -134,3 +134,35 @@ test('wide white signature is a report-body closing, not the legal footer (RU an
   assert.doesNotMatch(invoice,/q 207 0 0 81\.5 83 /,
     'the approved invoice signature remains unchanged')
 })
+
+
+test('mockup-aligned first-page composition uses two measured gauges, split client cards and side motif',()=>{
+  const generator=readFileSync('lib/prescriptions/pdf.js','utf8')
+  const reader=readFileSync('components/prescription-document.jsx','utf8')
+  const css=readFileSync('components/consultation-report.css','utf8')
+  assert.match(generator,/roundedFill\(A4\.left,metadataTop-metadataHeight,280,metadataHeight,8/)
+  assert.match(generator,/roundedFill\(A4\.left\+290,metadataTop-metadataHeight/)
+  assert.match(generator,/const noteX=A4\.left\+308/)
+  assert.match(generator,/const titleSize = 24\.6/)
+  assert.match(reader,/className="canonical-progress-note"/)
+  assert.match(css,/\.canonical-document--editorial \.canonical-progress-note \{/)
+  for(const locale of ['ru','en']){
+    const pdf=buildPrescriptionPdf(sample(locale),locale,origin).toString('latin1')
+    assert.match(pdf,/\/Lighthouse Do Q/,'real lighthouse remains')
+    assert.match(pdf,/0\.981 0\.963 0\.948 rg/,'both ivory client/date cards drawn')
+    assert.match(pdf,/\/RemedyPhoto1 Do Q/,'original remedy source photo remains')
+    assert.match(pdf,/\/Signature Do Q/,'signed white closing remains')
+    assert.doesNotMatch(pdf,/\(TARGET\)/,'a future goal is never a third score')
+    if(locale==='en')assert.match(pdf,/\(A small step forward\)/,
+      'editorial quote is only a neutral caption, not a treatment claim')
+  }
+  const single=buildPrescriptionPdf({
+    patientName:'SYNTHETIC NON-MEASURED CLIENT',
+    dateIssued:'2026-10-14',
+    recommendationType:'homeopathy',
+    analysis:'Only a future target: 7/10',
+    items:[],
+  },'en',origin).toString('latin1')
+  assert.doesNotMatch(single,/A small step forward/,
+    'no measurement graphic or caption when the client provided no paired observations')
+})
