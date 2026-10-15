@@ -51,9 +51,11 @@ try {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
-        // Do not abort in-flight Next link prefetches with the next hard goto.
-        // All page errors still fail; no CORS or JavaScript errors are filtered.
-        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
+        // networkidle is not a meaningful readiness signal for a hydrated Next.js
+        // application: recurring prefetch/analytics requests can keep it busy forever.
+        // Wait for the document load event, then use the existing route-specific
+        // Playwright assertions below. Keep pageerror collection strict.
+        const settle = () => page.waitForLoadState('load', {timeout:30000});
         async function navigate(path) {
           await settle();
           const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:60000});
