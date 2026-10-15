@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { SessionAudioRecorder } from './session-audio-recorder'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
+import { sessionVideoUsage,formatMediaSize,VIDEO_PER_SESSION_MAX_FILES,VIDEO_PER_SESSION_MAX_BYTES } from '../lib/clients/video-budget'
 
 async function api(url,method='GET',body) {
   const res=await fetch(url,{method,cache:'no-store',credentials:'same-origin',
@@ -109,6 +110,40 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   }
   function discardMedia(id) {setDraft(d=>({...d,media:d.media.filter(m=>m.assetId!==id).map((row,i)=>({...row,sortOrder:i}))}))}
   const block=Boolean(busy)
+
+  const videoUsage=sessionVideoUsage(session.assets||[])
+  const referencedMediaIds=new Set([
+    ...draft.media.map(item=>item.assetId),
+    ...(session.published?.media||[]).map(item=>item.assetId),
+  ])
+  const unusedVideos=(session.assets||[]).filter(asset=>
+    asset.kind==='video'&&asset.status==='ready'&&!referencedMediaIds.has(asset.id))
+  async function permanentlyDeleteUnusedVideo(assetId){
+    if(changed||busy)return
+    if(!window.confirm(ru?
+      'Навсегда удалить этот неиспользуемый видеофайл из закрытого хранилища?':
+      'Permanently delete this unused video file from private Storage?'))return
+    setBusy('delete-video');setError('');setMessage('')
+    try{
+      const result=await api(base+'/media','POST',{action:'delete-unused-video',assetId})
+      await load()
+      setMessage(ru?
+        'Неиспользуемое видео удалено из хранилища. Освобождено '+formatMediaSize(result.freedBytes||0):
+        'Unused video deleted from Storage. Freed '+formatMediaSize(result.freedBytes||0))
+    }catch(error){setError(error.message||String(error))}
+    finally{setBusy('')}
+  }
+  async function retryVideoCleanup(){
+    if(changed||busy)return
+    setBusy('retry-video-deletion');setError('');setMessage('')
+    try{
+      const result=await api(base+'/media','POST',{action:'retry-video-deletions'})
+      await load()
+      setMessage(ru?'Повторная очистка завершена: '+result.deleted:
+        'Storage cleanup retried: '+result.deleted)
+    }catch(error){setError(error.message||String(error))}
+    finally{setBusy('')}
+  }
   return <div className={styles.adminStudio}>
     <header className={styles.studioHeader}>
       <div><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'СЕССИЯ КЛИЕНТА':'CLIENT SESSION'}</span>
@@ -220,13 +255,31 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         }}><Save size={17}/>{ru?'Сохранить план':'Save plan'}</button>
       </div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
+    <SessionAudioRecorder clientId={clientId} sessionId={session.id} assets={session.assets} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
       {!draft.media.length&&<p>{ru?'Запишите аудио или добавьте видео, PDF или фотографии.':
         'Record audio or attach video, PDF or photos.'}</p>}
       <p>{ru?'Для фото измените подпись и порядок. Расшифровка аудио и видео вводится вручную, без стороннего распознавания.':'For photos, edit captions and order. Audio/video transcripts are entered manually; nothing is sent to external transcription.'}</p>
+      <div className={styles.videoStorageAdmin}>
+        <strong>{ru?'Место под видео этой консультации':'Video storage for this consultation'}</strong>
+        <span>{videoUsage.count}/{VIDEO_PER_SESSION_MAX_FILES} · {formatMediaSize(videoUsage.bytes)} / {formatMediaSize(VIDEO_PER_SESSION_MAX_BYTES)}</span>
+        <p>{ru?'Хранилище приватное. Удаление записи из черновика не освобождает место автоматически: сохраните черновик, при необходимости переопубликуйте сессию, затем удалите неиспользуемый файл ниже.':
+          'Private Storage. Detaching a video does not reclaim space: save your changes, republish if necessary, then permanently delete the unused file below.'}</p>
+        {unusedVideos.length>0&&<div className={styles.videoCleanupList}>
+          {unusedVideos.map(asset=><div key={asset.id}>
+            <span>{ru?'Неиспользуемый ролик':'Unused video'} · {formatMediaSize(asset.bytes||asset.maxBytes||0)}</span>
+            <button type="button" disabled={block||changed} onClick={()=>void permanentlyDeleteUnusedVideo(asset.id)}>
+              <Trash2 size={16}/>{ru?'Удалить файл навсегда':'Delete file permanently'}
+            </button>
+          </div>)}
+        </div>}
+        <button type="button" className={styles.secondaryButton} disabled={block||changed}
+          onClick={()=>void retryVideoCleanup()}>
+          <RotateCw size={16}/>{ru?'Повторить очистку незавершённых удалений':'Retry incomplete deletions'}
+        </button>
+      </div>
       {draft.media.map((row,index)=>{
         const asset=activeAssets.get(row.assetId)
         return <div key={row.assetId} className={styles.mediaEditor}>
