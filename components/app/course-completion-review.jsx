@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { orderAntistressScales, antistressRoleForScale, antistressSelectedMeasures } from '@/lib/inner-growth/anti-stress-measurement-contract'
 import { ArrowRight, Check, Pencil } from 'lucide-react'
 import styles from './course-r3-steps.module.css'
 
@@ -8,7 +9,7 @@ import styles from './course-r3-steps.module.css'
 // and after returning from the optional manual focus picker. No fake measurements.
 export default function CourseCompletionReview({
   t, root, confirmedStatuses, optionByKey, profile, suggested,
-  onSuggested, onAlternative, onEditTests, busy = false,
+  onSuggested, onAlternative, onEditTests, busy = false, programId=null, locale='en',
 }) {
   return <section className={'hh-panel '+styles.section+' '+styles.completeScreen}
     data-course-testing-complete>
@@ -23,9 +24,23 @@ export default function CourseCompletionReview({
 
     <section className={styles.briefSummary} aria-label={t.briefSummary}>
       <h3>{t.briefSummary}</h3>
+      {programId==='stress'&&<div className={styles.stressMeasureProtocol}
+        data-course-antistress-baseline-axes>
+        <strong>{t.stressMeasuresTitle}</strong>
+        <p>{t.stressMeasuresIntro}</p>
+        <ul>{antistressSelectedMeasures(confirmedStatuses.map(item=>item.key),locale).map(test=>
+          <li key={test.testKey}>
+            <span>{test.testKey==='hh-weekly-pulse'?'Weekly Pulse'
+              :test.testKey==='gad-7'?'GAD-7':'Resource Pulse'}</span>
+            <small>{test.testKey==='hh-weekly-pulse'?t.stressWindowWeek
+              :test.testKey==='gad-7'?t.stressWindowFortnight:t.stressWindowNow}</small>
+            <strong>{test.scales.length} {t.stressScalesUnit}</strong>
+          </li>)}</ul>
+      </div>}
       <p className={styles.small}>{t.scaleGuide}</p>
       {confirmedStatuses.map(item => {
-        const scales = profile.scales.filter(scale => scale.testKey === item.key)
+        const allScales=profile.scales.filter(scale=>scale.testKey===item.key)
+        const scales=programId==='stress'?orderAntistressScales(item.key,allScales):allScales
         const meta = optionByKey.get(item.key)
         return <article key={item.key} className={styles.summaryTest}>
           <div className={styles.summaryHeading}>
@@ -35,8 +50,14 @@ export default function CourseCompletionReview({
           </div>
           {scales.length ? <ul className={styles.briefScales}>
             {scales.map(scale => <li key={scale.id}
+              data-antistress-measure-role={programId==='stress'
+                ?antistressRoleForScale(item.key,scale.id.split('::')[1])||undefined:undefined}
               data-course-screening-scale={scale.testKey === 'asrs-6' && scale.type === 'screening_count' ? 'true' : undefined}>
-              <span>{scale.label}</span>
+              <span>{programId==='stress'&&
+                antistressRoleForScale(item.key,scale.id.split('::')[1])==='primary'&&
+                <em className={styles.primaryOutcomeTag}>{t.stressPrimaryMeasure}</em>}
+                {scale.label}
+              </span>
               {scale.testKey === 'asrs-6' && scale.type === 'screening_count'
                 ? <span data-course-screening-count>{scale.observation} {t.noMedical}</span>
                 : <meter min={scale.min} max={scale.max} value={scale.score}
