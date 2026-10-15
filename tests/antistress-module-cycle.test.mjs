@@ -22,6 +22,7 @@ const pureImports = [
   '../../data/inner-growth/course-journey.js', '../inner-growth/course-strategy.js',
   '../inner-growth/course-adaptation.js', '../inner-growth/antistress-module-lessons.js',
   '../inner-growth/antistress-module-router.js', '../inner-growth/anti-stress-day-one.js',
+  '../inner-growth/opora-state-journey.js',
   '../inner-growth/anti-stress-practice-lab.js', '../inner-growth/anti-stress-method-activities.js',
   '../inner-growth/course-slide-sequence.js',
   '../inner-growth/course-progress.js', '../inner-growth/opora-module-exercise.js',
