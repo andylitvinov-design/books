@@ -34,8 +34,8 @@ test("ignored-build comparison fails open on missing SHAs or git failures", () =
 test("service hero WebP posters bypass billed Vercel transformations", () => {
   const component = readFileSync("components/personal-service-landing.tsx", "utf8");
   const images = readFileSync("data/personal-service-pages.ts", "utf8");
-  assert.match(component, /unoptimized=\\{personalServiceImages\\[service\\]\\.endsWith\\("\\.webp"\\)\\}/);
-  assert.match(images, /"business-consulting": "\\/images\\/holistic-house\\/video-posters\\/constellations-en-v1\\.webp"/);
+  assert.ok(component.includes('unoptimized={personalServiceImages[service].endsWith(".webp")}'));
+  assert.ok(images.includes('"business-consulting": "/images/holistic-house/video-posters/constellations-en-v1.webp"'));
 });
 
 test("Vercel source controls contain the known spend guards", () => {
