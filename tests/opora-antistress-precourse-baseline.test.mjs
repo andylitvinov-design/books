@@ -47,8 +47,14 @@ test('stage-2 server rejects omitting the baseline and reviewing without complet
   assert.match(commands,/COURSE_TESTS_REMAIN/)
   assert.match(commands,/compatibleResult\(found,key,\{requireRecent:recentStress\}\)/)
   assert.match(server,/isAntistressBaselineRecent\(key,r\.measurementAt,now\)/)
-  const active=server.slice(server.indexOf("} else if (action === 'choose-goals')"))
-  assert.doesNotMatch(active,/COURSE_ANTISTRESS_BASELINE_REQUIRED/)
+  const active=server.slice(server.indexOf("} else if (action === 'choose-goals')"),
+    server.indexOf("} else if (action === 'complete-day')"))
+  // Even if stage 2 passed previously, the learner may start weeks later.
+  // Revalidate every chosen Anti-Stress questionnaire at actual cycle activation.
+  assert.match(active,/hasAntistressRequiredBaseline\(row\.test_keys, 'stress'\)/)
+  assert.match(active,/COURSE_ANTISTRESS_BASELINE_REQUIRED/)
+  assert.match(active,/compatibleResult\(before,key,\{requireRecent:true\}\)/)
+  assert.match(active,/COURSE_TESTS_REMAIN/)
 })
 
 test('the private step-2 interface visibly leads through starting tests before the first lesson', () => {
