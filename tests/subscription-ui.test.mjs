@@ -5,14 +5,14 @@ import * as billingPublic from '../lib/billing/public-plan.js'
 import { billingReadLifecycle } from '../lib/billing/read-lifecycle.js'
 import ts from 'typescript'
 import vm from 'node:vm'
-import { SUBSCRIPTION_PLANS, PAID_PLAN_KEYS, normalizeBillingStatus, canShowHousePromotion, canStartCheckout, lessonCompletionKey, lessonOfferReducer, EMPTY_LESSON_OFFERS, safeBillingRedirect } from '../lib/billing/public-plan.js'
+import { SUBSCRIPTION_PLANS, PAID_PLAN_KEYS, PURCHASABLE_PLAN_KEYS, normalizeBillingStatus, canShowHousePromotion, canStartCheckout, lessonCompletionKey, lessonOfferReducer, EMPTY_LESSON_OFFERS, safeBillingRedirect } from '../lib/billing/public-plan.js'
 import { SUBSCRIPTION_COPY } from '../components/app/subscription-copy.js'
 
 const entitlementFor = (key = 'free') => ({ ...SUBSCRIPTION_PLANS[key], tier: key,
   active: key !== 'free', paidThrough: key === 'free' ? null : '2026-11-13T12:00:00Z' })
 const freeStatus = (overrides = {}) => normalizeBillingStatus({
   available: true, enabled: true, plan: SUBSCRIPTION_PLANS.free, plans: SUBSCRIPTION_PLANS,
-  enabledPlans: PAID_PLAN_KEYS, entitlement: entitlementFor(), subscription: null, provider: 'stripe', ...overrides,
+  enabledPlans: PURCHASABLE_PLAN_KEYS, entitlement: entitlementFor(), subscription: null, provider: 'stripe', ...overrides,
 })
 const paidStatus = (tier = 'premium', overrides = {}) => freeStatus({
   plan: SUBSCRIPTION_PLANS[tier], entitlement: entitlementFor(tier),
@@ -23,7 +23,7 @@ const component = await readFile(new URL('../components/app/subscription-access.
 const daily = await readFile(new URL('../components/app/course-today.jsx', import.meta.url), 'utf8')
 const css = await readFile(new URL('../components/app/subscription-access.module.css', import.meta.url), 'utf8')
 
-test('public plans advertise exact EUR terms and require explicit supported checkout tiers', () => {
+test('current EUR purchase plans remain distinct from historical paid entitlement keys', () => {
   assert.deepEqual(Object.keys(SUBSCRIPTION_PLANS), ['free', 'start', 'advanced', 'premium'])
   assert.deepEqual(Object.values(SUBSCRIPTION_PLANS).map(plan => plan.amount), [0, 1000, 2000, 10000])
   assert.deepEqual(Object.values(SUBSCRIPTION_PLANS).map(plan => plan.activeCourseLimit), [1, 1, 5, 5])
@@ -32,17 +32,21 @@ test('public plans advertise exact EUR terms and require explicit supported chec
   }
   assert.equal(SUBSCRIPTION_PLANS.premium.monthlySessions, 1)
   assert.equal(SUBSCRIPTION_PLANS.premium.sessionMinutes, 60)
-  for (const tier of PAID_PLAN_KEYS) assert.equal(canStartCheckout(freeStatus(), 'ready', tier), true)
-  for (const tier of ['free', 'plus', 'unknown']) assert.equal(canStartCheckout(freeStatus(), 'ready', tier), false)
+  assert.deepEqual(PAID_PLAN_KEYS, ['start', 'advanced', 'premium'])
+  assert.deepEqual(PURCHASABLE_PLAN_KEYS, ['advanced', 'premium'])
+  assert.equal(canStartCheckout(freeStatus()), true, 'The default checkout plan is Advanced')
+  for (const tier of PURCHASABLE_PLAN_KEYS) assert.equal(canStartCheckout(freeStatus(), 'ready', tier), true)
+  for (const tier of ['free', 'start', 'plus', 'unknown']) assert.equal(canStartCheckout(freeStatus(), 'ready', tier), false)
   for (const field of ['amount', 'currency', 'interval', 'activeCourseLimit', 'monthlySessions']) {
     const plans = { ...SUBSCRIPTION_PLANS, premium: { ...SUBSCRIPTION_PLANS.premium, [field]: 'drifted' } }
     const status = freeStatus({ plans })
     assert.equal(status.available, false)
     assert.equal(canStartCheckout(status, 'ready', 'premium'), false)
   }
-  const gated = freeStatus({ enabledPlans: ['start'] })
-  assert.equal(canStartCheckout(gated, 'ready', 'start'), true)
-  assert.equal(canStartCheckout(gated, 'ready', 'advanced'), false)
+  assert.deepEqual(freeStatus({ enabledPlans: ['start', 'advanced', 'premium', 'unknown'] }).enabledPlans, ['advanced', 'premium'])
+  const gated = freeStatus({ enabledPlans: ['advanced'] })
+  assert.equal(canStartCheckout(gated, 'ready', 'start'), false)
+  assert.equal(canStartCheckout(gated, 'ready', 'advanced'), true)
   assert.equal(canStartCheckout(gated, 'ready', 'premium'), false)
 })
 
@@ -293,16 +297,16 @@ test('real checkout callback binds planId and keeps independent stable operation
   const h = harness({ request: async () => { throw Object.assign(new Error('pending'), { code: 'BILLING_PLAN_CONFLICT' }) } })
   h.render(); await h.settle()
   assert.equal(h.value.status.entitlement.tier, 'free')
-  await h.value.startCheckout('start'); await h.settle()
   await h.value.startCheckout('advanced'); await h.settle()
-  await h.value.startCheckout('start'); await h.settle()
   await h.value.startCheckout('premium'); await h.settle()
-  for (const invalid of ['free', 'plus', undefined]) assert.equal(await h.value.startCheckout(invalid), false)
+  await h.value.startCheckout('advanced'); await h.settle()
+  await h.value.startCheckout('premium'); await h.settle()
+  for (const invalid of ['free', 'start', 'plus', undefined]) assert.equal(await h.value.startCheckout(invalid), false)
   const checkouts = h.calls.filter(call => call.action === 'checkout')
-  assert.deepEqual(checkouts.map(call => call.body.planId), ['start', 'advanced', 'start', 'premium'])
+  assert.deepEqual(checkouts.map(call => call.body.planId), ['advanced', 'premium', 'advanced', 'premium'])
   assert.equal(checkouts[0].body.operationId, checkouts[2].body.operationId)
   assert.notEqual(checkouts[0].body.operationId, checkouts[1].body.operationId)
-  assert.notEqual(checkouts[1].body.operationId, checkouts[3].body.operationId)
+  assert.equal(checkouts[1].body.operationId, checkouts[3].body.operationId)
   assert.ok(checkouts.every(call => call.owner === 'owner-A' && call.body.locale === 'en'))
   assert.equal(h.value.error, 'checkoutConflict')
   assert.equal(h.value.status.entitlement.active, false)
@@ -314,7 +318,7 @@ test('double click makes one checkout; delayed checkout cannot redirect after ac
   const h = harness({ request: () => new Promise(resolve => { finish = resolve }) })
   h.render(); await h.settle()
   const pending = h.value.startCheckout('premium')
-  assert.equal(await h.value.startCheckout('start'), false)
+  assert.equal(await h.value.startCheckout('advanced'), false)
   h.render('SubscriptionProvider', { accountId: 'owner-B', locale: 'ru' }); await h.settle()
   finish({ redirectUrl: 'https://checkout.stripe.com/c/pay/stale' })
   assert.equal(await pending, false); await h.settle()
@@ -379,7 +383,8 @@ test('tier selector provides native labelled radio controls in both languages an
     const h = harness({ context }), t = SUBSCRIPTION_COPY[locale]
     let tree = h.render('PlanSelection', { t })
     const inputs = nodes(tree).filter(node => node.type === 'input')
-    assert.deepEqual(inputs.map(node => node.props.value), ['free', 'start', 'advanced', 'premium'])
+    assert.deepEqual(inputs.map(node => node.props.value), ['free', 'advanced', 'premium'])
+    assert.equal(inputs.find(node => node.props.checked).props.value, 'advanced')
     assert.ok(inputs.every(node => node.props.type === 'radio' && node.props.name && node.props['aria-describedby']))
     assert.equal(nodes(tree).find(node => node.type === 'legend').props.children, t.choosePlan)
     assert.ok(textOf(tree).includes(t.scheduling))
@@ -660,15 +665,17 @@ test('one verified completion selects either the inline Advanced slide or the le
  probe.unmount();h.unmount()
 })
 
-test('inline scope mismatch hides the offer and presenter unmount dismisses exactly its token',async()=>{
+test('completion scope mismatch clears only its pending token and owner mismatch hides eligibility',async()=>{
  for(const field of ['accountId','courseId','cycleId','day','lessonId']){
   const h=harness();h.render();await h.settle()
   const completion={cycleId:'cycle-a',day:1,lessonId:'lesson-a'},scope={accountId:'owner-A',courseId:'course-a',presentation:'inline'}
   h.value.notifyLessonSaved(completion,scope);await h.settle()
   const probe=harness({context:h.value}),props={...completion,...scope}
-  assert.equal(probe.render('CoursePromotionProbe',props).show,true)
+  assert.equal(probe.render('CoursePromotionProbe',props).completionPending,true)
   const changed={...props,[field]:field==='day'?2:props[field]+'-other'}
-  assert.equal(probe.render('CoursePromotionProbe',changed).show,false)
+  const changedPromotion=probe.render('CoursePromotionProbe',changed)
+  assert.equal(changedPromotion.completionPending,false)
+  assert.equal(changedPromotion.show,field!=='accountId')
   probe.unmount();await h.settle()
   // Owner/course changes normally unmount CourseToday. The exact completion
   // dismiss callback is unchanged for owner/course-only changes, then runs here.
@@ -708,4 +715,46 @@ test('a paid refresh suppresses late saved completions before React commits the 
  h.setStatus(freeStatus());await h.value.refresh();await h.settle()
  notify(completion,scope);await h.settle();assert.equal(h.value.offerKey,null)
  h.unmount()
+})
+
+// Real provider status -> real promotion hook -> real Player, without a saved
+// completion token. These are synthetic accounts; no network or payment exists.
+import { mount as mountCourse, nodes as courseNodes, dailyView } from './helpers/course-ui-harness.mjs'
+for(const variant of ['free','paid','unknown','wrong-owner']) test(`final offer uses actual verified provider before save: ${variant}`,async()=>{
+ const provider=harness({initialStatus:variant==='paid'?paidStatus('advanced'):freeStatus(),
+  ...(variant==='unknown'?{statusRequest:async()=>{throw Error('unavailable')}}:{})})
+ provider.render();await provider.settle()
+ assert.equal(provider.value.offerKey,null)
+ const scope={accountId:variant==='wrong-owner'?'owner-B':'owner-A',courseId:'course-a',cycleId:'cycle-a',day:14,lessonId:'lesson-a'}
+ const probe=harness({context:provider.value}),promotion=probe.render('CoursePromotionProbe',scope)
+ assert.equal(promotion.show,variant==='free')
+ const writes=[],data=dailyView('course-a','cycle-a',{cycle:{id:'cycle-a',day:14,durationDays:14,status:'active',preferences:{}},lesson:{id:'lesson-a',title:'Synthetic final lesson',sections:[{kind:'learn',text:'A bounded lesson.'}],aphorism:'A thought.'}})
+ const player=mountCourse('course-slide-player',{props:{locale:'en',data,promotion,onClose(){},onSession:async body=>{writes.push(body);return data}}})
+ const primary=()=>courseNodes(player.tree).find(n=>n.type==='button'&&n.props.className==='primary')
+ let offers=0
+ for(let i=0;i<40 && writes.length===0;i++){
+  if(courseNodes(player.tree).some(n=>n.props['data-course-post-lesson-promo']!==undefined))offers++
+  primary().props.onClick();await player.settle()
+ }
+ assert.equal(offers,variant==='free'?1:0);assert.equal(writes.length,1)
+ assert.ok(writes[0].visitedSlideKeys.length>1);assert.equal(writes[0].visitedSlideKeys.includes('free-course-offer'),false)
+ assert.ok(courseNodes(player.tree).some(n=>n.props['data-course-reward-stage']!==undefined))
+ player.unmount();probe.unmount();provider.unmount()
+})
+test('provider owner changes cannot reuse old Free status before effects or after a delayed old read',async()=>{
+ let release
+ const provider=harness({statusRequest:owner=>owner==='owner-B'?new Promise(resolve=>{release=resolve}):freeStatus()})
+ provider.render();await provider.settle()
+ const scope={accountId:'owner-A',courseId:'course-a',cycleId:'cycle-a',day:14,lessonId:'lesson-a'}
+ const probe=harness({context:provider.value})
+ assert.equal(probe.render('CoursePromotionProbe',scope).show,true)
+ provider.deferEffects();provider.render('SubscriptionProvider',{accountId:'owner-B'})
+ probe.setContext(provider.value)
+ assert.equal(probe.render('CoursePromotionProbe',{...scope,accountId:'owner-B'}).show,false)
+ assert.equal(probe.render('CoursePromotionProbe',scope).show,false)
+ provider.flushEffects();await provider.settle();probe.setContext(provider.value)
+ assert.equal(probe.render('CoursePromotionProbe',{...scope,accountId:'owner-B'}).show,false)
+ release(paidStatus('premium'));await provider.settle();probe.setContext(provider.value)
+ assert.equal(probe.render('CoursePromotionProbe',{...scope,accountId:'owner-B'}).show,false)
+ probe.unmount();provider.unmount()
 })

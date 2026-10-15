@@ -65,8 +65,8 @@ const WORDS = {
     progress: 'Practice journey', completeCount: 'lessons completed', pause: 'Pause course', resume: 'Resume course',
     paused: 'Your course is paused. You may resume when ready.', mood: 'Check my test results', compare: 'Repeat tests when they are due',
     compareNote: 'Course activity is different from psychological change. Repeat only suitable tests at their recommended intervals, then review comparable results in Insights.',
-    issue: 'Your course is temporarily unavailable. No personal information has been saved by this page. Please try again.',
-    retry: 'Try again', safe: 'You can skip or stop a practice. If distress is severe or persistent, seek support from a qualified healthcare professional.',
+    issue: 'We could not complete this course action. Your previously completed tests remain saved in My Tests; this module may still need to be started.',
+    retry: 'Check saved status', safe: 'You can skip or stop a practice. If distress is severe or persistent, seek support from a qualified healthcare professional.',
     courses: 'My courses and history', chooseCourse: 'Choose a course', courseNumber: 'Course',
     newCourse: 'Start another course', activeCount: 'Active courses', courseLimit: 'Plan limit',
     limitReached: 'You have reached your active-course limit. Pause an active course before starting or resuming another.',
@@ -121,8 +121,8 @@ const WORDS = {
     progress: 'Путь практики', completeCount: 'уроков пройдено', pause: 'Поставить на паузу', resume: 'Продолжить курс',
     paused: 'Курс на паузе. Вы можете вернуться к нему в удобное время.', mood: 'Посмотреть свои результаты', compare: 'Повторить тесты в подходящий срок',
     compareNote: 'Количество занятий не равно улучшению психического состояния. Сопоставляйте только совместимые результаты тестов в Insights и учитывайте рекомендованные интервалы.',
-    issue: 'Курс временно недоступен. Эта страница не сохранила персональные сведения. Попробуйте ещё раз.',
-    retry: 'Повторить', safe: 'Любое упражнение можно пропустить или остановить. Если состояние тяжёлое или ухудшается, обратитесь к квалифицированному специалисту.',
+    issue: 'Не удалось завершить действие с курсом. Ранее пройденные тесты остаются в разделе «Мои тесты», но запуск модуля нужно проверить.',
+    retry: 'Проверить сохранение', safe: 'Любое упражнение можно пропустить или остановить. Если состояние тяжёлое или ухудшается, обратитесь к квалифицированному специалисту.',
     courses: 'Мои курсы и история', chooseCourse: 'Выберите курс', courseNumber: 'Курс',
     newCourse: 'Начать ещё один курс', activeCount: 'Активные курсы', courseLimit: 'Лимит тарифа',
     limitReached: 'Достигнут лимит активных курсов. Поставьте один курс на паузу, чтобы начать или возобновить другой.',
@@ -470,13 +470,43 @@ export function MyCourse({ data, locale = 'en' }) {
   // inside the existing course onboarding flow.
   const testReturn = searchParams.get('tests') === 'complete' || searchParams.get('retest') === 'updated'
   const programmeEntry = stage === 0 && Boolean(requestedProgram)
+  const fastAntistressEntry = !state?.course?.presetId && view !== 'switch' && (Boolean(requestedProgram) ||
+    (showCourse && [1,2].includes(stage) && courseProgramFromTopics(state?.course?.focusTags||[])?.id===ACTIVE_COURSE_PROGRAM_ID && searchParams.get('entry')!=='personal'))
   const personalEntry = stage === 0 && !personalEntryDismissed && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
-  if (!showCourse && !testReturn && !programmeEntry && !personalEntry) return <CourseEntrySelector
+  if (!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry) return <CourseEntrySelector
     key={accountId + ':' + (state.course?.id || '')}
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
     onCloseCourse={closeCourse} closing={busy}
     onOpen={() => setShowCourse(true)}/>
+
+  async function confirmFastStart() {
+    const intent={accountId,courseId:selectedCourse.current,epoch:viewGeneration,programId:requestedProgram?.id||ACTIVE_COURSE_PROGRAM_ID}
+    if (!fastAntistressEntry || stage!==0 || busy || actionLock.current || atLimit ||
+        (courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled) ||
+        intent.accountId!==currentAccount.current || !isSelected(intent.courseId,intent.epoch)) return
+    await act('start',{consent:true,programId:intent.programId})
+  }
+
+  // One explicit consent action, then the existing private intake. No catalogue,
+  // six-step presentation, duplicate assessment or bypass of server validation.
+  if (stage === 0 && fastAntistressEntry) return <div className={styles.root} data-my-course>
+    <section className={styles.fastEntry} data-opora-fast-start>
+      <span className={styles.fastKicker}>{ru ? 'ОПОРА · АНТИСТРЕСС' : 'OPORA · STRESS RELIEF'}</span>
+      <h1>{ru ? 'Начните с короткого теста' : 'Start with one short check-in'}</h1>
+      <p>{ru ? '8 вопросов Weekly Pulse помогут подобрать один из 5 уровней программы. Дополнительные тесты — только по желанию.' :
+        'Eight Weekly Pulse questions help suggest one of five learning levels. Extra questionnaires are optional.'}</p>
+      <p className={styles.fastConsent}><LockKeyhole size={18} aria-hidden="true" />{t.consent}</p>
+      {error && <p className={styles.error} role="alert">{t.issue} ({error}) <button type="button" onClick={()=>refresh()}>{t.retry}</button></p>}
+      <button type="button" className={'hh-primary ' + styles.fastStartButton}
+        disabled={busy||atLimit||(courses.some(course=>course.status!=='closed')&&!access?.multiCourseEnabled)} onClick={() => void confirmFastStart()} data-opora-fast-consent>
+        {busy ? (ru ? 'Подготавливаем тест…' : 'Preparing your test…')
+          : (ru ? 'Согласен, к тесту' : 'Agree & continue to the test')}
+        <ArrowRight size={19} aria-hidden="true" />
+      </button>
+      <small>{t.note}</small>
+    </section>
+  </div>
 
   return <div className={styles.root} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
@@ -502,7 +532,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <p className={styles.small}>{t.historySafe}</p>
       <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
     </section>}
-    {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses} onClick={() => {
+    {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
       changeView('list'); setShowCourse(false); setPersonalEntryDismissed(true); setCourseEntry(null)
       if (testReturn || programmeEntry || personalEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button> : null}
@@ -559,7 +589,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <summary>{ru?'Курсы с фиксированным набором тестов':'Courses with fixed test sets'}</summary>
       <CoursePresetCatalog locale={locale} busy={busy} onPreset={openStartDialog} onPersonal={() => openStartDialog(null)} />
     </details>)}
-    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
+    {!showDashboard && !isHistory && stage >= 1 && stage <= 2 && !fastAntistressEntry && <div className={styles.activeProgress} aria-label={t.step + ' ' + visibleStep + ' ' + t.of + ' 6'}>
       <strong>{t.step} {visibleStep} {t.of} 6</strong><progress max={6} value={visibleStep}/>
     </div>}
     {error && <p className={styles.error} role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.limitReached:t.issue} ({error}) <button type="button" onClick={() => refresh()}>{t.retry}</button></p>}
@@ -598,7 +628,7 @@ export function MyCourse({ data, locale = 'en' }) {
       stage={stage} locale={locale} data={data} state={state} busy={busy}
       key={accountId + ':' + state.course.id + ':' + (state.course.presetId || 'personal')}
       onAct={act} onCourseCommand={courseCommand} onCourseRead={readSelectedCourse} isCourseCurrent={isSelected}
-      onState={acceptState} onError={acceptError} root={root}
+      onState={acceptState} onError={acceptError} root={root} quickEntry={fastAntistressEntry}
     />}
 
     {!showDashboard && view === 'detail' && isHistory && stage < 4 && <section className={'hh-panel ' + styles.details} data-course-history-readonly>

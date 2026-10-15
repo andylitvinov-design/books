@@ -93,7 +93,8 @@ test('the authenticated daily API overlays curriculum without touching existing 
   const today = read('components/app/course-today.jsx')
   const quest = read('components/app/course-quest.jsx')
   assert.match(server,/programme:programme\?\{id:programme.id/)
-  assert.match(server,/programmeDay:programme \? \(contentVersion===COURSE_ANTISTRESS_OUTCOME_V3/)
+  assert.match(server,/programmeDay:programme \? \(usesOporaOutcomeChecks/)
+  assert.match(server,/const isOporaNav2=/)
   assert.match(today,/data.programme\?\.day\?\.prompt/)
   assert.match(quest,/item.programmeDay\?\.title/)
   assert.match(server,/const lessonGoal=currentFocus.goal/)
@@ -169,7 +170,7 @@ test('failed or uncertain intake remains on the created course and explicit retr
   assert.equal(findPart(h.tree,'CourseR3Steps').props.stage,1)
   assert.ok(findButton(h.tree,'Retry programme setup'))
   // A generic refresh does not clear the user's retained programme choice.
-  findButton(h.tree,'Try again').props.onClick();await h.settle();assert.ok(findButton(h.tree,'Retry programme setup'))
+  findButton(h.tree,'Check saved status').props.onClick();await h.settle();assert.ok(findButton(h.tree,'Retry programme setup'))
   findButton(h.tree,'Retry programme setup').props.onClick();await h.settle()
   assert.equal(writes(h).filter(call=>call.body.action==='start').length,1)
   assert.equal(writes(h).filter(call=>call.body.action==='intake').length,committed?1:2)

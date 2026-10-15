@@ -3,12 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
+import { startCourseWithRecovery } from '@/lib/inner-growth/course-start-recovery'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
 import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
-import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS, isAntistressBaselineRecent, hasAntistressRequiredBaseline, withAntistressRequiredBaseline } from '@/lib/inner-growth/course-programs'
+import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, suggestCourseProgramScales, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS, isAntistressBaselineRecent, hasAntistressRequiredBaseline, withAntistressRequiredBaseline } from '@/lib/inner-growth/course-programs'
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import AntiStressModuleFinder from './antistress-module-finder'
@@ -158,7 +159,7 @@ async function saveExistingAccountPlan(items, accountId) {
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root,quickEntry=false}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
@@ -220,41 +221,69 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     catch { return 'UTC' }
   }
   async function submitFocusSelection(keys, isMeasured = true, moduleSelection = null) {
-    if(actionLock.current || busy || localBusy) return
-    const requested = isMeasured ? keys : fallbackGoals
-    if(!Array.isArray(requested) || !requested.length) return
-    if(isMeasured && (requested.length < minScales || requested.length > 5)) return
-    actionLock.current=true
+    if(actionLock.current || busy || localBusy || !isCourseCurrent()) return
+    // The optional skill questionnaire cannot block an explicitly approved
+    // Anti-Stress route when no directional practice scales are available.
+    // This is a general learning goal, never a fabricated measurement.
+    const chosenGoals = !isMeasured && moduleSelection && !fallbackGoals.length
+      ? getCourseProgram('stress').primaryGoals.slice(0, 1) : fallbackGoals
+    const requested = isMeasured ? keys : chosenGoals
+    if(!Array.isArray(requested) || !requested.length ||
+        (isMeasured && (requested.length < minScales || requested.length > 5))) {
+      onError('COURSE_SCALES_UNAVAILABLE')
+      return
+    }
+    const token={};actionLock.current=token
+    const courseId=current.id
+    const ensureCourseResponse=result=>{
+      ensureCurrent()
+      if(!courseId || result?.course?.id!==courseId) throw new Error('COURSE_SELECTION_CHANGED')
+      return result
+    }
     setLocalBusy(true)
     onError('')
     try {
+      ensureCurrent()
       // A stage-2 course must complete its private test review before goal
       // approval. Use the fresh revision from that response for the second
       // transaction, not the old revision captured by the UI closure.
       let revision=current.revision
       if(current.stage===2) {
-        const reviewed=await onCourseCommand('review')
+        ensureCurrent()
+        const reviewed=ensureCourseResponse(await onCourseCommand('review'))
         onState(reviewed)
         revision=reviewed.course.revision
       }
       const firstSelected=profile.eligible.find(item=>isMeasured && keys.includes(item.id))?.label
       const label=(problemLabel.trim() || firstSelected || (ru?'Моё ежедневное наблюдение':'My daily observation')).slice(0,160)
-      const result=await onCourseCommand('choose-goals',{
-        expectedRevision:revision,
-        ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
+      const payload={
+        action:'choose-goals',expectedRevision:revision,
+        ...(isMeasured ? {scaleKeys:keys} : {goals:chosenGoals}),
         ...(moduleSelection?{
           moduleAnswers:moduleSelection.answers,moduleGoal:moduleSelection.goal,
           moduleId:moduleSelection.moduleId,
         }:{}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
-      })
+      }
+      // If the POST response was interrupted, first check whether the course
+      // was already committed. Retry once only while the revision is unchanged.
+      const result=await startCourseWithRecovery(async body=>{
+        ensureCurrent()
+        const response=body
+          ? await onCourseCommand('choose-goals',body)
+          : await onCourseRead()
+        return ensureCourseResponse(response)
+      },payload)
+      ensureCourseResponse(result)
       onState(result)
     } catch(error) {
-      onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
+      if(isCourseCurrent()) onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
     } finally {
-      actionLock.current=false
-      setLocalBusy(false)
+      if(actionLock.current===token){
+        actionLock.current=false
+        if(isCourseCurrent()) setLocalBusy(false)
+      }
     }
   }
 
@@ -357,6 +386,62 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     finally {actionLock.current=false;setLocalBusy(false)}
   }
 
+
+  // The short course CTA owns the starter battery: one mandatory HH Weekly
+  // Pulse, two genuinely optional questionnaires. One button performs the
+  // existing plan-save + course confirmation and opens the first *missing*
+  // owner-scoped run. Never use a query parameter as proof of completion.
+  async function startCompactTests() {
+    if (actionLock.current || busy || localBusy || openingTest || !chosenTests.length || chosenTests.length>12 || !isAntistress || preset) return
+    if (!hasAntistressRequiredBaseline(chosenTests, programme?.id)) {
+      onError('COURSE_ANTISTRESS_BASELINE_REQUIRED')
+      return
+    }
+    const token={};actionLock.current=token
+    setLocalBusy(true);onError('')
+    try {
+      ensureCurrent()
+      const sameSelection=confirmed && confirmedKeys.length===chosenTests.length &&
+        confirmedKeys.every((key,index)=>key===chosenTests[index])
+      let fresh
+      if(sameSelection) fresh=await onCourseRead()
+      else {
+        const selected=chosenTests.map(key=>optionByKey.get(key))
+        if(selected.some(item=>!item))throw new Error('INVALID_PLAN_ITEM')
+        const existing=new Set(assessment.planStatus==='cancelled'?[]:(assessment.planKeys||[]))
+        const missing=selected.filter(item=>!existing.has(item.key))
+        if(missing.length)await saveExistingAccountPlan(missing.map(item=>({
+          definitionKey:item.key,definitionVersion:item.definitionVersion,instrumentLocale:item.instrumentLocale,
+        })),data.account.id)
+        ensureCurrent()
+        fresh=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
+        ensureCurrent();onState(fresh)
+        discardCourseEntryIntent();setTestsTouched(false);setShowCompletedOptions(false)
+      }
+      ensureCurrent()
+      const key=coursePendingKeys(fresh)[0]
+      if(key){
+        const run=await startOrResumeCourseTest({courseState:fresh,key,locale,request:boundRequest})
+        ensureCurrent()
+        router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=quick&course=1&courseId='+encodeURIComponent(fresh.course.id))
+      }else{
+        const reviewed=await onCourseCommand('review',{expectedRevision:fresh.course.revision})
+        ensureCurrent();onState(reviewed)
+      }
+    }catch(error){if(isCourseCurrent())onError(error.message||'COURSE_TEST_UNAVAILABLE')}
+    finally{if(actionLock.current===token){actionLock.current=false;if(isCourseCurrent())setLocalBusy(false)}}
+  }
+
+  if(stage===1 && quickEntry && !preset) return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-opora-fast-intake>
+    <h2>{ru?'Начнём с исходного теста':'Begin with your baseline check'}</h2>
+    <p>{ru?'Вы сможете выбрать интересующие темы и навыки после диагностики.':'You can choose your focus and skills after the starting assessment.'}</p>
+    <button type="button" className={'hh-primary '+styles.cta} disabled={busy}
+      onClick={()=>onAct('intake',{
+        concerns:current.concerns||'',
+        focusTags:current.focusTags?.length?current.focusTags:[...getCourseProgram('stress').focusTags],
+      })}>{ru?'К стартовым тестам':'Continue to starting tests'} <ArrowRight size={17}/></button>
+  </section>
+
   if(stage===1) return <section className={'hh-panel '+styles.section} data-course-focus>
     <h2>{t.focusTitle}</h2><p>{t.focusHint}</p>
     <div className={styles.topics} role="group" aria-label={t.focusTitle}>
@@ -384,8 +469,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     return <section className={'hh-panel '+styles.section} data-antistress-start-tests-complete>
       <div className={styles.completeHero}>
         <h2>{ru?'Исходное тестирование готово':'Your starting assessment is ready'}</h2>
-        <p>{ru?'Weekly Pulse уже сохранён. Следующий шаг — восемь коротких вопросов о навыках. По ним мы предложим ваш модуль Антистресс 1–6.':
-          'Your Weekly Pulse is saved. Next are eight short skill questions to suggest one of six Anti-Stress modules.'}</p>
+        <p>{ru?'Weekly Pulse уже сохранён. Следующий шаг — восемь коротких вопросов о навыках. По ним мы предложим ваш уровень Антистресс 1–5.':
+          'Your Weekly Pulse is saved. Next are eight short skill questions to suggest one of five Anti-Stress learning levels.'}</p>
         <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
       </div>
       <div className={styles.focusActions}>
@@ -407,6 +492,70 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
       onAlternative={openManualFocus}
       onEditTests={preset?undefined:()=>setShowCompletedOptions(true)}/>
+  }
+
+
+  // Default compact Anti-Stress battery; general test discovery stays in My Tests.
+  // Existing confirmed extras are retained and can still be seen and edited.
+  if(stage===2 && isAntistress) {
+    const defaultKeys = new Set(['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'])
+    const visible = ranked.filter((item,index) => defaultKeys.has(item.key) ||
+      chosenTests.includes(item.key) || (showAll && index < 10))
+    const hasPending = !confirmed || pending.length > 0
+    return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker>
+      <p className={styles.compactEyebrow}>{ru?'ОПОРА · СТАРТОВАЯ ДИАГНОСТИКА':'OPORA · STARTING ASSESSMENT'}</p>
+      <h2>{ru?'Начните с Weekly Pulse':'Start with Weekly Pulse'}</h2>
+      <p className={styles.compactLead}>{ru
+        ? '8 вопросов · около 2 минут. Результат поможет выбрать один из 5 уровней программы.'
+        : '8 questions · about 2 minutes. Your answers help suggest one of five learning levels.'}</p>
+      <div className={styles.shortTestList} data-course-antistress-pretests aria-label={t.stressTestsTitle}>
+        {visible.map(item=>{
+          const required=item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
+          const status=confirmedStatuses.find(row=>row.key===item.key)
+          const days=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
+          const completed=status ? Boolean(status.completed) :
+            Boolean(item.completed && (!days || isAntistressBaselineRecent(item.key,item.completedAt)))
+          const outdated=Boolean(item.completed&&!completed)
+          return <label key={item.key} className={styles.shortTestRow}
+            data-checked={chosenTests.includes(item.key)}
+            data-course-required-baseline={required?'true':undefined}>
+            <input type="checkbox" checked={chosenTests.includes(item.key)}
+              disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
+              onChange={()=>toggleTest(item.key)}/>
+            <span className={styles.shortTestBody}>
+              <strong>{item.title}</strong>
+              <small>{required?(ru?'Обязательный · 8 вопросов':'Required · 8 questions')
+                :item.key==='gad-7'?(ru?'По желанию · 7 вопросов':'Optional · 7 questions')
+                :item.key==='hh-resource-pulse'?(ru?'По желанию · 6 вопросов':'Optional · 6 questions')
+                :t.stressOptional}
+                {' · '}{completed ? t.completed : outdated ? t.stressRetake : ('~'+(item.durationMinutes||2)+' min')}
+              </small>
+            </span>
+            {completed && <Check size={18} className={styles.shortTestCheck} aria-label={t.completed}/>}
+          </label>
+        })}
+      </div>
+      <button type="button" className={'hh-primary '+styles.fastTestButton}
+        disabled={busy||localBusy||openingTest||!chosenTests.length} onClick={startCompactTests}
+        data-antistress-start-first-test>
+        {localBusy||openingTest?(ru?'Подготавливаем…':'Preparing…')
+          :hasPending?(ru?'Начать тестирование':'Start my assessment')
+            :(ru?'Подобрать мой уровень':'Find my learning level')}
+        <ArrowRight size={19} aria-hidden="true"/>
+      </button>
+      <div className={styles.shortTestExtras}>
+        <button type="button" onClick={()=>setShowAll(value=>!value)} disabled={busy||localBusy}>
+          <Plus size={15}/>{showAll?t.showLess:t.showMore}</button>
+        <button type="button" onClick={()=>onAct('edit-intake')} disabled={busy||localBusy}>
+          {t.editAreas}</button>
+      </div>
+      <details className={styles.shortTestDetails}>
+        <summary>{ru?'О тестах и конфиденциальности':'About these tests and privacy'}</summary>
+        <p>{t.stressBaselineText} {t.stressExtraNote}</p>
+        <p>{t.saveNotice}</p>
+        <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}</Link>
+      </details>
+    </section>
   }
 
   if(stage===2) {

@@ -89,7 +89,7 @@ test('server accepts only bounded activity codes for active stress days 2 to 14'
  assert.match(client,/dailyMethodChoice:dailyMethodChoice\|\|null/)
  assert.match(client,/AntiStressMethodActivity/)
  assert.match(client,/cycle.day>1/)
- assert.match(server,/validateAntiStressMethodChoice\(today.day,input.dailyMethodChoice\)/)
+ assert.match(server,/validateAntiStressMethodChoice\(today.day,input.dailyMethodChoice,routePlan\?\.methodActivity\)/)
  assert.match(server,/INVALID_OPORA_METHOD_DAY/)
  assert.match(server,/dailyMethodHintUsed:Boolean\(input.dailyMethodHintUsed\)/)
  assert.match(methods,/data-opora-method-day/)

@@ -43,6 +43,7 @@
 .planGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .planCard{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:7px 9px;min-width:0;min-height:135px;padding:15px;border:1px solid #cce7eb;border-radius:17px;background:#f6fcfd}
 .planCard[data-plan=free]{background:#fbfefd;border-color:#cbdfe4}
+.planCard[data-plan=premium]{grid-column:1/-1;background:linear-gradient(125deg,#f3faff,#f1f9f9);border-color:#bfdce8}
 .planCard[data-recommended=true]{border:2px solid #10a3b4;background:linear-gradient(130deg,#eafafb,#f4fffc)}
 .planCard>strong{grid-column:1;font-size:18px;line-height:1.25}
 .price{grid-column:2;font-size:25px;line-height:1.2;white-space:nowrap}
@@ -50,6 +51,11 @@
 .planCard p{grid-column:1/-1;display:flex;align-items:center;gap:8px;line-height:1.35;font-size:12px}
 .planCard p svg{flex:none}
 .recommended{grid-column:1/-1;font-size:10px;line-height:1.3;letter-spacing:.06em}
+.introOffer{grid-column:1/-1!important;display:flex!important;align-items:center;gap:10px;padding:10px 12px;background:#e5f8f5;border:1px solid #b9e7dd;border-radius:12px;color:#09697a!important}
+.introOffer>svg{flex:none;color:#0797a1}
+.introOffer>span{display:grid;gap:3px;min-width:0}
+.introOffer strong{font-size:13px;font-weight:850;line-height:1.4}
+.introOffer small{font-size:12px;color:#487888;line-height:1.3}
 .unavailable{line-height:1.5;border-radius:0 9px 9px 0}
 .closeButton{display:block;margin:16px 0 0 auto}
 @media(max-width:690px){
@@ -286,3 +292,272 @@
 .closeCourseActions button:disabled{opacity:.55;cursor:wait}
 .closeCourseActions button:focus-visible{outline:3px solid #0a7c9e!important;outline-offset:2px}
 @media(max-width:420px){.courseMenu{top:8px;right:8px}.courseMenuPopup{top:47px}.closeCourseActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.closeCourseActions button{padding:9px!important}}
+
+
+/* Cabinet My Courses — compact, photo-led cards in the public course palette.
+   Preserve the existing enrolment, progress, close-course and membership actions. */
+.page{
+  max-width:960px;
+  gap:14px;
+  color:#174764;
+}
+.header{
+  gap:7px;
+  padding:20px clamp(18px,3vw,29px);
+  border:1px solid #c8e9ee;
+  border-radius:23px;
+  background:linear-gradient(115deg,#e9f9fc 0%,#daf5f6 65%,#d2eef7 100%);
+}
+.header .eyebrow{
+  display:inline-flex;
+  color:#078ba0;
+  font-size:10px;
+  letter-spacing:.105em;
+}
+.headline h1{
+  font:700 clamp(31px,4.3vw,44px)/1.1 Georgia,serif;
+  color:#164c66;
+}
+.header p{
+  color:#527c8e;
+  font-size:clamp(13px,1.6vw,15px);
+  line-height:1.48;
+}
+.tiles{grid-template-columns:minmax(0,1fr);gap:12px}
+.current{
+  gap:14px;
+  border:1px solid #c1e6eb;
+  border-radius:22px;
+  padding:clamp(14px,2.4vw,21px);
+  background:linear-gradient(125deg,#fcffff,#e6f8fc);
+  box-shadow:0 8px 24px #137f9c0c;
+}
+.currentTop{
+  grid-template-columns:clamp(128px,24vw,180px) minmax(0,1fr);
+  gap:clamp(13px,2vw,20px);
+  min-height:0;
+}
+.currentPhoto{
+  min-height:172px;
+  border-radius:17px;
+  background:linear-gradient(150deg,#def4f7,#caecf1);
+  border:1px solid #c5e8ee;
+}
+.currentPhoto img{object-fit:contain;object-position:center}
+.currentPhoto::after{display:none}
+.current h2{
+  font:700 clamp(23px,3.2vw,33px)/1.16 Georgia,serif;
+  color:#174966;
+}
+.currentText{gap:6px}
+.overline{font-size:10px;padding:5px 10px}
+.axes{margin-top:0}
+.axes span{font-size:12px;padding:6px 10px}
+.progressInfo{font-size:13px}
+.courseActions{grid-template-columns:minmax(0,1fr) auto;gap:9px}
+.openButton{min-height:50px;border-radius:13px;font-size:15px}
+.planButton{min-height:50px;border-radius:13px}
+
+/* Both the first course and "add course" use the same left-photo pattern. */
+.addTile{
+  display:grid;
+  grid-template-columns:minmax(140px,26%) minmax(0,1fr);
+  align-items:center;
+  justify-items:stretch;
+  gap:clamp(15px,2.5vw,24px);
+  min-height:0;
+  padding:12px 18px 12px 12px;
+  border:1px solid #bfe4ed!important;
+  border-radius:22px;
+  background:linear-gradient(120deg,#f6fcff 0%,#e6f6fb 100%)!important;
+  box-shadow:0 8px 23px #177c990d;
+  text-align:left;
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.addTile:hover{
+  border-color:#7bc3d1!important;
+  background:linear-gradient(115deg,#f0fbff,#d8f3f8)!important;
+  box-shadow:0 9px 26px #137f9c1a;
+}
+.addTileMedia{
+  display:grid;
+  place-items:center;
+  position:relative;
+  min-width:0;
+  height:166px;
+  overflow:hidden;
+  border:1px solid #c8e6ec;
+  border-radius:15px;
+  background:linear-gradient(140deg,#d2f1f3,#b8e7ee);
+}
+.addTileMedia img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+}
+.addTileMediaBadge{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  display:grid;
+  place-items:center;
+  width:31px;
+  height:31px;
+  color:#087f95;
+  background:#f8ffffed;
+  border:1px solid #b9e8ed;
+  border-radius:10px;
+  box-shadow:0 2px 9px #085d7529;
+}
+.addTileText{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:7px;
+  min-width:0;
+}
+.addTileEyebrow{
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.095em;
+  color:#048fa5;
+}
+.addTileText strong{
+  font:700 clamp(21px,3vw,28px)/1.18 Georgia,serif;
+  letter-spacing:-.03em;
+  text-wrap:pretty;
+  color:#174e69;
+}
+.addTileText small{
+  display:block;
+  max-width:40ch;
+  font-size:clamp(12px,1.5vw,14px);
+  line-height:1.4;
+  color:#567d8e;
+}
+.addTileAction{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:37px;
+  margin-top:3px;
+  padding:8px 13px;
+  border-radius:999px;
+  color:#fff;
+  background:#0799ad;
+  font-size:13px;
+  line-height:1.2;
+  font-weight:800;
+}
+.addTile:hover .addTileAction{background:#087d91}
+
+/* "What you will find" remains, but no longer looks like a second landing page. */
+.benefits{
+  gap:12px;
+  padding:10px 2px 3px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.benefitHeading{gap:9px}
+.benefitHeading h2{
+  font:700 clamp(19px,2.5vw,24px)/1.2 Georgia,serif;
+  color:#164e69;
+}
+.benefitMark{width:38px;height:38px}
+.benefitGrid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+.benefitGrid>div{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  padding:10px;
+  border:1px solid #d5eaf0;
+  border-radius:14px;
+  text-align:left;
+  background:#f7fcfe;
+}
+.benefitGrid>div>span{
+  flex:none;
+  width:36px;
+  height:36px;
+  border-radius:11px;
+}
+.benefitGrid>div>span svg{width:18px;height:18px}
+.benefitGrid p{
+  font-size:12px;
+  line-height:1.35;
+  color:#527b8e;
+}
+.benefitQuote{
+  margin:1px 2px 0;
+  font:italic 13px/1.45 Georgia,serif;
+  color:#598496;
+}
+.benefitQuote span{font-size:13px}
+.footnote{font-size:11px;color:#7095a4}
+
+@media(max-width:760px){
+  .benefitGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:690px){
+  .page{gap:11px;padding:2px 0 calc(90px + env(safe-area-inset-bottom))}
+  .header{gap:6px;padding:17px 16px;border-radius:18px}
+  .headline h1{font-size:clamp(30px,8vw,36px)}
+  .header p{font-size:13px;line-height:1.4}
+  .current{gap:11px;padding:12px;border-radius:19px}
+  .currentTop{grid-template-columns:105px minmax(0,1fr);gap:12px}
+  .currentPhoto{height:128px;min-height:128px;border-radius:12px}
+  .current h2{font-size:clamp(20px,5.6vw,25px)}
+  .currentText p{font-size:12px}
+  .axes span{font-size:11px;padding:5px 8px}
+  .progressInfo{font-size:12px}
+  .courseActions{grid-template-columns:minmax(0,1fr);gap:3px}
+  .openButton{min-height:46px}
+  .planButton{min-height:38px}
+  .addTile{
+    grid-template-columns:116px minmax(0,1fr);
+    gap:13px;
+    min-height:0;
+    padding:10px;
+    border-radius:18px;
+  }
+  .addTileMedia{height:136px;border-radius:12px}
+  .addTileMediaBadge{width:27px;height:27px;right:5px;bottom:5px}
+  .addTileText{gap:5px}
+  .addTileEyebrow{font-size:9px;letter-spacing:.07em}
+  .addTileText strong{font-size:clamp(17px,5vw,22px);line-height:1.15}
+  .addTileText small{font-size:11px;line-height:1.36}
+  .addTileAction{min-height:33px;margin-top:2px;padding:7px 11px;font-size:11px;gap:6px}
+  .addTileAction svg{width:14px;height:14px}
+  .benefits{padding:7px 1px;gap:10px}
+  .benefitHeading h2{font-size:19px}
+  .benefitMark{width:34px;height:34px}
+  .benefitGrid{gap:8px}
+  .benefitGrid>div{padding:9px;gap:8px;border-radius:12px}
+  .benefitGrid>div>span{width:32px;height:32px}
+  .benefitGrid>div>span svg{width:17px;height:17px}
+  .benefitGrid p{font-size:11px}
+  .benefitQuote{font-size:12px}
+}
+@media(max-width:380px){
+  .addTile{grid-template-columns:92px minmax(0,1fr);gap:9px;padding:8px}
+  .addTileMedia{height:121px}
+  .addTileText strong{font-size:17px}
+  .addTileText small{font-size:10px}
+  .addTileAction{font-size:10px}
+  .benefitGrid>div{padding:7px;gap:6px}
+  .benefitGrid p{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .addTile{transition:none}
+}

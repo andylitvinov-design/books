@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVertical, Archive, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
-import { PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '@/lib/billing/public-plan'
+import { COURSE_MEMBERSHIP, COURSE_PUBLIC_PLANS } from '@/lib/inner-growth/course-membership'
 import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
@@ -24,14 +24,16 @@ const COPY = {
     continue: 'Continue course', completeSetup: 'Continue setup', review: 'Review my course',
     add: 'Add a new course', first: 'Start OPORA Anti-Stress',
     addNote: 'A new topic and its own 14-day journey', firstNote: '5 stress routes · 14 lessons each · your choice',
+    courseLabel: 'OPORA · STRESS RELIEF', nextLabel: 'EXPLORE COURSES', courseAction: 'Start for free', nextAction: 'View options',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
-    upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
-    plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
+    upgrade: 'Add another learning journey', upgradeNote: 'Free includes one active course and a closing course offer. Advanced and Premium include up to five simultaneous courses without ads.',
+    plans: 'Membership plans', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Final course offer',
     one: '1 active course', five: 'Up to 5 active courses', noAds: 'No ads',
+    introLabel: 'Advanced first month for new members', thenPrice: 'Then',
     tests: 'Included tests', session: '1 personal 60-minute session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
     unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
-    conditions: 'Premium session scheduling and included-test terms will be confirmed before purchase.',
+    conditions: 'Advanced only: 50% off the first month (€10), then €20/month. Premium is €100/month; included-test and personal-session terms will be confirmed before purchase. No subscription starts on this screen.',
     close: 'Not now',
     courseOptions: 'Course options', closeCourse: 'Close course',
     closeCourseTitle: 'Close this course?',
@@ -52,14 +54,16 @@ const COPY = {
     continue: 'Продолжить курс', completeSetup: 'Продолжить настройку', review: 'Посмотреть мой курс',
     add: 'Добавить новый курс', first: 'Начать «ОПОРА — Антистресс»',
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '5 маршрутов · по 14 занятий · ваш выбор',
+    courseLabel: 'ОПОРА · АНТИСТРЕСС', nextLabel: 'ДРУГИЕ НАПРАВЛЕНИЯ', courseAction: 'Начать бесплатно', nextAction: 'Посмотреть условия',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
-    upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
-    plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
+    upgrade: 'Добавить ещё один курс', upgradeNote: 'Free — один активный курс с рекламным слайдом в конце программы. Advanced и Premium — до пяти курсов одновременно, без рекламы.',
+    plans: 'Тарифы подписки', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Реклама в финале курса',
     one: '1 активный курс', five: 'До 5 активных курсов', noAds: 'Без рекламы',
+    introLabel: 'Первый месяц Advanced для новых подписчиков', thenPrice: 'Затем',
     tests: 'Тесты включены', session: '1 персональная сессия на 60 минут в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
     unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
-    conditions: 'Условия записи на сессию и перечень включённых тестов будут подтверждены до оплаты.',
+    conditions: 'Акция только для Advanced: первый месяц 10 € (−50%), затем 20 € в месяц. Premium — 100 € в месяц; условия включённых тестов и личной сессии уточняются до оплаты. На этом экране подписка не оформляется.',
     close: 'Не сейчас',
     courseOptions: 'Меню курса', closeCourse: 'Закрыть курс',
     closeCourseTitle: 'Закрыть этот курс?',
@@ -85,11 +89,7 @@ function courseTitle(course, locale, t) {
   return topic?.title?.[locale] || t.defaultCourse
 }
 
-const PLANS = ['free', ...PAID_PLAN_KEYS].map(id => {
-  const plan = SUBSCRIPTION_PLANS[id]
-  return { id, price: plan.amount / 100, spots: plan.activeCourseLimit === 1 ? 'one' : 'five',
-    items: [...(plan.adFree ? ['noAds'] : ['ads']), ...(plan.freeTests ? ['tests'] : []), ...(plan.monthlySessions ? ['session'] : [])] }
-})
+const PLANS = COURSE_PUBLIC_PLANS
 
 export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
@@ -263,12 +263,20 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       </article>}
 
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
-        <span className={styles.plusIcon}><Plus size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+        <span className={styles.addTileMedia} aria-hidden="true">
+          <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
+            width={240} height={180} loading="lazy" decoding="async" />
+          <span className={styles.addTileMediaBadge}><Plus size={17} strokeWidth={2} /></span>
+        </span>
         <span className={styles.addTileText}>
+          <span className={styles.addTileEyebrow}>{hasCourse ? t.nextLabel : t.courseLabel}</span>
           <strong>{hasCourse ? t.add : t.first}</strong>
           <small>{hasCourse ? t.addNote : t.firstNote}</small>
+          <span className={styles.addTileAction}>
+            {hasCourse ? t.nextAction : t.courseAction}
+            <ArrowRight size={16} aria-hidden="true"/>
+          </span>
         </span>
-        <ArrowRight className={styles.addArrow} size={19} aria-hidden="true"/>
       </button>
     </section>
 
@@ -322,7 +330,12 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
           data-plan={plan.id} data-recommended={plan.id === 'advanced'}>
           {plan.id === 'advanced' && <span className={styles.recommended}>{t.recommended}</span>}
           <strong>{t[plan.id]}</strong>
-          <div className={styles.price}>€{plan.price}<small>{t.perMonth}</small></div>
+          <div className={styles.price}>€{plan.price}<small>{plan.id === 'free' ? '' : t.perMonth}</small></div>
+           {plan.id === COURSE_MEMBERSHIP.paidPlanId && <p className={styles.introOffer} data-first-month-offer>
+             <Sparkles size={17} aria-hidden="true"/>
+             <span><strong>{t.introLabel}: €{COURSE_MEMBERSHIP.introFirstMonthEUR} (−{COURSE_MEMBERSHIP.introDiscountPercent}%)</strong>
+               <small>{t.thenPrice} €{COURSE_MEMBERSHIP.regularMonthlyEUR}{t.perMonth}</small></span>
+           </p>}
           <p><Check size={15} aria-hidden="true"/>{t[plan.spots]}</p>
           {plan.items.map(item => <p key={item}><Check size={15} aria-hidden="true"/>{t[item]}</p>)}
         </article>)}

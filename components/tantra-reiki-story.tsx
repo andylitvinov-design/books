@@ -17,8 +17,6 @@ const story = {
     kicker: "Real people · real experiences",
     title: "The energy of connection, beyond words",
     lead: "These photographs are from real gatherings and practices — moments of aliveness, connection and shared attention. Every person experiences the work differently.",
-    eventSourceTitle: "From the original Tantra Reiki events programme",
-    eventSourceNote: "The following themes come from Andrey’s original description of the events. They are personal and symbolic experiences, not guaranteed outcomes.",
     teacherEyebrow: "Meet your guide",
     schoolArchiveTitle: "History of the Academy · original English text",
     schoolArchiveNote: "Archival descriptions from an earlier site, including historical qualifications and teaching claims. They are not a statement of current professional status or course terms.",
@@ -34,8 +32,6 @@ const story = {
     kicker: "Настоящие люди · живой опыт",
     title: "Энергия встречи, которую чувствуешь",
     lead: "Это реальные фотографии с наших встреч и практик: присутствие, живой контакт и совместное исследование. У каждого участника свой уникальный опыт.",
-    eventSourceTitle: "Из исходного описания встреч Тантра Рейки",
-    eventSourceNote: "Авторские темы из исторического описания мероприятий: речь о символических практиках и личном опыте, а не о гарантированных результатах.",
     teacherEyebrow: "Знакомство с ведущим",
     schoolArchiveTitle: "История Академии · оригинальный английский текст",
     schoolArchiveNote: "Это архивный текст с историческими сведениями о школе, квалификации и методах. Он не описывает автоматически действующие сегодня статусы и условия.",
@@ -51,8 +47,6 @@ const story = {
     kicker: "Personas reales · experiencias auténticas",
     title: "La energía del encuentro",
     lead: "Fotografías reales de nuestros encuentros y prácticas: presencia, conexión y atención compartida. La experiencia es diferente para cada persona.",
-    eventSourceTitle: "Del programa original de los encuentros Tantra Reiki",
-    eventSourceNote: "Temas simbólicos del texto histórico de Andrey; no son garantías de resultados personales.",
     teacherEyebrow: "Conoce a tu guía",
     schoolArchiveTitle: "Historia de la Academia · texto inglés original",
     schoolArchiveNote: "Texto histórico sobre la escuela, credenciales y enseñanza. No certifica el estatus profesional o las condiciones actuales.",
@@ -65,23 +59,6 @@ const story = {
     reiki: "Estudio de Tantra, Kundalini y Runic Reiki desde 2004",
   },
 } as const;
-
-const translatedEventThemes: Record<"ru" | "es", string[]> = {
-  ru: [
-    "Любовь и контакт.",
-    "Единство и желание.",
-    "Чувствование себя и чувственная терапия.",
-    "Личностный рост.",
-    "Мистерии и преобразование через образы энергий Богов.",
-  ],
-  es: [
-    "Amor y conexión.",
-    "Unidad y deseo.",
-    "Sentirse a uno mismo y terapia sensorial.",
-    "Crecimiento personal.",
-    "Misterios y transformación hacia las energías de los Dioses.",
-  ],
-};
 
 const historicalSchoolIndices = [4, 75, 76, 77, 78, 81, 82] as const;
 const historicalBiographyIndices = [158, 159, 160, 161, 162, 163, 164, 165, 166, 167] as const;
@@ -103,15 +80,6 @@ export function TantraReikiFestivalMoments({locale}:{locale:PublicLocale}) {
           </figure>
         ))}
       </div>
-      <details className="tantra-source-disclosure tantra-festival-moments__author-themes" id="tantra-original-event-themes">
-        <summary>{text.eventSourceTitle}</summary>
-        <p className="tantra-source-disclosure__note">{text.eventSourceNote}</p>
-        <ul lang={locale === "en" ? "en" : locale}>
-          {(locale === "en"
-            ? tantraReikiArchive.blocks.en.slice(93, 98).map((block) => block.text)
-            : translatedEventThemes[locale]).map((theme, index) => <li key={index}>{theme}</li>)}
-        </ul>
-      </details>
     </section>
   );
 }

@@ -3,7 +3,7 @@ export const SUBSCRIPTION_COPY = {
     name: 'Holistic House subscriptions', title: 'Choose the space you need',
     offerTitle: 'Your progress is saved. Explore plans when you like.',
     intro: 'Choose a monthly plan for your own pace.', choosePlan: 'Choose your plan',
-    pricesSummary: 'Free €0 · Start €10 · Advanced €20 · Premium €100 per month',
+    pricesSummary: 'Free €0 · Advanced €20 · Premium €100 per month. Planned Advanced introductory offer: €10 for the first month, then €20/month; eligibility and final terms must be confirmed before checkout.',
     plans: {
       free: { name: 'Free', price: '€0 / month', benefits: ['1 active course at a time.'] },
       start: { name: 'Start', price: '€10 / month', benefits: ['1 active course at a time.', 'An ad-free experience, including no Holistic House promotional blocks.'] },
@@ -55,7 +55,7 @@ export const SUBSCRIPTION_COPY = {
     name: 'Подписки Holistic House', title: 'Выберите подходящий тариф',
     offerTitle: 'Ваш прогресс сохранён. Посмотрите тарифы, если захотите.',
     intro: 'Выберите ежемесячный тариф для занятий в своём темпе.', choosePlan: 'Выберите тариф',
-    pricesSummary: 'Free 0 € · Start 10 € · Advanced 20 € · Premium 100 € в месяц',
+    pricesSummary: 'Free 0 € · Advanced 20 € · Premium 100 € в месяц. Вводное предложение Advanced: 10 € за первый месяц, затем 20 €/месяц; право на скидку и итоговые условия подтверждаются до оплаты.',
     plans: {
       free: { name: 'Free', price: '0 € / месяц', benefits: ['1 активный курс одновременно.'] },
       start: { name: 'Start', price: '10 € / месяц', benefits: ['1 активный курс одновременно.', 'Без рекламы, включая рекламные блоки Holistic House.'] },

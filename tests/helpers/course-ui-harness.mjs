@@ -14,6 +14,9 @@ import * as courseEntryIntent from '../../lib/inner-growth/course-entry-intent.j
 import * as courseEntryClient from '../../lib/inner-growth/course-entry-client.js'
 import * as presets from '../../lib/inner-growth/course-presets.js'
 import * as moduleRouter from '../../lib/inner-growth/antistress-module-router.js'
+import * as courseMembership from '../../lib/inner-growth/course-membership.js'
+import * as courseRecovery from '../../lib/inner-growth/course-start-recovery.js'
+import * as courseSequence from '../../lib/inner-growth/course-slide-sequence.js'
 import * as moduleLessons from '../../lib/inner-growth/antistress-module-lessons.js'
 
 const sources = Object.fromEntries(['course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
@@ -55,13 +58,14 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
+    '@/lib/inner-growth/course-membership': courseMembership, '@/lib/inner-growth/course-start-recovery': courseRecovery, '@/lib/inner-growth/course-slide-sequence': courseSequence,
     '@/lib/inner-growth/course-programs': coursePrograms, '@/lib/inner-growth/course-presets': presets, '@/lib/inner-growth/course-plans': coursePlans, '@/lib/billing/public-plan': billingPlan,
     '@/lib/inner-growth/course-entry-intent': courseEntryIntent, '@/lib/inner-growth/course-entry-client': courseEntryClient,
     './course-entry-selector': moduleFor('CourseEntrySelector'), './my-courses-dashboard': moduleFor('MyCoursesDashboard'), './course-preset-catalog': moduleFor('CoursePresetCatalog'),
     './course-focus-entry': moduleFor('CourseFocusEntry'),
     './course-today': moduleFor('CourseToday'), './course-14-day-overview': moduleFor('Course14DayOverview'), './course-r3-steps': moduleFor('CourseR3Steps'),
     '@/lib/inner-growth/course-moment-trends': momentTrends, '@/lib/inner-growth/course-adaptation': adaptation,'@/lib/inner-growth/course-welcome':welcome, '@/lib/inner-growth/anti-stress-day-one':dayOne,
-    './anti-stress-practice-lab': {default:stub('AntiStressPracticeLab')},
+    './opora-module-activity':{default:()=>null},'./anti-stress-practice-lab': {default:stub('AntiStressPracticeLab')},
     './course-lesson-result': {default:stub('CourseLessonResult')},
     './antistress-module-finder': {default:stub('AntiStressModuleFinder')},
     './anti-stress-method-activity': {default:stub('AntiStressMethodActivity')},

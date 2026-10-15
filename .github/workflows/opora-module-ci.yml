@@ -24,5 +24,5 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
-      - name: Verify six-module router, baseline reuse and 84 curricula
-        run: node --test tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs
+      - name: Verify all 70 lessons × 15 screens, practical interactions and baseline routing
+        run: node --test tests/opora-all-slides-matrix.test.mjs tests/antistress-module-routing.test.mjs tests/my-course-programs.test.mjs tests/course-test-sequence.test.mjs tests/course-entry-selector.test.mjs

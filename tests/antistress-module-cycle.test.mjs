@@ -23,7 +23,8 @@ const pureImports = [
   '../inner-growth/course-adaptation.js', '../inner-growth/antistress-module-lessons.js',
   '../inner-growth/antistress-module-router.js', '../inner-growth/anti-stress-day-one.js',
   '../inner-growth/anti-stress-practice-lab.js', '../inner-growth/anti-stress-method-activities.js',
-  '../inner-growth/course-progress.js',
+  '../inner-growth/course-slide-sequence.js',
+  '../inner-growth/course-progress.js', '../inner-growth/opora-module-exercise.js',
 ]
 const modules = Object.fromEntries(await Promise.all(pureImports.map(async specifier =>
   [specifier, await import(pathToFileURL(resolve(appRoot, specifier)).href)])))
@@ -117,7 +118,7 @@ function assertCreated(h, id, expectedVersion, expectedPreferences, cycleNumber 
   assert.equal(cycle[0], id); assert.equal(cycle[1], OWNER); assert.equal(cycle[2], COURSE)
   assert.equal(cycle[3], cycleNumber); assert.equal(cycle[4], h.course.goals[0])
   assert.equal(cycle[5], expectedVersion); assert.equal(cycle[7], 'UTC')
-  assert.deepEqual(JSON.parse(cycle[8]), expectedPreferences)
+  assert.deepEqual(JSON.parse(cycle[8]), {length:'standard',imagery:'optional',checkinFrequency:'daily',...expectedPreferences})
   assert.equal(target[1], OWNER); assert.equal(target[2], id)
   assert.equal(crypto.openSealed(target[3], context(target[0], 'course.target_label'), config), input.problemLabel)
   assert.equal(crypto.openSealed(target[4], context(target[0], 'course.target_intention'), config), input.intention)

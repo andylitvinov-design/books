@@ -1521,6 +1521,7 @@ test('MHC-SF guest persistence retains zero, source sums and private bilingual r
 // session insert for the non-primary selected scale. This suite is loopback-only.
 test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU session validation', async () => {
   const { createDailyCourseRepository } = await import('../lib/app/growth-daily.js')
+  const { buildCourseSlides } = await import('../lib/inner-growth/course-slide-sequence.js')
   const { lessonFor, COURSE_CONTENT_VERSION, COURSE_CONTENT_V3, COURSE_CONTENT_V4 } = await import('../lib/inner-growth/lesson-library.js')
   const dailyRepo = createDailyCourseRepository(config)
   for (const locale of ['en','ru']) {
@@ -1547,8 +1548,9 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',1,locale,'quick',COURSE_CONTENT_V4).id)
       const originalLessonId = value.lesson.id
-      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const first = {operationId:randomUUID(),day:1,lessonId:originalLessonId,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...first,day:2,lessonId:lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'COURSE_DAY_NOT_DUE'})
+      await assert.rejects(dailyRepo.command(who,'session',{...first,operationId:randomUUID(),visitedSlideKeys:[]},locale),{code:'COURSE_SLIDES_INCOMPLETE'})
       const firstSaved = await dailyRepo.command(who,'session',first,locale)
       assert.equal(firstSaved.cycle.day,1)
       assert.ok(firstSaved.currentSession.completedAt)
@@ -1563,7 +1565,7 @@ test('V4 new cycle preserves primary focus, original 84 tracks and private EN/RU
       assert.equal(value.cycle.activeGoal,'calm_regulation')
       assert.deepEqual(value.lesson.sections,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V3).sections)
       assert.equal(value.lesson.id,lessonFor('calm_regulation',2,locale,'quick',COURSE_CONTENT_V4).id)
-      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:''}
+      const second = {operationId:randomUUID(),day:2,lessonId:value.lesson.id,feedback:'neutral',beforeNow:null,afterNow:null,reflection:'',visitedSlideKeys:buildCourseSlides(value.lesson).map(slide=>slide.key)}
       await assert.rejects(dailyRepo.command(who,'session',{...second,lessonId:lessonFor('attention_clarity',2,locale,'quick',COURSE_CONTENT_V4).id},locale),{code:'INVALID_LESSON_ID'})
       const secondSaved = await dailyRepo.command(who,'session',second,locale)
       assert.equal(secondSaved.cycle.day,2)
@@ -1731,4 +1733,83 @@ test('push subscriptions and preferences are account-owned, RLS-protected and re
     error=>error.code==='DEVICE_ALREADY_REGISTERED')
   const removed=await push.unsubscribe(a,{endpoint:null})
   assert.equal(removed.enabled,false);assert.equal(removed.deviceCount,0)
+})
+
+
+// End-to-end restricted-role OPORA handoff: a real synthetic Weekly Pulse
+// result, encrypted module choice, growth-course transaction and Day 1 read.
+// This runs only against the isolated Postgres CI fixture, never production.
+test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved testing', async () => {
+  const {createGrowthCourseRepository} = await import('../lib/app/growth-course.js')
+  const {createDailyCourseRepository} = await import('../lib/app/growth-daily.js')
+  const {courseMeasuredProfile} = await import('../lib/inner-growth/course-strategy.js')
+  const {ANTISTRESS_MODULE_FINDER_ITEMS} = await import('../lib/inner-growth/antistress-module-router.js')
+  const who=actor(randomUUID(),randomUUID())
+  const growth=createGrowthCourseRepository(config)
+  const daily=createDailyCourseRepository(config)
+  const db=await adminClient()
+  try {
+    await db.query('insert into auth.users(id,email) values($1,$2)',[who.id,'synthetic-opora@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+    await repo.ensureAccount(who)
+    await repo.onboarding(who,{
+      adult:true,necessary:true,marketing:false,displayName:'Synthetic OPORA learner',
+      uiLocale:'en',timezone:'UTC',goal:'explore',
+    })
+    let course=await growth.command(who,{action:'start',consent:true})
+    course=await growth.command(who,{
+      action:'intake',expectedRevision:course.course.revision,
+      concerns:'Synthetic stress during ordinary activities',
+      focusTags:['stress','mood','energy'],
+    })
+    assert.equal(course.course.stage,2)
+    const run=await repo.startRun(who,{
+      definitionKey:weekly.key,definitionVersion:weekly.version,
+      instrumentLocale:weekly.instrumentLocale,operationId:randomUUID(),
+    })
+    const saved=await repo.saveRun(who,run.id,{
+      answers:answer(weekly,5),context:{},progress:weekly.questions.length,
+      expectedRevision:run.revision,operationId:randomUUID(),
+    })
+    const completed=await repo.submitRun(who,run.id,{expectedRevision:saved.revision})
+    const profile=courseMeasuredProfile({
+      results:[completed],testKeys:['hh-weekly-pulse'],locale:'en',
+    })
+    const selected=profile.eligible.slice(0,Math.min(3,profile.eligible.length)).map(x=>x.id)
+    assert.ok(selected.length>0,'Synthetic Weekly Pulse has current measured practice scales')
+    // Earlier stages are exercised by the existing plan tests; advance the
+    // synthetic course to the real module decision with its completed test.
+    await db.query(`update app_private.growth_courses
+      set stage=3,test_keys=ARRAY['hh-weekly-pulse']::text[],revision=revision+1,updated_at=now()
+      where account_id=$1`,[who.id])
+    course=await growth.read(who)
+    assert.equal(course.course.stage,3)
+    assert.equal(course.assessments.selectedTests[0].completed,true)
+    const request={
+      action:'choose-goals',expectedRevision:course.course.revision,
+      scaleKeys:selected,consent:true,durationDays:14,
+      moduleId:'AS5',moduleGoal:'undecided',
+      moduleAnswers:Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>[x.id,null])),
+      problemLabel:'Synthetic daily stress observation',intention:'',timeZone:'UTC',
+    }
+    const started=await growth.command(who,request)
+    assert.equal(started.course.stage,4)
+    assert.equal(started.course.moduleChoice.id,'AS5')
+    assert.equal(started.assessments.selectedTests[0].completed,true)
+    const today=await daily.read(who,'en')
+    assert.equal(today.cycle.moduleId,'AS5')
+    assert.equal(today.cycle.day,1)
+    assert.equal(today.cycle.preferences.length,'standard')
+    assert.equal(today.cycle.preferences.imagery,'optional')
+    assert.equal(today.cycle.preferences.checkinFrequency,'daily')
+    assert.equal(today.roadmap.length,14)
+    assert.ok(today.lesson?.id)
+    await assert.rejects(growth.command(who,request),{code:'REVISION_CONFLICT'})
+    const cycleCount=await db.query('select count(*)::int as n from app_private.growth_cycles where account_id=$1',[who.id])
+    const resultCount=await db.query('select count(*)::int as n from app.assessment_results where account_id=$1',[who.id])
+    assert.equal(cycleCount.rows[0].n,1)
+    assert.equal(resultCount.rows[0].n,1)
+  } finally {
+    await db.end()
+  }
 })

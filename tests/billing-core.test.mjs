@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import Stripe from 'stripe'
-import { getBillingConfig } from '../lib/billing/config.js'
+import { getBillingConfig, SUBSCRIPTION_PLANS, PAID_PLAN_KEYS, PURCHASABLE_PLAN_KEYS } from '../lib/billing/config.js'
 import { subscriptionEntitlement } from '../lib/billing/entitlements.js'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -17,21 +17,23 @@ const { createBillingService } = await import('../lib/billing/service.js')
 const NOW = Date.parse('2026-10-13T12:00:00Z'), END = '2026-11-13T12:00:00.000Z'
 const OP = '4b93bfbb-1ec2-4cc4-b7d0-4bd0a9265fcd'
 const config = { configured: true, enabled: true, schemaApproved: true, provider: 'stripe', environment: 'sandbox',
-  priceIds: { start: 'price_fixture', advanced: 'price_advanced', premium: 'price_premium' }, enabledPlans: ['start', 'advanced', 'premium'], accountId: 'acct_fixture', portalConfigurationId: 'bpc_fixture', webhookSecret: 'whsec_fixture' }
+  priceIds: { start: 'price_fixture', advanced: 'price_advanced', premium: 'price_premium' }, enabledPlans: ['advanced', 'premium'], accountId: 'acct_fixture', portalConfigurationId: 'bpc_fixture', webhookSecret: 'whsec_fixture' }
 const paidSub = () => ({ provider: 'stripe', environment: 'sandbox', customerId: 'cus_fixture', subscriptionId: 'sub_fixture',
   planId: 'start', status: 'active', cancelAtPeriodEnd: false, paidThroughAt: END, currentPeriodEnd: END, revokedAt: null })
-function stripeFixture() {
-  const calls = [], price = { id: config.priceIds.start, active: true, currency: 'eur', unit_amount: 1000, livemode: false, type: 'recurring', billing_scheme: 'per_unit',
+// Default remains historical Start to preserve existing invoice/ledger coverage.
+function stripeFixture(planId = 'start') {
+  const amount = SUBSCRIPTION_PLANS[planId].amount
+  const calls = [], price = { id: config.priceIds[planId], active: true, currency: 'eur', unit_amount: amount, livemode: false, type: 'recurring', billing_scheme: 'per_unit',
     recurring: { interval: 'month', interval_count: 1, usage_type: 'licensed' } }
   const subscription = { id: 'sub_fixture', customer: 'cus_fixture', livemode: false, created: 1,
     status: 'active', cancel_at_period_end: false, items: { data: [{ quantity: 1, price, current_period_end: Date.parse(END) / 1000 }], has_more: false } }
-  const invoice = { id: 'in_fixture', customer: 'cus_fixture', livemode: false, status: 'paid', amount_paid: 1000,
+  const invoice = { id: 'in_fixture', customer: 'cus_fixture', livemode: false, status: 'paid', amount_paid: amount,
     currency: 'eur', parent: { subscription_details: { subscription: subscription.id } } }
   const line = { pricing: { price_details: { price: price.id } }, parent: { subscription_item_details: { subscription: subscription.id, proration: false } },
-    quantity: 1, amount: 1000, period: { start: NOW / 1000 - 100, end: Date.parse(END) / 1000 } }
-  const payment = { id: 'inpay_fixture', invoice: invoice.id, livemode: false, currency: 'eur', status: 'paid', amount_paid: 1000,
+    quantity: 1, amount: amount, period: { start: NOW / 1000 - 100, end: Date.parse(END) / 1000 } }
+  const payment = { id: 'inpay_fixture', invoice: invoice.id, livemode: false, currency: 'eur', status: 'paid', amount_paid: amount,
     payment: { type: 'payment_intent', payment_intent: 'pi_fixture' } }
-  const charge = { id: 'ch_fixture', customer: 'cus_fixture', livemode: false, paid: true, captured: true, status: 'succeeded', payment_intent: 'pi_fixture', amount: 1000, amount_captured: 1000,
+  const charge = { id: 'ch_fixture', customer: 'cus_fixture', livemode: false, paid: true, captured: true, status: 'succeeded', payment_intent: 'pi_fixture', amount: amount, amount_captured: amount,
     amount_refunded: 0, refunded: false, disputed: false, currency: 'eur' }
   const client = {
     accounts: { retrieve: async () => ({ id: config.accountId }) },
@@ -67,7 +69,7 @@ test('cancelled or past-due billing preserves already paid access, active alone 
   for (const status of ['canceled', 'past_due', 'unpaid']) assert.equal(subscriptionEntitlement({ ...paidSub(), status }, { environment: 'sandbox', now: NOW }).active, true)
   assert.equal(subscriptionEntitlement({ ...paidSub(), paidThroughAt: null }, { environment: 'sandbox', now: NOW }).active, false)
 })
-test('Stripe grant traces exact invoice, line, payment intent and charge', async () => {
+test('historical Start grant traces exact invoice, line, payment intent and charge', async () => {
   const { provider } = stripeFixture(), snapshot = await provider.reconcile('cus_fixture')
   assert.equal(snapshot.paidThroughAt, END)
   assert.equal(snapshot.planId, 'start')
@@ -115,10 +117,16 @@ test('dispute recovery rejects foreign/mode/malformed/open evidence and never ov
  f.client.disputes.list=async()=>{throw new Error('outage')}
  assert.equal((await f.provider.reconcile('cus_fixture')).paidThroughAt,null)
 })
-test('archiving an approved price does not revoke an already paid subscriber', async () => {
-  const f = stripeFixture(); f.price.active = false
-  assert.equal((await f.provider.reconcile('cus_fixture')).paidThroughAt, END)
-  await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, planId: 'start', origin: 'https://example.com', locale: 'en' }), /BILLING_PROVIDER_MISMATCH/)
+test('archiving an approved current or historical price does not revoke already paid access', async () => {
+  for (const planId of PAID_PLAN_KEYS) {
+    const f = stripeFixture(planId); f.price.active = false
+    const snapshot = await f.provider.reconcile('cus_fixture')
+    assert.equal(snapshot.paidThroughAt, END)
+    assert.equal(subscriptionEntitlement(snapshot, { environment: 'sandbox', now: NOW }).tier, planId)
+    await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, planId, origin: 'https://example.com', locale: 'en' }),
+      planId === 'start' ? /BILLING_PLAN_UNAVAILABLE/ : /BILLING_PROVIDER_MISMATCH/)
+    assert.equal(f.calls.some(call => call[0] === 'checkout'), false)
+  }
 })
 test('wrong mode, amount, customer or multiple recurring contracts fail closed', async () => {
   for (const alter of [f => { f.subscription.livemode = true }, f => { f.price.unit_amount = 999 }, f => { f.subscription.customer = 'cus_other' },
@@ -126,13 +134,15 @@ test('wrong mode, amount, customer or multiple recurring contracts fail closed',
     const f = stripeFixture(); alter(f); await assert.rejects(f.provider.reconcile('cus_fixture'))
   }
 })
-test('checkout sends fixed monthly plan with stable key and no health or owner metadata', async () => {
-  const f = stripeFixture()
+test('checkout sends fixed monthly Advanced with stable key and no health or owner metadata', async () => {
+  const f = stripeFixture('advanced')
   await f.provider.createCustomer('internal-owner')
   assert.deepEqual(f.calls[0][1], {})
-  await f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, planId: 'start', origin: 'https://example.com', locale: 'ru' })
+  await f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, planId: 'advanced', origin: 'https://example.com', locale: 'ru' })
   const args = f.calls.find(c => c[0] === 'checkout')
-  assert.equal(args[1].mode, 'subscription'); assert.deepEqual(args[1].line_items, [{ price: config.priceIds.start, quantity: 1 }])
+  assert.equal(args[1].mode, 'subscription'); assert.deepEqual(args[1].line_items, [{ price: config.priceIds.advanced, quantity: 1 }])
+  assert.equal(f.price.unit_amount, 2000, 'Introductory copy does not change the recurring price')
+  assert.equal(args[1].discounts, undefined); assert.equal(args[1].allow_promotion_codes, undefined)
   assert.equal(args[1].metadata, undefined); assert.equal(args[1].payment_method_types, undefined)
   assert.match(args[1].integration_identifier, /_[a-z]{8}$/)
   assert.match(args[1].success_url, /settings\?billing=success$/)
@@ -179,28 +189,28 @@ function serviceFixture() {
 test('customer mapping commits before chargeable checkout, retry preserves original request context', async () => {
   const f = serviceFixture(); let attempts = 0
   f.provider.checkout = async args => { f.history.push(['attempt', structuredClone(f.state()), args]); if (++attempts === 1) throw Error('timeout'); return { providerCheckoutId: 'cs_fixture', url: 'https://checkout.stripe.com/c/pay/fixture', expiresAt: END } }
-  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'ru' }, 'https://example.com'), /timeout/)
+  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'ru' }, 'https://example.com'), /timeout/)
   assert.equal(f.state().customer.customerId, 'cus_fixture')
-  await f.service.checkout({}, { operationId: 'second-client-op', planId: 'start', locale: 'en' }, 'https://example.net').catch(error => assert.match(error.message, /INVALID_ID/))
-  await f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.net')
+  await f.service.checkout({}, { operationId: 'second-client-op', planId: 'advanced', locale: 'en' }, 'https://example.net').catch(error => assert.match(error.message, /INVALID_ID/))
+  await f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.net')
   const attemptsArgs = f.history.filter(c => c[0] === 'attempt')
   assert.ok(attemptsArgs.every(c => c[1].customer.customerId === 'cus_fixture'))
   assert.deepEqual(attemptsArgs[0][2], attemptsArgs[1][2])
 })
 test('concurrent checkout requests reuse one remotely chargeable session', async () => {
   const f = serviceFixture()
-  await Promise.all([f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com'),
-    f.service.checkout({}, { operationId: 'ad2eecab-3a73-42f3-a4a0-15f70fdc5f5e', planId: 'start', locale: 'en' }, 'https://example.com')])
+  await Promise.all([f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com'),
+    f.service.checkout({}, { operationId: 'ad2eecab-3a73-42f3-a4a0-15f70fdc5f5e', planId: 'advanced', locale: 'en' }, 'https://example.com')])
   assert.equal(f.history.filter(c => c[0] === 'remoteCheckout').length, 1)
 })
 test('existing subscription never creates a stranded pending checkout', async () => {
   const f = serviceFixture(); f.set({ sub: paidSub() })
-  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com'), /ALREADY_SUBSCRIBED/)
+  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com'), /ALREADY_SUBSCRIBED/)
   assert.equal(f.state().checkout, null)
 })
 test('expired idempotency retention blocks recreation and preserves unresolved record', async () => {
-  const f = serviceFixture(); f.set({ checkout: { operationId: OP, planId: 'start', createdAt: new Date(NOW - 86400000).toISOString(), status: 'pending' } })
-  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com'), /RECONCILIATION_REQUIRED/)
+  const f = serviceFixture(); f.set({ checkout: { operationId: OP, planId: 'advanced', createdAt: new Date(NOW - 86400000).toISOString(), status: 'pending' } })
+  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com'), /RECONCILIATION_REQUIRED/)
   assert.equal(f.history.filter(c => c[0] === 'remoteCheckout').length, 0)
 })
 test('account deletion requires renewal cancellation and unresolved checkout reconciliation', async () => {
@@ -235,9 +245,9 @@ test('complete checkout retains deletion guard until its exact subscription is p
   assert.equal(f.state().checkout, null)
 })
 test('a separate open checkout is not discarded when a subscription is discovered', async () => {
-  const f = serviceFixture(); f.set({ customer: { customerId: 'cus_fixture' }, checkout: { operationId: OP, planId: 'start', providerCheckoutId: 'cs_fixture', createdAt: new Date(NOW).toISOString() } })
+  const f = serviceFixture(); f.set({ customer: { customerId: 'cus_fixture' }, checkout: { operationId: OP, planId: 'advanced', providerCheckoutId: 'cs_fixture', createdAt: new Date(NOW).toISOString() } })
   f.provider.reconcile = async () => paidSub()
-  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com'), /ALREADY_SUBSCRIBED/)
+  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com'), /ALREADY_SUBSCRIBED/)
   assert.ok(f.state().checkout)
   assert.equal(f.state().sub.subscriptionId, 'sub_fixture')
 })
@@ -251,8 +261,13 @@ test('each EUR tier maps exact verified price/payment to its own account mode', 
     f.price.id = config.priceIds[planId]; f.price.unit_amount = amount
     f.invoice.amount_paid = amount; f.line.pricing.price_details.price = f.price.id; f.line.amount = amount
     f.payment.amount_paid = amount; f.charge.amount = amount; f.charge.amount_captured = amount
-    await f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId })
-    assert.equal(f.calls.find(c => c[0] === 'checkout')[1].line_items[0].price, config.priceIds[planId])
+    if (PURCHASABLE_PLAN_KEYS.includes(planId)) {
+      await f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId })
+      assert.equal(f.calls.find(c => c[0] === 'checkout')[1].line_items[0].price, config.priceIds[planId])
+    } else {
+      await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId }), /BILLING_PLAN_UNAVAILABLE/)
+      assert.equal(f.calls.some(call => call[0] === 'checkout'), false)
+    }
     const snapshot = await f.provider.reconcile('cus_fixture'), access = subscriptionEntitlement(snapshot, { environment: 'sandbox', now: NOW })
     assert.equal(access.tier, planId); assert.equal(access.activeCourseLimit, courses)
     assert.equal(access.freeTests, freeTests); assert.equal(access.monthlySessions, sessions)
@@ -262,8 +277,8 @@ test('each EUR tier maps exact verified price/payment to its own account mode', 
   }
 })
 test('USD legacy price and mismatched chosen tier fail closed', async () => {
-  const f = stripeFixture(); f.price.currency = 'usd'
-  await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId: 'start' }), /PROVIDER_MISMATCH/)
+  const f = stripeFixture('advanced'); f.price.currency = 'usd'
+  await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId: 'advanced' }), /PROVIDER_MISMATCH/)
   f.price.currency = 'eur'
   await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, origin: 'https://example.com', locale: 'en', planId: 'premium' }), /PROVIDER_MISMATCH/)
   assert.equal(subscriptionEntitlement({ ...paidSub(), planId: 'plus' }, { environment: 'sandbox', now: NOW }).tier, 'free')
@@ -285,20 +300,44 @@ test('all prices are server-bound and advanced/premium operations are separately
     HH_STRIPE_RESTRICTED_KEY: 'rk_test_fixture', HH_STRIPE_START_PRICE_ID: 'price_start',
     HH_STRIPE_ADVANCED_PRICE_ID: 'price_advanced', HH_STRIPE_PREMIUM_PRICE_ID: 'price_premium',
     HH_STRIPE_ACCOUNT_ID: 'acct_fixture', HH_STRIPE_WEBHOOK_SECRET: 'whsec_fixture', HH_STRIPE_PORTAL_CONFIGURATION_ID: 'bpc_fixture' }
-  assert.deepEqual(getBillingConfig(env).enabledPlans, ['start'])
-  assert.deepEqual(getBillingConfig({ ...env, HH_MULTICOURSE_SCHEMA_APPROVED: 'true' }).enabledPlans, ['start', 'advanced'])
-  assert.deepEqual(getBillingConfig({ ...env, HH_MULTICOURSE_SCHEMA_APPROVED: 'true', HH_PREMIUM_SESSION_SCHEMA_APPROVED: 'true', HH_PREMIUM_SESSION_FULFILLMENT_APPROVED: 'true' }).enabledPlans, ['start', 'advanced', 'premium'])
+  assert.deepEqual(getBillingConfig(env).enabledPlans, [])
+  assert.deepEqual(getBillingConfig({ ...env, HH_MULTICOURSE_SCHEMA_APPROVED: 'true' }).enabledPlans, ['advanced'])
+  assert.deepEqual(getBillingConfig({ ...env, HH_MULTICOURSE_SCHEMA_APPROVED: 'true', HH_PREMIUM_SESSION_SCHEMA_APPROVED: 'true', HH_PREMIUM_SESSION_FULFILLMENT_APPROVED: 'true' }).enabledPlans, ['advanced', 'premium'])
   assert.equal(getBillingConfig({ ...env, HH_STRIPE_ADVANCED_PRICE_ID: env.HH_STRIPE_START_PRICE_ID }).configured, false)
-  assert.equal(getBillingConfig({ ...env, HH_STRIPE_START_PRICE_ID: '', HH_STRIPE_PLUS_PRICE_ID: 'price_legacy' }).configured, false)
+  assert.equal(getBillingConfig({ ...env, HH_STRIPE_START_PRICE_ID: '' }).configured, true, 'A retired Start price is optional for new configuration')
+  assert.equal(getBillingConfig(env).priceIds.start, env.HH_STRIPE_START_PRICE_ID, 'Configured historical mapping remains available for reconciliation')
+  assert.equal(getBillingConfig({ ...env, HH_STRIPE_ADVANCED_PRICE_ID: '', HH_STRIPE_PLUS_PRICE_ID: 'price_legacy' }).configured, false, 'A legacy price cannot replace a required current price')
 })
 test('a different tier cannot reuse a pending checkout or mint another contract', async () => {
   const f = serviceFixture()
-  await f.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com')
+  await f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com')
   await assert.rejects(f.service.checkout({}, { operationId: 'ad2eecab-3a73-42f3-a4a0-15f70fdc5f5e', planId: 'premium', locale: 'en' }, 'https://example.com'), /BILLING_PLAN_CONFLICT/)
   assert.equal(f.history.filter(c => c[0] === 'remoteCheckout').length, 1)
-  assert.equal(f.state().checkout.planId, 'start')
-  for (const planId of ['free', 'plus', 'unknown', undefined])
+  assert.equal(f.state().checkout.planId, 'advanced')
+  for (const planId of ['free', 'start', 'plus', 'unknown', undefined])
     await assert.rejects(f.service.checkout({}, { operationId: OP, planId, locale: 'en' }, 'https://example.com'), /BILLING_PLAN_INVALID/)
+})
+
+test('historical Start remains reconciled and entitled but cannot create a new checkout', async () => {
+  assert.deepEqual(PAID_PLAN_KEYS, ['start', 'advanced', 'premium'])
+  assert.deepEqual(PURCHASABLE_PLAN_KEYS, ['advanced', 'premium'])
+  const f = stripeFixture(), snapshot = await f.provider.reconcile('cus_fixture')
+  assert.equal(snapshot.planId, 'start'); assert.equal(snapshot.paidThroughAt, END)
+  const access = subscriptionEntitlement(snapshot, { environment: 'sandbox', now: NOW })
+  assert.equal(access.tier, 'start'); assert.equal(access.activeCourseLimit, 1); assert.equal(access.adFree, true)
+  await assert.rejects(f.provider.checkout({ customerId: 'cus_fixture', operationId: OP, planId: 'start', origin: 'https://example.com', locale: 'en' }), /BILLING_PLAN_UNAVAILABLE/)
+  assert.equal(f.calls.length, 0, 'No provider mutation for a retired plan')
+  const service = serviceFixture()
+  await assert.rejects(service.service.checkout({}, { operationId: OP, planId: 'start', locale: 'en' }, 'https://example.com'), /BILLING_PLAN_INVALID/)
+  assert.equal(service.history.length, 0, 'Reject before ownership transactions or provider calls')
+  assert.equal(service.state().customer, null); assert.equal(service.state().checkout, null)
+})
+test('historical pending Start checkout is retained and cannot be repurposed as Advanced', async () => {
+  const f = serviceFixture(), pending = { operationId: OP, planId: 'start', status: 'pending', createdAt: new Date(NOW).toISOString() }
+  f.set({ checkout: pending })
+  await assert.rejects(f.service.checkout({}, { operationId: OP, planId: 'advanced', locale: 'en' }, 'https://example.com'), /BILLING_PLAN_CONFLICT/)
+  assert.deepEqual(f.state().checkout, pending)
+  assert.equal(f.history.length, 0)
 })
 
 }

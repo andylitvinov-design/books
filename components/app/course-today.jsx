@@ -506,6 +506,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       <span className={styles.antiStressSkillNumber}>{skill.id}</span>
       <strong>{skill.title}</strong>
       <small>{skill.status==='new_context_choice'?(ru?'Выбор в новой ситуации':'New scenario choice')
+        :skill.status==='reported_attempt'?(ru?'Попробовал(а), по собственному сообщению':'Tried (self-reported)')
         :skill.status==='guided_attempt'?(ru?'Выбор с подсказкой':'Choice with hint')
         :skill.status==='introduced_only'?(ru?'Знакомство с навыком':'Introduced')
         :(ru?'Пока не оценивался':'Not assessed')}</small>
@@ -699,12 +700,15 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       <small className={styles.hint}>{t.journalHelp}</small>
       {isV4&&<small className={styles.symbolNotebookCue}>{t.symbolArtifact}: {lesson.practiceV4.artifact}</small>}</label>
     {completed?<p className={styles.saved}><CheckCircle2 size={18}/>{t.finished}</p>:
-      <button type="button" className="hh-primary" disabled={busy||paused} onClick={()=>submit('session',{
-        operationId:crypto.randomUUID(),day:cycle.day,lessonId:lesson.id,feedback,
-        beforeNow:beforeValue(beforeNow),afterNow:beforeValue(afterNow),reflection,
-      },()=>{
-        setExpanded('')
-      })}>{t.finish}<Check size={17}/></button>}
+      <>
+        <p className={styles.hint}>{ru
+          ? 'Урок дня завершается только после последнего слайда и подтверждения сохранения.'
+          : 'Today’s lesson is completed only after the final slide and a confirmed save.'}</p>
+        <button type="button" className="hh-primary" disabled={busy||paused}
+          data-open-complete-slide-lesson onClick={()=>setQuestOpen(true)}>
+          {ru?'Пройти все слайды урока':'Complete all lesson slides'}<ArrowRight size={17}/>
+        </button>
+      </>}
    </DailyCard>
   </>}
   </details>

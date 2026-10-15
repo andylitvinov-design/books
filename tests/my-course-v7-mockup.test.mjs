@@ -64,7 +64,8 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(playerCss,/object-fit:contain/)
   assert.match(playerCss,/\.welcomeChoices button\[aria-pressed=true\]/)
   assert.doesNotMatch(player,/key: 'pace', kind: 'pace'/)
-  assert.match(player,/slide\.kind === 'checkin' \? \(lesson\.antiStress \? goNext : \(\) => void saveCheckin\(\)\)/)
+  // Genuine NAV-2.0 OPORA lessons are practice-led, not a second daily questionnaire.
+  assert.match(player,/slide\.kind === 'checkin' \? \(lesson\.antiStress\|\|isOporaModule \? goNext : \(\) => void saveCheckin\(\)\)/)
   assert.match(player,/day:cycle\.day,lessonId:lesson\.id,operationId:sessionOp\.current/)
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
@@ -142,27 +143,20 @@ test('optional welcome advances without a write and explanation remains separate
  h.unmount()
 })
 
-test('V7 finish and promo skip call onFinish, while X calls onClose and neither creates another save',async()=>{
- for(const exit of ['finish','skip','close']){
-  const {h,calls,props}=playerFixture({promotion:{show:true,checkoutReady:false}})
+test('saved ordinary lessons return to the course without a repeated offer; X closes without another save',async()=>{
+ for(const exit of ['finish','close']){
+  const {h,calls}=playerFixture({promotion:{show:true,checkoutReady:false}})
   await toSave(h);primary(h).props.onClick();await h.settle()
   assert.equal(calls.sessions.length,1)
   primary(h).props.onClick();await h.settle()
-  assert.ok(nodes(h.tree).some(node=>node.props['data-course-reward-stage']==='xp'),'saved lesson first advances to the canonical XP/streak reward')
+  assert.ok(nodes(h.tree).some(node=>node.props['data-course-reward-stage']==='xp'))
   primary(h).props.onClick();await h.settle()
   assert.ok(nodes(h.tree).some(node=>node.props['data-course-completion-progress']!==undefined))
-  primary(h).props.onClick();await h.settle()
-  assert.ok(nodes(h.tree).some(node=>node.props['data-course-post-lesson-promo']!==undefined))
-  const promotionalLabel=h.tree.props['aria-label']
+  assert.equal(nodes(h.tree).some(node=>node.props['data-course-post-lesson-promo']!==undefined),false)
   if(exit==='finish')primary(h).props.onClick()
-  else if(exit==='skip')findButton(h.tree,'No thanks').props.onClick()
   else nodes(h.tree).find(node=>node.type==='button'&&node.props['aria-label']==='Return to my course').props.onClick()
   assert.equal(calls.finish,exit==='close'?0:1);assert.equal(calls.close,exit==='close'?1:0)
-  assert.equal(calls.sessions.length,1)
-  h.render({...props,promotion:{show:false}});await h.settle()
-  assert.notEqual(h.tree.props['aria-label'],promotionalLabel)
-  assert.ok(h.tree.props['aria-label'].includes('A little step forward!'))
-  h.unmount()
+  assert.equal(calls.sessions.length,1);h.unmount()
  }
 })
 
@@ -177,7 +171,8 @@ test('failed lesson saves do not earn an offer or completion and retries reuse t
  primary(h).props.onClick();await h.settle()
  assert.ok(nodes(h.tree).some(node=>node.props['data-course-reward-stage']==='xp'))
  primary(h).props.onClick();await h.settle()
- assert.ok(textOf(primary(h)).includes('See the Pro options'));h.unmount()
+ assert.equal(nodes(h.tree).some(node=>node.props['data-course-post-lesson-promo']!==undefined),false)
+ assert.ok(textOf(primary(h)).includes('Back to my learning path'));h.unmount()
 })
 
 test('V7 completion returns to the path and releases the exact presenter token; X preserves the current screen',async()=>{
