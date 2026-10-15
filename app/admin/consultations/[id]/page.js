@@ -3,6 +3,8 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { logout } from '@/app/admin/logout/actions'
 import { ConsultationResult as ResultScreen } from '@/components/consultation-result'
+import { SessionPhotoUploader } from '@/components/session-photo-uploader'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { revokeConsultationDocumentAction, reactivateConsultationDocumentAction } from '../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Documents ready', robots: { index: false, follow: false } }
@@ -19,5 +21,10 @@ export default async function ConsultationResult({ params }) {
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
     <ResultScreen clientId={recommendation.clientId} logout={logout} patientName={recommendation.patientName} dateIssued={recommendation.dateIssued} languagePreference={recommendation.languagePreference} documents={documents} />
+    {deliveryEnabled() && recommendation.clientId && recommendation.status==='active' &&
+      <div style={{maxWidth:850,margin:'22px auto'}}>
+        <SessionPhotoUploader clientId={recommendation.clientId} documentId={recommendation.id}
+          locale={recommendation.languagePreference==='ru'?'ru':'en'}/>
+      </div>}
   </main>
 }
