@@ -235,12 +235,12 @@ export function SimpleTestPicker({
         <h2>{c.promoTitle}</h2>
         <p>{c.promoText}</p>
         <a href="#hh-simple-topic-title" className={styles.promoAction}>{c.promoAction}<ArrowRight size={19} aria-hidden="true"/></a>
-        {!authenticated && <p className={styles.accessNote} data-prelogin-google-notice>
-          {c.accessNote}{' '}
-          <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
-        </p>}
       </div>
     </section>
+    {!authenticated && <p className={styles.accessNote} data-prelogin-google-notice>
+      {c.accessNote}{' '}
+      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
+    </p>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.topicHeading}>
