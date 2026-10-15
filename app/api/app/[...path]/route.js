@@ -48,6 +48,10 @@ import {
   readSavedDocument,
   removeSavedDocument,
 } from '@/lib/app/legacy-document-flow'
+import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession} from '@/lib/app/client-session-save-flow'
+import {deliveryEnabled} from '@/lib/clients/delivery-model'
+import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
+import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -225,6 +229,25 @@ async function handle(request, { params }) {
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         const opened = await authorizeReportViewer(config, store, body.selector, viewer)
         intent = await createReportSaveIntent(config, opened.grant, body.operationId)
+      } else if (body.sourceKind === 'client_session') {
+        if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
+        if(typeof body.selector!=='string')throw new AppError('SESSION_UNAVAILABLE',404)
+        const store=getPrescriptionStore()
+        if(!store?.findClientById)throw new AppError('SESSION_UNAVAILABLE',404)
+        let access
+        if(body.sourceId!==undefined){
+          requireUUID(body.sourceId)
+          const owner=await authorizeCabinetRequest(body.selector)
+          if(!owner?.client?.id)throw new AppError('SESSION_UNAVAILABLE',404)
+          await getPublishedClientSession(config,store,owner.client.id,body.sourceId)
+          access={clientId:owner.client.id,sessionId:body.sourceId,cabinetSelector:body.selector}
+        }else{
+          const opened=await authorizeSessionGuest(config,store,body.selector,
+            readSessionViewerCookie(request.cookies,body.selector))
+          access={clientId:opened.clientId,sessionId:opened.sessionId,
+            grantId:opened.grantId,grantVersion:opened.grantVersion}
+        }
+        intent=await createSessionSaveIntent(config,store,access,body.operationId)
       } else if (body.sourceKind === 'legacy_document') {
         if (typeof body.selector !== 'string') throw new AppError('DOCUMENT_UNAVAILABLE', 404)
         const store = getPrescriptionStore()
@@ -352,6 +375,11 @@ async function handle(request, { params }) {
         const store = getPrescriptionStore()
         if (!store?.findClientAssessment) throw new AppError('REPORT_UNAVAILABLE', 404)
         resource = await commitReportSaveIntent(config, store, actor, path[1], proof)
+      } else if(intent.sourceKind==='client_session'){
+        if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
+        const store=getPrescriptionStore()
+        if(!store?.findClientById)throw new AppError('SESSION_UNAVAILABLE',404)
+        resource=await commitSessionSaveIntent(config,store,actor,path[1],proof)
       } else if (intent.sourceKind === 'legacy_document') {
         const store = getPrescriptionStore()
         if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
@@ -407,6 +435,17 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await growth.command(actor, await readBody(request)))
       throw new AppError('NOT_FOUND', 404)
     }
+    if(path[0]==='saved-sessions' && path.length===2 && method==='GET'){
+      if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
+      const store=getPrescriptionStore()
+      const saved=await readSavedSession(config,store,actor,path[1])
+      return json({id:saved.id,savedAt:saved.savedAt,session:saved.session})
+    }
+    if(path[0]==='saved-sessions' && path.length===3 && path[2]==='remove' && method==='POST'){
+      if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
+      onlyKeys(await readBody(request),[])
+      return json(await removeSavedSession(config,actor,path[1]))
+    }
     if (joined === 'bootstrap' && method === 'GET') return json(await repo.bootstrap(actor))
     if (joined === 'personal-analysis-reports' && method === 'GET')
       return json(await listPersonalAnalysisReports(config, getPrescriptionStore(), actor))
@@ -457,6 +496,17 @@ async function handle(request, { params }) {
         }
       }
       exported.savedReports = savedReports
+      if(deliveryEnabled()){
+        const store=getPrescriptionStore()
+        const exportedSessions=[]
+        for(const row of exported.savedSessions||[]){
+          try{
+            const saved=await readSavedSession(config,store,actor,row.id,{markOpened:false})
+            exportedSessions.push({...row,available:true,session:saved.session})
+          }catch{exportedSessions.push({...row,available:false})}
+        }
+        exported.savedSessions=exportedSessions
+      }
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)

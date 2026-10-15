@@ -14,7 +14,7 @@ const words={
     kicker:'ОПОРА · АНТИСТРЕСС',eyebrow:'ВАШ РЕКОМЕНДОВАННЫЙ МАРШРУТ',
     title:'Рекомендуем начать с курса',route:'ОПОРА',day:'День 1 из 14',
     based:'Мы учли ваши ответы за последние 7 дней. Вы можете выбрать другой модуль.',
-    start:'Начать курс · День 1',starting:'Открываем занятие…',
+    start:'Начать курс · День 1',starting:'Открываем занятие…',reviewScales:'Далее · подтвердить шкалы',reviewFooterTitle:'Перед уроком 1 — ваши параметры',reviewFooterText:'Сначала проверьте предложенные шкалы, выберите важные для себя и подтвердите. Только после этого откроется первый урок.',
     modules:'Шесть этапов программы',modulesHint:'Рекомендуемый модуль уже выбран. При желании измените выбор одним нажатием.',
     recommended:'Рекомендуем',chosen:'Ваш выбор',reset:'Вернуться к рекомендации',
     results:'Результаты моего тестирования',resultsHint:'Свернуть / развернуть оценки',weekly:'Weekly Pulse · последние 7 дней',
@@ -49,7 +49,7 @@ const words={
     kicker:'OPORA · ANTI-STRESS',eyebrow:'YOUR RECOMMENDED STARTING POINT',
     title:'We recommend starting with',route:'Anti-Stress',day:'Day 1 of 14',
     based:'Based on your last seven days. You can always choose another module.',
-    start:'Start course · Day 1',starting:'Opening your lesson…',
+    start:'Start course · Day 1',starting:'Opening your lesson…',reviewScales:'Next · confirm focus scales',reviewFooterTitle:'Before Day 1 · your focus scales',reviewFooterText:'Review the scales suggested from your tests, adjust your priorities if needed, and confirm them before the first lesson opens.',
     modules:'All six programme courses',modulesHint:'Your recommended route is selected. Choose a different one if you prefer.',
     recommended:'Recommended',chosen:'Your choice',reset:'Use recommended module',
     results:'My assessment results',resultsHint:'Expand to see your scores',weekly:'Weekly Pulse · last 7 days',
@@ -84,7 +84,7 @@ const words={
     kicker:'OPORA · ANTIESTRÉS',eyebrow:'TU PUNTO DE PARTIDA RECOMENDADO',
     title:'Te recomendamos comenzar con',route:'Antiestrés',day:'Día 1 de 14',
     based:'Según tus respuestas de los últimos siete días. Puedes elegir otro módulo.',
-    start:'Comenzar curso · Día 1',starting:'Abriendo tu clase…',
+    start:'Comenzar curso · Día 1',starting:'Abriendo tu clase…',reviewScales:'Siguiente · confirmar escalas',reviewFooterTitle:'Antes del día 1 · tus escalas',reviewFooterText:'Revisa las escalas propuestas según tus pruebas, ajusta tus prioridades y confírmalas antes de abrir la primera clase.',
     modules:'Los seis cursos de la programa',modulesHint:'La ruta recomendada está seleccionada. Puedes cambiarla.',
     recommended:'Recomendado',chosen:'Tu elección',reset:'Volver a la recomendación',
     results:'Resultados de mis evaluaciones',resultsHint:'Desplegar las puntuaciones',weekly:'Weekly Pulse · últimos 7 días',
@@ -125,7 +125,7 @@ function savedWeekly(profile){
   if(relevant.some(row=>!row)||new Set(relevant.map(row=>row.resultId)).size!==1)return null
   return Object.fromEntries(ids.map((id,index)=>[id,relevant[index].score]))
 }
-export default function AntiStressModuleFinder({locale='en',profile,busy=false,onStart}){
+export default function AntiStressModuleFinder({locale='en',profile,busy=false,onStart,nextIsScaleReview=false}){
   const language=['ru','en','es'].includes(locale)?locale:'en',t=words[language]
   const [answers,setAnswers]=useState({})
   const [chosenRoute,setChosenRoute]=useState(null)
@@ -138,6 +138,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
   const recommended=ANTISTRESS_MODULE_GOALS.find(item=>item.id===recommendation.moduleId)
   const canStart=Boolean(weekly)&&chosen!=='AS4'&&!busy&&typeof onStart==='function'
   const clinicianNotice=language==='ru'?'Курс 4 проводится только при подтверждённом сопровождении квалифицированного специалиста; самостоятельный запуск недоступен.':language==='es'?'El curso 4 requiere acompañamiento profesional verificado; no se puede iniciar sin especialista.':'Course 4 needs verified qualified clinician support and cannot be started independently.'
+  const actionLabel=nextIsScaleReview?t.reviewScales:t.start
   const extraResults=(Array.isArray(profile?.scales)?profile.scales:[]).filter(item=>
     item.testKey!=='hh-weekly-pulse'&&item.recent&&Number.isFinite(item.score)&&
     Number.isFinite(item.min)&&Number.isFinite(item.max)).slice(0,8)
@@ -151,7 +152,7 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
   }
   const startButton=<button type="button" className={styles.cta} data-course-consent-module
     disabled={!canStart} onClick={startDayOne}>
-    <span>{busy?t.starting:t.start}</span><ArrowRight size={21} aria-hidden="true"/>
+    <span>{busy?t.starting:actionLabel}</span><ArrowRight size={21} aria-hidden="true"/>
   </button>
   return <section className={styles.root} data-course-module-finder data-opora-route-version={recommendation.version}>
     <section className={styles.recommendation} aria-label={t.title} aria-live="polite"
@@ -251,9 +252,9 @@ export default function AntiStressModuleFinder({locale='en',profile,busy=false,o
 
     <section className={styles.bottomStart} data-opora-bottom-start>
       <div><span className={styles.bottomEyebrow}>{t.day}</span>
-        <h3>{t.footerTitle}</h3><p>{t.footerText}</p></div>
+        <h3>{nextIsScaleReview?t.reviewFooterTitle:t.footerTitle}</h3><p>{nextIsScaleReview?t.reviewFooterText:t.footerText}</p></div>
       <button type="button" className={styles.cta} disabled={!canStart} onClick={startDayOne}>
-        <span>{busy?t.starting:t.start}</span><ArrowRight size={21} aria-hidden="true"/>
+        <span>{busy?t.starting:actionLabel}</span><ArrowRight size={21} aria-hidden="true"/>
       </button>
       {!weekly&&<small className={styles.unavailable}>{t.weekMissing}</small>}
       {chosen==='AS4'&&<small className={styles.unavailable}>{clinicianNotice}</small>}

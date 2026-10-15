@@ -33,14 +33,38 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
     },
     extraModules: modules(eligible), fetcher: () => assert.fail('Recovery must use the guarded parent callbacks'),
   })
-  return { h, calls, accepted, errors, retire: () => { active = false }, start: () => findPart(h.tree, 'AntiStressModuleFinder').props.onStart(selection) }
+  // The module choice is only a draft. Simulate the user's required
+  // explicit acceptance of 3 measured scales, or their chosen generic skill
+  // when no directionally eligible measurement exists.
+  const start = async () => {
+    const finder = findPart(h.tree, 'AntiStressModuleFinder')
+    if (!finder) return
+    finder.props.onStart(selection)
+    await h.settle()
+    const review = findPart(h.tree, 'CourseCompletionReview')
+    if (!review) return // e.g. account/course lifetime retired
+    if (eligible.length) return review.props.onSuggested()
+    await review.props.onAlternative()
+    await h.settle()
+    const picker = findPart(h.tree, 'CourseFocusPicker')
+    picker.props.onToggleGoal(programs.getCourseProgram('stress').primaryGoals[0])
+    await h.settle()
+    return findPart(h.tree, 'CourseFocusPicker').props.onContinue()
+  }
+  return { h, calls, accepted, errors, retire: () => { active = false }, start }
+}
+async function untilCalls(t, count) {
+  // An explicit scale-review screen now precedes the first POST. Allow
+  // state and guarded recovery microtasks to reach the test boundary.
+  for (let n = 0; n < 30 && t.calls.length < count; n++) await t.h.settle()
+  assert.equal(t.calls.length, count, 'Expected recovery boundary before retirement')
 }
 
  test('module start with no measured scales retains the explicit general-goal fallback and token lock', async () => {
   const slow = deferred(), t = ui(() => slow.promise, { eligible: [] })
   await t.h.settle()
   const first = t.start(), duplicate = t.start()
-  assert.equal(t.calls.length, 1)
+  await untilCalls(t, 1)
   assert.equal(t.calls[0].action, 'choose-goals')
   const payload = t.calls[0].body
   assert.deepEqual(Array.from(payload.goals), programs.getCourseProgram('stress').primaryGoals.slice(0, 1))
@@ -49,7 +73,7 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
   assert.equal(payload.moduleId, 'AS5')
   assert.equal(payload.consent, true)
   slow.resolve(started); await Promise.all([first, duplicate]); await t.h.settle()
-  assert.deepEqual(t.accepted, [started]); assert.deepEqual(t.errors, [''])
+  assert.deepEqual(t.accepted, [started]); assert.deepEqual(t.errors.filter(Boolean), [])
   assert.equal(t.h.calls.length, 0); t.h.unmount()
 })
 
@@ -67,7 +91,7 @@ for (const [name, responses, actions, succeeds] of [
     assert.deepEqual(Array.from(call.body.scaleKeys), scales.map(scale => scale.id))
   }
   assert.deepEqual(t.accepted, succeeds ? [started] : [])
-  assert.deepEqual(t.errors, succeeds ? [''] : ['', 'SERVICE_UNAVAILABLE'])
+  assert.deepEqual(t.errors.filter(Boolean), succeeds ? [] : ['SERVICE_UNAVAILABLE'])
   assert.equal(t.h.calls.length, 0); t.h.unmount()
 })
 
@@ -78,13 +102,13 @@ for (const delayedPhase of [0, 1, 2, 3]) test('retired selection stops after asy
     if (action === 'choose-goals') throw failure()
     return waiting
   })
-  await t.h.settle(); const pending = t.start(); await t.h.settle()
-  assert.equal(t.calls.length, delayedPhase + 1)
+  await t.h.settle(); const pending = t.start()
+  await untilCalls(t, delayedPhase + 1)
   t.retire(); t.h.unmount()
   slow.resolve(delayedPhase % 2 ? waiting : started)
   await pending
   assert.equal(t.calls.length, delayedPhase + 1, 'No further read or retry after retirement')
-  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors, [''])
+  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors.filter(Boolean), [])
 })
 
 test('an already stale module callback cannot clear errors, acquire busy state or send answers', async () => {
@@ -115,7 +139,7 @@ for (const response of [
   const t = ui((index) => { if (index === 0) throw failure(); return response })
   await t.h.settle(); await t.start()
   assert.deepEqual(t.calls.map(call => call.action), ['choose-goals', 'read'])
-  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors, ['', 'COURSE_STATE_CHANGED'])
+  assert.deepEqual(t.accepted, []); assert.deepEqual(t.errors.filter(Boolean), ['COURSE_STATE_CHANGED'])
   t.h.unmount()
 })
 
@@ -158,7 +182,9 @@ for (const change of ['owner', 'course', 'unmount']) test('real parent guards bi
     extraModules: modules(), fetcher: () => assert.fail('No raw fetch from the child'),
   })
   await child.settle()
-  const pending = findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
+  findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
+  await child.settle()
+  const pending = findPart(child.tree, 'CourseCompletionReview').props.onSuggested()
   await child.settle(); await parent.settle()
   assert.equal(posts, 1); assert.equal(recoveryReads, 1)
   const initialCalls = parent.calls.slice()
@@ -169,6 +195,6 @@ for (const change of ['owner', 'course', 'unmount']) test('real parent guards bi
   else if (change === 'course') await parent.backTo('?courseId=course-b')
   else parent.unmount()
   slow.resolve(started); await pending; await child.settle(); await parent.settle()
-  assert.equal(posts, 1); assert.deepEqual(accepted, []); assert.deepEqual(errors, [''])
+  assert.equal(posts, 1); assert.deepEqual(accepted, []); assert.deepEqual(errors.filter(Boolean), [])
   child.unmount(); parent.unmount()
 })

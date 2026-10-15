@@ -5,9 +5,10 @@ import {recommendAntistressModule} from '../lib/inner-growth/antistress-module-r
 
 const read = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8')
 
-test('the first post-test viewport is a recommendation with a real Day 1 action',()=>{
+test('the first post-test viewport is a recommendation that requires explicit scale confirmation before Day 1',()=>{
   const ui=read('components/app/antistress-module-finder.jsx')
   const root=read('components/app/my-course.jsx')
+  const steps=read('components/app/course-r3-steps.jsx')
   const sections=['data-module-recommendation','data-opora-route-picker',
     'data-opora-results','data-opora-skills','data-opora-bottom-start']
   for(let i=1;i<sections.length;i++){
@@ -19,6 +20,11 @@ test('the first post-test viewport is a recommendation with a real Day 1 action'
   assert.match(ui,/Comenzar curso · Día 1/)
   assert.equal((ui.match(/onClick=\{startDayOne\}/g)||[]).length,2)
   assert.match(ui,/data-course-consent-module/)
+  assert.match(ui,/nextIsScaleReview/)
+  assert.match(steps,/nextIsScaleReview onStart=\{reviewModuleScales\}/)
+  assert.match(steps,/data-course-scale-confirmation/)
+  assert.match(steps,/compactResults/)
+  assert.doesNotMatch(steps,/onStart=\{selection=>submitFocusSelection/)
   assert.match(ui,/disabled=\{!canStart\}/)
   assert.match(ui,/Boolean\(weekly\)/)
   assert.match(ui,/onStart\(\{/)

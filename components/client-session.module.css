@@ -399,3 +399,24 @@
   .cabinetBridgeLinks button{min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){.cabinetSessionPage *{scroll-behavior:auto}}
+
+/* Explicit, session-only Save to Google. Matches the signed-in Cabinet palette. */
+.saveSessionBox{margin:30px 0 18px;padding:clamp(18px,3vw,27px);border:1px solid #cddfcf;
+  border-radius:23px;background:linear-gradient(135deg,#f3f8ef,#fffdf8);box-shadow:0 6px 22px #344f3210}
+.saveSessionHeading{display:flex;gap:13px;align-items:flex-start}
+.saveSessionHeading>svg{flex:none;color:#43765f;margin-top:3px}
+.saveSessionHeading h2{font:600 clamp(22px,3.5vw,28px)/1.2 Georgia,serif!important;color:#403b33;margin:0 0 6px}
+.saveSessionHeading p{color:#6e7469;margin:0;font-size:15px;line-height:1.55}
+.saveSessionConsent{display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.5;
+  background:#fffefb;border:1px solid #dce4d8;border-radius:14px;padding:14px 15px;margin:17px 0 13px;cursor:pointer}
+.saveSessionConsent input{width:20px;height:20px;accent-color:#3f8062;flex:none;margin-top:1px}
+.saveSessionButton{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:49px;
+  padding:11px 18px;border-radius:13px;border:1px solid #ad4930;background:#b85036;color:white;
+  font-size:15px;font-weight:800;cursor:pointer}
+.saveSessionButton:disabled{opacity:.5;cursor:not-allowed}
+.saveSessionPrivacy{display:flex;gap:8px;align-items:flex-start;color:#6f7d6f;font-size:12px;line-height:1.5;margin:13px 0 0}
+.saveSessionPrivacy svg{flex:none;margin-top:2px}
+.saveSessionError{color:#9a3d2a;font-size:13px}
+.savedSessionBack{display:inline-flex;align-items:center;min-height:44px;padding:9px 12px;
+  border:1px solid #d8e3d2;border-radius:12px;color:#3c785f;text-decoration:none;font-size:14px;font-weight:750}
+@media(max-width:550px){.saveSessionBox{padding:17px}.saveSessionButton{width:100%}}
