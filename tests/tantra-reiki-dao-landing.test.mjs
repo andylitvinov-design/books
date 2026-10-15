@@ -27,7 +27,7 @@ test("real festival photos are restored to levels and visual gallery, not mislab
   const stageIds = [...stagePart.matchAll(/tantraReikiArchive\.images\.ru\[(\d+)\]/g)].map((x)=>Number(x[1]));
   assert.equal(stageIds.length, 9);
   assert.equal(new Set(stageIds).size, 9);
-  assert.deepEqual(stageIds.slice(0, 6), [17,18,19,20,21,22]);
+  assert.deepEqual(stageIds.slice(0, 6), [17,19,18,21,20,22], "Stages 2↔3 and 4↔5 exchange only their archived photographs");
   for (const index of stageIds) assert.doesNotMatch(images[index], /Screenshot_/);
   for (const index of [0,10,11]) assert.match(festival, new RegExp("images\\.ru\\[" + index + "\\]"));
   assert.doesNotMatch(reviews, /reviewImages|tantra-review-archive|tantra-review-gallery/);
