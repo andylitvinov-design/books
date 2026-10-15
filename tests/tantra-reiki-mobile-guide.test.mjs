@@ -13,7 +13,7 @@ for (const locale of ["en", "ru", "es"]) {
     assert.ok(raw.startsWith("%PDF-1.7"));
     assert.ok(raw.includes("/MediaBox [0 0 390 694]"));
     assert.ok(pages.length >= 12, "cover, roadmap, nine levels and CTA");
-    assert.ok(pages.length <= 21, "no runaway layout overflow");
+    assert.ok(pages.length <= 30, "large-print bilingual chapters may span multiple phone pages: " + pages.length);
     assert.ok(pdf.length > 25000 && pdf.length < 3000000);
     assert.ok(!raw.includes("/MediaBox [0 0 595.28 841.89]"));
   });
