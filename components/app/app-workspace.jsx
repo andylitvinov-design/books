@@ -504,7 +504,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <>
               <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
-                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded savedSessions={data.savedSessions || []} />}>
+                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />}>
                 <Portrait data={data} locale={locale} />
               </ProfileDomains>
               <PracticeEntry data={data} locale={locale} />
