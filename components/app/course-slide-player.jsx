@@ -338,6 +338,7 @@ export default function CourseSlidePlayer({
     setDayOneAnswers(previous=>{
       const next={...previous,[field]:value}
       if(field==='anchor'&&value!=='colour')delete next.anchorTone
+      if(field==='hintUsed'&&value==='yes'&&next.independent==='independent')delete next.independent
       if(field==='transferCue'&&['no_plan','skip'].includes(value))delete next.transferAction
       return next
     })
