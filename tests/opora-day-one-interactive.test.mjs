@@ -49,3 +49,15 @@ test('client and server wire day-one branching without disturbing older course v
   assert.ok(server.indexOf('const isInteractiveFirstDay=') < server.indexOf('const signals={'),
     'Validate first-day choices before constructing signals, including legacy V4 sessions')
 })
+
+test('every optional day-one response has a safe explicit decline or honest fallback', () => {
+  for (const [field, values] of Object.entries(DAY_ONE_ALLOWED)) {
+    if(field === 'focusId') {
+      assert.deepEqual(validateDayOneAnswers({focusId:'general'}),{focusId:'general'})
+      continue
+    }
+    assert.ok(values.includes('skip') || values.includes('unsure') ||
+      values.includes('no_plan') || values.includes('none'),
+      'No opt-out available for '+field)
+  }
+})
