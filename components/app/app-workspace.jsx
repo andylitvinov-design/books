@@ -54,6 +54,7 @@ import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
+import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
 
 import { appFetch } from '@/lib/app/client-fetch'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
@@ -504,7 +505,10 @@ export default function AppWorkspace({ locale, path = [] }) {
             <>
               <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
-                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded />}>
+                reportsContent={<>
+                  <SavedSessionsPanel items={data.savedSessions || []} locale={locale}/>
+                  <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded />
+                </>}>
                 <Portrait data={data} locale={locale} />
               </ProfileDomains>
               <PracticeEntry data={data} locale={locale} />
@@ -3060,6 +3064,12 @@ function HistoryView({ data, locale, reload }) {
       title: c.reportFromAndy,
       href: `/${locale}/app/reports/${report.id}`,
       note: `${c.saved}: ${dateLabel(report.savedAt, locale)}`,
+    })),
+    ...(data.savedSessions || []).map(session=>({
+      id:session.id,date:session.occurredOn+'T00:00:00.000Z',
+      title:locale==='ru'?'Сохранённая консультация':'Saved consultation',
+      href:'/'+locale+'/app/sessions/'+session.id,
+      note:(locale==='ru'?'Сохранено: ':'Saved: ')+dateLabel(session.savedAt,locale)
     })),
     ...(data.savedDocuments || []).map((document) => ({
       id: document.id,

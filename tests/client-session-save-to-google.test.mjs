@@ -16,7 +16,7 @@ test('individual session saving requires an explicit account-specific confirmati
 })
 test('guest save requires viewer cookie, and cabinet save reauthorizes exact Session ID',()=>{
   const api=source('app/api/app/[...path]/route.js')
-  assert.match(api,/readSessionViewerCookie\(request.cookies,body.selector\)/)
+  assert.match(api,/readSessionViewerCookie\(request.cookies,\s*body.selector\)/)
   assert.match(api,/authorizeSessionGuest\(config,store,body.selector/)
   assert.match(api,/authorizeCabinetRequest\(body.selector\)/)
   assert.match(api,/getPublishedClientSession\(config,store,owner.client.id,body.sourceId\)/)
@@ -31,7 +31,7 @@ test('account has its own session list, reader, independent PDF and per-file aut
   const client=source('components/client-session-page.jsx')
   assert.match(service,/sourceHash\(src\)!==intent.source_hash/)
   assert.match(service,/where app.saved_sessions.account_id=excluded.account_id/)
-  assert.match(service,/source_revision!==ref.source_revision/)
+  assert.match(service,/published_revision!==ref.source_revision/)
   assert.match(media,/await readSavedSession\(config,getPrescriptionStore\(\),actor,id/)
   assert.match(media,/privateMediaStream/)
   assert.match(pdf,/await readSavedSession\(config,store,actor,id/)
