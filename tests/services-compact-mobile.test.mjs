@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("three free entrances plus two personal services retain all original local EN/RU pages", () => {
+test("services starts with compact free tests and five image-left cards while all EN/RU routes remain", () => {
   const page = read("app/[locale]/services/page.tsx");
   const ui = read("components/services-solutions.tsx");
   const offers = read("data/core-service-offers.ts");
@@ -13,7 +13,15 @@ test("three free entrances plus two personal services retain all original local 
   assert.match(page, /<ServicesSolutions locale=/);
   assert.match(ui, /allOffers\.filter/);
   assert.match(ui, /visibleOffers\.map/);
-  assert.match(page, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
+  assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
+  assert.doesNotMatch(page, /<FreeInsightsPaths|<ServicesConversionHero/);
+  assert.ok(page.indexOf("<ServicesTestsIntro locale={locale as Locale} />") < page.indexOf("<ServicesSolutions locale={locale as Locale} />"), "Tests banner must precede service photos");
+  assert.ok(page.indexOf("<ServicesSolutions locale={locale as Locale} />") < page.indexOf("<ServiceCart locale={locale as Locale} />"), "Services photos must be ahead of booking cart");
+  assert.match(ui, /: allOffers;/);
+  assert.match(ui, /styles\.home, !isHome \? styles\.servicesPage/);
+  assert.match(read("components/services-tests-intro.tsx"), /href: "\/en\/client\/tests"/);
+  assert.match(read("components/services-tests-intro.tsx"), /href: "\/ru\/client\/tests"/);
+  assert.match(read("components/services-tests-intro.tsx"), /href: "\/es\/client"/);
   for (const key of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + key + '"'), key);
   for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
@@ -34,7 +42,7 @@ test("homepage restores photo-left four services while keeping tests and Academy
   const home = read("components/holistic-house-home.tsx");
   const css = read("app/holistic-house-home.css");
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
-  assert.match(read("components/services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
+  assert.ok(read("components/services-solutions.tsx").includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.match(home, /event="self_check_start"/);

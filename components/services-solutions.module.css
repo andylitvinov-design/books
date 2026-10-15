@@ -265,3 +265,21 @@
 .card[data-core-service-id="business"] .cardLabel,.card[data-core-service-id="business"] .cardBenefit{color:#61364f}
 .card[data-core-service-id="business"] .cardCta{background:#7d2d4c}
 .card[data-core-service-id="business"] .cardCta:hover{background:#61213a}
+
+/* Services restores the same approved photo-left card proportions as Home, not the old text-only panels. */
+.servicesPage { background:linear-gradient(125deg,#fbfaf7,#f3f6f9 82%);border-color:#dbe3ea;margin-top:14px; }
+.servicesPage .card { min-height:198px; }
+.servicesPage .cardBenefit { display:none; }
+.servicesPage .header { max-width:790px; }
+.servicesPage .eyebrow { color:#496b86; }
+.servicesPage .header h2 { color:#243e60;font-size:clamp(31px,3.7vw,45px); }
+.servicesPage .intro {color:#566b7b;max-width:760px;}
+.servicesPage .cardCta { background:#243e62; }
+.servicesPage .cardCta:hover { background:#182f50; }
+.servicesPage .card[data-core-service-id="business"] .cardCta {background:#782e4b}
+@media(max-width:760px) {
+ .servicesPage {margin-top:10px;padding:17px 12px 14px}
+ .servicesPage .card {min-height:174px}
+ .servicesPage .header h2 {font-size:clamp(29px,7.6vw,36px)}
+ .servicesPage .card:first-child {min-height:185px}
+}

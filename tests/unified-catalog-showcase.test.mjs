@@ -6,7 +6,7 @@ import test from "node:test";
 const root = process.cwd();
 const read = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("Services keeps three free paths while Home restores four illustrated offers", () => {
+test("Services leads with free tests and five photo cards while Home preserves four offers", () => {
   const services = read("app", "[locale]", "services", "page.tsx");
   const home = read("components", "holistic-house-home.tsx");
   const solutions = read("components", "services-solutions.tsx");
@@ -14,8 +14,9 @@ test("Services keeps three free paths while Home restores four illustrated offer
   const library = read("components", "library-hub.tsx");
   assert.match(services, /<ServicesSolutions locale=/);
   assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home"/);
-  assert.match(solutions, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
-  assert.match(services, /<FreeInsightsPaths locale=\{locale as Locale\} \/>/);
+  assert.ok(solutions.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
+  assert.ok(services.includes("<ServicesTestsIntro locale={locale as Locale} />"));
+  assert.doesNotMatch(services, /<FreeInsightsPaths/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.doesNotMatch(services, /<CatalogShowcase/);
   assert.match(academy, /CatalogShowcase/);

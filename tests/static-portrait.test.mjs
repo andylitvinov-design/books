@@ -25,10 +25,13 @@ test('responsive portrait preserves Next layout, alt, sizes, priority and lazy l
  assert.throws(()=>StaticPortrait({src:'/other.png',alt:'',width:20,height:20}),/verified portrait/);
 });
 
-test('only five observed public Home/Services instances switch to static responsive portrait',()=>{
- const files=['components/holistic-house-home.tsx','components/services-conversion-hero.tsx','app/es/page.tsx','app/es/services/page.tsx'];let count=0;
+test('approved live Home uses real static portraits without restoring oversized Services hero',()=>{
+ const files=['components/holistic-house-home.tsx','app/es/page.tsx'];let count=0;
  for(const f of files){const s=readFileSync(f,'utf8');count+=(s.match(/<StaticPortrait\b/g)||[]).length;assert.ok(s.includes('/images/holistic-house/andy-about.png'));}
- assert.equal(count,5);
+ assert.equal(count,3);
+ const services=readFileSync("app/es/services/page.tsx","utf8");
+ assert.ok(services.includes("className={offerStyles.photo}"));
+ assert.ok(services.includes("data-es-services-photo-cards"));
 });
 
 test('only new public artwork folders are excluded from function tracing',()=>{
