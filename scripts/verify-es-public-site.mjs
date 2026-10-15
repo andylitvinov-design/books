@@ -134,6 +134,20 @@ try {
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Client-entry overflow: '+language);
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
+        stage=`${engine} ${width} Spanish account navigation`;
+        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
+        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
+        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
+        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
+        // Same-CSP SPA navigation preserves the existing root document locale.
+        // A direct account load must have its own correct server-rendered locale.
+        await page.reload(); await settle();
+        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page.locator('html')).toHaveAttribute('lang','en');
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -163,7 +177,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six shared Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

@@ -13,7 +13,7 @@ test("home presents four photo-left offer cards before videos", () => {
   assert.ok(cards > 0 && video > cards);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
-  assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers : personalOffers/);
+  assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer.id !== "business"\) : personalOffers/);
 });
 
 test("Services leads with three free entrances plus two personal services, without prices in the overview", () => {

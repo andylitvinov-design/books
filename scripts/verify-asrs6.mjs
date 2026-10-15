@@ -112,7 +112,7 @@ function collectCourseLinkContext(links) {
 // A generic optional banner is separate from ASRS score-derived guidance.
 function assertCourseLinkBoundary(links, locale) {
   assert.equal(links.length, 1, 'ASRS reports permit only the single optional banner course link')
-  assert.equal(links[0].href, '/' + locale + '/app/course', 'The optional course link must use the report language')
+  assert.equal(links[0].href, '/' + locale + '/app/course?program=stress', 'The optional course link must use the report language and the reviewed Anti-Stress programme')
   assert.equal(links[0].insideBanner, true, 'No ASRS score-derived course recommendation is permitted')
   assert.equal(links[0].insideScore, false, 'The generic course banner must remain outside scored articles')
 }
@@ -144,7 +144,7 @@ async function assertReport(target, definition, locale, expected) {
   const banner = report.locator('[data-free-course-banner]')
   await expect(banner).toHaveCount(1)
   await expect(banner).toBeVisible()
-  await expect(banner.locator('a[href="/' + locale + '/app/course"]')).toBeVisible()
+  await expect(banner.locator('a[href="/' + locale + '/app/course?program=stress"]')).toBeVisible()
   await expect(banner.locator('details')).toHaveAttribute('open', '')
   await expect(banner).toContainText(locale === 'ru' ? 'Следующий шаг — по желанию' : 'An optional next step')
   await expect(banner).toContainText(locale === 'ru' ? 'требуют вашего согласия' : 'requires your consent')

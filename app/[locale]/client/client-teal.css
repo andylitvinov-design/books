@@ -15,3 +15,16 @@
  .client-entry-shell .house-wordmark{font-size:clamp(20px,5.5vw,25px)}
  .client-entry-shell .house-wordmark span{font-size:9px}
 }
+
+
+/* Deep navy + burgundy brand accents for the public test selection page only. */
+.client-entry-shell{background:linear-gradient(165deg,#fffaf6 0%,#f8f8f7 52%,#fcfaf8 100%);color:#193d56}
+.client-entry-shell .house-header{background:#fffefa;border-bottom-color:#dfe4e7}
+.client-entry-shell .house-wordmark{color:#173c53}
+.client-entry-shell .house-wordmark span{color:#738391}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link{background:#873e54;border:1px solid #723247;color:#fff}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link:hover{background:#722e45;color:#fff}
+.client-entry-shell .cabinet-signin-hero{border-color:#dfe2e5;background:linear-gradient(135deg,#fffdfa,#f7f6f5)}
+.client-entry-shell .cabinet-signin-hero :is(h2,h3){color:#183c55}
+.client-entry-shell .cabinet-signin-hero p{color:#617688}
+.client-entry-shell .cabinet-signin-hero :is(button,a):focus-visible{outline-color:#873e54}

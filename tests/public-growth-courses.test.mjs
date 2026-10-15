@@ -21,10 +21,10 @@ test('public course pages offer a free start with real 14-day program IDs and pr
     readFile('components/public-growth-courses.module.css', 'utf8'),
   ]);
   assert.match(landing, /data-public-my-courses/);
-  assert.match(landing, /const programmeIds = \["stress", "confidence", "focus"\]/);
+  assert.match(landing, /const programmeIds = \["stress"\]/);
   assert.match(landing, /\/app\/course/);
-  assert.match(landing, /\?program=\$\{id\}/);
-  assert.match(landing, /\?entry=personal/);
+  assert.match(landing, /\?program=stress/);
+  assert.doesNotMatch(landing, /\?entry=personal/);
   assert.match(landing, /Start for free/);
   assert.match(landing, /Начать бесплатно/);
   assert.match(enRu, /generateMetadata/);
@@ -75,4 +75,10 @@ test('OPORA methodology page is linked, localized, accessible and evidence-hones
   for (const locale of ['ru','en','es']) assert.match(sitemap, new RegExp('/' + locale + '/courses/methodology'));
   assert.match(methodology, /Авторство Holistic House/);
   assert.match(methodology, /Доказанность компонентов/);
+});
+
+ test('all public course locales are explicitly registered in the sitemap', async () => {
+  const sitemap = await readFile('app/sitemap.ts', 'utf8');
+  const publicPaths = sitemap.match(/const publicPaths = \[([^;]+)\];/)[1];
+  for (const locale of ['en', 'ru', 'es']) assert.ok(publicPaths.includes(`'/${locale}/courses/antistress'`));
 });

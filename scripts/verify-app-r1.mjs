@@ -2,6 +2,8 @@ import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
+import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
+import {installTestPlanNavigationDiagnostics} from './test-plan-navigation-diagnostics.mjs'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -11,9 +13,27 @@ const output='artifacts/app-r1'
 await mkdir(output,{recursive:true})
 const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{}),context=await browser.newContext({viewport:{width:390,height:844}}),errors=[]
+// Synthetic-only diagnostics preserve the readiness assertion. Never log
+// request headers, bodies, query strings, cookies, or auth handoff URLs.
+const pendingRequests=new Map()
+context.on('request',request=>{const url=new URL(request.url());if(url.origin===origin)pendingRequests.set(request,{path:url.pathname,type:request.resourceType()})})
+context.on('response',response=>{const value=pendingRequests.get(response.request());if(value)value.status=response.status();const url=new URL(response.url());if(url.origin===origin&&url.pathname==='/api/app/billing/status')console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify({kind:'response-headers',at:Date.now(),path:url.pathname,status:response.status()}))})
+context.on('requestfinished',request=>pendingRequests.delete(request))
+context.on('requestfailed',request=>{
+ const diagnostic=billingStatusRequestDiagnostic(origin,request)
+ if(diagnostic)console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify(diagnostic))
+ pendingRequests.delete(request)
+})
+await context.exposeBinding('__hhBillingStatusDiagnostic',(_source,event)=>{
+ const kinds=['request-start','signal-abort','pagehide','beforeunload','visibilitychange']
+ if(event&&kinds.includes(event.kind)&&event.path==='/api/app/billing/status'&&typeof event.at==='number'&&typeof event.pagePath==='string'&&/^\/[a-zA-Z0-9/_-]*$/.test(event.pagePath)&&['visible','hidden'].includes(event.visibility))
+  console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify(event))
+})
+await context.addInitScript(installBillingStatusLifecycleDiagnostics)
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message)}
+const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
 page.on('pageerror',capturePageError)
+const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
 function passed(name){checks.push(name);console.log('PASS '+name)}
 /**
@@ -54,6 +74,7 @@ async function ready(){
    await page.waitForLoadState('networkidle')
    return
   } catch(error) {
+   console.log('SYNTHETIC_READINESS_PENDING_REQUESTS',JSON.stringify([...pendingRequests.values()]))
    if(attempt===2)throw error
    // The isolated actor can hit its genuine sliding quota during hundreds of
    // synthetic test answers. Only retry a signed-in app error, never weaken the
@@ -123,6 +144,8 @@ async function chooseSinglePublicTest(target,name){
  await expect(checked).toHaveAttribute('aria-label',name)
 }
 async function enterTest(name='Current State Check',mode='Guided'){
+ testPlanDiagnostics.marker('enter-test-begin')
+ try {
  await page.goto(origin+'/en/app/tests');await ready()
  if(await page.locator('[data-saved-test]').count()){
   await expect(page.locator('#my-tests-list')).toBeVisible()
@@ -136,13 +159,19 @@ async function enterTest(name='Current State Check',mode='Guided'){
   const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
   if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
   await chooseVisibleTest(page,name)
+  testPlanDiagnostics.marker('before-selection-click')
   await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  testPlanDiagnostics.marker('after-selection-click')
   await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
   await expect(page.locator('#my-tests-list')).toBeVisible()
+  testPlanDiagnostics.marker('saved-list-visible')
  }
  await expect(candidate()).toBeVisible({timeout:15000})
+ testPlanDiagnostics.marker('before-start-click')
  await candidate().getByRole('button',{name:/^(Start test|Continue test|Retake test)/}).click()
+ testPlanDiagnostics.marker('after-start-click')
  await expect(page).toHaveURL(/\/runs\//)
+ testPlanDiagnostics.marker('run-url-observed')
  await expect(page.locator('.hh-runner')).toBeVisible()
  // My Tests opens the first question immediately; the optional guided mode stays inside the runner.
  await expect(page.locator('.hh-test-mode-picker')).toHaveCount(0)
@@ -152,6 +181,12 @@ async function enterTest(name='Current State Check',mode='Guided'){
   await page.locator('.hh-test-mode-toggle').getByRole('button',{name:/Guided/}).click()
   await expect(page.locator('.hh-runner-question, .hh-runner-complete').first()).toBeVisible()
  }else await expect(page.locator('.hh-quick-form')).toBeVisible()
+ } catch(error) {
+  testPlanDiagnostics.marker('enter-test-failed')
+  throw error
+ } finally {
+  testPlanDiagnostics.marker('enter-test-end')
+ }
 }
 async function savedClick(button){
  // Keep this long synthetic journey below the unchanged account request quota.
@@ -209,6 +244,30 @@ async function assertPublicViewportFits(target,label){
    return {document:{width:viewport,htmlScroll:document.documentElement.scrollWidth,bodyScroll:document.body.scrollWidth},byExcess,byRight}
   })
   console.error('PUBLIC_OVERFLOW_GEOMETRY',label,JSON.stringify(offenders))
+ }
+ if(scroll>width+1){
+  // Failure-only evidence from this loopback public-service fixture. Never
+  // inspect account state, field values, storage, or private routes here.
+  const pathname=new URL(target.url()).pathname
+  assert.match(pathname,/^\/(en|ru)\/services\/(dao-health-profile|alchemy-of-soul|hypnotherapy-course)$/)
+  const diagnostic=await target.evaluate(()=>({
+   viewport:innerWidth,document:document.documentElement.scrollWidth,
+   nodes:Array.from(document.querySelectorAll('header,nav,main,section,article,h1,h2,h3,p,li,a,button,details,summary,figure')).flatMap(el=>{
+    const rect=el.getBoundingClientRect(),style=getComputedStyle(el)
+    if(!rect.width||!rect.height||style.display==='none'||style.visibility==='hidden')return[]
+    const range=document.createRange();range.selectNodeContents(el)
+    const textRect=range.getBoundingClientRect()
+    if(rect.right<=innerWidth+1&&rect.left>=-1&&el.scrollWidth<=el.clientWidth+1&&textRect.right<=innerWidth+1)return[]
+    return [{tag:el.tagName,className:el.className,text:(el.textContent||'').trim().slice(0,120),
+     bounds:{left:rect.left,right:rect.right,width:rect.width},textRight:textRect.right,
+     scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+     display:style.display,whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,
+     minWidth:style.minWidth,flexWrap:style.flexWrap,flexShrink:style.flexShrink,fontSize:style.fontSize}]
+   }).slice(0,80),
+  }))
+  const stem='public-overflow-'+label.replace(/[^a-z0-9-]+/gi,'-')
+  await writeFile(output+'/'+stem+'.json',JSON.stringify({pathname,label,...diagnostic},null,2))
+  await screenshotEvidence(target,{path:output+'/'+stem+'.png',fullPage:true}).catch(error=>console.log('PUBLIC_OVERFLOW_SCREENSHOT_FAILED',error.message))
  }
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
@@ -471,7 +530,7 @@ try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
- await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:'Choose your tests',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
  await expect(page.getByRole('button',{name:/^Choose tests/}).first()).toBeInViewport();await expect(page.getByRole('button',{name:/Open test filters/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
@@ -880,7 +939,10 @@ try {
  // It must still be present after the public selector adds another test.
  const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
- await page.goto(origin+'/en/app/settings');await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ const settingsResponse=await page.goto(origin+'/en/app/settings')
+ assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
+ await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 

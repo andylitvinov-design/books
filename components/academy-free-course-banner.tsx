@@ -6,42 +6,42 @@ import styles from "./academy-free-course-banner.module.css";
 const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · FREE SELF-GUIDED COURSE",
-    title: "Free psychological support & personal growth course",
-    description: "Choose what matters now — stress, confidence or concentration. Start with a few check-in tests, then explore 14 days of small, practical exercises at your own pace.",
+    title: "OPORA Stress Relief — free 14-day course",
+    description: "Fourteen gentle lessons and seven practical skills for managing everyday stress. Optional check-ins and short exercises, at your own pace.",
     duration: "14 days",
     daily: "5–12 min a day",
-    cta: "Start my free course",
+    cta: "Start my free course", learn: "Learn about the course",
     note: "Your choices and progress are only saved with your consent.",
     caution: "Self-guided education and support, not a diagnosis, psychotherapy or emergency care.",
     visualTitle: "A small step every day",
     visualDays: "DAYS",
-    visualSteps: ["Choose a focus", "Check your starting point", "Build your daily practice"],
+    visualSteps: ["Check in gently", "Choose your focus", "Practise each day"],
   },
   ru: {
     eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНЫЙ КУРС",
-    title: "Бесплатный курс психокоррекции и поддержки",
-    description: "Выберите то, что важно сейчас: снижение стресса, уверенность или концентрация. Пройдите тесты для оценки исходного состояния и начните 14 дней коротких практик в своём темпе.",
+    title: "ОПОРА — Антистресс · бесплатный курс на 14 дней",
+    description: "Четырнадцать занятий и семь навыков саморегуляции повседневного стресса. Необязательные замеры и короткие упражнения в вашем темпе.",
     duration: "14 дней",
     daily: "5–12 мин в день",
-    cta: "Начать бесплатный курс",
+    cta: "Начать бесплатный курс", learn: "Подробнее о курсе",
     note: "Ваш выбор и прогресс сохраняются только с вашего согласия.",
     caution: "Самостоятельная программа поддержки, не диагностика, психотерапия или экстренная помощь.",
     visualTitle: "Маленький шаг каждый день",
     visualDays: "ДНЕЙ",
-    visualSteps: ["Выбрать тему", "Пройти тесты", "Практиковать ежедневно"],
+    visualSteps: ["Отметить своё состояние", "Выбрать личный фокус", "Практиковать ежедневно"],
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · CURSO GRATUITO",
-    title: "Curso gratuito de apoyo psicológico y crecimiento personal",
-    description: "Elige lo que más te importa: estrés, confianza o concentración. Realiza una evaluación inicial con cuestionarios y explora 14 días de prácticas breves a tu propio ritmo.",
+    title: "OPORA Antiestrés — curso gratuito de 14 días",
+    description: "Catorce lecciones y siete habilidades para afrontar el estrés cotidiano, con cuestionarios opcionales y prácticas breves a tu ritmo.",
     duration: "14 días",
     daily: "5–12 min al día",
-    cta: "Empezar gratis",
+    cta: "Empezar gratis", learn: "Conocer el curso",
     note: "El curso se abrirá en inglés. Tus datos solo se guardan con tu consentimiento.",
     caution: "Aprendizaje y apoyo autónomo; no sustituye el diagnóstico, la psicoterapia ni la atención urgente.",
     visualTitle: "Un pequeño paso cada día",
     visualDays: "DÍAS",
-    visualSteps: ["Elegir un tema", "Evaluar el inicio", "Practicar cada día"],
+    visualSteps: ["Observar tu estado", "Elegir tu enfoque", "Practicar cada día"],
   },
 } as const;
 
@@ -61,9 +61,10 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
           <span><Clock3 aria-hidden="true" size={17} />{t.daily}</span>
         </div>
         <div className={styles.actions}>
-          <Link href={`/${courseLocale}/app/course`} prefetch={false} className={styles.cta}>
+          <Link href={`/${courseLocale}/app/course?program=stress`} prefetch={false} className={styles.cta}>
             {t.cta}<ArrowRight aria-hidden="true" size={19} />
           </Link>
+          <Link href={"/" + locale + "/courses/antistress"} className={styles.learn}>{t.learn}<ArrowRight aria-hidden="true" size={16} /></Link>
           <span className={styles.note}>{t.note}</span>
         </div>
         <p className={styles.caution}>{t.caution}</p>

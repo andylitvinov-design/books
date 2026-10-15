@@ -43,7 +43,7 @@ for (const locale of ['en', 'ru']) {
     assert.equal(nodes.filter(node => node.type === 'h3').length, 1)
     const links = nodes.filter(node => node.type === Link)
     assert.equal(links.length, 1)
-    assert.equal(links[0].props.href, '/' + locale + '/app/course')
+    assert.equal(links[0].props.href, '/' + locale + '/app/course?program=stress')
     assert.equal(links[0].props.prefetch, false)
     assert.match(text(links[0]), locale === 'ru' ? /Начать курс бесплатно/ : /Start course for free/)
     const details = nodes.find(node => node.type === 'details')
@@ -64,7 +64,7 @@ for (const locale of ['en', 'ru']) {
 test('default and unsupported locale safely use the English route and copy', () => {
   for (const props of [{}, { locale: 'es' }, { locale: '../../admin' }, { locale: null }]) {
     const tree = FreeCourseBanner(props)
-    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course')
+    assert.equal(elements(tree).find(node => node.type === Link).props.href, '/en/app/course?program=stress')
     assert.match(text(tree), /An optional next step/)
   }
 })
@@ -234,7 +234,7 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
     const report = element('section', { 'data-personal-result-report': '' }, outer)
     const score = element('article', {}, report)
     const banner = element('aside', { 'data-free-course-banner': '' }, report)
-    const link = element('a', { href: '/' + locale + '/app/course' }, banner)
+    const link = element('a', { href: '/' + locale + '/app/course?program=stress' }, banner)
     const valid = collect([link])
     assert.equal(link.closest('article'), outer)
     assert.equal(valid[0].insideScore, false)
@@ -246,9 +246,9 @@ test('ASRS browser DOM boundary ignores the outer page article and rejects inner
       assert.throws(() => check(collect([link, badLink]), locale), /single optional banner/)
     }
     const nestedBanner = element('aside', { 'data-free-course-banner': '' }, score)
-    const nestedLink = element('a', { href: '/' + locale + '/app/course' }, nestedBanner)
+    const nestedLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, nestedBanner)
     assert.throws(() => check(collect([nestedLink]), locale), /outside scored articles/)
-    const footerLink = element('a', { href: '/' + locale + '/app/course' }, report)
+    const footerLink = element('a', { href: '/' + locale + '/app/course?program=stress' }, report)
     assert.throws(() => check(collect([footerLink]), locale), /score-derived course recommendation/)
   }
 })

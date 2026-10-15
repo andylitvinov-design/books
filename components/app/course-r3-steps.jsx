@@ -7,6 +7,7 @@ import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-tes
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
+import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
 import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales } from '@/lib/inner-growth/course-programs'
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
@@ -15,6 +16,7 @@ import styles from './course-r3-steps.module.css'
 
 const UI = {
   en: {
+    presetTag: 'Fixed', presetFixed: 'Fixed set for this programme', presetTestIntro: 'These five tests are already selected for your course. Confirm the list, complete only any missing tests, and then choose your focus from real measured scales.',
     focusTitle: 'Which areas matter to you?', focusHint: 'Choose one or several areas. You can also describe your concern in your own words.',
     optional: 'Describe my situation (optional)', describe: 'A few words about my concern (optional)',
     example: 'For example, I want to feel calmer in conversations and more supported.',
@@ -22,7 +24,7 @@ const UI = {
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
     testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
-    programmeLabel: 'Your chosen course', programmeBattery: 'Starter tests for this programme',
+    programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) and GAD-7 (7 items); Resource Pulse is optional. Russian GAD-7 is a separate, not independently validated translation.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
     showMore: 'Add or remove more tests', showLess: 'Show the five suggestions',
@@ -65,6 +67,7 @@ const UI = {
     relativePriority: 'within-scale priority', noMedical: 'For education and self-observation; not diagnosis or psychotherapy.',
   },
   ru: {
+    presetTag: 'Входит', presetFixed: 'Фиксированный набор для этой программы', presetTestIntro: 'Для этого курса заранее выбрано пять тестов. Подтвердите их, пройдите только недостающие и выберите направления по реальным измеренным шкалам.',
     focusTitle: 'С какими сферами хотите работать?', focusHint: 'Выберите одну или несколько сфер. Если хотите, дополнительно опишите проблему своими словами.',
     optional: 'Описать ситуацию (по желанию)', describe: 'Несколько слов о моей ситуации (по желанию)',
     example: 'Например: хочу спокойнее общаться и чувствовать больше внутренней опоры.',
@@ -72,7 +75,7 @@ const UI = {
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
     testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
-    programmeLabel: 'Ваш курс', programmeBattery: 'Стартовые тесты программы',
+    programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) + GAD-7 (7 вопросов), тест опоры — по желанию. Русский перевод GAD-7 не валидирован отдельно.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
     showMore: 'Добавить или убрать другие тесты', showLess: 'Показать только пять первых',
@@ -119,21 +122,22 @@ const formatDate=(date,locale)=>{
   try { return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':'en-CA',{dateStyle:'medium'}).format(new Date(date)) }
   catch { return '' }
 }
-async function saveExistingAccountPlan(items) {
+async function saveExistingAccountPlan(items, accountId) {
   const response=await fetch('/api/app/test-plans',{
     method:'POST',credentials:'same-origin',cache:'no-store',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-HH-Account-ID':accountId},
     body:JSON.stringify({items,operationId:crypto.randomUUID(),appendActive:true,replaceActive:false}),
   })
-  const result=await response.json().catch(()=>({}))
-  if(!response.ok) throw new Error(result.error||'TEST_PLAN_UNAVAILABLE')
+  const result=await response.json()
+  if(!response.ok||result?.error) throw new Error(result.error||'TEST_PLAN_UNAVAILABLE')
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
+  const preset=getCoursePreset(current.presetId)
   const [concerns,setConcerns]=useState(current.concerns||'')
   const [focusTags,setFocusTags]=useState(current.focusTags||[])
   const [chosenTests,setChosenTests]=useState([])
@@ -149,28 +153,41 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [openingTest,setOpeningTest]=useState(false)
   const [showCompletedOptions,setShowCompletedOptions]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
-  const programme=useMemo(()=>courseProgramFromTopics(current.focusTags||[]),[current.focusTags])
-  const ranked=useMemo(()=>orderCourseProgramTests(courseRecommendedTests({
-    // A written concern may be the only confirmed request. Derive its
-    // descriptive topic tags locally when no explicit sectors were selected.
-    focusTags:current.focusTags?.length ? current.focusTags
-      : suggestedCourseTopics(current.concerns||'').topics,
-    results:data.results||[],locale,
-  }),programme?.id),[current.focusTags,current.concerns,data.results,locale,programme?.id])
+  const programme=useMemo(()=>preset?null:courseProgramFromTopics(current.focusTags||[]),[current.focusTags,preset])
+  const ranked=useMemo(()=>{
+    const options=orderCourseProgramTests(courseRecommendedTests({
+      // Personal courses keep their editable relevance-ranked shortlist.
+      focusTags:current.focusTags?.length ? current.focusTags
+        : suggestedCourseTopics(current.concerns||'').topics,
+      results:data.results||[],locale,
+    }),programme?.id)
+    if (!preset) return options
+    const choices=new Map(options.map(test=>[test.key,test]))
+    // Fixed published battery: no opportunistic dynamic substitutions.
+    return preset.testKeys.map(key=>choices.get(key)).filter(Boolean)
+  },[current.focusTags,current.concerns,data.results,locale,preset,programme?.id])
   const profile=useMemo(()=>courseMeasuredProfile({
     results:data.results||[],testKeys:current.testKeys||[],locale,
   }),[data.results,current.testKeys,locale])
   const confirmed=(current.testKeys||[]).length>0
-  const confirmedKeys=current.testKeys||[]
+  const confirmedKeys=useMemo(()=>current.testKeys||[],[current.testKeys])
   const optionByKey=new Map(ranked.map(item=>[item.key,item]))
   const savedCount=assessment.completedSelectedCount||0
   const confirmedStatuses=assessment.selectedTests||[]
   const pending=confirmedStatuses.filter(item=>!item.completed)
   const minScales=Math.min(3,profile.eligible.length)
-  const suggestedScales=useMemo(()=>programme
-    ? suggestCourseProgramScales(profile,programme.id,3) : courseSuggestedFocus(profile,3),[profile,programme])
+  const suggestedScales=useMemo(()=>preset
+    ? coursePresetSuggestedScales(profile,preset.id,3)
+    : programme ? suggestCourseProgramScales(profile,programme.id,3) : courseSuggestedFocus(profile,3),[profile,preset,programme])
 
 
+  const ensureCurrent=()=>{if(!isCourseCurrent())throw new Error('COURSE_SELECTION_CHANGED')}
+  const boundRequest=async(path,body)=>{
+    ensureCurrent()
+    const result=await appFetch(path,body,undefined,{accountId:data.account.id})
+    ensureCurrent()
+    return result
+  }
   const courseTimeZone=()=>{
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
     catch { return 'UTC' }
@@ -195,8 +212,8 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
       const firstSelected=profile.eligible.find(item=>isMeasured && keys.includes(item.id))?.label
       const label=(problemLabel.trim() || firstSelected || (ru?'Моё ежедневное наблюдение':'My daily observation')).slice(0,160)
-      const result=await appFetch('course',{
-        action:'choose-goals',expectedRevision:revision,
+      const result=await onCourseCommand('choose-goals',{
+        expectedRevision:revision,
         ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
@@ -234,11 +251,12 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     onError('')
     try {
       // A fresh, owner-scoped read is authoritative after edits in another tab.
-      const fresh=await appFetch('course')
+      const fresh=await onCourseRead()
       const key=coursePendingKeys(fresh)[0]
       if (!key) { onState(fresh); return }
-      const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:appFetch })
-      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=1')
+      const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:boundRequest })
+      ensureCurrent()
+      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=1&courseId='+encodeURIComponent(fresh.course.id))
     } catch(error) { onError(error.message||'COURSE_TEST_UNAVAILABLE') }
     finally { setOpeningTest(false) }
   }
@@ -253,9 +271,15 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const available = new Set(ranked.map(item=>item.key))
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
-    setChosenTests(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : ranked.slice(0,5).map(item=>item.key))
-  },[stage,testsTouched,current.testKeys,ranked])
+    const starter=programme?.id==='stress'
+      ? ['hh-weekly-pulse','gad-7'].filter(key=>ranked.some(item=>item.key===key))
+      : ranked.slice(0,5).map(item=>item.key)
+    // A short stress course starts with one 7-day questionnaire and one
+    // 14-day anxiety instrument. Resource Pulse remains an opt-in third test.
+    setChosenTests(preset ? [...preset.testKeys] : confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter)
+  },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
+    if (preset) return
     setTestsTouched(true)
     setChosenTests(previous=>previous.includes(key)
       ? previous.filter(value=>value!==key)
@@ -268,16 +292,24 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   async function saveTestSelection() {
-    if(localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(actionLock.current||localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(preset && (chosenTests.length!==preset.testKeys.length ||
+      chosenTests.some((key,index)=>key!==preset.testKeys[index]))) {
+      onError('COURSE_PRESET_TESTS_FIXED')
+      return
+    }
+    actionLock.current=true
     setLocalBusy(true);onError('')
     try {
+      ensureCurrent()
       const selected=chosenTests.map(key=>optionByKey.get(key))
       if(selected.some(item=>!item)) throw new Error('INVALID_PLAN_ITEM')
       const existing=new Set(assessment.planStatus==='cancelled'?[]:(assessment.planKeys||[]))
       const missing=selected.filter(item=>!existing.has(item.key))
       if(missing.length) await saveExistingAccountPlan(missing.map(item=>({
         definitionKey:item.key,definitionVersion:item.definitionVersion,instrumentLocale:item.instrumentLocale,
-      })))
+      })),data.account.id)
+      ensureCurrent()
       // Server validates these keys against the actual private My Tests plan.
       const saved=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
       onState(saved)
@@ -286,7 +318,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       setTestsTouched(false)
       setShowCompletedOptions(false)
     } catch(error){onError(error.message||'COURSE_TEST_SELECTION_UNAVAILABLE')}
-    finally {setLocalBusy(false)}
+    finally {actionLock.current=false;setLocalBusy(false)}
   }
 
   if(stage===1) return <section className={'hh-panel '+styles.section} data-course-focus>
@@ -319,20 +351,22 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       busy={busy||localBusy}
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
       onAlternative={openManualFocus}
-      onEditTests={()=>setShowCompletedOptions(true)}/>
+      onEditTests={preset?undefined:()=>setShowCompletedOptions(true)}/>
   }
 
   if(stage===2) {
-    const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
+    const visible=preset?ranked:showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
       <div className={styles.sectionHeading}><h2>{t.testsTitle}</h2>
-        <button type="button" className={styles.secondary} disabled={busy}
-          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
-      <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
+        {!preset&&<button type="button" className={styles.secondary} disabled={busy}
+          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button>}</div>
+      <p>{preset?t.presetTestIntro:t.testsIntro}</p>
+      {preset?<p className={styles.small}><strong>{t.presetFixed} · {preset.title[ru?'ru':'en']}</strong></p>
+        :<p className={styles.small}>{t.relevanceHint}</p>}
       <div className={styles.testList} aria-label={t.testsTitle}>
-        {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
-          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
+        {visible.map(item=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
+          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||Boolean(preset)||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
@@ -343,19 +377,19 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
-          <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
+          <span className={styles.match}>{preset?t.presetTag:<>{item.matchPercent}%<small>{t.relevance}</small></>}</span>
         </label>)}
       </div>
-      <div className={styles.controls}>
+      {!preset&&<div className={styles.controls}>
         <button type="button" className={styles.secondary} onClick={()=>setShowAll(value=>!value)}>
           <Plus size={15}/>{showAll?t.showLess:t.showMore}</button>
-        <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}<ArrowRight size={15}/></Link>
-      </div>
-      <p className={styles.small}>{t.saveNotice}</p>
+        <Link href={root+'/tests?explore=1&course=1&filters=topics&courseId='+encodeURIComponent(current.id)}>{t.returnTests}<ArrowRight size={15}/></Link>
+      </div>}
+      {!preset&&<p className={styles.small}>{t.saveNotice}</p>}
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
         <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
           type="button" disabled={busy||localBusy||!chosenTests.length}
-          onClick={saveTestSelection}>{confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
+          onClick={saveTestSelection}>{preset?t.saveTests:confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
       </div>
       {confirmed&&<section className={styles.progress} aria-label={t.pendingTitle}>
         <h3>{t.pendingTitle}</h3><p>{t.pendingText}</p>

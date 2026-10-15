@@ -1,34 +1,21 @@
 'use client'
 
-// The planned paid billing module must be the sole authority for advertising.
-// An HTTP 404 means the feature is not installed on this build (free-only);
-// transient failures suppress promotions rather than showing ads to paid users.
-import { useEffect, useState } from 'react'
+// One authoritative billing read and one provider-owned completion token.
+// Unknown billing state, failed reads and ad-free entitlements suppress offers.
+import { useCallback, useEffect } from 'react'
+import { canShowHousePromotion, canStartCheckout, lessonCompletionKey } from '@/lib/billing/public-plan'
+import { useSubscription } from './subscription-access'
 
-export function useCoursePromotion(accountId) {
-  const [state,setState]=useState({show:false,checkoutReady:false,checking:true})
-  useEffect(()=>{
-    if(!accountId){setState({show:false,checkoutReady:false,checking:false});return}
-    const controller=new AbortController()
-    setState({show:false,checkoutReady:false,checking:true})
-    fetch('/api/app/billing/status',{
-      method:'GET',credentials:'same-origin',cache:'no-store',
-      headers:{'X-HH-Account-ID':accountId},signal:controller.signal,
-    }).then(async response=>{
-      if(response.status===404) {
-        setState({show:true,checkoutReady:false,checking:false});return
-      }
-      if(!response.ok)throw new Error('BILLING_STATUS_UNAVAILABLE')
-      const value=await response.json()
-      if(!value?.entitlement || typeof value.entitlement.adFree!=='boolean') throw new Error('BILLING_STATUS_UNAVAILABLE')
-      const adFree=value.entitlement.active===true || value.entitlement.adFree===true
-      const checkoutReady=Boolean(value.enabled && !value.sandbox &&
-        value.available && value.enabledPlans?.includes('advanced'))
-      setState({show:!adFree,checkoutReady:!adFree&&checkoutReady,checking:false})
-    }).catch(()=>{
-      if(!controller.signal.aborted)setState({show:false,checkoutReady:false,checking:false})
-    })
-    return ()=>controller.abort()
-  },[accountId])
-  return state
+export function useCoursePromotion(accountId, { courseId, cycleId, day, lessonId } = {}) {
+  const { status, phase, offerKey, offerScope, dismissCompletionOffer } = useSubscription()
+  const key = lessonCompletionKey({ cycleId, day, lessonId })
+  const dismiss = useCallback(() => { if (key) dismissCompletionOffer?.(key) }, [key, dismissCompletionOffer])
+  // Exact-key dismissal is stable across status/token updates, and keeps seen
+  // deduplication intact when this course/cycle presenter leaves the screen.
+  useEffect(() => dismiss, [dismiss])
+  const matches = Boolean(accountId && courseId && key && offerKey === key &&
+    offerScope?.accountId === accountId && offerScope?.courseId === courseId && offerScope?.presentation === 'inline')
+  const show = matches && canShowHousePromotion(status, phase)
+  return { show, checking: phase === 'loading', dismiss,
+    checkoutReady: show && !status.sandbox && canStartCheckout(status, phase, 'advanced') }
 }

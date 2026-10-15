@@ -259,3 +259,9 @@
 .cardVideo:hover{color:#305e4a!important}
 .cardVideo:focus-visible{outline:3px solid #b48554;outline-offset:3px}
 @media(max-width:760px){.cardVideo{font-size:11px;margin:0 0 5px;min-height:42px}}
+
+/* Visually distinct business offer; the four homepage cards stay unchanged. */
+.card[data-core-service-id="business"]{background:#f5f7fb;border-color:#b8c6da}
+.card[data-core-service-id="business"] .cardLabel,.card[data-core-service-id="business"] .cardBenefit{color:#61364f}
+.card[data-core-service-id="business"] .cardCta{background:#7d2d4c}
+.card[data-core-service-id="business"] .cardCta:hover{background:#61213a}

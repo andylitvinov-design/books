@@ -124,3 +124,211 @@
   .primary, .secondary { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .root a, .programme { transition: none; } }
+
+
+/* Oct 14, 2026: mobile-first public course journey. Overrides preserve the
+   existing public header, API entry routes and design tokens. */
+.root { --teal: #0099ac; --deep: #16334f; --ink: #163b4c; --muted: #5b7e8b; background:#f4fafc; }
+.hero { max-width:1160px; grid-template-columns:minmax(0,1fr) minmax(0,.82fr); gap:24px; padding:35px clamp(24px,4vw,48px); border-radius:27px;
+  background:linear-gradient(118deg,#e8f9fb 0%,#d6f6f2 55%,#c1eded 100%); }
+.kicker { margin-bottom:13px; font-size:11px; color:#007f94; letter-spacing:.09em; }
+.hero h1 { font-size:clamp(52px,5.7vw,75px); margin-bottom:14px; color:#16334f; }
+.heroLead { font-size:clamp(20px,2.2vw,26px); line-height:1.3; max-width:550px; margin-bottom:12px; }
+.heroIntro { font-size:15px; line-height:1.52; max-width:510px; }
+.heroActions { margin-top:21px; }
+.primary, .secondary { min-height:48px; padding:12px 20px; }
+.primary { background:#0099ac; box-shadow:0 9px 22px #047f921c; }
+.primary:hover { background:#087c8e; }
+.secondary { background:transparent; border-color:#8dc9d2; }
+.freeNote { margin-top:15px; color:#087f78; font-size:12px; }
+.heroVisual { height:320px; }
+.visualPhoto { inset:0 25px 20px 0; border-radius:24px 24px 24px 24px;
+  background:#d6efeb url('/images/holistic-house/course-focus-mountain-boy.webp') center 40% / cover no-repeat;
+  box-shadow:0 12px 28px #1a7c8d20; }
+.visualCard { width:min(250px,70%); padding:16px 18px; gap:6px; border-radius:17px; }
+.visualCard strong { font-size:23px; }
+.visualCard small { font-size:12px; }
+.cabinetSection { max-width:1160px; margin:38px auto 0; padding:0 clamp(16px,3.6vw,34px); }
+.cabinetHeading h2 { margin:0; color:#16334f; font:500 clamp(29px,3.5vw,39px)/1.17 Georgia,'Times New Roman',serif; letter-spacing:-.04em; }
+.cabinetHeading > p:last-child { margin:9px 0 18px; font-size:14px; color:#5b7e8b; line-height:1.5; }
+.cabinetHeading .sectionKicker { display:flex; align-items:center; gap:6px; font-size:10px; margin-bottom:8px; }
+.cabinetGrid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:14px; }
+.ownedCard { min-width:0; display:grid; grid-template-columns:clamp(125px,22%,205px) minmax(0,1fr); align-items:stretch; gap:17px;
+  padding:14px; border:1px solid #cce8ed; border-radius:21px; background:#fff; box-shadow:0 6px 21px #164b5f0a; }
+.ownedImage { overflow:hidden; position:relative; min-height:165px; border-radius:15px; background:linear-gradient(145deg,#e1f7f6,#b3e7ea); }
+.ownedImage img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; position:absolute; inset:0; }
+.ownedCopy { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; min-width:0; gap:8px; padding:4px 4px 4px 0; }
+.ownedEyebrow { display:inline-flex; gap:6px; align-items:center; color:#007b92; font-size:10px; font-weight:800; letter-spacing:.06em; }
+.ownedCopy h3 { font:600 clamp(22px,2.3vw,27px)/1.16 Georgia,'Times New Roman',serif; color:#16334f; letter-spacing:-.025em; margin:0; overflow-wrap:anywhere; }
+.ownedCopy p { color:#62818e; font-size:12px; line-height:1.42; margin:0; }
+.ownedAction { display:inline-flex; align-items:center; justify-content:center; gap:9px; background:#0099ac; color:#fff!important; border-radius:11px;
+  font-size:13px; font-weight:800; min-height:42px; padding:9px 15px; margin-top:5px; }
+.ownedAction:hover { background:#057b8c; }
+.ownedProgress { height:7px; width:100%; max-width:270px; background:#dceff1; border-radius:99px; overflow:hidden; }
+.ownedProgress span { height:100%; display:block; border-radius:inherit; background:#0099ac; }
+.addCourseTile { display:flex; min-width:0; align-items:center; gap:15px; padding:20px; border:2px dashed #a8d8df; border-radius:21px;
+  background:#eefafb; color:#16334f!important; transition:background .17s ease,border-color .17s ease; }
+.addCourseTile:hover { background:#dff6f8; border-color:#0099ac; }
+.addCourseIcon { display:grid; place-items:center; width:50px; height:50px; flex:0 0 50px; border-radius:16px; background:#d7f1f3; color:#0099ac; }
+.addCourseCopy { display:flex; flex-direction:column; min-width:0; gap:5px; }
+.addCourseCopy strong { font-size:17px; line-height:1.2; }
+.addCourseCopy small { color:#668793; font-size:12px; line-height:1.45; }
+.addCourseArrow { margin-left:auto; flex:none; color:#0099ac; }
+.privacyLine { display:flex; align-items:center; gap:6px; font-size:11px; color:#487d88; margin:9px 0 0; }
+.section, .how { max-width:1160px; padding:52px clamp(16px,3.6vw,34px) 10px; }
+.section h2, .how h2, .final h2 { font-size:clamp(32px,3.9vw,44px); color:#16334f; }
+.sectionLead { margin:9px 0 19px; font-size:14px; }
+.programmes { gap:13px; }
+.programme { padding:21px; border-radius:20px; min-height:305px; box-shadow:0 5px 18px #164b5f0a; }
+.programmeIcon { width:49px; height:49px; border-radius:15px; }
+.programmeMeta { margin:13px 0 8px; font-size:10px; }
+.programme h3 { font-size:clamp(22px,2.3vw,27px); }
+.programmePain { font-size:14px; line-height:1.35; margin-bottom:8px; }
+.programmeText { font-size:13px; line-height:1.5; margin-bottom:11px; }
+.programmeResult { font-size:11px; padding-top:11px; margin-bottom:12px; }
+.programme a { min-height:44px; background:#e6f6f8; color:#047f91!important; border-radius:11px; font-size:12px; }
+.programme a:hover { background:#c8eff4; }
+.personal { margin-top:13px; padding:17px 20px; border-radius:19px; }
+.personal h3 { font-size:19px; }
+.personal p { font-size:13px; }
+.how { padding-top:45px; padding-bottom:34px; }
+.steps { margin-top:20px; gap:11px; }
+.step { display:flex; gap:14px; align-items:flex-start; min-width:0; padding:17px; background:#fff; border:1px solid #cee9ed; border-radius:16px; box-shadow:0 5px 15px #195d7108; }
+.stepNumber { display:grid; place-items:center; flex:0 0 41px; width:41px; height:41px; border-radius:12px; background:#e0f6f8; font:600 17px/1 Georgia,serif; color:#0099ac; }
+.stepCopy { min-width:0; }
+.step h3 { font-size:16px; margin:0 0 7px; line-height:1.3; }
+.step p { font-size:12px; line-height:1.5; }
+.methodSection { margin-bottom:33px; border-radius:21px; padding:22px 27px; }
+.final { background:linear-gradient(135deg,#077d92,#0099ac); border-radius:24px; padding:34px 25px; }
+.final h2 { color:#fff; }
+.final > p { font-size:14px; }
+.note { padding-bottom:108px; }
+@media(max-width:900px) {
+  .hero { gap:16px; }
+  .heroVisual { height:285px; }
+  .cabinetGrid { grid-template-columns:1fr .85fr; gap:10px; }
+  .ownedCard { gap:12px; }
+  .addCourseTile { padding:14px; gap:12px; }
+  .addCourseIcon { width:44px; height:44px; flex-basis:44px; }
+}
+@media(max-width:700px) {
+  .hero { margin:9px 12px 0; padding:23px 20px 19px; gap:11px; border-radius:21px; }
+  .hero h1 { font-size:clamp(44px,10.3vw,56px); margin-bottom:11px; }
+  .kicker { margin-bottom:11px; font-size:10px; }
+  .heroLead { font-size:19px; margin-bottom:10px; }
+  .heroIntro { font-size:13px; line-height:1.48; }
+  .heroActions { margin-top:17px; gap:6px; }
+  .heroActions .primary { width:100%; min-height:48px; }
+  .heroActions .secondary { border:none; background:transparent; min-height:36px; padding:4px 10px; color:#007f91!important; }
+  .freeNote { margin-top:8px; font-size:11px; }
+  .heroVisual { height:175px; margin-top:7px; }
+  .visualPhoto { inset:0 29% 0 0; border-radius:16px; background-position:center 42%; }
+  .visualCard { width:58%; max-width:205px; bottom:0; padding:10px 12px; gap:4px; border-radius:14px; }
+  .visualCard span { font-size:9px; gap:4px; }
+  .visualCard strong { font-size:19px; }
+  .visualCard small { font-size:10px; }
+  .visualProgress i { height:4px; }
+  .cabinetSection { margin-top:33px; padding:0 15px; }
+  .cabinetHeading h2 { font-size:30px; }
+  .cabinetHeading > p:last-child { margin:7px 0 13px; font-size:12px; }
+  .cabinetGrid { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+  .ownedCard { grid-template-columns:108px minmax(0,1fr); gap:12px; padding:11px; border-radius:17px; }
+  .ownedImage { min-height:152px; border-radius:12px; }
+  .ownedCopy { gap:7px; }
+  .ownedCopy h3 { font-size:21px; }
+  .ownedCopy p { font-size:11px; }
+  .ownedAction { min-height:40px; font-size:12px; padding:9px 11px; }
+  .addCourseTile { min-height:78px; border-radius:17px; padding:12px 14px; }
+  .addCourseCopy strong { font-size:15px; }
+  .addCourseCopy small { font-size:11px; }
+  .privacyLine { font-size:10px; }
+  .section,.how { padding:36px 15px 10px; }
+  .sectionKicker { font-size:10px; margin-bottom:7px; }
+  .section h2,.how h2 { font-size:31px; }
+  .sectionLead { margin:7px 0 15px; font-size:13px; line-height:1.4; }
+  .programmes { gap:10px; }
+  .programme { min-height:0; padding:17px; border-radius:17px; }
+  .programmeIcon { width:43px; height:43px; border-radius:13px; }
+  .programmeMeta { margin:10px 0 7px; }
+  .programme h3 { font-size:23px; margin-bottom:8px; }
+  .programmePain { font-size:13px; margin-bottom:6px; }
+  .programmeText { font-size:12px; line-height:1.48; margin-bottom:8px; }
+  .programmeResult { font-size:11px; margin-bottom:11px; }
+  .programme a { min-height:42px; }
+  .personal { margin-top:10px; padding:14px; gap:10px; }
+  .personalIcon { width:42px; height:42px; }
+  .personal h3 { font-size:17px; }
+  .personal p { font-size:12px; }
+  .personal a { min-height:40px; border-radius:12px; }
+  .how { padding-top:39px; padding-bottom:24px; }
+  .steps { margin-top:15px; gap:9px; }
+  .step { padding:13px; border-radius:14px; gap:12px; }
+  .stepNumber { flex-basis:36px; width:36px; height:36px; font-size:16px; }
+  .step h3 { font-size:14px; margin-bottom:4px; }
+  .step p { font-size:12px; }
+  .methodSection { margin:0 12px 26px; padding:18px; }
+  .final { margin:0 12px 18px; padding:26px 20px; }
+  .note { padding-bottom:115px; }
+}
+@media(max-width:360px) {
+  .hero { padding:21px 16px 17px; }
+  .heroVisual { height:157px; }
+  .visualCard { width:64%; }
+  .ownedCard { grid-template-columns:88px minmax(0,1fr); gap:10px; padding:9px; }
+  .ownedCopy h3 { font-size:18px; }
+  .ownedAction { font-size:11px; }
+  .addCourseTile { gap:9px; padding:10px; }
+  .addCourseIcon { width:39px; height:39px; flex-basis:39px; }
+  .addCourseCopy strong { font-size:14px; }
+  .programme { padding:15px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .addCourseTile, .ownedAction { transition:none; }
+}
+
+/* OPORA Anti-Stress: seven skills / fourteen lessons. Kept visually scoped so
+   other course cards and enrollment paths remain unchanged. */
+.stressSkills {
+  display:grid; gap:21px; margin:19px 0 0; padding:27px 30px; border:1px solid #30465f;
+  border-radius:23px; background:linear-gradient(123deg,#152f4d 0%,#263853 68%,#3b2948 100%);
+  color:#fff; box-shadow:0 11px 30px #172b4530;
+}
+.stressSkillsHeader { display:grid; gap:8px; }
+.stressSkillsKicker { display:inline-flex; gap:8px; align-items:center; color:#e7bccb; font-size:11px; font-weight:800; letter-spacing:.1em; }
+.stressSkillsHeader h3 { margin:0; max-width:820px; font:500 clamp(25px,3.1vw,38px)/1.17 Georgia,'Times New Roman',serif; letter-spacing:-.03em; color:#fff; }
+.stressSkillsHeader p { max-width:740px; margin:0; font-size:14px; line-height:1.6; color:#d9e5ef; }
+.stressSkillsList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; padding:0; margin:0; list-style:none; }
+.stressSkillsList li { display:grid; grid-template-columns:32px minmax(0,1fr) 48px; align-items:center; gap:11px;
+  padding:13px 14px; border:1px solid #ffffff24; border-radius:12px; background:#ffffff0d; }
+.stressSkillsList li > span { font:600 15px/1 Georgia,'Times New Roman',serif; color:#e7bccb; }
+.stressSkillsList strong { font-size:13px; font-weight:650; line-height:1.35; }
+.stressSkillsList small { white-space:nowrap; text-align:right; color:#b9d4df; font-size:10px; }
+.stressSkillsFoot { display:flex; align-items:center; justify-content:space-between; gap:22px; }
+.stressSkillsFoot p { max-width:720px; margin:0; font-size:11px; line-height:1.6; color:#c6d5e1; }
+.stressSkillsFoot a { display:inline-flex; align-items:center; justify-content:center; gap:8px; flex:0 0 auto;
+  min-height:44px; padding:12px 17px; border-radius:12px; background:#813651; color:#fff!important;
+  font-size:12px; font-weight:800; box-shadow:0 6px 17px #1b182533; }
+.stressSkillsFoot a:hover { background:#9c4665; }
+@media(max-width:700px) {
+  .stressSkills { margin-top:12px; padding:21px 16px; gap:16px; border-radius:17px; }
+  .stressSkillsHeader h3 { font-size:27px; }
+  .stressSkillsHeader p { font-size:12px; }
+  .stressSkillsList { grid-template-columns:minmax(0,1fr); gap:7px; }
+  .stressSkillsList li { padding:11px; grid-template-columns:26px minmax(0,1fr) 45px; gap:8px; }
+  .stressSkillsList strong { font-size:12px; }
+  .stressSkillsFoot { display:grid; gap:13px; }
+  .stressSkillsFoot a { width:100%; }
+}
+
+/* Single available Anti-Stress programme: no empty two-card gap on desktop. */
+.programmes:has([data-course-programme="stress"]:only-child){grid-template-columns:minmax(0,1fr);max-width:640px}
+.personal [data-course-upcoming]{margin-left:auto;white-space:nowrap;color:#7d4c63;font-weight:750}
+@media(max-width:700px){.personal [data-course-upcoming]{margin-left:0}}
+
+/* Course information is a distinct secondary action below the enrolment CTA. */
+.root .programme .programmeMore{display:inline-flex;align-items:center;gap:7px;margin-top:11px;padding:6px 0;min-height:36px;width:max-content;max-width:100%;background:transparent!important;border:0!important;box-shadow:none!important;color:#8e3456!important;font-size:13px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.root .programme .programmeMore:hover{color:#b44668!important}
+
+/* Exact exercises/results for all fourteen Anti-Stress days, responsive. */
+.dailyPlanPreview{margin:19px 0 14px;min-width:0}
+@media(max-width:700px){.dailyPlanPreview{margin-top:12px}}

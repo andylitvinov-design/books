@@ -3,20 +3,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BookmarkCheck, Check, CheckCircle2, ChevronDown,
-  Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, ShieldCheck,
-  SkipForward, Sparkles, Star, Target, Trophy, Waves, X,
+  CircleHelp, Cloud, Clock3, Compass, Crown, Heart, Leaf, LockKeyhole, Moon, ShieldCheck,
+  SkipForward, Sparkles, Star, Sun, Target, Trophy, Waves, X,
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
+import CoursePracticeVoice from './course-practice-voice'
+import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
+import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
+import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
+import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
-    pace: 'Choose your rhythm', pacePrompt: 'How would you like to practise today?',
-    shortDetail: 'A gentle, shorter version', standardDetail: 'Take the time you need', noImageryDetail: 'Stay with words and senses',
+    welcome: 'How are you feeling today?',
+    welcomePrompt: 'What feels closest to your experience right now?',
+    welcomeNote: 'A gentle momentary check-in, not a test. Your answer will not change your course or test results.',
+    welcomeSkip: 'I would rather not answer',
     understand: 'One idea at a time', adjustPace: 'Change my practice style',
-    baseline: 'Notice your state before the practice', baselineQuestion: 'How difficult does today’s focus feel right now?',
+    baseline: 'Notice your state at the start', baselineQuestion: 'How strongly do you feel the quality or state at the heart of today’s lesson right now?',
+    baselineResourceQuestion: 'How much inner resource and support do you feel right now?',
+    baselineLow: '0 · Not at all', baselineHigh: '10 · Fully present',
     momentQuestion: 'And how difficult does the same focus feel right now, after the practice?',
     focusForToday: 'Focus of the day', pairTitle: 'Your before & after',
     easierResult: 'points less difficult after the practice', harderResult: 'points more difficult after the practice',
@@ -31,13 +40,24 @@ const WORDS = {
     recall: 'Remember a familiar skill', recallHint: 'Try recalling it without pressure, or simply continue.',
     phrase: 'A more flexible thought', phraseHint: 'This is a possible phrase, not something you must believe.',
     guided: 'A moment of practice', gentle: 'Eyes can remain open; breathe naturally. Pause or skip anything uncomfortable.',
+    arrivalTitle: 'A gentle minute of grounding',
+    arrivalKicker: 'GUIDED EXERCISE · ABOUT 1 MINUTE',
+    arrivalFocus: 'Today’s focus',
+    arrivalSteps: [
+      'Find a comfortable position. Eyes may stay open.',
+      'Notice one colour, one sound and the support beneath you.',
+      'Observe how you feel right now. Nothing needs to change.',
+    ],
+    arrivalAudioLead: 'Take a gentle pause. You can keep your eyes open and let your breathing happen naturally. Today’s focus is',
+    arrivalAudioBody: 'Notice one colour around you. Notice one sound. If comfortable, feel the surface supporting you. Notice what is present for you now, without having to change anything. You can stop or continue in your own time.',
+    fullInstructions: 'Read the full instructions',
     short: 'Short', standard: 'Standard', noImagery: 'No imagery', optionalTimer: 'Optional timer',
     ritual: 'One gentle support', transfer: 'If you feel ready', transferHint: 'Choose a safe, very small action. No challenge is required.',
     symbol: 'A resource image', words: 'Plain words', imagery: 'Optional image', symbolHint: 'A metaphor for reflection, never diagnosis or treatment.',
     reflection: 'One thought worth keeping', reflectionHint: 'One sentence is enough. You can leave this empty.',
     note: 'My private reflection', feedback: 'How was the practice for you?', feedbackHint: 'Any honest response is welcome.',
     helped: 'Helpful', neutral: 'Neutral', uncomfortable: 'Uncomfortable', preferNot: 'Prefer not to say',
-    choiceTitle: 'Choose a suitable approach', cbtChoice: 'Check the thought with facts (CBT)', actChoice: 'Notice the thought without debate (ACT)', neutralChoice: 'Return to neutral support',
+    choiceTitle: 'Choose a suitable approach', cbtChoice: 'Check the thought', actChoice: 'Notice the thought', neutralChoice: 'Return to your surroundings',
     cbtText: 'What supports this thought? What else could be true? Find a believable alternative without forcing positivity.',
     actText: 'I notice I am having this thought. I do not have to argue with it or follow it now.',
     neutralText: 'Notice the colour or shape of a neutral object. You do not need to work with your thoughts.',
@@ -46,7 +66,24 @@ const WORDS = {
     discomfortNeutral: 'Choose a neutral practice', discomfortExit: 'Stop and return',
     discomfortHelp: 'Find a human helpline', discomfortEmergency: 'If there is immediate danger, contact your local emergency services.',
     neutralPractice: 'Keep your eyes open and notice two ordinary shapes or colours in the room. You can sense support beneath you if comfortable. Breathe naturally and stop at any time.',
-    moment: 'One optional comparison', momentHint: 'Two separate momentary impressions, not a clinical improvement score.',
+    moment: 'Your practice observations', momentHint: 'The two ratings were offered directly around the guided practice. No answer is required.',
+    momentNoPair: 'There is no completed practice pair to compare. That is okay.',
+    practicePrePrompt: 'Just before this exercise: how difficult does today’s focus feel?',
+    practicePostPrompt: 'Immediately after this exercise: how difficult does the same focus feel?',
+    comfortTitle: 'How comfortable was this practice?', usefulTitle: 'Did you notice any subjective benefit?',
+    flexibilityTitle: 'Could you choose a little more freely, even if your feeling stayed?',
+    comfortableChoice: 'Comfortable', neutralComfort: 'Neutral or manageable',
+    usefulChoice: 'Useful for me', unchangedChoice: 'No clear benefit', unsureChoice: 'Not sure',
+    moreChoice: 'A little more freedom', sameChoice: 'About the same',
+    transferStageTitle: 'What kind of experience did you choose?', transferPlan: 'Made only a plan',
+    transferImagined: 'Imagined a safe situation', transferPhrase: 'Prepared a phrase',
+    transferReal: 'Tried a safe real-world step', transferSkip: 'No action today',
+    transferPlanLabel: 'My optional plan for day 10', lastPlanTitle: 'My saved day 6 experience',
+    noSavedPlan: 'No day 6 plan was saved; you can continue without one.',
+    adaptationTitle: 'Choose for future practices (optional)',
+    adaptationHint: 'A possible adjustment, not a prescription:',
+    adaptationKeep: 'Keep the approach', adaptationSimplify: 'Try a shorter practice',
+    adaptationNeutral: 'Choose a neutral version',
     before: 'Just before the practice', after: 'Just after the practice', none: 'Not rated',
     finish: 'Finish and save', finished: 'A little step forward!',
     completed: 'Practice saved', celebration: 'You took time to practise. That counts.',
@@ -71,10 +108,14 @@ const WORDS = {
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
-    pace: 'Выберите свой темп', pacePrompt: 'Как вам будет комфортнее сегодня?',
-    shortDetail: 'Мягко и немного короче', standardDetail: 'Без спешки, в своём ритме', noImageryDetail: 'Только слова и ощущения',
+    welcome: 'Как вы себя чувствуете сегодня?',
+    welcomePrompt: 'Какое описание сейчас вам ближе?',
+    welcomeNote: 'Мягкий вопрос о состоянии сейчас, а не тест. Ответ не изменяет курс или результаты тестов.',
+    welcomeSkip: 'Предпочитаю не отвечать',
     understand: 'Одна идея за раз', adjustPace: 'Изменить формат практики',
-    baseline: 'Заметьте состояние перед практикой', baselineQuestion: 'Насколько трудно сейчас даётся тема сегодняшнего дня?',
+    baseline: 'Заметьте состояние перед практикой', baselineQuestion: 'Насколько вы сейчас ощущаете в себе качество или состояние, которому посвящён урок?',
+    baselineResourceQuestion: 'Насколько вы сейчас ощущаете в себе ресурс и внутреннюю опору?',
+    baselineLow: '0 · Совсем не ощущаю', baselineHigh: '10 · Ощущаю в полной мере',
     momentQuestion: 'Насколько трудно даётся эта же тема сейчас, сразу после практики?',
     focusForToday: 'Тема дня', pairTitle: 'Ваш результат: до и после',
     easierResult: 'меньше трудности после занятия', harderResult: 'больше трудности после занятия',
@@ -89,6 +130,17 @@ const WORDS = {
     recall: 'Вспомните знакомый навык', recallHint: 'Попробуйте вспомнить без напряжения — или просто продолжайте.',
     phrase: 'Более гибкая мысль', phraseHint: 'Это возможная формулировка. Не обязательно верить в неё.',
     guided: 'Момент практики', gentle: 'Можно не закрывать глаза и не менять дыхание. Неудобный шаг пропускайте.',
+    arrivalTitle: 'Минута мягкой опоры',
+    arrivalKicker: 'ПРАКТИЧЕСКОЕ УПРАЖНЕНИЕ · ОКОЛО 1 МИНУТЫ',
+    arrivalFocus: 'Тема сегодняшнего занятия',
+    arrivalSteps: [
+      'Устройтесь удобно. Глаза можно оставить открытыми.',
+      'Заметьте один цвет, один звук и опору под собой.',
+      'Понаблюдайте за состоянием. Менять ничего не требуется.',
+    ],
+    arrivalAudioLead: 'Сделайте небольшую паузу. Глаза можно оставить открытыми, а дыхание — естественным. Сегодня наша тема',
+    arrivalAudioBody: 'Заметьте один цвет вокруг. Заметьте один звук. Если комфортно, почувствуйте поверхность, на которую опираетесь. Отметьте, как вы себя сейчас ощущаете. Ничего не нужно исправлять. Вы можете закончить или продолжить в своём ритме.',
+    fullInstructions: 'Прочитать полную инструкцию',
     short: 'Короткая', standard: 'Обычная', noImagery: 'Без образов', optionalTimer: 'Таймер — по желанию',
     ritual: 'Небольшая опора', transfer: 'Если появится готовность',
     transferHint: 'Самочувствие и опора первичны. Действие необязательно, отдых тоже подходит.',
@@ -98,7 +150,7 @@ const WORDS = {
     note: 'Моя личная заметка', feedback: 'Как вам было во время практики?',
     feedbackHint: 'Любой честный ответ подходит.',
     helped: 'Помогло', neutral: 'Нейтрально', uncomfortable: 'Было некомфортно', preferNot: 'Не хочу отвечать',
-    choiceTitle: 'Выберите подходящий способ', cbtChoice: 'Проверить мысль фактами (КПТ)', actChoice: 'Заметить мысль без спора (ACT)', neutralChoice: 'Вернуться к нейтральной опоре',
+    choiceTitle: 'Выберите подходящий способ', cbtChoice: 'Проверить мысль', actChoice: 'Заметить мысль', neutralChoice: 'Вернуться к окружающему',
     cbtText: 'Что подтверждает мысль? Что ещё может быть верно? Можно найти правдоподобный взгляд без принудительного оптимизма.',
     actText: 'Я замечаю, что появилась такая мысль. Не обязательно спорить с ней или следовать ей.',
     neutralText: 'Заметьте цвет или форму нейтрального предмета. Работать с мыслью не обязательно.',
@@ -107,7 +159,24 @@ const WORDS = {
     discomfortNeutral: 'Нейтральная практика', discomfortExit: 'Остановить и вернуться',
     discomfortHelp: 'Найти помощь человека', discomfortEmergency: 'Если есть непосредственная опасность, обратитесь в местные экстренные службы.',
     neutralPractice: 'Оставляя глаза открытыми, заметьте два цвета или формы в комнате. Если комфортно, почувствуйте опору под собой. Дышите естественно. Можно остановиться.',
-    moment: 'Необязательное сравнение', momentHint: 'Два впечатления в разные моменты, а не медицинский показатель улучшения.',
+    moment: 'Наблюдение после практики', momentHint: 'Две необязательные оценки предлагались непосредственно до и после упражнения.',
+    momentNoPair: 'Полной пары оценок нет. Это нормально.',
+    practicePrePrompt: 'Прямо перед упражнением: насколько трудно ощущается сегодняшняя тема?',
+    practicePostPrompt: 'Сразу после упражнения: насколько трудно ощущается та же тема?',
+    comfortTitle: 'Насколько комфортной была практика?', usefulTitle: 'Заметили ли вы субъективную пользу?',
+    flexibilityTitle: 'Стало ли выбирать немного свободнее, даже если чувство осталось?',
+    comfortableChoice: 'Комфортно', neutralComfort: 'Нейтрально или терпимо',
+    usefulChoice: 'Было полезно', unchangedChoice: 'Явной пользы не заметил(а)', unsureChoice: 'Не уверен(а)',
+    moreChoice: 'Немного больше свободы', sameChoice: 'Примерно так же',
+    transferStageTitle: 'Какой опыт вы выбрали?', transferPlan: 'Только составил(а) план',
+    transferImagined: 'Мысленно представил(а) безопасную ситуацию', transferPhrase: 'Подготовил(а) фразу',
+    transferReal: 'Попробовал(а) в безопасной жизни', transferSkip: 'Без действия сегодня',
+    transferPlanLabel: 'Мой необязательный план для урока 10', lastPlanTitle: 'Сохранённый опыт из урока 6',
+    noSavedPlan: 'В уроке 6 план не был сохранён. Можно продолжать и без него.',
+    adaptationTitle: 'Выбор для следующих занятий (необязательно)',
+    adaptationHint: 'Возможный вариант, а не назначение:',
+    adaptationKeep: 'Оставить как есть', adaptationSimplify: 'Упростить практику',
+    adaptationNeutral: 'Перейти на нейтральный вариант',
     before: 'Непосредственно перед практикой', after: 'Непосредственно после практики', none: 'Нет оценки',
     finish: 'Завершить и сохранить', finished: 'Маленький шаг вперёд!',
     completed: 'Практика сохранена', celebration: 'Вы нашли время для себя. Это уже важный шаг.',
@@ -133,7 +202,7 @@ const WORDS = {
 }
 
 const SCENE = {
-  pace: Compass,
+  welcome: Heart,
   understand: Leaf,
   baseline: Target,
   checkin: Target,
@@ -149,15 +218,51 @@ const SCENE = {
   feedback: Heart,
 }
 
+const INTERACTIVE_STRESS = {
+  ru: {
+    aphorismTitle:'Как вам эта мысль?',agree:'Согласен',unsure:'Не знаю',disagree:'Не согласен',
+    aphorismHints:{
+      agree:'Можно взять эту мысль как приглашение к небольшой практике, но ничего доказывать не требуется.',
+      unsure:'Необязательно решать сейчас. Можно попробовать нейтральный шаг или просто продолжить.',
+      disagree:'Вы можете не соглашаться. Выберите собственную, более правдоподобную формулировку или нейтральную опору.',
+    },
+    phraseTitle:'Подходит ли вам эта формулировка?',fits:'Подходит',phraseUnsure:'Пока не знаю',phraseNo:'Не подходит',
+    phraseHints:{fits:'При желании сохраните её для себя.',unsure:'Можно оставить вопрос открытым.',no:'Никакую фразу не нужно принимать через силу.'},
+    recallTitle:'Как прошла попытка вспомнить?',recallYes:'Вспомнил(а)',recallHint:'Нужна подсказка',recallSkip:'Пропускаю',
+    practiceTitle:'Что вы действительно попробовали?',tried:'Попробовал(а)',simplified:'Сократил(а) практику',
+    neutral:'Выбрал(а) нейтральный вариант',practiceSkip:'Не сегодня',
+    practiceNote:'Это запись учебной попытки, а не оценка вашего психического здоровья. Можно пропустить.',
+    transferTitle:'Как вы хотите перенести этот опыт?',plan:'Только составить план',
+    imagined:'Мысленно представить',phrase:'Подготовить фразу',real:'Пробовал(а) в обычной жизни',skip:'Не планирую сейчас',
+  },
+  en: {
+    aphorismTitle:'How does this idea sound to you?',agree:'Agree',unsure:'Not sure',disagree:'Disagree',
+    aphorismHints:{
+      agree:'You can use it as an invitation to try one small exercise, not proof of anything.',
+      unsure:'There is no need to decide now. You may choose a neutral step or continue.',
+      disagree:'You are free to disagree. Choose your own credible wording or a neutral anchor.',
+    },
+    phraseTitle:'Does this phrase fit you?',fits:'It fits',phraseUnsure:'Not sure yet',phraseNo:'Not for me',
+    phraseHints:{fits:'You may keep it for yourself.',unsure:'You may leave the question open.',no:'You do not have to believe or use this phrase.'},
+    recallTitle:'How did recalling go?',recallYes:'Recalled it',recallHint:'Need a hint',recallSkip:'Skip',
+    practiceTitle:'Which step did you actually try?',tried:'Tried the exercise',simplified:'Used a shorter version',
+    neutral:'Chose a neutral alternative',practiceSkip:'Not today',
+    practiceNote:'This is a learning attempt, not a mental-health score. You can skip.',
+    transferTitle:'How would you carry this forward?',plan:'Make a plan only',
+    imagined:'Imagine a safe step',phrase:'Prepare a phrase',real:'Tried in ordinary life',skip:'Not planning now',
+  },
+}
 function buildSlides(lesson) {
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
+  // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
+  const hasArrival = guided.some(section => section.kind === 'arrive')
   return [
-    { key: 'pace', kind: 'pace' },
+    { key: 'welcome', kind: 'welcome' },
     { key: 'baseline', kind: 'baseline' },
     { key: 'checkin', kind: 'checkin' },
     ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
     { key: 'idea', kind: 'idea' },
-    ...((lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
+    ...(!hasArrival && (lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
     ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
     ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
     { key: 'ritual', kind: 'ritual' },
@@ -169,13 +274,13 @@ function buildSlides(lesson) {
   ]
 }
 
-function MomentScale({ value, onChange, words, label, disabled }) {
+function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
   return <div>
     <div className={styles.numberGrid} role="group" aria-label={label}>
       {Array.from({length:11}, (_, i) => <button key={i} type="button"
         disabled={disabled} aria-pressed={value === i} onClick={() => onChange(i)}>{i}</button>)}
     </div>
-    <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
+    <div className={styles.rangeCaption}><span>{lowLabel}</span><span>{highLabel}</span></div>
   </div>
 }
 
@@ -199,25 +304,51 @@ export default function CourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
+  const learning = INTERACTIVE_STRESS[locale] || INTERACTIVE_STRESS.en
   const cycle = data.cycle || {}
   const lesson = data.lesson || {}
   const today = data.currentCheckin
   const session = data.currentSession
   const focusLabel = cycle.activeScaleLabel || data.roadmap?.find(item => item.day === cycle.day)?.focusTitle || data.target?.label || words.todaySkill
+  const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
+  const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
-  const slides = useMemo(() => buildSlides(lesson), [lesson])
+  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
+  const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
   const [feedback, setFeedback] = useState(session?.feedback || 'skip')
+  const [entryNow, setEntryNow] = useState(null)
+  const [comfort, setComfort] = useState(session?.signals?.comfort || 'skip')
+  const [usefulness, setUsefulness] = useState(session?.signals?.usefulness || 'skip')
+  const [flexibility, setFlexibility] = useState(session?.signals?.flexibility || 'skip')
+  const [transferStage, setTransferStage] = useState(session?.signals?.transferStage || 'skip')
+  const [adaptationChoice, setAdaptationChoice] = useState(session?.signals?.adaptationChoice || 'skip')
+  const [transferPlan, setTransferPlan] = useState(session?.transferPlan || '')
   const [beforeNow, setBeforeNow] = useState(session?.beforeNow ?? null)
   const [afterNow, setAfterNow] = useState(session?.afterNow ?? null)
   const [symbolMode, setSymbolMode] = useState('words')
-  const [thoughtChoice, setThoughtChoice] = useState('neutral')
+  const [thoughtChoice, setThoughtChoice] = useState(session?.signals?.thoughtPath || 'neutral')
+  const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
+  const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
+  const [associationWords,setAssociationWords]=useState('')
+  const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
+  function recordDayOne(field,value){
+    setDayOneAnswers(previous=>({...previous,[field]:value}))
+    if(field==='comfort')setComfort(value)
+    if(field==='adaptation')setAdaptationChoice(value)
+    if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
+    if(field==='experience'&&value==='unchanged')setFlexibility('same')
+  }
+  const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
+  const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
+  const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
+  const [recallAttempt,setRecallAttempt] = useState('')
+  const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
-  const [pace, setPace] = useState(() => cycle.preferences?.imagery === 'no_imagery'
-    ? 'no_imagery' : cycle.preferences?.length === 'quick' ? 'quick' : 'standard')
   const [earned, setEarned] = useState(false)
   const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
   const [promoOpen, setPromoOpen] = useState(false)
@@ -232,6 +363,7 @@ export default function CourseSlidePlayer({
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
   const finished = index >= slides.length
+  const adaptationProposal = practiceAdjustmentSuggestion({comfort,usefulness,flexibility})
   const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
 
@@ -261,7 +393,7 @@ export default function CourseSlidePlayer({
   useEffect(() => {
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index, rewardStep, promoOpen])
+  }, [index, rewardStep, promoOpen, discomfortOpen, neutralMode])
 
   function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
@@ -296,26 +428,6 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  async function savePace() {
-    if (submitting.current) return
-    const previous = cycle.preferences || {}
-    const next = pace === 'quick'
-      ? { length:'quick', imagery:previous.imagery || 'optional' }
-      : pace === 'no_imagery'
-        ? { length:previous.length || 'standard', imagery:'no_imagery' }
-        : { length:'standard', imagery:'optional' }
-    if ((previous.length||'standard') === next.length &&
-        (previous.imagery||'optional') === next.imagery) { goNext(); return }
-    submitting.current = true
-    setSaving(true); setError('')
-    try {
-      const result = await onPreferences(next)
-      if (result) goNext()
-      else setError(words.saveError)
-    } catch { setError(words.saveError) }
-    finally { submitting.current = false; setSaving(false) }
-  }
-
   async function finishLesson() {
     if (alreadyDone) { setIndex(slides.length); return }
     if (submitting.current) return
@@ -323,9 +435,26 @@ export default function CourseSlidePlayer({
     setSaving(true); setError('')
     try {
       if (!sessionOp.current) sessionOp.current = crypto.randomUUID()
+      // Keep the legacy feedback field for old reports; independent v1.5
+      // signals carry comfort, usefulness and flexibility without conflation.
+      const legacyFeedback = feedback==='uncomfortable' || comfort==='uncomfortable'
+        ? 'uncomfortable' : usefulness==='useful' ? 'helped'
+        : usefulness==='unchanged' ? 'neutral' : 'skip'
       const response = await onSession({
         day:cycle.day,lessonId:lesson.id,operationId:sessionOp.current,
-        feedback,beforeNow,afterNow,reflection,
+        feedback:legacyFeedback,beforeNow,afterNow,reflection,
+        practiceWindow:'practice_v15',comfort,usefulness,flexibility,
+        transferStage,thoughtPath:thoughtChoice,adaptationChoice,
+        welcomeFeeling:welcomeFeeling||'skip',
+        transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
+        ...(lesson.antiStress ? {
+          aphorismResponse:aphorismResponse||null,
+          practiceAttempt:practiceAttempt||null,
+          phraseResponse:phraseResponse||null,
+        } : {}),
+        ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
+        ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
+          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{})
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -333,17 +462,41 @@ export default function CourseSlidePlayer({
     finally { submitting.current = false; setSaving(false) }
   }
 
-  const title = promoOpen ? words.promoTitle : finished ? words.finished : slide.kind === 'guided' ? (slide.section.title || words.guided) : words[slide.kind]
+  const dayOneTitles=locale==='ru'?{
+    recall:'Мой личный фокус',idea:'Одна мысль для размышления',
+    'day1-prepare':'Подготовка к практике','day1-notice':'Замечаю настоящее',
+    'day1-practice':'Главная практика','day1-exit':'Мягкое завершение',
+    'day1-anchor':'Моя точка опоры','day1-association':'Практика ассоциаций',
+    'day1-independent':'Попробую самостоятельно','day1-experience':'Что я заметил(а)?',
+    'day1-adapt':'Выбираю подходящий формат','day1-transfer':'Мой следующий шаг',
+  }:{
+    recall:'My personal focus',idea:'A thought to consider',
+    'day1-prepare':'Preparing to practise','day1-notice':'Noticing the present',
+    'day1-practice':'Main practice','day1-exit':'A gentle finish',
+    'day1-anchor':'My point of support','day1-association':'Associations',
+    'day1-independent':'Trying it by myself','day1-experience':'What did I notice?',
+    'day1-adapt':'Choosing what fits','day1-transfer':'My next step',
+  }
+  const title = promoOpen && promotion.show ? words.promoTitle : finished ? words.finished
+    : isDayOne && dayOneTitles[slide.kind] ? dayOneTitles[slide.kind]
+    : slide.kind === 'guided' ? (slide.section.kind === 'arrive' ? words.arrivalTitle : slide.section.title || words.guided) : words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
+  const scenicBaseline = !finished && !promoOpen && !discomfortOpen &&
+    (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player ref={frame}>
-    <div className={styles.frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.8":undefined} ref={frame}>
+    <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
+      {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
+        <img className={styles.fullscreenScenePhoto}
+          src="/images/holistic-house/course-focus-mountain-boy.webp"
+          alt="" width={705} height={411} loading="eager" decoding="async"/>
+      </div>}
       <header className={styles.header}>
         <button type="button" className={styles.close} onClick={onClose} disabled={locked}
           aria-label={words.close}><X size={23}/></button>
@@ -360,7 +513,7 @@ export default function CourseSlidePlayer({
         {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
           <ShieldCheck size={36} aria-hidden="true"/>
           <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
-          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setComfort('uncomfortable'); if(isDayOne)setIndex(current=>Math.max(5,current)); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
           <button type="button" onClick={onClose}>{words.discomfortExit}</button>
           <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
           <small>{words.discomfortEmergency}</small>
@@ -440,40 +593,64 @@ export default function CourseSlidePlayer({
           {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
-          <div className={styles.slideIdentity}>
-            <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
-            <span className={styles.identityLabel}>{lesson.title}</span>
-          </div>
-          <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
-
-          {slide.kind === 'pace' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{words.pacePrompt}</p>
-            <div className={styles.paceChoices} role="group" aria-label={words.pacePrompt}>
-              {[
-                ['quick',words.short,words.shortDetail,Clock3],
-                ['standard',words.standard,words.standardDetail,Waves],
-                ['no_imagery',words.noImagery,words.noImageryDetail,Leaf],
-              ].map(([key,label,detail,OptionIcon])=><button key={key} type="button"
-                disabled={locked} aria-pressed={pace===key} onClick={()=>setPace(key)}>
-                <span className={styles.paceIcon}><OptionIcon size={22} aria-hidden="true"/></span>
-                <span className={styles.paceCopy}><strong>{label}</strong><small>{detail}</small></span>
-                {pace===key?<CheckCircle2 size={19} className={styles.paceCheck} aria-hidden="true"/>:
-                  <ArrowRight size={18} aria-hidden="true"/>}
-              </button>)}
+          {slide.kind !== 'welcome' && <>
+            <div className={styles.slideIdentity}>
+              <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
+              <span className={styles.identityLabel}>{lesson.title}</span>
             </div>
+            <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{title}</h2>
           </>}
 
+          {slide.kind === 'welcome' && <section className={styles.welcomeScreen} data-course-welcome>
+            <div className={styles.welcomeBackdrop} aria-hidden="true">
+              <img className={styles.welcomeBackgroundImage}
+                src="/images/holistic-house/course-focus-mountain-boy.webp"
+                alt="" width={705} height={411} decoding="async" />
+            </div>
+            <div className={styles.welcomeContent}>
+              <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
+              <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
+              <p className={styles.welcomePrompt}>{words.welcomePrompt}</p>
+              <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
+                {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
+                  const FeelingIcon = [Sun, Cloud, Moon, CircleHelp][choiceIndex]
+                  return <button key={choice.id} type="button" disabled={locked}
+                    aria-pressed={welcomeFeeling === choice.id} onClick={() => setWelcomeFeeling(choice.id)}>
+                    <span className={styles.welcomeChoiceIcon}><FeelingIcon size={20} aria-hidden="true"/></span>
+                    <span>{choice.label}</span>
+                    {welcomeFeeling === choice.id ? <CheckCircle2 size={20} aria-hidden="true"/> : <ArrowRight size={17} aria-hidden="true"/>}
+                  </button>
+                })}
+              </div>
+              {welcomeFeeling && welcomeFeeling !== 'skip' &&
+                <p className={styles.welcomeResponse} role="status">{welcomeFeelingSupport(welcomeFeeling, locale)}</p>}
+              <p className={styles.welcomeNote}>{words.welcomeNote}</p>
+              <button type="button" className={styles.welcomeSkip} disabled={locked}
+                onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>
+            </div>
+          </section>}
+
           {slide.kind === 'baseline' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt}>{words.baselineQuestion}</p>
-            <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
-              label={words.before + ': ' + focusLabel} disabled={locked}/>
+            <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
+            <MomentScale value={entryNow} onChange={setEntryNow} words={words}
+              label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
+              highLabel={words.baselineHigh} disabled={locked}/>
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && <>
+          {slide.kind === 'checkin' && (lesson.antiStress ? <>
+            <IllustratedMoment variant="calm" kind={slide.kind}/>
+            <p className={styles.prompt}>{lesson.antiStress.skill}</p>
+            <p className={styles.instruction}>{lesson.antiStress.learningOutcome}</p>
+            <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+            <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
+              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
+            </div>
+            <p className={styles.helper}>{lesson.antiStress.neutralText}</p>
+          </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
             <p className={styles.instruction}>{words.checkinQuestion}</p>
@@ -484,36 +661,107 @@ export default function CourseSlidePlayer({
             <div className={styles.rangeCaption}><span>{words.low}</span><span>{words.high}</span></div>
             <p className={styles.helper}>{words.ratingHint}</p>
             {today && <p className={styles.confirmed}><CheckCircle2 size={16}/>{words.saved}</p>}
-          </>}
+          </>)}
 
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo kind={slide.kind}/>
-            <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
+            <blockquote className={styles.quote}>“{isDayOne ? dayOneAphorism(locale,dayOneFocus?.goal,lesson.aphorism) : lesson.aphorism}”</blockquote>
+            {isDayOne && <DayOneChoices label={locale==='ru'?'Как вам эта мысль?':'How does this idea fit for you?'}
+              value={dayOneAnswers.quote} disabled={locked} onSelect={value=>recordDayOne('quote',value)}
+              options={[
+                {value:'agree',label:locale==='ru'?'Согласен(на)':'I agree'},
+                {value:'unsure',label:locale==='ru'?'Не знаю':'I am not sure'},
+                {value:'disagree',label:locale==='ru'?'Не согласен(на)':'I disagree'},
+                {value:'skip',label:locale==='ru'?'Пропустить':'Skip'},
+              ]}/>}
+            {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
+              {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
+            </p>}
+            {!isDayOne&&lesson.antiStress&&<section data-course-aphorism-dialogue>
+              <p className={styles.prompt}>{learning.aphorismTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
+                {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={aphorismResponse===key}
+                    onClick={()=>setAphorismResponse(key)}>{label}</button>)}
+              </div>
+              {aphorismResponse&&<p className={styles.helper} role="status">
+                {learning.aphorismHints[aphorismResponse]}</p>}
+            </section>}
           </>}
           {slide.kind === 'understand' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
           </>}
 
-          {slide.kind === 'recall' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
-            <p className={styles.helper}>{words.recallHint}</p>
-          </>}
+          {slide.kind === 'recall' && (isDayOne
+            ? <DayOneFocusPicker locale={locale} options={data.dayOneFocusOptions||[]}
+                value={dayOneAnswers.focusId} disabled={locked}
+                onSelect={value=>recordDayOne('focusId',value)}/>
+            : <>
+              <IllustratedMoment variant="calm" kind={slide.kind}/>
+              <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
+              <p className={styles.helper}>{words.recallHint}</p>
+              {lesson.antiStress&&<div className={styles.feedbackOptions}
+                role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
+                {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
+                    onClick={()=>setRecallAttempt(key)}>{label}</button>)}
+              </div>}
+              {lesson.antiStress&&recallAttempt==='hint'&&
+                <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
+            </>)}
 
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
-            {cycle.day===5 && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
+            {cycle.day===5 && !lesson.antiStress && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
               {[['cbt',words.cbtChoice],['act',words.actChoice],['neutral',words.neutralChoice]].map(([key,label])=><button key={key} type="button"
                 disabled={locked} aria-pressed={thoughtChoice===key} onClick={()=>setThoughtChoice(key)}>{label}</button>)}
             </div>}
-            <blockquote className={styles.quote}>{cycle.day===5 ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
+            <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
+            {lesson.antiStress&&<div data-course-support-phrase-choice>
+              <p className={styles.prompt}>{learning.phraseTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.phraseTitle}>
+                {[['fits',learning.fits],['unsure',learning.phraseUnsure],['no',learning.phraseNo]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={phraseResponse===key}
+                    onClick={()=>setPhraseResponse(key)}>{label}</button>)}
+              </div>
+              {phraseResponse&&<p className={styles.helper}>{learning.phraseHints[phraseResponse]}</p>}
+            </div>}
           </>}
 
           {slide.kind === 'guided' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{neutralMode ? words.neutralPractice : slide.section.text}</p>
+            {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
+            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
+              <p className={styles.prompt}>{words.practicePrePrompt}</p>
+              <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
+                label={words.before + ': ' + focusLabel} disabled={locked}/>
+            </div>}
+            {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
+              <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
+              <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
+              <CoursePracticeVoice key={slide.key + ':' + neutralMode} locale={locale}
+                text={neutralMode ? words.neutralPractice : words.arrivalAudioLead + ': ' + focusLabel + '. ' + words.arrivalAudioBody}/>
+              <ol className={styles.arrivalSteps}>
+                {words.arrivalSteps.map((step, stepIndex) => <li key={stepIndex}>
+                  <span aria-hidden="true">{stepIndex + 1}</span><p>{step}</p>
+                </li>)}
+              </ol>
+              <details className={styles.practiceTranscript}>
+                <summary>{words.fullInstructions}<ChevronDown size={17} aria-hidden="true"/></summary>
+                <div>
+                  {lesson.sections?.find(part => part.kind === 'learn')?.text && <p>{lesson.sections.find(part => part.kind === 'learn').text}</p>}
+                  <p>{neutralMode ? words.neutralPractice : slide.section.text}</p>
+                </div>
+              </details>
+            </section> : <>
+              <CoursePracticeVoice key={slide.key + ':' + neutralMode} locale={locale}
+                text={neutralMode ? words.neutralPractice : slide.section.text}/>
+              <details className={styles.practiceTranscript}>
+                <summary>{words.fullInstructions}<ChevronDown size={17} aria-hidden="true"/></summary>
+                <div><p>{neutralMode ? words.neutralPractice : slide.section.text}</p></div>
+              </details>
+            </>}
             <p className={styles.helper}>{words.gentle}</p>
             {!neutralMode && <details className={styles.timerDetails}>
               <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
@@ -533,18 +781,78 @@ export default function CourseSlidePlayer({
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
             </details>}
+            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-post>
+              <p className={styles.prompt}>{words.practicePostPrompt}</p>
+              <MomentScale value={afterNow} onChange={setAfterNow} words={words}
+                label={words.after + ': ' + focusLabel} disabled={locked}/>
+            </div>}
           </>}
 
           {slide.kind === 'ritual' && <>
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {lesson.antiStress&&<section data-course-practice-attempt>
+              <p className={styles.prompt}>{learning.practiceTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
+                {[['tried',learning.tried],['simplified',learning.simplified],
+                  ['neutral',learning.neutral],['skip',learning.practiceSkip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={practiceAttempt===key}
+                    onClick={()=>setPracticeAttempt(key)}>{label}</button>)}
+              </div>
+              <p className={styles.helper}>{learning.practiceNote}</p>
+            </section>}
+            {lesson.antiStress?.probe && <section className={styles.antiStressProbe} data-antistress-skill-probe>
+              <p className={styles.antiStressProbeTag}>{locale==='ru'?'Практический выбор · навык '+lesson.antiStress.skillId:'Practice choice · skill '+lesson.antiStress.skillId}</p>
+              <strong>{lesson.antiStress.probe.prompt}</strong>
+              <div className={styles.antiStressProbeChoices} role="group" aria-label={lesson.antiStress.probe.prompt}>
+                {lesson.antiStress.probe.choices.map(choice=><button type="button" key={choice.value}
+                  disabled={locked} aria-pressed={skillProbeChoice===choice.value}
+                  onClick={()=>setSkillProbeChoice(choice.value)}>
+                  {choice.label}{skillProbeChoice===choice.value&&<Check size={16} aria-hidden="true"/>}
+                </button>)}
+              </div>
+              <button type="button" className={styles.antiStressHint} disabled={locked}
+                onClick={()=>setSkillProbeHintUsed(true)}>{locale==='ru'?'Показать подсказку':'Show a hint'}</button>
+              {skillProbeHintUsed&&<p className={styles.helper}>{lesson.antiStress.probe.hint}</p>}
+              <p className={styles.helper}>{locale==='ru'?'Можно не отвечать. Выбор — учебная проба, а не показатель психического здоровья.':'You may skip this. A choice here is an educational attempt, not a mental-health score.'}</p>
+            </section>}
           </>}
 
           {slide.kind === 'transfer' && <>
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {lesson.antiStress&&<section data-course-everyday-transfer>
+              <p className={styles.prompt}>{learning.transferTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={learning.transferTitle}>
+                {[['plan',learning.plan],['imagined',learning.imagined],['phrase',learning.phrase],
+                  ['real',learning.real],['skip',learning.skip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={transferStage===key}
+                    onClick={()=>setTransferStage(key)}>{label}</button>)}
+              </div>
+              <p className={styles.helper}>{locale==='ru'?'Реальный шаг фиксируется только с ваших слов. Ни один шаг не обязателен.':'Real-world action is self-reported only. No action is required.'}</p>
+            </section>}
+            {cycle.day===6 && !lesson.antiStress && <>
+              <p className={styles.prompt}>{words.transferStageTitle}</p>
+              <div className={styles.feedbackOptions} role="group" aria-label={words.transferStageTitle} data-course-transfer-stage>
+                {[
+                  ['plan',words.transferPlan],['imagined',words.transferImagined],
+                  ['phrase',words.transferPhrase],['real',words.transferReal],
+                  ['skip',words.transferSkip],
+                ].map(([key,label])=><button type="button" key={key} disabled={locked}
+                  aria-pressed={transferStage===key} onClick={()=>setTransferStage(key)}>{label}</button>)}
+              </div>
+              <label className={styles.noteField}><span>{words.transferPlanLabel}</span>
+                <textarea rows={2} maxLength={300} value={transferPlan} disabled={locked}
+                  onChange={event=>setTransferPlan(event.target.value)}/>
+              </label>
+            </>}
+            {cycle.day===10 && !lesson.antiStress && <div className={styles.practiceRating} data-course-day-six-recall>
+              <strong>{words.lastPlanTitle}</strong>
+              <p>{data.daySixPlan?.plan || words.noSavedPlan}</p>
+              {data.daySixPlan?.stage && <small>{words.transferStageTitle}: {data.daySixPlan.stage}</small>}
+            </div>}
           </>}
 
           {slide.kind === 'symbol' && <>
@@ -575,28 +883,68 @@ export default function CourseSlidePlayer({
           {slide.kind === 'moment' && <>
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt}>{words.momentQuestion}</p>
-            <MomentScale value={afterNow} onChange={setAfterNow} words={words}
-              label={words.after + ': ' + focusLabel} disabled={locked}/>
+            <p className={styles.prompt}>{words.moment}</p>
+            {compareLessonMoments(beforeNow,afterNow)
+              ? <p className={styles.instruction}>{beforeNow}/10 → {afterNow}/10</p>
+              : <p className={styles.helper}>{words.momentNoPair}</p>}
             <p className={styles.helper}>{words.momentHint}</p>
           </>}
 
+          {isDayOne && slide.kind.startsWith('day1-') && <DayOneExercise
+            kind={slide.kind} locale={locale} lesson={lesson} answers={dayOneAnswers}
+            onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
+            onAssociationWords={setAssociationWords} selectedFocus={dayOneFocus}
+            neutralMode={neutralMode} onReturnToPractice={()=>setNeutralMode(false)}
+            onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {slide.kind === 'feedback' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.helper}>{words.feedbackHint}</p>
-            <div className={styles.feedbackOptions} role="group" aria-label={words.feedback}>
+            <p className={styles.prompt}>{words.comfortTitle}</p>
+            <div className={styles.feedbackOptions} role="group" aria-label={words.comfortTitle} data-course-comfort>
               {[
-                ['helped',words.helped,Heart],
-                ['neutral',words.neutral,Leaf],
-                ['uncomfortable',words.uncomfortable,ShieldCheck],
-                ['skip',words.preferNot,SkipForward],
-              ].map(([key,label,ChoiceIcon]) => <button type="button" key={key}
-                disabled={locked} aria-pressed={feedback === key}
-                onClick={() => { setFeedback(key); if (key === 'uncomfortable') setDiscomfortOpen(true) }}>
-                <ChoiceIcon size={20} aria-hidden="true"/><span>{label}</span>
-                {feedback === key && <Check size={18} aria-hidden="true"/>}
+                ['comfortable',words.comfortableChoice],['neutral',words.neutralComfort],
+                ['uncomfortable',words.uncomfortable],['skip',words.preferNot],
+              ].map(([key,label])=><button type="button" key={key} disabled={locked}
+                aria-pressed={comfort===key} onClick={()=>{setComfort(key);if(key==='uncomfortable'){setFeedback('uncomfortable');setDiscomfortOpen(true)}}}>
+                <span>{label}</span>{comfort===key&&<Check size={18} aria-hidden="true"/>}
               </button>)}
             </div>
+            <p className={styles.prompt}>{words.usefulTitle}</p>
+            <div className={styles.feedbackOptions} role="group" aria-label={words.usefulTitle} data-course-usefulness>
+              {[
+                ['useful',words.usefulChoice],['unchanged',words.unchangedChoice],
+                ['unsure',words.unsureChoice],['skip',words.preferNot],
+              ].map(([key,label])=><button type="button" key={key} disabled={locked}
+                aria-pressed={usefulness===key} onClick={()=>setUsefulness(key)}>
+                <span>{label}</span>{usefulness===key&&<Check size={18} aria-hidden="true"/>}
+              </button>)}
+            </div>
+            <p className={styles.prompt}>{words.flexibilityTitle}</p>
+            <div className={styles.feedbackOptions} role="group" aria-label={words.flexibilityTitle} data-course-flexibility>
+              {[
+                ['more_choice',words.moreChoice],['same',words.sameChoice],
+                ['unsure',words.unsureChoice],['skip',words.preferNot],
+              ].map(([key,label])=><button type="button" key={key} disabled={locked}
+                aria-pressed={flexibility===key} onClick={()=>setFlexibility(key)}>
+                <span>{label}</span>{flexibility===key&&<Check size={18} aria-hidden="true"/>}
+              </button>)}
+            </div>
+            {(comfort!=='skip'||usefulness!=='skip')&&<div className={styles.practiceRating} data-course-practice-adaptation>
+              <p className={styles.prompt}>{words.adaptationTitle}</p>
+              {adaptationProposal&&adaptationProposal.kind!=='stop'&&<p className={styles.helper}>
+                {words.adaptationHint} {adaptationProposal.kind==='keep'?words.adaptationKeep:
+                  adaptationProposal.kind==='simplify'?words.adaptationSimplify:words.adaptationNeutral}
+              </p>}
+              <div className={styles.feedbackOptions} role="group" aria-label={words.adaptationTitle}>
+                {[
+                  ['keep',words.adaptationKeep],['simplify',words.adaptationSimplify],
+                  ['neutral',words.adaptationNeutral],
+                ].map(([key,label])=><button key={key} type="button" disabled={locked}
+                  aria-pressed={adaptationChoice===key} onClick={()=>setAdaptationChoice(key)}>
+                  <span>{label}</span>{adaptationChoice===key&&<Check size={18} aria-hidden="true"/>}
+                </button>)}
+              </div>
+            </div>}
             <small className={styles.helper}>{words.needSave}</small>
           </>}
         </>}
@@ -609,23 +957,24 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind) && <button
+          {(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
+            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        {!finished && !discomfortOpen && ['guided','symbol'].includes(slide.kind) && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)}>{words.discomfortAction}</button>}
+        {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
+        {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
         {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'pace' ? () => void savePace()
-            : slide.kind === 'checkin' ? () => void saveCheckin()
+            : slide.kind === 'checkin' ? (lesson.antiStress ? goNext : () => void saveCheckin())
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
               : promotion.show && earned ? words.promoContinue : words.seeMap)
             : index === slides.length - 1 ? words.finish
-            : slide.kind === 'pace' || (slide.kind === 'checkin' && Number.isInteger(severity)) ? words.saveNext : words.next}</span>
+            : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}
         </button>}
         <p>{words.safety}</p>

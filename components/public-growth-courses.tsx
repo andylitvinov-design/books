@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, CheckCircle2, CircleHelp, Clock3, ShieldCheck, SlidersHorizontal, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PublicCourseCabinet } from "@/components/public-course-cabinet";
+import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-growth-courses.module.css";
 
@@ -8,24 +10,40 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ПРОГРАММЫ ПОДДЕРЖКИ",
     title: "Мои курсы",
-    lead: "Небольшие шаги, которые помогают лучше понимать себя и находить внутреннюю опору.",
-    intro: "Выберите важную для вас тему, начните с коротких тестов и проходите 14-дневный курс в своём темпе — по одному завершённому уроку за раз.",
-    start: "Начать бесплатно", learn: "Посмотреть программы",
+    lead: "Небольшие шаги к спокойствию и внутренней опоре.",
+    intro: "14 дней в вашем темпе. Один урок, одна практика и возможность замечать свои изменения.",
+    start: "Начать бесплатно", learn: "Подробнее об Антистрессе",
     heroTag: "14 дней · личный темп", visualTitle: "Ваша точка опоры",
     visualText: "Один урок, одна практика, один небольшой шаг.",
     badge: "Первый курс бесплатно",
     eyebrowPrograms: "ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ",
-    programsTitle: "С чего хотите начать?", programsIntro: "Три готовые программы или индивидуальный маршрут под вашу цель.",
+    programsTitle: "ОПОРА — Антистресс", programsIntro: "Сейчас открыт один 14-дневный курс: семь навыков для работы с повседневным стрессом.",
     cardAction: "Выбрать программу", days: "14-дневная программа",
     stress: { title: "Антистресс", pain: "Трудно расслабиться и выключить напряжение", description: "Наблюдаем свои реакции, находим короткие паузы и способы восстановления.", result: "Спокойствие · устойчивость · восстановление" },
+    stressSkills: {
+      "title": "Антистресс · 7 навыков за 14 занятий",
+      "kicker": "ОПОРА · АНТИСТРЕСС",
+      "intro": "Каждому навыку посвящены два занятия: знакомство с техникой и её бережная тренировка в обычной ситуации.",
+      "skills": [
+        "Ориентироваться в настоящем и сохранять выбор",
+        "Раньше замечать признаки перегрузки",
+        "Мягко регулировать напряжение и нагрузку",
+        "Находить реальные и внутренние ресурсы",
+        "Отделять тревожные мысли от фактов",
+        "Обозначать границы и обращаться за поддержкой",
+        "Самостоятельно применять знакомые практики"
+      ],
+      "cta": "Начать программу «Антистресс»",
+      "safety": "Самостоятельное обучение управлению повседневным стрессом. Не терапия шоковой травмы или ПТСР и не замена помощи специалиста. Любую практику можно остановить или пропустить."
+    },
     confidence: { title: "Внутренняя уверенность", pain: "Сомнения и слишком строгий внутренний критик", description: "Работаем с внутренней поддержкой, личными границами и уверенностью в выборе.", result: "Опора · свой голос · границы" },
     focus: { title: "Фокус и энергия", pain: "Трудно собраться, начать и удержать внимание", description: "Развиваем мягкую концентрацию, ясность приоритетов и посильные действия.", result: "Ясность · действие · свой темп" },
-    personal: "Мой персональный курс", personalDesc: "Не нашли своё направление? Сформируйте программу вокруг ваших целей и актуальных вопросов.", personalAction: "Составить свой курс",
+    personal: "Другие направления — позже", personalDesc: "Курсы уверенности и концентрации готовятся. Сейчас можно выбрать свои цели и шкалы внутри Антистресса.", personalAction: "Составить свой курс",
     eyebrowHow: "ПРОСТОЙ ПУТЬ", howTitle: "Как проходит курс",
     steps: [
-      { title: "Выберите тему", description: "Определите запрос или начните с готовой программы." },
-      { title: "Изучите свой профиль", description: "Пройдите предложенные тесты, чтобы увидеть исходную точку." },
-      { title: "Осваивайте по одному уроку", description: "Короткая практика и отметка о завершении. Следующий урок откроется, когда вы закончите текущий." },
+      { title: "Определите свой фокус", description: "Курс Антистресс уже выбран: вы отмечаете важные лично вам навыки и цели." },
+      { title: "Узнайте исходное состояние", description: "Короткий замер и подобранные тесты перед стартом." },
+      { title: "Замечайте изменения", description: "14 небольших уроков. Следующий — после завершения текущего; в конце можно повторить замер." },
     ],
     methodKicker: "НАША МЕТОДИКА", methodTitle: "Метод ОПОРА: как работают наши курсы", methodText: "Пять шагов от осознания до действия. Узнайте, как мы объединяем психологические подходы, короткие практики и персональный маршрут.", methodLink: "Узнать о методе ОПОРА",
     bottomTitle: "Готовы сделать первый шаг?",
@@ -36,22 +54,38 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · GUIDED LEARNING",
     title: "My courses",
-    lead: "Small, meaningful steps to understand yourself and build inner support.",
-    intro: "Choose what matters, start with brief assessments and follow a 14-day learning journey at your own pace — one completed lesson at a time.",
-    start: "Start for free", learn: "Explore the programmes",
+    lead: "Small steps towards calm and inner support.",
+    intro: "Fourteen days at your own pace. One lesson, one practice, and room to notice how you feel.",
+    start: "Start for free", learn: "About Stress Relief",
     heroTag: "14 days · your pace", visualTitle: "Find your footing",
     visualText: "One lesson, one practice, one small step.",
     badge: "Your first course is free",
     eyebrowPrograms: "FIND YOUR STARTING POINT",
-    programsTitle: "What would you like to work on?", programsIntro: "Choose one of three guided programmes or create a personal learning path.",
+    programsTitle: "OPORA — Stress Relief", programsIntro: "One programme is open now: 14 lessons and seven practical skills for everyday stress.",
     cardAction: "Choose programme", days: "14-day programme",
     stress: { title: "Stress Relief", pain: "It's hard to switch off and unwind", description: "Notice reactions, practise small pauses and make space for recovery.", result: "Calm · steadiness · recovery" },
+    stressSkills: {
+      "title": "Stress Relief · 7 skills across 14 lessons",
+      "kicker": "OPORA · STRESS RELIEF",
+      "intro": "Each skill is explored twice: first a gentle introduction, then practice in an ordinary, manageable situation.",
+      "skills": [
+        "Orient to the present and retain choice",
+        "Notice signs of overload earlier",
+        "Regulate tension and pace gently",
+        "Find practical and inner sources of support",
+        "Separate worrying thoughts from facts",
+        "Set boundaries and ask for support",
+        "Choose familiar practices independently"
+      ],
+      "cta": "Start Stress Relief",
+      "safety": "Self-guided education for everyday stress, not shock-trauma or PTSD treatment and not a replacement for professional care. You may stop or skip any exercise."
+    },
     confidence: { title: "Inner Confidence", pain: "Self-doubt and a harsh inner critic", description: "Explore self-support, boundaries and confidence in everyday decisions.", result: "Support · voice · boundaries" },
     focus: { title: "Focus & Energy", pain: "It's hard to focus and get started", description: "Build gentle attention, clear priorities and manageable daily action.", result: "Clarity · action · your pace" },
-    personal: "My personal course", personalDesc: "Need a different topic? Shape a learning path around your goals and questions.", personalAction: "Create my course",
+    personal: "More programmes are coming", personalDesc: "Confidence and focus courses are in preparation. You can choose your own goals and scales within Stress Relief.", personalAction: "Create my course",
     eyebrowHow: "A SIMPLE PATH", howTitle: "How your course works",
     steps: [
-      { title: "Choose a focus", description: "Pick a guided programme or define your own question." },
+      { title: "Choose your focus", description: "Anti-Stress is selected; you choose which personal skills and goals matter." },
       { title: "Explore your starting point", description: "Complete suggested assessments to better understand your current experience." },
       { title: "One lesson at a time", description: "Try a short practice and mark it complete. The next lesson follows when you're ready." },
     ],
@@ -64,22 +98,38 @@ const copy = {
   es: {
     eyebrow: "HOLISTIC HOUSE · PROGRAMAS DE APOYO",
     title: "Mis cursos",
-    lead: "Pequeños pasos para conocerte mejor y cultivar tu apoyo interior.",
-    intro: "Elige un tema, comienza con pruebas breves y sigue un recorrido de 14 días a tu ritmo: una lección completada cada vez.",
-    start: "Empezar gratis", learn: "Ver los programas",
+    lead: "Pequeños pasos hacia la calma y tu apoyo interior.",
+    intro: "Catorce días a tu ritmo. Una lección, una práctica y espacio para observar los cambios.",
+    start: "Empezar gratis", learn: "Conocer Antiestrés",
     heroTag: "14 días · a tu ritmo", visualTitle: "Tu punto de apoyo",
     visualText: "Una lección, una práctica, un pequeño paso.",
     badge: "Tu primer curso es gratis",
     eyebrowPrograms: "ELIGE TU CAMINO",
-    programsTitle: "¿Por dónde quieres empezar?", programsIntro: "Tres programas guiados o una ruta personal según tus objetivos.",
+    programsTitle: "OPORA — Antiestrés", programsIntro: "Un único curso disponible: 14 lecciones y siete habilidades prácticas para el estrés cotidiano.",
     cardAction: "Elegir programa", days: "Programa de 14 días",
     stress: { title: "Menos estrés", pain: "Cuesta desconectar y relajarte", description: "Observa tus reacciones y encuentra pausas para recuperarte.", result: "Calma · estabilidad · recuperación" },
+    stressSkills: {
+      "title": "Menos estrés · 7 habilidades en 14 lecciones",
+      "kicker": "OPORA · MENOS ESTRÉS",
+      "intro": "Cada habilidad se practica en dos lecciones: primero se conoce y después se prueba en una situación cotidiana segura.",
+      "skills": [
+        "Orientarte en el presente y poder elegir",
+        "Reconocer antes las señales de sobrecarga",
+        "Regular la tensión y la carga con suavidad",
+        "Encontrar apoyos reales e internos",
+        "Distinguir pensamientos inquietantes de hechos",
+        "Poner límites y pedir apoyo",
+        "Elegir prácticas conocidas con autonomía"
+      ],
+      "cta": "Empezar el programa antiestrés",
+      "safety": "Educación para afrontar el estrés cotidiano; no es tratamiento del trauma agudo ni del TEPT y no sustituye la ayuda profesional. Puedes detener o saltar cualquier ejercicio."
+    },
     confidence: { title: "Confianza interior", pain: "Dudas y autocrítica", description: "Explora el apoyo interior, los límites y tus decisiones.", result: "Apoyo · voz · límites" },
     focus: { title: "Enfoque y energía", pain: "Cuesta concentrarte y empezar", description: "Cultiva una atención amable y pequeñas acciones sostenibles.", result: "Claridad · acción · tu ritmo" },
-    personal: "Mi curso personal", personalDesc: "¿Otro tema? Crea una ruta de aprendizaje centrada en tus objetivos.", personalAction: "Crear mi curso",
+    personal: "Próximamente otros cursos", personalDesc: "Estamos preparando cursos de confianza y concentración. Ya puedes elegir metas personales dentro de Antiestrés.", personalAction: "Crear mi curso",
     eyebrowHow: "UN CAMINO SENCILLO", howTitle: "Cómo funciona",
     steps: [
-      { title: "Elige un tema", description: "Escoge un programa o define tu propia pregunta." },
+      { title: "Elige tu enfoque", description: "Antiestrés ya está seleccionado; tú eliges tus metas personales." },
       { title: "Conoce tu punto de partida", description: "Completa las pruebas sugeridas para reflexionar sobre tu situación actual." },
       { title: "Una lección a la vez", description: "Practica, marca la lección como terminada y después sigue con la siguiente." },
     ],
@@ -91,16 +141,16 @@ const copy = {
   },
 } as const;
 
-const programmeIds = ["stress", "confidence", "focus"] as const;
+const programmeIds = ["stress"] as const; // Only the reviewed course accepts new public enrollment.
 const icons = { stress: Waves, confidence: ShieldCheck, focus: Target } as const;
 
 export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const appLocale = locale === "es" ? "en" : locale;
-  const courseUrl = `/${appLocale}/app/course`;
+  const courseUrl = `/${appLocale}/app/course?program=stress`;
 
   return <main className={styles.root} lang={locale} data-public-my-courses>
-    <PublicSiteHeader locale={locale} />
+    <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
     <section className={styles.hero} aria-labelledby="courses-title">
       <div className={styles.heroCopy}>
         <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
@@ -109,7 +159,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         <p className={styles.heroIntro}>{t.intro}</p>
         <div className={styles.heroActions}>
           <Link className={styles.primary} href={courseUrl} prefetch={false}>{t.start}<ArrowRight size={18} aria-hidden="true" /></Link>
-          <a className={styles.secondary} href="#course-programmes">{t.learn}<ArrowRight size={18} aria-hidden="true" /></a>
+          <Link className={styles.secondary} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={18} aria-hidden="true" /></Link>
         </div>
         <span className={styles.freeNote}><CheckCircle2 size={17} aria-hidden="true" />{t.badge}</span>
       </div>
@@ -123,6 +173,8 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
         </div>
       </div>
     </section>
+
+    <PublicCourseCabinet locale={appLocale} />
 
     <section className={styles.section} id="course-programmes" aria-labelledby="course-programmes-title">
       <p className={styles.sectionKicker}>{t.eyebrowPrograms}</p>
@@ -139,14 +191,37 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
             <p className={styles.programmePain}>{programme.pain}</p>
             <p className={styles.programmeText}>{programme.description}</p>
             <p className={styles.programmeResult}>{programme.result}</p>
-            <Link href={`${courseUrl}?program=${id}`} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link href={courseUrl} prefetch={false}>{t.cardAction}<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className={styles.programmeMore} href={"/" + locale + "/courses/antistress"}>{t.learn}<ArrowRight size={15} aria-hidden="true" /></Link>
           </article>;
         })}
+      </div>
+      <section className={styles.stressSkills} aria-labelledby="stress-seven-skills-title" data-opora-stress-seven-skills>
+        <div className={styles.stressSkillsHeader}>
+          <span className={styles.stressSkillsKicker}><Waves size={18} aria-hidden="true" />{t.stressSkills.kicker}</span>
+          <h3 id="stress-seven-skills-title">{t.stressSkills.title}</h3>
+          <p>{t.stressSkills.intro}</p>
+        </div>
+        <ol className={styles.stressSkillsList}>
+          {t.stressSkills.skills.map((skill, index) => <li key={skill}>
+            <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            <strong>{skill}</strong>
+            <small>{index * 2 + 1}–{index * 2 + 2} / 14</small>
+          </li>)}
+        </ol>
+        <div className={styles.stressSkillsFoot}>
+          <p>{t.stressSkills.safety}</p>
+          <Link href={courseUrl} prefetch={false}>{t.stressSkills.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+        </div>
+      </section>
+
+      <div className={styles.dailyPlanPreview} data-opora-14-day-public-plan>
+        <Course14DayOverview locale={locale} programId="stress" compact />
       </div>
       <div className={styles.personal}>
         <span className={styles.personalIcon}><SlidersHorizontal size={27} aria-hidden="true" /></span>
         <div><h3>{t.personal}</h3><p>{t.personalDesc}</p></div>
-        <Link href={`${courseUrl}?entry=personal`} prefetch={false}>{t.personalAction}<ArrowRight size={17} aria-hidden="true" /></Link>
+        <span className={styles.programmeMeta} data-course-upcoming>{locale === "ru" ? "Скоро" : locale === "es" ? "Próximamente" : "Coming soon"}</span>
       </div>
     </section>
 
@@ -156,7 +231,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
       <div className={styles.steps}>{t.steps.map((step, index) =>
         <div className={styles.step} key={step.title}>
           <span className={styles.stepNumber}>0{index + 1}</span>
-          <h3>{step.title}</h3><p>{step.description}</p>
+          <div className={styles.stepCopy}><h3>{step.title}</h3><p>{step.description}</p></div>
         </div>)}</div>
     </section>
 

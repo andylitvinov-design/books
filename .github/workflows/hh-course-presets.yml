@@ -1,0 +1,47 @@
+name: HH My Courses Preset Tests
+
+on:
+  push:
+    branches:
+      - feat/hh-my-courses-presets-five-tests-20261013
+      - codex/course-subscriptions-commerce-20261013
+  pull_request:
+    paths:
+      - 'lib/inner-growth/course-presets.js'
+      - 'components/app/course-preset-catalog.*'
+      - 'components/app/my-course.jsx'
+      - 'components/app/my-courses-dashboard.jsx'
+      - 'components/app/course-r3-steps.jsx'
+      - 'lib/app/growth-course.js'
+      - 'tests/course-presets.test.mjs'
+      - 'tests/my-course.test.mjs'
+      - 'lib/billing/**'
+      - 'lib/app/course-access.js'
+      - 'docs/billing/proposed-concurrent-course-schema.sql'
+      - 'tests/course-dashboard-integration.test.mjs'
+      - 'tests/course-concurrency-ui.test.mjs'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  course-presets:
+    name: Five-test presets + legacy course
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test exact five-test fixed curricula, old R3 and multicourse
+        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs
+      - name: Lint course code
+        run: npx eslint components/app/course-preset-catalog.jsx components/app/my-course.jsx components/app/course-r3-steps.jsx components/app/my-courses-dashboard.jsx lib/inner-growth/course-presets.js lib/app/growth-course.js
+      - name: Next production compile
+        run: npm run build

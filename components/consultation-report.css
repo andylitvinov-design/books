@@ -2622,3 +2622,286 @@
     width:207pt!important;
   }
 }
+
+
+/* HH Editorial Report v6 — the live report and downloadable PDF share
+   ivory paper, an unboxed lighthouse, decorative outer margins and two
+   *recorded* progress rings. This is not a mockup image overlay. */
+.canonical-shell .canonical-document--editorial {
+  --report-plum:#612c46;
+  --report-ink:#353034;
+  --report-sage:#487e76;
+  --report-ivory:#fffdf9;
+  background:var(--report-ivory);
+  border-top:6px solid #633049;
+}
+.canonical-document--editorial .canonical-report-brandline {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:7px 16px;
+  background:#fffefa;
+  border-bottom:0;
+  margin:0 0 7px;
+  padding:0;
+}
+.canonical-document--editorial .canonical-editorial-brand {
+  grid-column:1;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+.canonical-document--editorial .canonical-editorial-brand strong {
+  color:#612c46;
+  font:400 clamp(25px,3.8vw,35px)/1.13 Georgia,'Times New Roman',serif;
+  letter-spacing:.035em;
+}
+.canonical-document--editorial .canonical-editorial-brand span {
+  color:#8b767e;
+  font:11px/1.3 Georgia,'Times New Roman',serif;
+  letter-spacing:.12em;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {
+  grid-row:2;
+  grid-column:1;
+  display:flex;
+  gap:10px;
+  margin:13px 0 5px;
+  background:none;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+  display:none;
+}
+.canonical-document--editorial .canonical-report-brandline .canonical-practitioner {
+  font:400 clamp(18px,2.3vw,23px)/1.15 Georgia,'Times New Roman',serif;
+  color:#442a37;
+}
+.canonical-document--editorial .canonical-report-private-label {
+  grid-column:2;grid-row:1;
+  margin-top:7px;
+  background:transparent;
+  border:0;
+  border-left:1px solid #d9c8ce;
+  border-radius:0;
+  color:#785c69;
+  font-size:9px;
+  letter-spacing:.08em;
+}
+.canonical-document--editorial .canonical-report-hero {
+  position:relative;
+  isolation:isolate;
+  min-height:200px;
+  padding:23px min(33%,265px) 22px 0;
+  margin:0 0 16px;
+  border:0;
+  border-bottom:1px solid #dcd6d1;
+  border-left:0;
+  border-radius:0;
+  overflow:visible;
+  background-color:#fffefa;
+  background-image:
+    linear-gradient(90deg,#fffefa 0%,#fffefa 50%,rgba(255,254,250,.35) 71%,rgba(235,245,243,.30) 100%),
+    url('/document-assets/lighthouse.png');
+  background-size:cover,auto 188px;
+  background-repeat:no-repeat;
+  background-position:center,right 10px center;
+}
+.canonical-document--editorial .canonical-report-hero::after {
+  content:"";
+  z-index:-1;
+  position:absolute;
+  width:37%;
+  height:63%;
+  right:-7px;
+  bottom:0;
+  top:auto;
+  border:0;
+  opacity:.6;
+  background: url('/images/holistic-house/homepage-botanical.svg') right bottom/81px auto no-repeat,
+    linear-gradient(175deg,transparent 35%,#d5e7e6 54%,#e4f0ed 62%,transparent 80%);
+  pointer-events:none;
+}
+.canonical-document--editorial .canonical-report-heading h1 {
+  max-width:17ch;
+  color:var(--report-plum);
+  font-size:clamp(30px,4.3vw,42px);
+  line-height:1.11;
+  letter-spacing:-.028em;
+  hyphens:none;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  color:#715267;
+  font-size:10px;
+  font-weight:650;
+  letter-spacing:.13em;
+}
+.canonical-document--editorial .canonical-report-hero-subtitle {
+  color:#687271;
+  max-width:31ch;
+  font-size:12px;
+  line-height:1.48;
+}
+.canonical-document--editorial .canonical-editorial-hero-motto {
+  display:block;
+  position:absolute;
+  right:6px;
+  top:12px;
+  max-width:76px;
+  color:#6b5360;
+  font:italic 12px/1.38 Georgia,'Times New Roman',serif;
+  text-align:right;
+  letter-spacing:.025em;
+}
+.canonical-document--editorial .canonical-client {
+  margin:0 0 17px;
+  gap:10px;
+  background:transparent;
+  padding:0;
+  border:0;
+  border-radius:0;
+}
+.canonical-document--editorial .canonical-client > div {
+  background:#faf5f1;
+  padding:13px 17px;
+  border:1px solid #ede5df;
+  border-radius:9px;
+}
+.canonical-document--editorial .canonical-client > div + div {
+  border:1px solid #ede5df;
+  padding-top:13px;
+}
+.canonical-document--editorial .canonical-progress {
+  padding:10px 14px 14px;
+  background:#fffefa;
+  border:0;
+  border-top:1px solid #e6ded9;
+  border-left:0;
+  border-radius:0;
+  margin:0 0 17px;
+}
+.canonical-document--editorial .canonical-progress > h2 {
+  font:500 12px/1.4 Georgia,'Times New Roman',serif;
+  color:var(--report-plum);
+  letter-spacing:.09em;
+}
+.canonical-document--editorial .canonical-progress-grid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  max-width:490px;
+  gap:25px;
+  margin:14px 0 3px;
+}
+.canonical-document--editorial .canonical-progress-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:4px 2px;
+  min-height:84px;
+  box-shadow:none;
+  background:transparent;
+  border:0;
+}
+.canonical-document--editorial .canonical-progress-item--after::before {
+  left:-20px;
+  color:#66364c;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  width:88px;
+  height:88px;
+  flex:0 0 88px;
+  box-shadow:none;
+}
+.canonical-document--editorial .canonical-report-analysis {
+  background:#faf7f3;
+  border:1px solid #ebe1d8;
+  border-left:3px solid #633049;
+  border-radius:10px;
+}
+.canonical-document--editorial .canonical-remedy {
+  border:1px solid #eadfd6;
+  border-radius:12px;
+  background:#fbf7f2;
+}
+.canonical-document--editorial .canonical-remedy-card-photo {
+  width:105px;
+  padding:6px;
+  background:#fffefa;
+}
+.canonical-document--editorial .canonical-remedy-card-photo img {
+  display:block;
+  width:100%;
+  height:108px;
+  object-fit:contain;
+}
+.canonical-document--editorial .canonical-remedy-title h3 {
+  color:var(--report-plum);
+  font-size:clamp(21px,2.9vw,28px);
+}
+.canonical-document--editorial .canonical-remedy-profiles {
+  border-top:2px solid #d7e4de;
+}
+.canonical-document--editorial .canonical-remedy-profiles > h2 {
+  color:var(--report-plum);
+  font:400 28px/1.24 Georgia,'Times New Roman',serif;
+}
+.canonical-document--editorial .canonical-remedy-profile {
+  position:relative;
+  padding-right:min(5vw,32px);
+}
+.canonical-document--editorial .canonical-remedy-profile::after {
+  content:"";
+  position:absolute;
+  right:-16px;top:210px;
+  width:32px;height:112px;
+  opacity:.35;
+  background:url('/images/holistic-house/homepage-botanical.svg') center/contain no-repeat;
+  pointer-events:none;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact {margin:9px 0 4px}
+  .canonical-document--editorial .canonical-editorial-brand strong {font-size:25px}
+  .canonical-document--editorial .canonical-report-private-label {font-size:8px;padding:4px}
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:178px;
+    padding:16px 83px 15px 0;
+    background-size:cover,102px auto;
+    background-position:center,right 3px bottom 7px;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {
+    font-size:clamp(22px,5.7vw,29px);
+    max-width:none;
+  }
+  .canonical-document--editorial .canonical-editorial-hero-motto {
+    right:1px;top:7px;font-size:9px;max-width:65px;
+  }
+  .canonical-document--editorial .canonical-report-hero::after {
+    width:31%;height:48%;background-size:36px auto,cover;
+  }
+  .canonical-document--editorial .canonical-client {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .canonical-document--editorial .canonical-client > div,
+  .canonical-document--editorial .canonical-client > div + div {
+    padding:10px 8px;min-width:0;
+  }
+  .canonical-document--editorial .canonical-progress-grid {gap:11px;max-width:none}
+  .canonical-document--editorial .canonical-progress-item {flex-direction:column;gap:7px;min-height:0}
+  .canonical-document--editorial .canonical-progress-dial {width:69px;height:69px;flex-basis:69px}
+  .canonical-document--editorial .canonical-remedy-card-photo {width:80px}
+  .canonical-document--editorial .canonical-remedy-card-photo img {height:84px}
+}
+@media print {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:175px;
+    padding-right:170px;
+    background-size:cover,160px auto!important;
+    background-position:center,right 5px center!important;
+    background-color:#fffefa!important;
+    print-color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+  }
+  .canonical-document--editorial .canonical-report-heading h1 {font-size:32px;hyphens:none}
+  .canonical-document--editorial .canonical-progress {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy {break-inside:avoid}
+  .canonical-document--editorial .canonical-remedy-profile::after {display:none}
+}

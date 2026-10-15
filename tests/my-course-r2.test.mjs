@@ -97,7 +97,7 @@ test('daily course API and private migration do not create public client ownersh
  const page=read('components/app/my-course.jsx')
  assert.match(routes,/createDailyCourseRepository/)
  assert.match(routes,/const actor = await auth\.verified\(\)/)
- assert.match(repo,/transaction\(config,actor/)
+ assert.match(repo,/runTransaction\(config,actor/)
  assert.match(repo,/localDateKey/)
  assert.match(repo,/seal\(label/)
  assert.match(repo,/where account_id=\$1/)
@@ -114,4 +114,26 @@ test('daily course API and private migration do not create public client ownersh
  assert.match(page,/<CourseToday locale=\{locale\}/)
  assert.doesNotMatch(app,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
  assert.doesNotMatch(repo,/ga4|analytics|sendBeacon/)
+})
+
+test('a delayed saved lesson owns its observation date without duplicate future placeholders',()=>{
+ const r=describeCycle({startLocalDay:'2026-10-14',duration:14,
+   sessions:[
+    {dayNumber:1,localDate:'2026-10-14',completedAt:'2026-10-14T18:00:00Z',feedback:'neutral'},
+    {dayNumber:2,localDate:'2026-10-20',completedAt:'2026-10-20T18:00:00Z',feedback:'neutral'},
+   ],
+   checkins:[
+    {localDate:'2026-10-14',severity:6},
+    {localDate:'2026-10-17',severity:7},
+    {localDate:'2026-10-20',severity:2},
+    {localDate:'2026-11-19',severity:3},
+   ],
+ })
+ assert.equal(r.days[1].date,'2026-10-20')
+ assert.equal(r.days[1].severity,2)
+ assert.equal(r.days[6].date,'2026-10-20') // retained legacy placeholder date
+ assert.equal(r.days[6].severity,null)       // no duplicate observation
+ assert.equal(r.observations,4)
+ assert.equal(r.calendarObservations.at(-1).date,'2026-11-19')
+ assert.deepEqual(r.comparison,{from:6,to:3,change:-3})
 })
