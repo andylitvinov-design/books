@@ -80,3 +80,45 @@
 .sessionCards a:hover{border-color:#5ea4ae}
 .sessionCards small{color:#69838a}
 @media(max-width:580px){.clientPage,.adminStudio{padding:13px}.studioHeader{align-items:flex-start;flex-direction:column}.editorCard,.recorder,.clientMediaCard,.welcomeCard{padding:16px}.recordControls button,.recordControls .filePicker{flex:1}.actions .primaryButton,.actions .secondaryButton{flex:1}.clientSection h2{font-size:20px}}
+
+/* Session-specific client follow-up — calm mobile-first editorial reading. */
+.nextStepCard{background:#fff;border:1px solid #cbe5e5;border-radius:16px;padding:16px 19px;margin-top:22px;display:grid;gap:8px}
+.nextStepCard strong{font-size:13px;letter-spacing:.02em;color:#19748a}
+.nextStepCard p{margin:0;color:#254b55;font-size:17px;line-height:1.55;white-space:pre-wrap}
+.nextStepLink{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:46px;border-radius:11px;background:#237c8c;color:#fff;font-weight:750;padding:11px 15px;width:fit-content;margin-top:3px}
+.nextStepLink:hover{color:#fff;background:#155e70}
+.summaryDetails{border-top:1px solid #cfe6e5;padding-top:12px;margin-top:14px}
+.summaryDetails summary{min-height:44px;display:flex;align-items:center;font-weight:750;cursor:pointer}
+.focusCard{border:1px solid #c8e3e4;border-radius:16px;background:#f0f9f7;padding:18px 21px;margin:18px 0}
+.focusCard p{font-size:17px;line-height:1.65;white-space:pre-wrap;margin:7px 0 0}
+.sectionHeader{display:flex;align-items:center;gap:12px;color:#257d89;margin:0 0 16px}
+.sectionHeader h2{margin:0;color:#284a53;min-width:0}
+.takeawayList{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.takeawayList li{display:flex;align-items:flex-start;gap:15px;background:white;border:1px solid #d7e9e9;border-radius:14px;padding:15px 16px}
+.takeawayList li>span{flex:none;font-size:13px;color:#38828c;font-weight:800;padding-top:3px}
+.takeawayList li p{margin:0;font-size:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.practiceList{display:grid;gap:12px}
+.practiceCard{display:flex;align-items:flex-start;gap:15px;background:white;border:1px solid #d6e7e8;border-radius:16px;padding:18px}
+.practiceNumber{flex:none;display:grid;place-items:center;width:33px;height:33px;border-radius:50%;background:#e1f3f1;color:#277b88;font-weight:800}
+.practiceCard h3{font-size:18px;margin:2px 0 9px;color:#244b55}
+.practiceCard p{margin:0;white-space:pre-wrap;line-height:1.65;color:#4d717a;overflow-wrap:anywhere}
+.reportActions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.reportDetails{scroll-margin-top:18px;background:#fff;border:1px solid #d7e8e8;border-radius:13px;padding:12px 16px}
+.reportDetails summary{color:#1d6876;font-size:16px}
+.reportContent{overflow-wrap:anywhere;font-size:17px;line-height:1.6}
+.reportContent :global(p),.reportContent :global(li){font-size:inherit;line-height:inherit}
+.planEditorSection{padding-top:14px;border-top:1px solid #e0ebed;margin-top:16px}
+.planEditorSection h3{margin:0 0 13px;font-size:17px}
+.planEditorSection h3 small{font-size:12px;color:#64838a}
+.planEditorRow{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
+.planEditorRow>.field{flex:1;margin:0}
+.planEditorPractice{border:1px solid #d9e9e8;border-radius:13px;padding:15px;margin:12px 0;background:#f6fbfa}
+.planEditorPractice>button{margin-top:4px}
+@media(max-width:580px){
+ .nextStepLink{width:100%}
+ .focusCard{padding:16px}
+ .sectionHeader{gap:9px}
+ .sectionHeader h2{font-size:20px}
+ .practiceCard{padding:15px}
+ .reportContent{padding:12px 0}
+}

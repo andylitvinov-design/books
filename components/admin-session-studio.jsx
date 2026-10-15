@@ -26,6 +26,19 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const [playerUrls,setPlayerUrls]=useState({})
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
+  const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[]}
+  const updatePlan=patch=>setDraft(current=>({...current,
+    plan:{focus:'',nextStep:'',takeaways:[],practices:[],...(current.plan||{}),...patch}
+  }))
+  function setTakeaway(index,value){
+    const points=[...(plan.takeaways||[])];points[index]=value
+    updatePlan({takeaways:points})
+  }
+  function changePractice(index,patch){
+    const rows=[...(plan.practices||[])]
+    rows[index]={...rows[index],...patch}
+    updatePlan({practices:rows})
+  }
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
   async function load() {
     const result=await api(base)
@@ -115,6 +128,56 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
           <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
+    </section>
+    <section className={styles.editorCard} aria-label={ru?'Персональный план клиента':'Client session plan'}>
+      <h2>{ru?'План после консультации':'Plan after this consultation'}</h2>
+      <p>{ru?'Только ваш утверждённый текст. Клиент увидит его после публикации, а не во время редактирования.':
+        'Only your practitioner-approved text. The client sees this after publication, not while you edit.'}</p>
+      <label className={styles.field}>{ru?'Главный фокус встречи':'Main focus of this session'}
+        <textarea rows={2} maxLength={300} value={plan.focus||''}
+          placeholder={ru?'На что мы обратили внимание…':'What we focused on…'}
+          onChange={event=>updatePlan({focus:event.target.value})}/></label>
+      <label className={styles.field}>{ru?'Самый первый следующий шаг':'The first next step'}
+        <textarea rows={2} maxLength={300} value={plan.nextStep||''}
+          placeholder={ru?'Что клиенту полезно сделать сначала…':'What to do first…'}
+          onChange={event=>updatePlan({nextStep:event.target.value})}/></label>
+      <div className={styles.planEditorSection}>
+        <h3>{ru?'Главные выводы':'Key takeaways'} <small>{(plan.takeaways||[]).length}/3</small></h3>
+        {(plan.takeaways||[]).map((value,index)=><div className={styles.planEditorRow} key={index}>
+          <label className={styles.field}>{ru?'Вывод':'Takeaway'} {index+1}
+            <input maxLength={300} value={value} onChange={event=>setTakeaway(index,event.target.value)}/></label>
+          <button type="button" className={styles.secondaryButton} aria-label={ru?'Удалить вывод':'Remove takeaway'}
+            onClick={()=>updatePlan({takeaways:plan.takeaways.filter((_,i)=>i!==index)})}>×</button>
+        </div>)}
+        {(plan.takeaways||[]).length<3&&<button type="button" className={styles.secondaryButton}
+          onClick={()=>updatePlan({takeaways:[...(plan.takeaways||[]),'']})}>
+          + {ru?'Добавить вывод':'Add takeaway'}
+        </button>}
+      </div>
+      <div className={styles.planEditorSection}>
+        <h3>{ru?'Домашние практики':'Home practices'} <small>{(plan.practices||[]).length}/3</small></h3>
+        {(plan.practices||[]).map((practice,index)=><div className={styles.planEditorPractice} key={index}>
+          <label className={styles.field}>{ru?'Название упражнения':'Practice title'}
+            <input maxLength={120} value={practice.title}
+              onChange={event=>changePractice(index,{title:event.target.value})}/></label>
+          <label className={styles.field}>{ru?'Как выполнять':'How to practice'}
+            <textarea rows={3} maxLength={1500} value={practice.instructions||''}
+              onChange={event=>changePractice(index,{instructions:event.target.value})}/></label>
+          <button type="button" className={styles.secondaryButton} onClick={()=>
+            updatePlan({practices:plan.practices.filter((_,i)=>i!==index)})}>
+            {ru?'Убрать практику':'Remove practice'}
+          </button>
+        </div>)}
+        {(plan.practices||[]).length<3&&<button type="button" className={styles.secondaryButton}
+          onClick={()=>updatePlan({practices:[...(plan.practices||[]),{title:ru?'Новая практика':'New practice',instructions:''}]})}>
+          + {ru?'Добавить практику':'Add practice'}
+        </button>}
+      </div>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
+          setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
+        }}><Save size={17}/>{ru?'Сохранить план':'Save plan'}</button>
+      </div>
     </section>
     <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>

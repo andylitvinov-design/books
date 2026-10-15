@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { normalizeDraft,clientPayload,emptySessionDraft,validSelector,validSecret,
-  SESSION_MEDIA_TYPES, PRIVATE_MEDIA_BUCKET,deliveryEnabled,guestSessionProjection } from '../lib/clients/delivery-model.js'
+  SESSION_MEDIA_TYPES, PRIVATE_MEDIA_BUCKET,deliveryEnabled,guestSessionProjection,normalizeClientPlan } from '../lib/clients/delivery-model.js'
 const AUDIO='29e2a748-ea4c-4cb4-9561-5224482f9b44'
 const VIDEO='09a8c81b-93c4-4a89-adb0-084e293bdacc'
 const make=()=>({title:'Consultation',summary:'Private care plan',reportDocumentId:null,
@@ -72,4 +72,32 @@ test('guest session projection excludes cabinet identity and internal access met
   const encoded=JSON.stringify(guest)
   for(const forbidden of ['clientId','sourceConsultationId','draftRevision','publishedRevision','Secret practitioner note','Private','246aa1a3-a371-5a83-9f4b-cd23ff027a79'])
     assert.equal(encoded.includes(forbidden),false,forbidden)
+})
+
+
+test('client session plan is small, human-authored and isolated per published snapshot',()=>{
+  const plan={
+    focus:'Inner support',nextStep:'Listen to the practice once',
+    takeaways:['Notice your breathing','Rest after the meeting'],
+    practices:[{title:'Grounding',instructions:'Spend 3 minutes noticing contact with the floor'}]
+  }
+  const a=normalizeDraft({...make(),plan}),b=normalizeDraft(make())
+  assert.deepEqual(a.plan,plan)
+  assert.deepEqual(b.plan,normalizeClientPlan())
+  const published=clientPayload(a)
+  assert.deepEqual(published.plan,plan)
+  assert.equal(guestSessionProjection({...published,id:AUDIO,occurredOn:'2026-10-15'}).plan.focus,'Inner support')
+  assert.equal(guestSessionProjection({...published,id:AUDIO,occurredOn:'2026-10-15',internalNotes:'Owner secret'}).internalNotes,undefined)
+})
+
+test('client plan rejects overlong or malformed instructions and never creates plan content',()=>{
+  for(const plan of [
+    {focus:'x'.repeat(301)}, {takeaways:Array(4).fill('a')},
+    {takeaways:[42]}, {practices:[{title:'',instructions:'x'}]},
+    {practices:[{title:'Okay',instructions:'x',secret:'bad'}]},
+    {focus:'hello\0world'}, {nextStep:25}
+  ])assert.throws(()=>normalizeClientPlan(plan))
+  const first=emptySessionDraft(),second=emptySessionDraft()
+  first.plan.takeaways.push('Unique to first')
+  assert.deepEqual(second.plan.takeaways,[])
 })

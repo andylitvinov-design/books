@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,CalendarDays } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,CalendarDays,BookOpen,ListChecks } from 'lucide-react'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale}) {
@@ -69,41 +69,97 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
+  const plan=session.plan||{}
+  const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
+  const practices=Array.isArray(plan.practices)?plan.practices:[]
+  const videos=(session.media||[]).filter(item=>item.kind==='video')
+  const audios=(session.media||[]).filter(item=>item.kind==='audio')
   const path=mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
-  return <main className={styles.clientPage}>
+  const firstSection=videos.length?'#session-video':audios.length?'#session-audio':
+    practices.length?'#session-practices':session.report?'#session-report':
+    takeaways.length?'#session-conclusions':null
+  return <main className={styles.clientPage} lang={locale}>
     <header className={styles.clientHeader}>
-      <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'ЛИЧНО':'PRIVATE'}</span>
+      <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'ЛИЧНЫЕ МАТЕРИАЛЫ':'PERSONAL MATERIALS'}</span>
         <h1>{ru?'Ваша консультация':'Your consultation'}</h1></div>
       <LockKeyhole size={22} aria-label={ru?'Приватная страница':'Private page'}/>
     </header>
-    <section className={styles.welcomeCard}>
+
+    <section className={styles.welcomeCard} aria-labelledby="session-title">
       <div className={styles.dateRow}><CalendarDays size={17}/><span>{date}</span></div>
-      <h2>{session.title}</h2>
-      {session.summary&&<p className={styles.sessionSummary}>{session.summary}</p>}
+      <h2 id="session-title">{session.title}</h2>
+      {session.summary&&(session.summary.length>650
+        ? <details className={styles.summaryDetails}><summary>{ru?'Прочитать личное сообщение':'Read your personal message'}</summary>
+            <p className={styles.sessionSummary}>{session.summary}</p></details>
+        : <p className={styles.sessionSummary}>{session.summary}</p>)}
       <p className={styles.practitionerCredit}>Andrii Litvinov · Holistic House</p>
+      {(plan.nextStep||firstSection)&&<div className={styles.nextStepCard}>
+        <strong>{ru?'Ваш следующий шаг':'Your next step'}</strong>
+        {plan.nextStep&&<p>{plan.nextStep}</p>}
+        {firstSection&&<a className={styles.nextStepLink} href={firstSection}>
+          {ru?'Перейти к материалам ↓':'Continue to your materials ↓'}
+        </a>}
+      </div>}
     </section>
-    {session.media?.length>0&&<section className={styles.clientSection}>
-      <h2>{ru?'Личные записи и практики':'Your voice messages & practices'}</h2>
-      <div className={styles.mediaList}>{session.media.map(item=>
+
+    {plan.focus&&<section className={styles.focusCard} aria-label={ru?'Фокус нашей работы':'Focus of our work'}>
+      <span className={styles.eyebrow}>{ru?'ФОКУС ЭТОЙ ВСТРЕЧИ':'FOCUS OF THIS SESSION'}</span>
+      <p>{plan.focus}</p>
+    </section>}
+
+    {videos.length>0&&<section id="session-video" className={styles.clientSection} aria-label={ru?'Личное видеообращение':'Personal video message'}>
+      <div className={styles.sectionHeader}><Video size={19}/><h2>{ru?'Личное видеообращение':'A personal video message'}</h2></div>
+      <div className={styles.mediaList}>{videos.map(item=>
         <PrivatePlayer key={item.assetId} item={item} session={session} mode={mode} selector={selector} locale={locale}/>)}</div>
     </section>}
-    {session.report&&<section className={styles.clientSection}>
-      <h2>{ru?'Ваш персональный отчёт':'Your personal report'}</h2>
+
+    {audios.length>0&&<section id="session-audio" className={styles.clientSection} aria-label={ru?'Аудиопрактики':'Audio practices'}>
+      <div className={styles.sectionHeader}><Headphones size={19}/><h2>{ru?'Ваши аудио и практики':'Your audio & guided practices'}</h2></div>
+      <div className={styles.mediaList}>{audios.map(item=>
+        <PrivatePlayer key={item.assetId} item={item} session={session} mode={mode} selector={selector} locale={locale}/>)}</div>
+    </section>}
+
+    {takeaways.length>0&&<section id="session-conclusions" className={styles.clientSection}>
+      <div className={styles.sectionHeader}><BookOpen size={19}/><h2>{ru?'Главное из консультации':'What matters from our session'}</h2></div>
+      <ol className={styles.takeawayList}>
+        {takeaways.map((item,index)=><li key={index}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span><p>{item}</p></li>)}
+      </ol>
+    </section>}
+
+    {session.report&&<section id="session-report" className={styles.clientSection}>
+      <div className={styles.sectionHeader}><FileDown size={19}/><h2>{ru?'Ваш персональный отчёт':'Your personal report'}</h2></div>
       <div className={styles.reportPanel}>
-        <p>{ru?'Документ подготовлен для этой консультации. Скачать настоящий PDF можно по кнопке ниже.':
-          'Your report is attached to this consultation. Download the original PDF below.'}</p>
-        <a href={path} className={styles.downloadButton} download><FileDown size={20}/>{ru?'Скачать PDF-отчёт':'Download PDF report'}</a>
+        <p>{ru?'Полный документ этой встречи. Его удобно читать онлайн или сохранить в PDF.':
+          'The full report for this session. Read it here or keep a PDF copy.'}</p>
+        <div className={styles.reportActions}>
+          
+          <a href={path} className={styles.downloadButton} download>
+            <FileDown size={20}/>{ru?'Скачать PDF':'Download PDF'}
+          </a>
+        </div>
       </div>
-      {reportContent&&<details className={styles.reportDetails}>
-        <summary>{ru?'Прочитать отчёт на странице':'Read report on this page'}</summary>
+      {reportContent&&<details id="session-report-reading" className={styles.reportDetails}>
+        <summary>{ru?'Развернуть полный отчёт':'Expand the full report'}</summary>
         <div className={styles.reportContent}>{reportContent}</div>
       </details>}
     </section>}
+
+    {practices.length>0&&<section id="session-practices" className={styles.clientSection}>
+      <div className={styles.sectionHeader}><ListChecks size={19}/><h2>{ru?'Практики до следующей встречи':'Practices until our next meeting'}</h2></div>
+      <div className={styles.practiceList}>
+        {practices.map((practice,index)=><article className={styles.practiceCard} key={index}>
+          <div className={styles.practiceNumber}>{index+1}</div>
+          <div><h3>{practice.title}</h3>
+            {practice.instructions&&<p>{practice.instructions}</p>}</div>
+        </article>)}
+      </div>
+    </section>}
+
     <footer className={styles.clientFooter}>
-      <p><LockKeyhole size={14}/>{ru?'Этот материал относится только к данной консультации.':'This page only contains materials from this consultation.'}</p>
-      {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>{ru?'Ко всем документам':'Back to my cabinet'}</a>}
+      <p><LockKeyhole size={14}/>{ru?'Эта приватная ссылка открывает материалы только одной консультации. Не пересылайте её другим людям.':
+        'This private invitation opens only one consultation. Please do not forward it.'}</p>
+      {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>{ru?'Мои предыдущие консультации':'My other consultations'}</a>}
     </footer>
   </main>
 }
-
