@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { ServiceCart } from "@/components/commerce/service-cart";
 import Link from "next/link";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
@@ -49,7 +48,6 @@ export default function SpanishServicesPage() {
     </div>
   </section>
   <ServicesAboutEntry locale="es" />
-  <ServiceCart locale="es" />
   <PublicConsultationCta locale="es" />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
  </main>;
