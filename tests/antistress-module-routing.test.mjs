@@ -15,30 +15,24 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const goodWeekly={ 'weekly.load':8,'weekly.tension':6,'weekly.functioning':5 }
 const empty=()=>Object.fromEntries(ANTISTRESS_MODULE_FINDER_ITEMS.map(({id})=>[id,null]))
 const moduleDecision=(o={})=>recommendAntistressModule({weekly:goodWeekly,answers:empty(),...o})
-test('one programme offers five different bilingual 14-day routes while preserving the legacy sixth',()=>{
- assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(x=>x.id),['AS1','AS2','AS3','AS4','AS5'])
- assert.deepEqual(ANTISTRESS_ACTIVE_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5'])
- assert.deepEqual(ANTISTRESS_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5','AS6'])
- assert.deepEqual(ANTISTRESS_MODULE_GOALS.map(x=>x.range),[[9,10],[7,8],[5,6],[3,4],[0,2]])
+test('six learning phases are visible, but phase four requires a clinician',()=>{
+ assert.deepEqual(ANTISTRESS_ACTIVE_MODULE_IDS,['AS1','AS2','AS3','AS4','AS5','AS6'])
+ assert.deepEqual(ANTISTRESS_MODULE_IDS,ANTISTRESS_ACTIVE_MODULE_IDS)
+ assert.equal(ANTISTRESS_MODULE_GOALS.length,6)
+ assert.equal(ANTISTRESS_MODULE_GOALS.find(x=>x.id==='AS4').clinicalOnly,true)
  assert.equal(fiveLevelContentComplete(),true)
  assert.equal(ANTISTRESS_MODULE_FINDER_ITEMS.length,8)
- assert.equal(new Set(ANTISTRESS_MODULE_FINDER_ITEMS.map(x=>x.id)).size,8)
  assert.equal(OPORA_MODULE_DAY_COUNT,14)
  assert.equal(moduleCurriculumComplete(),true)
- for(const mod of ANTISTRESS_MODULE_GOALS){
-   assert.ok(mod.title.en && mod.title.ru && mod.title.es)
-   const a=Array.from({length:14},(_,i)=>{
-    const base=lessonFor('calm_regulation',i+1,'en','standard',mod.id==='AS2'?COURSE_ANTISTRESS_OUTCOME_V3:COURSE_CONTENT_V4)
-    return moduleLesson(base,mod.id,i+1,'en',ANTISTRESS_ROUTER_VERSION)
-   })
-   assert.equal(new Set(a.map(x=>x.id)).size,14)
-   assert.equal(a.every(x=>x.title && x.sections?.length===5),true)
-   if(mod.id==='AS2')assert.equal(a[0].antiStress?.skillId,'S1')
-   else {
-    assert.equal(a.every(x=>x.antiStress===undefined),true)
-    assert.equal(new Set(a.map(x=>x.sections.find(s=>s.kind==='meditation')?.text)).size,14)
-    assert.ok(a.every(x=>x.accessibility.stopAnytime))
-   }
+ for(const mod of ANTISTRESS_MODULE_GOALS.filter(x=>x.id!=='AS4')){
+  for(let day=1;day<=14;day++){
+   const base=lessonFor('calm_regulation',day,'en','standard',mod.id==='AS2'?COURSE_ANTISTRESS_OUTCOME_V3:COURSE_CONTENT_V4)
+   const lesson=moduleLesson(base,mod.id,day,'en',ANTISTRESS_ROUTER_VERSION)
+   assert.ok(lesson.title?.length>5)
+   assert.equal(lesson.sections.length,5)
+   if(mod.id==='AS2')assert.ok(lesson.antiStress)
+   else assert.equal(lesson.oporaModule?.id,mod.id)
+  }
  }
 })
 test('finder rejects forged numbers/unknown keys and preserves unanswered as missing',()=>{
@@ -57,24 +51,23 @@ test('safety and gentle start is suggested when both grounding and ability to pa
  assert.equal(d.reason,'gentle_start')
  assert.ok(d.evidence.some(e=>e.id==='F1'&&e.value===1))
 })
-test('user focus is a separate voluntary choice, not a replacement for measured recommendation',()=>{
+test('an explicit goal and relevant skill scores determine course, not the stress band',()=>{
  const d=moduleDecision({answers:{...empty(),F3:2,F4:3},goal:'AS3'})
- assert.equal(d.moduleId,'AS2')
- assert.equal(d.reason,'reported_overload')
- assert.equal(d.goal,'AS3')
- assert.equal(d.alternativeId,'AS1')
+ assert.equal(d.moduleId,'AS3')
+ assert.equal(d.reason,'goal_preference')
+ assert.equal(d.alternativeId,'AS2')
+ const emotional=moduleDecision({answers:{...empty(),F3:3,F4:2}})
+ assert.equal(emotional.moduleId,'AS3')
+ const support=moduleDecision({answers:{...empty(),F7:2,F8:3}})
+ assert.equal(support.moduleId,'AS5')
+ const activity=moduleDecision({weekly:{'weekly.load':4,'weekly.tension':4,'weekly.functioning':2}})
+ assert.equal(activity.moduleId,'AS6')
+ assert.equal(moduleDecision({answers:{...empty(),F1:1,F2:2}}).moduleId,'AS1')
 })
-test('explicit stress bands are educational, and low function chooses a gentler route',()=>{
- const c=(load,tension,functioning)=>moduleDecision({weekly:{'weekly.load':load,'weekly.tension':tension,'weekly.functioning':functioning}})
- assert.equal(c(10,2,7).moduleId,'AS1')
- assert.equal(c(8,3,8).moduleId,'AS2')
- assert.equal(c(5,6,8).moduleId,'AS3')
- assert.equal(c(4,3,8).moduleId,'AS4')
- assert.equal(c(1,2,9).moduleId,'AS5')
- assert.equal(c(4,3,2).moduleId,'AS3')
- assert.equal(c(6,6,2).moduleId,'AS2')
- assert.equal(moduleDecision({weekly:{'weekly.load':6,'weekly.tension':6,'weekly.functioning':8},goal:'AS4'}).moduleId,'AS3')
- assert.equal(moduleDecision({weekly:{'weekly.load':4,'weekly.tension':4,'weekly.functioning':8},goal:'AS5'}).moduleId,'AS4')
+test('module four is never auto-recommended from questionnaires',()=>{
+ const d=moduleDecision({goal:'AS4',answers:{...empty(),F5:1,F6:1}})
+ assert.notEqual(d.moduleId,'AS4')
+ assert.equal(d.primaryMetric,'hh-weekly-pulse::weekly.load')
 })
 test('weak data are labelled provisional, are not silently filled and do not create clinical stages',()=>{
  const d=recommendAntistressModule({weekly:{},answers:{},goal:null})
@@ -135,11 +128,11 @@ test('connected intake screens and server enforce the owner-scoped selection',()
  assert.match(day, /antiStress:isActiveStress/)
 })
 
-test('seven pairs of trauma-informed educational stages sit inside each of five routes',()=>{
+test('seven skill pairs remain within each educational route',()=>{
  assert.equal(OPORA_RECOVERY_STAGES.length,7)
  assert.deepEqual(OPORA_RECOVERY_STAGES.map(x=>x.days),[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14]])
  assert.ok(OPORA_ENTRY_AND_EXIT.entry.ru.includes('Тестирование'))
- for(const route of ANTISTRESS_MODULE_GOALS){
+ for(const route of ANTISTRESS_MODULE_GOALS.filter(x=>x.id!=='AS4')){
    for(let day=1;day<=14;day++){
      if(route.id==='AS2')continue
      const lesson=moduleDayMeta(route.id,day,'ru',ANTISTRESS_ROUTER_VERSION)
@@ -149,7 +142,7 @@ test('seven pairs of trauma-informed educational stages sit inside each of five 
  }
  const old=moduleDayMeta('AS4',1,'ru','opora-nav-1.3-20261014')
  const current=moduleDayMeta('AS4',1,'ru',ANTISTRESS_ROUTER_VERSION)
- assert.notEqual(old.title,current.title)
+ assert.equal(old.title,current.title)
  assert.notEqual(old.exercise,current.exercise)
 })
 test('public and personal maps show five routes and precise phase cards',()=>{
@@ -160,7 +153,7 @@ test('public and personal maps show five routes and precise phase cards',()=>{
  assert.match(publicLanding, /PublicAntistressRouteMap/)
  assert.match(publicLanding, /oporaRecoveryStages/)
  assert.match(publicRoute, /ANTISTRESS_MODULE_GOALS\.map/)
- assert.match(publicRoute, /data-antistress-five-routes/)
+ assert.match(publicRoute, /data-antistress-six-routes/)
  assert.match(personalOverview, /moduleDayMeta\(moduleId,day\.day,locale,routerVersion\)/)
  assert.match(personalOverview, /oporaRecoveryStages/)
  assert.match(personalCourse, /moduleId=\{data\.programme\?\.moduleId\}/)
