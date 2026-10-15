@@ -179,8 +179,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
           </button>
         </div>
         {showPlan && <div className={styles.planDetails} id="my-course-plan">
-          <Course14DayOverview locale={locale}
-            programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}
+          <Course14DayOverview locale={locale} programId={courseProgramFromTopics(course?.focusTags)?.id||'stress'}
             moduleId={course?.moduleChoice?.id||null}
             routerVersion={course?.moduleChoice?.version||null}/>
         </div>}
