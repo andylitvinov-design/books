@@ -107,11 +107,15 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <summary>{ru?'Личное сообщение от специалиста':'Read your personal message'}</summary>
         <p className={styles.sessionSummary}>{session.summary}</p>
       </details>:<p className={styles.sessionSummary}>{session.summary}</p>)}
-      {(plan.nextStep||plan.focus)&&<div className={styles.nextStepCard}>
+      {(plan.nextStep||plan.focus||hasRecommendation)&&<div className={styles.nextStepCard}>
         <span className={styles.sectionKicker}>{ru?'С ЧЕГО НАЧАТЬ':'START HERE'}</span>
         {plan.nextStep&&<p><strong>{ru?'Ваш следующий шаг':'Your next step'}:</strong> {plan.nextStep}</p>}
         {!plan.nextStep&&plan.focus&&<p>{plan.focus}</p>}
-        <a href={nextAnchor} className={styles.nextStepLink}>{ru?'Посмотреть назначения ↓':'Go to your session guide ↓'}</a>
+        {!plan.nextStep&&!plan.focus&&hasRecommendation&&<p>{
+          ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
+          'Review the assigned items and your practitioner’s individual instructions below.'
+        }</p>}
+        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'Review recommendations ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>
@@ -197,7 +201,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <FileDown size={21} aria-hidden="true"/><div><strong>{item.title||'PDF'}</strong>
             <small>{ru?'Приватный документ':'Private document'}</small></div>
           <a href={assetBase+item.assetId} target="_blank" rel="noopener noreferrer">
-            {ru?'Открыть':'Open'} <ExternalLink size={16}/>
+            {ru?'Скачать PDF':'Download PDF'} <ExternalLink size={16}/>
           </a>
         </article>
         :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale}/>)}
