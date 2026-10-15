@@ -343,8 +343,8 @@ export default function CourseSlidePlayer({
     })
     if(field==='comfort')setComfort(value)
     if(field==='adaptation')setAdaptationChoice(value)
-    if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
-    if(field==='experience'&&value==='unchanged')setFlexibility('same')
+    if(field==='experience')setFlexibility(value==='more_choice'?'more_choice'
+      :value==='unchanged'?'same':'skip')
   }
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
