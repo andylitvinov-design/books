@@ -56,6 +56,10 @@ test('every optional day-one response has a safe explicit decline or honest fall
       assert.deepEqual(validateDayOneAnswers({focusId:'general'}),{focusId:'general'})
       continue
     }
+    if(field === 'practiceMode') {
+      assert.ok(values.includes('text'), 'Default accessible text mode must exist')
+      continue
+    }
     assert.ok(values.includes('skip') || values.includes('unsure') ||
       values.includes('no_plan') || values.includes('none'),
       'No opt-out available for '+field)
