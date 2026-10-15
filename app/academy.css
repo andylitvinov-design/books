@@ -3647,3 +3647,78 @@
     transition: none;
   }
 }
+
+/* Tantra Reiki: single compact mobile PDF and nine-level navigation block. */
+.academy-reading-shell--tantra .tantra-mobile-guide--combined {
+  align-items: center;
+  margin-bottom: 20px;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__copy h2 {
+  max-width: 24ch;
+  margin: 7px 0 10px;
+  font-size: clamp(28px, 3.5vw, 42px);
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__copy > p:not(.homeopathy-kicker) {
+  max-width: 48ch;
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.5;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__download {
+  margin-top: 16px;
+  min-height: 48px;
+  padding: 12px 20px;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__overview-links {
+  width: 100%;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__phase-links {
+  width: 100%;
+  margin-top: 16px;
+  gap: 7px;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__phase-links a {
+  min-width: 0;
+  min-height: 50px;
+  padding: 9px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__phase-links a span {
+  flex-shrink: 0;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__original-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #326b74;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__photo-context {
+  margin-top: 9px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #61777a;
+}
+@media (max-width: 620px) {
+  .academy-reading-shell--tantra .tantra-mobile-guide--combined {
+    gap: 12px;
+    margin: 16px 0 19px;
+  }
+  .academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__cover {
+    min-height: 167px;
+  }
+  .academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-mobile-guide__copy {
+    padding: 6px 6px 8px;
+  }
+  .academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__phase-links {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .academy-reading-shell--tantra .tantra-mobile-guide--combined .tantra-journey__phase-links a {
+    min-height: 57px;
+    padding: 9px 7px;
+    font-size: 11px;
+  }
+}
