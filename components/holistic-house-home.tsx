@@ -3,7 +3,6 @@
 import { ClipboardCheck, GraduationCap } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
@@ -23,7 +22,7 @@ const copy = {
     homeLabel: "Holistic House — главная",
     heroTitle: "Найдите больше ясности и внутренней опоры",
     heroIntro: "Три бесплатных способа начать: анализ ситуации, профиль У-Син и тесты стресса и личности. Личные консультации — по желанию.",
-    heroPrimary: "Бесплатный разбор ситуации",
+    heroPrimary: "Начать бесплатно",
     heroBook: "Записаться на консультацию",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
@@ -56,7 +55,7 @@ const copy = {
     homeLabel: "Holistic House — home",
     heroTitle: "Explore your question. Find a clearer way forward.",
     heroIntro: "Three free ways to begin: a situation review, a Wu Xing resource profile, or stress and personality tests. Personal sessions are optional.",
-    heroPrimary: "Free situation review",
+    heroPrimary: "Start for free",
     heroBook: "Book a consultation",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
@@ -86,22 +85,47 @@ const copy = {
   },
 } as const;
 
+const journeyCopy = {
+  ru: {
+    label: "Простой путь",
+    heading: "Сначала узнайте больше о себе, затем решите, что делать",
+    steps: [
+      { title: "Выберите бесплатный вариант", detail: "Тестирование, письменный анализ ситуации или У-Син." },
+      { title: "Получите результат", detail: "Показатели и рекомендации или персональный письменный разбор." },
+      { title: "Продолжите по желанию", detail: "Сохраните результат, изучайте курсы или запросите личную сессию." },
+    ],
+    bookTitle: "Нужна поддержка лично?",
+    bookNote: "Экспресс-сессия 30 минут — €50. Личная сессия 60 минут — €100. Время подтверждается отдельно.",
+    bookAction: "Форматы и запись",
+    moreTitle: "Все направления, темы и курсы",
+    moreLead: "Дополнительные услуги и пять тематических маршрутов тестирования",
+  },
+  en: {
+    label: "A simple path",
+    heading: "Begin with insight. Decide on the next step yourself.",
+    steps: [
+      { title: "Choose a free starting point", detail: "Self-check tests, a written situation review, or a Wu Xing profile." },
+      { title: "Understand your results", detail: "Scores and guidance, or a personal written reflection." },
+      { title: "Continue if useful", detail: "Save results, explore a course or request a personal session." },
+    ],
+    bookTitle: "Prefer personal guidance?",
+    bookNote: "Express session: 30 minutes for €50. Personal session: 60 minutes for €100. Time is confirmed individually.",
+    bookAction: "Session options & booking",
+    moreTitle: "Explore all topics, methods and courses",
+    moreLead: "More services and five guided pathways to relevant tests",
+  },
+} as const;
+
 type HolisticHouseHomeProps = {
   locale?: Locale;
   introVideos?: Partial<Record<Locale, PublishedSiteVideo>>;
 };
 
 export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticHouseHomeProps) {
-  const router = useRouter();
   const text = copy[locale];
+  const flow = journeyCopy[locale];
   const entry = LOCAL_ACQUISITION[locale];
   const introVideo = introVideos[locale];
-
-  function selectLocale(nextLocale: Locale) {
-    const target = new URL(window.location.href);
-    target.searchParams.set("lang", nextLocale);
-    router.replace(target.pathname + target.search + target.hash, { scroll: false });
-  }
 
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
@@ -110,7 +134,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
-        <SiteNavigation locale={locale} onLocaleChange={selectLocale} />
+        <SiteNavigation locale={locale} />
       </header>
 
       <section className="service-home-hero" aria-labelledby="house-title">
@@ -129,26 +153,54 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
             <AcquisitionEventLink
+              className="service-home-button service-home-button--primary"
+              href="#home-consultation"
+              event="self_check_start"
+            >
+              {text.heroPrimary}<span aria-hidden="true">→</span>
+            </AcquisitionEventLink>
+            <AcquisitionEventLink
               className="service-home-button service-home-button--consultation"
               href={`/${locale}/services#consultation`}
               event="service_request_start"
             >
               {text.heroBook}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
-            <AcquisitionEventLink className="service-home-button service-home-button--primary" href={`/${locale}/services/free-situation-review`} event="service_request_start">
-              {text.heroPrimary}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
-            <AcquisitionEventLink
-              className="service-home-button service-home-button--secondary"
-              href="#core-services"
-              event="service_view"
-            >
-              {text.heroSecondary}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
           </div>
         </div>
       </section>
 
+      <HomepageContactCta locale={locale} />
+
+      <section className="service-home-progress" aria-labelledby="home-progress-title" data-home-path="free-results-optional-session">
+        <p className="service-home-kicker">{flow.label}</p>
+        <h2 id="home-progress-title">{flow.heading}</h2>
+        <ol className="service-home-progress__steps">
+          {flow.steps.map((step, index) => (
+            <li key={step.title}>
+              <span aria-hidden="true">0{index + 1}</span>
+              <strong>{step.title}</strong>
+              <p>{step.detail}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="service-home-progress__booking">
+          <div>
+            <h3>{flow.bookTitle}</h3>
+            <p>{flow.bookNote}</p>
+          </div>
+          <AcquisitionEventLink href={`/${locale}/services#consultation`} event="service_request_start">
+            {flow.bookAction}<span aria-hidden="true">→</span>
+          </AcquisitionEventLink>
+        </div>
+      </section>
+
+      <details className="service-home-more" id="home-more" data-home-extra-paths>
+        <summary>
+          <span><strong>{flow.moreTitle}</strong><small>{flow.moreLead}</small></span>
+          <span aria-hidden="true">+</span>
+        </summary>
+        <div className="service-home-more__content">
       <HomeFreeTestsBanner locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
       <HomepageTopicJourneys locale={locale} />
@@ -188,7 +240,12 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         <p className="service-home-start__returning">
           {text.returning} <Link href={`/${locale}/client`}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
         </p>
+        <AcquisitionEventLink className="service-home-more-link" href="#home-more" event="service_view">
+          {text.heroSecondary}<span aria-hidden="true">↓</span>
+        </AcquisitionEventLink>
       </section>
+        </div>
+      </details>
 
       {introVideo ? (
         <section className="service-home-video" aria-labelledby="service-home-video-title">
@@ -228,8 +285,6 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           </span>
         </div>
       </section>
-
-      <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href="/">Holistic House</Link>
