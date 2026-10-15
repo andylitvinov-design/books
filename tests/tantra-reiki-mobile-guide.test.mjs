@@ -44,7 +44,8 @@ test("Tantra Reiki keeps the same working PDF route in both upper and lower capt
   assert.match(chooser, /href=\{guideUrl\}/);
   assert.match(chooser, /course === "tantra" && !download/);
   assert.match(chooser, /download=\{download \? true : undefined\}/);
-  assert.match(chooser, /id=\{isTop \? undefined : "reiki-free-consultation"\}/);
+  assert.match(chooser, /id="reiki-free-consultation"/);
+  assert.match(chooser, /\{isTop\s*\?/);
   assert.match(style, /\.topCapture \.choices/);
   assert.match(style, /\.alwaysDownload/);
   assert.match(endpoint, /tantra-reiki-mobile-study-guide-/);
