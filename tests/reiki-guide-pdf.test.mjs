@@ -57,7 +57,7 @@ for (const course of ["tantra", "yggdrasil"]) {
         assert.match(pdf.toString("latin1"), /0\.115 0\.263 0\.333 rg/); // existing Yggdrasil cover
         assert.match(pdf.toString("latin1"), /0\.886 0\.954 0\.941 rg/); // existing learning sections
       }
-      assert.match(pdf.toString("latin1"), /\/Count [2-9][0-9]* >>/); // separate cover + syllabus
+      assert.match(pdf.toString("latin1"), /\/Count (?:[2-9]|[1-9][0-9]+) >>/); // at least two pages; portrait page count may vary by language
     });
   }
 }
