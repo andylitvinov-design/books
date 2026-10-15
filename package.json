@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --test tests/guest-single-via-family.test.mjs tests/public-tests-auth-transparency.test.mjs tests/client-navy-compact-picker.test.mjs tests/account-picker-draft.test.mjs tests/assessment-priority-methods-review.test.mjs tests/test-kinds-catalog-audit.test.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "test:unit": "node --test tests/**/*.test.mjs",
