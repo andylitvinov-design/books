@@ -70,7 +70,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
       </div>
       <span className={styles.duration}><Clock3 size={16} aria-hidden="true"/>{t.daily}</span>
     </header>
-    <div className={styles.phases} role={stress ? undefined : 'list'} aria-label={stress ? st.title : t.title}>
+    <div className={styles.phases} role={stress ? undefined : 'list'} aria-label={t.title}>
       {groups.map((group, index) => stress ? (
         <details className={`${styles.phase} ${styles.phaseExpandable}`} key={group.id}
           data-course-phase={group.id} data-course-skill-accordion={index + 1}>
