@@ -166,13 +166,13 @@ export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : t
   : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findPart = (tree, name) => nodes(tree).find(n => n.type?.testName === name)
 export const findButton = (tree, label) => nodes(tree).find(n => n.type === 'button' && textOf(n).trim() === label)
-const uiNames = ['course-slide-player', 'opora-module-activity', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
+const uiNames = ['course-slide-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
 const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileModule(readFileSync(resolve(root, 'components/app', name + '.jsx'), 'utf8'), {
   fileName: name + '.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText]))
 const pureUI = Object.fromEntries(await Promise.all(['anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
-  'course-slide-sequence', 'course-membership'].map(async name =>
+  'course-slide-sequence', 'course-membership', 'opora-state-journey'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )
 
 // Executes real JSX component functions with isolated state/effect slots.
@@ -209,6 +209,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
     // This import must resolve to the actual canonical implementation. A new
     // presentation layer cannot silently bypass all underlying activity tests.
     if (key === './opora-module-activity') return evaluate('opora-module-activity')
+    if (key === './opora-state-journey') return evaluate('opora-state-journey')
     assert.ok(Object.hasOwn(modules, key), 'Unmocked UI dependency: ' + key); return modules[key]
   }
   const evaluate = uiName => {
@@ -219,6 +220,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
       document: { body: { style: { overflow: '' } }, addEventListener() {}, removeEventListener() {} } }
     vm.runInNewContext(compiledUI[uiName], runtime, { filename: resolve(root, 'components/app', uiName + '.jsx') })
     if (uiName === 'opora-module-activity') runtime.exports.default.testName = 'OporaModuleActivity'
+    if (uiName === 'opora-state-journey') runtime.exports.default.testName = 'OporaStateJourney'
     compiledModules.set(uiName, runtime.exports)
     return runtime.exports
   }
@@ -233,7 +235,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
     const previous = active; active = context
     try { return fn(nextProps) } finally { active = previous }
   }
-  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity'])
+  const recursiveComponents = new Set(['RouteMethodActivity', 'RoutePracticeLab', 'OporaModuleActivity','OporaStateJourney','ChoiceRow'])
   const expand = (value, path) => {
     if (Array.isArray(value)) return value.map((child, index) => expand(child, path + '/' + (child?.key ?? index)))
     if (!value || typeof value !== 'object') return value
