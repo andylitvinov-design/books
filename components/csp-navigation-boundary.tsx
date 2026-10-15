@@ -27,6 +27,8 @@ function privatePath(pathname: string) {
 
 function cspClassForPath(pathname: string) {
   if (pathname === "/admin/videos") return "video-manager";
+  if (/^\/(en|ru)\/client\/(?:session\/|[^/]+\/sessions\/)/.test(pathname)) return "private-session-media";
+  if (/^\/admin\/clients\/[0-9a-f-]{36}\/?$/i.test(pathname)) return "private-owner-media";
   if (privatePath(pathname)) return "private";
   if (/^\/(en|ru|es)\/academy\/reiki\/tantra-reiki(?:\/|$)/.test(pathname)) return "tantra-media";
   if (pathname.startsWith("/api/")) return "restricted";

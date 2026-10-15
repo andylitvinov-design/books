@@ -81,6 +81,8 @@ export function middleware(request: NextRequest) {
   const practitionerDraftPreview = pathname === '/admin/consultations/new'
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
   const cspClass = videoManager ? 'video-manager'
+    : privateSessionPage ? 'private-session-media'
+    : sessionOwnerPage ? 'private-owner-media'
     : privateDocument ? 'private'
       : tantraReikiPage ? 'tantra-media'
         : publicDocument ? 'public-video'
@@ -89,9 +91,11 @@ export function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
     publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    tantraReikiPage ? "media-src 'self' https://psitrends.com" : sessionMediaPolicy,
-    "font-src 'self'", sessionConnectPolicy, "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'",
+    "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
+    .replace("media-src 'self'", sessionMediaPolicy)
+    .replace("connect-src 'self' https://www.google-analytics.com", sessionConnectPolicy)
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
