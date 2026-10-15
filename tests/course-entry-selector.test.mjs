@@ -115,10 +115,10 @@ test('course page brand and bottom nav agree on My Courses while keeping the ori
 })
 
 test('each active course card exposes a localized vertical-ellipsis menu and safe confirmation', () => {
-  assert.match(entry, /<MoreVertical size={22}/)
+  assert.ok(entry.includes('<MoreVertical size={22}'))
   assert.match(entry, /data-course-actions/)
   assert.match(entry, /data-course-menu-trigger/)
-  assert.match(entry, /aria-expanded={menuOpen}/)
+  assert.ok(entry.includes('aria-expanded={menuOpen}'))
   assert.match(entry, /data-course-actions-menu/)
   assert.match(entry, /data-close-course-dialog/)
   assert.match(entry, /data-confirm-close-course/)
@@ -129,7 +129,7 @@ test('each active course card exposes a localized vertical-ellipsis menu and saf
   assert.match(css, /\.courseMenu\{position:absolute;top:10px;right:10px/)
   assert.match(css, /\.courseMenuTrigger\{[^}]*width:44px;height:44px/)
   assert.match(css, /\.closeCourseDialog::backdrop/)
-  assert.match(wrapper, /onCloseCourse={closeCourse} closing={busy}/)
+  assert.ok(wrapper.includes('onCloseCourse={closeCourse} closing={busy}'))
   assert.match(wrapper, /action: 'close', expectedRevision: state.course.revision/)
   assert.doesNotMatch(entry, /localStorage|sessionStorage/)
 })
