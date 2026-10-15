@@ -7,7 +7,7 @@ import './client-session-editor.css'
 const text=(ru,en,r)=>r?ru:en
 const kinds=['text','practice','report','document','video','audio','pdf','link']
 const uuid=()=>crypto.randomUUID()
-export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[]}){
+export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[],storageReady=false}){
   const ru=locale==='ru'
   const [sessions,setSessions]=useState([]),[current,setCurrent]=useState(null)
   const [busy,setBusy]=useState(false),[status,setStatus]=useState('')
@@ -128,6 +128,10 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
   }
   async function upload(file,kind=fileKind){
     if(!file||!current||uploading)return
+    if(!storageReady){setStatus(text('Закрытое хранилище ещё не подключено.','Private media storage is not configured yet.',ru));return}
+    if((kind==='video'&&file.size>45_000_000)||(kind==='audio'&&file.size>20_000_000)||(kind==='pdf'&&file.size>15_000_000)){
+      setStatus(text('Файл превышает лимит хранилища.','File exceeds the current storage limit.',ru));return
+    }
     setUploading(true);setStatus(text('Загружаем файл…','Uploading securely…',ru))
     try{
       const rawMime=file.type==='audio/x-m4a'?'audio/mp4':file.type
@@ -231,15 +235,17 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
           <option value="audio">Audio</option><option value="video">Video</option><option value="pdf">PDF</option>
         </select></label>
         <label className="hh-owner-upload-label">{text('Выбрать файл','Select a file',ru)}
-          <input type="file" disabled={uploading} accept={fileKind==='audio'?'audio/mpeg,audio/mp4,audio/webm,.mp3,.m4a':fileKind==='video'?'video/mp4,video/webm,.mp4,.webm':'application/pdf,.pdf'}
+          <input type="file" disabled={uploading||!storageReady} accept={fileKind==='audio'?'audio/mpeg,audio/mp4,audio/webm,.mp3,.m4a':fileKind==='video'?'video/mp4,video/webm,.mp4,.webm':'application/pdf,.pdf'}
             onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);e.target.value=''}}/>
         </label>
         {fileKind==='audio'?<div className="hh-owner-record">
-          <button type="button" disabled={uploading||recording} onClick={startRecording}>● {text('Записать с телефона','Record from phone',ru)}</button>
+          <button type="button" disabled={uploading||recording||!storageReady} onClick={startRecording}>● {text('Записать с телефона','Record from phone',ru)}</button>
           {recording?<button type="button" onClick={stopRecording}>{text('Остановить','Stop',ru)}</button>:null}
-          {audioBlob?<button type="button" disabled={uploading} onClick={()=>upload(audioBlob,'audio')}>{text('Прикрепить запись','Attach recorded audio',ru)}</button>:null}
+          {audioBlob?<button type="button" disabled={uploading||!storageReady} onClick={()=>upload(audioBlob,'audio')}>{text('Прикрепить запись','Attach recorded audio',ru)}</button>:null}
         </div>:null}
-        <p className="hh-owner-hint">{text('Файлы сохраняются в закрытом хранилище. Публикация отдельным действием.','Files go to private storage. Publication is a separate action.',ru)}</p>
+        <p className="hh-owner-hint">{storageReady
+          ? text('Видео до 45 МБ, аудио до 20 МБ. Публикация отдельным действием.','Video up to 45 MB; audio up to 20 MB. Publication is separate.',ru)
+          : text('Закрытое медиа-хранилище пока не подключено. Отчёты и письменные рекомендации можно подготовить отдельно.','Private media storage has not been configured. Written reports and recommendations can still be prepared.',ru)}</p>
       </div>
       <div className="hh-owner-session-actions">
         <button type="button" disabled={busy||uploading} onClick={saveClick}>{text('Сохранить черновик','Save draft',ru)}</button>

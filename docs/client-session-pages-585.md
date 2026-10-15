@@ -20,10 +20,11 @@ These changes provide session-scoped guest invitations. Do not share with real c
 
 ## Known limitations and safeguards
 
-- Browser-to-Storage signed upload currently uses `uploadToSignedUrl`; large/slow networks need TUS resumable support before advertising 100 MB as reliably uploadable.
+- Browser-to-Storage signed upload currently uses `uploadToSignedUrl`; large/slow networks need TUS resumable support; keep upload files <=45 MB on current Free-tier storage.
 - Assessment reports render approved HTML and generate a genuine PDF in the browser. Legacy documents have a grant-scoped server-side PDF endpoint.
 - Provider signed playback URLs remain usable until expiry (maximum five minutes), independently of session grant revocation.
 - Draft items and reports are encrypted at rest; published content is a separate immutable per-revision snapshot. New sessions always have separate media and grant URLs.
 - The app_private RLS/grants and Canadian privacy/retention requirements need independent review before use with real client recordings.
 - The feature never auto-sends WhatsApp, automatically spends HeyGen credits, or imports entire guest histories into Google Cabinet.
 - Rollback: disable `HH_CLIENT_SESSIONS_ENABLED` without destroying client records/blobs; legacy cabinet/report journeys remain in place.
+Storage Free-tier facts verified 2026-10-15: single file maximum 50 MB, 10 GB overall egress limit (5 GB cached + 5 GB uncached); no tier upgrade authorized. Public domain cannot serve private client recordings.

@@ -39,6 +39,8 @@ test('media size and MIME are explicitly limited before signed upload',()=>{
   assert.deepEqual(validateUpload({mime:'audio/mpeg',bytes:1024}),{mime:'audio/mpeg',bytes:1024})
   assert.throws(()=>validateUpload({mime:'text/html',bytes:150}))
   assert.throws(()=>validateUpload({mime:'video/mp4',bytes:150*1024*1024}))
+  assert.throws(()=>validateUpload({mime:'video/mp4',bytes:48_000_000}))
+  assert.deepEqual(validateUpload({mime:'video/mp4',bytes:40_000_000}),{mime:'video/mp4',bytes:40_000_000})
   assert.throws(()=>validateUpload({mime:'audio/mp4',bytes:26*1024*1024}))
   assert.throws(()=>validateUpload({mime:'application/pdf',bytes:0}))
 })

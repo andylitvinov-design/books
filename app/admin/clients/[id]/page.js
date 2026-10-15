@@ -133,7 +133,7 @@ export default async function ClientDetail({ params }) {
       </div>
     </section>
 
-    {sessionPagesEnabled() && <ClientSessionEditor clientId={id} locale={client.preferredLocale}
+    {sessionPagesEnabled() && <ClientSessionEditor clientId={id} locale={client.preferredLocale} storageReady={Boolean(process.env.HH_APP_SUPABASE_SECRET_KEY)}
       reports={assessments.filter(r => r.status === 'shared').map(r => ({
         id: r.id, title: r.title, occurredOn: r.occurredOn, kind: r.kind,
         language: r.language, sourceName: r.sourceName, sourceVersion: r.sourceVersion,

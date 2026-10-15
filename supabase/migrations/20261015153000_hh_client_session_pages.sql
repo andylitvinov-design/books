@@ -33,7 +33,7 @@ create table if not exists app_private.client_session_assets (
   client_id uuid not null,
   object_key text not null unique,
   mime text not null,
-  bytes bigint not null check(bytes>=0 and bytes <= 104857600),
+  bytes bigint not null check(bytes>=0 and bytes <= 50000000),
   status text not null default 'pending' check(status in ('pending','ready','failed','removed')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -84,7 +84,7 @@ end $$;
 -- Storage access via server-held provider secret only, signed requests, random object keys.
 -- No public bucket access and no public download policy.
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
-values ('hh-client-private-media','hh-client-private-media',false,104857600,
+values ('hh-client-private-media','hh-client-private-media',false,50000000,
   array['video/mp4','video/webm','audio/mpeg','audio/mp4','audio/x-m4a','audio/webm','application/pdf'])
 on conflict (id) do nothing;
 commit;
