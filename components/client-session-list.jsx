@@ -9,7 +9,8 @@ export function OwnerClientSessions({clientId,sessions,documents,locale='en'}) {
     if(busy) return
     setBusy(true);setError('')
     try {
-      const first=[...documents].filter(x=>x.kind!=='report'&&x.status==='active').sort((a,b)=>b.dateIssued.localeCompare(a.dateIssued))[0]
+      const occupied=new Set(sessions.map(x=>x.sourceConsultationId).filter(Boolean))
+      const first=[...documents].filter(x=>x.kind!=='report'&&x.status==='active'&&!occupied.has(x.consultationId||x.id)).sort((a,b)=>b.dateIssued.localeCompare(a.dateIssued))[0]
       const res=await fetch('/api/admin/clients/'+clientId+'/sessions',{method:'POST',cache:'no-store',
         headers:{'content-type':'application/json'},credentials:'same-origin',
         body:JSON.stringify({documentId:first?.id||null})})
