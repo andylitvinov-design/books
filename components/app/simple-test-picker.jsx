@@ -174,6 +174,8 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
+  const [problemQuery, setProblemQuery] = useState('')
+  const [browseTab, setBrowseTab] = useState('all')
   const [showIndividualVia, setShowIndividualVia] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
@@ -181,7 +183,9 @@ export function SimpleTestPicker({
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
-  const visibleProblems = showAllProblems ? chosenFirst : chosenFirst.slice(0, 8)
+  const queryText = problemQuery.trim().toLocaleLowerCase(locale)
+  const matchingProblems = queryText ? chosenFirst.filter((item) => (item.label[locale] || item.label.en).toLocaleLowerCase(locale).includes(queryText)) : chosenFirst
+  const visibleProblems = (showAllProblems || queryText) ? matchingProblems : matchingProblems.slice(0, 8)
   useEffect(() => {
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
@@ -209,14 +213,10 @@ export function SimpleTestPicker({
         <p className={styles.lead}>{c.heroDescription}</p>
       </div>
       <div className={styles.heroSaying} aria-hidden="true">
-        <span>{locale === 'ru' ? 'Лучшее в тебе уже здесь' : locale === 'es' ? 'Lo mejor ya está en ti' : 'The best of you is already here'}</span>
+        <span>{locale === 'ru' ? 'Осознанность сегодня — больше свободы завтра' : locale === 'es' ? 'Más conciencia hoy, más libertad mañana' : 'Awareness today, more freedom tomorrow'}</span>
         <Heart size={22} strokeWidth={1.5}/>
       </div>
     </header>
-    {!authenticated && <p className={styles.privacy} data-prelogin-google-notice>
-      {c.accessNote}{' '}
-      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
-    </p>}
     <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
       <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
       <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
@@ -225,20 +225,31 @@ export function SimpleTestPicker({
     </div>
     <section className={styles.promo} aria-label={c.promoTitle} data-client-tests-promo>
       <div className={styles.promoImage}>
-        <img src="/images/holistic-house/course-hero-mindful.svg" alt="" width="460" height="560" decoding="async" />
+        <img src="/images/holistic-house/assessment-coast.svg" alt="" width="480" height="480" decoding="async" />
       </div>
       <div className={styles.promoCopy}>
         <p className={styles.promoKicker}>{c.promoKicker}</p>
         <h2>{c.promoTitle}</h2>
         <p>{c.promoText}</p>
         <a href="#hh-simple-topic-title" className={styles.promoAction}>{c.promoAction}<ArrowRight size={19} aria-hidden="true"/></a>
+        {!authenticated && <p className={styles.accessNote} data-prelogin-google-notice>
+          {c.accessNote}{' '}
+          <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
+        </p>}
       </div>
     </section>
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
-      <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">1</span>
-        <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+      <div className={styles.topicHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">1</span>
+          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+        </div>
+        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
+          onClick={() => {
+            const all = TOPICS.every(({key}) => focus.includes(key))
+            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
+          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
       </div>
       <div className={styles.topicGrid} role="group" aria-label={c.first}>
         {TOPICS.map(({ key, Icon, ...labels }) => {
@@ -261,10 +272,19 @@ export function SimpleTestPicker({
     </section>
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
-      <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
-        <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+      <div className={styles.problemHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">2</span>
+          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+        </div>
+        <button type="button" className={styles.skipProblems}
+          onClick={() => document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
       </div>
+      <label className={styles.problemSearch}>
+        <Search size={19} aria-hidden="true" />
+        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+      </label>
       {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
         {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
@@ -276,9 +296,10 @@ export function SimpleTestPicker({
               <span>{problem.label[locale] || problem.label.en}</span>
             </button>
           })}
-        </div></>}
+        </div>
+        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
       {focus.length > 0 && <div className={styles.problemActions}>
-        {allProblems.length > 8 && <button type="button" className={styles.problemMore}
+        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
           {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
         </button>}
@@ -287,7 +308,7 @@ export function SimpleTestPicker({
       </div>}
     </section>
 
-    <details className={styles.advanced}>
+    <details className={styles.advanced} id="hh-more-test-filters">
       <summary>
         <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
         <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
