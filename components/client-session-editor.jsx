@@ -249,7 +249,13 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
       </div>
       <div className="hh-owner-session-actions">
         <button type="button" disabled={busy||uploading} onClick={saveClick}>{text('Сохранить черновик','Save draft',ru)}</button>
-        <button type="button" onClick={()=>setPreview(v=>!v)}>{preview?text('Скрыть предпросмотр','Close preview',ru):text('Предпросмотр','Preview',ru)}</button>
+        <button type="button" disabled={busy||uploading} onClick={async()=>{
+          if(preview){setPreview(false);return}
+          setBusy(true);setStatus('')
+          try{await save(true);setPreview(true)}
+          catch(error){setStatus(error.message||'Unable to prepare preview')}
+          finally{setBusy(false)}
+        }}>{preview?text('Скрыть предпросмотр','Close preview',ru):text('Предпросмотр','Preview',ru)}</button>
         <button type="button" disabled={busy||uploading} className="hh-owner-primary" onClick={publish}>{text('Опубликовать клиенту','Publish to client',ru)}</button>
         {current.status==='published'?<>
           <button type="button" disabled={busy} onClick={()=>share(false)}>{text('Копировать ссылку на эту сессию','Copy this session link',ru)}</button>
