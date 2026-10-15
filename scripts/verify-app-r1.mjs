@@ -4,6 +4,7 @@ import {mkdir,writeFile,readFile} from 'node:fs/promises'
 import {createHmac} from 'node:crypto'
 import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
 import {installTestPlanNavigationDiagnostics} from './test-plan-navigation-diagnostics.mjs'
+import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -88,6 +89,16 @@ async function ready(){
    await page.reload({waitUntil:'domcontentloaded'})
   }
  }
+}
+// The compact account suggestions may already include Monthly Life Profile.
+// Exercise a genuinely new public selection, never infer novelty from a title.
+function unsavedPublicTest(savedPlan){
+ const saved=new Set(savedPlan.definitionIds)
+ const eligibleKeys=['ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10']
+ const entry=buildExplorerEntries({locale:'en',audience:'public'}).find(row=>eligibleKeys.includes(row.key)&&row.selectable&&row.definition&&!saved.has(row.definition.id))
+ assert.ok(entry,'the synthetic account must have a startable public test not already saved')
+ assert.equal(saved.has(entry.definition.id),false,'public handoff begins with an absent exact definition')
+ return entry
 }
 async function chooseVisibleTest(testPage,name){
  const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
@@ -952,6 +963,7 @@ try {
  // It must still be present after the public selector adds another test.
  const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
+ const newPublicTest=unsavedPublicTest(savedBeforeSignout)
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
@@ -1031,7 +1043,7 @@ try {
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await chooseVisibleTest(page,'Monthly Life Profile')
+ await chooseVisibleTest(page,newPublicTest.title)
  await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  // The public selector must ADD selected tests to the existing Google account,
  // never discard earlier tests or display a replacement confirmation.
@@ -1041,13 +1053,14 @@ try {
  assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'saved plan URL identifies the original account plan')
  assert.ok(savedBeforeSignout.definitionIds.every(id=>reopenedPlan.definitionIds.includes(id)),
    'every earlier saved test remains in the account')
+ assert.ok(reopenedPlan.definitionIds.includes(newPublicTest.definition.id),'the exact newly selected public definition is saved')
  assert.ok(reopenedPlan.definitionIds.length>savedBeforeSignout.definitionIds.length,
    'the newly selected public test is added to My Tests')
  assert.deepEqual(reopenedPlan.completedRunIds,savedBeforeSignout.completedRunIds,
    'adding tests must not discard completed progress')
  await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
  await expect(page.locator('#my-tests-list')).toBeVisible()
- await expect(page.getByRole('heading',{name:'Monthly Life Profile',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:newPublicTest.title,exact:true})).toBeVisible()
  passed('public test selection adds new tests without replacing the previous account battery')
  // The account shows the entire saved selection immediately, with a direct
  // remove control per row. Removing does not remove previous saved results.
