@@ -18,7 +18,7 @@ async function post(url,body) {
     result.error||'Unable to save this recording')
   return result
 }
-export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved}) {
+export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,assets=null}) {
   const ru=locale==='ru'
   const mountedRef=useRef(true),busyRef=useRef(false),jobRef=useRef(null),failedRef=useRef(false)
   const recorderRef=useRef(null),streamRef=useRef(null),chunksRef=useRef([])
@@ -193,7 +193,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
   <SessionVideoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
-    assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
+    assessmentId={assessmentId} assets={assets} locale={locale} onSaved={onSaved}/>
   <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
   </>
