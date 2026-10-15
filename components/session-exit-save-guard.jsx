@@ -3,7 +3,7 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react'
 import {BookmarkCheck,House,LockKeyhole,ShieldCheck,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
-import {rememberSessionSaveTarget,safeSessionExitTarget} from '@/lib/app/session-exit-navigation'
+import {rememberSessionSaveTarget,safeSessionExitTarget,sessionExitActionTarget} from '@/lib/app/session-exit-navigation'
 import styles from './client-session.module.css'
 
 const NavigationContext=createContext(null)
@@ -68,12 +68,12 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
       if(!link||link.closest('[data-hh-session-save-modal]')||
         link.hasAttribute('download')||
         (link.target&&link.target!=='_self'))return
-      const target=safeSessionExitTarget(link.href,window.location.origin,window.location.href)
-      if(!target)return
+      const route=sessionExitActionTarget(link.href,window.location.origin,window.location.href)
+      if(!route)return
       event.preventDefault()
       event.stopImmediatePropagation()
       setError('')
-      setPending({next:target})
+      setPending({next:route.afterSave,skipTo:route.withoutSave})
     }
     document.addEventListener('click',intercept,true)
     return ()=>document.removeEventListener('click',intercept,true)
@@ -102,7 +102,7 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
 
   function continueWithoutSaving(){
     if(busy)return
-    const target=pending?.next
+    const target=pending?.skipTo||pending?.next
     setPending(null)
     if(target)window.location.assign(target)
   }

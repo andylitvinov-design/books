@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {safeSessionExitTarget,rememberSessionSaveTarget,consumeSessionSaveTarget} from '../lib/app/session-exit-navigation.js'
+import {safeSessionExitTarget,sessionExitActionTarget,rememberSessionSaveTarget,consumeSessionSaveTarget} from '../lib/app/session-exit-navigation.js'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const origin='https://holistichouse.vercel.app'
@@ -69,4 +69,17 @@ test('session exit dialog is explicit, keyboard-accessible and allows refusal wi
  assert.match(entry,/exit.requestExit/)
  assert.match(page,/SessionExitSaveGuard/)
  assert.match(workspace,/consumeSessionSaveTarget/)
+})
+
+test('legacy Client Cabinet navigation is offered Save without persisting its selector',()=>{
+ const privatePage='https://holistichouse.vercel.app/ru/client/abcdefghijklmnopqrstuv/sessions/29e2a748-ea4c-4cb4-9561-5224482f9b44'
+ const route=sessionExitActionTarget(privatePage,origin,current)
+ assert.equal(route.afterSave,'/ru/app/portrait#personal-reports')
+ assert.equal(route.withoutSave,privatePage)
+ const store=makeStore()
+ assert.equal(rememberSessionSaveTarget(id,route.afterSave,origin,store),true)
+ const stored=[...store.data.values()][0]
+ assert(!stored.includes('abcdefghijklmnopqrstuv'))
+ assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),'/ru/app/portrait#personal-reports')
+ assert.equal(sessionExitActionTarget('https://elsewhere.example/ru/client/abcdefghijklmnopqrstuv',origin,current),null)
 })
