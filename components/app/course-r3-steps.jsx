@@ -352,25 +352,42 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
-      <div className={styles.sectionHeading}><h2>{t.testsTitle}</h2>
+      {isAntistress && <section className={styles.stressBaselineIntro} data-course-antistress-pretests aria-label={t.stressBaselineTitle}>
+        <span className={styles.baselineIcon}><ClipboardList size={23} aria-hidden="true"/></span>
+        <div><strong>{t.stressBaselineTitle}</strong><p>{t.stressBaselineText}</p></div>
+      </section>}
+      <div className={styles.sectionHeading}><h2>{isAntistress?t.stressTestsTitle:t.testsTitle}</h2>
         <button type="button" className={styles.secondary} disabled={busy}
           onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
       <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
-      <div className={styles.testList} aria-label={t.testsTitle}>
-        {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
-          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
+      <div className={styles.testList} aria-label={isAntistress?t.stressTestsTitle:t.testsTitle}>
+        {visible.map((item,index)=>{
+          const required=isAntistress && item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
+          const serverStatus=confirmedStatuses.find(row=>row.key===item.key)
+          const recencyDays=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
+          const resultValid=serverStatus?Boolean(serverStatus.completed)
+            :(isAntistress&&recencyDays?Boolean(item.completed &&
+              isAntistressBaselineRecent(item.key,item.completedAt)):Boolean(item.completed))
+          const outdated=Boolean(item.completed&&!resultValid)
+          return <label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}
+            data-course-required-baseline={required?'true':undefined}>
+          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||required||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
+            {isAntistress && ['hh-weekly-pulse','gad-7','hh-resource-pulse'].includes(item.key) &&
+              <small className={required?styles.requiredBadge:styles.optionalBadge}>
+                {required?t.stressRequired:t.stressOptional}
+              </small>}
             <small>{item.measurementAxes.slice(0,3).join(' · ')}</small>
-            <small className={item.completed?styles.completed:styles.pending}>
-              {item.completed?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
-                :<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
+            <small className={resultValid?styles.completed:styles.pending}>
+              {resultValid?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
+                :outdated?t.stressRetake:<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
           <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
-        </label>)}
+        </label>})}
       </div>
       <div className={styles.controls}>
         <button type="button" className={styles.secondary} onClick={()=>setShowAll(value=>!value)}>
@@ -378,6 +395,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}<ArrowRight size={15}/></Link>
       </div>
       <p className={styles.small}>{t.saveNotice}</p>
+      {isAntistress && <p className={styles.small} data-course-antistress-battery-note>{t.stressExtraNote}</p>}
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
         <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
           type="button" disabled={busy||localBusy||!chosenTests.length}
@@ -393,10 +411,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
               {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}</small></div>
           })}
         </div>
-        {pending.length===0?<p className={styles.completed}>{t.allDone}</p>:
+        {pending.length===0?<p className={baselineConfirmed?styles.completed:styles.pending}>{baselineConfirmed?t.allDone:t.stressMissingBaseline}</p>:
           <button type="button" className={'hh-primary '+styles.ctaLink} disabled={busy||localBusy||openingTest}
             onClick={openFirstCourseTest}>{t.pendingTitle}<ArrowRight size={17}/></button>}
-        {pending.length===0&&<button type="button" disabled={busy||localBusy}
+        {pending.length===0&&baselineConfirmed&&<button type="button" disabled={busy||localBusy}
           className={'hh-primary '+styles.cta} onClick={()=>onAct('review')}>{t.review}<ArrowRight size={17}/></button>}
         {pending.length>0&&<p className={styles.small}>{t.reviewDisabled}</p>}
       </section>}
