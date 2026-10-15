@@ -25,7 +25,7 @@ test('first-month half-price is only conditional Advanced, never recurring €10
   assert.match(a, /€10 \(50% off\)/)
   assert.match(a, /subject to confirmation/)
   assert.match(p, /€100\/month/)
-  assert.doesNotMatch(p, /€10|50% off/)
+  assert.doesNotMatch(p, /€10(?!\d)|50% off/)
 })
 
 test('RU requests and invalid choices stay bounded; no payment is ever performed', () => {
