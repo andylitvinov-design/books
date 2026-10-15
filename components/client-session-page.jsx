@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -83,8 +83,9 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
     .sort((a,b)=>(a.kind==='audio'?0:1)-(b.kind==='audio'?0:1))
   const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
-  const supplementary=media.filter(item=>item.kind==='pdf'||['meditation','additional'].includes(item.role)||
-    (item.role==='instruction'&&item.kind==='audio'))
+  const photos=media.filter(item=>item.kind==='image')
+  const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
+    (item.role==='instruction'&&item.kind==='audio')))
   const hasRecommendation=Boolean(recommendation?.items?.length)
   const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
     recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
@@ -95,7 +96,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
   return <main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
@@ -164,6 +165,25 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <summary>{ru?'Развернуть полную HTML-версию':'Read the full HTML document'}</summary>
         <div className={styles.reportContent}>{reportContent}</div>
       </details>}
+    </section>}
+
+    {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Images size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ФОТОМАТЕРИАЛЫ':'PHOTO ATTACHMENTS'}</span>
+          <h2>{ru?'Фотографии к вашей консультации':'Photos from your consultation'}</h2></div>
+      </header>
+      <div className={styles.sessionPhotoGallery}>
+        {photos.map(item=><figure key={item.assetId} className={styles.sessionPhotoCard}>
+          <a href={assetBase+encodeURIComponent(item.assetId)} target="_blank" rel="noopener noreferrer"
+            aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={assetBase+encodeURIComponent(item.assetId)}
+              alt={item.title||(ru?'Фото консультации':'Consultation photo')} loading="lazy" decoding="async"/>
+          </a>
+          {item.title&&<figcaption>{item.title}</figcaption>}
+        </figure>)}
+      </div>
     </section>}
 
     {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
