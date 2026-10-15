@@ -53,7 +53,7 @@ test('the public, guest, and private programme views reuse the exact curriculum'
   const overview=read('components/app/course-14-day-overview.jsx')
   assert.match(publicPage,/data-opora-14-day-public-plan/)
   assert.match(publicPage,/Course14DayOverview locale=\{locale\} programId="stress" compact/)
-  assert.match(guest,/Course14DayOverview locale=\{locale\} programId=/)
+  assert.match(guest,/Course14DayOverview locale=\{locale\}\s+programId=/)
   assert.match(privatePage,/data-course-full-14-day-scheme/)
   assert.match(overview,/antiStressBlueprint/)
   assert.match(overview,/data-antistress-day-schema=\{day\.day\}/)
