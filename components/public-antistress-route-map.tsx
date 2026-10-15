@@ -5,7 +5,7 @@ import {ANTISTRESS_MODULE_GOALS} from '@/lib/inner-growth/antistress-module-rout
 import styles from './public-antistress-route-map.module.css'
 
 type Locale='ru'|'en'|'es'
-type Props={locale:Locale;selectedId:string;onSelect:(id:string)=>void}
+type Props={locale:Locale;selectedId:string;onSelect:(id:string)=>void;onStart?:()=>void;busy?:boolean}
 const words={
  ru:{eyebrow:'ПЕРСОНАЛЬНЫЙ МАРШРУТ',title:'Пять уровней нагрузки — пять вариантов «Антистресс»',
   intro:'Входное тестирование помогает предложить один из пяти 14-дневных маршрутов. Это не пять последовательных этапов лечения: вы начинаете с подходящей интенсивности и сохраняете право выбора.',
@@ -23,7 +23,7 @@ const words={
   how:'Cómo se sugiere la ruta',detail:'Se utiliza la cifra más alta entre carga y tensión percibidas (0–10). La dificultad cotidiana puede sugerir un comienzo más suave. No son normas clínicas.',
   preview:'Ver las 14 clases',active:'Elegida para ver',start:'Empezar con la evaluación',safety:'Si los síntomas son graves o empeoran, busca apoyo profesional.'},
 } as const
-export function PublicAntistressRouteMap({locale,selectedId,onSelect}:Props){
+export function PublicAntistressRouteMap({locale,selectedId,onSelect,onStart,busy=false}:Props){
  const t=words[locale],href='/'+(locale==='es'?'en':locale)+'/app/course?program=stress'
  return <section id="stress-levels" className={styles.root} aria-labelledby="opora-levels-title" data-antistress-five-routes>
   <div className={styles.heading}><p className={styles.kicker}><ClipboardList size={16} aria-hidden="true"/>{t.eyebrow}</p>
@@ -38,6 +38,6 @@ export function PublicAntistressRouteMap({locale,selectedId,onSelect}:Props){
   </div>
   <details className={styles.method}><summary>{t.how}<ChevronDown size={18} aria-hidden="true"/></summary><p>{t.detail}</p></details>
   <div className={styles.bottom}><span><HeartHandshake size={17} aria-hidden="true"/>{t.safety}</span>
-   <Link href={href} prefetch={false}>{t.start}<ArrowRight size={17} aria-hidden="true"/></Link></div>
+   {onStart?<button type="button" onClick={onStart} disabled={busy}>{t.start}<ArrowRight size={17} aria-hidden="true"/></button>:<Link href={href} prefetch={false}>{t.start}<ArrowRight size={17} aria-hidden="true"/></Link>}</div>
  </section>
 }
