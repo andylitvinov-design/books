@@ -39,7 +39,7 @@ test('each semantic learning unit has the same scene presentation but retains un
   }
   assert.match(player, /<IllustratedMoment kind=\{slide\.kind\}\/>/)
   assert.doesNotMatch(player, /<div className=\{styles\.bigIcon\}>/)
-  assert.match(player, /data-slide-kind=\{promoOpen/)
+  assert.match(player, /data-slide-kind=\{finished \? "completion" : slide\.kind\}/)
   assert.match(player, /data-art="celebration"/)
   assert.match(playerCss, /\.content\[data-slide-kind=guided\]/)
   assert.match(playerCss, /\.content\[data-slide-kind=feedback\]/)

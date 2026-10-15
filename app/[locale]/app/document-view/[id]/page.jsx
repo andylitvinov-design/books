@@ -61,7 +61,10 @@ export default async function AuthenticatedSavedDocument({ params }) {
             <Link href={'/' + otherLocale + '/app/document-view/' + encodeURIComponent(id)} prefetch={false}>
               {otherLocale.toUpperCase()}
             </Link>
-            <a className="hh-saved-document-reader__pdf" href={pdfUrl} download>
+            {!payment && <a className="hh-saved-document-reader__pdf-preview" href={pdfUrl + '&preview=1'}>
+              {ru ? 'Просмотреть PDF крупно' : 'View large PDF'}
+            </a>}
+                        <a className="hh-saved-document-reader__pdf" href={pdfUrl} download>
               {ru ? 'Скачать PDF' : 'Download PDF'}
             </a>
           </div>

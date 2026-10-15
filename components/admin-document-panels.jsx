@@ -7,6 +7,9 @@ import { reportPdfFilename } from '@/lib/documents/report-filename'
 export function AdminDocumentActions({ record, locale = record.languagePreference === 'ru' ? 'ru' : 'en' }) {
   return <div className="document-panel-actions">
     <a href={`/admin/documents/${record.id}/view?locale=${locale}`} className="saved-document-preview-open">Preview / Open</a>
+    {record.kind !== 'payment' && <a className="saved-document-preview-pdf" href={`/admin/api/documents/${record.id}/pdf?locale=${locale}&preview=1`}>
+      {locale === 'ru' ? 'Просмотреть PDF крупно' : 'Read large PDF'}
+    </a>}
     <a href={`/admin/api/documents/${record.id}/pdf?locale=${locale}`} download={record.kind === 'payment' ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(record)}>Download PDF</a>
     <Link href={`/admin/documents/${record.id}/view?locale=${locale}&print=1`} prefetch={false}>Print</Link>
     {record.status === 'active' ? <div><span>Copy client link</span><PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></div> : <p>Activate the document to issue a private client link.</p>}
