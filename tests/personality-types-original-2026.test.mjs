@@ -35,7 +35,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,137)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,139)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
