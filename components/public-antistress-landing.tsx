@@ -7,6 +7,8 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
 import { PublicAntistressRouteMap } from "@/components/public-antistress-route-map";
 import { oporaRecoveryStages } from "@/lib/inner-growth/antistress-recovery-pathway";
+import { ANTISTRESS_ROUTER_VERSION, antistressModuleTitle } from "@/lib/inner-growth/antistress-module-router";
+import { moduleDayMeta } from "@/lib/inner-growth/antistress-module-lessons";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
 import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -649,6 +651,9 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
     days: {title:string}[];
   };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
+  const [previewModuleId,setPreviewModuleId]=useState('AS2');
+  const previewDay=(day:number)=>moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
+  const previewTitle=antistressModuleTitle(previewModuleId,locale);
   const recoveryStages = oporaRecoveryStages(locale);
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
@@ -737,7 +742,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <PublicAntistressRouteMap locale={locale} />
+        <PublicAntistressRouteMap locale={locale} selectedId={previewModuleId} onSelect={setPreviewModuleId} />
 
         <section className={styles.section} id="programme" aria-labelledby="antistress-programme">
           <div className={styles.sectionIntro}>
@@ -748,6 +753,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.pathIllustration} aria-hidden="true">
             <img src="/images/holistic-house/course-journey-landscape.svg" width={860} height={245} alt="" loading="lazy" decoding="async" />
           </div>
+          <p className={styles.previewLabel} data-antistress-preview-module>{locale==="ru"?"Просмотр программы":locale==="es"?"Vista previa de la ruta":"Route preview"}: <strong>{previewTitle}</strong></p>
           <div className={styles.skills}>
             {programme.skills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
@@ -760,9 +766,9 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
               <div className={styles.lessonPair}>
-                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{programme.days[index * 2].title}</strong></p>
-                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{programme.days[index * 2 + 1].title}</strong></p>
-                <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{skill.outcome}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{previewDay(index * 2 + 1)}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{previewDay(index * 2 + 2)}</strong></p>
+                <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{previewModuleId==='AS2'?skill.outcome:(recoveryStages[index]?.description||skill.outcome)}</strong></p>
               </div>
             </details>)}
           </div>
@@ -771,7 +777,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.detailedDays} id="daily-programme"
           aria-label={locale==="ru"?"Практики, результаты и измерения каждого дня":locale==="es"?"Ejercicios, resultados y medidas de cada día":"Exercises, outcomes and measurements for all 14 days"}
           data-antistress-full-day-scheme data-antistress-detailed-14-day-scheme>
-          <Course14DayOverview locale={locale} programId="stress" compact />
+          <Course14DayOverview locale={locale} programId="stress" moduleId={previewModuleId} routerVersion={ANTISTRESS_ROUTER_VERSION} compact />
         </section>
         <section className={styles.process} id="how" aria-labelledby="antistress-how">
           <div className={styles.sectionIntro}>
