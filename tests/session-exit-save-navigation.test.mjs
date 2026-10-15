@@ -83,3 +83,17 @@ test('legacy Client Cabinet navigation is offered Save without persisting its se
  assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),'/ru/app/portrait#personal-reports')
  assert.equal(sessionExitActionTarget('https://elsewhere.example/ru/client/abcdefghijklmnopqrstuv',origin,current),null)
 })
+
+
+test('homepage language remains on chosen first-party route after Google save',()=>{
+  assert.equal(safeSessionExitTarget('/?lang=ru',origin,current),'/?lang=ru')
+  assert.equal(safeSessionExitTarget('/?lang=en',origin,current),'/?lang=en')
+  assert.equal(safeSessionExitTarget('/?lang=ru&client=secret',origin,current),'/')
+  assert.equal(safeSessionExitTarget('/?return=https://evil.example&lang=ru',origin,current),'/')
+  const store=makeStore()
+  assert.equal(rememberSessionSaveTarget(id,'/?lang=ru',origin,store),true)
+  assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),'/?lang=ru')
+  assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),null)
+  const config=read('next.config.ts')
+  assert.ok(config.includes('{ source: "/ru", destination: "/?lang=ru", permanent: true }'))
+})
