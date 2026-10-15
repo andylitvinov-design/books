@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves, MapPin, BookOpen, CircleHelp, ArrowUpRight, MousePointerClick } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves, MapPin, BookOpen, CircleHelp, MousePointerClick } from 'lucide-react'
 import CoursePracticeVoice from './course-practice-voice'
 import styles from './anti-stress-day-one.module.css'
 
@@ -72,7 +72,6 @@ export default function DayOneExercise({
   const choice=(field,options,extra={})=><DayOneChoices label={extra.label||text('Выберите подходящий вариант','Choose what fits')}
     options={options} value={answers[field]} disabled={locked} compact={extra.compact} cards={extra.cards}
     onSelect={value=>{onAnswer(field,value);if((field==='experience'||field==='comfort')&&value==='uncomfortable')onDiscomfort()}}/>
-  const photo=<Scene locale={locale}/>
   const helper=<p className={styles.hint}>{text(
     'Правильного ответа нет. Вы можете пропустить шаг или остановиться. Ваши чувства не обязаны измениться.',
     'There is no correct answer. You may skip or stop. Your feelings do not have to change.')}</p>
