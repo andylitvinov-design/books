@@ -131,6 +131,8 @@ test('connected intake screens and server enforce the owner-scoped selection',()
  assert.match(day, /oporaModuleRouter:ANTISTRESS_ROUTER_VERSION/)
  assert.match(day, /activePreferences\.oporaModuleRouter/)
  assert.match(day, /cycle\.preferences\?\.oporaModuleRouter/)
+ assert.match(day, /primaryTestKey=isActiveStress && selected\.includes\('hh-weekly-pulse'\)/)
+ assert.match(day, /antiStress:isActiveStress/)
 })
 
 test('seven pairs of trauma-informed educational stages sit inside each of five routes',()=>{
