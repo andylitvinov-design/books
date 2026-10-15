@@ -348,7 +348,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
         const auth = authToken.current
         if (!auth || auth.expiresAt < Date.now() + 30_000) throw new Error('session_expired')
         if (!connected || connected.id !== desired.id || entry.target !== targetRef.current) throw new Error('wrong_channel')
-        const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',synthetic,madeForKids})
+        const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',language:target,synthetic,madeForKids})
         update(entry.id,{state:'sending'})
         let session = sessions.current.get(entry.id)
         const previousSession = Boolean(session)
