@@ -121,3 +121,28 @@ test('external media HEAD/ftyp confirmation must match exact intended bytes befo
   assert.equal(inspected,2)
   assert.equal(sniffed,1);assert.equal(updated,1);assert.equal(attached,1)
 })
+
+test('a ready external asset never issues another signed PUT or exposes its object path',async()=>{
+  let presigned=0
+  const existing={id:'asset-1',legacy_client_id:'client-a',session_id:'session-a',
+    scope:'client',mime:'video/mp4',asset_kind:'video',max_bytes:512,
+    status:'ready',storage_provider:'r2',object_key:key,created_at:new Date().toISOString()}
+  const create=loadStorage(
+    ['AppError','SESSION_MEDIA_TYPES','getOwnerSession','configuredVideoUploadStore',
+     'transaction','validUuid','createVideoUploadUrl'],
+    [AppError,{'video/mp4':{kind:'video',ext:'mp4',max:45_000_000}},
+     async()=>({status:'published',assets:[],draft:{media:[]}}),
+     ()=>({provider:'r2'}),
+     async(_cfg,_actor,fn)=>fn({query:async()=>({rows:[existing]})}),
+     ()=>true,()=>{presigned++;return 'https://synthetic.invalid/upload'}],
+    'createPrivateMediaIntent'
+  )
+  const result=await create({},null,'client-a','session-a',{
+    intentId:'intent-1',mime:'video/mp4',kind:'video',scope:'client',bytes:512,
+  })
+  assert.equal(result.ready,true)
+  assert.equal(result.assetId,'asset-1')
+  assert.equal(result.uploadUrl,undefined)
+  assert.equal(result.objectKey,undefined)
+  assert.equal(presigned,0)
+})
