@@ -16,3 +16,11 @@ Release: The page remains behind HH_CLIENT_DELIVERY_ENABLED, and real private me
 
 Acceptance: invited Session A → My Tests → modal Save → Google → Session A appears in My Reports and target My Tests opens; already signed-in Account works; decline continues without saving; in-page links do not prompt; malicious return target rejected; repeated save does not transfer ownership.
 An already saved session is detected only by a verified Google Account bootstrap and the exact sourceSessionId in savedSessions. It no longer asks again; its Save button opens the authenticated saved-session reader. Unavailable/outdated revisions still require new confirmation. The guest grant never auto-authorizes a different Account.
+
+## Freshness and privacy verification (2026-10-15)
+
+The Google Cabinet bootstrap list is **not** proof that a previously saved consultation is still current. Before suppressing the leave-page Save prompt, the session UI must check `GET /api/app/saved-sessions/{savedId}/status` with the current authenticated Account. That status endpoint reauthorizes the exact Account-owned save, consults the published session's revision and hash, and **does not mark the report as opened** or return medical content. A withdrawn, republished, missing, removed or foreign-account entry fails closed; the user may then confirm a new Save from a valid consultation link.
+
+Only fixed public Cabinet menu paths (App root, Tests, Course, Portrait) and safe public site paths may be retained for same-tab post-OAuth navigation. Never persist `/app/sessions/{id}`, `/app/reports/{id}`, resource identifiers, private selectors, patient data, arbitrary queries, or external URLs in browser storage. EN/RU homepage language is the one deliberately allowed non-sensitive query field.
+
+This is code and synthetic-test validation, not a substitute for testing real Google OAuth onboarding, iPhone Safari/Android recordings, authenticated PDF/Range video playback, and cross-client consent in production.
