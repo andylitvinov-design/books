@@ -544,18 +544,18 @@ export default function CourseSlidePlayer({
 
   const dayOneTitles=locale==='ru'?{
     recall:'Мой личный фокус',idea:'Одна мысль для размышления',
-    'day1-prepare':'Подготовка к практике','day1-notice':'Замечаю настоящее',
-    'day1-practice':'Главная практика','day1-exit':'Мягкое завершение',
-    'day1-anchor':'Моя точка опоры','day1-association':'Практика ассоциаций',
-    'day1-independent':'Попробую самостоятельно','day1-experience':'Что я заметил(а)?',
-    'day1-adapt':'Выбираю подходящий формат','day1-transfer':'Мой следующий шаг',
+    'day1-prepare':'Мой способ начать','day1-notice':'Моё состояние сейчас',
+    'day1-practice':'Состояние и поддержка','day1-exit':'Завершаю в своём темпе',
+    'day1-anchor':'Что мне сейчас нужно','day1-association':'Три слова о себе',
+    'day1-independent':'Пробую сам(а)','day1-experience':'Что изменилось внутри?',
+    'day1-adapt':'Учитываю свои границы','day1-transfer':'Моя карточка поддержки',
   }:{
     recall:'My personal focus',idea:'A thought to consider',
-    'day1-prepare':'Preparing to practise','day1-notice':'Noticing the present',
-    'day1-practice':'Main practice','day1-exit':'A gentle finish',
-    'day1-anchor':'My point of support','day1-association':'Associations',
-    'day1-independent':'Trying it by myself','day1-experience':'What did I notice?',
-    'day1-adapt':'Choosing what fits','day1-transfer':'My next step',
+    'day1-prepare':'How I begin','day1-notice':'My state right now',
+    'day1-practice':'State and support','day1-exit':'Finish at my pace',
+    'day1-anchor':'What I need now','day1-association':'Three words for me',
+    'day1-independent':'Try it myself','day1-experience':'My inner experience',
+    'day1-adapt':'Respect my limits','day1-transfer':'My support card',
   }
   const title=finished?(cycle.day===14?words.courseFinished:words.finished)
     :slide?.kind==='course-offer'?words.promoTitle
@@ -720,7 +720,10 @@ export default function CourseSlidePlayer({
               <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
               <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
               {isOporaModule&&<p className={styles.welcomeModule} data-opora-welcome-theme>{lesson.oporaModule.theme}</p>}
-              <p className={styles.welcomePrompt}>{words.welcomePrompt}</p>
+              <p className={styles.welcomePrompt}>{isDayOne
+                ? (locale==='ru'?'С каким внутренним состоянием вы пришли сегодня? Ничего менять не нужно.':
+                  'What inner state are you arriving with today? Nothing needs to change.')
+                : words.welcomePrompt}</p>
               <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
                 {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
                   const FeelingIcon = [Sun, Cloud, Moon, CircleHelp][choiceIndex]
@@ -734,7 +737,10 @@ export default function CourseSlidePlayer({
               </div>
               {welcomeFeeling && welcomeFeeling !== 'skip' &&
                 <p className={styles.welcomeResponse} role="status">{welcomeFeelingSupport(welcomeFeeling, locale)}</p>}
-              <p className={styles.welcomeNote}>{words.welcomeNote}</p>
+              <p className={styles.welcomeNote}>{isDayOne
+                ? (locale==='ru'?'Сегодня вы потренируетесь замечать состояние и выбирать небольшую поддержку. Можно пропускать любые наблюдения.':
+                  'Today you can notice your state and choose a small support. Any observation may be skipped.')
+                : words.welcomeNote}</p>
               <button type="button" className={styles.welcomeSkip} disabled={locked}
                 onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>
             </div>
@@ -742,11 +748,17 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'baseline' && <>
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
-            <p className={styles.prompt} data-course-baseline-presence>{baselinePrompt}</p>
+            <p className={styles.prompt} data-course-baseline-presence>{isDayOne
+              ? (locale==='ru'?'Насколько сейчас доступна небольшая пауза, чтобы заметить себя и выбрать действие?':
+                'How available is a small pause to notice yourself and choose a response right now?')
+              : baselinePrompt}</p>
             <MomentScale value={entryNow} onChange={setEntryNow} words={words}
-              label={baselinePrompt + ': ' + focusLabel} lowLabel={words.baselineLow}
+              label={(isDayOne?(locale==='ru'?'Доступность паузы и выбора':'Availability of pause and choice'):baselinePrompt) + ': ' + focusLabel} lowLabel={words.baselineLow}
               highLabel={words.baselineHigh} disabled={locked}/>
-            <p className={styles.helper}>{words.ratingHint}</p>
+            <p className={styles.helper}>{isDayOne
+              ? (locale==='ru'?'Необязательная моментная оценка — не диагностический тест и не требование улучшить показатель.':
+                  'Optional momentary rating, not a diagnostic test or a score you must improve.')
+              : words.ratingHint}</p>
           </>}
 
           {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
