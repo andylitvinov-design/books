@@ -8,6 +8,7 @@ import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-tes
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
 import { courseMeasuredProfile, courseRecommendedTests, courseSuggestedFocus } from '@/lib/inner-growth/course-strategy'
+import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth/course-presets'
 import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, suggestCourseProgramScales, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS, isAntistressBaselineRecent, hasAntistressRequiredBaseline, withAntistressRequiredBaseline } from '@/lib/inner-growth/course-programs'
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
@@ -17,6 +18,7 @@ import styles from './course-r3-steps.module.css'
 
 const UI = {
   en: {
+    presetTag: 'Fixed', presetFixed: 'Fixed set for this programme', presetTestIntro: 'These five tests are already selected for your course. Confirm the list, complete only any missing tests, and then choose your focus from real measured scales.',
     focusTitle: 'Which areas matter to you?', focusHint: 'Choose one or several areas. You can also describe your concern in your own words.',
     optional: 'Describe my situation (optional)', describe: 'A few words about my concern (optional)',
     example: 'For example, I want to feel calmer in conversations and more supported.',
@@ -79,6 +81,7 @@ const UI = {
     relativePriority: 'within-scale priority', noMedical: 'For education and self-observation; not diagnosis or psychotherapy.',
   },
   ru: {
+    presetTag: 'Входит', presetFixed: 'Фиксированный набор для этой программы', presetTestIntro: 'Для этого курса заранее выбрано пять тестов. Подтвердите их, пройдите только недостающие и выберите направления по реальным измеренным шкалам.',
     focusTitle: 'С какими сферами хотите работать?', focusHint: 'Выберите одну или несколько сфер. Если хотите, дополнительно опишите проблему своими словами.',
     optional: 'Описать ситуацию (по желанию)', describe: 'Несколько слов о моей ситуации (по желанию)',
     example: 'Например: хочу спокойнее общаться и чувствовать больше внутренней опоры.',
@@ -145,21 +148,22 @@ const formatDate=(date,locale)=>{
   try { return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':'en-CA',{dateStyle:'medium'}).format(new Date(date)) }
   catch { return '' }
 }
-async function saveExistingAccountPlan(items) {
+async function saveExistingAccountPlan(items, accountId) {
   const response=await fetch('/api/app/test-plans',{
     method:'POST',credentials:'same-origin',cache:'no-store',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-HH-Account-ID':accountId},
     body:JSON.stringify({items,operationId:crypto.randomUUID(),appendActive:true,replaceActive:false}),
   })
-  const result=await response.json().catch(()=>({}))
-  if(!response.ok) throw new Error(result.error||'TEST_PLAN_UNAVAILABLE')
+  const result=await response.json()
+  if(!response.ok||result?.error) throw new Error(result.error||'TEST_PLAN_UNAVAILABLE')
   return result
 }
 
-export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onState,onError,root,quickEntry=false}) {
+export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,onCourseCommand,onCourseRead,isCourseCurrent,onState,onError,root,quickEntry=false}) {
   const t=UI[locale]||UI.en,ru=locale==='ru'
   const router=useRouter()
   const current=state.course||{}, assessment=state.assessments||{}
+  const preset=getCoursePreset(current.presetId)
   const [concerns,setConcerns]=useState(current.concerns||'')
   const [focusTags,setFocusTags]=useState(current.focusTags||[])
   const [chosenTests,setChosenTests]=useState([])
@@ -175,19 +179,24 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [openingTest,setOpeningTest]=useState(false)
   const [showCompletedOptions,setShowCompletedOptions]=useState(false)
   const predicted=useMemo(()=>suggestedCourseTopics(concerns),[concerns])
-  const programme=useMemo(()=>courseProgramFromTopics(current.focusTags||[]),[current.focusTags])
-  const ranked=useMemo(()=>orderCourseProgramTests(courseRecommendedTests({
-    // A written concern may be the only confirmed request. Derive its
-    // descriptive topic tags locally when no explicit sectors were selected.
-    focusTags:current.focusTags?.length ? current.focusTags
-      : suggestedCourseTopics(current.concerns||'').topics,
-    results:data.results||[],locale,
-  }),programme?.id),[current.focusTags,current.concerns,data.results,locale,programme?.id])
+  const programme=useMemo(()=>preset?null:courseProgramFromTopics(current.focusTags||[]),[current.focusTags,preset])
+  const ranked=useMemo(()=>{
+    const options=orderCourseProgramTests(courseRecommendedTests({
+      // Personal courses keep their editable relevance-ranked shortlist.
+      focusTags:current.focusTags?.length ? current.focusTags
+        : suggestedCourseTopics(current.concerns||'').topics,
+      results:data.results||[],locale,
+    }),programme?.id)
+    if (!preset) return options
+    const choices=new Map(options.map(test=>[test.key,test]))
+    // Fixed published battery: no opportunistic dynamic substitutions.
+    return preset.testKeys.map(key=>choices.get(key)).filter(Boolean)
+  },[current.focusTags,current.concerns,data.results,locale,preset,programme?.id])
   const profile=useMemo(()=>courseMeasuredProfile({
     results:data.results||[],testKeys:current.testKeys||[],locale,
   }),[data.results,current.testKeys,locale])
   const confirmed=(current.testKeys||[]).length>0
-  const confirmedKeys=current.testKeys||[]
+  const confirmedKeys=useMemo(()=>current.testKeys||[],[current.testKeys])
   const isAntistress=programme?.id==='stress'
   const baselineConfirmed=hasAntistressRequiredBaseline(confirmedKeys,programme?.id)
   const optionByKey=new Map(ranked.map(item=>[item.key,item]))
@@ -195,16 +204,24 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const confirmedStatuses=assessment.selectedTests||[]
   const pending=confirmedStatuses.filter(item=>!item.completed)
   const minScales=Math.min(3,profile.eligible.length)
-  const suggestedScales=useMemo(()=>programme
-    ? suggestCourseProgramScales(profile,programme.id,3) : courseSuggestedFocus(profile,3),[profile,programme])
+  const suggestedScales=useMemo(()=>preset
+    ? coursePresetSuggestedScales(profile,preset.id,3)
+    : programme ? suggestCourseProgramScales(profile,programme.id,3) : courseSuggestedFocus(profile,3),[profile,preset,programme])
 
 
+  const ensureCurrent=()=>{if(!isCourseCurrent())throw new Error('COURSE_SELECTION_CHANGED')}
+  const boundRequest=async(path,body)=>{
+    ensureCurrent()
+    const result=await appFetch(path,body,undefined,{accountId:data.account.id})
+    ensureCurrent()
+    return result
+  }
   const courseTimeZone=()=>{
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
     catch { return 'UTC' }
   }
   async function submitFocusSelection(keys, isMeasured = true, moduleSelection = null) {
-    if(actionLock.current || busy || localBusy) return
+    if(actionLock.current || busy || localBusy || !isCourseCurrent()) return
     // The optional skill questionnaire cannot block an explicitly approved
     // Anti-Stress route when no directional practice scales are available.
     // This is a general learning goal, never a fabricated measurement.
@@ -216,16 +233,24 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       onError('COURSE_SCALES_UNAVAILABLE')
       return
     }
-    actionLock.current=true
+    const token={};actionLock.current=token
+    const courseId=current.id
+    const ensureCourseResponse=result=>{
+      ensureCurrent()
+      if(!courseId || result?.course?.id!==courseId) throw new Error('COURSE_SELECTION_CHANGED')
+      return result
+    }
     setLocalBusy(true)
     onError('')
     try {
+      ensureCurrent()
       // A stage-2 course must complete its private test review before goal
       // approval. Use the fresh revision from that response for the second
       // transaction, not the old revision captured by the UI closure.
       let revision=current.revision
       if(current.stage===2) {
-        const reviewed=await onCourseCommand('review')
+        ensureCurrent()
+        const reviewed=ensureCourseResponse(await onCourseCommand('review'))
         onState(reviewed)
         revision=reviewed.course.revision
       }
@@ -243,13 +268,22 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
       // If the POST response was interrupted, first check whether the course
       // was already committed. Retry once only while the revision is unchanged.
-      const result=await startCourseWithRecovery(body=>appFetch('course',body),payload)
+      const result=await startCourseWithRecovery(async body=>{
+        ensureCurrent()
+        const response=body
+          ? await onCourseCommand('choose-goals',body)
+          : await onCourseRead()
+        return ensureCourseResponse(response)
+      },payload)
+      ensureCourseResponse(result)
       onState(result)
     } catch(error) {
-      onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
+      if(isCourseCurrent()) onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
     } finally {
-      actionLock.current=false
-      setLocalBusy(false)
+      if(actionLock.current===token){
+        actionLock.current=false
+        if(isCourseCurrent()) setLocalBusy(false)
+      }
     }
   }
 
@@ -277,11 +311,12 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     onError('')
     try {
       // A fresh, owner-scoped read is authoritative after edits in another tab.
-      const fresh=await appFetch('course')
+      const fresh=await onCourseRead()
       const key=coursePendingKeys(fresh)[0]
       if (!key) { onState(fresh); return }
-      const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:appFetch })
-      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=1')
+      const run=await startOrResumeCourseTest({ courseState:fresh, key, locale, request:boundRequest })
+      ensureCurrent()
+      router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=guided&course=1&courseId='+encodeURIComponent(fresh.course.id))
     } catch(error) { onError(error.message||'COURSE_TEST_UNAVAILABLE') }
     finally { setOpeningTest(false) }
   }
@@ -300,10 +335,11 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       ? ['hh-weekly-pulse'].filter(key=>ranked.some(item=>item.key===key))
       : ranked.slice(0,5).map(item=>item.key)
     // Weekly Pulse is the only compulsory existing questionnaire.
-    // The short skill finder follows inside the course; GAD-7/Resource are opt-in.
-    setChosenTests(withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
-  },[stage,testsTouched,current.testKeys,ranked,programme?.id])
+    // The short skill finder follows; GAD-7/Resource remain opt-in.
+    setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
+  },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
+    if (preset) return
     if(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY) return
     setTestsTouched(true)
     setChosenTests(previous=>previous.includes(key)
@@ -317,20 +353,28 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   async function saveTestSelection() {
-    if(localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(actionLock.current||localBusy||busy||!chosenTests.length||chosenTests.length>12) return
+    if(preset && (chosenTests.length!==preset.testKeys.length ||
+      chosenTests.some((key,index)=>key!==preset.testKeys[index]))) {
+      onError('COURSE_PRESET_TESTS_FIXED')
+      return
+    }
     if(!hasAntistressRequiredBaseline(chosenTests,programme?.id)) {
       onError('COURSE_ANTISTRESS_BASELINE_REQUIRED')
       return
     }
+    actionLock.current=true
     setLocalBusy(true);onError('')
     try {
+      ensureCurrent()
       const selected=chosenTests.map(key=>optionByKey.get(key))
       if(selected.some(item=>!item)) throw new Error('INVALID_PLAN_ITEM')
       const existing=new Set(assessment.planStatus==='cancelled'?[]:(assessment.planKeys||[]))
       const missing=selected.filter(item=>!existing.has(item.key))
       if(missing.length) await saveExistingAccountPlan(missing.map(item=>({
         definitionKey:item.key,definitionVersion:item.definitionVersion,instrumentLocale:item.instrumentLocale,
-      })))
+      })),data.account.id)
+      ensureCurrent()
       // Server validates these keys against the actual private My Tests plan.
       const saved=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
       onState(saved)
@@ -339,7 +383,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       setTestsTouched(false)
       setShowCompletedOptions(false)
     } catch(error){onError(error.message||'COURSE_TEST_SELECTION_UNAVAILABLE')}
-    finally {setLocalBusy(false)}
+    finally {actionLock.current=false;setLocalBusy(false)}
   }
 
 
@@ -348,52 +392,47 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   // existing plan-save + course confirmation and opens the first *missing*
   // owner-scoped run. Never use a query parameter as proof of completion.
   async function startCompactTests() {
-    if (busy || localBusy || openingTest || !chosenTests.length) return
+    if (actionLock.current || busy || localBusy || openingTest || !chosenTests.length || chosenTests.length>12 || !isAntistress || preset) return
     if (!hasAntistressRequiredBaseline(chosenTests, programme?.id)) {
       onError('COURSE_ANTISTRESS_BASELINE_REQUIRED')
       return
     }
-    setLocalBusy(true)
-    onError('')
+    const token={};actionLock.current=token
+    setLocalBusy(true);onError('')
     try {
-      const sameSelection = confirmed && confirmedKeys.length === chosenTests.length &&
-        confirmedKeys.every((key, index) => key === chosenTests[index])
+      ensureCurrent()
+      const sameSelection=confirmed && confirmedKeys.length===chosenTests.length &&
+        confirmedKeys.every((key,index)=>key===chosenTests[index])
       let fresh
-      if (sameSelection) {
-        fresh = await appFetch('course')
-      } else {
-        const selected = chosenTests.map(key => optionByKey.get(key))
-        if (selected.some(item => !item)) throw new Error('INVALID_PLAN_ITEM')
-        const existing = new Set(assessment.planStatus === 'cancelled' ? [] : (assessment.planKeys || []))
-        const missing = selected.filter(item => !existing.has(item.key))
-        if (missing.length) await saveExistingAccountPlan(missing.map(item => ({
-          definitionKey: item.key, definitionVersion: item.definitionVersion,
-          instrumentLocale: item.instrumentLocale,
-        })))
-        fresh = await onCourseCommand('confirm-tests', { testKeys: chosenTests })
-        onState(fresh)
-        discardCourseEntryIntent()
-        setTestsTouched(false)
-        setShowCompletedOptions(false)
+      if(sameSelection) fresh=await onCourseRead()
+      else {
+        const selected=chosenTests.map(key=>optionByKey.get(key))
+        if(selected.some(item=>!item))throw new Error('INVALID_PLAN_ITEM')
+        const existing=new Set(assessment.planStatus==='cancelled'?[]:(assessment.planKeys||[]))
+        const missing=selected.filter(item=>!existing.has(item.key))
+        if(missing.length)await saveExistingAccountPlan(missing.map(item=>({
+          definitionKey:item.key,definitionVersion:item.definitionVersion,instrumentLocale:item.instrumentLocale,
+        })),data.account.id)
+        ensureCurrent()
+        fresh=await onCourseCommand('confirm-tests',{testKeys:chosenTests})
+        ensureCurrent();onState(fresh)
+        discardCourseEntryIntent();setTestsTouched(false);setShowCompletedOptions(false)
       }
-      const key = coursePendingKeys(fresh)[0]
-      if (key) {
-        const run = await startOrResumeCourseTest({ courseState: fresh, key, locale, request: appFetch })
-        router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick&course=1')
-      } else {
-        // Compatible saved results count. Continue to the existing five-level
-        // navigator without forcing a duplicate test.
-        const reviewed = await appFetch('course', {
-          action: 'review', expectedRevision: fresh.course.revision,
-        })
-        onState(reviewed)
+      ensureCurrent()
+      const key=coursePendingKeys(fresh)[0]
+      if(key){
+        const run=await startOrResumeCourseTest({courseState:fresh,key,locale,request:boundRequest})
+        ensureCurrent()
+        router.push(root+'/runs/'+encodeURIComponent(run.id)+'?mode=quick&course=1&courseId='+encodeURIComponent(fresh.course.id))
+      }else{
+        const reviewed=await onCourseCommand('review',{expectedRevision:fresh.course.revision})
+        ensureCurrent();onState(reviewed)
       }
-    } catch (error) {
-      onError(error.message || 'COURSE_TEST_UNAVAILABLE')
-    } finally { setLocalBusy(false) }
+    }catch(error){if(isCourseCurrent())onError(error.message||'COURSE_TEST_UNAVAILABLE')}
+    finally{if(actionLock.current===token){actionLock.current=false;if(isCourseCurrent())setLocalBusy(false)}}
   }
 
-  if(stage===1 && quickEntry) return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-opora-fast-intake>
+  if(stage===1 && quickEntry && !preset) return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-opora-fast-intake>
     <h2>{ru?'Начнём с исходного теста':'Begin with your baseline check'}</h2>
     <p>{ru?'Вы сможете выбрать интересующие темы и навыки после диагностики.':'You can choose your focus and skills after the starting assessment.'}</p>
     <button type="button" className={'hh-primary '+styles.cta} disabled={busy}
@@ -452,7 +491,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       busy={busy||localBusy}
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
       onAlternative={openManualFocus}
-      onEditTests={()=>setShowCompletedOptions(true)}/>
+      onEditTests={preset?undefined:()=>setShowCompletedOptions(true)}/>
   }
 
 
@@ -520,7 +559,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   if(stage===2) {
-    const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
+    const visible=preset?ranked:showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
       {isAntistress && <section className={styles.stressBaselineIntro} data-course-antistress-pretests aria-label={t.stressBaselineTitle}>
@@ -528,9 +567,11 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <div><strong>{t.stressBaselineTitle}</strong><p>{t.stressBaselineText}</p></div>
       </section>}
       <div className={styles.sectionHeading}><h2>{isAntistress?t.stressTestsTitle:t.testsTitle}</h2>
-        <button type="button" className={styles.secondary} disabled={busy}
-          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
-      <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
+        {!preset&&<button type="button" className={styles.secondary} disabled={busy}
+          onClick={()=>onAct('edit-intake')}>{t.editAreas}</button>}</div>
+      <p>{preset?t.presetTestIntro:t.testsIntro}</p>
+      {preset?<p className={styles.small}><strong>{t.presetFixed} · {preset.title[ru?'ru':'en']}</strong></p>
+        :<p className={styles.small}>{t.relevanceHint}</p>}
       <div className={styles.testList} aria-label={isAntistress?t.stressTestsTitle:t.testsTitle}>
         {visible.map((item,index)=>{
           const required=isAntistress && item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
@@ -542,7 +583,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           const outdated=Boolean(item.completed&&!resultValid)
           return <label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}
             data-course-required-baseline={required?'true':undefined}>
-          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||required||
+          <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||Boolean(preset)||required||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
@@ -558,20 +599,20 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
-          <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
+          <span className={styles.match}>{preset?t.presetTag:<>{item.matchPercent}%<small>{t.relevance}</small></>}</span>
         </label>})}
       </div>
-      <div className={styles.controls}>
+      {!preset&&<div className={styles.controls}>
         <button type="button" className={styles.secondary} onClick={()=>setShowAll(value=>!value)}>
           <Plus size={15}/>{showAll?t.showLess:t.showMore}</button>
-        <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}<ArrowRight size={15}/></Link>
-      </div>
-      <p className={styles.small}>{t.saveNotice}</p>
+        <Link href={root+'/tests?explore=1&course=1&filters=topics&courseId='+encodeURIComponent(current.id)}>{t.returnTests}<ArrowRight size={15}/></Link>
+      </div>}
+      {!preset&&<p className={styles.small}>{t.saveNotice}</p>}
       {isAntistress && <p className={styles.small} data-course-antistress-battery-note>{t.stressExtraNote}</p>}
       <div className={styles.selectionActions}><strong>{chosenTests.length} {t.chosen}</strong>
         <button className={confirmed ? styles.editSelection : 'hh-primary '+styles.cta}
           type="button" disabled={busy||localBusy||!chosenTests.length}
-          onClick={saveTestSelection}>{confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
+          onClick={saveTestSelection}>{preset?t.saveTests:confirmed?t.editTests:t.saveTests}<ArrowRight size={17}/></button>
       </div>
       {confirmed&&<section className={styles.progress} aria-label={t.pendingTitle}>
         <h3>{t.pendingTitle}</h3><p>{t.pendingText}</p>

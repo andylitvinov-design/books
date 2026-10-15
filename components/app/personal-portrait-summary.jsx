@@ -46,13 +46,14 @@ export function PersonalPortraitSummary({ data, locale = 'en' }) {
   const [courseFocus, setCourseFocus] = useState([])
   useEffect(() => {
     // Read-only authenticated course preferences. Never show optional private notes.
+    setCourseFocus([])
     const controller = new AbortController()
-    fetch('/api/app/course', { credentials:'same-origin', cache:'no-store', signal:controller.signal })
+    fetch('/api/app/course', { credentials:'same-origin', cache:'no-store', signal:controller.signal, headers: { 'X-HH-Account-ID': data.account.id } })
       .then(response => response.ok ? response.json() : null)
-      .then(value => { if (value?.course) setCourseFocus(approvedCourseFocus(value.course, locale)) })
+      .then(value => { if (!controller.signal.aborted && value?.course) setCourseFocus(approvedCourseFocus(value.course, locale)) })
       .catch(() => {})
     return () => controller.abort()
-  }, [locale])
+  }, [locale, data.account.id])
   const cards = [
     {
       id:'resources', icon:Leaf, title:t.resources, href:root+'/portfolio',

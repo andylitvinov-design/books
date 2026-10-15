@@ -42,7 +42,11 @@ import {
 import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
+import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
+import CrmManager from '@/components/app/crm-manager'
+import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
+import { isNativePsiAlchemy } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
@@ -50,7 +54,6 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
-import { isNativePsiAlchemy } from '@/lib/native/client'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -101,6 +104,15 @@ export default function AppWorkspace({ locale, path = [] }) {
   const page = path[0] || 'tests',
     recordId = path[1],
     root = `/${locale}/app`
+  const retestLifetime = useRef({ mounted: false, epoch: 0 })
+  const retestScope = useRef(null)
+  retestScope.current = { accountId: data?.account?.id, page, recordId,
+    courseId: searchParams.get('courseId'), cycleId: searchParams.get('cycleId'), courseMode: searchParams.get('course') }
+  useEffect(() => {
+    const lifetime = retestLifetime.current
+    lifetime.mounted = true; lifetime.epoch += 1
+    return () => { lifetime.mounted = false; lifetime.epoch += 1 }
+  }, [])
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
   const load = useCallback(async () => {
     setError(null)
@@ -131,6 +143,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       channel = new BroadcastChannel('hh-app-session')
       channel.onmessage = (e) => {
         if (e.data === 'signed-out') {
+          retestLifetime.current.epoch += 1
           setData(null)
           setState('signed-out')
           router.refresh()
@@ -147,6 +160,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         }
       },
       hide = () => {
+        retestLifetime.current.epoch += 1
         setData(null)
         setState('loading')
       }
@@ -196,7 +210,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         try {
           const { Capacitor, registerPlugin } = await import('@capacitor/core')
           if (Capacitor.getPlatform() === 'ios') {
-            await appFetch('notifications/live-stop', { activityId: null })
+            await appFetch('notifications/live-stop', { activityId: null }, 'POST', { accountId: data.account.id })
             await registerPlugin('HHCourseActivity').stop({})
           }
         } catch { /* Sign-out must still complete even if iOS is offline. */ }
@@ -211,14 +225,43 @@ export default function AppWorkspace({ locale, path = [] }) {
       router.replace(root)
     }
   }
-  async function completePlan(result, destination = 'report') {
-    if (searchParams.get('course') === 'retest') {
-      await load()
-      router.push(root + '/course?retest=updated')
-      return
+  const renderedRetestScope = retestScope.current, renderedRetestEpoch = retestLifetime.current.epoch
+  async function returnFromFinalRetest(completed = false) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || !scope.courseId || !scope.cycleId || !isCurrent()) return
+    const today = await appFetch('course/today?locale=' + encodeURIComponent(locale) + '&courseId=' + encodeURIComponent(scope.courseId),
+      undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || today?.courseId !== scope.courseId || today?.cycle?.id !== scope.cycleId || today.readOnly) return
+    const fresh = await appFetch('bootstrap', undefined, undefined, { accountId: scope.accountId })
+    if (!isCurrent() || fresh?.account?.id !== scope.accountId) return
+    setData(fresh); setState('ready')
+    router.push(root + '/course?courseId=' + encodeURIComponent(scope.courseId) + (completed ? '&retest=updated' : ''))
+  }
+  async function continueCoursePlan(result) {
+    const scope = renderedRetestScope, epoch = renderedRetestEpoch
+    const isCurrent = () => retestLifetime.current.mounted && retestLifetime.current.epoch === epoch &&
+      Object.keys(scope).every(key => retestScope.current?.[key] === scope[key])
+    if (!scope.accountId || scope.courseMode !== '1' || !isCurrent() ||
+        (scope.recordId && result.runId !== scope.recordId)) return
+    const request = async (path, body, method) => {
+      if (!isCurrent()) throw new Error('COURSE_SELECTION_CHANGED')
+      const response = await appFetch(path, body, method, { accountId: scope.accountId })
+      if (!isCurrent() || (path === 'bootstrap' && response?.account?.id !== scope.accountId))
+        throw new Error('COURSE_SELECTION_CHANGED')
+      return response
     }
-    if (searchParams.get('course') === '1') {
-      const courseState = await appFetch('course')
+    const refreshCourseOwner = async () => {
+      const fresh = await request('bootstrap')
+      if (!isCurrent()) return
+      setData(fresh); setState('ready')
+    }
+    try {
+      const requestedCourseId = scope.courseId
+      const courseState = await request('course' + (requestedCourseId ? '?courseId=' + encodeURIComponent(requestedCourseId) : ''))
+      if (requestedCourseId && courseState.course?.id !== requestedCourseId) return
+      const courseQuery = courseState.course?.id ? '&courseId=' + encodeURIComponent(courseState.course.id) : ''
       // Validate membership against the server-owned confirmed set, not only
       // the URL. Normal non-course tests still use their original result flow.
       if (isCourseTest(courseState, result.definitionKey)) {
@@ -226,33 +269,49 @@ export default function AppWorkspace({ locale, path = [] }) {
         // count in the ordinary account-wide selection. Sync that ledger
         // independently; stale plan revisions never block course progression.
         try {
-          const snapshot = await appFetch('bootstrap')
+          const snapshot = await request('bootstrap')
           const active = snapshot.activeTestPlan
           if (active?.status === 'active' && active.definitionIds?.includes(result.definitionId)) {
-            const plan = await appFetch('test-plans/' + encodeURIComponent(active.id))
-            await appFetch('test-plans/' + encodeURIComponent(active.id) + '/advance', {
+            const plan = await request('test-plans/' + encodeURIComponent(active.id))
+            await request('test-plans/' + encodeURIComponent(active.id) + '/advance', {
               completedRunId: result.runId,
               expectedRevision: plan.revision,
             })
           }
-        } catch {
+        } catch (error) {
+          if (error.message === 'COURSE_SELECTION_CHANGED') throw error
           // The saved result and authoritative course state remain intact.
         }
+        if (!isCurrent()) return
         const nextKey = coursePendingKeys(courseState)[0]
         if (nextKey) {
           const nextRun = await startOrResumeCourseTest({
-            courseState, key: nextKey, locale, request: appFetch,
+            courseState, key: nextKey, locale, request,
           })
-          await load()
-          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1')
+          await refreshCourseOwner()
+          if (!isCurrent()) return
+          router.push(root + '/runs/' + encodeURIComponent(nextRun.id) + '?mode=guided&course=1' + courseQuery)
         } else {
-          await load()
-          router.push(root + '/course?tests=complete')
+          await refreshCourseOwner()
+          if (!isCurrent()) return
+          router.push(root + '/course?tests=complete' + courseQuery)
         }
         return
       }
-      await load()
+      await refreshCourseOwner()
+      if (!isCurrent()) return
       router.push(root + '/results/' + encodeURIComponent(result.id))
+    } catch (error) {
+      if (isCurrent()) throw error
+    }
+  }
+  async function completePlan(result, destination = 'report') {
+    if (searchParams.get('course') === 'retest') {
+      await returnFromFinalRetest(true)
+      return
+    }
+    if (searchParams.get('course') === '1') {
+      await continueCoursePlan(result)
       return
     }
     const planId = searchParams.get('plan')
@@ -377,6 +436,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     data.account.onboardingState === 'active' &&
     page === 'reports'
   return (
+    <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
@@ -450,7 +510,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
-          {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
+          {page === 'practice' && <><PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />{data.practitioner && <CrmManager key={data.account.id} accountId={data.account.id} locale={locale} />}</>}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
@@ -462,7 +522,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'tests' && (
             searchParams.get('summary')
               ? <TestPlanSummary locale={locale} planId={searchParams.get('plan')} results={data.results} onBack={() => router.push(root + '/tests')} />
-              : <AccountTestBattery data={data} locale={locale}
+              : <AccountTestBattery key={data.account.id + ':' + (searchParams.get('courseId') || '')} data={data} locale={locale}
                   requestedPlanId={searchParams.get('plan')}
                   recommendedKey={searchParams.get('suggest')}
                   initialStatusFilter={searchParams.get('filter')}
@@ -476,8 +536,9 @@ export default function AppWorkspace({ locale, path = [] }) {
               initialMode={searchParams.get('mode') === 'quick' ? 'quick' : searchParams.get('mode') === 'guided' ? 'guided' : null}
               courseMode={searchParams.get('course') === '1'}
               onExit={async () => {
+                if (searchParams.get('course') === 'retest') { await returnFromFinalRetest(); return }
                 await load()
-                router.push(['1', 'retest'].includes(searchParams.get('course')) ? root + '/course' : root + '/tests')
+                router.push(searchParams.get('course') === '1' ? root + '/course' + (searchParams.get('courseId') ? '?courseId=' + encodeURIComponent(searchParams.get('courseId')) : '') : root + '/tests')
               }}
               onComplete={async (result, destination) => {
                 await completePlan(result, destination)
@@ -499,7 +560,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
-              <NotificationSettings locale={locale} />
+              <SubscriptionSettings />
+              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+              <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
@@ -521,9 +584,10 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
         <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
-        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мой курс' : 'My course'}</span></Link>
+        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</span></Link>
       </nav>}
     </main>
+    </SubscriptionProvider>
   )
 }
 
@@ -1138,6 +1202,7 @@ function RunnerAnswerChoices({ definition, question, selected, onChoose, locale,
 }
 
 function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode = false }) {
+  const { offerAfterCompletion } = useSubscription()
   const c = COPY[locale],
     [run, setRun] = useState(null),
     [error, setError] = useState(null),
@@ -1272,6 +1337,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     setBusy(true)
     try {
       const result = await appFetch(`runs/${id}/submit`, { expectedRevision: saved.revision })
+      // The offer is queued only after server persistence. Course sequencing stays nonblocking.
+      if (result?.id) offerAfterCompletion(`test:${result.id}`)
       await onComplete(result, destination)
     } catch (e) {
       setError(e)
@@ -1898,6 +1965,20 @@ function PortfolioPage({ data, locale }) {
   const [activeTab, setActiveTab] = useState(requestedTab)
   const [retakeBusy, setRetakeBusy] = useState(false)
   const [retakeError, setRetakeError] = useState('')
+  const accountId = data.account?.id
+  const retakeScope = useRef(null), retakeOperation = useRef(null)
+  const retakeLifetime = useRef({ mounted: false, epoch: 0 })
+  if (!retakeScope.current || retakeScope.current.accountId !== accountId ||
+      retakeScope.current.tab !== activeTab || retakeScope.current.locale !== locale) {
+    retakeScope.current = { accountId, tab: activeTab, locale }
+    retakeOperation.current = null
+  }
+  const renderedRetakeScope = retakeScope.current
+  useEffect(() => {
+    retakeLifetime.current.mounted = true
+    return () => { retakeLifetime.current.mounted = false; retakeLifetime.current.epoch += 1; retakeOperation.current = null }
+  }, [])
+  useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
@@ -1911,6 +1992,8 @@ function PortfolioPage({ data, locale }) {
     return definitions
   }, [data.results])
   function chooseView(next) {
+    if (next === activeTab) return
+    retakeScope.current = null; retakeOperation.current = null
     setActiveTab(next)
     setRetakeError('')
     const query = new URLSearchParams(searchParams.toString())
@@ -1920,7 +2003,11 @@ function PortfolioPage({ data, locale }) {
   }
   async function retakeTest(definitionId) {
     const definition = retakeDefinitions.get(definitionId)
-    if (!definition) return
+    const scope = renderedRetakeScope, epoch = retakeLifetime.current.epoch
+    const isCurrent = () => retakeLifetime.current.mounted && retakeLifetime.current.epoch === epoch &&
+      retakeScope.current === scope && scope.accountId === accountId
+    if (!definition || !accountId || !isCurrent() || retakeOperation.current) return
+    const operation = {}; retakeOperation.current = operation
     setRetakeBusy(true)
     setRetakeError('')
     try {
@@ -1931,12 +2018,15 @@ function PortfolioPage({ data, locale }) {
         definitionVersion: definition.version,
         instrumentLocale: definition.instrumentLocale,
         operationId: crypto.randomUUID(),
-      })
+      }, 'POST', { accountId })
+      if (!isCurrent() || retakeOperation.current !== operation) return
       const plan = data.activeTestPlan
       const planSuffix = plan?.status === 'active' && plan.definitionIds?.includes(definitionId)
         ? '&plan=' + encodeURIComponent(plan.id) : ''
       router.push('/' + locale + '/app/runs/' + encodeURIComponent(run.id) + '?mode=quick' + planSuffix)
     } catch (cause) {
+      if (!isCurrent() || retakeOperation.current !== operation) return
+      retakeOperation.current = null
       setRetakeError((ru ? 'Не удалось открыть тест повторно.' : 'Could not open the retake.') +
         ' (' + (cause.code || 'SERVICE_UNAVAILABLE') + ')')
       setRetakeBusy(false)

@@ -1,3 +1,16 @@
+// Exact approved public hero and its real topic-selection anchor, in each tested locale.
+async function assertPublicPickerEntrance(target,locale){
+ const copy=locale==='ru'
+  ? {region:'Подберите свои тесты',hero:'Лучше понять себя и свою жизнь',action:'Выбрать темы',first:'Что вы хотите исследовать?'}
+  : {region:'Choose your tests',hero:'Understand yourself and your life better',action:'Choose my topics',first:'What would you like to explore?'}
+ const picker=target.locator('[data-prelogin-test-picker]')
+ await expect(picker).toHaveAttribute('aria-label',copy.region)
+ await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
+ const entrance=picker.locator('[data-client-tests-promo]').getByRole('link',{name:copy.action,exact:true})
+ await expect(entrance).toBeVisible()
+ await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
+ await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
+}
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
@@ -108,7 +121,7 @@ try {
             // explicit continuation action and remains available below it.
             const preloginPicker=page.locator('[data-prelogin-test-picker]');
             await expect(preloginPicker).toBeVisible();
-            await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Подберите свои тесты':'Choose your tests'})).toBeVisible();
+            await assertPublicPickerEntrance(page,language);
             await expect(preloginPicker.getByRole('heading',{name:language==='ru'?'Рекомендуем для вас':'Recommended for you'})).toBeVisible();
             assert.equal(await preloginPicker.locator('details').first().evaluate(element=>element.open),false,'advanced filter starts folded');
             await expect(preloginPicker.getByRole('button',{name:language==='ru'?/Начать бесплатный мониторинг/:/Start free monitoring/})).toBeVisible();
@@ -121,6 +134,20 @@ try {
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Client-entry overflow: '+language);
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
+        stage=`${engine} ${width} Spanish account navigation`;
+        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
+        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
+        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
+        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
+        await expect(page.locator('[data-subscription-settings], [data-course-testing-complete]')).toHaveCount(0);
+        // Same-CSP SPA navigation preserves the existing root document locale.
+        // A direct account load must have its own correct server-rendered locale.
+        await page.reload(); await settle();
+        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page.locator('html')).toHaveAttribute('lang','en');
+        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;
         await navigate('/es/homeopathy/remedies');
         await page.getByRole('searchbox').fill('Aconitum'); await settle();
@@ -150,7 +177,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six shared Spanish destinations',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

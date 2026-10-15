@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Bell,BellOff,Clock3,Sparkles} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import LiveActivityControl from './live-activity-control'
@@ -45,54 +45,72 @@ function keyBytes(encoded){
   return Uint8Array.from(atob(base+'='.repeat((4-base.length%4)%4)),x=>x.charCodeAt(0))
 }
 function localZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}}
-export default function NotificationSettings({locale='en',compact=false}){
+export default function NotificationSettings({locale='en',compact=false,accountId}){
   const c=COPY[locale]||COPY.en
   const [state,setState]=useState(null),[busy,setBusy]=useState(false),
     [error,setError]=useState(''),[notice,setNotice]=useState(''),
     [course,setCourse]=useState(true),[hour,setHour]=useState(19)
+  const owner=useRef(null),working=useRef(false)
+  const currentAccount=useRef(accountId);currentAccount.current=accountId
+  async function api(path,body,session=owner.current){
+    if(!session||session.accountId!==currentAccount.current||owner.current!==session)throw new Error('ACCOUNT_CHANGED')
+    const result=await appFetch(path,body,undefined,{accountId:session.accountId,signal:session.controller.signal})
+    if(owner.current!==session||session.accountId!==currentAccount.current)throw new Error('ACCOUNT_CHANGED')
+    return result
+  }
   useEffect(()=>{
+    const session={accountId,controller:new AbortController()};owner.current=session;working.current=false
+    setState(null);setBusy(false);setError('');setNotice('')
     let mounted=true
-    appFetch('notifications').then(value=>{if(mounted){
+    api('notifications',undefined,session).then(value=>{if(mounted){
       setState(value);setCourse(value.courseReminders);setHour(value.reminderHour)
     }}).catch(()=>{if(mounted)setError(c.error)})
-    return ()=>{mounted=false}
-  },[locale,c.error])
+    return ()=>{mounted=false;session.controller.abort();if(owner.current===session)owner.current=null}
+  },[accountId,locale,c.error])
   async function run(work){
+    if(working.current||!owner.current)return
+    const session=owner.current;working.current=true
     setBusy(true);setError('');setNotice('')
-    try{await work()}catch(e){setError(e?.code==='PUSH_NOT_CONFIGURED'?c.server:
+    try{await work(session)}catch(e){if(owner.current!==session)return;setError(e?.code==='PUSH_NOT_CONFIGURED'?c.server:
       e?.name==='NotAllowedError'?c.blocked:c.error)}
-    finally{setBusy(false)}
+    finally{if(owner.current===session){working.current=false;setBusy(false)}}
   }
-  async function enable(){await run(async()=>{
+  async function enable(){await run(async(session)=>{
     if(!canPush()){setError(c.unsupported);return}
     if(needsHomeScreen()){setError(c.mobile);return}
     if(!state?.ready||!state.publicKey){setError(c.server);return}
     const permission=await Notification.requestPermission()
+    if(owner.current!==session)return
     if(permission!=='granted'){setError(c.blocked);return}
     const worker=await navigator.serviceWorker.ready
+    if(owner.current!==session)return
     let subscription=await worker.pushManager.getSubscription()
+    if(owner.current!==session)return
     if(!subscription)subscription=await worker.pushManager.subscribe({
       userVisibleOnly:true,applicationServerKey:keyBytes(state.publicKey)})
-    const next=await appFetch('notifications/subscribe',{
-      subscription:subscription.toJSON(),locale,timeZone:localZone()})
+    const next=await api('notifications/subscribe',{
+      subscription:subscription.toJSON(),locale,timeZone:localZone()},session)
     setState(next);setCourse(next.courseReminders);setHour(next.reminderHour)
     setNotice(c.on)
   })}
-  async function disable(){await run(async()=>{
+  async function disable(){await run(async(session)=>{
     const worker=canPush()?await navigator.serviceWorker.ready:null
+    if(owner.current!==session)return
     const subscription=worker?await worker.pushManager.getSubscription():null
-    const next=await appFetch('notifications/unsubscribe',{endpoint:null})
+    if(owner.current!==session)return
+    const next=await api('notifications/unsubscribe',{endpoint:null},session)
     await subscription?.unsubscribe()
+    if(owner.current!==session)return
     setState(next);setNotice(c.off)
   })}
-  async function save(){await run(async()=>{
-    const next=await appFetch('notifications/preferences',{
+  async function save(){await run(async(session)=>{
+    const next=await api('notifications/preferences',{
       enabled:state.enabled,courseReminders:course,reminderHour:Number(hour),
-      locale,timeZone:localZone()})
+      locale,timeZone:localZone()},session)
     setState(next);setNotice(c.saved)
   })}
-  async function testPush(){await run(async()=>{
-    await appFetch('notifications/test',{})
+  async function testPush(){await run(async(session)=>{
+    await api('notifications/test',{},session)
     setNotice(c.done)
   })}
   return <section className={styles.root} aria-label={c.title}>
@@ -126,7 +144,7 @@ export default function NotificationSettings({locale='en',compact=false}){
     </>}
     {notice&&<p role="status" className={styles.success}>{notice}</p>}
     {error&&state&&<p role="alert" className={styles.subtle}>{error}</p>}
-    <LiveActivityControl locale={locale} serverReady={Boolean(state?.liveActivitiesAvailable)} />
+    <LiveActivityControl key={accountId} accountId={accountId} locale={locale} serverReady={Boolean(state?.liveActivitiesAvailable)} />
     {!compact&&<p className={styles.subtle}>{c.native} {c.planned}</p>}
   </section>
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, BookOpenCheck, CheckCircle2, ClipboardList, RotateCcw, ShieldCheck } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, CheckCircle2, RotateCcw, ShieldCheck } from 'lucide-react'
 import styles from './course-final-retest.module.css'
 
 const COPY = {

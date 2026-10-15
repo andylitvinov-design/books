@@ -107,7 +107,7 @@ const WORDS = {
     rewardMeaning: 'XP rewards saved practice, not how you feel or your scores.',
     rewardTotal: 'Total XP', rewardStreak: 'Practice streak', rewardStreakUnit: 'days',
     rewardPath: 'My 14-lesson journey', rewardPathNote: 'Tomorrow, or whenever you return, your next lesson will be waiting.',
-    promoBrand: 'ADVANCED MEMBERSHIP · ONE MONTHLY PLAN',
+    promoBrand: 'ADVANCED MEMBERSHIP',
     promoTitle: 'Grow in five directions', promoText: 'With Advanced you can run up to five courses in parallel, without advertising.',
     promoPrice: 'First month €10 (−50%), then €20/month', promoCta: 'See membership options',
     promoSoon: 'Checkout is not active yet. Your free course stays available.',
@@ -202,7 +202,7 @@ const WORDS = {
     rewardMeaning: 'XP начисляются за сохранённую практику, не за самочувствие или оценки.',
     rewardTotal: 'Всего XP', rewardStreak: 'Серия практик', rewardStreakUnit: 'дн.',
     rewardPath: 'Мой путь из 14 уроков', rewardPathNote: 'Следующий урок будет ждать вас в другой день — без спешки.',
-    promoBrand: 'ЕДИНЫЙ ПЛАТНЫЙ ТАРИФ · ADVANCED',
+    promoBrand: 'ТАРИФ ADVANCED',
     promoTitle: 'Развивайтесь в пяти направлениях', promoText: 'С тарифом Advanced можно вести до пяти курсов одновременно, без рекламы.',
     promoPrice: 'Первый месяц 10 € (−50%), затем 20 € / месяц', promoCta: 'Посмотреть подписку',
     promoSoon: 'Оплата пока не подключена. Бесплатный курс остаётся доступным.',
@@ -309,6 +309,15 @@ function IllustratedMoment({ variant = 'calm', photo = false, kind = 'idea' }) {
   </div>
 }
 
+function RouteMethodActivity({activity,...props}) {
+  return activity ? <OporaModuleActivity {...props} part="method" routePlan={{methodActivity:activity}}/>
+    : <AntiStressMethodActivity {...props}/>
+}
+function RoutePracticeLab({plan,...props}) {
+  return plan ? <OporaModuleActivity {...props} routePlan={{practiceLab:plan}}/>
+    : <AntiStressPracticeLab {...props}/>
+}
+
 export default function CourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
@@ -322,19 +331,31 @@ export default function CourseSlidePlayer({
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
-  const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
-  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
-  const isExtendedStress=Boolean(lesson.antiStress && cycle.day>=2 && cycle.day<=14 &&
+  const routePlan=lesson.antiStress?.routePlan
+  const MethodActivityComponent=routePlan?RouteMethodActivity:AntiStressMethodActivity
+  const PracticeLabComponent=routePlan?RoutePracticeLab:AntiStressPracticeLab
+  const isDayOne=Boolean(lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
+  const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
     data.programme?.id === 'stress')
+  const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
+  const [earned, setEarned] = useState(false)
   const baseSlides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const slides=useMemo(()=>withFinalFreeOffer(baseSlides,{
     day:cycle.day,durationDays:cycle.durationDays,show:promotion.show,
-    checking:promotion.checking,alreadyDone,
-  }),[baseSlides,cycle.day,cycle.durationDays,promotion.show,promotion.checking,alreadyDone])
+    checking:promotion.checking,alreadyDone:alreadyDone||earned,
+  }),[baseSlides,cycle.day,cycle.durationDays,promotion.show,promotion.checking,alreadyDone,earned])
   const visitedSlideKeys=useRef(new Set(baseSlides[0] ? [baseSlides[0].key] : []))
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
+  function appendRouteReflection(addition){
+    const clean=String(addition||'').trim()
+    if(!clean)return false
+    if(reflection.includes(clean))return true
+    const next=[reflection.trim(),clean].filter(Boolean).join('\n')
+    if(next.length>500)return false
+    setReflection(next);return true
+  }
   const [feedback, setFeedback] = useState(session?.feedback || 'skip')
   const [entryNow, setEntryNow] = useState(null)
   const [comfort, setComfort] = useState(session?.signals?.comfort || 'skip')
@@ -351,7 +372,9 @@ export default function CourseSlidePlayer({
   const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
   const [associationWords,setAssociationWords]=useState('')
   const [practiceLab,setPracticeLab]=useState(session?.signals?.practiceLab||{})
-  const [moduleActivityChoice,setModuleActivityChoice]=useState(session?.signals?.moduleActivityChoice||'')
+  // Voluntary worksheet drafts survive slide/neutral navigation in memory only.
+  const [routeDrafts,setRouteDrafts]=useState({main:{},reflect:{}})
+  const updateRouteDraft=(part,update)=>setRouteDrafts(previous=>({...previous,[part]:typeof update==='function'?update(previous[part]||{}):update}))
   const updatePracticeLab=(key,value)=>setPracticeLab(previous=>({...previous,[key]:value}))
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
@@ -373,11 +396,14 @@ export default function CourseSlidePlayer({
   const [dailyMethodChoice,setDailyMethodChoice] = useState(session?.signals?.dailyMethodChoice || '')
   const [dailyMethodHintUsed,setDailyMethodHintUsed] = useState(Boolean(session?.signals?.dailyMethodHintUsed))
   const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
+  function recordRouteHint(){
+    setDailyMethodHintUsed(true)
+    if(routePlan&&practiceLab.reflect?.endsWith('_independent'))updatePracticeLab('reflect','')
+  }
   const [recallAttempt,setRecallAttempt] = useState('')
   const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
-  const [earned, setEarned] = useState(false)
   const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -389,7 +415,7 @@ export default function CourseSlidePlayer({
   const closeRef = useRef(onClose)
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
-  const finished = index >= slides.length
+  const finished = index >= slides.length && (alreadyDone || earned)
   const adaptationProposal = practiceAdjustmentSuggestion({comfort,usefulness,flexibility})
   const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
@@ -417,10 +443,17 @@ export default function CourseSlidePlayer({
     }
   }, [])
 
+  // Eligibility may remove the offer while it is open. An index change alone
+  // must never produce a completion receipt without a confirmed session.
   useEffect(() => {
+    if (!alreadyDone && !earned && index >= slides.length) setIndex(slides.length - 1)
+  }, [alreadyDone, earned, index, slides.length])
+
+  useEffect(() => {
+    if (!finished && !discomfortOpen && slide?.key) visitedSlideKeys.current.add(slide.key)
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index, rewardStep])
+  }, [index, rewardStep, discomfortOpen, neutralMode, slide?.key, finished])
 
   function goNext() {
     setError('')
@@ -497,11 +530,10 @@ export default function CourseSlidePlayer({
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
           data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
-        ...(lesson.antiStress&&cycle.day>1&&data.programme?.id==='stress'
+        ...(lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
           : {}),
         ...(isExtendedStress ? {practiceLab} : {}),
-        ...(isOporaModule ? {moduleActivityChoice:moduleActivityChoice||null} : {}),
         visitedSlideKeys:baseSlides.map(item=>item.key),
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
@@ -541,8 +573,14 @@ export default function CourseSlidePlayer({
     flexibility:alreadyDone?session?.signals?.flexibility:flexibility,
     adaptationChoice:alreadyDone?session?.signals?.adaptationChoice:adaptationChoice,
     transferStage:alreadyDone?session?.signals?.transferStage:transferStage,
-    practiceAttempt:isExtendedStress?(practiceLab.attempt||practiceAttempt):practiceAttempt,
-    practiceLab:isExtendedStress?practiceLab:null,dayOne:isDayOne?dayOneAnswers:null}
+    practiceAttempt:alreadyDone
+      ? (isExtendedStress?(session?.signals?.practiceLab?.attempt||session?.signals?.practiceAttempt):session?.signals?.practiceAttempt)||null
+      : isExtendedStress?(practiceLab.attempt||practiceAttempt):practiceAttempt,
+    practiceLab:isExtendedStress?(alreadyDone?session?.signals?.practiceLab||null:practiceLab):null,
+    moduleActivityChoice:alreadyDone&&session?.signals?.interactionSchema==='opora-level-2'&&
+      session?.signals?.moduleThemeId===lesson.oporaModule?.id+'-day-'+String(cycle.day)
+      ?session?.signals?.moduleActivityChoice||null:null,
+    dayOne:isDayOne?(alreadyDone?session?.signals?.dayOne||null:dayOneAnswers):null}
   const minutesEstimate=isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
     :(cycle.preferences?.length==='quick'?'5–8':'9–13')
   const scenicBaseline = !finished && !discomfortOpen &&
@@ -571,11 +609,11 @@ export default function CourseSlidePlayer({
         </div>
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
-      <main className={styles.content} data-slide-scroller data-slide-kind={finished ? "completion" : slide.kind}>
+      <main className={styles.content} data-slide-scroller data-slide-kind={finished ? "completion" : slide.kind} data-slide-key={finished ? undefined : slide.key}>
         {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
           <ShieldCheck size={36} aria-hidden="true"/>
           <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
-          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setComfort('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
           <button type="button" onClick={onClose}>{words.discomfortExit}</button>
           <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
           <small>{words.discomfortEmergency}</small>
@@ -804,16 +842,16 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
-            {slide.section.kind==='meditation'&&lesson.antiStress&&cycle.day>1&&
-              data.programme?.id==='stress'&&!neutralMode&&
-              <AntiStressMethodActivity key={String(cycle.day)} day={cycle.day} locale={locale}
-                value={dailyMethodChoice} onChange={setDailyMethodChoice}
-                hintUsed={dailyMethodHintUsed} onHint={()=>setDailyMethodHintUsed(true)} disabled={locked}/>}
             {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
               <p className={styles.prompt}>{words.practicePrePrompt}</p>
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
                 label={words.before + ': ' + focusLabel} disabled={locked}/>
             </div>}
+            {slide.section.kind==='meditation'&&lesson.antiStress&&(cycle.day>1||routePlan)&&
+              data.programme?.id==='stress'&&!neutralMode&&
+              <MethodActivityComponent key={String(cycle.day)} day={cycle.day} locale={locale} activity={routePlan?.methodActivity}
+                value={dailyMethodChoice} onChange={setDailyMethodChoice}
+                hintUsed={dailyMethodHintUsed} onHint={recordRouteHint} disabled={locked}/>}
             {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
               <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
               <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
@@ -866,16 +904,9 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'ritual' && <>
-            {!isOporaModule&&<IllustratedMoment kind={slide.kind}/>}
+            {!neutralMode&&(!isOporaModule||routePlan)&&<IllustratedMoment kind={slide.kind}/>}
             <p className={styles.prompt}>{isOporaModule?lesson.oporaModule.learningOutcome:lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {isOporaModule&&<OporaModuleActivity key={cycle.id+':'+cycle.day} day={cycle.day}
-              locale={locale} moduleId={lesson.oporaModule.id} routerVersion={lesson.oporaModule.version}
-              value={moduleActivityChoice} onChange={setModuleActivityChoice} disabled={locked}
-              onAddReflection={addition=>setReflection(previous=>{
-                const clean=String(addition||'').slice(0,240)
-                return clean&&!previous.includes(clean)?[previous.trim(),clean].filter(Boolean).join('\n').slice(0,500):previous
-              })}/>}
             {(lesson.antiStress||isOporaModule)&&<section data-course-practice-attempt>
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
@@ -901,11 +932,14 @@ export default function CourseSlidePlayer({
               {skillProbeHintUsed&&<p className={styles.helper}>{lesson.antiStress.probe.hint}</p>}
               <p className={styles.helper}>{locale==='ru'?'Можно не отвечать. Выбор — учебная проба, а не показатель психического здоровья.':'You may skip this. A choice here is an educational attempt, not a mental-health score.'}</p>
             </section>}
-            {isExtendedStress&&<AntiStressPracticeLab key={'lab-main-'+cycle.day}
-              day={cycle.day} locale={locale} part="main" disabled={locked}
+            {isExtendedStress&&!neutralMode&&<PracticeLabComponent key={'lab-main-'+cycle.day}
+              day={cycle.day} locale={locale} part="main" plan={routePlan?.practiceLab} disabled={locked}
+              onHint={routePlan?recordRouteHint:undefined}
+              draft={routeDrafts.main} onDraftChange={update=>updateRouteDraft('main',update)}
               value={practiceLab.main||''} onChange={value=>updatePracticeLab('main',value)}
               attempt={practiceLab.attempt||''}
-              onAttempt={value=>updatePracticeLab('attempt',value)}/>}
+              onAttempt={value=>updatePracticeLab('attempt',value)}
+              onSaveReflection={appendRouteReflection}/>}
           </>}
 
           {slide.kind === 'transfer' && <>
@@ -956,14 +990,12 @@ export default function CourseSlidePlayer({
             <p className={styles.prompt}>{symbolMode === 'image' && cycle.preferences?.imagery !== 'no_imagery'
               ? lesson.practiceV4?.invitation : lesson.practiceV4?.withoutImagery}</p>
             <p className={styles.helper}>{words.symbolHint}</p>
-            {isExtendedStress&&<AntiStressPracticeLab key={'lab-reflect-'+cycle.day}
-              day={cycle.day} locale={locale} part="reflect" disabled={locked}
+            {isExtendedStress&&!neutralMode&&<PracticeLabComponent key={'lab-reflect-'+cycle.day}
+              day={cycle.day} locale={locale} part="reflect" plan={routePlan?.practiceLab}
+              draft={routeDrafts.reflect} onDraftChange={update=>updateRouteDraft('reflect',update)}
+              hintUsed={Boolean(routePlan&&dailyMethodHintUsed)} onHint={routePlan?recordRouteHint:undefined} disabled={locked}
               value={practiceLab.reflect||''} onChange={value=>updatePracticeLab('reflect',value)}
-              onSaveReflection={addition=>setReflection(previous=>{
-                const clean=String(addition||'').slice(0,430)
-                if(!clean||previous.includes(clean))return previous
-                return [previous.trim(),clean].filter(Boolean).join('\n').slice(0,500)
-              })}/>}
+              onSaveReflection={appendRouteReflection}/>}
           </>}
 
           {slide.kind === 'reflection' && <>
@@ -992,6 +1024,7 @@ export default function CourseSlidePlayer({
             onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
             onAssociationWords={setAssociationWords} selectedFocus={dayOneFocus}
             neutralMode={neutralMode} onReturnToPractice={()=>setNeutralMode(false)}
+            onStopPractice={()=>{if(locked)return;recordDayOne('practiceAttempt','stopped');setNeutralMode(true);setSymbolMode('words');setIndex(slides.findIndex(item=>item.kind==='day1-exit'))}}
             onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {slide.kind === 'feedback' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>

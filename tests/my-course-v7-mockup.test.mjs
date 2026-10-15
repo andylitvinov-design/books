@@ -86,6 +86,115 @@ test('EN/RU mobile course stays keyboard accessible with a visible bottom action
   assert.match(mapCss,/@media\(max-width:620px\)/)
 })
 
+// Execute the real JSX with synthetic hooks only. No browser, account or DB.
+import { mount, nodes, textOf, findButton, findPart, dailyView } from './helpers/course-ui-harness.mjs'
+const fixture=()=>dailyView('course-a','cycle-a',{lesson:{id:'lesson-a',title:'Synthetic practice',sections:[{kind:'learn',text:'One idea at a time.'}],aphorism:'A small thought.'}})
+const primary=h=>nodes(h.tree).find(node=>node.type==='button'&&node.props.className==='primary')
+const playerFixture=(overrides={})=>{
+ const calls={preferences:[],sessions:[],finish:0,close:0}
+ const props={locale:'en',data:fixture(),onClose:()=>{calls.close++},onFinish:()=>{calls.finish++},
+  onPreferences:async patch=>{calls.preferences.push(patch);return fixture()},onSession:async body=>{calls.sessions.push(body);return fixture()},onCheckin:async()=>fixture(),...overrides}
+ const h=mount('course-slide-player',{props})
+ return {h,calls,props}
+}
+async function toSave(h){
+ for(let i=0;i<25&&!textOf(primary(h)).includes('Finish and save');i++){primary(h).props.onClick();await h.settle()}
+ assert.ok(textOf(primary(h)).includes('Finish and save'))
+}
+
+test('warm welcome changes only local supportive wording and saves its feeling with the final lesson',async()=>{
+ const {h,calls}=playerFixture()
+ findButton(h.tree,'I feel tense').props.onClick();await h.settle()
+ assert.equal(findButton(h.tree,'I feel tense').props['aria-pressed'],true)
+ assert.ok(textOf(h.tree).includes('Nothing needs to change right away'))
+ assert.equal(calls.preferences.length,0);assert.equal(calls.sessions.length,0);assert.equal(calls.finish,0)
+ primary(h).props.onClick();await h.settle()
+ assert.ok(textOf(h.tree).includes('Notice your state at the start'))
+ assert.equal(calls.preferences.length,0);assert.equal(calls.sessions.length,0)
+ await toSave(h);primary(h).props.onClick();await h.settle()
+ assert.equal(calls.sessions.length,1);assert.equal(calls.sessions[0].welcomeFeeling,'tense')
+ assert.equal(calls.preferences.length,0);assert.equal(calls.finish,0)
+ h.unmount()
+})
+
+test('welcome skip stays optional, performs no immediate writes and busy state disables every welcome control',async()=>{
+ const {h,calls,props}=playerFixture()
+ const welcomeButtons=()=>nodes(h.tree).filter(node=>node.type==='button'&&(node.props['aria-pressed']!==undefined||node.props.className==='welcomeSkip'))
+ assert.equal(welcomeButtons().length,5)
+ h.render({...props,busy:true});await h.settle()
+ assert.ok(welcomeButtons().every(node=>node.props.disabled===true));assert.equal(primary(h).props.disabled,true)
+ h.render(props);await h.settle()
+ assert.ok(welcomeButtons().every(node=>node.props.disabled===false))
+ nodes(h.tree).find(node=>node.props.className==='welcomeSkip').props.onClick();await h.settle()
+ assert.ok(textOf(h.tree).includes('Notice your state at the start'))
+ assert.equal(calls.preferences.length,0);assert.equal(calls.sessions.length,0);assert.equal(calls.finish,0)
+ await toSave(h);primary(h).props.onClick();await h.settle()
+ assert.equal(calls.sessions.length,1);assert.equal(calls.sessions[0].welcomeFeeling,'skip')
+ assert.equal(calls.preferences.length,0);h.unmount()
+})
+
+test('optional welcome advances without a write and explanation remains separate from the thought',async()=>{
+ const {h,calls}=playerFixture()
+ primary(h).props.onClick();await h.settle();assert.equal(calls.preferences.length,0)
+ for(let i=0;i<2;i++){primary(h).props.onClick();await h.settle()}
+ assert.ok(textOf(h.tree).includes('A small thought.'));assert.ok(!textOf(h.tree).includes('One idea at a time.'))
+ primary(h).props.onClick();await h.settle()
+ assert.ok(textOf(h.tree).includes('One idea at a time.'));assert.ok(!textOf(h.tree).includes('A small thought.'))
+ h.unmount()
+})
+
+test('saved ordinary lessons return to the course without a repeated offer; X closes without another save',async()=>{
+ for(const exit of ['finish','close']){
+  const {h,calls}=playerFixture({promotion:{show:true,checkoutReady:false}})
+  await toSave(h);primary(h).props.onClick();await h.settle()
+  assert.equal(calls.sessions.length,1)
+  primary(h).props.onClick();await h.settle()
+  assert.ok(nodes(h.tree).some(node=>node.props['data-course-reward-stage']==='xp'))
+  primary(h).props.onClick();await h.settle()
+  assert.ok(nodes(h.tree).some(node=>node.props['data-course-completion-progress']!==undefined))
+  assert.equal(nodes(h.tree).some(node=>node.props['data-course-post-lesson-promo']!==undefined),false)
+  if(exit==='finish')primary(h).props.onClick()
+  else nodes(h.tree).find(node=>node.type==='button'&&node.props['aria-label']==='Return to my course').props.onClick()
+  assert.equal(calls.finish,exit==='close'?0:1);assert.equal(calls.close,exit==='close'?1:0)
+  assert.equal(calls.sessions.length,1);h.unmount()
+ }
+})
+
+test('failed lesson saves do not earn an offer or completion and retries reuse the operation id',async()=>{
+ const writes=[];let succeed=false
+ const {h,calls}=playerFixture({promotion:{show:true},onSession:async body=>{writes.push(body);return succeed?fixture():null}})
+ await toSave(h);primary(h).props.onClick();await h.settle()
+ assert.ok(textOf(primary(h)).includes('Finish and save'));assert.equal(calls.finish,0)
+ assert.ok(!nodes(h.tree).some(node=>node.props.className==='xpReward'||node.props['data-course-post-lesson-promo']!==undefined))
+ succeed=true;primary(h).props.onClick();await h.settle()
+ assert.equal(writes.length,2);assert.equal(writes[0].operationId,writes[1].operationId)
+ primary(h).props.onClick();await h.settle()
+ assert.ok(nodes(h.tree).some(node=>node.props['data-course-reward-stage']==='xp'))
+ primary(h).props.onClick();await h.settle()
+ assert.equal(nodes(h.tree).some(node=>node.props['data-course-post-lesson-promo']!==undefined),false)
+ assert.ok(textOf(primary(h)).includes('Back to my learning path'));h.unmount()
+})
+
+test('V7 completion returns to the path and releases the exact presenter token; X preserves the current screen',async()=>{
+ for(const exit of ['finish','close']){
+  const dismissals=[],notify=[]
+  const dismiss=()=>dismissals.push('cycle-a:1:lesson-a')
+  const h=mount('course-today',{props:{locale:'en',accountId:'owner-a',courseId:'course-a'},fetcher:()=>fixture(),extraModules:{
+   './use-course-promotion':{useCoursePromotion:()=>({show:true,checkoutReady:false,dismiss})},
+   './subscription-access':{useLessonCompletionOffer:()=>completion=>notify.push(completion)},
+  }})
+  await h.settle();findButton(h.tree,'Start today’s practice').props.onClick();await h.settle()
+  const player=findPart(h.tree,'CourseSlidePlayer');assert.ok(player)
+  if(exit==='finish')player.props.onFinish();else player.props.onClose()
+  await h.settle()
+  assert.equal(findPart(h.tree,'CourseSlidePlayer'),undefined)
+  assert.equal(h.tree.props['data-course-view'],exit==='finish'?'path':'today')
+  assert.deepEqual(dismissals,['cycle-a:1:lesson-a'])
+  assert.equal(notify.length,0,'completion navigation alone does not earn an offer')
+  h.unmount()
+ }
+})
+
 
 test('Today story, illustration, CTA and progress have separate non-overlapping responsive rows',()=>{
   const heroStart=today.indexOf('<header className={styles.questHero}')

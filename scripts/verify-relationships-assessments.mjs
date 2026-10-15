@@ -4,6 +4,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
+import { TOPIC_JOURNEYS, journeyFocusForTopics, journeyProblemsForTopics } from '../lib/assessments/topic-journeys.js'
+import { buildTopicTestSuggestions } from '../lib/assessments/topic-test-suggestions.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS, RELATIONSHIPS_INTIMACY_CATALOG } from '../data/assessments/relationships-intimacy-v1.js'
 const defs=RELATIONSHIPS_INTIMACY_DEFINITIONS.filter(d=>d.instrumentLocale==='en')
@@ -44,7 +47,8 @@ async function diagnosticPage(context,label){
  })
  page.on('request',request=>{
   const url=new URL(request.url())
-  if(url.origin!==origin||!(request.isNavigationRequest()||url.pathname.startsWith('/api/app/')||url.searchParams.has('_rsc')))return
+  const routeChunk=request.resourceType()==='script'&&url.pathname.startsWith('/_next/static/')
+  if(url.origin!==origin||!(request.isNavigationRequest()||url.pathname.startsWith('/api/app/')||url.searchParams.has('_rsc')||routeChunk))return
   const entry={id:++diagnosticRequestId,url:request.url(),method:request.method(),
    resourceType:request.resourceType(),isNavigationRequest:request.isNavigationRequest(),
    startedPageUrl:page.url(),startedProbe:info.probe}
@@ -150,15 +154,19 @@ try{
   const choices=journey.locator('[data-topic-choice]')
   await expect(choices).toHaveCount(4)
   assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicChoice)),['trust','boundaries','conflict','presence'])
-  await expect(journey.locator('[data-topic-action]')).toHaveCount(4)
+  const actions=journey.locator('[data-topic-action]')
+  await expect(actions).toHaveCount(4)
+  assert.deepEqual(await actions.evaluateAll(nodes=>nodes.map(n=>n.dataset.topicAction)),['tests','browse','course','review'])
+  const testsAction=journey.locator('button[data-topic-action="tests"]')
+  await expect(testsAction).toHaveAttribute('type','button')
+  await expect(testsAction).toBeEnabled()
+  await expect(journey.locator('[data-recommended-test]')).toHaveCount(2)
   const browseAction=journey.locator('[data-topic-action="browse"]')
-  await expect(browseAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Cintimacy&journey=relationships&topics=&catalog=full')
-  const testsAction=journey.locator('[data-topic-action="tests"]')
-  const testsFocus=async()=>new URL(await testsAction.getAttribute('href'),origin).searchParams.get('focus').split(',')
+  const testsFocus=async()=>new URL(await browseAction.getAttribute('href'),origin).searchParams.get('focus').split(',')
   assert.deepEqual(await testsFocus(),['relationships','intimacy'])
   const courseAction=journey.locator('[data-topic-action="course"]')
-  await expect(testsAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Cintimacy&journey=relationships&topics=')
-  await expect(courseAction).toHaveAttribute('href',await testsAction.getAttribute('href')+'&mode=course')
+  await expect(browseAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Cintimacy&journey=relationships&topics=&catalog=full')
+  await expect(courseAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Cintimacy&journey=relationships&topics=&mode=course')
   await expect(journey.locator('[data-topic-action="review"]')).toHaveAttribute('href','/'+locale+'/services/free-situation-review')
   const boundaries=journey.locator('[data-topic-choice="boundaries"]')
   await boundaries.focus();await boundaries.press('Space')
@@ -170,14 +178,22 @@ try{
   await boundaries.press('Space')
   await expect(boundaries).toHaveAttribute('aria-pressed','true')
   assert.deepEqual(await testsFocus(),['relationships','sexuality'])
-  await expect(testsAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Csexuality&journey=relationships&topics=boundaries')
-  await expect(courseAction).toHaveAttribute('href',await testsAction.getAttribute('href')+'&mode=course')
-  await testsAction.click()
+  await expect(browseAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Csexuality&journey=relationships&topics=boundaries&catalog=full')
+  await expect(courseAction).toHaveAttribute('href','/'+locale+'/client/tests?focus=relationships%2Csexuality&journey=relationships&topics=boundaries&mode=course')
+  await browseAction.click()
   await expect(page).toHaveURL(new RegExp('/'+locale+'/client/tests\\?focus='),{timeout:15000})
   assert.deepEqual(new URL(page.url()).searchParams.get('focus').split(','),['relationships','sexuality'])
   assert.equal(new URL(page.url()).searchParams.get('journey'),'relationships')
   assert.equal(new URL(page.url()).searchParams.get('topics'),'boundaries')
   assert.equal(new URL(page.url()).searchParams.has('mode'),false)
+  assert.equal(new URL(page.url()).searchParams.get('catalog'),'full')
+  // Server-rendered controls may be visible before route chunks hydrate.
+  // Match the existing navigate/course-route readiness contract before clicking.
+  await page.waitForLoadState('networkidle')
+  const easySelection=page.getByRole('button',{name:locale==='ru'?'← Назад к простому подбору':'← Back to easy selection',exact:true})
+  await expect(easySelection).toBeVisible()
+  await expect(page.locator('article input[type="checkbox"]').first()).toBeVisible()
+  await easySelection.click()
   const focusedPicker=page.locator('[data-prelogin-test-picker]')
   await expect(focusedPicker).toBeVisible()
   await expect(focusedPicker.getByRole('button',{name:locale==='ru'?'Отношения':'Relationships',exact:true})).toHaveAttribute('aria-pressed','true')
@@ -233,7 +249,7 @@ try{
   await spotlight.locator('a[href="/'+locale+'/explore/relationships"]').click()
   await expect(page).toHaveURL(origin+'/'+locale+'/explore/relationships')
   await expect(journey).toBeVisible()
-  passed(locale+' theme journey: legacy redirect, four reversible themes, four actions, real test-filter handoff, six mobile slots, 320–1280px and home route')
+  passed(locale+' theme journey: legacy redirect, four reversible themes, four actions, full catalog and easy-picker handoff, six mobile slots, 320–1280px and home route')
   for(const entry of RELATIONSHIPS_INTIMACY_CATALOG){
    await navigate(page,origin+'/'+locale+'/client/tests?test='+entry.key)
    const picker=page.locator('[data-prelogin-test-picker]')
@@ -278,6 +294,46 @@ try{
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ // Exercise the primary topic action through the existing isolated auth and plan API.
+ // This is a button that saves its two recommendations, not the full-catalog link.
+ const relationshipJourney=TOPIC_JOURNEYS.find(journey=>journey.id==='relationships')
+ for(const locale of ['en','ru']){
+  await navigate(page,origin+'/'+locale+'/explore/relationships')
+  const journey=page.locator('[data-topic-journey="relationships"]')
+  await journey.locator('[data-topic-choice="boundaries"]').click()
+  const expected=buildTopicTestSuggestions(relationshipJourney,locale).boundaries
+  assert.equal(expected.length,2)
+  await expect(journey.locator('[data-recommended-test]')).toHaveCount(2)
+  assert.deepEqual(await journey.locator('[data-recommended-test]').evaluateAll(nodes=>nodes.map(n=>n.dataset.recommendedTest)),expected.map(item=>item.key))
+  const before=await api(account,'bootstrap'),owner=before.account.id
+  const expectedIds=expected.map(item=>getAssessmentDefinition(item.definition.key,item.definition.version,item.definition.instrumentLocale).id)
+  const saving=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
+  const loading=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
+  await journey.locator('button[data-topic-action="tests"]').click()
+  const response=await saving
+  assert.ok(response.ok())
+  assert.equal(response.request().headers()['x-hh-account-id'],owner)
+  const submitted=response.request().postDataJSON()
+  assert.equal(submitted.appendActive,true)
+  assert.deepEqual(submitted.items,expected.map(item=>({definitionKey:item.definition.key,definitionVersion:item.definition.version,instrumentLocale:item.definition.instrumentLocale})))
+  assert.deepEqual(submitted.selectionPreferences,{focus:journeyFocusForTopics(relationshipJourney,['boundaries']),problems:journeyProblemsForTopics(relationshipJourney,['boundaries'])})
+  const plan=await response.json()
+  assert.ok(plan.id)
+  assert.ok(expectedIds.every(id=>plan.definitionIds.includes(id)))
+  assert.ok((before.activeTestPlan?.definitionIds||[]).every(id=>plan.definitionIds.includes(id)))
+  await expect(page).toHaveURL(origin+'/'+locale+'/app/tests?plan='+encodeURIComponent(plan.id),{timeout:20000})
+  await expect(page.locator('#my-tests-list')).toBeVisible()
+  const loaded=await loading
+  assert.ok(loaded.ok());assert.equal((await loaded.json()).id,plan.id)
+  await loaded.finished()
+  const saved=await api(account,'bootstrap')
+  assert.equal(saved.account.id,owner)
+  assert.equal(saved.activeTestPlan.id,plan.id)
+  assert.deepEqual(saved.activeTestPlan.definitionIds,plan.definitionIds)
+  assert.deepEqual(saved.activeTestPlan.selectionPreferences.focus,submitted.selectionPreferences.focus)
+  assert.deepEqual(saved.activeTestPlan.selectionPreferences.problems,submitted.selectionPreferences.problems)
+  passed(locale+' suggested-tests button saves exactly the displayed definitions with owner-bound preferences and opens the saved private plan')
+ }
  for(const [i,base] of defs.entries()){
   const locale=i%2?'ru':'en',mode=i%2?'guided':'quick',d=localized(base.key,locale)
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale,operationId:randomUUID()})

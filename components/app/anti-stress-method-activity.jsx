@@ -7,9 +7,9 @@ import styles from './anti-stress-method-activity.module.css'
 // A real interactive action in each of days 2–14; does not mark an outcome
 // or infer that someone practised from a click alone.
 export default function AntiStressMethodActivity({
-  day,locale='en',value='',onChange,onHint,hintUsed=false,disabled=false
+  day,locale='en',value='',onChange,onHint,hintUsed=false,disabled=false,activity:routeActivity=null
 }){
-  const activity=antiStressMethodActivity(day,locale)
+  const activity=routeActivity||antiStressMethodActivity(day,locale)
   if(!activity)return null
   const ru=locale==='ru'
   const prompt=activity.prompt
@@ -40,7 +40,7 @@ export default function AntiStressMethodActivity({
       {ru?'Вы выбрали вариант упражнения. Можно изменить его или остановиться; это ещё не оценка освоения навыка.':
         'You chose an exercise option. You can change or stop; this is not a mastery score.'}
     </p>}
-    {activity.kind==='fact_guess'&&value&&<p className={styles.explanation}>
+    {!routeActivity&&activity.kind==='fact_guess'&&value&&<p className={styles.explanation}>
       {ru?'В учебном сюжете точно известно лишь то, что ответ ещё не пришёл. Причина нам не известна; тревожный прогноз — предположение.':
         'In this fictional example, the only known fact is that a reply has not arrived. The reason is unknown; the worrying prediction is an assumption.'}
     </p>}
