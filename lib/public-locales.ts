@@ -3,7 +3,7 @@ export type PublicLocale = 'en' | 'ru' | 'es';
 export const publicLocaleCookie = 'holistic_house_public_locale';
 export const publicLocales: readonly PublicLocale[] = ['ru', 'en', 'es'];
 export function publicHomePath(locale: PublicLocale) {
-  return locale === 'es' ? '/es' : `/?lang=${locale}`;
+  return locale === 'en' ? '/' : `/${locale}`;
 }
 export function hasSpanishCounterpart(pathname: string) {
   return pathname === '/' || /^\/(?:en|ru|es)\/courses\/antistress\/?$/.test(pathname) || /^\/(en|ru|es)(?:\/(?:about|courses(?:\/methodology)?|services(?:\/(?:free-situation-review|imagery-therapy|business-consulting|[a-z0-9-]+\/[a-z0-9-]+))?|books|library(?:\/distance-homeopathy)?|client(?:\/tests)?|masters(?:\/[a-z0-9-]+)?|academy(?:\/[a-z0-9-]+)*|wu-xing|homeopathy(?:\/remedies(?:\/[a-z0-9-]+)?)?))?\/?$/.test(pathname);
