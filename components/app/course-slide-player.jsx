@@ -313,8 +313,8 @@ export default function CourseSlidePlayer({
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
-  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id==='stress')
-  const slides=useMemo(()=>isDayOne?DAY_ONE_SLIDES:buildSlides(lesson),[isDayOne,lesson])
+  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
+  const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
