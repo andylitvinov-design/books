@@ -3004,3 +3004,35 @@
     width:55px;height:55px;flex-basis:55px;
   }
 }
+
+
+/* Editorial cover correction: make the on-screen report breathe without
+   repeating the masthead or stretching a low-resolution lighthouse fill. */
+.canonical-document--editorial .canonical-report-hero {
+  background-color:#fffefa;
+  border-bottom-color:#e0d8d3;
+}
+.canonical-document--editorial .canonical-report-eyebrow {
+  color:#754e64;
+}
+.canonical-document--editorial .canonical-report-analysis {
+  margin-top:15px;
+  background:#fcf8f4;
+  border-color:#eaded7;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-hero {
+    min-height:151px;
+    padding:12px 88px 14px 0;
+    margin-bottom:11px;
+    background-size:cover,94px auto;
+    background-position:center,right 3px bottom 8px;
+  }
+  .canonical-document--editorial .canonical-report-eyebrow {
+    letter-spacing:.07em;
+  }
+  .canonical-document--editorial .canonical-report-hero-subtitle {
+    max-width:29ch;
+    line-height:1.38;
+  }
+}
