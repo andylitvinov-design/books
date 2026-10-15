@@ -28,12 +28,17 @@ export async function GET(request,{params}) {
     // Only metadata for the authorized owner. Never return bucket, object key,
     // upload URL or credential. Audio/PDF/photo remain available when optional
     // external video is misconfigured, so return a separate video readiness flag.
-    let videoProvider='supabase',videoLimitBytes=45_000_000,videoReady=true
+    let videoProvider='unavailable',videoLimitBytes=0,videoReady=false
     try{
       const external=configuredVideoUploadStore()
-      if(external){videoProvider=external.provider;videoLimitBytes=200_000_000}
+      if(external){videoProvider=external.provider;videoLimitBytes=200_000_000;videoReady=true}
+      else if(process.env.HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED==='true'){
+        // Legacy opt-in only: not the default for sensitive/large MP4 files.
+        videoProvider='supabase';videoLimitBytes=45_000_000;videoReady=true
+      }
     }catch{
-      videoProvider='unavailable';videoLimitBytes=0;videoReady=false
+      // Invalid external configuration must fail closed for video, without
+      // blocking audio, PDFs or photos stored in existing private Supabase.
     }
     return privateJson({ready:true,videoReady,videoProvider,videoLimitBytes})
   }catch{
