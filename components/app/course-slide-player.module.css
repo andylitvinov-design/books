@@ -291,7 +291,7 @@
 }
 .overlay .primary{
   min-height:56px;border-radius:17px!important;
-  background:linear-gradient(105deg,#11b9c4,#078fa8)!important;
+  background:linear-gradient(105deg,#087d89,#03778c)!important;
   border-color:#078ca0!important;border-bottom-color:#086f86!important;
   font-weight:850!important;font-size:16px!important;
   box-shadow:0 10px 24px #058da52e;
@@ -659,6 +659,8 @@
   object-position:center;
 }
 
+/* Keep long slide content scrollable instead of shrinking details below their summaries. */
+.content > *{flex-shrink:0}
 /* OPORA NAV-2.0 · five-level Anti-Stress learning flow. Gentle sky-blue rather
    than repeated assessment-heavy cards; preserve the legacy AS2 visual system. */
 .overlay[data-opora-module] .frame{background:linear-gradient(160deg,#fbfeff 0%,#f1f9fc 48%,#f9fefd 100%)}

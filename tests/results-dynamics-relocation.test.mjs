@@ -44,3 +44,31 @@ test('a retake still opens the saved run or a real new run', () => {
   assert.match(workspace, /router\.push\('\/' \+ locale \+ '\/app\/runs\/'/)
   assert.match(workspace, /retakeDefinitions\.has\(id\)/)
 })
+
+test('Results retake binds the owner and rejects stale owner, view and lifetime continuations', async () => {
+  const source = read('components/app/app-workspace.jsx')
+  const body = source.slice(source.indexOf('  async function retakeTest('), source.indexOf('  const allGroups', source.indexOf('  async function retakeTest(')))
+  for (const outcome of ['resolve','reject']) for (const change of ['none','owner','view','unmount','remount']) {
+    const scope={accountId:'owner-a',tab:'dynamics',locale:'en'}
+    const retakeScope={current:scope},retakeOperation={current:null},retakeLifetime={current:{mounted:true,epoch:0}}
+    const calls=[],navigation=[],errors=[];let release,reject
+    const response=new Promise((resolve,fail)=>{release=resolve;reject=fail})
+    const build=new Function('retakeDefinitions','renderedRetakeScope','retakeScope','retakeOperation','retakeLifetime','accountId','setRetakeBusy','setRetakeError','data','appFetch','crypto','router','locale','ru',body+';return retakeTest')
+    const run=build(new Map([['test-id',{key:'test-key',version:'1',instrumentLocale:'en'}]]),scope,retakeScope,retakeOperation,retakeLifetime,'owner-a',()=>{},x=>errors.push(x),{runs:[]},async(...args)=>{calls.push(args);return response},{randomUUID:()=> 'op'}, {push:x=>navigation.push(x)},'en',false)
+    const pending=run('test-id');await run('test-id')
+    assert.equal(calls.length,1,'duplicate click cannot create another run')
+    assert.equal(calls[0][2],'POST');assert.equal(calls[0][3].accountId,'owner-a')
+    if(change==='owner')retakeScope.current={...scope,accountId:'owner-b'}
+    if(change==='view')retakeScope.current={...scope,tab:'values'}
+    if(change==='unmount')retakeLifetime.current.mounted=false
+    if(change==='remount')retakeLifetime.current.epoch++
+    if(outcome==='resolve')release({id:'new-run'});else reject(Object.assign(new Error('synthetic failure'),{code:'TEST_ERROR'}))
+    await pending
+    assert.equal(navigation.length,change==='none'&&outcome==='resolve'?1:0)
+    assert.equal(errors.length,change==='none'&&outcome==='reject'?2:1)
+    if(errors.length===2)assert.match(errors[1],/TEST_ERROR/)
+  }
+  assert.match(source,/if \(next === activeTab\) return/)
+  assert.match(source,/retakeLifetime\.current\.epoch \+= 1/)
+  assert.match(source,/retakeScope\.current = null; retakeOperation\.current = null/)
+})

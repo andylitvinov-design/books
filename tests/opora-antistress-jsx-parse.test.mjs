@@ -34,3 +34,11 @@ test('a practice phrase closes before the guided exercise and controls remain op
   assert.match(player,/data-course-practice-attempt/)
   assert.match(player,/data-antistress-skill-probe/)
 })
+
+test('typed public programme retains the description supplied by the canonical blueprint',()=>{
+  const source=readFileSync(new URL('../components/public-antistress-landing.tsx',import.meta.url),'utf8')
+  const blueprint=readFileSync(new URL('../lib/inner-growth/anti-stress-blueprint.js',import.meta.url),'utf8')
+  assert.match(source,/skills: \{id:string;title:string;description:string;days:\[number,number\];outcome:string\}\[\]/)
+  assert.match(source,/skill\.description/)
+  assert.match(blueprint,/description:OPORA_SKILLS\[i\]\.description\[lang\]/)
+})

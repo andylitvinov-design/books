@@ -24,6 +24,10 @@ export default function CourseLessonResult(props){
         <strong>{r.attempt}</strong>
         {r.mainPractice&&<small>{r.mainPractice}</small>}
       </span></div>
+      {r.savedActivity&&<div data-course-saved-module-choice><Compass size={18} aria-hidden="true"/><span>
+        <small>{ru?'Сохранённый выбор практики':'Saved practice choice'}</small><strong>{r.savedActivity}</strong>
+        <small>{ru?'Выбор не подтверждает выполненную попытку.':'A choice does not confirm an attempted practice.'}</small>
+      </span></div>}
       {(r.anchor||r.anotherChoice)&&<div><Heart size={18} aria-hidden="true"/><span>
         <small>{ru?'Мой выбранный ориентир':'My selected support'}</small>
         {r.anchor&&<strong>{r.anchor}</strong>}

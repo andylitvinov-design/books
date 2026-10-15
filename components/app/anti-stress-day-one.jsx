@@ -55,7 +55,7 @@ export function DayOneFocusPicker({locale,options=[],value,onSelect,disabled=fal
 export default function DayOneExercise({
   kind,locale='en',lesson={},answers={},onAnswer,locked=false,
   associationWords='',onAssociationWords,selectedFocus=null,onDiscomfort,
-  neutralMode=false,onReturnToPractice,
+  neutralMode=false,onReturnToPractice,onStopPractice,
 }) {
   const ru=locale==='ru'
   const text=(a,b)=>t(locale,a,b)
@@ -177,6 +177,9 @@ export default function DayOneExercise({
           </button>
         </div>
       </div>
+      <button type="button" disabled={locked} onClick={onStopPractice} data-day-one-stop-practice>
+        <PauseCircle size={17}/>{text('Остановить практику','Stop practice')}
+      </button>
       <details className={styles.transcript}><summary>{text('Полная текстовая инструкция','Complete written guide')} <ChevronDown size={16}/></summary>
         <p>{lesson.sections?.find(part=>part.kind==='meditation')?.text}</p></details>
       <p className={styles.headline}>{text('Как прошла ваша попытка?','How did the attempt go?')}</p>

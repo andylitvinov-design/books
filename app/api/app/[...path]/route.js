@@ -15,6 +15,7 @@ import {
   setGuestCookie,
 } from '@/lib/app/guest-session'
 import { consumeRate } from '@/lib/app/database'
+import { createBillingService } from '@/lib/billing/service'
 import {
   clearSaveIntentCookie,
   createGuestSaveIntent,
@@ -313,6 +314,8 @@ async function handle(request, { params }) {
     const actor = await auth.verified(),
       repo = createAppRepository(config),
       practiceRepo = createPractitionerRepository(config)
+    const expectedAccount = request.headers.get('x-hh-account-id')
+    if (expectedAccount && expectedAccount !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     await consumeRate(
       config,
       { op: joined === 'export' ? 'export' : 'app', actor: actor.id },
@@ -353,31 +356,33 @@ async function handle(request, { params }) {
       )
     }
     if (path[0] === 'notifications') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
       const notifications = createNotificationRepository(config)
       if (joined === 'notifications' && method === 'GET')
         return json(await notifications.state(actor))
       if (joined === 'notifications/live-token' && method === 'POST')
-        return json(await registerLiveActivity(config,actor,await readBody(request)),201)
+        return json(await registerLiveActivity(config,actor,await readBody(request, 8192)),201)
       if (joined === 'notifications/live-stop' && method === 'POST')
-        return json(await stopLiveActivity(config,actor,await readBody(request)))
+        return json(await stopLiveActivity(config,actor,await readBody(request, 8192)))
       if (joined === 'notifications/subscribe' && method === 'POST')
-        return json(await notifications.subscribe(actor, await readBody(request)), 201)
+        return json(await notifications.subscribe(actor, await readBody(request, 8192)), 201)
       if (joined === 'notifications/unsubscribe' && method === 'POST')
-        return json(await notifications.unsubscribe(actor, await readBody(request)))
+        return json(await notifications.unsubscribe(actor, await readBody(request, 8192)))
       if (joined === 'notifications/preferences' && method === 'POST')
-        return json(await notifications.preferences(actor, await readBody(request)))
+        return json(await notifications.preferences(actor, await readBody(request, 8192)))
       if (joined === 'notifications/test' && method === 'POST') {
-        onlyKeys(await readBody(request), [])
+        onlyKeys(await readBody(request, 8192), [])
         await consumeRate(config, {op:'push-test',actor:actor.id}, 2, 3600)
         return json(await notifications.sendTest(actor))
       }
       throw new AppError('NOT_FOUND', 404)
     }
+    if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     if (path[0] === 'course' && path.length === 2) {
       const daily = createDailyCourseRepository(config)
       const locale = new URL(request.url).searchParams.get('locale') === 'ru' ? 'ru' : 'en'
       if ((path[1] === 'today' || path[1] === 'progress') && method === 'GET')
-        return json(await daily.read(actor, locale))
+        return json(await daily.read(actor, locale, new URL(request.url).searchParams.get('courseId')))
       if (method === 'POST' && ['activate','checkin','session','review','preferences','pause','resume','new-cycle'].includes(path[1]))
       {
         const updated=await daily.command(actor,path[1],await readBody(request),locale)
@@ -389,7 +394,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'course') {
       const growth = createGrowthCourseRepository(config)
-      if (method === 'GET') return json(await growth.read(actor))
+      if (method === 'GET') return json(await growth.read(actor, new URL(request.url).searchParams.get('courseId')))
       if (method === 'POST') return json(await growth.command(actor, await readBody(request)))
       throw new AppError('NOT_FOUND', 404)
     }
@@ -444,6 +449,7 @@ async function handle(request, { params }) {
       }
       exported.savedReports = savedReports
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
+      exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
       const response = json(exported)
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
@@ -545,6 +551,7 @@ async function handle(request, { params }) {
     if (path[0] === 'context' && path.length === 2)
       return json(await repo.contextEvent(actor, path[1], body))
     if (joined === 'deletion') {
+      await createBillingService(config).guardAccountDeletion(actor)
       const result = await repo.requestDeletion(actor, body)
       await auth.client.auth.signOut({ scope: 'global' })
       return auth.clear(json(result, 202))
@@ -570,3 +577,4 @@ async function handle(request, { params }) {
   }
 }
 export { handle as GET, handle as POST }
+

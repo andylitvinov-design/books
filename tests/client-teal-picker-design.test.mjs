@@ -23,7 +23,7 @@ test('the approved teal refresh belongs to the public /client test picker, not t
 test('the new entrance leads to the functioning first step, not a fake action', () => {
   assert.match(picker, /href="#hh-simple-topic-title"/)
   assert.match(picker, /id="hh-simple-topic-title"/)
-  assert.match(css, /#hh-simple-topic-title\{scroll-margin-top:/)
+  assert.match(css, /\.shell :global\(#hh-simple-topic-title\)\{scroll-margin-top:115px\}/)
   assert.match(picker, /TOPICS\.map/)
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /problemsForTopics\(focus\)/)

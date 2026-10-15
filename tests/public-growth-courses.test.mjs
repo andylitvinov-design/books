@@ -76,3 +76,9 @@ test('OPORA methodology page is linked, localized, accessible and evidence-hones
   assert.match(methodology, /Авторство Holistic House/);
   assert.match(methodology, /Доказанность компонентов/);
 });
+
+ test('all public course locales are explicitly registered in the sitemap', async () => {
+  const sitemap = await readFile('app/sitemap.ts', 'utf8');
+  const publicPaths = sitemap.match(/const publicPaths = \[([^;]+)\];/)[1];
+  for (const locale of ['en', 'ru', 'es']) assert.ok(publicPaths.includes(`'/${locale}/courses/antistress'`));
+});
