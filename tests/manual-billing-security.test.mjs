@@ -44,5 +44,5 @@ test('server protects funds with unique digest, external proof fields, owner rev
   assert.match(source,/revision\s*!==\s*input.expectedRevision/)
   assert.match(source,/receipt_digest=\$2/)
   assert.match(source,/status='paid'/)
-  assert.match(source,/status='refunded'/)
+  assert.match(source,/input.action === 'reject' \? 'rejected' : 'refunded'/)
 })

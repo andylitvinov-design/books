@@ -95,7 +95,7 @@ async function createOwner(db, { status = 'active', ready = true } = {}) {
   return { id, claims: { sub: id, session_id: sessionId, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 } }
 }
 async function rawAs(actor, role, fn, scope = null) {
-  if (!['anon', 'authenticated', 'hh_app_backend', 'hh_billing_backend', 'hh_crm_backend', 'hh_course_push_worker'].includes(role)) throw new Error('Invalid isolated test role')
+  if (!['anon', 'authenticated', 'hh_app_backend', 'hh_app_inbox', 'hh_billing_backend', 'hh_crm_backend', 'hh_course_push_worker'].includes(role)) throw new Error('Invalid isolated test role')
   const db = await adminClient()
   try {
     await db.query('BEGIN')
