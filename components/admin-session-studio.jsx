@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { SessionAudioRecorder } from './session-audio-recorder'
-import { Clipboard,Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
+import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
 
 async function api(url,method='GET',body) {
@@ -107,7 +107,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>load().catch(e=>setError(e.message))}/>
+    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>{if(changed){setMessage(ru?'Запись сохранена. Сначала сохраните ваши текстовые изменения, затем обновите страницу.':'Recording saved. Save your text changes before refreshing.')}else load().catch(e=>setError(e.message))}}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       {!draft.media.length&&<p>{ru?'Запишите аудио или загрузите MP4, чтобы прикрепить материал.':
