@@ -179,6 +179,21 @@ export function MyCourse({ data, locale = 'en' }) {
     finally { setBusy(false) }
   }
 
+  async function closeCourse() {
+    if (busy || !state?.course) return false
+    setBusy(true)
+    setError('')
+    try {
+      const updated = await request({ action: 'close', expectedRevision: state.course.revision })
+      setState(updated)
+      setShowCourse(false)
+      return true
+    } catch (e) {
+      setError(e.message || 'COURSE_CLOSE_UNAVAILABLE')
+      return false
+    } finally { setBusy(false) }
+  }
+
   function openStartDialog(programId = ACTIVE_COURSE_PROGRAM_ID) {
     if (busy) return
     // Existing courses retain their state; only a brand-new enrollment is routed to Anti-Stress.
@@ -233,7 +248,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const programmeEntry = stage === 0 && Boolean(requestedProgram)
   const personalEntry = stage === 0 && (Boolean(courseEntry) || searchParams.get('entry') === 'personal')
   if (!showCourse && !testReturn && !programmeEntry && !personalEntry) return <CourseEntrySelector
-    course={state.course} locale={locale} onOpen={() => setShowCourse(true)}/>
+    course={state.course} locale={locale} onOpen={() => setShowCourse(true)}
+    onCloseCourse={closeCourse} closing={busy}/>
 
   return <div className={styles.root} data-my-course>
     <button type="button" className={styles.backToCourses} onClick={() => {
