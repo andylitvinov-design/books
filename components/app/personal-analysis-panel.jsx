@@ -6,6 +6,7 @@ import { ArrowDownToLine, ArrowUpRight, FileText, LockKeyhole, Pin } from 'lucid
 import { useEffect, useState } from 'react'
 import './personal-analysis.css'
 import { generatePractitionerReportPdf } from '@/lib/profile/practitioner-report-pdf'
+import {SavedSessionsPanel} from '@/components/app/saved-sessions-panel'
 
 const WORDS = {
   ru: {
@@ -210,7 +211,7 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
   </section>
 }
 
-export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyReports = [], selector = null, embedded = false }) {
+export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyReports = [], selector = null, embedded = false, savedSessions = [] }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
   const [verified, setVerified] = useState(null)
   useEffect(() => {
@@ -231,6 +232,7 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
   // The unified Profile owns this archive. Legacy /analysis links may still render
   // the existing standalone experience while all report access rules remain unchanged.
   if (embedded) return <div className="hh-personal-analysis hh-personal-analysis--embedded" data-personal-reports>
+    {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>}
     <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
   </div>
   return <section className="hh-personal-analysis" aria-label={t.title}>
