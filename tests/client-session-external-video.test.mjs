@@ -191,3 +191,14 @@ test('iPhone editor shows gated video status immediately and checks each selecte
   assert.match(source,/video\/quicktime/)
   assert.match(source,/uploadProgress/)
 })
+
+test('storage onboarding is protected and the mobile editor links to it without exposing credentials',()=>{
+  const page=readFileSync(new URL('../app/admin/client-video-storage/page.jsx',import.meta.url),'utf8')
+  const editor=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  assert.match(page,/if\(!await requireAdminRequest\(\)\)redirect\('\/admin\/login'\)/)
+  assert.match(page,/configuredVideoUploadStore\(\)/)
+  assert.match(page,/HH_CLIENT_VIDEO_SECRET_ACCESS_KEY/)
+  assert.doesNotMatch(page,/decryptedValue|process\.env\.HH_CLIENT_VIDEO_SECRET_ACCESS_KEY\b/)
+  assert.match(editor,/href="\/admin\/client-video-storage"/)
+  assert.match(editor,/videoStatus\?\.ready===false/)
+})
