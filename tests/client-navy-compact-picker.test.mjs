@@ -138,9 +138,9 @@ test('mobile cards give full width to labels and keep a 44px burgundy launch but
 })
 
 test('brief introductions remain localized and their topic action still jumps to the real picker', () => {
-  assert.match(picker, /promoTitle:'Start with what matters to you'/)
-  assert.match(picker, /promoTitle:'Начните с того, что важно вам'/)
-  assert.match(picker, /promoTitle:'Empieza por lo que te importa'/)
+  assert.match(picker, /promoTitle:'Start with a personal check-in'/)
+  assert.match(picker, /promoTitle:'Начните с базовых тестов'/)
+  assert.match(picker, /promoTitle:'Empieza con pruebas sencillas'/)
   assert.match(picker, /href="#hh-simple-topic-title"/)
   assert.match(picker, /aria-pressed=\{checked\}/)
   assert.match(picker, /onToggleFocus\(key\)/)
