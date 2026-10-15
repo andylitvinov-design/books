@@ -15,6 +15,7 @@ test('exactly 15 unique methodology metadata records and conservative commercial
     assert.ok(item.questions > 0 && item.questions <= 15, item.key)
     assert.ok(item.name.en && item.name.ru && item.topic.en && item.topic.ru, item.key)
     assert.ok(item.minutes && item.scales.en && item.scales.ru, item.key)
+    assert.ok(item.scoring.en && item.scoring.ru, item.key + ': scoring reference')
     assert.ok(item.rights.en && item.rights.ru, item.key)
     assert.ok(item.source === null || /^https:\/\//.test(item.source), item.key)
     assert.ok(!('items' in item) && !('definition' in item) && !('scoringKey' in item), 'no copyrighted items or executable scorer: ' + item.key)
