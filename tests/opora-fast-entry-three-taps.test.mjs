@@ -7,7 +7,12 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('sitewide Stress Relief banner enters the course directly, without another catalogue', () => {
   const banner = read('components/sitewide-antistress-banner.tsx')
   const entry = read('components/app/my-course.jsx')
-  assert.match(banner, /app\/course\?program=stress/)
+  assert.match(banner, /app\/course\?program=stress&entry=quick/)
+  const app = read('components/app/app-workspace.jsx')
+  assert.match(app, /quickAuthAttempted = useRef\(false\)/)
+  assert.match(app, /state === 'signed-out' && stressSignup/)
+  assert.match(app, /searchParams.get\('entry'\) === 'quick'/)
+  assert.match(app, /void signin\(\)/)
   assert.match(entry, /const fastAntistressEntry = Boolean\(requestedProgram\)/)
   assert.match(entry, /!fastAntistressEntry\) return <CourseEntrySelector/)
   assert.match(entry, /stage === 0 && fastAntistressEntry/)
