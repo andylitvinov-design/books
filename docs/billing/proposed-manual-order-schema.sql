@@ -13,6 +13,8 @@ create table app_private.manual_billing_orders (
   currency text not null check (currency in ('EUR','USD','CAD','UAH')),
   reference_euro_cents integer not null check(reference_euro_cents in (2000,10000)),
   first_month_candidate boolean not null default false,
+  first_month_discount_applied boolean not null default false,
+  revision integer not null default 0 check(revision>=0),
   status text not null default 'requested' check(status in ('requested','quoted','paid','rejected','refunded','expired')),
   invoice_currency text check(invoice_currency in ('EUR','USD','CAD','UAH')),
   invoice_amount_minor bigint check(invoice_amount_minor between 100 and 50000000),
