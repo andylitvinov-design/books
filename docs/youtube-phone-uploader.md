@@ -19,19 +19,22 @@
 
 Previously uploaded media from YouTube Studio or Metricool does not automatically enter the *app upload history*. Existing site-managed videos and the previously approved six Unlisted originals must never be re-uploaded to populate the history.
 
-## One-time Google Cloud activation
+## One-time Google Cloud activation (admin self-service)
 
-The authenticated Vercel project is `codex-public-book-library`, production `holistichouse.vercel.app`. Current production inspection on 2026-10-15 found none of the uploader-specific Google OAuth variables.
+The authenticated Vercel production project is `codex-public-book-library`, domain `https://holistichouse.vercel.app`. There is **no Google Cloud account provisioning capability** in this repository or Vercel; the owner must create or reuse the real Google OAuth project and approve account/channel scopes.
 
-1. Find/reuse an owner-approved Google Cloud project; do not silently create duplicate credentials or enable billing. Enable **YouTube Data API v3**.
-2. Create or reuse a **Web application** OAuth 2.0 client configured with Authorized JavaScript origin `https://holistichouse.vercel.app`. Configure the OAuth consent screen and authorize the channel owner's Google account if the app is in Testing. Include `youtube.upload` and `youtube.readonly` permissions.
-3. Add to the correct Vercel project as production environment variables:
-   - `HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID` — **public Web OAuth Client ID**, never a client secret.
-   - `HH_YOUTUBE_PHONE_UPLOAD_ENABLED=true` — turn on **only after OAuth configuration and admin/secure-storage checks**.
-   - The Russian destination is code-pinned to the last verified SOP ID. The English destination is stored using one-time user confirmation; no English channel ID or refresh token is guessed or stored in frontend code.
-4. Redeploy the verified build. Sign into the existing practitioner cabinet. In Safari, choose Russian or English, authorize that channel and check the displayed verified title/handle. After English pairing, switch between both using the selector. Authorization for each account may be required at least once per browser session. Already authorized channels are reused automatically **in active page memory only**. Different Google accounts **cannot be switched without owner consent**.
-5. Upload one *small, non-sensitive, new* sample from the phone as Unlisted. Verify the exact channel, actual status in YouTube Studio, anonymous playability, copy-link, server history after reload and the failure/reconnect behavior. Check YouTube Data API project verification and quota requirements. Do not claim Unlisted is externally accessible merely because it was requested in the API.
-6. Run `node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs`, `npm run build`, and review the dedicated CI workflow. Full-device / account-dependent testing still requires real owner Google authorization.
+1. Open [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials) under an owner-controlled Google account. Reuse the correct existing Cloud project if available; don't create duplicate projects or enable billing without owner review.
+2. Enable [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com). Configure the OAuth consent screen and permitted testers if in Testing mode.
+3. Create/reuse an OAuth 2.0 **Web application** client, with Authorized JavaScript Origin exactly `https://holistichouse.vercel.app`. Request `youtube.upload` and `youtube.readonly`. **Copy only the public Client ID** ending in `.apps.googleusercontent.com`; **never paste a Client Secret, refresh token, API key or password**.
+4. Open `https://holistichouse.vercel.app/admin/youtube-upload` after logging into the practitioner cabinet. The admin-only setup card allows you to paste and confirm this **public Web Client ID** once. It is validated and saved to `holistic-house:youtube:phone-oauth:v1` in existing authenticated Redis. The page reloads and enables the uploader; **no Vercel environment editing or redeploy is necessary**.
+5. If the OAuth client is wrong or its authorized origins later change, choose **Configure / change Google OAuth** from the uploader and replace the client ID. This does **not** store any tokens and does not connect a Google account without a user consent popup.
+6. On iPhone Safari, select RU or EN and click **Choose Google / YouTube account**. Verify the exact channel shown. English channel must be explicitly paired once; switching later can reuse each channel's access token **only while the page session remains open**. Browser/account consent cannot be bypassed.
+7. Upload one short **new, non-sensitive** test video. Check the exact channel ID and real Unlisted/Private status in YouTube Studio, anonymous playback, the Copy link button, saved history after reload and resume on simulated network interruption. The app now checks the actual uploaded video's `snippet.channelId` as well as `status.privacyStatus`; mismatched channel uploads are never archived under the expected channel.
+8. Run `node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs tests/youtube-upload-readback.test.mjs` and `npm run build` as well as real-device/Google OAuth acceptance. A successful Vercel build alone does not establish a working YouTube connection.
+
+**Optional Vercel controls:** An existing `HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID` in production overrides the admin-saved ID if configured. Set `HH_YOUTUBE_PHONE_UPLOAD_ENABLED=false` (string) in Vercel and redeploy as an emergency global kill switch regardless of Redis settings; otherwise a valid admin-confirmed ID plus healthy server-side history storage enables the UI. No secrets are ever accepted by the in-app form.
+
+**Google caveat:** Google API documentation currently differs between endpoints about Private restrictions on unverified upload projects. The app always requests Unlisted, but treats the actual `videos.list` readback and an anonymous playback check as authoritative; it never silently claims Unlisted success from the request alone.
 
 ## Scope and safety
 

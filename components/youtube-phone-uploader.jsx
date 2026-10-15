@@ -4,14 +4,20 @@ import {useEffect, useRef, useState} from 'react'
 import Link from 'next/link'
 import styles from './youtube-phone-uploader.module.css'
 import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl} from '@/lib/youtube/phone-upload-protocol.mjs'
-import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedVisibility} from '@/lib/youtube/browser-upload'
-import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction} from '@/app/admin/youtube-upload/actions'
+import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedDetails} from '@/lib/youtube/browser-upload'
+import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction, configureYoutubeWebOauthAction} from '@/app/admin/youtube-upload/actions'
 
 const copy = {
   ru: {
     intro:'Выберите русский или английский канал, затем добавьте видео с iPhone. Файлы передаются прямо в YouTube — без хранения MP4 на сервере.',
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
-    config:'Google OAuth ещё не настроен. Загрузка безопасно отключена до подключения YouTube Data API и веб-клиента Google.',
+    config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
+    setupTitle:'Первое подключение Google YouTube',
+    setupHelp:'В Google Cloud включите YouTube Data API v3, создайте OAuth Client (тип Web application) и добавьте разрешённый JavaScript origin: https://holistichouse.vercel.app. Укажите здесь только публичный Client ID, без секрета.',
+    setupGoogle:'Открыть Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
+    setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
+    setupSave:'Подключить OAuth-клиент',setupSaving:'Сохранение…',setupChange:'Настроить / заменить Google OAuth',
+
     historyUnavailable:'Хранилище истории временно недоступно. Загрузка отключена, чтобы не потерять ссылки на готовые видео.',
     target:'Куда загрузить?', ru:'Русский YouTube', en:'English YouTube',
     connect:'Выбрать Google / YouTube-аккаунт', reconnect:'Сменить YouTube-аккаунт',
@@ -33,6 +39,7 @@ const copy = {
     retrySave:'Повторить сохранение ссылки',
     channelUnlisted:'YouTube подтвердил Unlisted', channelPrivate:'YouTube вернул Private. Ролик может быть недоступен по ссылке — проверьте в Studio.',
     channelPublic:'YouTube вернул Public! Срочно проверьте доступ в Studio.', channelUnknown:'Проверьте фактическую видимость в YouTube Studio.',
+    wrongResult:'YouTube разместил ролик в другом канале! Загрузка остановлена, ссылка не сохранена в журнал. Проверьте Google-аккаунт и YouTube Studio.',
     stay:'Оставляйте Safari открытым, а экран активным до завершения передачи. После обновления страницы файлы придётся выбрать заново.',
     more:'Для нового канала сначала завершите или уберите незаконченные файлы из очереди.',
     errors:{
@@ -55,13 +62,20 @@ const copy = {
       invalid_session:'Небезопасный адрес сессии загрузки: передача остановлена.',
       invalid_range:'YouTube не подтвердил байты. Повтор без сверки запрещён.',
       unauthorized:'Сессия администратора закончилась. Войдите повторно.',
+      invalid_oauth_client:'Укажите корректный Google Web OAuth Client ID (не Client Secret).',
       unknown:'Ошибка. Проверьте YouTube Studio, прежде чем загружать повторно.',
     },
   },
   en: {
     intro:'Choose the Russian or English YouTube channel, then select videos from your phone. Files go straight to YouTube without Holistic House MP4 storage.',
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
-    config:'Google OAuth is not yet configured. Uploads remain safely disabled until the YouTube API and Google web client are connected.',
+    config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
+    setupTitle:'Connect Google YouTube once',
+    setupHelp:'In Google Cloud enable YouTube Data API v3, create a Web application OAuth client, and authorize this JavaScript origin: https://holistichouse.vercel.app. Enter the public Client ID only, never a secret.',
+    setupGoogle:'Open Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
+    setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
+    setupSave:'Connect OAuth client',setupSaving:'Saving…',setupChange:'Configure / change Google OAuth',
+
     historyUnavailable:'Your saved-link archive is unavailable. Uploads are disabled to prevent lost video links.',
     target:'Upload to which channel?', ru:'Russian YouTube', en:'English YouTube',
     connect:'Choose Google / YouTube account', reconnect:'Switch YouTube account',
@@ -83,6 +97,7 @@ const copy = {
     retrySave:'Retry saving the link',
     channelUnlisted:'YouTube confirmed Unlisted', channelPrivate:'YouTube returned Private. The link may not work for viewers. Check Studio.',
     channelPublic:'YouTube returned Public! Review this immediately in Studio.', channelUnknown:'Verify actual visibility in YouTube Studio.',
+    wrongResult:'YouTube uploaded the video to a different channel! Upload stopped and link not archived. Check your Google account and YouTube Studio.',
     stay:'Keep Safari open and the phone awake until transfer finishes. A page reload requires choosing the files again.',
     more:'Finish or remove incomplete uploads before changing channels.',
     errors:{
@@ -105,6 +120,7 @@ const copy = {
       invalid_session:'YouTube returned an unsafe session URL. Upload stopped.',
       invalid_range:'YouTube did not confirm bytes; an unsafe retry was blocked.',
       unauthorized:'Your admin session expired. Please sign in again.',
+      invalid_oauth_client:'Enter a valid Google Web OAuth Client ID, not a client secret.',
       unknown:'Error. Check YouTube Studio before attempting another upload.',
     },
   },
@@ -123,7 +139,7 @@ function mergeHistory(old, record) {
   return [record, ...old.filter(item => item.videoId !== record.videoId)]
     .sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,200)
 }
-export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', initialChannels,
+export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', setupAvailable=false, initialChannels,
   initialHistory=[], historyReady=false}) {
   const t = copy[locale] || copy.ru
   const [target, setTarget] = useState('ru')
@@ -145,6 +161,10 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
   const [historyStatus, setHistoryStatus] = useState(Boolean(historyReady))
   const [historyFilter, setHistoryFilter] = useState('all')
   const [copiedId, setCopiedId] = useState('')
+  const [setupClientId, setSetupClientId] = useState(clientId)
+  const [showSetup, setShowSetup] = useState(!enabled)
+  const [setupConfirmed, setSetupConfirmed] = useState(false)
+  const [setupBusy, setSetupBusy] = useState(false)
   const oauthClient = useRef(null)
   const authToken = useRef(null)
   // Separate volatile credentials for each owner-authorized channel; never persist OAuth tokens.
@@ -294,6 +314,20 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
     } catch (reason) {setError(humanError(reason,t))}
     finally {setPairBusy(false)}
   }
+  async function setupGoogleOAuth() {
+    if (!setupAvailable || !historyStatus || setupBusy || !setupConfirmed) return
+    setSetupBusy(true)
+    setError('')
+    const result = await configureYoutubeWebOauthAction({clientId:setupClientId,confirmed:true})
+      .catch(() => ({ok:false,error:'history_unavailable'}))
+    if (result.ok) {
+      // Re-read the server-trusted OAuth client configuration; no token or secret persisted.
+      window.location.reload()
+      return
+    }
+    setError(humanError(result.error,t))
+    setSetupBusy(false)
+  }
   function addFiles(event) {
     const files = Array.from(event.target.files || [])
     event.target.value = ''
@@ -329,8 +363,15 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
     }
   }
   async function finish(entry, resultId, auth, channelId) {
-    const actual = await readUploadedVisibility(resultId,auth.value)
-    update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual || 'unknown',saved:false})
+    const details = await readUploadedDetails(resultId,auth.value)
+    const actual = details?.privacyStatus || 'unknown'
+    const wrongChannel = Boolean(details?.channelId && details.channelId !== channelId)
+    // Always show the YouTube video ID even if Google placed it in an unexpected channel.
+    update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual,saved:false,wrongChannel})
+    if (wrongChannel) {
+      setHistoryStatus(false)
+      throw new Error('wrong_channel')
+    }
     const archived = await saveLink(entry.id,resultId,actual,entry.title,entry.target,channelId)
     if (!archived) throw new Error('history_unavailable')
   }
@@ -424,6 +465,23 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
       </div>
       <p className={styles.warning}>{t.noClient}</p>
       {!enabled && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
+        type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
+      {setupAvailable && showSetup && <div className={styles.pairing}>
+        <h3>{t.setupTitle}</h3>
+        <p>{t.setupHelp}</p>
+        <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
+        <label className={styles.field}><span>{t.setupField}</span><input type="text"
+          value={setupClientId} onChange={event => setSetupClientId(event.target.value)}
+          placeholder="123456789012-example.apps.googleusercontent.com" spellCheck={false}
+          autoComplete="off" maxLength={180} disabled={setupBusy}/></label>
+        <label className={styles.check}><input type="checkbox" checked={setupConfirmed}
+          disabled={setupBusy} onChange={event => setSetupConfirmed(event.target.checked)}/>{t.setupCheck}</label>
+        <button className={styles.secondary} type="button" onClick={setupGoogleOAuth}
+          disabled={setupBusy || !setupConfirmed || !setupClientId.trim() || !historyStatus}>
+          {setupBusy ? t.setupSaving : t.setupSave}
+        </button>
+      </div>}
       {!historyStatus && <p className={styles.unavailable} role="status">{t.historyUnavailable}</p>}
       <fieldset className={styles.targetSelector} disabled={busy || authPending || pairBusy}>
         <legend>{t.target}</legend>
@@ -432,7 +490,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
             <button key={lang} type="button" className={target === lang ? styles.targetSelected:styles.target}
               aria-pressed={target === lang} onClick={() => chooseTarget(lang)}>
               <strong>{lang === 'ru' ? '🇷🇺' : '🇬🇧'} {t[lang]}</strong>
-              <small>{channels[lang]?.name || (lang === 'en' ? '@aatapro · '+t.noEnglish : '')}</small>
+              <small>{channels[lang]?.name || (lang === 'en' ? t.noEnglish : '')}</small>
             </button>
           ))}
         </div>
@@ -469,7 +527,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
             <div className={styles.file} key={item.id}>
               <div className={styles.filehead}>
                 <span className={styles.filename}>{item.target.toUpperCase()} · {item.file.name} · {filesize(item.file.size)}</span>
-                {!busy && item.state !== 'done' && <button type="button" className={styles.remove} onClick={() => {
+                {!busy && item.state !== 'done' && !sessions.current.has(item.id) && <button type="button" className={styles.remove} onClick={() => {
                   sessions.current.delete(item.id)
                   alter(all => all.filter(row => row.id !== item.id))
                 }}>{t.remove}</button>}
@@ -485,7 +543,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
                   <a href={videoWatchUrl(item.videoId)} target="_blank" rel="noreferrer">{t.open} ↗</a>
                   <button type="button" onClick={() => copyLink(item.videoId)}>{copiedId === item.videoId ? t.copied : t.copy}</button>
                 </div>
-                {!item.saved && <div className={styles.caution}>
+                {item.wrongChannel && <p className={styles.error}>{t.wrongResult}</p>}
+                {!item.saved && !item.wrongChannel && <div className={styles.caution}>
                   <p>{t.historyError}</p>
                   <button type="button" disabled={busy} onClick={() =>
                     saveLink(item.id,item.videoId,item.privacyStatus,item.title,item.target,
