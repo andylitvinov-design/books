@@ -21,7 +21,7 @@ test("only the existing bottom blue capture presents the three free choices on H
   assert.match(capture, /offerOrder: FreeOffer\[\] = \["situation", "wu", "stress"\]/);
 });
 
-test("each selection opens its exact existing entry route, changing the orange CTA", () => {
+test("each selection opens its exact existing entry route, changing the burgundy CTA", () => {
   for (const slug of ["free-situation-review", "dao-health-profile", "client#cabinet-tests"]) {
     assert.ok(capture.includes(slug), "Missing destination: " + slug);
   }
@@ -59,9 +59,15 @@ test("EN/RU copy is clear, free and appropriately limits diagnosis promises", ()
 
 test("home free options use accessible, touch-friendly cards without changing paid selectors elsewhere", () => {
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
-  assert.match(css, /\.homeFreeChoices \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /@media \(max-width:760px\)/);
-  assert.match(css, /\.homeFreeChoices \{ grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css, /\.homeFreeChoices\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.homeFreeChoices \.homeFreeChoice:last-child\{grid-column:1\/-1/);
+  assert.match(css, /@media\(max-width:760px\)/);
+  assert.match(css, /\.homeFreeChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(capture, /compactTitle: "Situation review"/);
+  assert.match(capture, /compactTitle: "Wu Xing profile"/);
+  assert.match(capture, /compactTitle: "Stress & personality tests"/);
+  assert.match(capture, /aria-label=\{\x60\$\{t\.offers\[id\]\.title\}/);
+  assert.doesNotMatch(capture, /<small>\{t\.offers\[id\]\.description\}<\/small>/);
   assert.match(css, /\.capture :is\(a,button\):focus-visible/);
   assert.match(capture, /role="group"/);
   const old = read("components/consultation-choice-capture.tsx");
