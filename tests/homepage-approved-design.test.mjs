@@ -109,7 +109,8 @@ test("home restores four approved image-left service cards and their titles", ()
   assert.match(cards, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
-  assert.match(home, /href="#core-services"/);
+  assert.match(home, /id="home-more" data-home-extra-paths/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
 });
