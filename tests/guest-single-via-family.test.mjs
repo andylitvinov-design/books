@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
-import { groupViaRecommendations, isStandaloneViaKey, VIA_PROFILE_KEY } from '../lib/assessments/via-family.js'
+import { groupViaRecommendations, resolveViaProfile, isStandaloneViaKey, VIA_PROFILE_KEY } from '../lib/assessments/via-family.js'
 
 const src = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const eligible = (key = 'hh-current-state') => ({
@@ -29,6 +29,26 @@ test('24 short IPIP strengths + 3 core scales are collapsed, full profile is a d
   assert.equal(isStandaloneViaKey(VIA_PROFILE_KEY), false)
   assert.equal(isStandaloneViaKey('ipip-via-r-core-positivity-6'), true)
   assert.equal(isStandaloneViaKey('cfpb-financial-wellbeing-5'), false)
+})
+
+test('complete VIA 96 is available even when short-form ranking omits it, but never ignores filters', () => {
+  const shortForms = Array.from({length: 27}, (_, i) => ({ key: 'ipip-via-r-strength-' + i + '-4' }))
+  const group = groupViaRecommendations(shortForms)
+  const full = { key: VIA_PROFILE_KEY, selectable: true, startable: true, rightsStatus: 'cleared', durationMinutes: 18, questionCount: 96 }
+  assert.equal(group.profile, null)
+  assert.equal(group.individualCount, 27)
+  assert.equal(resolveViaProfile(group, full), full)
+  assert.equal(resolveViaProfile(group, full, [], {maxMinutes: 5}), null)
+  assert.equal(resolveViaProfile(group, full, [], {testKinds: ['monitoring']}), null)
+  assert.equal(resolveViaProfile(group, full, [VIA_PROFILE_KEY], {maxMinutes:5}), full, 'manual selection stays visible')
+  assert.equal(resolveViaProfile(group, {...full, rightsStatus:'review_required'}), null)
+  assert.equal(resolveViaProfile(group, {...full, selectable:false}), null)
+  assert.equal(resolveViaProfile(groupViaRecommendations([]), full), null)
+  const picker=src('components/app/simple-test-picker.jsx')
+  const explorer=src('components/app/test-explorer.jsx')
+  assert.match(picker, /resolveViaProfile\(via, viaProfileEntry, selectedKeys/)
+  assert.match(picker, /onStartSingle\?\.\(fullVia\)/)
+  assert.match(explorer, /viaProfileEntry=\{entries\.find\(\(entry\) => entry\.key === 'ipip-via-r-strengths-96'/)
 })
 
 function publicHarness({ signedIn = false, guestHandler = async () => {} } = {}) {
