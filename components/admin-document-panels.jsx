@@ -2,17 +2,23 @@ import Link from 'next/link'
 
 import { markPaymentReceivedAction, revokePaymentAccessAction, reactivatePaymentAction } from '@/app/admin/payments/actions'
 import { PrescriptionLinkIssuer } from './prescription-link-issuer'
+import { SessionLinkIssuer } from './session-link-issuer'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
 
 export function AdminDocumentActions({ record, locale = record.languagePreference === 'ru' ? 'ru' : 'en' }) {
   return <div className="document-panel-actions">
-    <a href={`/admin/documents/${record.id}/view?locale=${locale}`} className="saved-document-preview-open">Preview / Open</a>
+    <a href={`/admin/documents/${record.id}/${record.kind==='payment'?'view':'session-preview'}?locale=${locale}`} className="saved-document-preview-open">{locale==='ru'?'Предпросмотр / открыть':'Preview / Open'}</a>
     {record.kind !== 'payment' && <a className="saved-document-preview-pdf" href={`/admin/api/documents/${record.id}/pdf?locale=${locale}&preview=1`}>
       {locale === 'ru' ? 'Просмотреть PDF крупно' : 'Read large PDF'}
     </a>}
     <a href={`/admin/api/documents/${record.id}/pdf?locale=${locale}`} download={record.kind === 'payment' ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(record)}>Download PDF</a>
     <Link href={`/admin/documents/${record.id}/view?locale=${locale}&print=1`} prefetch={false}>Print</Link>
-    {record.status === 'active' ? <div><span>Copy client link</span><PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></div> : <p>Activate the document to issue a private client link.</p>}
+    {record.status === 'active' ? (record.kind==='payment'
+      ? <div><span>{locale==='ru'?'Ссылка на счёт':'Invoice link'}</span><PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></div>
+      : <div><SessionLinkIssuer recordId={record.id} locale={locale} />
+        <details><summary>{locale==='ru'?'Только старый документ (без вложений)':'Legacy document only (no attachments)'}</summary>
+          <PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></details></div>)
+      : <p>Activate the document to issue a private client link.</p>}
   </div>
 }
 
