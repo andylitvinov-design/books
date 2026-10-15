@@ -1,0 +1,55 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('sitewide Stress Relief banner enters the course directly, without another catalogue', () => {
+  const banner = read('components/sitewide-antistress-banner.tsx')
+  const entry = read('components/app/my-course.jsx')
+  assert.match(banner, /app\/course\?program=stress/)
+  assert.match(entry, /const fastAntistressEntry = Boolean\(requestedProgram\)/)
+  assert.match(entry, /!fastAntistressEntry\) return <CourseEntrySelector/)
+  assert.match(entry, /stage === 0 && fastAntistressEntry/)
+  assert.match(entry, /data-opora-fast-start/)
+  assert.match(entry, /data-opora-fast-consent/)
+  assert.match(entry, /confirmStart\(true\)/)
+  assert.match(entry, /request\(\{ action: 'start', consent: true \}\)/)
+  assert.match(entry, /action: 'intake'/)
+})
+
+test('Anti-Stress baseline uses three compact options, one save-and-start click and quick answer mode', () => {
+  const picker = read('components/app/course-r3-steps.jsx')
+  const styles = read('components/app/course-r3-steps.module.css')
+  const runner = read('components/app/app-workspace.jsx')
+  const flow = read('lib/app/course-test-flow.js')
+  assert.match(picker, /data-antistress-compact-picker/)
+  assert.match(picker, /const defaultKeys = new Set\(\['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'\]\)/)
+  assert.match(picker, /if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
+  assert.match(picker, /data-course-required-baseline/)
+  assert.match(picker, /async function startCompactTests\(\)/)
+  assert.match(picker, /await saveExistingAccountPlan/)
+  assert.match(picker, /onCourseCommand\('confirm-tests'/)
+  assert.match(picker, /coursePendingKeys\(fresh\)\[0\]/)
+  assert.match(picker, /startOrResumeCourseTest/)
+  assert.match(picker, /\?mode=quick&course=1/)
+  assert.match(picker, /data-antistress-start-first-test/)
+  assert.match(flow, /if \(!isCourseTest\(courseState, key\)\)/)
+  assert.match(runner, /onComplete=\{async \(result, destination\)/)
+  assert.match(styles, /\.shortTestRow/)
+  assert.match(styles, /\.shortTestList/)
+  assert.match(styles, /\.fastTestButton/)
+})
+
+test('fast flow is not an authentication, consent or clinical-baseline bypass', () => {
+  const entry = read('components/app/my-course.jsx')
+  const server = read('lib/app/growth-course.js')
+  assert.match(entry, /if \(busy \|\| \(!optIn && !quickConsent\)\) return/)
+  assert.match(server, /if \(body.consent !== true\) reject\('CONSENT_REQUIRED'\)/)
+  assert.match(server, /COURSE_ANTISTRESS_BASELINE_REQUIRED/)
+  assert.match(server, /COURSE_TEST_SELECTION_REQUIRED/)
+  assert.match(server, /COURSE_TESTS_REMAIN/)
+  assert.match(entry, /stage >= 1 && stage <= 3 && <CourseR3Steps/)
+  assert.match(entry, /stage === 4 && <CourseToday/)
+  assert.match(read('lib/inner-growth/antistress-module-router.js'), /'AS5'/)
+})
