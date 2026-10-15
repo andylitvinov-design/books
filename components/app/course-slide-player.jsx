@@ -346,7 +346,10 @@ export default function CourseSlidePlayer({
     : standardBaselinePrompt
   const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
     data.programme?.id === 'stress')
-  const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
+  const isOporaModule=Boolean(
+    ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015']
+      .includes(lesson.oporaModule?.version) && data.programme?.id==='stress'
+  )
   const isOporaStateJourney=Boolean(!isDayOne && data.programme?.id==='stress' && (
     lesson.antiStress ||
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015'].includes(lesson.oporaModule?.version)
@@ -408,6 +411,7 @@ export default function CourseSlidePlayer({
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
   const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [moduleActivityChoice,setModuleActivityChoice] = useState(session?.signals?.moduleActivityChoice||'')
   const [dailyMethodChoice,setDailyMethodChoice] = useState(session?.signals?.dailyMethodChoice || '')
   const [dailyMethodHintUsed,setDailyMethodHintUsed] = useState(Boolean(session?.signals?.dailyMethodHintUsed))
   const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
@@ -538,11 +542,14 @@ export default function CourseSlidePlayer({
         welcomeFeeling:welcomeFeeling||'skip',
         ...(isOporaStateJourney?{stateJourney:validateOporaStateJourney(stateJourney)}:{}),
         transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
-        ...((lesson.antiStress||isOporaModule) ? {
+        ...((lesson.antiStress||routePlan) ? {
           aphorismResponse:aphorismResponse||null,
           practiceAttempt:practiceAttempt||null,
           phraseResponse:phraseResponse||null,
         } : {}),
+        ...(isOporaModule&&!routePlan
+          ? {moduleActivityChoice:moduleActivityChoice||null}
+          : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
           data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
@@ -933,8 +940,15 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'ritual' && <>
             {!neutralMode&&(!isOporaModule||routePlan)&&<IllustratedMoment kind={slide.kind}/>}
-            <p className={styles.prompt}>{isOporaModule?lesson.oporaModule.learningOutcome:lesson.ritual}</p>
+            <p className={styles.prompt}>{isOporaModule
+              ? lesson.oporaModule.practice : lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {isOporaModule&&!routePlan&&!neutralMode&&
+              <OporaModuleActivity moduleId={lesson.oporaModule.id} day={cycle.day}
+                routerVersion={lesson.oporaModule.version} locale={locale}
+                value={moduleActivityChoice} onChange={setModuleActivityChoice}
+                draft={routeDrafts.main} onDraftChange={update=>updateRouteDraft('main',update)}
+                onSaveReflection={appendRouteReflection} disabled={locked}/>}
             {(lesson.antiStress||isOporaModule)&&<section data-course-practice-attempt>
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
