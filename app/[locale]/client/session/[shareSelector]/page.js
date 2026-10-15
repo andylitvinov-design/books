@@ -10,7 +10,8 @@ import { ClientSessionPage } from '@/components/client-session-page'
 import { sharedGranulesGuideReady } from '@/lib/clients/shared-education-video'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
-import { PaymentDocument } from '@/components/payment-document'
+import {PaymentDocument} from '@/components/payment-document'
+import {PrescriptionDocument} from '@/components/prescription-document'
 export const dynamic='force-dynamic'
 export const metadata={title:'Holistic House · Private session',robots:{index:false,follow:false},
   referrer:'no-referrer'}
@@ -28,8 +29,8 @@ export default async function ClientSessionSharePage({params}) {
       if(record?.status==='active'&&record.clientId===session.clientId) {
         const payment=record.kind==='payment'
         const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
-        if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={locale}/>
-          else recommendation=projected}
+        if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={locale} embedded/>
+          else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={locale} embedded/>}}
       }
     }
     const client=await store.findClientById(session.clientId)
