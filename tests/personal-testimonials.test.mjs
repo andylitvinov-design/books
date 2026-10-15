@@ -70,7 +70,8 @@ test("video browser verification selects the managed intro even when testimonial
 test("mobile video testimonials keep real YouTube thumbnail images with a same-origin and direct fallback", () => {
   const player = read("components", "site-video-player.tsx");
   assert.match(player, /compact \? "hq" : "maxres"/);
-  assert.match(player, /unoptimized=\{poster === "direct"\}/);
+  assert.match(player, /<img key=\{poster\} className="site-video-poster"/);
+  assert.doesNotMatch(player, /unoptimized=\{poster === "direct"\}/);
   assert.match(player, /current === "hq" \? "direct"/);
   assert.match(player, /i\.ytimg\.com\/vi\/\$\{video\.youtubeId\}/);
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
