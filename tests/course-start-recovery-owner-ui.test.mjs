@@ -33,13 +33,33 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
     },
     extraModules: modules(eligible), fetcher: () => assert.fail('Recovery must use the guarded parent callbacks'),
   })
-  return { h, calls, accepted, errors, retire: () => { active = false }, start: () => findPart(h.tree, 'AntiStressModuleFinder').props.onStart(selection) }
+  // The module choice is only a draft. Simulate the user's required
+  // explicit acceptance of 3 measured scales, or their chosen generic skill
+  // when no directionally eligible measurement exists.
+  const start = async () => {
+    const finder = findPart(h.tree, 'AntiStressModuleFinder')
+    if (!finder) return
+    finder.props.onStart(selection)
+    await h.settle()
+    const review = findPart(h.tree, 'CourseCompletionReview')
+    if (!review) return // e.g. account/course lifetime retired
+    if (eligible.length) return review.props.onSuggested()
+    await review.props.onAlternative()
+    await h.settle()
+    const picker = findPart(h.tree, 'CourseFocusPicker')
+    picker.props.onToggleGoal(programs.getCourseProgram('stress').primaryGoals[0])
+    await h.settle()
+    return findPart(h.tree, 'CourseFocusPicker').props.onContinue()
+  }
+  return { h, calls, accepted, errors, retire: () => { active = false }, start }
+
 }
 
  test('module start with no measured scales retains the explicit general-goal fallback and token lock', async () => {
   const slow = deferred(), t = ui(() => slow.promise, { eligible: [] })
   await t.h.settle()
   const first = t.start(), duplicate = t.start()
+  await t.h.settle()
   assert.equal(t.calls.length, 1)
   assert.equal(t.calls[0].action, 'choose-goals')
   const payload = t.calls[0].body
@@ -158,7 +178,9 @@ for (const change of ['owner', 'course', 'unmount']) test('real parent guards bi
     extraModules: modules(), fetcher: () => assert.fail('No raw fetch from the child'),
   })
   await child.settle()
-  const pending = findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
+  findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
+  await child.settle()
+  const pending = findPart(child.tree, 'CourseCompletionReview').props.onSuggested()
   await child.settle(); await parent.settle()
   assert.equal(posts, 1); assert.equal(recoveryReads, 1)
   const initialCalls = parent.calls.slice()
