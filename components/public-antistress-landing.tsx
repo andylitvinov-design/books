@@ -5,7 +5,6 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
-import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
 
