@@ -105,7 +105,7 @@ export function PublicAntistressEvidence({locale}:{locale:PublicLocale}){
       </div>
       <section className={styles.timeline} aria-label={text.timing}>
         <header><Clock3 size={23} aria-hidden="true"/><div><small>{text.timing}</small><h3>{text.timingTitle}</h3></div></header>
-        <ol>{data.schedule.map((point,index)=><li key={index}><strong>{point.when}</strong><span>{point.what}</span></li>)}</ol>
+        <ol>{data.schedule.map((point: {when:string;what:string},index:number)=><li key={index}><strong>{point.when}</strong><span>{point.what}</span></li>)}</ol>
       </section>
       <section className={styles.skillCheck}>
         <div className={styles.skillIcon}><BookOpenCheck size={28} aria-hidden="true"/></div>
