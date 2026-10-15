@@ -50,7 +50,7 @@ const STRESS = {
     practice:'Ejercicio',result:'Resultado observable',scales:'Escalas relacionadas',check:'Prueba de habilidad',
     screens:'15 pasos de práctica + 3 de cierre', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
 }
-export default function Course14DayOverview({ locale = 'en', compact = false, programId = null }) {
+export default function Course14DayOverview({ locale = 'en', compact = false, programId = '' }) {
   const t = COPY[locale] || COPY.en
   const st=STRESS[locale]||STRESS.en
   const stress=programId==='stress'
