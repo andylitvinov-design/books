@@ -20,17 +20,25 @@ export function SessionExitSaveGuard({children,locale='en',selector,sessionId=nu
   const [savedSessionId,setSavedSessionId]=useState(null)
   const agreeRef=useRef(null),priorFocus=useRef(null)
 
-  // Already saved to the *current verified* Google Account? Skip repeated
-  // prompts, but never infer identity from a name or the guest share link.
+  // A bootstrap row only proves that this Google Account saved the session
+  // in the past. The practitioner may since have republished or withdrawn it.
+  // Verify the exact current revision before skipping consent on navigation.
+  // The status endpoint is account-scoped and never marks the report opened.
   useEffect(()=>{
-    if(!appAvailable||!sessionId)return
+    if(!appAvailable||!sessionId){setSavedSessionId(null);return}
     let live=true
-    appFetch('bootstrap').then(data=>{
-      if(!live)return
-      const found=(data.savedSessions||[]).find(item=>
-        item.sourceSessionId===sessionId && item.available!==false)
-      setSavedSessionId(found?.id||null)
-    }).catch(()=>{if(live)setSavedSessionId(null)})
+    setSavedSessionId(null)
+    async function checkCurrentSave(){
+      try{
+        const data=await appFetch('bootstrap')
+        const found=(data.savedSessions||[]).find(item=>
+          item.sourceSessionId===sessionId && item.available!==false)
+        if(!found){if(live)setSavedSessionId(null);return}
+        const checked=await appFetch('saved-sessions/'+found.id+'/status')
+        if(live)setSavedSessionId(checked?.available===true && checked?.id===found.id?found.id:null)
+      }catch{if(live)setSavedSessionId(null)}
+    }
+    void checkCurrentSave()
     return()=>{live=false}
   },[sessionId,appAvailable])
 
