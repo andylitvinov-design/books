@@ -12,6 +12,7 @@ async function api(url,method='GET',body) {
   return response
 }
 function mediaTitle(row,locale) {
+  if(row?.kind==='pdf') return locale==='ru'?'PDF-материал':'PDF resource'
   if(row?.kind==='video') return locale==='ru'?'Видеообращение':'Video message'
   return locale==='ru'?'Голосовое сообщение':'Voice message'
 }
@@ -27,9 +28,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const [playerUrls,setPlayerUrls]=useState({})
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
-  const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[]}
+  const plan=draft.plan||{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[]}
   const updatePlan=patch=>setDraft(current=>({...current,
-    plan:{focus:'',nextStep:'',takeaways:[],practices:[],...(current.plan||{}),...patch}
+    plan:{focus:'',nextStep:'',takeaways:[],practices:[],additionalRecommendations:'',resources:[],...(current.plan||{}),...patch}
   }))
   function setTakeaway(index,value){
     const points=[...(plan.takeaways||[])];points[index]=value
@@ -39,6 +40,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     const rows=[...(plan.practices||[])]
     rows[index]={...rows[index],...patch}
     updatePlan({practices:rows})
+  }
+  function changeResource(index,patch){
+    const links=[...(plan.resources||[])]
+    links[index]={...links[index],...patch}
+    updatePlan({resources:links})
   }
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
   async function load() {
@@ -174,6 +180,39 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           + {ru?'Добавить практику':'Add practice'}
         </button>}
       </div>
+      <label className={styles.field}>
+        {ru?'Дополнительные рекомендации для клиента':'Additional recommendations for the client'}
+        <textarea rows={4} maxLength={4000} value={plan.additionalRecommendations||''}
+          placeholder={ru?'Например: наблюдения, образ жизни или другие индивидуально согласованные действия…':
+            'Any additional practitioner-approved guidance or observations…'}
+          onChange={event=>updatePlan({additionalRecommendations:event.target.value})}/>
+      </label>
+      <div className={styles.planEditorSection}>
+        <h3>{ru?'Дополнительные материалы и медитации':'Extra materials and meditations'} <small>{(plan.resources||[]).length}/8</small></h3>
+        <p>{ru?'Добавляйте здесь только проверенные общедоступные HTTPS-материалы. Приватные аудио, видео и PDF загружайте отдельным полем ниже.':
+          'Use this for approved public HTTPS resources only. Upload private audio, video and PDF below instead.'}</p>
+        {(plan.resources||[]).map((resource,index)=><div className={styles.planEditorPractice} key={index}>
+          <label className={styles.field}>{ru?'Название материала':'Material title'}
+            <input maxLength={140} value={resource.title} onChange={e=>changeResource(index,{title:e.target.value})}/>
+          </label>
+          <label className={styles.field}>{ru?'Публичная HTTPS-ссылка':'Public HTTPS link'}
+            <input inputMode="url" type="url" maxLength={1500} value={resource.url}
+              placeholder="https://" onChange={e=>changeResource(index,{url:e.target.value})}/>
+          </label>
+          <label className={styles.field}>{ru?'Короткое описание':'Short description'}
+            <textarea rows={2} maxLength={500} value={resource.description||''}
+              onChange={e=>changeResource(index,{description:e.target.value})}/>
+          </label>
+          <button type="button" className={styles.secondaryButton} onClick={()=>
+            updatePlan({resources:plan.resources.filter((_,i)=>i!==index)})}>
+            {ru?'Удалить материал':'Remove material'}
+          </button>
+        </div>)}
+        {(plan.resources||[]).length<8&&<button type="button" className={styles.secondaryButton}
+          onClick={()=>updatePlan({resources:[...(plan.resources||[]),{title:ru?'Новый материал':'New material',description:'',url:'https://'}]})}>
+          + {ru?'Добавить ссылку':'Add resource link'}
+        </button>}
+      </div>
       <div className={styles.actions}>
         <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
           setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
@@ -199,12 +238,24 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           </div>
           <label className={styles.field}>{ru?'Название записи':'Recording title'}
             <input value={row.title} maxLength={160} onChange={e=>setMedia(row.assetId,{title:e.target.value})}/></label>
-          <label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
+          {row.scope==='client'&&asset?.kind!=='pdf'&&<label className={styles.field}>
+            {ru?'Где показывать запись клиенту':'Where this recording appears'}
+            <select value={row.role||'personal'} onChange={e=>setMedia(row.assetId,{role:e.target.value})}>
+              <option value="personal">{ru?'Личное обращение вверху':'Personal message (top)'}</option>
+              {asset?.kind==='video'&&<option value="instruction">{ru?'Видео: как принимать препараты':'Video: how to follow the recommendations'}</option>}
+              <option value="meditation">{ru?'Дополнительная медитация':'Additional meditation'}</option>
+              <option value="additional">{ru?'Другие материалы':'Other materials'}</option>
+            </select>
+          </label>}
+                    <label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
             <textarea rows={2} maxLength={12000} value={row.transcript||''} onChange={e=>setMedia(row.assetId,{transcript:e.target.value})}/></label>
           {playerUrls[row.assetId] ? asset?.kind==='video'?
             <video controls playsInline preload="metadata" className={styles.video} src={playerUrls[row.assetId]}/>:
+            asset?.kind==='pdf'?<a href={playerUrls[row.assetId]} target="_blank" rel="noopener noreferrer" className={styles.secondaryButton}>
+              {ru?'Открыть PDF':'Open PDF'}
+            </a>:
             <audio controls preload="metadata" className={styles.audio} src={playerUrls[row.assetId]}/>:
-            <button className={styles.secondaryButton} onClick={()=>play(row.assetId)}><PlayCircle size={18}/>{ru?'Прослушать':'Preview'}</button>}
+            <button className={styles.secondaryButton} onClick={()=>play(row.assetId)}><PlayCircle size={18}/>{ru?'Проверить материал':'Preview material'}</button>}
         </div>
       })}
     </section>
@@ -233,6 +284,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             </p>)}
         </>}
         {draft.reportDocumentId&&<p>▣ {ru?'Привязан отчёт в формате PDF':'A PDF report is attached'}</p>}
+        {plan.additionalRecommendations&&<p><strong>{ru?'Дополнительные рекомендации':'Additional recommendations'}:</strong> {plan.additionalRecommendations}</p>}
+        {(plan.resources||[]).length>0&&<>
+          <h4>{ru?'Дополнительные ссылки':'Additional links'}</h4>
+          {plan.resources.map((r,i)=><p key={i}>{r.title} · {r.url}</p>)}
+        </>}
         {(plan.practices||[]).length>0&&<>
           <h4>{ru?'Практики':'Practices'}</h4>
           {plan.practices.map((practice,index)=><div key={index}>

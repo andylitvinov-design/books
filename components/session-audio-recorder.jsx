@@ -171,8 +171,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
         <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать видео':'Record video'}</button>
-        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить аудио/видео':'Upload audio/video'}
-          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,.m4a,.mp3,.webm,.mp4"
+        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Добавить аудио, видео или PDF':'Add audio, video or PDF'}
+          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,application/pdf,.m4a,.mp3,.webm,.mp4,.pdf"
             onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
       </>}
     </div>

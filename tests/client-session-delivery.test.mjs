@@ -82,10 +82,10 @@ test('client session plan is small, human-authored and isolated per published sn
     practices:[{title:'Grounding',instructions:'Spend 3 minutes noticing contact with the floor'}]
   }
   const a=normalizeDraft({...make(),plan}),b=normalizeDraft(make())
-  assert.deepEqual(a.plan,plan)
+  assert.deepEqual(a.plan,normalizeClientPlan(plan))
   assert.deepEqual(b.plan,normalizeClientPlan())
   const published=clientPayload(a)
-  assert.deepEqual(published.plan,plan)
+  assert.deepEqual(published.plan,normalizeClientPlan(plan))
   assert.equal(guestSessionProjection({...published,id:AUDIO,occurredOn:'2026-10-15'}).plan.focus,'Inner support')
   assert.equal(guestSessionProjection({...published,id:AUDIO,occurredOn:'2026-10-15',internalNotes:'Owner secret'}).internalNotes,undefined)
 })
@@ -100,4 +100,30 @@ test('client plan rejects overlong or malformed instructions and never creates p
   const first=emptySessionDraft(),second=emptySessionDraft()
   first.plan.takeaways.push('Unique to first')
   assert.deepEqual(second.plan.takeaways,[])
+})
+
+
+test('session layout sections accept practitioner-approved links and private media roles',()=>{
+ const plan={additionalRecommendations:'Practitioner-approved extra notes',resources:[
+   {title:'Approved public meditation',description:'Optional',url:'https://holistichouse.vercel.app/en/academy'}
+ ]}
+ const sample=normalizeDraft({...make(),plan,media:[{assetId:VIDEO,title:'How to take remedies',scope:'client',transcript:'',role:'instruction'}]})
+ assert.equal(sample.plan.additionalRecommendations,'Practitioner-approved extra notes')
+ assert.equal(sample.plan.resources.length,1)
+ assert.equal(sample.media[0].role,'instruction')
+ assert.equal(guestSessionProjection({...clientPayload(sample),occurredOn:'2026-10-15'}).media[0].role,'instruction')
+ assert.equal(normalizeClientPlan().resources.length,0)
+})
+
+test('private session resource links disallow private network, tokens and Drive sharing',()=>{
+ for(const url of ['http://example.com','https://localhost/secret','https://127.0.0.1/file',
+   'https://drive.google.com/file/d/abc/view','https://foo.local/foo','https://10.0.0.1/internal',
+   'https://example.com/?token=private','https://example.com/#secret']){
+   assert.throws(()=>normalizeClientPlan({resources:[{title:'Bad',url}]}),url)
+ }
+ assert.throws(()=>normalizeClientPlan({resources:Array.from({length:9},(_,i)=>({title:'x'+i,url:'https://example.com/public'}))}))
+ assert.throws(()=>normalizeClientPlan({additionalRecommendations:'x'.repeat(4001)}))
+ assert.throws(()=>normalizeDraft({...make(),media:[{assetId:AUDIO,title:'x',scope:'client',transcript:'',role:'private-note'}]}))
+ assert.equal(SESSION_MEDIA_TYPES['application/pdf'].kind,'pdf')
+ assert.equal(SESSION_MEDIA_TYPES['application/pdf'].max,15_000_000)
 })

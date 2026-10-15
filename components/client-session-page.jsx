@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,CalendarDays,BookOpen,ListChecks } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { SessionPrescriptionOverview } from './client-session-prescription'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale}) {
@@ -65,101 +66,157 @@ function PrivatePlayer({item,session,mode,selector,locale}) {
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null}) {
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName=''}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
   const plan=session.plan||{}
   const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
   const practices=Array.isArray(plan.practices)?plan.practices:[]
-  const videos=(session.media||[]).filter(item=>item.kind==='video')
-  const audios=(session.media||[]).filter(item=>item.kind==='audio')
-  const path=mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
+  const resources=Array.isArray(plan.resources)?plan.resources:[]
+  const media=session.media||[]
+  const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
+    .sort((a,b)=>(a.kind==='audio'?0:1)-(b.kind==='audio'?0:1))
+  const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
+  const supplementary=media.filter(item=>item.kind==='pdf'||['meditation','additional'].includes(item.role)||
+    (item.role==='instruction'&&item.kind==='audio'))
+  const hasRecommendation=Boolean(recommendation?.items?.length)
+  const pdfPath=mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
-  const firstSection=videos.length?'#session-video':audios.length?'#session-audio':
-    practices.length?'#session-practices':session.report?'#session-report':
-    takeaways.length?'#session-conclusions':null
-  return <main className={styles.clientPage} lang={locale}>
+  const assetBase=mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
+    '/api/client/'+selector+'/sessions/'+session.id+'/media/'
+  const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
+    session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+  const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
+    recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
+  return <main className={styles.clientPage+' '+styles.courseSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
-      <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'ЛИЧНЫЕ МАТЕРИАЛЫ':'PERSONAL MATERIALS'}</span>
-        <h1>{ru?'Ваша консультация':'Your consultation'}</h1></div>
+      <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
+        <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
+      </div>
       <LockKeyhole size={22} aria-label={ru?'Приватная страница':'Private page'}/>
     </header>
-
-    <section className={styles.welcomeCard} aria-labelledby="session-title">
-      <div className={styles.dateRow}><CalendarDays size={17}/><span>{date}</span></div>
-      <h2 id="session-title">{session.title}</h2>
-      {session.summary&&(session.summary.length>650
-        ? <details className={styles.summaryDetails}><summary>{ru?'Прочитать личное сообщение':'Read your personal message'}</summary>
-            <p className={styles.sessionSummary}>{session.summary}</p></details>
-        : <p className={styles.sessionSummary}>{session.summary}</p>)}
-      <p className={styles.practitionerCredit}>Andrii Litvinov · Holistic House</p>
-      {(plan.nextStep||firstSection)&&<div className={styles.nextStepCard}>
-        <strong>{ru?'Ваш следующий шаг':'Your next step'}</strong>
-        {plan.nextStep&&<p>{plan.nextStep}</p>}
-        {firstSection&&<a className={styles.nextStepLink} href={firstSection}>
-          {ru?'Перейти к материалам ↓':'Continue to your materials ↓'}
-        </a>}
+    <section className={styles.sessionHero} aria-labelledby="session-title">
+      <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
+      <h1 id="session-title">{session.title}</h1>
+      <dl className={styles.sessionIdentity}>
+        {clientName&&<div><dt>{ru?'Клиент':'Client'}</dt><dd>{clientName}</dd></div>}
+        <div><dt>{ru?'Дата консультации':'Consultation date'}</dt><dd><time dateTime={session.occurredOn}>{date}</time></dd></div>
+      </dl>
+      {session.summary&&(session.summary.length>700?<details className={styles.summaryDetails}>
+        <summary>{ru?'Личное сообщение от специалиста':'Read your personal message'}</summary>
+        <p className={styles.sessionSummary}>{session.summary}</p>
+      </details>:<p className={styles.sessionSummary}>{session.summary}</p>)}
+      {(plan.nextStep||plan.focus)&&<div className={styles.nextStepCard}>
+        <span className={styles.sectionKicker}>{ru?'С ЧЕГО НАЧАТЬ':'START HERE'}</span>
+        {plan.nextStep&&<p><strong>{ru?'Ваш следующий шаг':'Your next step'}:</strong> {plan.nextStep}</p>}
+        {!plan.nextStep&&plan.focus&&<p>{plan.focus}</p>}
+        <a href={nextAnchor} className={styles.nextStepLink}>{ru?'Посмотреть назначения ↓':'Go to your session guide ↓'}</a>
       </div>}
+      <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>
 
-    {plan.focus&&<section className={styles.focusCard} aria-label={ru?'Фокус нашей работы':'Focus of our work'}>
-      <span className={styles.eyebrow}>{ru?'ФОКУС ЭТОЙ ВСТРЕЧИ':'FOCUS OF THIS SESSION'}</span>
-      <p>{plan.focus}</p>
+    {personalMedia.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Личное обращение':'Personal message'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Headphones size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'01 · ЛИЧНОЕ ОБРАЩЕНИЕ':'01 · PERSONAL MESSAGE'}</span>
+          <h2>{ru?'Сообщение для вас':'A message for you'}</h2></div>
+      </header>
+      <div className={styles.mediaList}>
+        {personalMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+          session={session} mode={mode} selector={selector} locale={locale}/>)}
+      </div>
     </section>}
 
-    {videos.length>0&&<section id="session-video" className={styles.clientSection} aria-label={ru?'Личное видеообращение':'Personal video message'}>
-      <div className={styles.sectionHeader}><Video size={19}/><h2>{ru?'Личное видеообращение':'A personal video message'}</h2></div>
-      <div className={styles.mediaList}>{videos.map(item=>
-        <PrivatePlayer key={item.assetId} item={item} session={session} mode={mode} selector={selector} locale={locale}/>)}</div>
-    </section>}
-
-    {audios.length>0&&<section id="session-audio" className={styles.clientSection} aria-label={ru?'Аудиопрактики':'Audio practices'}>
-      <div className={styles.sectionHeader}><Headphones size={19}/><h2>{ru?'Ваши аудио и практики':'Your audio & guided practices'}</h2></div>
-      <div className={styles.mediaList}>{audios.map(item=>
-        <PrivatePlayer key={item.assetId} item={item} session={session} mode={mode} selector={selector} locale={locale}/>)}</div>
-    </section>}
-
-    {takeaways.length>0&&<section id="session-conclusions" className={styles.clientSection}>
-      <div className={styles.sectionHeader}><BookOpen size={19}/><h2>{ru?'Главное из консультации':'What matters from our session'}</h2></div>
-      <ol className={styles.takeawayList}>
-        {takeaways.map((item,index)=><li key={index}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span><p>{item}</p></li>)}
-      </ol>
-    </section>}
+    {hasRecommendation&&<>
+      <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
+      <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
+    </>}
 
     {session.report&&<section id="session-report" className={styles.clientSection}>
-      <div className={styles.sectionHeader}><FileDown size={19}/><h2>{ru?'Ваш персональный отчёт':'Your personal report'}</h2></div>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FileDown size={20}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
+          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
+      </header>
       <div className={styles.reportPanel}>
-        <p>{ru?'Полный документ этой встречи. Его удобно читать онлайн или сохранить в PDF.':
-          'The full report for this session. Read it here or keep a PDF copy.'}</p>
-        <div className={styles.reportActions}>
-          
-          <a href={path} className={styles.downloadButton} download>
-            <FileDown size={20}/>{ru?'Скачать PDF':'Download PDF'}
-          </a>
-        </div>
+        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
+          'Your original PDF contains the complete recommendations and additional details.'}</p>
+        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
+          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
       </div>
-      {reportContent&&<details id="session-report-reading" className={styles.reportDetails}>
-        <summary>{ru?'Развернуть полный отчёт':'Expand the full report'}</summary>
+      {reportContent&&<details className={styles.reportDetails}>
+        <summary>{ru?'Развернуть полную HTML-версию':'Read the full HTML document'}</summary>
         <div className={styles.reportContent}>{reportContent}</div>
       </details>}
     </section>}
 
-    {practices.length>0&&<section id="session-practices" className={styles.clientSection}>
-      <div className={styles.sectionHeader}><ListChecks size={19}/><h2>{ru?'Практики до следующей встречи':'Practices until our next meeting'}</h2></div>
-      <div className={styles.practiceList}>
+    {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Video size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОИНСТРУКЦИЯ':'VIDEO GUIDE'}</span>
+          <h2>{ru?'Как принимать назначенные препараты':'How to follow the recommendations'}</h2></div>
+      </header>
+      <p className={styles.sectionIntro}>{ru?'Дополнительное видео от специалиста. Индивидуальные дозировки остаются в вашем назначении выше.':
+        'Your practitioner’s guidance video. Your personal dosage details remain in the written recommendation above.'}</p>
+      <div className={styles.mediaList}>{guideMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+        session={session} selector={selector} mode={mode} locale={locale}/>)}</div>
+    </section>}
+
+    {hasAdvice&&<section id="session-recommendations" className={styles.clientSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><ListChecks size={20}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ДАЛЬНЕЙШИЕ ШАГИ':'NEXT STEPS'}</span>
+          <h2>{ru?'Дополнительные рекомендации':'Additional recommendations'}</h2></div>
+      </header>
+      {plan.additionalRecommendations&&<div className={styles.adviceCard}>
+        <p>{plan.additionalRecommendations}</p>
+      </div>}
+      {takeaways.length>0&&<ol className={styles.takeawayList}>
+        {takeaways.map((text,index)=><li key={index}>
+          <span aria-hidden="true">{String(index+1).padStart(2,'0')}</span><p>{text}</p>
+        </li>)}
+      </ol>}
+      {practices.length>0&&<div className={styles.practiceList}>
         {practices.map((practice,index)=><article className={styles.practiceCard} key={index}>
           <div className={styles.practiceNumber}>{index+1}</div>
-          <div><h3>{practice.title}</h3>
-            {practice.instructions&&<p>{practice.instructions}</p>}</div>
+          <div><h3>{practice.title}</h3>{practice.instructions&&<p>{practice.instructions}</p>}</div>
         </article>)}
-      </div>
+      </div>}
+      {hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
+    </section>}
+
+    {(supplementary.length>0||resources.length>0)&&<section id="session-resources" className={styles.clientSection}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FolderOpen size={20}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ЛИЧНАЯ БИБЛИОТЕКА СЕССИИ':'YOUR SESSION MATERIALS'}</span>
+          <h2>{ru?'Дополнительные материалы и медитации':'Additional materials & meditations'}</h2></div>
+      </header>
+      {supplementary.map(item=>item.kind==='pdf'
+        ?<article className={styles.attachmentCard} key={item.assetId}>
+          <FileDown size={21} aria-hidden="true"/><div><strong>{item.title||'PDF'}</strong>
+            <small>{ru?'Приватный документ':'Private document'}</small></div>
+          <a href={assetBase+item.assetId} target="_blank" rel="noopener noreferrer">
+            {ru?'Открыть':'Open'} <ExternalLink size={16}/>
+          </a>
+        </article>
+        :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale}/>)}
+      {resources.map((item,index)=><a className={styles.attachmentCard} key={index}
+        href={item.url} target="_blank" rel="noopener noreferrer">
+        <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
+          {item.description&&<small>{item.description}</small>}</div>
+        <ExternalLink size={17} aria-hidden="true"/>
+      </a>)}
     </section>}
 
     <footer className={styles.clientFooter}>
-      <p><LockKeyhole size={14}/>{ru?'Эта приватная ссылка открывает материалы только одной консультации. Не пересылайте её другим людям.':
-        'This private invitation opens only one consultation. Please do not forward it.'}</p>
-      {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>{ru?'Мои предыдущие консультации':'My other consultations'}</a>}
+      <p><LockKeyhole size={14}/>{ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':
+        'This private invitation is for this session only. Please do not forward it.'}</p>
+      <p className={styles.safetyLine}>{ru?
+        'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
+        'This information does not replace appropriate medical assessment or care.'}</p>
+      {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>
+        {ru?'Все мои консультации':'All my sessions'}</a>}
     </footer>
   </main>
 }

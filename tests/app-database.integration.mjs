@@ -1824,11 +1824,19 @@ test('private session share grants enforce per-consultation ownership under real
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
     const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
     await db.query(sql)
+    // The private PDF extension is additive and does not grant browser DB access.
+    const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
+    await db.query(pdfExtension)
+    const permittedMime=(await db.query("select allowed_mime_types from storage.buckets where id='hh-client-private-media'")).rows[0].allowed_mime_types
+    assert.ok(permittedMime.includes('application/pdf'))
     const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]
     assert.ok(bucket)
     assert.equal(bucket.public,false)
     assert.equal(Number(bucket.file_size_limit),50_000_000)
     const clientA=randomUUID(),clientB=randomUUID(),sessionA=randomUUID(),sessionB=randomUUID()
+    const pdfConstraint=(await db.query("select pg_get_constraintdef(c.oid) as definition from pg_constraint c where c.conname='client_delivery_assets_asset_kind_check'")).rows[0].definition
+    assert.match(pdfConstraint,/pdf/)
+
     for(const [id,clientId] of [[sessionA,clientA],[sessionB,clientB]]){
       await db.query("insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic-encrypted-fixture','draft')",[id,clientId])
     }

@@ -129,3 +129,126 @@
 .ownerPreview p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .ownerPreview li{margin:8px 0}
 .ownerPreview .previewDisclaimer{border-top:1px solid #d8e9e9;padding-top:12px;font-size:13px;color:#637f86;margin-top:20px}
+
+
+/* Consultation delivery, aligned with airy cyan course cards and mobile course readers. */
+.courseSessionPage{max-width:910px;--hh-course-ink:#174760;--hh-course-tint:#0b8499;--hh-course-soft:#e4f7f8;
+  padding:clamp(14px,3.2vw,35px);color:#194b60;font-size:16px;line-height:1.58}
+.courseSessionPage .clientHeader{margin-bottom:16px;padding-bottom:13px;align-items:center}
+.courseSessionPage .clientBrand{display:flex;flex-direction:column;gap:4px}
+.privateLabel{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#6b8b95}
+.sessionHero{padding:clamp(19px,4.2vw,35px);background:linear-gradient(133deg,#fffefa 3%,#e3f8fa 70%,#d2f0f3 100%);
+  border:1px solid #bce3e9;border-radius:23px;box-shadow:0 12px 32px #287e9c10}
+.sessionHero h1{font:750 clamp(26px,4vw,36px)/1.14 Georgia,serif;letter-spacing:-.025em;
+  margin:8px 0 19px;color:#194d69;text-wrap:balance;overflow-wrap:anywhere}
+.courseSessionPage .sectionKicker{display:block;font-size:11px;letter-spacing:.095em;
+  font-weight:850;text-transform:uppercase;color:#0a8ca0;line-height:1.4}
+.sessionIdentity{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin:0 0 16px}
+.sessionIdentity div{display:grid;gap:1px;min-width:0;padding:10px 15px;background:#fffdfb;border:1px solid #d5e8e8;border-radius:13px}
+.sessionIdentity dt{font-size:11px;color:#678591;font-weight:650}
+.sessionIdentity dd{font-size:15px;font-weight:760;color:#194960;margin:0;overflow-wrap:anywhere}
+.sessionHero .sessionSummary{margin:13px 0;font-size:17px;line-height:1.6;color:#355d6e;overflow-wrap:anywhere}
+.courseSessionPage .practitionerCredit{margin-top:17px;color:#5c808c}
+.courseSessionPage .nextStepCard{border-color:#a9dce6;background:#ffffffed;
+  box-shadow:0 8px 20px #257c9812;padding:17px 20px}
+.courseSessionPage .nextStepCard p{line-height:1.55;color:#235064;font-size:16px;white-space:pre-wrap}
+.courseSessionPage .nextStepLink{background:linear-gradient(95deg,#12b4c3,#058caa);
+  font-size:15px;border-bottom:3px solid #067792;border-radius:14px;font-weight:800;min-height:48px}
+.courseSessionPage .clientSection{scroll-margin-top:16px;margin:clamp(20px,4vw,31px) 0}
+.courseSessionPage .sectionHeader{display:flex;align-items:center;gap:11px;color:#0b8499;margin-bottom:12px}
+.courseSessionPage .sectionHeader>div{min-width:0;flex:1}
+.courseSessionPage .sectionHeader h2{margin:4px 0 0;font:760 clamp(20px,3.2vw,26px)/1.23 Georgia,serif;letter-spacing:-.02em;color:#1b5069}
+.sectionIcon{height:45px;width:45px;flex:none;display:grid;place-items:center;border-radius:15px;
+  border:1px solid #c3e8ee;background:linear-gradient(135deg,#e5fafb,#d7f0f6);color:#07869d}
+.sectionIntro{font-size:15px;color:#587b88;margin:0 0 14px;line-height:1.55}
+.courseSessionPage .clientMediaCard{border-color:#cce5eb;background:#fcffff;border-radius:20px;box-shadow:0 7px 22px #174e6810}
+.courseSessionPage .mediaHeading strong{font-size:17px}
+.courseSessionPage .playButton{min-height:49px;border:1px solid #9bd7df;background:#e2f7f9;font-size:15px}
+.courseSessionPage .audio{min-width:0;max-width:100%}
+.courseSessionPage .video{aspect-ratio:16/9;height:auto;object-fit:contain}
+.prescriptionSummary{padding:clamp(15px,3.2vw,25px);border:1px solid #afdce4;border-radius:21px;
+  background:linear-gradient(140deg,#f7ffff,#e8f9fa 75%);box-shadow:0 8px 22px #267b9710}
+.prescriptionCount{font-size:14px;margin:0 0 15px;color:#4b7787}
+.prescriptionCount strong{color:#067f9b}
+.prescriptionOverviewList{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.prescriptionOverviewList li{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #cfebee;
+  border-radius:14px;padding:12px 14px;min-width:0}
+.remedyIndex{flex:none;display:grid;place-items:center;height:35px;width:35px;border-radius:12px;
+  color:#0988a1;background:#e4f7f9;font-size:12px;font-weight:850;letter-spacing:.035em}
+.prescriptionOverviewList li>div{display:grid;min-width:0;gap:2px}
+.prescriptionOverviewList strong,.remedyAccordionText strong{font-size:17px;color:#1d4c64;overflow-wrap:anywhere}
+.prescriptionOverviewList small,.remedyAccordionText small{color:#638997;font-size:13px;line-height:1.45}
+.instructionPanel{padding:15px 18px;border-radius:15px;background:#fff;border-left:4px solid #07a2b3;
+  margin:18px 0 4px;box-shadow:0 3px 14px #0c688507}
+.instructionPanel strong{font-size:15px;color:#126f82}
+.instructionPanel p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.64;margin:8px 0 0;color:#315d6c}
+.instructionNote{font-size:14px;color:#67818a;margin:10px 0;line-height:1.6}
+.distanceNote{display:flex;gap:12px;align-items:flex-start;padding:14px;background:#fffdf8;
+  border:1px solid #e8dfca;border-radius:14px;margin-top:13px}
+.distanceNote svg{flex:none;color:#ad8750;margin-top:2px}
+.distanceNote strong{color:#745936;font-size:14px}
+.distanceNote p{margin:5px 0 0;font-size:13px;color:#6e6960}
+.sessionFollowUp{font-size:14px;color:#376678;margin:14px 0 0}
+.remedyAccordions{display:grid;gap:10px}
+.remedyAccordion{border:1px solid #cfe6eb;border-radius:18px;background:#fff;
+  box-shadow:0 5px 20px #0f5a7710;overflow:hidden}
+.remedyAccordion[open]{border-color:#9dd7e2;background:#fdffff}
+.remedyAccordion summary{list-style:none;display:flex;align-items:center;gap:13px;padding:15px 17px;
+  min-height:72px;cursor:pointer}
+.remedyAccordion summary::-webkit-details-marker{display:none}
+.remedyAccordion summary:focus-visible,.detailSection summary:focus-visible{outline:3px solid #047d9b;outline-offset:-3px}
+.remedyAccordionText{flex:1;min-width:0;display:grid;gap:2px}
+.remedyChevron{flex:none;color:#5093a3;transition:transform .2s ease}
+.remedyAccordion[open] .remedyChevron{transform:rotate(180deg)}
+.remedyAccordionBody{padding:18px 20px 22px;border-top:1px solid #e4eff1}
+.remedyFields{display:grid;gap:12px;margin:0}
+.remedyFields div{display:grid;gap:4px;min-width:0}
+.remedyFields dt{font-size:12px;color:#608593;font-weight:750}
+.remedyFields dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.6;color:#244f62}
+.remedyLearnMore{display:inline-flex;align-items:center;gap:7px;min-height:44px;color:#067f99;
+  text-decoration:none;font-size:13px;font-weight:750;margin-top:14px}
+.courseSessionPage .reportPanel{border-color:#bfe3e8;background:linear-gradient(125deg,#f6ffff,#ecf8fa);box-shadow:0 6px 21px #226f8910}
+.courseSessionPage .reportPanel p{font-size:15px;line-height:1.55;color:#4f7683}
+.courseSessionPage .downloadButton{min-height:49px;border-radius:14px;background:linear-gradient(100deg,#10aebf,#0288a8);
+  border:1px solid #087d99;border-bottom:3px solid #077895;box-shadow:0 5px 14px #0a8da323;font-weight:800}
+.courseSessionPage .reportDetails{border-color:#c4e2e8;margin-top:11px}
+.courseSessionPage .reportDetails summary{font-size:15px;line-height:1.4}
+.courseSessionPage .reportContent{font-size:17px;line-height:1.62}
+.courseSessionPage .reportContent *{max-width:100%;overflow-wrap:anywhere}
+.adviceCard{padding:17px 20px;background:linear-gradient(115deg,#f9ffff,#f0faf5);border:1px solid #cfe8e6;border-radius:17px;margin-bottom:12px}
+.adviceCard p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:16px;margin:0}
+.detailSection{background:#fff;border:1px solid #d1e7e8;border-radius:15px;margin-top:13px;overflow:hidden}
+.detailSection>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:13px 16px;
+  cursor:pointer;list-style:none;min-height:52px;font-weight:750;color:#205366}
+.detailSection>summary::-webkit-details-marker{display:none}
+.detailBody{padding:12px 17px 17px;border-top:1px solid #e8f0f0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.6}
+.detailBody p{margin:6px 0 15px}
+.nestedDetail{background:#f4fbfb;border:1px solid #dceced;border-radius:12px;padding:11px 13px;margin-top:10px}
+.nestedDetail summary{cursor:pointer;min-height:44px;font-size:14px;font-weight:750}
+.attachmentCard{display:flex;align-items:center;gap:12px;padding:14px 17px;border:1px solid #d3e8eb;
+  border-radius:15px;background:#fff;margin:10px 0;text-decoration:none;color:#275466;min-height:68px}
+.attachmentCard>svg{flex:none;color:#0991a6}
+.attachmentCard>div{flex:1;min-width:0;display:grid;gap:2px}
+.attachmentCard strong{font-size:15px;color:#184d65;overflow-wrap:anywhere}
+.attachmentCard small{font-size:13px;color:#63828d;white-space:pre-wrap;overflow-wrap:anywhere}
+.attachmentCard>a{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:#097e9a;text-decoration:none;font-weight:750;min-height:44px}
+.courseSessionPage .clientFooter{padding:18px 0;border-top:1px solid #d7e8eb}
+.courseSessionPage .clientFooter p{line-height:1.6}
+.courseSessionPage .safetyLine{color:#73868b;font-size:12px}
+.courseSessionPage .clientFooter a{min-height:44px}
+@media(max-width:580px){
+ .courseSessionPage{padding:14px 13px;font-size:16px;line-height:1.55}
+ .sessionHero{border-radius:19px;padding:18px}
+ .sessionIdentity{display:grid;grid-template-columns:1fr;gap:8px}
+ .sessionIdentity div{padding:8px 12px}
+ .courseSessionPage .clientSection{margin:21px 0}
+ .sectionIcon{width:41px;height:41px;border-radius:13px}
+ .courseSessionPage .sectionHeader h2{font-size:21px}
+ .prescriptionSummary{padding:15px;border-radius:17px}
+ .prescriptionOverviewList li{padding:11px 12px}
+ .remedyAccordion summary{padding:14px 13px;gap:9px}
+ .remedyAccordionBody{padding:14px 15px 18px}
+ .courseSessionPage .downloadButton{width:100%;justify-content:center}
+ .attachmentCard{padding:13px}
+}
+@media(prefers-reduced-motion:reduce){.remedyChevron{transition:none}}
