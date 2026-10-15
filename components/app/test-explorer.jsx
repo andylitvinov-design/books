@@ -40,7 +40,7 @@ const QUICK_COPY = {
     showLess: 'Show fewer tests',
     resetSet: 'Use suggested set',
     summary: 'suggested tests',
-    google: 'Continue with Google to create or open your private Cabinet. Tests are for self-reflection, not a diagnosis.',
+    google: 'Take available tests without signing in. After each, read your scale results; free analysis is in your Cabinet.',
   },
   ru: {
     title: 'Начните с простого тестирования',
@@ -53,7 +53,7 @@ const QUICK_COPY = {
     showLess: 'Показать меньше',
     resetSet: 'Вернуть рекомендованный набор',
     summary: 'тестов в подборке',
-    google: 'Вход через Google откроет ваш личный кабинет. Тесты предназначены для самонаблюдения, а не диагностики.',
+    google: 'Доступные тесты — без регистрации. После каждого — расшифровка шкал; бесплатный анализ — в личном кабинете.',
   },
   es: {
     title: 'Empieza con una evaluación sencilla',
@@ -66,7 +66,7 @@ const QUICK_COPY = {
     showLess: 'Mostrar menos',
     resetSet: 'Usar la selección sugerida',
     summary: 'pruebas sugeridas',
-    google: 'Continúa con Google para abrir tu espacio privado. Las pruebas son para autoobservación, no diagnósticos.',
+    google: 'Realiza pruebas disponibles sin registro; lee tus escalas y entra a tu espacio para el análisis gratuito.',
   },
 }
 
