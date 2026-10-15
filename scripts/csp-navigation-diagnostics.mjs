@@ -11,7 +11,9 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
   const bootstrap = url.pathname === '/api/app/guest/bootstrap' && !url.search;
   const prefetch = ['/', '/en/services/free-situation-review'].includes(url.pathname)
     && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
-  if (!bootstrap && !prefetch) return null;
+  const clientPrefetch = url.pathname === '/en/client'
+    && [...url.searchParams.keys()].length === 1 && url.searchParams.has('_rsc') && !!url.searchParams.get('_rsc');
+  if (!bootstrap && !prefetch && !clientPrefetch) return null;
   for (const navigation of lifecycle) {
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
@@ -23,6 +25,17 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && source.url === new URL('/en/client', origin).href
       && navigation.documentClass === 'private' && navigation.navigationType === 'traverse'
       && navigation.destination === new URL('/en/about', origin).href;
+    // Observed after Back from About to the public home: its interrupted
+    // router is replaced while an About-page client-link prefetch is pending.
+    // Require that exact same-document traversal followed by hard replacement;
+    // the usual pagehide/new-document timing guards below still apply.
+    if (clientPrefetch && !(error.phase === 'back-to-public-home' && source.url === new URL('/en/about', origin).href
+      && navigation.documentClass === 'public-video' && navigation.navigationType === 'replace'
+      && navigation.destination === new URL('/', origin).href
+      && lifecycle.some(event => event.type === 'navigate' && event.documentProbe === navigation.documentProbe
+        && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
+        && event.url === new URL('/en/about', origin).href && event.documentClass === 'public-video'
+        && event.destination === navigation.destination))) continue;
     if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
