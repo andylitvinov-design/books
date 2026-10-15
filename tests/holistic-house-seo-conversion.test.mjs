@@ -47,13 +47,13 @@ test("home SEO metadata and all three languages have real human-readable variant
   assert.match(sitemap, /\.\.\.network, \.\.\.homes/);
 });
 
-test("free-first homepage remains complete but non-overwhelming in three languages", () => {
+test("home SEO preserves visible photo offers and bottom blue free capture in EN/RU", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   assert.equal(home.split("<HomepageContactCta locale={locale} />").length - 1, 1);
-  assert.ok(home.indexOf("<HomepageContactCta locale={locale} />") < home.indexOf("<ServicesSolutions"));
-  assert.match(home, /data-home-path="free-results-optional-session"/);
-  assert.match(home, /data-home-extra-paths/);
+  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
+  assert.doesNotMatch(home, /data-home-path|data-home-extra-paths|service-home-more|service-home-progress/);
+  assert.match(home, /href="#core-services"/);
   for (const comp of ["HomeFreeTestsBanner", "ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
     assert.ok(home.includes("<" + comp), comp);
   }
