@@ -20,8 +20,8 @@ test('original approved RU video is one fixed private master reference',()=>{
   assert.equal(GRANULES_GUIDE_ID,'homeopathy-granules-ru-v2')
   assert.equal(GRANULES_GUIDE_SOURCE_VIDEO_ID,'1e4fb28d920f7fc4739d33e14061c56b')
   assert.equal(GRANULES_GUIDE_DURATION_SECONDS,62.448)
-  assert.match(GRANULES_GUIDE_OBJECT_KEY,/^shared\\/homeopathy\\/[^/]+\\.mp4$/)
-  assert.doesNotMatch(source('components/client-session-page.jsx'),/files2\\.heygen\\.ai|drive\\.google\\.com|youtube\\.com\\/embed/)
+  assert.match(GRANULES_GUIDE_OBJECT_KEY,/^shared\/homeopathy\/[^/]+\.mp4$/)
+  assert.doesNotMatch(source('components/client-session-page.jsx'),/files2\.heygen\.ai|drive\.google\.com|youtube\.com\/embed/)
 })
 test('private routes authorize before allowing the single shared video ID',()=>{
   for(const path of [
@@ -43,7 +43,7 @@ test('all three session readers receive the availability gate',()=>{
     'app/[locale]/client/session/[shareSelector]/page.js',
     'app/[locale]/client/[selector]/sessions/[sessionId]/page.js',
     'app/[locale]/app/sessions/[id]/page.jsx',
-  ]) assert.match(source(path),/sharedGuideReady=\\{sharedGranulesGuideReady\\(\\)\\}/)
+  ]) assert.match(source(path),/sharedGuideReady=\{sharedGranulesGuideReady\(\)\}/)
   const page=source('components/client-session-page.jsx')
   assert.match(page,/hasHomeopathyRecommendation&&sharedGuideReady/)
   assert.match(page,/GRANULES_GUIDE_ID/)
