@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, Search, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
@@ -15,11 +15,11 @@ const TEXT = {
   en: {
     kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
     heroKicker:'MY TESTS · HOLISTIC HOUSE', heroHeadline:'Understand yourself and your life better',
-    heroDescription:'Choose a topic, find a suitable test and notice changes over time.',
+    heroDescription:'Choose topics, explore suitable tests and receive personal guidance.',
     accessNote:'Choose topics freely. Eligible individual tests can be taken without Google; creating and saving a multi-test plan requires Google sign-in.', guestAction:'Try guest tests',
-    benefitOne:'Track changes', benefitTwo:'Understand yourself', benefitThree:'Relevant guidance', benefitFour:'Your own pace',
-    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Start with what matters to you',
-    promoText:'Check in with stress, mood and your inner resources.', promoAction:'Choose my topics',
+    benefitOne:'Measurable progress', benefitTwo:'Deeper understanding', benefitThree:'Personal guidance', benefitFour:'Support & growth',
+    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Start with a personal check-in',
+    promoText:'Explore stress, mood and inner resources, with gentle next steps.', promoAction:'Choose my topics',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
@@ -38,16 +38,16 @@ const TEXT = {
     browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Google sign-in is required to save a personal plan.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
     more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
-    problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
+    selectAll:'Select all',clearAll:'Clear topics',skip:'Skip',problemSearch:'e.g. trouble relaxing, low energy, relationships…',noProblemMatches:'No matching concerns.',filterTitle:'Filter tests',filters:'Filters',problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
   },
   ru: {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
     heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
-    heroDescription:'Выберите тему, найдите подходящий тест и наблюдайте за изменениями.',
+    heroDescription:'Выберите темы, пройдите тесты и получите персональные рекомендации.',
     accessNote:'Выбирайте темы свободно. Отдельные доступные тесты можно пройти без Google; для составления и сохранения набора нужен вход через Google.', guestAction:'Попробовать без регистрации',
-    benefitOne:'Динамика результатов', benefitTwo:'Понимание себя', benefitThree:'Подбор по запросу', benefitFour:'Удобный темп',
-    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с того, что важно вам',
-    promoText:'Оцените стресс, настроение и свои ресурсы с помощью коротких опросников.', promoAction:'Выбрать темы',
+    benefitOne:'Измеримый прогресс', benefitTwo:'Глубокое понимание', benefitThree:'Персональные рекомендации', benefitFour:'Поддержка и развитие',
+    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с базовых тестов',
+    promoText:'Узнайте больше о стрессе, настроении и ресурсах, а затем получите рекомендации.', promoAction:'Выбрать темы',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
@@ -66,16 +66,16 @@ const TEXT = {
     browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Для сохранения набора нужен вход через Google.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
     more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
-    problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
+    selectAll:'Выбрать все',clearAll:'Снять выбор',skip:'Пропустить',problemSearch:'Например: не могу расслабиться, мало энергии, отношения…',noProblemMatches:'Уточнения не найдены.',filterTitle:'Фильтры тестов',filters:'Фильтры',problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
   },
   es: {
     kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
     heroKicker:'MIS PRUEBAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor y comprende tu vida',
-    heroDescription:'Elige un tema, encuentra una prueba adecuada y observa tus cambios.',
+    heroDescription:'Elige temas, completa pruebas adecuadas y recibe orientación personal.',
     accessNote:'Elige temas libremente. Puedes realizar pruebas individuales aptas sin Google; crear y guardar un conjunto requiere iniciar sesión con Google.', guestAction:'Probar sin registrarse',
-    benefitOne:'Sigue tus cambios', benefitTwo:'Autoconocimiento', benefitThree:'Opciones personalizadas', benefitFour:'A tu ritmo',
-    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza por lo que te importa',
-    promoText:'Explora el estrés, el ánimo y tus recursos con breves cuestionarios.', promoAction:'Elegir temas',
+    benefitOne:'Progreso visible', benefitTwo:'Conócete mejor', benefitThree:'Orientación personal', benefitFour:'Apoyo y crecimiento',
+    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza con pruebas sencillas',
+    promoText:'Explora tu estrés, tu ánimo y tus recursos para dar el siguiente paso.', promoAction:'Elegir temas',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
@@ -94,15 +94,31 @@ const TEXT = {
     browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Inicia sesión con Google para guardarla.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
     more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
-    problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
+    selectAll:'Elegir todo',clearAll:'Quitar selección',skip:'Omitir',problemSearch:'Por ejemplo: tensión, poca energía, relaciones…',noProblemMatches:'Sin resultados.',filterTitle:'Filtrar pruebas',filters:'Filtros',problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
   },
 }
 
 // These keys are mapped to existing test facets and shared with Insights.
 const TEST_KIND_ICONS = { professional: GraduationCap, monitoring: Activity, hobby: Sparkles }
 const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
-  body: Sun, relationships: Users, resources: Leaf, attention: Target }
-const TOPICS = HOME_TEST_TOPICS.map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
+  body: Sun, relationships: Users, resources: Leaf, attention: Target, function: BriefcaseBusiness }
+// The ninth visible topic reuses the existing functioning/work discovery facet.
+const TOPICS = [...HOME_TEST_TOPICS, { key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' }]
+  .map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
+const BROWSE_TABS = [
+  { key: 'all', label: { en: 'All', ru: 'Все', es: 'Todas' } },
+  { key: 'closest', label: { en: 'Best fit', ru: 'Подходят', es: 'Más afines' } },
+  { key: 'professional', label: { en: 'Sourced', ru: 'Методики', es: 'Con fuente' } },
+  { key: 'personality', label: { en: 'Personality', ru: 'Личность', es: 'Personalidad' } },
+  { key: 'relationships', label: { en: 'Relationships', ru: 'Отношения', es: 'Relaciones' } },
+  { key: 'stress', label: { en: 'Stress', ru: 'Стресс', es: 'Estrés' } },
+]
+function matchesBrowseTab(entry, key) {
+  if (key === 'all') return true
+  if (key === 'professional') return entry.testKind === 'professional'
+  const tags = [...(entry.topics || []), ...(entry.measurementAxes || []), ...(entry.areas || [])]
+  return tags.some((tag) => String(tag).toLowerCase() === key || (key === 'relationships' && tag === 'intimacy'))
+}
 
 // A pictogram and a short, non-clinical type label, including on phones.
 const COMPACT_KIND_LABELS = {
@@ -132,8 +148,8 @@ const VIA_COPY = {
 // Lightweight images already in the site bundle; avoid additional image transformations.
 function artworkFor(entry) {
   const topics = entry.topics || []
-  if (topics.includes('relationships') || topics.includes('support')) return '/images/holistic-house/course-hero-mindful.svg'
-  if (topics.includes('stress') || topics.includes('energy') || topics.includes('recovery')) return '/images/holistic-house/course-journey-landscape.svg'
+  if (topics.includes('relationships') || topics.includes('support')) return '/images/holistic-house/assessment-lotus.svg'
+  if (topics.includes('stress') || topics.includes('energy') || topics.includes('recovery')) return '/images/holistic-house/assessment-lotus.svg'
   return '/images/holistic-house/course-calm-illustration.svg'
 }
 
@@ -158,6 +174,8 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
+  const [problemQuery, setProblemQuery] = useState('')
+  const [browseTab, setBrowseTab] = useState('all')
   const [showIndividualVia, setShowIndividualVia] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
@@ -165,7 +183,9 @@ export function SimpleTestPicker({
   const allProblems = problemsForTopics(focus)
   const chosenFirst = [...allProblems.filter((item) => problems.includes(item.key)),
     ...allProblems.filter((item) => !problems.includes(item.key))]
-  const visibleProblems = showAllProblems ? chosenFirst : chosenFirst.slice(0, 8)
+  const queryText = problemQuery.trim().toLocaleLowerCase(locale)
+  const matchingProblems = queryText ? chosenFirst.filter((item) => (item.label[locale] || item.label.en).toLocaleLowerCase(locale).includes(queryText)) : chosenFirst
+  const visibleProblems = (showAllProblems || queryText) ? matchingProblems : matchingProblems.slice(0, 8)
   useEffect(() => {
     // The first screen starts from the five closest matches after any filter change.
     setVisibleCount(5)
@@ -176,8 +196,11 @@ export function SimpleTestPicker({
   const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
   const viaCopy = VIA_COPY[locale] || VIA_COPY.en
   const groupedRecommendations = via.visible
-  const visibleRecommendations = groupedRecommendations.slice(0, visibleCount)
-  const remainingCount = Math.max(0, groupedRecommendations.length - visibleCount)
+  const browseRecommendations = browseTab === 'all' ? groupedRecommendations
+    : browseTab === 'closest' ? groupedRecommendations.slice(0, 12)
+    : groupedRecommendations.filter((entry) => matchesBrowseTab(entry, browseTab))
+  const visibleRecommendations = browseRecommendations.slice(0, visibleCount)
+  const remainingCount = Math.max(0, browseRecommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
   const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
@@ -193,14 +216,10 @@ export function SimpleTestPicker({
         <p className={styles.lead}>{c.heroDescription}</p>
       </div>
       <div className={styles.heroSaying} aria-hidden="true">
-        <span>{locale === 'ru' ? 'Лучшее в тебе уже здесь' : locale === 'es' ? 'Lo mejor ya está en ti' : 'The best of you is already here'}</span>
+        <span>{locale === 'ru' ? 'Осознанность сегодня — больше свободы завтра' : locale === 'es' ? 'Más conciencia hoy, más libertad mañana' : 'Awareness today, more freedom tomorrow'}</span>
         <Heart size={22} strokeWidth={1.5}/>
       </div>
     </header>
-    {!authenticated && <p className={styles.privacy} data-prelogin-google-notice>
-      {c.accessNote}{' '}
-      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
-    </p>}
     <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
       <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
       <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
@@ -209,7 +228,7 @@ export function SimpleTestPicker({
     </div>
     <section className={styles.promo} aria-label={c.promoTitle} data-client-tests-promo>
       <div className={styles.promoImage}>
-        <img src="/images/holistic-house/course-hero-mindful.svg" alt="" width="460" height="560" decoding="async" />
+        <img src="/images/holistic-house/assessment-coast.svg" alt="" width="480" height="480" decoding="async" />
       </div>
       <div className={styles.promoCopy}>
         <p className={styles.promoKicker}>{c.promoKicker}</p>
@@ -218,11 +237,22 @@ export function SimpleTestPicker({
         <a href="#hh-simple-topic-title" className={styles.promoAction}>{c.promoAction}<ArrowRight size={19} aria-hidden="true"/></a>
       </div>
     </section>
+    {!authenticated && <p className={styles.accessNote} data-prelogin-google-notice>
+      {c.accessNote}{' '}
+      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
+    </p>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
-      <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">1</span>
-        <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+      <div className={styles.topicHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">1</span>
+          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+        </div>
+        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
+          onClick={() => {
+            const all = TOPICS.every(({key}) => focus.includes(key))
+            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
+          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
       </div>
       <div className={styles.topicGrid} role="group" aria-label={c.first}>
         {TOPICS.map(({ key, Icon, ...labels }) => {
@@ -245,10 +275,19 @@ export function SimpleTestPicker({
     </section>
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
-      <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">2</span>
-        <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+      <div className={styles.problemHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">2</span>
+          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+        </div>
+        <button type="button" className={styles.skipProblems}
+          onClick={() => document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
       </div>
+      <label className={styles.problemSearch}>
+        <Search size={19} aria-hidden="true" />
+        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+      </label>
       {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
         {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
         <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
@@ -260,9 +299,10 @@ export function SimpleTestPicker({
               <span>{problem.label[locale] || problem.label.en}</span>
             </button>
           })}
-        </div></>}
+        </div>
+        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
       {focus.length > 0 && <div className={styles.problemActions}>
-        {allProblems.length > 8 && <button type="button" className={styles.problemMore}
+        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
           aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
           {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
         </button>}
@@ -271,7 +311,7 @@ export function SimpleTestPicker({
       </div>}
     </section>
 
-    <details className={styles.advanced}>
+    <details className={styles.advanced} id="hh-more-test-filters">
       <summary>
         <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
         <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
@@ -328,34 +368,24 @@ export function SimpleTestPicker({
         <button type="button" aria-pressed={journeyMode === 'course'} onClick={() => setJourneyMode('course')}>{c.modeCourse}</button>
       </div>}
       {journeyMode === 'course' && <p className={styles.modeHint}>{c.courseHint}</p>}
-      <div className={styles.matchCount} role="status" aria-live="polite">{matchCount} {c.matching}</div>
-      <details className={styles.why}>
-        <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
-        <p>{c.whyText}</p>
-      </details>
-      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
-        <div className={styles.viaFamilyIntro}>
-          <strong>{viaCopy.title}</strong>
-          <p>{viaCopy.description}</p>
-        </div>
-        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
-          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
-          <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
-            onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
-            {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
-          </button>
-          <button type="button" className={styles.takeTest} data-test-action="start"
-            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
-            {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
-          </button>
-        </div>}
-        {via.individualCount > 0 && <button type="button" className={styles.viaToggle}
-          aria-expanded={showIndividualVia} aria-controls="hh-public-recommended-tests"
-          onClick={() => { setShowIndividualVia((value) => !value); setVisibleCount(5) }}>
-          {showIndividualVia ? viaCopy.collapse : viaCopy.expand} ({via.individualCount})
-        </button>}
-      </section>}
-      {recommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
+      <div className={styles.recommendationMeta}>
+        <div className={styles.matchCount} role="status" aria-live="polite">{browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
+        <details className={styles.why}>
+          <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
+          <p>{c.whyText}</p>
+        </details>
+      </div>
+      <div className={styles.browseTabs} role="group" aria-label={c.filterTitle}>
+        {BROWSE_TABS.map((tab) => <button key={tab.key} type="button" aria-pressed={browseTab === tab.key}
+          onClick={() => { setBrowseTab(tab.key); setVisibleCount(5) }}>{tab.label[locale] || tab.label.en}</button>)}
+        <button type="button" className={styles.moreFilterButton} title={c.filters} aria-label={c.filters}
+          onClick={() => {
+            const details = document.getElementById('hh-more-test-filters')
+            if (details) { details.open = true; details.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+          }}><SlidersHorizontal size={18} aria-hidden="true" /></button>
+      </div>
+
+      {browseRecommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
          {visibleRecommendations.map((entry, index) => {
            const checked = selectedKeys.has(entry.key)
            const inputId = `hh-public-test-${entry.key}`
@@ -413,16 +443,38 @@ export function SimpleTestPicker({
            </article>
          })}
        </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
-       {groupedRecommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
+       {browseRecommendations.length > 0 && <div className={styles.moreTests} data-inline-test-expansion>
         <span role="status" aria-live="polite">
-          {format(c.showing, { shown: visibleRecommendations.length, total: groupedRecommendations.length })}
+          {format(c.showing, { shown: visibleRecommendations.length, total: browseRecommendations.length })}
         </span>
         {remainingCount > 0 && <button type="button" className={styles.showFiveMore}
           aria-controls="hh-public-recommended-tests" aria-expanded={visibleCount > 5}
-          onClick={() => setVisibleCount((current) => Math.min(groupedRecommendations.length, current + 5))}>
+          onClick={() => setVisibleCount((current) => Math.min(browseRecommendations.length, current + 5))}>
           {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
         </button>}
       </div>}
+      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+        <div className={styles.viaFamilyIntro}>
+          <strong>{viaCopy.title}</strong>
+          <p>{viaCopy.description}</p>
+        </div>
+        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
+          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
+          <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
+            onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
+            {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
+          </button>
+          <button type="button" className={styles.takeTest} data-test-action="start"
+            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
+            {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </div>}
+        {via.individualCount > 0 && <button type="button" className={styles.viaToggle}
+          aria-expanded={showIndividualVia} aria-controls="hh-public-recommended-tests"
+          onClick={() => { setShowIndividualVia((value) => !value); setVisibleCount(5) }}>
+          {showIndividualVia ? viaCopy.collapse : viaCopy.expand} ({via.individualCount})
+        </button>}
+      </section>}
       <p className={styles.fitNote}>{c.fitInfo}</p>
 
       <div className={styles.selectedSummary} role="status" aria-live="polite">
