@@ -72,3 +72,33 @@ test('softer palette does not remove the original single-test action or its auth
   assert.match(explorer, /await onStart\(\[entry\], \{/)
   assert.match(publicFlow, /request\('auth\/start'/)
 });
+
+
+const fullExplorerCss = read('components/app/test-explorer.module.css')
+
+test('simple test picker uses navy choice states and reserves wine for launching tests', () => {
+  assert.match(css, /Test picker 2026-10-15: all selection actions navy/)
+  assert.match(css, /--choice-navy:#173957/)
+  assert.match(css, /\.shell :is\(\.topic,\.problemChip,\.depthOption\)\[aria-pressed=true\]/)
+  assert.match(css, /\.shell \.kindChoice\[data-checked=true\]/)
+  assert.match(css, /\.shell \.modeSwitch button\[aria-pressed=true\]\{background:var\(--choice-navy\)/)
+  assert.match(css, /\.shell \.timeButtons button\[aria-pressed=true\]/)
+  assert.match(css, /\.shell \.themeRefinements button\{background:var\(--choice-navy\)/)
+  assert.match(css, /\.shell \.promoAction,\.shell \.cta\[data-test-start-mode=course\]/)
+  assert.match(css, /\.shell \.takeTest,\.shell \.cta\[data-test-start-mode=tests\]/)
+  assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
+  assert.match(picker, /onClick=\{journeyMode === 'course' \? onStartCourse : onStart\}/)
+  assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
+  assert.match(routeCss, /My Tests site chrome: navy for navigation\/sign-in/)
+  assert.match(routeCss, /site-cabinet-link:hover/)
+})
+
+test('full test catalog differentiates selection and save buttons from actual test start', () => {
+  assert.equal((explorer.match(/data-test-action=\{explicitSelectionOnly \? 'save' : 'start'\}/g) || []).length, 2)
+  assert.match(fullExplorerCss, /Full test selection: navy choices, burgundy test starts only/)
+  assert.match(fullExplorerCss, /\.explorer \.guidedResults,\.explorer \.databaseHeader button/)
+  assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=save\]/)
+  assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=start\]/)
+  assert.match(fullExplorerCss, /\.explorer \.battery \.primary\[data-test-action=start\]/)
+  assert.match(explorer, /onStart\(\[entry\]/)
+})
