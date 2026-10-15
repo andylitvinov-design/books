@@ -696,3 +696,10 @@
 .oporaSafeStop:focus-visible{outline:3px solid #168e97;outline-offset:2px}
 .oporaSafeStop:disabled{opacity:.55;cursor:wait}
 @media(max-width:540px){.oporaExtraDetails{padding:10px 12px}.oporaSafeStop{font-size:11px!important;padding:8px 10px!important}}
+
+/* On narrow phones preserve Back, Skip and the safe-stop action without overflow. */
+.overlay[data-opora-state-journey] .subactions{flex-wrap:wrap;justify-content:flex-start}
+.overlay[data-opora-state-journey] .skip{margin-left:auto}
+@media(max-width:390px){
+  .overlay[data-opora-state-journey] .oporaSafeStop{order:3;flex:1 0 100%;min-height:41px}
+}
