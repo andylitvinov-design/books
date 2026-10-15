@@ -316,6 +316,7 @@ export default function CourseSlidePlayer({
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
+  const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
   const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
   const isExtendedStress=Boolean(lesson.antiStress && cycle.day>=2 && cycle.day<=14 &&
     data.programme?.id === 'stress')
@@ -462,7 +463,7 @@ export default function CourseSlidePlayer({
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         welcomeFeeling:welcomeFeeling||'skip',
         transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
-        ...(lesson.antiStress ? {
+        ...((lesson.antiStress||isOporaModule) ? {
           aphorismResponse:aphorismResponse||null,
           practiceAttempt:practiceAttempt||null,
           phraseResponse:phraseResponse||null,
@@ -520,7 +521,9 @@ export default function CourseSlidePlayer({
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined} ref={frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined}
+    data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
+    data-opora-day={isOporaModule?cycle.day:undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -672,17 +675,17 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && (lesson.antiStress ? <>
+          {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.antiStress.skill}</p>
-            <p className={styles.instruction}>{lesson.antiStress.learningOutcome}</p>
+            <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
+            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.learningOutcome}</p>
             <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
             </div>
-            <p className={styles.helper}>{lesson.antiStress.neutralText}</p>
+            <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
@@ -710,7 +713,7 @@ export default function CourseSlidePlayer({
             {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
               {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
             </p>}
-            {!isDayOne&&lesson.antiStress&&<section data-course-aphorism-dialogue>
+            {!isDayOne&&(lesson.antiStress||isOporaModule)&&<section data-course-aphorism-dialogue>
               <p className={styles.prompt}>{learning.aphorismTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
                 {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
@@ -734,14 +737,14 @@ export default function CourseSlidePlayer({
               <IllustratedMoment variant="calm" kind={slide.kind}/>
               <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
               <p className={styles.helper}>{words.recallHint}</p>
-              {lesson.antiStress&&<div className={styles.feedbackOptions}
+              {(lesson.antiStress||isOporaModule)&&<div className={styles.feedbackOptions}
                 role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
                 {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
                   <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
                     onClick={()=>setRecallAttempt(key)}>{label}</button>)}
               </div>}
-              {lesson.antiStress&&recallAttempt==='hint'&&
-                <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
+              {(lesson.antiStress||isOporaModule)&&recallAttempt==='hint'&&
+                <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>}
             </>)}
 
           {slide.kind === 'phrase' && <>
@@ -752,7 +755,7 @@ export default function CourseSlidePlayer({
             </div>}
             <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
-            {lesson.antiStress&&<div data-course-support-phrase-choice>
+            {(lesson.antiStress||isOporaModule)&&<div data-course-support-phrase-choice>
               <p className={styles.prompt}>{learning.phraseTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.phraseTitle}>
                 {[['fits',learning.fits],['unsure',learning.phraseUnsure],['no',learning.phraseNo]].map(([key,label])=>
@@ -830,7 +833,7 @@ export default function CourseSlidePlayer({
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {lesson.antiStress&&<section data-course-practice-attempt>
+            {(lesson.antiStress||isOporaModule)&&<section data-course-practice-attempt>
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
                 {[['tried',learning.tried],['simplified',learning.simplified],
@@ -866,7 +869,7 @@ export default function CourseSlidePlayer({
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {lesson.antiStress&&<section data-course-everyday-transfer>
+            {(lesson.antiStress||isOporaModule)&&<section data-course-everyday-transfer>
               <p className={styles.prompt}>{learning.transferTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.transferTitle}>
                 {[['plan',learning.plan],['imagined',learning.imagined],['phrase',learning.phrase],
@@ -1018,7 +1021,7 @@ export default function CourseSlidePlayer({
           onClick={promoOpen ? (onFinish||onClose)
             : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
               : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'checkin' ? (lesson.antiStress ? goNext : () => void saveCheckin())
+            : slide.kind === 'checkin' ? (lesson.antiStress||isOporaModule ? goNext : () => void saveCheckin())
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
           <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
