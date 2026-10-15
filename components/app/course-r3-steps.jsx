@@ -13,6 +13,7 @@ import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, sug
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import AntiStressModuleFinder from './antistress-module-finder'
+import { ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
@@ -53,6 +54,8 @@ const UI = {
     viewMyResults: 'View results and choose my focus areas', reviseSelection: 'Change the course test selection',
     nextStage: 'NEXT STEP · MY COURSE',
     recommendedFocusTitle: 'Suggested focus areas for your course',
+    scaleGateTitle: 'Confirm your focus before Day 1', scaleGateHelp: 'These are the measured areas you will practise and observe over 14 days. Keep the suggestions or edit your selection; nothing starts until you confirm.',
+    moduleChosen: 'Selected module', changeModule: 'Change module',
     recommendedFocusIntro: 'These areas are suggested from your own compatible test scales, with the strongest reported difficulties or lowest resources first. The choice is yours.',
     recommendationSafety: 'These are self-guided learning priorities, not a diagnosis, medical norms or proof that treatment is needed.',
     acceptSuggested: 'Yes, choose these {count} areas and start my course',
@@ -116,6 +119,8 @@ const UI = {
     viewMyResults: 'Смотреть результаты и выбрать направления работы', reviseSelection: 'Изменить набор тестов курса',
     nextStage: 'СЛЕДУЮЩИЙ ШАГ · МОЙ КУРС',
     recommendedFocusTitle: 'Рекомендованные шкалы для курса',
+    scaleGateTitle: 'Подтвердите шкалы перед первым уроком', scaleGateHelp: 'По этим параметрам вы будете заниматься и наблюдать изменения в течение 14 дней. Примите рекомендации или отредактируйте список: урок начнётся только после подтверждения.',
+    moduleChosen: 'Выбранный модуль', changeModule: 'Изменить модуль',
     recommendedFocusIntro: 'Эти темы предложены по вашим реальным совместимым шкалам: сначала более выраженные трудности или менее развитые ресурсы. Выбор остаётся за вами.',
     recommendationSafety: 'Это направления для самостоятельных практик, а не диагноз, медицинская норма или доказательство необходимости лечения.',
     acceptSuggested: 'Да, выбрать эти {count} темы и перейти к курсу',
@@ -171,6 +176,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [showAll,setShowAll]=useState(false)
   const [chosenScales,setChosenScales]=useState([])
   const [scaleView,setScaleView]=useState('recommended')
+  const [moduleSelection,setModuleSelection]=useState(null)
   const actionLock=useRef(false)
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
@@ -286,6 +292,26 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
     }
   }
+
+  function reviewModuleScales(selection) {
+    if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
+    if (!selection || !ANTISTRESS_MODULE_GOALS.some(item=>item.id===selection.moduleId) ||
+      !selection.answers || typeof selection.answers !== 'object') {
+      onError('COURSE_MODULE_FINDER_INVALID')
+      return
+    }
+    // This is only a draft in this component. No course is started and no
+    // goals are written until the user confirms suggested or edited scales.
+    setModuleSelection({moduleId:selection.moduleId,goal:selection.goal,answers:{...selection.answers}})
+    setChosenScales(suggestedScales.map(item=>item.id))
+    setFallbackGoals([])
+    setScaleView('recommended')
+    onError('')
+  }
+
+  useEffect(()=>{
+    if(stage!==3)setModuleSelection(null)
+  },[stage])
 
   async function openManualFocus() {
     if(actionLock.current || busy || localBusy) return
@@ -637,9 +663,42 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   if(stage===3 && isAntistress) {
-    return <AntiStressModuleFinder locale={locale} profile={profile} busy={busy||localBusy}
-      onStart={selection=>submitFocusSelection(suggestedScales.map(scale=>scale.id),
-        profile.eligible.length>0,selection)}/>
+    if(!moduleSelection) {
+      return <AntiStressModuleFinder locale={locale} profile={profile} busy={busy||localBusy}
+        nextIsScaleReview onStart={reviewModuleScales}/>
+    }
+    const chosenModule=ANTISTRESS_MODULE_GOALS.find(item=>item.id===moduleSelection.moduleId)
+    return <div className={styles.scaleConfirmationJourney} data-course-scale-confirmation>
+      <section className={'hh-panel '+styles.selectedModuleBar} data-course-module-draft>
+        <div>
+          <small>{t.moduleChosen}: {moduleSelection.moduleId}</small>
+          <h2>{t.scaleGateTitle}</h2>
+          <p>{t.scaleGateHelp}</p>
+          {chosenModule&&<strong>{chosenModule.title[ru?'ru':'en']}</strong>}
+        </div>
+        <button type="button" className={styles.whiteSecondary} disabled={busy||localBusy}
+          data-course-change-module onClick={()=>{setModuleSelection(null);setScaleView('recommended')}}>{t.changeModule}</button>
+      </section>
+      {scaleView==='manual'
+        ? <CourseFocusPicker
+          t={t} locale={locale} profile={profile} suggested={suggestedScales}
+          chosenScales={chosenScales} chosenGoals={fallbackGoals}
+          onToggleScale={toggleScale}
+          onSetPrimaryScale={key=>setChosenScales(previous=>previous.includes(key)?[key,...previous.filter(item=>item!==key)]:previous)}
+          onToggleGoal={key=>setFallbackGoals(previous=>previous.includes(key)
+            ?previous.filter(x=>x!==key):previous.length<3?[...previous,key]:previous)}
+          problemLabel={problemLabel} onProblemLabel={setProblemLabel}
+          minScales={minScales} busy={busy||localBusy}
+          onContinue={()=>submitFocusSelection(chosenScales,profile.eligible.length>0,moduleSelection)}
+          onBack={()=>setScaleView('recommended')}/>
+        : <CourseCompletionReview
+          t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
+          optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
+          busy={busy||localBusy} compactResults
+          onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id),true,moduleSelection)}
+          onAlternative={openManualFocus}/>
+      }
+    </div>
   }
 
   if(stage===3) {
