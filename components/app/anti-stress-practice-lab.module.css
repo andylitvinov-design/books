@@ -1,0 +1,37 @@
+.lab{display:grid;gap:15px;color:#21485f;background:linear-gradient(135deg,#fffefa 0%,#f1fbfa 95%);border:1px solid #d1e9e9;box-shadow:0 12px 38px #173b5020;border-radius:19px;padding:clamp(16px,3vw,24px);max-width:100%;margin:12px 0}
+.lab h3{font-size:clamp(18px,2.6vw,23px);line-height:1.28;margin:0;color:#123d59;letter-spacing:-.02em}
+.kicker{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:850;letter-spacing:.11em;color:#086f85}
+.intro{font-size:14px;line-height:1.55;margin:0;color:#45697b}
+.exerciseStep{display:grid;gap:12px;border:1px solid #c9e1e6;border-radius:15px;padding:14px;background:#ffffffdf}
+.stepMeta{display:flex;justify-content:space-between;align-items:center;gap:15px;font-size:13px;color:#174b61}
+.stepMeta small{font-variant-numeric:tabular-nums;font-weight:800;color:#778e9d}
+.exerciseStep p{font-size:15px;line-height:1.5;margin:0}
+.stepButtons{display:flex;justify-content:space-between;gap:10px}
+.stepButtons button{display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid #b5d8df;border-radius:12px;padding:9px 13px;min-height:39px;background:#f3fbfd;color:#235b72;font-weight:750;cursor:pointer}
+.stepButtons button:disabled{opacity:.5;cursor:default}
+.choiceTitle{font-size:14px;font-weight:800;color:#1c4862;margin:0}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.options button{min-height:64px;display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid #bcd7e0;border-bottom:3px solid #a8cdd6;border-radius:13px;padding:12px;background:#fff;color:#174660;font-size:14px;line-height:1.35;font-weight:750;cursor:pointer;overflow-wrap:anywhere}
+.options button[aria-pressed=true]{border:2px solid #76304a;border-bottom:4px solid #76304a;background:#fdf4f6;color:#61213a}
+.options button svg{flex:none}
+.lab button:focus-visible,.lab input:focus-visible{outline:3px solid #0c7890;outline-offset:3px}
+.lab button:disabled{cursor:default;opacity:.58}
+.note{font-size:12px;line-height:1.5;color:#527283;margin:0}
+.hintBlock{border-left:3px solid #65b2b8;padding-left:12px}
+.hintBlock button{display:flex;align-items:center;gap:6px;padding:8px 0;color:#0b7184;border:0;background:transparent;font-weight:750;cursor:pointer}
+.hintBlock p{font-size:13px;margin:5px 0;line-height:1.5;color:#355d70}
+.associations{display:grid;gap:11px;background:#f8fdfc;border:1px dashed #8fc2ca;padding:14px;border-radius:14px}
+.associations p{font-size:13px;line-height:1.5;margin:0}
+.associationRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.associationRow label{display:grid;gap:4px;font-size:11px;color:#376074;font-weight:800}
+.associationRow input{width:100%;min-width:0;border:1px solid #b6d7dd;border-radius:9px;padding:8px 10px;font-size:14px;background:white;color:#1e5065}
+.journalButton{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 13px;border:1px solid #875067;background:#722c49;color:white;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer}
+.attempt{display:grid;gap:8px;border-top:1px solid #d8e9ea;padding-top:12px}
+.attempt p{margin:0;font-size:13px;font-weight:800;color:#1b4b63}
+.attemptChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.attemptChoices button{font-size:12px;line-height:1.35;min-height:45px;border:1px solid #bdd8de;border-radius:9px;background:#fff;color:#36586d;padding:6px;font-weight:750;cursor:pointer}
+.attemptChoices button[aria-pressed=true]{border-color:#76304a;background:#f5e6eb;color:#6e2340}
+.safety{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:12px;line-height:1.5;color:#627e8c}
+.safety svg{flex:none;margin-top:1px}
+@media(max-width:480px){.lab{padding:14px;gap:12px}.options{grid-template-columns:1fr}.options button{min-height:51px}.attemptChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.associationRow{grid-template-columns:1fr 1fr}.stepButtons button{padding:8px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.lab *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
