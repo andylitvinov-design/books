@@ -72,15 +72,14 @@ test('the current course has a real photo to the left and a compact mobile add t
   assert.match(css, /@media\(max-width:340px\)/)
 })
 
-test('membership modal shows bilingual Free at €0 before paid tiers and remains scrollable', () => {
-  const plans = entry.slice(entry.indexOf('const PLANS = ['), entry.indexOf('export default function'))
-  assert.ok(plans.indexOf("id: 'free'") < plans.indexOf("id: 'start'"))
-  assert.ok(plans.indexOf("id: 'start'") < plans.indexOf("id: 'advanced'"))
-  assert.ok(plans.indexOf("id: 'advanced'") < plans.indexOf("id: 'premium'"))
-  assert.match(plans, /id: 'free', price: 0, spots: 'one', items: \['ads'\]/)
+test('membership modal has Free and a single €20 paid plan with a €10 intro month', () => {
+  const plans = read('lib/inner-growth/course-membership.js')
+  assert.match(entry, /const PLANS = COURSE_PUBLIC_PLANS/)
+  assert.match(plans, /regularMonthlyEUR: 20/)
+  assert.match(plans, /introFirstMonthEUR: 10/)
   assert.match(entry, /free: 'Free'/)
-  assert.match(entry, /ads: 'With ads'/)
-  assert.match(entry, /ads: 'С рекламой'/)
+  assert.match(entry, /ads: 'Final course offer'/)
+  assert.match(entry, /data-first-month-offer/)
   assert.match(entry, /data-plan=\{plan\.id\}/)
   assert.match(css, /\.planCard\[data-plan=free\]/)
   assert.match(css, /max-height:min\(80dvh,770px\)/)
