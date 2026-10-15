@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { normalizeDraft,clientPayload,emptySessionDraft,validSelector,validSecret,
-  SESSION_MEDIA_TYPES, PRIVATE_MEDIA_BUCKET,deliveryEnabled } from '../lib/clients/delivery-model.js'
+  SESSION_MEDIA_TYPES, PRIVATE_MEDIA_BUCKET,deliveryEnabled,guestSessionProjection } from '../lib/clients/delivery-model.js'
 const AUDIO='29e2a748-ea4c-4cb4-9561-5224482f9b44'
 const VIDEO='09a8c81b-93c4-4a89-adb0-084e293bdacc'
 const make=()=>({title:'Consultation',summary:'Private care plan',reportDocumentId:null,
@@ -50,4 +50,26 @@ test('transcript fields require strings and titles have length limits',()=>{
   assert.throws(()=>normalizeDraft({...make(),media:[{...make().media[0],transcript:null}]}))
   assert.throws(()=>normalizeDraft({...make(),title:'x'.repeat(161)}))
   assert.throws(()=>normalizeDraft({...make(),media:Array.from({length:31},()=>make().media[0])}))
+})
+
+test('guest session projection excludes cabinet identity and internal access metadata',()=>{
+  const guest=guestSessionProjection({
+    id:'246aa1a3-a371-5a83-9f4b-cd23ff027a76',
+    clientId:'246aa1a3-a371-5a83-9f4b-cd23ff027a77',
+    sourceConsultationId:'246aa1a3-a371-5a83-9f4b-cd23ff027a78',
+    occurredOn:'2026-10-15',title:'Session A',summary:'Only A',
+    draftRevision:3,publishedRevision:2,status:'published',
+    report:{id:'246aa1a3-a371-5a83-9f4b-cd23ff027a79',kind:'recommendation'},
+    media:[
+      {assetId:'246aa1a3-a371-5a83-9f4b-cd23ff027a80',title:'Client A',kind:'audio',scope:'client',transcript:'Hello'},
+      {assetId:'246aa1a3-a371-5a83-9f4b-cd23ff027a81',title:'Secret practitioner note',kind:'audio',scope:'practitioner',transcript:'Private'}
+    ]
+  })
+  assert.equal(guest.title,'Session A')
+  assert.equal(guest.report.kind,'recommendation')
+  assert.equal(guest.media.length,1)
+  assert.equal(guest.media[0].title,'Client A')
+  const encoded=JSON.stringify(guest)
+  for(const forbidden of ['clientId','sourceConsultationId','draftRevision','publishedRevision','Secret practitioner note','Private','246aa1a3-a371-5a83-9f4b-cd23ff027a79'])
+    assert.equal(encoded.includes(forbidden),false,forbidden)
 })

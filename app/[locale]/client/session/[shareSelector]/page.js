@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { deliveryEnabled,validSelector } from '@/lib/clients/delivery-model'
+import { deliveryEnabled,validSelector,guestSessionProjection } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { readSessionViewerCookie,authorizeSessionGuest } from '@/lib/clients/session-delivery-access'
@@ -31,7 +31,7 @@ export default async function ClientSessionSharePage({params}) {
           <PrescriptionDocument document={projected} locale={locale}/>
       }
     }
-    return <ClientSessionPage locale={locale} session={session} selector={shareSelector}
+    return <ClientSessionPage locale={locale} session={guestSessionProjection(session)} selector={shareSelector}
       mode="guest" reportContent={reportContent}/>
   } catch{return <ClientSessionShareGate locale={locale} selector={shareSelector}/>}
 }
