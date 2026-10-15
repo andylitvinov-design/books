@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves, MapPin, BookOpen, CircleHelp, MousePointerClick } from 'lucide-react'
 import CoursePracticeVoice from './course-practice-voice'
+import { DAY_ONE_PRACTICE_GUIDE } from '@/lib/inner-growth/anti-stress-day-one'
 import styles from './anti-stress-day-one.module.css'
 
 const PHOTO = '/images/holistic-house/course-focus-mountain-boy.webp'
@@ -197,7 +198,7 @@ export default function DayOneExercise({
           {value:'audio',label:text('Системная озвучка','Device voice'),icon:Waves},
         ]}/>
       {answers.practiceMode==='audio'&&<CoursePracticeVoice key={locale+'-'+String(answers.practiceMode)}
-        locale={locale} text={lesson.sections?.find(part=>part.kind==='meditation')?.text}/>}
+        locale={locale} text={DAY_ONE_PRACTICE_GUIDE[ru?'ru':'en']}/>}
       <div className={styles.practiceStepper} data-interactive-practice-stepper>
         <div className={styles.practiceStepHeader}><small>{text('ЭТАП','STEP')} {guidedStep+1} / {steps.length}</small>
           <div className={styles.stepDots} aria-hidden="true">{steps.map((item,i)=><i key={item.title} data-active={i===guidedStep}/>)}</div>
@@ -224,7 +225,7 @@ export default function DayOneExercise({
         {value:'skip',label:text('Не отвечать','Skip'),icon:CircleHelp},
       ],{compact:true})}
       <details className={styles.transcript}><summary>{text('Полная текстовая инструкция','Full written guide')} <ChevronDown size={16}/></summary>
-        <p>{lesson.sections?.find(part=>part.kind==='meditation')?.text}</p></details>
+        <p>{DAY_ONE_PRACTICE_GUIDE[ru?'ru':'en']}</p></details>
       <p className={styles.headline}>{text('Насколько вы участвовали?','How much did you try?')}</p>
       {choice('practiceAttempt',[
         {value:'tried',label:text('Попробовал(а)','I tried')},
