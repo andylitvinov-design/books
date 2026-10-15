@@ -6,6 +6,7 @@ import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVerti
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { COURSE_MEMBERSHIP, COURSE_PUBLIC_PLANS } from '@/lib/inner-growth/course-membership'
+import ManualBillingRequest from './manual-billing-request'
 import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
@@ -32,7 +33,7 @@ const COPY = {
     introLabel: 'Advanced first month for new members', thenPrice: 'Then',
     tests: 'Included tests', session: '1 personal 60-minute session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
-    unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
+    unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen. You may request manual one-month payment instructions below.',
     conditions: 'Advanced only: 50% off the first month (€10), then €20/month. Premium is €100/month; included-test and personal-session terms will be confirmed before purchase. No subscription starts on this screen.',
     close: 'Not now',
     courseOptions: 'Course options', closeCourse: 'Close course',
@@ -62,7 +63,7 @@ const COPY = {
     introLabel: 'Первый месяц Advanced для новых подписчиков', thenPrice: 'Затем',
     tests: 'Тесты включены', session: '1 персональная сессия на 60 минут в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
-    unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
+    unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается. Ниже можно запросить инструкции для ручной оплаты одного месяца.',
     conditions: 'Акция только для Advanced: первый месяц 10 € (−50%), затем 20 € в месяц. Premium — 100 € в месяц; условия включённых тестов и личной сессии уточняются до оплаты. На этом экране подписка не оформляется.',
     close: 'Не сейчас',
     courseOptions: 'Меню курса', closeCourse: 'Закрыть курс',
@@ -102,6 +103,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
   const tier = ({ free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium' })[access?.tier] || 'Free'
   const canAdd = access?.multiCourseEnabled === true && activeCount < activeLimit
   const [showPlan, setShowPlan] = useState(false)
+  const [manualPlan, setManualPlan] = useState('advanced')
   const [progressError, setProgressError] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [closeError, setCloseError] = useState(false)
@@ -338,8 +340,12 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
            </p>}
           <p><Check size={15} aria-hidden="true"/>{t[plan.spots]}</p>
           {plan.items.map(item => <p key={item}><Check size={15} aria-hidden="true"/>{t[item]}</p>)}
+          {plan.id !== 'free' && <button type="button" className={styles.paymentChoiceButton}
+            aria-pressed={manualPlan === plan.id} onClick={() => setManualPlan(plan.id)}
+            data-manual-plan-select={plan.id}>{locale === 'ru' ? 'Выбрать способ оплаты' : 'Choose payment method'}</button>}
         </article>)}
       </div>
+      <ManualBillingRequest planId={manualPlan} locale={locale} />
       <p className={styles.unavailable} role="status">{t.unavailable}</p>
       <p className={styles.conditions}>{t.conditions}</p>
       <button type="button" className={styles.closeButton} onClick={() => dialogRef.current?.close()}>{t.close}</button>
