@@ -280,6 +280,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         (ru?'Лимит видео: ':'Video limit: ')+Math.floor(videoStatus.limit/1_000_000)+' MB ('+(videoStatus.provider==='supabase'?'Supabase':videoStatus.provider==='s3_ca'?'S3 Canada':'R2')+')':
         (ru?'Внешнее видеохранилище пока не настроено; аудио и документы доступны.':'External video storage is not configured; audio and documents remain available.')}</span>}
     </p>
+    {videoStatus?.ready===false&&<p className={styles.photoHint}>
+      <a className={styles.inlineLink} href="/admin/client-video-storage">
+        {ru?'Настроить приватное видеохранилище →':'Configure private video storage →'}
+      </a>
+    </p>}
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
