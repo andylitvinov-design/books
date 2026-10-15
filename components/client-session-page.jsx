@@ -41,7 +41,8 @@ export function ClientSessionPage({session,locale='en',playBase,backHref=null,pd
           <AssessmentReading record={item.report} locale={locale}/>
           <DownloadPractitionerReport report={item.report} locale={locale}/>
         </div>:null}
-        {item.kind==='document'?<a className="hh-session-action" href={pdfBase?pdfBase+'/'+item.id+'?locale='+locale:'#'} download>{ru?'Скачать PDF документа':'Download document PDF'}</a>:null}
+        {item.kind==='document'&&pdfBase?<a className="hh-session-action" href={pdfBase+'/'+item.id+'?locale='+locale} download>{ru?'Скачать PDF документа':'Download document PDF'}</a>:null}
+        {item.kind==='document'&&!pdfBase?<p>{ru?'PDF доступен в опубликованной сессии.':'PDF is available in the published session.'}</p>:null}
         {item.kind==='pdf'?<PrivateSessionMedia kind="pdf" title={item.title} itemId={item.id} playBase={playBase}/>:null}
       </article>)}
     </section>:null}

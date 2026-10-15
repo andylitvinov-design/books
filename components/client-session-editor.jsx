@@ -17,6 +17,9 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
   const [fileKind,setFileKind]=useState('audio'),[uploading,setUploading]=useState(false)
   const [recording,setRecording]=useState(false),[audioBlob,setAudioBlob]=useState(null)
   const [preview,setPreview]=useState(false)
+  const previewItems=items.map(i=>i.kind==='report'
+    ? {...i,report:reports.find(r=>r.id===i.refId)||null}
+    : i)
   const recorder=useRef(null),mediaStream=useRef(null)
   const base='/admin/api/clients/'+encodeURIComponent(clientId)+'/sessions'
   const uniqueConsults=[...new Map(documents.map(d=>[d.consultationId??d.id,{id:d.consultationId??d.id,date:d.date}])).values()]
@@ -237,7 +240,7 @@ export function ClientSessionEditor({clientId,locale='en',reports=[],documents=[
       </div>
     </div>:null}
     {current&&preview?<div className="hh-owner-session-preview" aria-label={text('Предпросмотр сессии','Session preview',ru)}>
-      <ClientSessionPage session={{id:current.id,date:current.date,title,summary,items}}
+      <ClientSessionPage session={{id:current.id,date:current.date,title,summary,items:previewItems}}
         locale={locale} playBase={base+'/'+current.id+'/play'} pdfBase={null}/>
       <p className="hh-owner-hint">{text('Предпросмотр виден только специалисту. Гостевая ссылка создаётся после публикации.','Owner-only preview. A guest invitation becomes available after publication.',ru)}</p>
     </div>:null}

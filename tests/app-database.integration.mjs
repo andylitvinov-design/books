@@ -1811,3 +1811,47 @@ test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved test
     await db.end()
   }
 })
+
+
+test('session-specific share grants have enforced client ownership and no anonymous read', async()=>{
+  // Real Postgres isolated fixture; imitate only Storage catalog data, not real media.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    await db.query('create schema if not exists storage')
+    await db.query('create table if not exists storage.buckets(id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const migration=await readFile(new URL('../supabase/migrations/20261015153000_hh_client_session_pages.sql',import.meta.url),'utf8')
+    await db.query(migration)
+    const active=(await db.query("select public from storage.buckets where id='hh-client-private-media'")).rows[0]
+    assert.equal(active.public,false)
+    const firstClient=randomUUID(),secondClient=randomUUID()
+    const firstSession=randomUUID(),secondSession=randomUUID()
+    for(const [id,client] of [[firstSession,firstClient],[secondSession,secondClient]]){
+      await db.query(
+        "insert into app_private.client_session_pages(id,client_id,occurred_on,locale,draft_ciphertext,published_ciphertext,published_revision,status) values($1,$2,'2026-10-15','en','synthetic-test','synthetic-test',1,'published')",
+        [id,client]
+      )
+    }
+    const grant=randomUUID()
+    await db.query(
+      "insert into app_private.client_session_grants(id,session_id,client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",
+      [grant,firstSession,firstClient,'aaaaaaaaaaaaaaaaaaaaaa','a'.repeat(64)]
+    )
+    await assert.rejects(db.query(
+      "insert into app_private.client_session_grants(id,session_id,client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",
+      [randomUUID(),secondSession,firstClient,'bbbbbbbbbbbbbbbbbbbbbb','b'.repeat(64)]
+    ),error=>error.code==='23503')  // wrong owner even with valid session UUID
+    await assert.rejects(db.query(
+      "insert into app_private.client_session_assets(id,session_id,client_id,object_key,mime,bytes) values($1,$2,$3,$4,$5,$6)",
+      [randomUUID(),firstSession,secondClient,'synthetic/random','video/mp4',100]
+    ),error=>error.code==='23503')
+    const grantCount=await db.query('select count(*)::int as n from app_private.client_session_grants')
+    assert.equal(grantCount.rows[0].n,1)
+    for(const role of ['authenticated']){
+      await assert.rejects(rawAs(a,role,x=>x.query('select id from app_private.client_session_pages')),error=>error.code==='42501')
+      await assert.rejects(rawAs(a,role,x=>x.query('select id from app_private.client_session_grants')),error=>error.code==='42501')
+    }
+    const roleCount=await rawAs(a,'hh_app_backend',x=>x.query('select count(*)::int as n from app_private.client_session_pages'))
+    assert.equal(roleCount.rows[0].n,2)
+  }finally{await db.end()}
+})

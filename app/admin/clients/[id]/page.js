@@ -134,7 +134,12 @@ export default async function ClientDetail({ params }) {
     </section>
 
     {sessionPagesEnabled() && <ClientSessionEditor clientId={id} locale={client.preferredLocale}
-      reports={assessments.filter(r => r.status === 'shared').map(r => ({ id: r.id, title: r.title, occurredOn: r.occurredOn }))}
+      reports={assessments.filter(r => r.status === 'shared').map(r => ({
+        id: r.id, title: r.title, occurredOn: r.occurredOn, kind: r.kind,
+        language: r.language, sourceName: r.sourceName, sourceVersion: r.sourceVersion,
+        description: r.description, originalResult: r.originalResult,
+        practitionerComment: r.practitionerComment,
+      }))}
       documents={documents.filter(r => r.status === 'active' && r.kind !== 'report').map(r => ({id: r.id, title: r.kind === 'payment' ? copy.invoice : copy.recommendation, date: r.dateIssued, consultationId: r.consultationId ?? r.id}))}
     />}
 

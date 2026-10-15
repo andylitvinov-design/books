@@ -95,7 +95,7 @@ export function middleware(request: NextRequest) {
     "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
     .replace("media-src 'self'", sessionMediaPolicy)
-    .replace("connect-src 'self' https://www.google-analytics.com", sessionConnectPolicy)
+    .replace("connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", sessionConnectPolicy)
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
