@@ -82,7 +82,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const resources=Array.isArray(plan.resources)?plan.resources:[]
   const media=session.media||[]
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
-    .sort((a,b)=>(a.kind==='audio'?0:1)-(b.kind==='audio'?0:1))
+    .sort((a,b)=>(a.kind==='video'?0:1)-(b.kind==='video'?0:1))
   const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
   const photos=media.filter(item=>item.kind==='image')
   const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
