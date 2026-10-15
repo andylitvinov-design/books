@@ -202,3 +202,22 @@ test('storage onboarding is protected and the mobile editor links to it without 
   assert.match(editor,/href="\/admin\/client-video-storage"/)
   assert.match(editor,/videoStatus\?\.ready===false/)
 })
+
+test('conditional R2 PUT signing matches the independent AWS botocore SigV4 vector',()=>{
+  const fixture={...env,
+    HH_CLIENT_VIDEO_BUCKET:'private-test',
+    HH_CLIENT_VIDEO_ACCESS_KEY_ID:'TESTACCESSID',
+    HH_CLIENT_VIDEO_SECRET_ACCESS_KEY:'TESTSECRETKEY',
+    HH_CLIENT_R2_ACCOUNT_ID:'0123456789abcdef0123456789abcdef',
+  }
+  const fixtureKey='11111111-2222-4333-8444-555555555555/11111111-2222-4333-8444-555555555555.mp4'
+  const url=new URL(signPrivateVideoRequest('r2',fixtureKey,{
+    method:'PUT',mime:'video/mp4',expires:900,
+    at:new Date('2026-10-15T18:15:00Z'),env:fixture,
+  }))
+  // Cross-checked against botocore 1.43 S3SigV4QueryAuth using the same
+  // method, canonical path, Content-Type, If-None-Match and unsigned payload.
+  assert.equal(url.searchParams.get('X-Amz-Signature'),
+    'a8bc13a2179f733fd31ac038e740a8acd2623d56a18e24bb10c775e9a648452f')
+  assert.equal(url.searchParams.get('X-Amz-SignedHeaders'),'content-type;host;if-none-match')
+})
