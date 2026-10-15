@@ -105,3 +105,16 @@
   .dayExerciseContent{padding:11px}
   .screenDetails>ol{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Compact assessment bookends and recovery-stage cards: legible on 320px phones. */
+.assessmentRail{display:flex;align-items:center;flex-wrap:wrap;gap:5px 16px;margin:0!important;padding:12px 15px;border:1px solid #d9dfea;border-radius:12px;background:#f8f4f6;color:#263e56;font-size:12px;line-height:1.5}
+.assessmentRail strong{font-weight:850;color:#74354f}.assessmentRail span{color:#4e687d}
+.overview:has([data-antistress-day-schema]) .phases{gap:8px}
+.overview:has([data-antistress-day-schema]) .phase{padding:13px;gap:6px;min-height:0}
+@media(max-width:530px){
+ .assessmentRail{padding:10px}
+ .overview:has([data-antistress-day-schema]) .phases{gap:6px}
+ .overview:has([data-antistress-day-schema]) .phase{grid-template-columns:minmax(0,1fr);gap:5px;padding:10px 12px}
+ .overview:has([data-antistress-day-schema]) .phase h3{font-size:14px!important}
+ .overview:has([data-antistress-day-schema]) .phase p{font-size:11px;line-height:1.42}
+}
