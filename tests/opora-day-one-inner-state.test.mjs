@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
-import {DAY_ONE_SLIDES,DAY_ONE_ALLOWED,validateDayOneAnswers,dayOneAphorism} from '../lib/inner-growth/anti-stress-day-one.js'
+import {DAY_ONE_SLIDES,DAY_ONE_ALLOWED,DAY_ONE_PRACTICE_GUIDE,validateDayOneAnswers,dayOneAphorism} from '../lib/inner-growth/anti-stress-day-one.js'
 import {courseSingleLessonOutcome} from '../lib/inner-growth/course-single-lesson-outcome.js'
 import {antiStressDay} from '../lib/inner-growth/anti-stress-outcomes-v3.js'
 
@@ -19,8 +19,11 @@ test('fifteen ordered day-one slides teach awareness, support and optional every
   assert.match(DAY_ONE_SLIDES.find(s=>s.kind==='day1-transfer').intent,/state → response/)
   for(const locale of ['ru','en']){
     const lesson=antiStressDay(1,locale)
-    assert.match(lesson.guide,locale==='ru'?/внутренн.*состояни|своём состоянии/i:/present inner state|observation about your state/i)
-    assert.match(lesson.outcome,locale==='ru'?/состояние — возможная потребность — поддержка/:/present state, possible need and chosen support/)
+    // The canonical content must remain pinned for previously enrolled users.
+    assert.match(lesson.outcome,locale==='ru'?/зрительный ориентир/:/visual anchor/)
+    // The new first-day player provides independent state-first UX and audio.
+    assert.match(DAY_ONE_PRACTICE_GUIDE[locale],locale==='ru'?/как вы сейчас|что вы чувствуете/i:/present state/i)
+    assert.match(DAY_ONE_PRACTICE_GUIDE[locale],locale==='ru'?/поддержк|отдых/:/support|rest/i)
   }
 })
 
