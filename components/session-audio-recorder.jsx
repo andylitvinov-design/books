@@ -3,6 +3,7 @@ import { useEffect,useRef,useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Mic,Video,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
 import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
+import { SessionPhotoUploader } from './session-photo-uploader'
 import styles from './client-session.module.css'
 
 const recordingTypes=['audio/mp4','audio/webm;codecs=opus','audio/webm']
@@ -148,7 +149,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     event.target.value=''
   }
   const busy=['preparing','uploading','finalizing'].includes(stage)
-  return <section className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
+  return <>
+  <section className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
     <div className={styles.sectionHeading}>
       <span className={styles.eyebrow}>{ru?'ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ':'VOICE MESSAGE'}</span>
       <h3>{ru?'Записать аудио или видео для сессии':'Record audio or video for this session'}</h3>
@@ -188,5 +190,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
+  <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
+    assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
+  </>
 }
 
