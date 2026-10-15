@@ -325,7 +325,10 @@
 .personal [data-course-upcoming]{margin-left:auto;white-space:nowrap;color:#7d4c63;font-weight:750}
 @media(max-width:700px){.personal [data-course-upcoming]{margin-left:0}}
 
-/* Seven skills and their detailed 14-day curriculum on the public page. */
-.dailyPlanPreview { margin:20px 0 13px;min-width:0; }
-.dailyPlanPreview :global([data-course-14-day-overview]) { max-width:none; }
-@media(max-width:700px){ .dailyPlanPreview{margin-top:13px} }
+/* Course information is a distinct secondary action below the enrolment CTA. */
+.root .programme .programmeMore{display:inline-flex;align-items:center;gap:7px;margin-top:11px;padding:6px 0;min-height:36px;width:max-content;max-width:100%;background:transparent!important;border:0!important;box-shadow:none!important;color:#8e3456!important;font-size:13px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.root .programme .programmeMore:hover{color:#b44668!important}
+
+/* Exact exercises/results for all fourteen Anti-Stress days, responsive. */
+.dailyPlanPreview{margin:19px 0 14px;min-width:0}
+@media(max-width:700px){.dailyPlanPreview{margin-top:12px}}
