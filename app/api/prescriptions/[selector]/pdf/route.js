@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { metadataBaseFor } from '@/data/site-metadata'
 import { isSupportedLocale } from '@/data/remedies'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
-import { buildPrescriptionPdf, buildPaymentPdf } from '@/lib/prescriptions/pdf'
+import { buildPrescriptionPdf, buildPrescriptionMobilePdf, buildPaymentPdf } from '@/lib/prescriptions/pdf'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { authorizePrescriptionRequest } from '@/lib/prescriptions/session'
@@ -19,11 +19,21 @@ export async function GET(request, { params }) {
   const document = record?.kind === 'payment' ? getClientPaymentDocument(record, locale) : getClientPrescription(record, locale)
   if (!document) return new NextResponse(null, { status: 404 })
 
-  const pdf = record.kind === 'payment' ? buildPaymentPdf(document, locale, metadataBaseFor().origin) : buildPrescriptionPdf(document, locale, metadataBaseFor().origin)
+  const preview = new URL(request.url).searchParams.get('preview') === '1'
+  // Narrow, large-type single-column PDF for direct phone viewing. Standard
+  // attachment remains the full A4 original for printing or archiving.
+  const pdf = record.kind === 'payment'
+    ? buildPaymentPdf(document, locale, metadataBaseFor().origin)
+    : preview
+      ? buildPrescriptionMobilePdf(document, locale, metadataBaseFor().origin)
+      : buildPrescriptionPdf(document, locale, metadataBaseFor().origin)
+  // The invitation's 'view without saving' action is an inline PDF, not
+  // the HTML reader. Authorization still requires the scoped HttpOnly session.
+  const inlinePreview = preview
   return new NextResponse(pdf, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': record.kind === 'payment' ? `attachment; filename="${document.paymentStatus === 'received' ? 'receipt' : 'invoice'}.pdf"` : `attachment; filename="${reportPdfFilename(document)}"`,
+      'Content-Disposition': `${inlinePreview ? 'inline' : 'attachment'}; filename="${record.kind === 'payment' ? (document.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(document)}"`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Robots-Tag': 'noindex, nofollow, noarchive',
       'Referrer-Policy': 'no-referrer',

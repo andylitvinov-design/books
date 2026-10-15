@@ -46,22 +46,36 @@ test('IA verifier retains strict JavaScript error assertion and writes separate 
  assert.doesNotMatch(source,/errors\.filter|errors\.splice/)
 })
 
-test('viewport settling waits for a delayed resize-triggered request rather than stale networkidle', async () => {
- const page=new EventEmitter(), request={}, events=[]
- let settled=false, original=globalThis.requestAnimationFrame
- globalThis.requestAnimationFrame=callback=>setImmediate(callback)
+test('viewport settling waits for a delayed resize-triggered request rather than stale networkidle', async t => {
+ const page=new EventEmitter(), request={}, events=[], frames=[]
+ t.mock.timers.enable({apis:['setTimeout']})
+ let settled=false, original=globalThis.requestAnimationFrame, signalFrames, pending
+ const framesReady=new Promise(resolve=>{signalFrames=resolve})
+ globalThis.requestAnimationFrame=callback=>{frames.push(callback);return frames.length}
  page.setViewportSize=async()=>{events.push('resize');page.emit('request',request)}
- page.evaluate=async callback=>{await callback();events.push('frames')}
+ page.evaluate=async callback=>{await callback();events.push('frames');signalFrames()}
  const errors=[];page.on('pageerror',e=>errors.push(e.message))
  try {
-  const pending=resizePublicViewport(page,{width:768,height:900},{quietMs:10,timeoutMs:1000}).then(()=>{settled=true;events.push('settled')})
-  await new Promise(resolve=>setTimeout(resolve,40));assert.equal(settled,false)
+  pending=resizePublicViewport(page,{width:768,height:900},{quietMs:10,timeoutMs:1000}).then(()=>{settled=true;events.push('settled')})
+  await Promise.resolve()
+  assert.equal(frames.length,1)
+  t.mock.timers.tick(80);frames.shift()()
+  assert.equal(frames.length,1)
+  t.mock.timers.tick(80);frames.shift()()
+  await framesReady
+  await Promise.resolve()
+  t.mock.timers.tick(40);assert.equal(settled,false)
   assert.deepEqual(events,['resize','frames'])
   page.emit('pageerror',new Error('must remain visible'))
   page.emit('requestfinished',request)
+  t.mock.timers.tick(10)
   await pending;assert.equal(settled,true);assert.deepEqual(errors,['must remain visible'])
   for(const event of ['request','requestfinished','requestfailed'])assert.equal(page.listenerCount(event),0)
- } finally {if(original===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=original}
+ } finally {
+  page.emit('requestfinished',request)
+  t.mock.timers.tick(10)
+  try {await pending} finally {if(original===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=original}
+ }
 })
 test('viewport settling rejects unfinished requests and removes its observers', async () => {
  const page=new EventEmitter();page.setViewportSize=async()=>page.emit('request',{});page.evaluate=async()=>{}

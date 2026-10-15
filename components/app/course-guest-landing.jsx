@@ -1,0 +1,219 @@
+import Link from 'next/link'
+import {
+  ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3,
+  Compass, HeartHandshake, Leaf, LockKeyhole, ShieldCheck, Sparkles, Waves,
+} from 'lucide-react'
+import Course14DayOverview from './course-14-day-overview'
+import AntiStressModuleJourney from '@/components/antistress-module-journey'
+import styles from './course-guest-landing.module.css'
+
+const COPY = {
+  ru: {
+    breadcrumb: 'Курсы', eyebrow: 'HOLISTIC HOUSE · КУРС ОПОРА', free: 'Первый курс бесплатно',
+    brand: 'ОПОРА', title: 'Антистресс',
+    headline: 'Меньше борьбы с собой. Больше внутренней опоры.',
+    introduction: 'Одна программа и шесть вариантов по 14 дней. Пройдите стартовые опросы, узнайте подходящий модуль и самостоятельно подтвердите свой выбор.',
+    facts: ['6 модулей', '14 дней каждый', '5–12 минут в день'],
+    start: 'Начать курс бесплатно', startTests: 'Войти и пройти стартовые тесты',
+    programme: 'Посмотреть программу',
+    privacy: 'Сначала вход и стартовая оценка состояния. Выбор тестов и участие — только с вашего согласия.',
+    imageAlt: 'Человек на фоне спокойного горного пейзажа',
+    caption: 'Можно начать с одного маленького шага.',
+    valueEyebrow: 'ВАШИ ПЕРВЫЕ ШАГИ', valueTitle: 'Не нужно становиться другим человеком, чтобы помочь себе.',
+    valueLead: 'Вместо сложной теории — короткие практики, выбор и внимание к тому, что подходит именно вам.',
+    benefits: [
+      { title: 'Замечать напряжение раньше', text: 'Понимать свои первые сигналы перегрузки и вовремя делать паузу.' },
+      { title: 'Находить свою опору', text: 'Пробовать мягкие телесные, образные и повседневные способы поддержки.' },
+      { title: 'Выбирать, а не заставлять', text: 'Развивать гибкость и право остановиться, изменить или пропустить упражнение.' },
+    ],
+    planEyebrow: 'ПРОГРАММА КУРСА', planTitle: 'Пример программы: Антистресс 2',
+    planLead: 'Здесь раскрыт модуль стабилизации. В других модулях на каждый день предусмотрены отдельные темы и практики.',
+    howEyebrow: 'КАК ЭТО РАБОТАЕТ', howTitle: 'Просто начать. Удобно продолжать.',
+    how: [
+      { title: 'Определите точку старта', text: 'После входа заполните HH Weekly Pulse (8 вопросов), затем Module Finder (8 вопросов с правом пропуска). GAD-7 и Resource Pulse по желанию.' },
+      { title: 'Практикуйтесь каждый день', text: 'Один небольшой урок, интерактивное упражнение и выбор комфортного темпа.' },
+      { title: 'Заметьте свои изменения', text: 'В конце можно повторить стартовый тест и сравнить сопоставимые результаты.' },
+    ],
+    bottomTitle: 'Начните с того, что доступно вам сегодня.',
+    bottomLead: 'Без спешки, оценок и требования быть «идеальным».',
+    legacy: 'Перейти в прежний кабинет',
+    legal: 'Самостоятельное обучение и самонаблюдение. Курс не предназначен для диагностики или замены профессиональной помощи.',
+    retry: 'Попробовать снова',
+  },
+  en: {
+    breadcrumb: 'Courses', eyebrow: 'HOLISTIC HOUSE · OPORA COURSE', free: 'Your first course is free',
+    brand: 'OPORA', title: 'Stress Relief',
+    headline: 'Less pressure on yourself. More room to feel supported.',
+    introduction: 'One programme, six different 14-day modules. Complete the starting assessments, see your suggested module and decide what works for you.',
+    facts: ['6 modules', '14 days each', '5–12 min a day'],
+    start: 'Start the free course', startTests: 'Sign in and start the assessments',
+    programme: 'Explore the programme',
+    privacy: 'Sign in and take a starting assessment first. Tests and participation are always your choice.',
+    imageAlt: 'A person against a peaceful mountain landscape',
+    caption: 'One small step is a meaningful beginning.',
+    valueEyebrow: 'WHAT YOU CAN PRACTISE', valueTitle: 'You do not have to become someone else to care for yourself.',
+    valueLead: 'Less theory, more small practices, choice and awareness of what feels manageable for you.',
+    benefits: [
+      { title: 'Notice tension sooner', text: 'Recognise early signs of overload and make room for a pause.' },
+      { title: 'Find your own supports', text: 'Explore gentle body-based, imagery and everyday grounding practices.' },
+      { title: 'Choose rather than force', text: 'Build flexibility and permission to pause, adjust or skip an exercise.' },
+    ],
+    planEyebrow: 'COURSE CURRICULUM', planTitle: 'Example: the Anti-Stress 2 module',
+    planLead: 'This preview shows the stabilization module. Other modules offer different daily themes and exercises.',
+    howEyebrow: 'HOW IT WORKS', howTitle: 'Easy to start. Simple to keep going.',
+    how: [
+      { title: 'See your starting point', text: 'After signing in, complete 8 Weekly Pulse questions and 8 Module Finder items. GAD-7 and Resource Pulse remain optional.' },
+      { title: 'Practise each day', text: 'One short lesson, an interactive exercise and a pace that feels right.' },
+      { title: 'Notice what changes', text: 'At the end, you can repeat the same assessment and compare eligible results.' },
+    ],
+    bottomTitle: 'Begin with what is possible today.',
+    bottomLead: 'No rush, no grading and no need to get it perfect.',
+    legacy: 'Open the previous client cabinet',
+    legal: 'Self-guided education and reflection. Not for diagnosis or as a substitute for professional care.',
+    retry: 'Try again',
+  },
+  es: {
+    breadcrumb: 'Cursos', eyebrow: 'HOLISTIC HOUSE · CURSO OPORA', free: 'Tu primer curso es gratis',
+    brand: 'OPORA', title: 'Menos estrés',
+    headline: 'Menos exigencia. Más apoyo interior.',
+    introduction: 'Un programa con seis módulos diferentes de 14 días. Completa la evaluación inicial, recibe una sugerencia y elige libremente.',
+    facts: ['6 módulos', '14 días cada uno', '5–12 min al día'],
+    start: 'Empezar gratis', startTests: 'Iniciar sesión y hacer la evaluación inicial',
+    programme: 'Ver el programa',
+    privacy: 'Primero inicia sesión y completa la evaluación inicial. Participar es siempre tu elección.',
+    imageAlt: 'Una persona ante un paisaje tranquilo de montaña',
+    caption: 'Un paso pequeño puede ser suficiente para empezar.',
+    valueEyebrow: 'LO QUE PUEDES PRACTICAR', valueTitle: 'No tienes que cambiar quién eres para cuidarte.',
+    valueLead: 'Menos teoría, más prácticas breves y libertad de elección.',
+    benefits: [
+      { title: 'Reconocer la tensión', text: 'Observar las primeras señales y permitirte una pausa.' },
+      { title: 'Encontrar apoyo', text: 'Probar recursos corporales, imaginativos y cotidianos.' },
+      { title: 'Elegir sin forzarte', text: 'Poder detener, adaptar o saltar un ejercicio.' },
+    ],
+    planEyebrow: 'PROGRAMA', planTitle: 'Ejemplo: módulo Antiestrés 2',
+    planLead: 'Aquí se muestra el módulo de estabilización. Los demás tienen diferentes temas y prácticas.',
+    howEyebrow: 'CÓMO FUNCIONA', howTitle: 'Fácil de empezar y continuar.',
+    how: [
+      { title: 'Conoce tu punto de partida', text: 'Después de iniciar sesión, completa 8 preguntas del Weekly Pulse y 8 sobre habilidades. GAD-7 y Resource Pulse son opcionales.' },
+      { title: 'Practica cada día', text: 'Una lección corta, un ejercicio interactivo y tu propio ritmo.' },
+      { title: 'Observa tus cambios', text: 'Al final, puedes repetir la evaluación y comparar los resultados compatibles.' },
+    ],
+    bottomTitle: 'Empieza con lo que puedas hoy.',
+    bottomLead: 'Sin prisa, sin notas, sin necesidad de hacerlo perfecto.',
+    legacy: 'Abrir el antiguo espacio privado',
+    legal: 'Educación y reflexión personal; no es un diagnóstico ni sustituye la atención profesional.',
+    retry: 'Reintentar',
+  },
+}
+
+const benefitIcons = [Waves, HeartHandshake, Compass]
+
+export default function CourseGuestLanding({
+  locale = 'en', onStart, busy = false, stressSignup = false,
+  errorMessage, onRetry, legacyText, nonDiagnostic,
+}) {
+  const t = COPY[locale] || COPY.en
+  return (
+    <div className={styles.root} data-opora-guest-landing>
+      <nav className={styles.breadcrumbs} aria-label={locale === 'ru' ? 'Навигация' : 'Breadcrumb'}>
+        <Link href={`/${locale}/courses`}>{t.breadcrumb}</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{t.brand} · {t.title}</span>
+      </nav>
+      <section className={styles.hero} aria-labelledby="opora-guest-title">
+        <div className={styles.heroCopy}>
+          <div className={styles.kickerRow}>
+            <span className={styles.kicker}><Leaf size={15} aria-hidden="true" />{t.eyebrow}</span>
+            <span className={styles.free}><CheckCircle2 size={14} aria-hidden="true" />{t.free}</span>
+          </div>
+          <h1 id="opora-guest-title">{t.brand}<span>{t.title}</span></h1>
+          <p className={styles.headline}>{t.headline}</p>
+          <p className={styles.introduction}>{t.introduction}</p>
+          <div className={styles.facts} aria-label={t.facts.join(', ')}>
+            <span><CalendarDays size={17} aria-hidden="true" />{t.facts[0]}</span>
+            <span><Sparkles size={17} aria-hidden="true" />{t.facts[1]}</span>
+            <span><Clock3 size={17} aria-hidden="true" />{t.facts[2]}</span>
+          </div>
+          <div className={styles.heroActions}>
+            <button type="button" className={styles.primary} onClick={onStart} disabled={busy}
+              data-antistress-start data-antistress-start-tests={stressSignup ? '' : undefined}>
+              {stressSignup ? t.startTests : t.start}<ArrowRight size={18} aria-hidden="true" />
+            </button>
+            <a href="#opora-guest-modules" className={styles.secondary}>{t.programme}<ArrowRight size={16} aria-hidden="true" /></a>
+          </div>
+          <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.privacy}</p>
+        </div>
+        <figure className={styles.heroVisual}>
+          <div className={styles.photoFrame}>
+            <img src="/images/holistic-house/course-focus-mountain-boy.webp"
+              width="920" height="700" alt={t.imageAlt} decoding="async" />
+          </div>
+          <figcaption><span aria-hidden="true">✦</span> {t.caption}</figcaption>
+        </figure>
+      </section>
+
+      <AntiStressModuleJourney locale={locale} sectionId="opora-guest-modules" />
+
+      <section className={styles.benefits} aria-labelledby="opora-guest-benefits">
+        <div className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.valueEyebrow}</p>
+          <h2 id="opora-guest-benefits">{t.valueTitle}</h2>
+          <p>{t.valueLead}</p>
+        </div>
+        <div className={styles.benefitGrid}>
+          {t.benefits.map((benefit, index) => {
+            const Icon = benefitIcons[index]
+            return (
+              <article className={styles.benefit} key={benefit.title}>
+                <span className={styles.benefitIcon}><Icon size={21} aria-hidden="true" /></span>
+                <h3>{benefit.title}</h3><p>{benefit.text}</p>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className={styles.programme} id="opora-guest-plan" aria-labelledby="opora-guest-plan-title">
+        <div className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.planEyebrow}</p>
+          <h2 id="opora-guest-plan-title">{t.planTitle}</h2>
+          <p>{t.planLead}</p>
+        </div>
+        <Course14DayOverview locale={locale} programId="stress" compact />
+      </section>
+
+      <section className={styles.how} aria-labelledby="opora-guest-how">
+        <div className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.howEyebrow}</p>
+          <h2 id="opora-guest-how">{t.howTitle}</h2>
+        </div>
+        <div className={styles.howGrid}>
+          {t.how.map((step, index) => <article key={step.title} className={styles.howStep}>
+            <span className={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</span>
+            <h3>{step.title}</h3><p>{step.text}</p>
+          </article>)}
+        </div>
+      </section>
+
+      <section className={styles.endCta} aria-labelledby="opora-guest-final">
+        <div>
+          <span className={styles.endKicker}><ShieldCheck size={17} aria-hidden="true" />{t.free}</span>
+          <h2 id="opora-guest-final">{t.bottomTitle}</h2>
+          <p>{t.bottomLead}</p>
+        </div>
+        <button className={styles.primary} type="button" onClick={onStart} disabled={busy}>
+          {stressSignup ? t.startTests : t.start}<ArrowRight size={18} aria-hidden="true" />
+        </button>
+      </section>
+
+      {errorMessage && <div className={styles.error} role="alert">
+        <p>{errorMessage}</p>
+        {onRetry && <button type="button" onClick={onRetry}>{t.retry}</button>}
+      </div>}
+      <footer className={styles.footer}>
+        <p><BookOpen size={16} aria-hidden="true" />{nonDiagnostic || t.legal}</p>
+        <a href={`/${locale}/client`}>{legacyText || t.legacy}</a>
+      </footer>
+    </div>
+  )
+}

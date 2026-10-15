@@ -38,7 +38,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   return <Root className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
-      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
+      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} mobilePdf />{cabinetAction}
     </div>}
     <article className="canonical-document canonical-document--editorial">
       <DocumentAutoPrint enabled={admin && autoPrint} />
@@ -52,7 +52,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </div>
       <header className="canonical-report-heading">
         <div className="canonical-report-hero">
-          <p className="canonical-report-eyebrow">{locale === 'ru' ? 'HOLISTIC HOUSE · ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'HOLISTIC HOUSE · PERSONAL REPORT'}</p>
+          <p className="canonical-report-eyebrow">{locale === 'ru' ? 'ПЕРСОНАЛЬНЫЙ ОТЧЁТ' : 'PERSONAL REPORT'}</p>
           <h1>{reportHeading}</h1>
           <p className="canonical-report-hero-subtitle">{locale === 'ru' ? 'Мягкий путь к внутреннему равновесию' : 'A gentler path to inner balance'}</p>
           <span className="canonical-editorial-hero-motto" aria-hidden="true">{locale === 'ru' ? 'Глубже. Человечнее. Целостнее.' : 'Deeper. Kinder. More whole.'}</span>

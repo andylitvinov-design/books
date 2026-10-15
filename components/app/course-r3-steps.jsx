@@ -11,6 +11,7 @@ import { getCoursePreset, coursePresetSuggestedScales } from '@/lib/inner-growth
 import { courseProgramFromTopics, orderCourseProgramTests, suggestCourseProgramScales, ANTISTRESS_REQUIRED_BASELINE_KEY, ANTISTRESS_BASELINE_RECENCY_DAYS, isAntistressBaselineRecent, hasAntistressRequiredBaseline, withAntistressRequiredBaseline } from '@/lib/inner-growth/course-programs'
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
+import AntiStressModuleFinder from './antistress-module-finder'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
@@ -218,7 +219,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
     catch { return 'UTC' }
   }
-  async function submitFocusSelection(keys, isMeasured = true) {
+  async function submitFocusSelection(keys, isMeasured = true, moduleSelection = null) {
     if(actionLock.current || busy || localBusy) return
     const requested = isMeasured ? keys : fallbackGoals
     if(!Array.isArray(requested) || !requested.length) return
@@ -241,6 +242,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const result=await onCourseCommand('choose-goals',{
         expectedRevision:revision,
         ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
+        ...(moduleSelection?{
+          moduleAnswers:moduleSelection.answers,moduleGoal:moduleSelection.goal,
+          moduleId:moduleSelection.moduleId,
+        }:{}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
       })
@@ -298,10 +303,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       preferred = intent.testKeys.filter(key=>available.has(key))
     }
     const starter=programme?.id==='stress'
-      ? ['hh-weekly-pulse','gad-7'].filter(key=>ranked.some(item=>item.key===key))
+      ? ['hh-weekly-pulse'].filter(key=>ranked.some(item=>item.key===key))
       : ranked.slice(0,5).map(item=>item.key)
-    // A short stress course starts with one 7-day questionnaire and one
-    // 14-day anxiety instrument. Resource Pulse remains an opt-in third test.
+    // Weekly Pulse is the only compulsory existing questionnaire.
+    // The short skill finder follows; GAD-7/Resource remain opt-in.
     setChosenTests(preset ? [...preset.testKeys] : withAntistressRequiredBaseline(confirmedKeys.length ? [...confirmedKeys] : preferred.length ? preferred : starter,programme?.id))
   },[stage,testsTouched,confirmedKeys,ranked,preset,programme?.id])
   function toggleTest(key) {
@@ -374,6 +379,25 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       disabled={busy||predicted.urgent||(!focusTags.length&&!concerns.trim())}
       onClick={()=>onAct('intake',{concerns,focusTags})}>{t.confirmFocus}<ArrowRight size={17}/></button>
   </section>
+
+  if(stage===2 && confirmed && baselineConfirmed && pending.length===0 && !showCompletedOptions && isAntistress){
+    return <section className={'hh-panel '+styles.section} data-antistress-start-tests-complete>
+      <div className={styles.completeHero}>
+        <h2>{ru?'Исходное тестирование готово':'Your starting assessment is ready'}</h2>
+        <p>{ru?'Weekly Pulse уже сохранён. Следующий шаг — восемь коротких вопросов о навыках. По ним мы предложим ваш модуль Антистресс 1–6.':
+          'Your Weekly Pulse is saved. Next are eight short skill questions to suggest one of six Anti-Stress modules.'}</p>
+        <strong>{confirmedStatuses.length} / {confirmedStatuses.length} {t.completed.toLowerCase()}</strong>
+      </div>
+      <div className={styles.focusActions}>
+        <button type="button" className={'hh-primary '+styles.burgundyPrimary} disabled={busy||localBusy}
+          data-open-antistress-module-finder onClick={()=>onAct('review')}>
+          {ru?'Определить мой модуль':'Find my module'} <ArrowRight size={17}/>
+        </button>
+        <button type="button" className={styles.whiteSecondary}
+          disabled={busy||localBusy} onClick={()=>setShowCompletedOptions(true)}>{t.reviseSelection}</button>
+      </div>
+    </section>
+  }
 
   if(stage===2 && confirmed && baselineConfirmed && pending.length===0 && !showCompletedOptions) {
     return <CourseCompletionReview
@@ -461,6 +485,12 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         {pending.length>0&&<p className={styles.small}>{t.reviewDisabled}</p>}
       </section>}
     </section>
+  }
+
+  if(stage===3 && isAntistress) {
+    return <AntiStressModuleFinder locale={locale} profile={profile} busy={busy||localBusy}
+      onStart={selection=>submitFocusSelection(suggestedScales.map(scale=>scale.id),
+        profile.eligible.length>0,selection)}/>
   }
 
   if(stage===3) {

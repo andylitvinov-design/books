@@ -37,7 +37,12 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
   // Print is an already-authorized, explicit action from the document toolbar.
   if (print === '1') return viewer
   return (
-    <ReportInvitationGate locale={locale} kind="document" saveAction={cabinetAction}>
+    <ReportInvitationGate
+      locale={locale}
+      kind="document"
+      saveAction={cabinetAction}
+      viewPdfHref={`/api/prescriptions/${selector}/pdf?locale=${locale}&preview=1`}
+    >
       {viewer}
     </ReportInvitationGate>
   )
