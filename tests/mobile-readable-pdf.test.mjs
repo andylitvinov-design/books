@@ -23,8 +23,8 @@ test('mobile PDF is actually narrow and uses readable large text rather than min
     const source=latin(pdf)
     assert.match(source,/^%PDF-1\.7/)
     assert.match(source,/\/MediaBox \[0 0 390 780\]/)
-    assert.match(source,/18\.5 Tf/,'mobile PDF—not only HTML—has 18.5pt body text')
-    assert.match(source,/28 Tf/,'mobile PDF has full-size 28pt title')
+    assert.match(source,/15\.8 Tf/,'mobile PDF has balanced readable 15.8pt body text')
+    assert.match(source,/25 Tf/,'mobile PDF has clear 25pt report title')
     assert.match(source,/SYNTHETIC MOBILE CLIENT/)
     assert.match(source,/JOURNAL/)
     assert.match(source,/OBSERVATION/)
@@ -97,12 +97,51 @@ test('old saved owner reports and Google Cabinet expose a true large-PDF button'
 test('mobile PDF preserves its actual sources at large sizes while invoices stay A4',()=>{
   const mobile=latin(buildPrescriptionMobilePdf(base,'en','https://example.invalid'))
   assert.match(mobile,/\/MediaBox \[0 0 390 780\]/)
-  assert.match(mobile,/18\.5 Tf/)
-  assert.match(mobile,/21 Tf/)
-  assert.match(mobile,/28 Tf/)
+  assert.match(mobile,/15\.8 Tf/)
+  assert.match(mobile,/19\.5 Tf/)
+  assert.match(mobile,/25 Tf/)
   assert.match(mobile,/\/Signature Do Q/)
   assert.match(mobile,/\/MobileRemedy0 Do Q/)
   assert.doesNotMatch(mobile,/PRIVATE-NOT-FOR-CLIENT/)
   const paper=latin(buildPrescriptionPdf(base,'en','https://example.invalid'))
   assert.match(paper,/\/MediaBox \[0 0 595\.28 841\.89\]/)
+})
+
+
+function mobilePageStreams(pdf) {
+  const body=pdf.toString('latin1')
+  return [...body.matchAll(/\/Type \/Page\b[^\r\n]*?\/Contents (\d+) 0 R/g)].map(match=>{
+    const token=new RegExp('\\n'+match[1]+' 0 obj\\n<< /Length (\\d+) >>\\nstream\\n')
+    const content=body.match(token)
+    assert.ok(content,'each page has its own PDF content stream')
+    const start=content.index+content[0].length
+    return body.slice(start,start+Number(content[1]))
+  })
+}
+
+test('balanced report keeps title, original photograph and remedy schedule on the same page',()=>{
+  const source=readFileSync('lib/prescriptions/pdf.js','utf8')
+  const pdf=buildPrescriptionMobilePdf(base,'en','https://example.invalid')
+  const pages=mobilePageStreams(pdf)
+  const remedyPage=pages.findIndex(p=>p.includes('/MobileRemedy0 Do Q'))
+  assert.ok(remedyPage>=1,'remedy begins after the factual summary cover')
+  assert.match(pages[remedyPage],/\(Veratrum Album\)/,
+    'the actual remedy title appears beside its original image, not on the next page')
+  assert.match(source,/room\(cardHeight\+105\)/,'title-photo pair is a keep-together unit')
+  assert.match(source,/const total=57\+lines\.length\*23/,
+    'small authored analyses are measured and kept intact before breaking')
+  assert.doesNotMatch(source.slice(source.indexOf('export function buildPrescriptionMobilePdf')),
+    /txt\('→'/,'progress arrow is vector-drawn rather than a missing-font question mark')
+  assert.match(pages[0],/15\.8 Tf/,'genuine readable body text is printed as PDF vector type')
+})
+
+test('appendix begins on a new page after signing and retains source text',()=>{
+  const pdf=buildPrescriptionMobilePdf(base,'en','https://example.invalid')
+  const pages=mobilePageStreams(pdf)
+  const sig=pages.findIndex(p=>p.includes('/Signature Do Q'))
+  const appendix=pages.findIndex((p,i)=>i>sig && p.includes('/MobileRemedy0 Do Q'))
+  assert.ok(sig>=0)
+  assert.ok(appendix>sig,'remedy appendix photo starts after signed main report')
+  assert.ok(appendix>=sig+1,'appendix starts on a new page')
+  assert.equal(pages[sig].includes('(APPENDIX)'),false)
 })
