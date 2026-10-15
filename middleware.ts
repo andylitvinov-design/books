@@ -65,6 +65,7 @@ export function middleware(request: NextRequest) {
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
   const deliveryPath = /^\/admin\/clients\/[^/]+\/sessions(?:\/|$)/.test(pathname)
     || /^\/admin\/documents\/[^/]+\/?$/.test(pathname)
+    || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
     || /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
     || /^\/(en|ru)\/client\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
   const deliveryOrigin = (() => {
