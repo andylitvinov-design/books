@@ -1,7 +1,7 @@
 'use client'
 import { useEffect,useRef,useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Mic,Pause,Play,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
+import { Mic,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
 import styles from './client-session.module.css'
 
 const recordingTypes=['audio/mp4','audio/webm;codecs=opus','audio/webm']
