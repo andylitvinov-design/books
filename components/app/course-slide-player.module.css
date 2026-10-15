@@ -614,3 +614,42 @@
  .antiStressProbe > strong { font-size:14px; }
  .antiStressProbeChoices button { padding:11px; font-size:12px; }
 }
+
+
+/* OPORA AS-1.9 visual pass: unify opening five with distinct interactive exercises 6–15.
+   Structure and existing course/testing logic stay unchanged. */
+.overlay[data-opora-first-lesson] .frame{
+  background:linear-gradient(170deg,#fafdff 0%,#f5fbfa 62%,#fcf9fa 100%);
+}
+.overlay[data-opora-first-lesson] .header{
+  border-bottom:1px solid #cde3e8;box-shadow:0 2px 14px #1539500a;
+}
+.overlay[data-opora-first-lesson] .progressTrack{height:8px;background:#dcebf0}
+.overlay[data-opora-first-lesson] .progressValue{background:linear-gradient(90deg,#2a8c9b,#138d88,#0e687f)}
+.overlay[data-opora-first-lesson] .dayPill{background:#e5f7f3;color:#1d7c86;border-color:#b9e0d7}
+.overlay[data-opora-first-lesson] .content{gap:14px}
+.overlay[data-opora-first-lesson] .identityTag{color:#833f5a;background:#fbeef1;border:1px solid #f0d7e0}
+.overlay[data-opora-first-lesson] .slideTitle{color:#173b58;letter-spacing:-.033em}
+.overlay[data-opora-first-lesson] .primary{
+  background:linear-gradient(112deg,#175269,#0e7e83)!important;
+  border-color:#126779!important;border-bottom-color:#0b555e!important;
+  border-radius:16px!important;box-shadow:0 11px 24px #0b67772b;
+}
+.overlay[data-opora-first-lesson] .footer{
+  background:linear-gradient(180deg,#fffffffa,#f7fbfc);
+  border-top:1px solid #d8e9ed;
+}
+.overlay[data-opora-first-lesson] .content[data-slide-kind=recall] .focusName,
+.overlay[data-opora-first-lesson] .content[data-slide-kind=baseline] .focusName{
+  background:#eff9f8;border-color:#cce9e7;color:#2c6175;
+}
+.overlay[data-opora-first-lesson] .content[data-slide-kind=idea] .quote{
+  border-left-color:#954963;background:linear-gradient(115deg,#fbf0f4,#f1fbf9);
+  color:#57394f;
+}
+.overlay[data-opora-first-lesson] button:focus-visible,
+.overlay[data-opora-first-lesson] input:focus-visible{outline:3px solid #109baa;outline-offset:3px}
+@media(max-width:540px){
+  .overlay[data-opora-first-lesson] .content{padding:16px 16px 19px;gap:12px}
+  .overlay[data-opora-first-lesson] .footer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+}

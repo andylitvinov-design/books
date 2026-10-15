@@ -335,11 +335,17 @@ export default function CourseSlidePlayer({
   const [associationWords,setAssociationWords]=useState('')
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
-    setDayOneAnswers(previous=>({...previous,[field]:value}))
+    setDayOneAnswers(previous=>{
+      const next={...previous,[field]:value}
+      if(field==='anchor'&&value!=='colour')delete next.anchorTone
+      if(field==='hintUsed'&&value==='yes'&&next.independent==='independent')delete next.independent
+      if(field==='transferCue'&&['no_plan','skip'].includes(value))delete next.transferAction
+      return next
+    })
     if(field==='comfort')setComfort(value)
     if(field==='adaptation')setAdaptationChoice(value)
-    if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
-    if(field==='experience'&&value==='unchanged')setFlexibility('same')
+    if(field==='experience')setFlexibility(value==='more_choice'?'more_choice'
+      :value==='unchanged'?'same':'skip')
   }
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
@@ -491,7 +497,7 @@ export default function CourseSlidePlayer({
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.8":undefined} ref={frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
