@@ -131,7 +131,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
             <div className={styles.dayExerciseContent}>
               <p><strong>{st.practice}:</strong> {day.exercise}</p>
               <p><strong>{st.result}:</strong> {day.adapted?(locale==='ru'?'Опробовать подходящий способ и выбрать: продолжить, упростить, отдохнуть или пропустить.':locale==='es'?'Probar una opción adecuada y poder continuar, simplificar, descansar u omitir.':'Try an acceptable choice and decide to continue, simplify, rest or skip.'):day.result}</p>
-              {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>}
+              {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>}}
               {!day.adapted&&day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
               {!day.adapted&&<div className={styles.axisList} aria-label={st.scales}>
                 {day.scales.map(axis=><span key={axis.id}>{axis.label}</span>)}
