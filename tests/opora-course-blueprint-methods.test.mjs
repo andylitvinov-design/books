@@ -74,7 +74,7 @@ test('days two through fourteen have real safe interactive activity, not a passi
      assert.ok(a.choices.every(q=>q.label.length>=5))
      assert.equal(validateAntiStressMethodChoice(day,a.choices[0].value),a.choices[0].value)
      assert.equal(validateAntiStressMethodChoice(day,null),null)
-     assert.throws(()=>validateAntiStressMethodChoice(day,'unknown'),/INVALID/)
+     assert.throws(()=>validateAntiStressMethodChoice(day,'not_in_catalog'),/INVALID/)
    }
  }
  assert.equal(antiStressMethodActivity(1),null)
