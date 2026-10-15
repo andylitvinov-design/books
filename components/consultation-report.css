@@ -2982,3 +2982,25 @@
     print-color-adjust:exact;
   }
 }
+
+
+/* Match the approved original masthead in the browser reader as well as PDF:
+   retain the authentic small lighthouse beside the practitioner's credentials. */
+.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+  display:block;
+  flex:0 0 66px;
+  width:66px;
+  height:66px;
+  object-fit:contain;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+    width:51px;height:51px;flex-basis:51px;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img {
+    display:block;
+    width:55px;height:55px;flex-basis:55px;
+  }
+}
