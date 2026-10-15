@@ -1,7 +1,7 @@
 // Write-capable acceptance harness: loopback + isolated CI Redis DB 15 ONLY.
 // There is deliberately no --live flag, production URL, seed route or real credential.
 import assert from 'node:assert/strict'
-import { observePublicNavigation } from './ia-public-navigation-diagnostics.mjs'
+import { observePublicNavigation, resizePublicViewport } from './ia-public-navigation-diagnostics.mjs'
 import { randomBytes, randomUUID, createHmac } from 'node:crypto'
 import { createServer } from 'node:https'
 import { request as httpRequest } from 'node:http'
@@ -67,7 +67,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
       for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
-        await page.setViewportSize({ width, height: 900 })
+        await resizePublicViewport(page, { width, height: 900 })
         assert.equal((await go(page, path)).status(), 200, label)
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')

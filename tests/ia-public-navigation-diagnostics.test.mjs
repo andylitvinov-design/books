@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
-import { publicDiagnosticUrl, observePublicNavigation } from '../scripts/ia-public-navigation-diagnostics.mjs'
+import { publicDiagnosticUrl, observePublicNavigation, resizePublicViewport } from '../scripts/ia-public-navigation-diagnostics.mjs'
 const origin = 'https://127.0.0.1:3444'
 test('public diagnostics strip all query values and refuse private/external/credential URLs', () => {
   assert.deepEqual(publicDiagnosticUrl(origin + '/es/services/imagery-therapy?_rsc=secret&token=secret', origin), {path:'/es/services/imagery-therapy',rsc:true})
@@ -44,4 +44,30 @@ test('IA verifier retains strict JavaScript error assertion and writes separate 
  assert.match(source,/public-navigation-diagnostics\.json/)
  assert.match(source,/finally \{ diagnostic\.stop\(\) \}/)
  assert.doesNotMatch(source,/errors\.filter|errors\.splice/)
+})
+
+test('viewport settling waits for a delayed resize-triggered request rather than stale networkidle', async () => {
+ const page=new EventEmitter(), request={}, events=[]
+ let settled=false, original=globalThis.requestAnimationFrame
+ globalThis.requestAnimationFrame=callback=>setImmediate(callback)
+ page.setViewportSize=async()=>{events.push('resize');page.emit('request',request)}
+ page.evaluate=async callback=>{await callback();events.push('frames')}
+ const errors=[];page.on('pageerror',e=>errors.push(e.message))
+ try {
+  const pending=resizePublicViewport(page,{width:768,height:900},{quietMs:10,timeoutMs:1000}).then(()=>{settled=true;events.push('settled')})
+  await new Promise(resolve=>setTimeout(resolve,40));assert.equal(settled,false)
+  assert.deepEqual(events,['resize','frames'])
+  page.emit('pageerror',new Error('must remain visible'))
+  page.emit('requestfinished',request)
+  await pending;assert.equal(settled,true);assert.deepEqual(errors,['must remain visible'])
+  for(const event of ['request','requestfinished','requestfailed'])assert.equal(page.listenerCount(event),0)
+ } finally {if(original===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=original}
+})
+test('viewport settling rejects unfinished requests and removes its observers', async () => {
+ const page=new EventEmitter();page.setViewportSize=async()=>page.emit('request',{});page.evaluate=async()=>{}
+ await assert.rejects(resizePublicViewport(page,{width:768,height:900},{quietMs:1,timeoutMs:15}),/did not settle/)
+ for(const event of ['request','requestfinished','requestfailed'])assert.equal(page.listenerCount(event),0)
+ const source=readFileSync(new URL('../scripts/verify-ia-v2.mjs',import.meta.url),'utf8')
+ assert.match(source,/await resizePublicViewport\(page, \{ width, height: 900 \}\)\s+assert.equal\(\(await go\(page, path\)\)/)
+ assert.match(source,/assert\.deepEqual\(errors, \[\]\)/)
 })
