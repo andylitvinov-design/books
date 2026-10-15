@@ -22,6 +22,7 @@ const COPY = {
     continue: 'Continue course', completeSetup: 'Continue setup', review: 'Review my course',
     add: 'Add a new course', first: 'Start OPORA Anti-Stress',
     addNote: 'A new topic and its own 14-day journey', firstNote: '5 stress routes · 14 lessons each · your choice',
+    courseLabel: 'OPORA · STRESS RELIEF', nextLabel: 'EXPLORE COURSES', courseAction: 'Start for free', nextAction: 'View options',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
     upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
     plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
@@ -50,6 +51,7 @@ const COPY = {
     continue: 'Продолжить курс', completeSetup: 'Продолжить настройку', review: 'Посмотреть мой курс',
     add: 'Добавить новый курс', first: 'Начать «ОПОРА — Антистресс»',
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '5 маршрутов · по 14 занятий · ваш выбор',
+    courseLabel: 'ОПОРА · АНТИСТРЕСС', nextLabel: 'ДРУГИЕ НАПРАВЛЕНИЯ', courseAction: 'Начать бесплатно', nextAction: 'Посмотреть условия',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
     upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
     plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
@@ -245,12 +247,20 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
       </article>}
 
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
-        <span className={styles.plusIcon}><Plus size={25} strokeWidth={1.8} aria-hidden="true"/></span>
+        <span className={styles.addTileMedia} aria-hidden="true">
+          <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
+            width={240} height={180} loading="lazy" decoding="async" />
+          <span className={styles.addTileMediaBadge}><Plus size={17} strokeWidth={2} /></span>
+        </span>
         <span className={styles.addTileText}>
+          <span className={styles.addTileEyebrow}>{hasCourse ? t.nextLabel : t.courseLabel}</span>
           <strong>{hasCourse ? t.add : t.first}</strong>
           <small>{hasCourse ? t.addNote : t.firstNote}</small>
+          <span className={styles.addTileAction}>
+            {hasCourse ? t.nextAction : t.courseAction}
+            <ArrowRight size={16} aria-hidden="true"/>
+          </span>
         </span>
-        <ArrowRight className={styles.addArrow} size={19} aria-hidden="true"/>
       </button>
     </section>
 
