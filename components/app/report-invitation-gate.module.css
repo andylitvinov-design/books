@@ -108,3 +108,11 @@
 @media (prefers-reduced-motion: reduce) {
   .content { transition: none; }
 }
+
+/* The invitation preview is a native browser PDF hyperlink, not an HTML reveal. */
+.viewButton:is(a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

@@ -20,10 +20,13 @@ export async function GET(request, { params }) {
   if (!document) return new NextResponse(null, { status: 404 })
 
   const pdf = record.kind === 'payment' ? buildPaymentPdf(document, locale, metadataBaseFor().origin) : buildPrescriptionPdf(document, locale, metadataBaseFor().origin)
+  // The invitation's 'view without saving' action is an inline PDF, not
+  // the HTML reader. Authorization still requires the scoped HttpOnly session.
+  const inlinePreview = new URL(request.url).searchParams.get('preview') === '1'
   return new NextResponse(pdf, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': record.kind === 'payment' ? `attachment; filename="${document.paymentStatus === 'received' ? 'receipt' : 'invoice'}.pdf"` : `attachment; filename="${reportPdfFilename(document)}"`,
+      'Content-Disposition': `${inlinePreview ? 'inline' : 'attachment'}; filename="${record.kind === 'payment' ? (document.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(document)}"`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Robots-Tag': 'noindex, nofollow, noarchive',
       'Referrer-Policy': 'no-referrer',
