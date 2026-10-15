@@ -204,7 +204,7 @@ function definitionFor(id, locale) {
   if (id === 'state') return locale === 'ru' ? CURRENT_STATE_RU_V2 : CURRENT_STATE_EN_V2
   if (id === 'trait') return MINI_IPIP_20_EN_V1
   const item = monitoringCatalogItem(id)
-  if (!item?.startable || item.guestEligible === false || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
+  if (!item?.startable || item.rightsStatus !== 'cleared' || item.guestEligible === false || PUBLIC_GUEST_BLOCKED_KEYS.has(item.key)) return null
   return getAssessmentDefinition(
     item.key,
     item.version,
@@ -214,7 +214,7 @@ function definitionFor(id, locale) {
 
 function publicRecommendationDefinitions(locale) {
   return MONITORING_CATALOG
-    .filter((item) => item.startable && item.guestEligible !== false && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
+    .filter((item) => item.startable && item.rightsStatus === 'cleared' && item.guestEligible !== false && !PUBLIC_GUEST_BLOCKED_KEYS.has(item.key))
     .map((item) =>
       getAssessmentDefinition(
         item.key,
