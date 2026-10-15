@@ -27,15 +27,16 @@ export function ConsultationDocumentActions({
   const [copiedLocale, setCopiedLocale] = useState(null)
 
   if (!cache.current) cache.current = createDocumentLinkCache(async () => {
-    const response = await fetch(`/admin/api/documents/${recordId}/client-link`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-    if (!response.ok) throw new Error('Unavailable')
+    const endpoint = kind === 'payment' ? 'client-link' : 'session-link'
+    const response = await fetch(`/admin/api/documents/${recordId}/${endpoint}`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    if (!response.ok) throw new Error('Session unavailable or not published')
     return response.json()
-  })
+  }, { scope: kind === 'payment' ? 'document' : 'session' })
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
   const labels = resultCopy(locale)
-  const urls = documentActionUrls(recordId, locale)
+  const urls = documentActionUrls(recordId, locale, kind)
   const pdfFilename = kind === 'payment' ? (paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename({dateIssued})
   const ru = locale === 'ru'
 
@@ -60,7 +61,9 @@ export function ConsultationDocumentActions({
       <a className="consultation-action-primary" href={urls.open}>{ru ? 'Предпросмотр / открыть' : 'Preview / Open'}</a>
       <a href={urls.previewPdf}>{ru ? 'Открыть PDF крупным текстом' : 'Read large PDF'}</a>
       <a href={urls.pdf} download={pdfFilename}>{labels.pdf}</a>
-      <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}>
+      <button className="consultation-copy consultation-share-action" type="button" disabled={!active || copying} onClick={copy}
+        title={ru?(kind==='payment'?'Ссылка на счёт':'Ссылка на полную опубликованную консультацию'):(kind==='payment'?'Invoice link':'Published consultation page link')}>
+
         {copying ? labels.copying : copiedLocale === locale ? labels.copied : labels.copy}
       </button>
     </div>
@@ -75,7 +78,7 @@ export function ConsultationDocumentActions({
     </div>
 
     <p className="consultation-copy-feedback" role="status" aria-live="polite">
-      {status ? labels.copyError : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}
+      {status ? (ru?'Сначала опубликуйте страницу консультации с материалами или проверьте авторизацию.':'Publish the client session first, or check your sign-in.') : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}
     </p>
   </>
 }
