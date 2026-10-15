@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --test tests/assessments-via96-cfpb5.test.mjs tests/assessment-interpretation-registry.test.mjs tests/ipip-via-r-completion-2026.test.mjs tests/open-professional-2026.test.mjs tests/assessment-professional-2026.test.mjs tests/assessment-methodology.test.mjs tests/psychic-health-battery-smoke.test.mjs tests/test-kinds-catalog-audit.test.mjs tests/test-recommendations.test.mjs tests/relationships-intimacy.test.mjs tests/mhc-sf-assessment.test.mjs tests/personality-types-original-2026.test.mjs tests/compassion-assessments.test.mjs tests/ipip-big-five-50.test.mjs tests/assessment-cdc-healthy-days.test.mjs tests/assessment-expanded-v4.test.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "test:unit": "node --test tests/**/*.test.mjs",
