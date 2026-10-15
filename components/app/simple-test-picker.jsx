@@ -15,6 +15,7 @@ const TEXT = {
     kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
     heroKicker:'MY TESTS · HOLISTIC HOUSE', heroHeadline:'Understand yourself and your life better',
     heroDescription:'Choose a topic, find a suitable test and notice changes over time.',
+    accessNote:'Choosing topics is free. Starting a selected test set requires Google sign-in; short guest self-checks are available without an account.', guestAction:'Try guest tests',
     benefitOne:'Track changes', benefitTwo:'Understand yourself', benefitThree:'Relevant guidance', benefitFour:'Your own pace',
     promoKicker:'FREE SELF-REFLECTION', promoTitle:'Start with what matters to you',
     promoText:'Check in with stress, mood and your inner resources.', promoAction:'Choose my topics',
@@ -42,6 +43,7 @@ const TEXT = {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
     heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
     heroDescription:'Выберите тему, найдите подходящий тест и наблюдайте за изменениями.',
+    accessNote:'Подбирать темы можно без входа. Для запуска выбранного набора тестов потребуется Google; короткие гостевые тесты доступны без аккаунта.', guestAction:'Попробовать без регистрации',
     benefitOne:'Динамика результатов', benefitTwo:'Понимание себя', benefitThree:'Подбор по запросу', benefitFour:'Удобный темп',
     promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с того, что важно вам',
     promoText:'Оцените стресс, настроение и свои ресурсы с помощью коротких опросников.', promoAction:'Выбрать темы',
@@ -69,6 +71,7 @@ const TEXT = {
     kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
     heroKicker:'MIS PRUEBAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor y comprende tu vida',
     heroDescription:'Elige un tema, encuentra una prueba adecuada y observa tus cambios.',
+    accessNote:'Puedes explorar los temas libremente. Para iniciar una selección de pruebas se requiere Google; hay pruebas breves para invitados sin cuenta.', guestAction:'Probar sin registrarse',
     benefitOne:'Sigue tus cambios', benefitTwo:'Autoconocimiento', benefitThree:'Opciones personalizadas', benefitFour:'A tu ritmo',
     promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza por lo que te importa',
     promoText:'Explora el estrés, el ánimo y tus recursos con breves cuestionarios.', promoAction:'Elegir temas',
@@ -182,6 +185,10 @@ export function SimpleTestPicker({
         <Heart size={22} strokeWidth={1.5}/>
       </div>
     </header>
+    {!authenticated && <p className={styles.privacy} data-prelogin-google-notice>
+      {c.accessNote}{' '}
+      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
+    </p>}
     <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
       <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
       <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
