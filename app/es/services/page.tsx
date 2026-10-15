@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
+import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { spanishMetadata } from "@/lib/spanish-metadata";
@@ -21,6 +22,7 @@ const approaches = [
 export default function SpanishServicesPage() {
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" />
+  <ServicesConversionHero locale="es" />
   <ServicesTestsIntro locale="es" />
   <section className={offerStyles.section} id="solutions" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>
     <header className={offerStyles.heading}>
