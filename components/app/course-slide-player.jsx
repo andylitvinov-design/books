@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
 import CoursePracticeVoice from './course-practice-voice'
+import AntiStressMethodActivity from './anti-stress-method-activity'
 import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
 import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
@@ -350,6 +351,8 @@ export default function CourseSlidePlayer({
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
   const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [dailyMethodChoice,setDailyMethodChoice] = useState(session?.signals?.dailyMethodChoice || '')
+  const [dailyMethodHintUsed,setDailyMethodHintUsed] = useState(Boolean(session?.signals?.dailyMethodHintUsed))
   const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
   const [recallAttempt,setRecallAttempt] = useState('')
   const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
@@ -460,7 +463,10 @@ export default function CourseSlidePlayer({
         } : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
-          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{})
+          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
+        ...(lesson.antiStress&&cycle.day>1&&data.programme?.id==='stress'
+          ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
+          : {})
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -738,6 +744,11 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && <IllustratedMoment variant="calm" kind={slide.kind}/>}
+            {slide.section.kind==='meditation'&&lesson.antiStress&&cycle.day>1&&
+              data.programme?.id==='stress'&&!neutralMode&&
+              <AntiStressMethodActivity key={String(cycle.day)} day={cycle.day} locale={locale}
+                value={dailyMethodChoice} onChange={setDailyMethodChoice}
+                hintUsed={dailyMethodHintUsed} onHint={()=>setDailyMethodHintUsed(true)} disabled={locked}/>}
             {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
               <p className={styles.prompt}>{words.practicePrePrompt}</p>
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}

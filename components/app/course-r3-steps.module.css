@@ -349,3 +349,23 @@
 /* A chosen course remains recognizable during the existing test wizard. */
 .programmeContext{display:inline-flex!important;align-items:center;gap:5px;flex-wrap:wrap;justify-self:start;border:1px solid #a8e0e7;border-radius:999px;background:#e9fafa;color:#156984!important;padding:8px 13px;font-size:12px!important;line-height:1.4!important}
 .programmeContext strong{color:#155773}
+
+/* Anti-Stress intake: exactly one required self-report and visible optional tests. */
+.stressBaselineIntro{
+  display:grid;grid-template-columns:49px minmax(0,1fr);gap:13px;align-items:start;
+  padding:clamp(15px,2.5vw,22px);border:1px solid #acdce4;border-radius:18px;
+  background:linear-gradient(135deg,#e8f9fc,#f8fdfb);
+}
+.stressBaselineIntro > div{display:grid;gap:8px;min-width:0}
+.stressBaselineIntro strong{font:800 clamp(17px,2.5vw,21px)/1.3 system-ui,-apple-system,sans-serif;color:#154963}
+.stressBaselineIntro p{margin:0;color:#4d7483;font-size:13px;line-height:1.6}
+.baselineIcon{display:grid;place-items:center;width:47px;height:47px;border-radius:14px;background:#d4f1f6;color:#087e9a}
+.testRow[data-course-required-baseline="true"]{border:2px solid #438da6;background:#f0fbfd;cursor:default}
+.testRow[data-course-required-baseline="true"]>input{accent-color:#0d8197;opacity:1}
+.requiredBadge,.optionalBadge{display:inline-flex!important;align-items:center;justify-self:start;width:fit-content;
+  border:1px solid #b3d9e3;background:#dcf3f7;color:#166a7e!important;border-radius:8px;
+  padding:4px 8px;font-size:11px!important;line-height:1.3!important;font-weight:800}
+.optionalBadge{background:#f5f7f9;border-color:#dbe5e9;color:#5b7080!important;font-weight:650}
+@media(max-width:530px){.stressBaselineIntro{grid-template-columns:1fr;gap:9px;padding:15px 13px}
+  .baselineIcon{width:39px;height:39px;border-radius:12px}.stressBaselineIntro strong{font-size:17px}
+  .stressBaselineIntro p{font-size:12px}}

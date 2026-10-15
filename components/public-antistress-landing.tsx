@@ -5,6 +5,8 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
+import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
+import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
 
@@ -197,7 +199,7 @@ const copy = {
       },
       {
         "q": "Будут ли тесты?",
-        "a": "На старте предлагаются подходящие тесты, чтобы определить исходную точку. Вы видите предложения и делаете осознанный выбор. Повторное сравнение возможно только для совместимых результатов."
+        "a": "Да. Перед первым уроком нужно пройти исходный HH Weekly Pulse (8 вопросов о последней неделе). GAD-7 и ресурсный опросник — по желанию. Если недавний совместимый результат Weekly Pulse уже есть, повторять тест не требуется. Позднее сравниваются только совместимые измерения."
       },
       {
         "q": "Что делать, если практика вызывает дискомфорт?",
@@ -403,7 +405,7 @@ const copy = {
       },
       {
         "q": "Will I take questionnaires?",
-        "a": "At the start you can review suggested assessments to establish a starting point. You make informed choices. Later comparisons require genuinely comparable results."
+        "a": "Yes. Before the first lesson, complete HH Weekly Pulse (8 questions about the past week). GAD-7 and Resource Pulse are optional. A recent compatible Weekly Pulse result counts without repeating the test; later comparisons require comparable results."
       },
       {
         "q": "What if an exercise feels uncomfortable?",
@@ -609,7 +611,7 @@ const copy = {
       },
       {
         "q": "¿Hay cuestionarios?",
-        "a": "Al inicio se proponen evaluaciones para conocer el punto de partida. Tú decides de forma informada. Las comparaciones posteriores requieren resultados realmente comparables."
+        "a": "Sí. Antes de la primera lección necesitas completar HH Weekly Pulse (8 preguntas sobre los últimos 7 días). GAD-7 y Resource Pulse son opcionales. Si ya tienes un resultado reciente compatible, no hace falta repetirlo. Las comparaciones posteriores requieren mediciones equivalentes."
       },
       {
         "q": "¿Y si una práctica me incomoda?",
@@ -631,14 +633,19 @@ const copy = {
 
 const challengeIcons = [Waves, PauseCircle, Leaf, ShieldCheck] as const;
 const chapterLinks = {
-  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Формат занятий" }, { id: "questions", title: "Вопросы" }] },
-  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "How it works" }, { id: "questions", title: "Questions" }] },
-  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Cómo funciona" }, { id: "questions", title: "Preguntas" }] },
+  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
+  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
+  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
 } as const;
 const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
 export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const programme = antiStressBlueprint(locale) as unknown as {
+    outcomes: {title:string;text:string}[];
+    skills: {id:string;title:string;description:string;days:[number,number];outcome:string}[];
+    days: {title:string}[];
+  };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
@@ -717,7 +724,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             <h2 id="antistress-outcomes">{t.outcomeTitle}</h2>
           </div>
           <div className={styles.outcomeGrid}>
-            {t.outcomes.map((item, index) => {
+            {programme.outcomes.map((item, index) => {
               const Icon = outcomeIcons[index];
               return <article className={styles.outcome} key={item.title}>
                 <span className={styles.outcomeIcon}><Icon size={24} aria-hidden="true" /></span>
@@ -737,19 +744,20 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             <img src="/images/holistic-house/course-journey-landscape.svg" width={860} height={245} alt="" loading="lazy" decoding="async" />
           </div>
           <div className={styles.skills}>
-            {t.skills.map((skill, index) => <details className={styles.skill} key={skill.days} data-antistress-skill={index + 1}>
+            {programme.skills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
-                  <small>{t.daysWord} {skill.days}</small>
+                  <small>{t.daysWord} {skill.days[0]}–{skill.days[1]}</small>
                   <strong>{skill.title}</strong>
                   <span>{skill.description}</span>
                 </span>
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
               <div className={styles.lessonPair}>
-                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{skill.d1}</strong></p>
-                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{skill.d2}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{programme.days[index * 2].title}</strong></p>
+                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{programme.days[index * 2 + 1].title}</strong></p>
+                <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{skill.outcome}</strong></p>
               </div>
             </details>)}
           </div>
@@ -798,15 +806,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.measure} aria-labelledby="antistress-measurement">
-          <div className={styles.measureSymbol} aria-hidden="true"><Waves size={54} strokeWidth={1.1} /></div>
-          <div>
-            <p className={styles.sectionEyebrow}>{t.measuresEyebrow}</p>
-            <h2 id="antistress-measurement">{t.measuresTitle}</h2>
-            <p>{t.measuresText}</p>
-            <small>{t.measuresFoot}</small>
-          </div>
-        </section>
+        <PublicAntistressEvidence locale={locale} />
 
         <section className={styles.safety} aria-labelledby="antistress-safety">
           <div className={styles.safetyHeader}>

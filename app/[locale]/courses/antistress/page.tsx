@@ -13,6 +13,10 @@ const seo = {
   en: {
     title: "OPORA Stress Relief — 14 Days, 7 Skills | Holistic House",
     description: "Explore OPORA Stress Relief: 14 short interactive lessons, seven practical coping skills, gentle self-guided practices and honest progress tracking."
+  },
+  es: {
+    title: "OPORA Antiestrés — 14 días, 7 habilidades | Holistic House",
+    description: "Curso de 14 clases y siete habilidades, ejercicios de autorregulación y seguimiento voluntario de estrés y recuperación."
   }
 } as const;
 

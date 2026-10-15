@@ -42,7 +42,7 @@ const copy = {
     eyebrowHow: "ПРОСТОЙ ПУТЬ", howTitle: "Как проходит курс",
     steps: [
       { title: "Определите свой фокус", description: "Курс Антистресс уже выбран: вы отмечаете важные лично вам навыки и цели." },
-      { title: "Узнайте исходное состояние", description: "Короткий замер и подобранные тесты перед стартом." },
+      { title: "Пройдите стартовые тесты", description: "До первого урока — Weekly Pulse (8 вопросов); GAD-7 и тест ресурсов — по желанию." },
       { title: "Замечайте изменения", description: "14 небольших уроков. Следующий — после завершения текущего; в конце можно повторить замер." },
     ],
     methodKicker: "НАША МЕТОДИКА", methodTitle: "Метод ОПОРА: как работают наши курсы", methodText: "Пять шагов от осознания до действия. Узнайте, как мы объединяем психологические подходы, короткие практики и персональный маршрут.", methodLink: "Узнать о методе ОПОРА",
@@ -86,7 +86,7 @@ const copy = {
     eyebrowHow: "A SIMPLE PATH", howTitle: "How your course works",
     steps: [
       { title: "Choose your focus", description: "Anti-Stress is selected; you choose which personal skills and goals matter." },
-      { title: "Explore your starting point", description: "Complete suggested assessments to better understand your current experience." },
+      { title: "Complete starting assessments", description: "Before lesson 1: Weekly Pulse (8 questions); GAD-7 and Resource Pulse are optional." },
       { title: "One lesson at a time", description: "Try a short practice and mark it complete. The next lesson follows when you're ready." },
     ],
     methodKicker: "OUR APPROACH", methodTitle: "The OPORA Method: how our courses work", methodText: "Five steps from awareness to action. Discover the psychology-informed principles behind your personal learning journey.", methodLink: "Explore the OPORA Method",

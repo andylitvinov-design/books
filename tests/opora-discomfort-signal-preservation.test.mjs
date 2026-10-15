@@ -24,7 +24,7 @@ function mount(_name,{props}){
   }
   const dependencies={react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:(_,key)=>String(key)}),'./course-guided-timer':{default:()=>null},'./course-practice-voice':{default:()=>null},
-    '@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
+    '@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
   const runtime={exports:{},require:name=>{assert.ok(dependencies[name],name);return dependencies[name]},
     document:{body:{style:{overflow:''}},addEventListener(){},removeEventListener(){}},
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}
