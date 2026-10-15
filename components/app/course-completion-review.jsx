@@ -45,6 +45,10 @@ export default function CourseCompletionReview({
         return <article key={item.key} className={styles.summaryTest}>
           <div className={styles.summaryHeading}>
             <strong>{meta?.title || item.key}</strong>
+            {programId==='stress'&&item.instrumentLocale&&
+              <small className={styles.originalLanguage}>
+                {locale==='ru'?'Язык исходного теста':'Original instrument language'}: {item.instrumentLocale.toUpperCase()}
+              </small>}
             {item.resultId && <Link href={root+'/results/'+encodeURIComponent(item.resultId)}
               prefetch={false}>{t.report}<ArrowRight size={13} aria-hidden="true"/></Link>}
           </div>
