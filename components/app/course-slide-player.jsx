@@ -666,8 +666,19 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'idea' && <>
             <IllustratedMoment photo kind={slide.kind}/>
-            <blockquote className={styles.quote}>“{lesson.aphorism}”</blockquote>
-            {lesson.antiStress&&<section data-course-aphorism-dialogue>
+            <blockquote className={styles.quote}>“{isDayOne ? dayOneAphorism(locale,dayOneFocus?.goal,lesson.aphorism) : lesson.aphorism}”</blockquote>
+            {isDayOne && <DayOneChoices label={locale==='ru'?'Как вам эта мысль?':'How does this idea fit for you?'}
+              value={dayOneAnswers.quote} disabled={locked} onSelect={value=>recordDayOne('quote',value)}
+              options={[
+                {value:'agree',label:locale==='ru'?'Согласен(на)':'I agree'},
+                {value:'unsure',label:locale==='ru'?'Не знаю':'I am not sure'},
+                {value:'disagree',label:locale==='ru'?'Не согласен(на)':'I disagree'},
+                {value:'skip',label:locale==='ru'?'Пропустить':'Skip'},
+              ]}/>}
+            {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
+              {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
+            </p>}
+            {!isDayOne&&lesson.antiStress&&<section data-course-aphorism-dialogue>
               <p className={styles.prompt}>{learning.aphorismTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
                 {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
@@ -683,19 +694,23 @@ export default function CourseSlidePlayer({
             <p className={styles.prompt}>{lesson.sections?.find(part => part.kind === 'learn')?.text}</p>
           </>}
 
-          {slide.kind === 'recall' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
-            <p className={styles.helper}>{words.recallHint}</p>
-            {lesson.antiStress&&<div className={styles.feedbackOptions}
-              role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
-              {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
-                <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
-                  onClick={()=>setRecallAttempt(key)}>{label}</button>)}
-            </div>}
-            {lesson.antiStress&&recallAttempt==='hint'&&
-              <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
-          </>}
+          {slide.kind === 'recall' && (isDayOne
+            ? <DayOneFocusPicker locale={locale} options={data.dayOneFocusOptions||[]}
+                value={dayOneAnswers.focusId} disabled={locked}
+                onSelect={value=>recordDayOne('focusId',value)}/>
+            : <>
+              <IllustratedMoment variant="calm" kind={slide.kind}/>
+              <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
+              <p className={styles.helper}>{words.recallHint}</p>
+              {lesson.antiStress&&<div className={styles.feedbackOptions}
+                role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
+                {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
+                  <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
+                    onClick={()=>setRecallAttempt(key)}>{label}</button>)}
+              </div>}
+              {lesson.antiStress&&recallAttempt==='hint'&&
+                <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
+            </>)}
 
           {slide.kind === 'phrase' && <>
             <IllustratedMoment photo variant="books" kind={slide.kind}/>
