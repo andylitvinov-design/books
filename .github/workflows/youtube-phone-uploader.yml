@@ -6,6 +6,7 @@ on:
       - 'components/youtube-phone-uploader*'
       - 'app/admin/youtube-upload/**'
       - 'tests/youtube-phone-upload.test.mjs'
+      - 'tests/youtube-upload-history.test.mjs'
       - '.github/workflows/youtube-phone-uploader.yml'
   workflow_dispatch:
 jobs:
@@ -18,9 +19,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Protocol unit tests
-        run: node --test tests/youtube-phone-upload.test.mjs
-      - name: Browser transport syntax
+          cache: 'npm'
+      - name: Protocol + persistent history unit tests
+        run: node --test tests/youtube-phone-upload.test.mjs tests/youtube-upload-history.test.mjs
+      - name: Browser transport and server history syntax
         run: |
           node --check lib/youtube/phone-upload-protocol.mjs
+          node --check lib/youtube/upload-history-model.mjs
+          node --check lib/youtube/upload-history-store.js
           node --check lib/youtube/browser-upload.js
+          node --check app/admin/youtube-upload/actions.js
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: TypeScript check
+        run: npx tsc --noEmit
+      - name: Next.js production build
+        run: npm run build
