@@ -181,3 +181,43 @@ test('admin client media preflight reports fail-closed MP4, while keeping audio 
   assert.match(route,/HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED==='true'/)
   assert.match(route,/videoReady=true/)
 })
+
+test('iPhone editor shows gated video status immediately and checks each selected file once',()=>{
+  const source=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  const choose=source.slice(source.indexOf('async function chooseFile('),source.indexOf("const busy=['preparing'"))
+  assert.equal((choose.match(/await checkReady\(\)/g)||[]).length,1)
+  assert.match(source,/videoStatus\?\.ready===false/)
+  assert.match(source,/fetch\('\/api\/admin\/clients\/')
+  assert.match(source,/video\/quicktime/)
+  assert.match(source,/uploadProgress/)
+})
+
+test('storage onboarding is protected and the mobile editor links to it without exposing credentials',()=>{
+  const page=readFileSync(new URL('../app/admin/client-video-storage/page.jsx',import.meta.url),'utf8')
+  const editor=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  assert.match(page,/if\(!await requireAdminRequest\(\)\)redirect\('\/admin\/login'\)/)
+  assert.match(page,/configuredVideoUploadStore\(\)/)
+  assert.match(page,/HH_CLIENT_VIDEO_SECRET_ACCESS_KEY/)
+  assert.doesNotMatch(page,/decryptedValue|process\.env\.HH_CLIENT_VIDEO_SECRET_ACCESS_KEY\b/)
+  assert.match(editor,/href="\/admin\/client-video-storage"/)
+  assert.match(editor,/videoStatus\?\.ready===false/)
+})
+
+test('conditional R2 PUT signing matches the independent AWS botocore SigV4 vector',()=>{
+  const fixture={...env,
+    HH_CLIENT_VIDEO_BUCKET:'private-test',
+    HH_CLIENT_VIDEO_ACCESS_KEY_ID:'TESTACCESSID',
+    HH_CLIENT_VIDEO_SECRET_ACCESS_KEY:'TESTSECRETKEY',
+    HH_CLIENT_R2_ACCOUNT_ID:'0123456789abcdef0123456789abcdef',
+  }
+  const fixtureKey='11111111-2222-4333-8444-555555555555/11111111-2222-4333-8444-555555555555.mp4'
+  const url=new URL(signPrivateVideoRequest('r2',fixtureKey,{
+    method:'PUT',mime:'video/mp4',expires:900,
+    at:new Date('2026-10-15T18:15:00Z'),env:fixture,
+  }))
+  // Cross-checked against botocore 1.43 S3SigV4QueryAuth using the same
+  // method, canonical path, Content-Type, If-None-Match and unsigned payload.
+  assert.equal(url.searchParams.get('X-Amz-Signature'),
+    'a8bc13a2179f733fd31ac038e740a8acd2623d56a18e24bb10c775e9a648452f')
+  assert.equal(url.searchParams.get('X-Amz-SignedHeaders'),'content-type;host;if-none-match')
+})
