@@ -29,6 +29,10 @@ export function SessionPrescriptionOverview({recommendation,locale='en',part='su
           <div><strong>{item.displayName}</strong>
             {remedySchedule(item,locale,recommendation.recommendationType)&&
               <small>{remedySchedule(item,locale,recommendation.recommendationType)}</small>}
+            {(item.dosage||item.frequency||item.instructions)&&
+              <small className={styles.prescriptionItemHow}>
+                {ru?'Как указано в назначении':'From your recommendation'}: {item.dosage||item.frequency||item.instructions}
+              </small>}
           </div>
         </li>)}
       </ol>

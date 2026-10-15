@@ -55,7 +55,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       jobRef.current=null
       if(!mountedRef.current)return
       setRetryFile(null);setStage('saved')
-      setMessage(ru?'Запись сохранена в этой сессии. Клиент её пока не видит.':'Saved to this session. Your client cannot see it until you publish.')
+      setMessage(ru?'Материал сохранён в этой сессии. Клиент увидит его после публикации.':
+        'Material saved to this session. Your client sees it after you publish.')
       onSaved?.(job.sessionId)
     } catch(e) {
       if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(e.message||String(e))}

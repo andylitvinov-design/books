@@ -252,3 +252,5 @@
  .attachmentCard{padding:13px}
 }
 @media(prefers-reduced-motion:reduce){.remedyChevron{transition:none}}
+
+.courseSessionPage .prescriptionItemHow{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:#385f6c;font-size:13px;line-height:1.5}
