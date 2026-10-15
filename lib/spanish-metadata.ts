@@ -13,5 +13,8 @@ export function spanishMetadata(path: string, title: string, description: string
       ru: absolute(suffix ? '/ru' + suffix : '/ru'),
       'x-default': absolute(suffix ? '/en' + suffix : '/'),
     } },
+    openGraph: { type: 'website', siteName: 'Holistic House', locale: 'es_ES', url: absolute(path), title, description,
+      images: [{ url: absolute('/images/holistic-house/andy-about.png'), alt: 'Andrey Litvinov — Holistic House' }] },
+    twitter: { card: 'summary_large_image', title, description, images: [absolute('/images/holistic-house/andy-about.png')] },
   };
 }
