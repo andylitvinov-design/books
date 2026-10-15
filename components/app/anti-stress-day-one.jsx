@@ -61,6 +61,7 @@ export default function DayOneExercise({
   const text=(a,b)=>t(locale,a,b)
   const [guidedStep,setGuidedStep]=useState(0)
   const [hintOpen,setHintOpen]=useState(false)
+  const [hintEverUsed,setHintEverUsed]=useState(answers.hintUsed==='yes')
   const [wordQuality,setWordQuality]=useState('')
   const wordTokens=associationWords.split('\n').slice(0,3)
   const changeWord=(index,value)=>{
@@ -279,7 +280,7 @@ export default function DayOneExercise({
       {value:'skip',label:text('Не выбирать','No choice'),icon:CircleHelp},
     ],{compact:true})}
     <button type="button" className={styles.hintToggle} disabled={locked}
-      aria-expanded={hintOpen} onClick={()=>{setHintOpen(value=>!value);if(!hintOpen)onAnswer('independent','guided')}}>
+      aria-expanded={hintOpen} onClick={()=>{setHintOpen(value=>!value);if(!hintOpen){setHintEverUsed(true);onAnswer('hintUsed','yes')}}}>
       <Lightbulb size={18}/>{hintOpen?text('Скрыть подсказку','Hide the hint'):text('Мне нужна подсказка','Show a hint')}
       <ChevronDown size={16} aria-hidden="true"/>
     </button>
@@ -289,7 +290,7 @@ export default function DayOneExercise({
     </div>}
     <p className={styles.headline}>{text('Как вы попробовали?','How did you try?')}</p>
     {choice('independent',[
-      {value:'independent',label:text('Самостоятельно','Independently')},
+      ...(!hintEverUsed?[{value:'independent',label:text('Самостоятельно','Independently')}]:[]),
       {value:'guided',label:text('С подсказкой','With a hint')},
       {value:'deferred',label:text('Попробую позже','I will try later')},
       {value:'skip',label:text('Пропустить','Skip')},
