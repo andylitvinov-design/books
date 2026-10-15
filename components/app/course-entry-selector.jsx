@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVertical, Archive, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import Course14DayOverview from './course-14-day-overview'
@@ -30,6 +30,12 @@ const COPY = {
     unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
     conditions: 'Premium session scheduling and included-test terms will be confirmed before purchase.',
     close: 'Not now',
+    courseOptions: 'Course options', closeCourse: 'Close course',
+    closeCourseTitle: 'Close this course?',
+    closeCourseExplanation: 'The course will disappear from My courses:',
+    closeCourseSaved: 'Your completed tests and practice records will remain in your private account. You can start a new course later.',
+    keepCourse: 'Keep course', closingCourse: 'Closing…',
+    closeCourseFailed: 'The course could not be closed. Please try again.',
   },
   ru: {
     eyebrow: 'МОИ КУРСЫ · HOLISTIC HOUSE',
@@ -52,6 +58,12 @@ const COPY = {
     unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
     conditions: 'Условия записи на сессию и перечень включённых тестов будут подтверждены до оплаты.',
     close: 'Не сейчас',
+    courseOptions: 'Меню курса', closeCourse: 'Закрыть курс',
+    closeCourseTitle: 'Закрыть этот курс?',
+    closeCourseExplanation: 'Курс исчезнет из раздела «Мои курсы»: ',
+    closeCourseSaved: 'Результаты пройденных тестов и записи занятий останутся в вашем личном кабинете. Позже можно начать новый курс.',
+    keepCourse: 'Оставить курс', closingCourse: 'Закрываем…',
+    closeCourseFailed: 'Не удалось закрыть курс. Попробуйте ещё раз.',
   },
 }
 
@@ -71,15 +83,49 @@ const PLANS = [
   { id: 'premium', price: 100, spots: 'five', items: ['noAds', 'tests', 'session'] },
 ]
 
-export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
+export default function CourseEntrySelector({ course, locale = 'en', onOpen, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
   const hasCourse = Boolean(course?.stage > 0)
   const [daily, setDaily] = useState(null)
   const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [closeError, setCloseError] = useState(false)
+  const menuRef = useRef(null)
+  const closeCourseDialogRef = useRef(null)
   const dialogRef = useRef(null)
   const searchParams = useSearchParams()
   const requestedAdd = searchParams.get('add') === '1'
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onOutsideClick(event) {
+      if (!menuRef.current?.contains(event.target)) setMenuOpen(false)
+    }
+    function onEscape(event) {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onOutsideClick)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('pointerdown', onOutsideClick)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [menuOpen])
+
+  function openCloseConfirmation() {
+    setMenuOpen(false)
+    setCloseError(false)
+    closeCourseDialogRef.current?.showModal()
+  }
+
+  async function confirmCloseCourse() {
+    if (closing) return
+    setCloseError(false)
+    const success = await onCloseCourse?.()
+    if (success) closeCourseDialogRef.current?.close()
+    else setCloseError(true)
+  }
 
   // A public landing link can request the existing subscription modal.
   // Never start or charge for a second course in the browser.
@@ -134,6 +180,19 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
 
     <section className={styles.tiles} aria-label={t.title}>
       {hasCourse && <article className={styles.current} data-current-course-card>
+        <div className={styles.courseMenu} ref={menuRef} data-course-actions>
+          <button type="button" className={styles.courseMenuTrigger} data-course-menu-trigger
+            aria-label={t.courseOptions} aria-expanded={menuOpen} aria-controls="my-course-actions-menu"
+            onClick={() => setMenuOpen(open => !open)} disabled={closing}>
+            <MoreVertical size={22} strokeWidth={2.2} aria-hidden="true"/>
+          </button>
+          {menuOpen && <div id="my-course-actions-menu" className={styles.courseMenuPopup} data-course-actions-menu>
+            <button type="button" className={styles.courseMenuAction}
+              onClick={openCloseConfirmation} disabled={closing}>
+              <Archive size={17} aria-hidden="true"/>{t.closeCourse}
+            </button>
+          </div>}
+        </div>
         <div className={styles.currentTop}>
           <div className={styles.currentPhoto} aria-hidden="true">
             <img src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
@@ -203,6 +262,23 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen }) {
     <p className={styles.footnote}><LockKeyhole size={15} aria-hidden="true"/>
       {hasCourse ? t.freeLimit + ' · ' + t.currentLimit : t.freeLimit}
     </p>
+
+    <dialog ref={closeCourseDialogRef} className={styles.closeCourseDialog}
+      aria-labelledby="close-course-title" aria-describedby="close-course-description"
+      onClose={() => setCloseError(false)} data-close-course-dialog>
+      <h2 id="close-course-title">{t.closeCourseTitle}</h2>
+      <p id="close-course-description">{t.closeCourseExplanation} <strong>{name}</strong></p>
+      <p>{t.closeCourseSaved}</p>
+      {closeError && <p role="alert" className={styles.closeCourseError}>{t.closeCourseFailed}</p>}
+      <div className={styles.closeCourseActions}>
+        <button type="button" className={styles.keepCourseButton}
+          onClick={() => closeCourseDialogRef.current?.close()} disabled={closing}>{t.keepCourse}</button>
+        <button type="button" className={styles.confirmCloseButton}
+          onClick={() => void confirmCloseCourse()} disabled={closing} data-confirm-close-course>
+          {closing ? t.closingCourse : t.closeCourse}
+        </button>
+      </div>
+    </dialog>
 
     <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="course-upgrade-title"
       data-course-subscription-dialog>
