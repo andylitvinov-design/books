@@ -46,4 +46,6 @@ test('client and server wire day-one branching without disturbing older course v
   assert.match(server,/dayOne:dayOneAnswers,interactiveSchema:'as-1\.8'/)
   assert.match(server,/if\(!isInteractiveFirstDay && input\.dayOneAnswers!==undefined\)/)
   assert.match(server,/notAllowed\('INVALID_DAY_ONE_ANSWERS'/)
+  assert.ok(server.indexOf('const isInteractiveFirstDay=') < server.indexOf('const signals={'),
+    'Validate first-day choices before constructing signals, including legacy V4 sessions')
 })
