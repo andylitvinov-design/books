@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef, useState } from 'react'
 import { Check, ShieldCheck, Sparkles, X } from 'lucide-react'
-import { canShowHousePromotion, canStartCheckout, EMPTY_LESSON_OFFERS, lessonCompletionKey, lessonOfferReducer, normalizeBillingStatus, PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '@/lib/billing/public-plan'
+import { canShowHousePromotion, canStartCheckout, EMPTY_LESSON_OFFERS, lessonCompletionKey, lessonOfferReducer, normalizeBillingStatus, PURCHASABLE_PLAN_KEYS, SUBSCRIPTION_PLANS } from '@/lib/billing/public-plan'
 import { requestBilling, requestBillingStatus, verifiedBillingRedirect } from '@/lib/billing/client-session'
 import { billingReadLifecycle } from '@/lib/billing/read-lifecycle'
 import { SUBSCRIPTION_COPY } from './subscription-copy'
@@ -30,7 +30,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   const offerScopes = useRef(new Map()), latestStatus = useRef(status)
   latestStatus.current = status
   const operationIds = useRef({}), lifecycle = useRef(0), currentAccount = useRef(accountId)
-  const statusController = useRef(null), reconciledReturn = useRef(null)
+  const statusController = useRef(null), reconciledReturn = useRef(null), statusAccount = useRef(null)
   currentAccount.current = accountId
   const lang = locale === 'ru' ? 'ru' : 'en'
   const readLifecycle = typeof window === 'undefined' ? null : billingReadLifecycle(window, document)
@@ -40,7 +40,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     const version = ++requestVersion.current
     statusController.current?.abort()
     if (!accountId) {
-      latestStatus.current = null; setStatus(null); setPhase('unavailable')
+      statusAccount.current = null; latestStatus.current = null; setStatus(null); setPhase('unavailable')
       return false
     }
     const controller = new AbortController()
@@ -50,7 +50,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
       if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
       const next = normalizeBillingStatus(await requestBillingStatus(accountId, { signal: controller.signal }))
       if (!mounted.current || currentAccount.current !== accountId || requestVersion.current !== version || controller.signal.aborted) return false
-      latestStatus.current = next; setStatus(next); setPhase('ready')
+      statusAccount.current = accountId; latestStatus.current = next; setStatus(next); setPhase('ready')
       if (next.entitlement.active || next.entitlement.adFree) {
         dispatch({ type: 'suppress' }); setManualOffer(false)
       }
@@ -64,7 +64,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
   useEffect(() => {
     mounted.current = true; lifecycle.current += 1
     inFlight.current = false; setBusy('')
-    latestStatus.current = null; setStatus(null); setPhase('loading'); setManualOffer(false)
+    statusAccount.current = null; latestStatus.current = null; setStatus(null); setPhase('loading'); setManualOffer(false)
     dispatch({ type: 'reset' }); operationIds.current = {}; offerScopes.current.clear()
     const returned = new URLSearchParams(window.location.search).get('billing')
     const isReturn = returned === 'success' || returned === 'returned'
@@ -133,7 +133,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     try { await run(isCurrent); return isCurrent() } catch (failure) {
       if (isCurrent()) {
         if (['BILLING_OPERATION_CLOSED', 'BILLING_CHECKOUT_FINISHED'].includes(failure.code) && planId) delete operationIds.current.checkout?.[planId]
-        if (failure.code === 'ACCOUNT_CHANGED') { latestStatus.current = null; setStatus(null); setPhase('error') }
+        if (failure.code === 'ACCOUNT_CHANGED') { statusAccount.current = null; latestStatus.current = null; setStatus(null); setPhase('error') }
         setError(['BILLING_CHECKOUT_PLAN_CONFLICT', 'BILLING_PLAN_CONFLICT'].includes(failure.code) ? 'checkoutConflict' : 'action')
       }
       return false
@@ -142,7 +142,7 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     }
   }, [accountId])
   const startCheckout = useCallback((planId) => {
-    if (!PAID_PLAN_KEYS.includes(planId) || !canStartCheckout(status, phase, planId)) return Promise.resolve(false)
+    if (!PURCHASABLE_PLAN_KEYS.includes(planId) || !canStartCheckout(status, phase, planId)) return Promise.resolve(false)
     return runAction('checkout', async isCurrent => {
       operationIds.current.checkout ||= {}
       operationIds.current.checkout[planId] ||= crypto.randomUUID()
@@ -186,13 +186,13 @@ export function SubscriptionProvider({ accountId, locale = 'en', children }) {
     if (!ok) throw new Error('BILLING_UNAVAILABLE')
   }), [runAction, loadStatus, status])
   const value = useMemo(() => ({
-    locale: lang, status, phase, busy, error,
+    locale: lang, accountId, statusAccountId: statusAccount.current, status, phase, busy, error,
     offerKey: offers.pending[0] || (manualOffer ? 'manual' : null),
     offerScope: offerScopes.current.get(offers.pending[0]) || null,
     offerAfterCompletion, notifyLessonSaved, dismissOffer, dismissCompletionOffer,
     showOffer: () => { setError(''); setManualOffer(true) },
     startCheckout, cancelRenewal, openPortal, requestSession, refresh,
-  }), [lang, status, phase, busy, error, offers.pending, manualOffer, offerAfterCompletion,
+  }), [lang, accountId, status, phase, busy, error, offers.pending, manualOffer, offerAfterCompletion,
     notifyLessonSaved, dismissOffer, dismissCompletionOffer, startCheckout, cancelRenewal, openPortal, requestSession, refresh])
   return <SubscriptionContext.Provider value={value}>
     {children}
@@ -232,12 +232,12 @@ function CheckoutAction({ t, planId }) {
 
 function PlanSelection({ t }) {
   const { status, busy } = useSubscription()
-  const [planId, setPlanId] = useState('start')
+  const [planId, setPlanId] = useState('advanced')
   const groupId = useId(), historyId = useId()
   return <div className={styles.planSelection}>
     <fieldset className={styles.planFieldset} disabled={Boolean(busy)} aria-describedby={historyId}>
       <legend>{t.choosePlan}</legend>
-      <div className={styles.planGrid}>{Object.keys(SUBSCRIPTION_PLANS).map(key => {
+      <div className={styles.planGrid}>{['free', ...PURCHASABLE_PLAN_KEYS].map(key => {
         const plan = t.plans[key], descriptionId = groupId + '-' + key
         return <label key={key} className={styles.planCard} data-selected={planId === key}>
           <span className={styles.planHeading}>

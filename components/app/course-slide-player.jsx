@@ -8,10 +8,15 @@ import {
 } from 'lucide-react'
 import CourseGuidedTimer from './course-guided-timer'
 import CoursePracticeVoice from './course-practice-voice'
+import AntiStressMethodActivity from './anti-stress-method-activity'
 import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
+import AntiStressPracticeLab from './anti-stress-practice-lab'
+import OporaModuleActivity from './opora-module-activity'
+import CourseLessonResult from './course-lesson-result'
 import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
+import { withFinalFreeOffer } from '@/lib/inner-growth/course-slide-sequence'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import styles from './course-slide-player.module.css'
 
@@ -61,7 +66,7 @@ const WORDS = {
     cbtText: 'What supports this thought? What else could be true? Find a believable alternative without forcing positivity.',
     actText: 'I notice I am having this thought. I do not have to argue with it or follow it now.',
     neutralText: 'Notice the colour or shape of a neutral object. You do not need to work with your thoughts.',
-    discomfortAction: 'I feel uncomfortable', discomfortTitle: 'You may stop the exercise',
+    discomfortTitle: 'You may stop the exercise',
     discomfortIntro: 'You do not need to push through discomfort. No specialist monitors this lesson or journal in real time.',
     discomfortNeutral: 'Choose a neutral practice', discomfortExit: 'Stop and return',
     discomfortHelp: 'Find a human helpline', discomfortEmergency: 'If there is immediate danger, contact your local emergency services.',
@@ -85,7 +90,9 @@ const WORDS = {
     adaptationKeep: 'Keep the approach', adaptationSimplify: 'Try a shorter practice',
     adaptationNeutral: 'Choose a neutral version',
     before: 'Just before the practice', after: 'Just after the practice', none: 'Not rated',
-    finish: 'Finish and save', finished: 'A little step forward!',
+    finish: 'Finish and save', finished: 'Congratulations! You completed today’s lesson.',
+    courseFinished: 'Congratulations! You completed your 14-day course!',
+    finishAllSlides: 'Continue through every slide before completing today’s lesson.',
     completed: 'Practice saved', celebration: 'You took time to practise. That counts.',
     earned: '+20 XP', xpNote: 'XP represents saved participation, not symptoms or “right answers”.',
     seeMap: 'Back to my learning path', replay: 'Read the lesson again', private: 'Private to your account',
@@ -100,11 +107,11 @@ const WORDS = {
     rewardMeaning: 'XP rewards saved practice, not how you feel or your scores.',
     rewardTotal: 'Total XP', rewardStreak: 'Practice streak', rewardStreakUnit: 'days',
     rewardPath: 'My 14-lesson journey', rewardPathNote: 'Tomorrow, or whenever you return, your next lesson will be waiting.',
-    promoContinue: 'See the Pro options', promoBrand: 'PRO FEATURES · ADVANCED PLAN',
+    promoBrand: 'ADVANCED MEMBERSHIP',
     promoTitle: 'Grow in five directions', promoText: 'With Advanced you can run up to five courses in parallel, without advertising.',
-    promoPrice: 'Advanced · €20 / month', promoCta: 'Explore subscription options',
+    promoPrice: 'First month €10 (−50%), then €20/month', promoCta: 'See membership options',
     promoSoon: 'Checkout is not active yet. Your free course stays available.',
-    promoSkip: 'No thanks, back to my course', promoDisclaimer: 'Optional monthly membership. Your lessons and results stay yours.',
+    promoDisclaimer: 'Optional offer for new subscribers. Completing the course never requires payment.',
   },
   ru: {
     day: 'День', step: 'Шаг', of: 'из', close: 'Вернуться к моему курсу',
@@ -154,7 +161,7 @@ const WORDS = {
     cbtText: 'Что подтверждает мысль? Что ещё может быть верно? Можно найти правдоподобный взгляд без принудительного оптимизма.',
     actText: 'Я замечаю, что появилась такая мысль. Не обязательно спорить с ней или следовать ей.',
     neutralText: 'Заметьте цвет или форму нейтрального предмета. Работать с мыслью не обязательно.',
-    discomfortAction: 'Мне некомфортно', discomfortTitle: 'Вы можете остановить упражнение',
+    discomfortTitle: 'Вы можете остановить упражнение',
     discomfortIntro: 'Не нужно заставлять себя продолжать. Специалист не наблюдает за уроком или дневником в реальном времени.',
     discomfortNeutral: 'Нейтральная практика', discomfortExit: 'Остановить и вернуться',
     discomfortHelp: 'Найти помощь человека', discomfortEmergency: 'Если есть непосредственная опасность, обратитесь в местные экстренные службы.',
@@ -178,7 +185,9 @@ const WORDS = {
     adaptationKeep: 'Оставить как есть', adaptationSimplify: 'Упростить практику',
     adaptationNeutral: 'Перейти на нейтральный вариант',
     before: 'Непосредственно перед практикой', after: 'Непосредственно после практики', none: 'Нет оценки',
-    finish: 'Завершить и сохранить', finished: 'Маленький шаг вперёд!',
+    finish: 'Завершить и сохранить', finished: 'Поздравляем! Урок дня завершён.',
+    courseFinished: 'Поздравляем! Вы завершили весь 14-дневный курс!',
+    finishAllSlides: 'Чтобы завершить урок дня, пройдите все слайды до конца.',
     completed: 'Практика сохранена', celebration: 'Вы нашли время для себя. Это уже важный шаг.',
     earned: '+20 XP', xpNote: 'XP — за сохранённую практику, не за симптомы или «правильные» ответы.',
     seeMap: 'Вернуться к карте курса', replay: 'Перечитать занятие', private: 'Приватно в вашем кабинете',
@@ -193,11 +202,11 @@ const WORDS = {
     rewardMeaning: 'XP начисляются за сохранённую практику, не за самочувствие или оценки.',
     rewardTotal: 'Всего XP', rewardStreak: 'Серия практик', rewardStreakUnit: 'дн.',
     rewardPath: 'Мой путь из 14 уроков', rewardPathNote: 'Следующий урок будет ждать вас в другой день — без спешки.',
-    promoContinue: 'Возможности Pro', promoBrand: 'PRO-ВОЗМОЖНОСТИ · ТАРИФ ADVANCED',
+    promoBrand: 'ТАРИФ ADVANCED',
     promoTitle: 'Развивайтесь в пяти направлениях', promoText: 'С тарифом Advanced можно вести до пяти курсов одновременно, без рекламы.',
-    promoPrice: 'Advanced · 20 € / месяц', promoCta: 'Посмотреть варианты подписки',
+    promoPrice: 'Первый месяц 10 € (−50%), затем 20 € / месяц', promoCta: 'Посмотреть подписку',
     promoSoon: 'Оплата пока не подключена. Бесплатный курс остаётся доступным.',
-    promoSkip: 'Не сейчас, вернуться в курс', promoDisclaimer: 'Необязательная ежемесячная подписка. Уроки и результаты сохраняются.',
+    promoDisclaimer: 'Необязательное предложение для новых подписчиков. Завершение курса не требует оплаты.',
   },
 }
 
@@ -300,6 +309,15 @@ function IllustratedMoment({ variant = 'calm', photo = false, kind = 'idea' }) {
   </div>
 }
 
+function RouteMethodActivity({activity,...props}) {
+  return activity ? <OporaModuleActivity {...props} part="method" routePlan={{methodActivity:activity}}/>
+    : <AntiStressMethodActivity {...props}/>
+}
+function RoutePracticeLab({plan,...props}) {
+  return plan ? <OporaModuleActivity {...props} routePlan={{practiceLab:plan}}/>
+    : <AntiStressPracticeLab {...props}/>
+}
+
 export default function CourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
@@ -313,11 +331,31 @@ export default function CourseSlidePlayer({
   const resourceFocus = /(ресурс.*опор|опор.*ресурс|resource.*support|support.*resource)/i.test(String(focusLabel))
   const baselinePrompt = resourceFocus ? words.baselineResourceQuestion : words.baselineQuestion
   const alreadyDone = Boolean(session)
-  const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
-  const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
+  const routePlan=lesson.antiStress?.routePlan
+  const MethodActivityComponent=routePlan?RouteMethodActivity:AntiStressMethodActivity
+  const PracticeLabComponent=routePlan?RoutePracticeLab:AntiStressPracticeLab
+  const isDayOne=Boolean(lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
+  const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
+    data.programme?.id === 'stress')
+  const isOporaModule=Boolean(lesson.oporaModule?.version==='opora-nav-2.0-20261014' && data.programme?.id==='stress')
+  const [earned, setEarned] = useState(false)
+  const baseSlides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
+  const slides=useMemo(()=>withFinalFreeOffer(baseSlides,{
+    day:cycle.day,durationDays:cycle.durationDays,show:promotion.show,
+    checking:promotion.checking,alreadyDone:alreadyDone||earned,
+  }),[baseSlides,cycle.day,cycle.durationDays,promotion.show,promotion.checking,alreadyDone,earned])
+  const visitedSlideKeys=useRef(new Set(baseSlides[0] ? [baseSlides[0].key] : []))
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
+  function appendRouteReflection(addition){
+    const clean=String(addition||'').trim()
+    if(!clean)return false
+    if(reflection.includes(clean))return true
+    const next=[reflection.trim(),clean].filter(Boolean).join('\n')
+    if(next.length>500)return false
+    setReflection(next);return true
+  }
   const [feedback, setFeedback] = useState(session?.feedback || 'skip')
   const [entryNow, setEntryNow] = useState(null)
   const [comfort, setComfort] = useState(session?.signals?.comfort || 'skip')
@@ -333,25 +371,40 @@ export default function CourseSlidePlayer({
   const [welcomeFeeling, setWelcomeFeeling] = useState(session?.signals?.welcomeFeeling || '')
   const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
   const [associationWords,setAssociationWords]=useState('')
+  const [practiceLab,setPracticeLab]=useState(session?.signals?.practiceLab||{})
+  // Voluntary worksheet drafts survive slide/neutral navigation in memory only.
+  const [routeDrafts,setRouteDrafts]=useState({main:{},reflect:{}})
+  const updateRouteDraft=(part,update)=>setRouteDrafts(previous=>({...previous,[part]:typeof update==='function'?update(previous[part]||{}):update}))
+  const updatePracticeLab=(key,value)=>setPracticeLab(previous=>({...previous,[key]:value}))
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
-    setDayOneAnswers(previous=>({...previous,[field]:value}))
+    setDayOneAnswers(previous=>{
+      const next={...previous,[field]:value}
+      if(field==='anchor'&&value!=='colour')delete next.anchorTone
+      if(field==='hintUsed'&&value==='yes'&&next.independent==='independent')delete next.independent
+      if(field==='transferCue'&&['no_plan','skip'].includes(value))delete next.transferAction
+      return next
+    })
     if(field==='comfort')setComfort(value)
     if(field==='adaptation')setAdaptationChoice(value)
-    if(field==='experience'&&value==='more_choice')setFlexibility('more_choice')
-    if(field==='experience'&&value==='unchanged')setFlexibility('same')
+    if(field==='experience')setFlexibility(value==='more_choice'?'more_choice'
+      :value==='unchanged'?'same':'skip')
   }
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
   const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [dailyMethodChoice,setDailyMethodChoice] = useState(session?.signals?.dailyMethodChoice || '')
+  const [dailyMethodHintUsed,setDailyMethodHintUsed] = useState(Boolean(session?.signals?.dailyMethodHintUsed))
   const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
+  function recordRouteHint(){
+    setDailyMethodHintUsed(true)
+    if(routePlan&&practiceLab.reflect?.endsWith('_independent'))updatePracticeLab('reflect','')
+  }
   const [recallAttempt,setRecallAttempt] = useState('')
   const [skillProbeHintUsed, setSkillProbeHintUsed] = useState(Boolean(session?.signals?.skillProbeHintUsed))
   const [discomfortOpen, setDiscomfortOpen] = useState(false)
   const [neutralMode, setNeutralMode] = useState(false)
-  const [earned, setEarned] = useState(false)
   const [rewardStep, setRewardStep] = useState(alreadyDone ? 2 : 0)
-  const [promoOpen, setPromoOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const checkinOp = useRef(null)
@@ -362,7 +415,7 @@ export default function CourseSlidePlayer({
   const closeRef = useRef(onClose)
   const locked = busy || saving
   const slide = slides[Math.min(index, slides.length - 1)]
-  const finished = index >= slides.length
+  const finished = index >= slides.length && (alreadyDone || earned)
   const adaptationProposal = practiceAdjustmentSuggestion({comfort,usefulness,flexibility})
   const finalRetestReady = cycle.day === 14 && data.finalRetest?.ready === true
   closeRef.current = () => { if (!submitting.current && !locked) onClose() }
@@ -390,12 +443,26 @@ export default function CourseSlidePlayer({
     }
   }, [])
 
+  // Eligibility may remove the offer while it is open. An index change alone
+  // must never produce a completion receipt without a confirmed session.
   useEffect(() => {
+    if (!alreadyDone && !earned && index >= slides.length) setIndex(slides.length - 1)
+  }, [alreadyDone, earned, index, slides.length])
+
+  useEffect(() => {
+    if (!finished && !discomfortOpen && slide?.key) visitedSlideKeys.current.add(slide.key)
     frame.current?.querySelector('[data-slide-scroller]')?.scrollTo({top:0,behavior:'instant'})
     headingRef.current?.focus()
-  }, [index, rewardStep, promoOpen, discomfortOpen, neutralMode])
+  }, [index, rewardStep, discomfortOpen, neutralMode, slide?.key, finished])
 
-  function goNext() { setError(''); setIndex(current => Math.min(current + 1, slides.length)) }
+  function goNext() {
+    setError('')
+    setIndex(current => {
+      const next=Math.min(current+1,slides.length-1)
+      if(slides[next])visitedSlideKeys.current.add(slides[next].key)
+      return next
+    })
+  }
   function goBack() { setError(''); setIndex(current => Math.max(0, current - 1)) }
 
   async function saveCheckin() {
@@ -431,6 +498,14 @@ export default function CourseSlidePlayer({
   async function finishLesson() {
     if (alreadyDone) { setIndex(slides.length); return }
     if (submitting.current) return
+    // Every screen must be visited in order; this includes the final Free
+    // course offer, but never requires payment or a completed rating.
+    const missing=slides.findIndex(item=>!visitedSlideKeys.current.has(item.key))
+    if(index!==slides.length-1||missing>=0){
+      setError(words.finishAllSlides)
+      if(missing>=0)setIndex(missing)
+      return
+    }
     submitting.current = true
     setSaving(true); setError('')
     try {
@@ -447,14 +522,19 @@ export default function CourseSlidePlayer({
         transferStage,thoughtPath:thoughtChoice,adaptationChoice,
         welcomeFeeling:welcomeFeeling||'skip',
         transferPlan:cycle.day===6&&!lesson.antiStress?transferPlan:'',
-        ...(lesson.antiStress ? {
+        ...((lesson.antiStress||isOporaModule) ? {
           aphorismResponse:aphorismResponse||null,
           practiceAttempt:practiceAttempt||null,
           phraseResponse:phraseResponse||null,
         } : {}),
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
-          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{})
+          data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
+        ...(lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
+          ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
+          : {}),
+        ...(isExtendedStress ? {practiceLab} : {}),
+        visitedSlideKeys:baseSlides.map(item=>item.key),
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -477,20 +557,40 @@ export default function CourseSlidePlayer({
     'day1-independent':'Trying it by myself','day1-experience':'What did I notice?',
     'day1-adapt':'Choosing what fits','day1-transfer':'My next step',
   }
-  const title = promoOpen && promotion.show ? words.promoTitle : finished ? words.finished
-    : isDayOne && dayOneTitles[slide.kind] ? dayOneTitles[slide.kind]
-    : slide.kind === 'guided' ? (slide.section.kind === 'arrive' ? words.arrivalTitle : slide.section.title || words.guided) : words[slide.kind]
+  const title=finished?(cycle.day===14?words.courseFinished:words.finished)
+    :slide?.kind==='course-offer'?words.promoTitle
+    :isDayOne&&dayOneTitles[slide.kind]?dayOneTitles[slide.kind]
+    :slide.kind==='guided'?(slide.section.kind==='arrive'?words.arrivalTitle:slide.section.title||words.guided)
+    :words[slide.kind]
   const Icon = finished ? Trophy : (SCENE[slide.kind] || Sparkles)
   const progress = finished ? 100 : Math.round((index / slides.length) * 100)
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
-  const scenicBaseline = !finished && !promoOpen && !discomfortOpen &&
+  const lessonOutcomeProps={locale,lesson,day:cycle.day,beforeNow:alreadyDone?session?.beforeNow:beforeNow,
+    afterNow:alreadyDone?session?.afterNow:afterNow,
+    comfort:alreadyDone?session?.signals?.comfort:comfort,usefulness:alreadyDone?session?.signals?.usefulness:usefulness,
+    flexibility:alreadyDone?session?.signals?.flexibility:flexibility,
+    adaptationChoice:alreadyDone?session?.signals?.adaptationChoice:adaptationChoice,
+    transferStage:alreadyDone?session?.signals?.transferStage:transferStage,
+    practiceAttempt:alreadyDone
+      ? (isExtendedStress?(session?.signals?.practiceLab?.attempt||session?.signals?.practiceAttempt):session?.signals?.practiceAttempt)||null
+      : isExtendedStress?(practiceLab.attempt||practiceAttempt):practiceAttempt,
+    practiceLab:isExtendedStress?(alreadyDone?session?.signals?.practiceLab||null:practiceLab):null,
+    moduleActivityChoice:alreadyDone&&session?.signals?.interactionSchema==='opora-level-2'&&
+      session?.signals?.moduleThemeId===lesson.oporaModule?.id+'-day-'+String(cycle.day)
+      ?session?.signals?.moduleActivityChoice||null:null,
+    dayOne:isDayOne?(alreadyDone?session?.signals?.dayOne||null:dayOneAnswers):null}
+  const minutesEstimate=isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
+    :(cycle.preferences?.length==='quick'?'5–8':'9–13')
+  const scenicBaseline = !finished && !discomfortOpen &&
     (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.8":undefined} ref={frame}>
+    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined}
+    data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
+    data-opora-day={isOporaModule?cycle.day:undefined} ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -505,19 +605,25 @@ export default function CourseSlidePlayer({
             aria-valuenow={progress} aria-label={words.step}>
             <div className={styles.progressValue} style={{width:progress + '%'}} />
           </div>
-          <small>{finished ? words.completed : words.step + ' ' + (index + 1) + ' ' + words.of + ' ' + slides.length}</small>
+          <small>{finished ? words.completed : words.step + ' ' + (index + 1) + ' ' + words.of + ' ' + slides.length} · ≈ {minutesEstimate} {locale==='ru'?'мин':'min'}</small>
         </div>
         <div className={styles.dayPill}>{cycle.day}/14</div>
       </header>
-      <main className={styles.content} data-slide-scroller data-slide-kind={promoOpen ? "offer" : finished ? "completion" : slide.kind}>
+      <main className={styles.content} data-slide-scroller data-slide-kind={finished ? "completion" : slide.kind} data-slide-key={finished ? undefined : slide.key}>
         {!finished && discomfortOpen ? <section className={styles.discomfortPanel} data-course-discomfort-support aria-label={words.discomfortTitle}>
           <ShieldCheck size={36} aria-hidden="true"/>
           <h2 tabIndex={-1} ref={headingRef}>{words.discomfortTitle}</h2><p>{words.discomfortIntro}</p>
-          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setComfort('uncomfortable'); if(isDayOne)setIndex(current=>Math.max(5,current)); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
+          <button type="button" onClick={() => { setNeutralMode(true); setSymbolMode('words'); setFeedback('uncomfortable'); setComfort('uncomfortable'); setDiscomfortOpen(false) }}>{words.discomfortNeutral}</button>
           <button type="button" onClick={onClose}>{words.discomfortExit}</button>
           <a href="https://findahelpline.com/en" target="_blank" rel="noopener noreferrer">{words.discomfortHelp}<ArrowRight size={16}/></a>
           <small>{words.discomfortEmergency}</small>
-        </section> : promoOpen && promotion.show ? <div className={styles.promoSlide} data-course-post-lesson-promo>
+        </section> : !finished && isDayOne && neutralMode && index<5 ? <section
+          className={styles.discomfortPanel} data-course-day-one-neutral-early>
+          <ShieldCheck size={36} aria-hidden="true"/>
+          <h2 tabIndex={-1} ref={headingRef}>{words.discomfortNeutral}</h2>
+          <p>{words.neutralPractice}</p>
+          <p>{words.discomfortIntro}</p>
+        </section> : !finished && slide.kind==='course-offer' ? <div className={styles.promoSlide} data-course-post-lesson-promo>
           <div className={styles.promoIcon}><Crown size={42} aria-hidden="true"/></div>
           <p className={styles.promoBrand}>{words.promoBrand}</p>
           <h2 tabIndex={-1} ref={headingRef}>{words.promoTitle}</h2>
@@ -527,14 +633,14 @@ export default function CourseSlidePlayer({
             <div><CheckCircle2 size={21}/><span>{locale==='ru'?'Без рекламы':'No advertising'}</span></div>
           </div>
           <strong className={styles.promoPrice}>{words.promoPrice}</strong>
-          {promotion.checkoutReady ? <a className={styles.promoLink} href={'/'+locale+'/app/settings#subscriptions'}>{words.promoCta}<ArrowRight size={17}/></a>
+          {promotion.checkoutReady ? <a className={styles.promoLink} href={'/'+locale+'/app/course?add=1'} target="_blank" rel="noopener noreferrer">{words.promoCta}<ArrowRight size={17}/></a>
             : <p className={styles.promoSoon}>{words.promoSoon}</p>}
           <p className={styles.promoLegal}>{words.promoDisclaimer}</p>
         </div> : finished && earned && rewardStep===0 ? <div className={styles.finished}
           data-course-slide-completion data-course-reward-stage="celebration" aria-live="polite">
           <IllustratedMoment variant="celebration"/>
           <p className={styles.rewardKicker}><CheckCircle2 size={17}/>{words.day} {cycle.day} · {words.celebrationLabel}</p>
-          <h2 tabIndex={-1} ref={headingRef}>{words.finished}</h2>
+          <h2 tabIndex={-1} ref={headingRef}>{cycle.day===14?words.courseFinished:words.finished}</h2>
           {paired ? <section className={styles.momentResult} data-course-moment-result aria-label={words.pairTitle}>
             <p className={styles.resultFocus}>{focusLabel}</p>
             <h3>{words.pairTitle}</h3>
@@ -547,6 +653,7 @@ export default function CourseSlidePlayer({
               changeAmount(paired.change,locale)+' '+(paired.change<0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>}
           <p>{words.rewardIntro}</p>
+          <CourseLessonResult {...lessonOutcomeProps}/>
         </div> : finished && earned && rewardStep===1 ? <div className={styles.rewardStage}
           data-course-slide-completion data-course-reward-stage="xp" aria-live="polite">
           <div className={styles.rewardMedal}><Star size={74} fill="currentColor" aria-hidden="true"/></div>
@@ -560,7 +667,7 @@ export default function CourseSlidePlayer({
         </div> : finished ? <div className={styles.finished} data-course-slide-completion>
           {earned ? <div className={styles.journeyRewardIcon}><Trophy size={66} aria-hidden="true"/></div> :
             <IllustratedMoment variant="celebration"/>}
-          <h2 tabIndex={-1} ref={headingRef}>{earned ? words.rewardPath : words.completed}</h2>
+          <h2 tabIndex={-1} ref={headingRef}>{earned ? words.rewardPath : (cycle.day===14?words.courseFinished:words.completed)}</h2>
           {earned && <div className={styles.completionPath} data-course-completion-progress>
             <strong>{lessonsSaved} / {cycle.durationDays}</strong>
             <progress max={cycle.durationDays} value={lessonsSaved} aria-label={words.rewardPath}/>
@@ -577,6 +684,8 @@ export default function CourseSlidePlayer({
               changeAmount(paired.change, locale) + ' ' + (paired.change < 0 ? words.easierResult : words.harderResult)}</p>
           </section> : <p className={styles.helper}>{words.noPair}</p>)}
           <p>{earned ? words.rewardPathNote : words.celebration}</p>
+          {!earned&&<CourseLessonResult {...lessonOutcomeProps}/>}
+
           {finalRetestReady && <div className={styles.finalRetestCue}>
             <p>{words.retestInvitation}</p>
             <button type="button" onClick={onOpenRetest} disabled={locked||typeof onOpenRetest!=='function'}>
@@ -610,6 +719,7 @@ export default function CourseSlidePlayer({
             <div className={styles.welcomeContent}>
               <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
               <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
+              {isOporaModule&&<p className={styles.welcomeModule} data-opora-welcome-theme>{lesson.oporaModule.theme}</p>}
               <p className={styles.welcomePrompt}>{words.welcomePrompt}</p>
               <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
                 {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
@@ -639,17 +749,17 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.ratingHint}</p>
           </>}
 
-          {slide.kind === 'checkin' && (lesson.antiStress ? <>
+          {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.antiStress.skill}</p>
-            <p className={styles.instruction}>{lesson.antiStress.learningOutcome}</p>
+            <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
+            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.learningOutcome}</p>
             <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
             </div>
-            <p className={styles.helper}>{lesson.antiStress.neutralText}</p>
+            <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
@@ -677,7 +787,7 @@ export default function CourseSlidePlayer({
             {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
               {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
             </p>}
-            {!isDayOne&&lesson.antiStress&&<section data-course-aphorism-dialogue>
+            {!isDayOne&&(lesson.antiStress||isOporaModule)&&<section data-course-aphorism-dialogue>
               <p className={styles.prompt}>{learning.aphorismTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
                 {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
@@ -701,14 +811,14 @@ export default function CourseSlidePlayer({
               <IllustratedMoment variant="calm" kind={slide.kind}/>
               <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
               <p className={styles.helper}>{words.recallHint}</p>
-              {lesson.antiStress&&<div className={styles.feedbackOptions}
+              {(lesson.antiStress||isOporaModule)&&<div className={styles.feedbackOptions}
                 role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
                 {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
                   <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
                     onClick={()=>setRecallAttempt(key)}>{label}</button>)}
               </div>}
-              {lesson.antiStress&&recallAttempt==='hint'&&
-                <p className={styles.helper}>{lesson.antiStress.neutralText}</p>}
+              {(lesson.antiStress||isOporaModule)&&recallAttempt==='hint'&&
+                <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>}
             </>)}
 
           {slide.kind === 'phrase' && <>
@@ -719,7 +829,7 @@ export default function CourseSlidePlayer({
             </div>}
             <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
-            {lesson.antiStress&&<div data-course-support-phrase-choice>
+            {(lesson.antiStress||isOporaModule)&&<div data-course-support-phrase-choice>
               <p className={styles.prompt}>{learning.phraseTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.phraseTitle}>
                 {[['fits',learning.fits],['unsure',learning.phraseUnsure],['no',learning.phraseNo]].map(([key,label])=>
@@ -737,6 +847,11 @@ export default function CourseSlidePlayer({
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
                 label={words.before + ': ' + focusLabel} disabled={locked}/>
             </div>}
+            {slide.section.kind==='meditation'&&lesson.antiStress&&(cycle.day>1||routePlan)&&
+              data.programme?.id==='stress'&&!neutralMode&&
+              <MethodActivityComponent key={String(cycle.day)} day={cycle.day} locale={locale} activity={routePlan?.methodActivity}
+                value={dailyMethodChoice} onChange={setDailyMethodChoice}
+                hintUsed={dailyMethodHintUsed} onHint={recordRouteHint} disabled={locked}/>}
             {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
               <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
               <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
@@ -789,10 +904,10 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'ritual' && <>
-            <IllustratedMoment kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.ritual}</p>
+            {!neutralMode&&(!isOporaModule||routePlan)&&<IllustratedMoment kind={slide.kind}/>}
+            <p className={styles.prompt}>{isOporaModule?lesson.oporaModule.learningOutcome:lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {lesson.antiStress&&<section data-course-practice-attempt>
+            {(lesson.antiStress||isOporaModule)&&<section data-course-practice-attempt>
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
                 {[['tried',learning.tried],['simplified',learning.simplified],
@@ -817,13 +932,21 @@ export default function CourseSlidePlayer({
               {skillProbeHintUsed&&<p className={styles.helper}>{lesson.antiStress.probe.hint}</p>}
               <p className={styles.helper}>{locale==='ru'?'Можно не отвечать. Выбор — учебная проба, а не показатель психического здоровья.':'You may skip this. A choice here is an educational attempt, not a mental-health score.'}</p>
             </section>}
+            {isExtendedStress&&!neutralMode&&<PracticeLabComponent key={'lab-main-'+cycle.day}
+              day={cycle.day} locale={locale} part="main" plan={routePlan?.practiceLab} disabled={locked}
+              onHint={routePlan?recordRouteHint:undefined}
+              draft={routeDrafts.main} onDraftChange={update=>updateRouteDraft('main',update)}
+              value={practiceLab.main||''} onChange={value=>updatePracticeLab('main',value)}
+              attempt={practiceLab.attempt||''}
+              onAttempt={value=>updatePracticeLab('attempt',value)}
+              onSaveReflection={appendRouteReflection}/>}
           </>}
 
           {slide.kind === 'transfer' && <>
             <IllustratedMoment kind={slide.kind}/>
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
-            {lesson.antiStress&&<section data-course-everyday-transfer>
+            {(lesson.antiStress||isOporaModule)&&<section data-course-everyday-transfer>
               <p className={styles.prompt}>{learning.transferTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.transferTitle}>
                 {[['plan',learning.plan],['imagined',learning.imagined],['phrase',learning.phrase],
@@ -867,6 +990,12 @@ export default function CourseSlidePlayer({
             <p className={styles.prompt}>{symbolMode === 'image' && cycle.preferences?.imagery !== 'no_imagery'
               ? lesson.practiceV4?.invitation : lesson.practiceV4?.withoutImagery}</p>
             <p className={styles.helper}>{words.symbolHint}</p>
+            {isExtendedStress&&!neutralMode&&<PracticeLabComponent key={'lab-reflect-'+cycle.day}
+              day={cycle.day} locale={locale} part="reflect" plan={routePlan?.practiceLab}
+              draft={routeDrafts.reflect} onDraftChange={update=>updateRouteDraft('reflect',update)}
+              hintUsed={Boolean(routePlan&&dailyMethodHintUsed)} onHint={routePlan?recordRouteHint:undefined} disabled={locked}
+              value={practiceLab.reflect||''} onChange={value=>updatePracticeLab('reflect',value)}
+              onSaveReflection={appendRouteReflection}/>}
           </>}
 
           {slide.kind === 'reflection' && <>
@@ -895,6 +1024,7 @@ export default function CourseSlidePlayer({
             onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
             onAssociationWords={setAssociationWords} selectedFocus={dayOneFocus}
             neutralMode={neutralMode} onReturnToPractice={()=>setNeutralMode(false)}
+            onStopPractice={()=>{if(locked)return;recordDayOne('practiceAttempt','stopped');setNeutralMode(true);setSymbolMode('words');setIndex(slides.findIndex(item=>item.kind==='day1-exit'))}}
             onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {slide.kind === 'feedback' && <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -951,9 +1081,6 @@ export default function CourseSlidePlayer({
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>
-        {promoOpen && promotion.show && <div className={styles.subactions}>
-          <button type="button" className={styles.skip} onClick={onFinish||onClose}>{words.promoSkip}<SkipForward size={14}/></button>
-        </div>}
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
@@ -962,17 +1089,14 @@ export default function CourseSlidePlayer({
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
-        {/* Safe exit must be reachable from every learning slide, including the initial rating and reflection. The active timer is unmounted when the support panel opens. */}
-        {!finished && !discomfortOpen && !promoOpen && <button type="button" className={styles.discomfortShortcut} disabled={locked} onClick={()=>setDiscomfortOpen(true)} data-course-global-discomfort>{words.discomfortAction}</button>}
+        {/* Close/skip stay available; voluntary comfort feedback can open neutral support. */}
         {!discomfortOpen && <button type="button" className={styles.primary} disabled={locked}
-          onClick={promoOpen ? (onFinish||onClose)
-            : finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
-              : promotion.show && earned ? () => setPromoOpen(true) : (onFinish||onClose))
-            : slide.kind === 'checkin' ? (lesson.antiStress ? goNext : () => void saveCheckin())
+          onClick={finished ? (earned && rewardStep<2 ? () => setRewardStep(current=>Math.min(2,current+1))
+              : (onFinish||onClose))
+            : slide.kind === 'checkin' ? (lesson.antiStress||isOporaModule ? goNext : () => void saveCheckin())
             : index === slides.length - 1 ? () => void finishLesson()
             : goNext}>
-          <span>{promoOpen ? words.seeMap : finished ? (earned && rewardStep<2 ? words.next
-              : promotion.show && earned ? words.promoContinue : words.seeMap)
+          <span>{finished ? (earned && rewardStep<2 ? words.next : words.seeMap)
             : index === slides.length - 1 ? words.finish
             : slide.kind === 'checkin' && Number.isInteger(severity) ? words.saveNext : words.next}</span>
           {finished ? <CheckCircle2 size={19}/> : <ArrowRight size={19}/>}

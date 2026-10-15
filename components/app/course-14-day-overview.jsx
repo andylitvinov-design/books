@@ -1,11 +1,14 @@
 import { BookOpen, ChevronDown, Clock3, Leaf } from 'lucide-react'
 import { coursePreEnrolmentPlan } from '@/lib/inner-growth/course-pre-enrolment'
-import { antiStressPublicPlan, antiStressPublicSkills } from '@/lib/inner-growth/anti-stress-day-scheme'
+import { antiStressBlueprint } from '@/lib/inner-growth/anti-stress-blueprint'
+import { oporaRecoveryStages, OPORA_ENTRY_AND_EXIT } from '@/lib/inner-growth/antistress-recovery-pathway'
+import { moduleDayMeta } from '@/lib/inner-growth/antistress-module-lessons'
+import { antistressModuleTitle } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-14-day-overview.module.css'
 
 const COPY = {
   en: {
-    eyebrow: 'YOUR PERSONAL LEARNING PATH',
+    eyebrow: 'THE 14-DAY JOURNEY',
     title: 'What happens during the 14 days?',
     intro: 'A clear journey from understanding your reactions to practising small, useful choices in everyday life.',
     daily: 'One lesson each day · 5–12 min',
@@ -17,7 +20,7 @@ const COPY = {
     notTreatment: 'Self-guided education and reflection, not diagnosis or a substitute for professional care.',
   },
   ru: {
-    eyebrow: 'ВАШ ЛИЧНЫЙ ПУТЬ РАЗВИТИЯ',
+    eyebrow: 'ПРОГРАММА · 14 ДНЕЙ',
     title: 'Что вас ждёт за 14 дней?',
     intro: 'Понятный путь от изучения своих реакций к небольшим полезным действиям в повседневной жизни.',
     daily: 'Один урок в день · 5–12 минут',
@@ -31,33 +34,41 @@ const COPY = {
 }
 
 const STRESS = {
-  en: { title:'OPORA Anti-Stress · 7 skills, 14 lessons',
-    intro:'Each pair trains one skill. Open a day to view its exercise, expected result and related measures.',
+  en: { title:'Seven recovery steps · your 14-day route',
+    intro:'Five separate stress-informed courses. Inside each: seven practical recovery stages from safety through integration. Open any stage to preview its two lessons.',
     allDays:'All 14 daily exercises and results',
-    hint:'Seven two-lesson skills · measured changes and real practice',
+    hint:'Exercises, outcomes and related measurements',
     practice:'Exercise', result:'Observable learning result', scales:'Related scales', check:'Skill check',
     screens:'The 15 learning + 3 closing screens', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
-  ru: { title:'ОПОРА · Антистресс — 7 навыков за 14 дней',
-    intro:'Каждые два занятия тренируют один навык. Откройте день, чтобы увидеть упражнение, ожидаемый результат и шкалы.',
+  ru: { title:'Семь этапов восстановления · 14 занятий',
+    intro:'Пять разных программ по уровню стресса. Внутри каждой — путь от безопасности и стабилизации до восстановления ресурсов и интеграции. Раскройте этап, чтобы увидеть два занятия.',
     allDays:'Практики и результаты всех 14 дней',
-    hint:'Семь пар навыков · реальные упражнения и измерения',
+    hint:'Упражнения, результаты и связанные шкалы',
     practice:'Упражнение',result:'Ожидаемый результат',scales:'Связанные шкалы',check:'Проверка навыка',
     screens:'15 учебных + 3 завершающих интерактивных слайда', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
-  es: { title:'OPORA · Menos estrés: 7 habilidades en 14 días',
-    intro:'Cada dos clases practicas una habilidad. Abre cada día para ver su ejercicio y resultado.',
+  es: { title:'Siete etapas · tu ruta de 14 días',
+    intro:'Cinco cursos según el estrés percibido. Cada curso tiene siete etapas de seguridad, estabilización, recursos e integración.',
     allDays:'Ejercicios y resultados de los 14 días',
-    hint:'Siete pares de habilidades · práctica y mediciones',
+    hint:'Ejercicios, resultados y medidas relacionadas',
     practice:'Ejercicio',result:'Resultado observable',scales:'Escalas relacionadas',check:'Prueba de habilidad',
     screens:'15 pasos de práctica + 3 de cierre', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
 }
-export default function Course14DayOverview({ locale = 'en', compact = false, programId = '' }) {
+export default function Course14DayOverview({ locale = 'en', compact = false, programId = '', moduleId = '', routerVersion = '' }) {
   const t = COPY[locale] || COPY.en
   const st=STRESS[locale]||STRESS.en
   const stress=programId==='stress'
-  const groups=stress ? antiStressPublicSkills(locale).map(skill=>({
-    id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:st.hint,
-  })) : coursePreEnrolmentPlan(locale)
-  const days=stress ? antiStressPublicPlan(locale) : groups.flatMap(group=>group.days)
+  const blueprint=stress?antiStressBlueprint(locale):null
+  // The old NAV-1.3 module-specific curriculum and labels remain pinned for existing cycles.
+  const updatedPath=stress && (!routerVersion || routerVersion==='opora-nav-2.0-20261014')
+  const groups=stress ? (updatedPath
+    ? oporaRecoveryStages(locale).map(stage=>({id:stage.id,start:stage.days[0],end:stage.days[1],title:stage.title,summary:stage.description}))
+    : blueprint.skills.map(skill=>({id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:skill.description})))
+    : coursePreEnrolmentPlan(locale)
+  const chosenTitle=stress&&moduleId?antistressModuleTitle(moduleId,locale):null
+  const days=stress ? blueprint.days.map(day=>{
+    const adapted=moduleId?moduleDayMeta(moduleId,day.day,locale,routerVersion):null
+    return adapted?{...day,title:adapted.title,exercise:adapted.exercise,skill:groups[Math.floor((day.day-1)/2)]?.title||day.skill,adapted:true}:day
+  }) : groups.flatMap(group=>group.days)
   return <section className={styles.overview} data-course-14-day-overview
     data-course-before-signup={compact ? 'guest' : 'intro'}
     aria-label={stress?st.title:t.title}>
@@ -69,16 +80,39 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
       </div>
       <span className={styles.duration}><Clock3 size={16} aria-hidden="true"/>{t.daily}</span>
     </header>
-    <div className={styles.phases} role="list" aria-label={t.title}>
-      {groups.map((group, index) => <article role="listitem" className={styles.phase}
-        key={group.id} data-course-phase={group.id}>
-        <div className={styles.phaseTop}>
-          <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
-          <span className={styles.phaseIndex} aria-hidden="true">{index + 1}<span>/{groups.length}</span></span>
-        </div>
-        <h3>{group.title}</h3>
-        <p>{group.summary}</p>
-      </article>)}
+    {stress&&<p className={styles.assessmentRail} data-antistress-baseline-before-days><strong>00 · {OPORA_ENTRY_AND_EXIT.entry[locale]||OPORA_ENTRY_AND_EXIT.entry.en}</strong>{chosenTitle&&<span>{locale==='ru'?'Выбранный маршрут':locale==='es'?'Ruta elegida':'Selected route'}: {chosenTitle}</span>}</p>}
+    <div className={styles.phases} role={stress ? undefined : 'list'} aria-label={t.title}>
+      {groups.map((group, index) => stress ? (
+        <details className={`${styles.phase} ${styles.phaseExpandable}`} key={group.id}
+          data-course-phase={group.id} data-course-skill-accordion={index + 1}>
+          <summary className={styles.phaseSummary}>
+            <span className={styles.phaseNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            <span className={styles.phaseBody}>
+              <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+              <strong>{group.title}</strong>
+            </span>
+            <ChevronDown className={styles.phaseChevron} size={18} aria-hidden="true" />
+          </summary>
+          <div className={styles.phaseDetails}>
+            <p>{group.summary}</p>
+            <div className={styles.phaseLessons}>
+              {days.filter(day => day.day === group.start || day.day === group.end).map(day => (
+                <p key={day.day}>
+                  <span>{t.day} {day.day}</span><strong>{day.title}</strong>
+                </p>
+              ))}
+            </div>
+          </div>
+        </details>
+      ) : (
+        <article role="listitem" className={styles.phase} key={group.id} data-course-phase={group.id}>
+          <div className={styles.phaseTop}>
+            <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+            <span className={styles.phaseIndex} aria-hidden="true">{index + 1}<span>/{groups.length}</span></span>
+          </div>
+          <h3>{group.title}</h3><p>{group.summary}</p>
+        </article>
+      ))}
     </div>
     <details className={styles.dayDisclosure} data-course-14-day-list>
       <summary className={styles.dayToggle}>
@@ -96,11 +130,13 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
             </summary>
             <div className={styles.dayExerciseContent}>
               <p><strong>{st.practice}:</strong> {day.exercise}</p>
-              <p><strong>{st.result}:</strong> {day.result}</p>
-              <div className={styles.axisList} aria-label={st.scales}>
+              <p><strong>{st.result}:</strong> {day.adapted?(locale==='ru'?'Опробовать подходящий способ и выбрать: продолжить, упростить, отдохнуть или пропустить.':locale==='es'?'Probar una opción adecuada y poder continuar, simplificar, descansar u omitir.':'Try an acceptable choice and decide to continue, simplify, rest or skip.'):day.result}</p>
+              {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>}
+              {!day.adapted&&day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
+              {!day.adapted&&<div className={styles.axisList} aria-label={st.scales}>
                 {day.scales.map(axis=><span key={axis.id}>{axis.label}</span>)}
-              </div>
-              {!compact&&<details className={styles.screenDetails}>
+              </div>}
+              {!day.adapted&&!compact&&<details className={styles.screenDetails}>
                 <summary>{st.screens}</summary>
                 <ol>{day.screens.map(screen=><li key={screen.number}>
                   <span>{screen.number}</span><span>{screen.expected}</span>
@@ -114,6 +150,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
         </li>)}
       </ol>
     </details>
+    {stress&&<p className={styles.assessmentRail} data-antistress-retest-after-days><strong>08 · {OPORA_ENTRY_AND_EXIT.exit[locale]||OPORA_ENTRY_AND_EXIT.exit.en}</strong><span>{OPORA_ENTRY_AND_EXIT.note[locale]||OPORA_ENTRY_AND_EXIT.note.en}</span></p>}
     <p className={styles.footnote}>{stress?st.tests:t.optional} <span>{t.notTreatment}</span></p>
   </section>
 }

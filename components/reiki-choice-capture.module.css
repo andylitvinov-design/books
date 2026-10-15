@@ -58,3 +58,149 @@
   .secondary { gap: 6px 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .choice, .action { transition: none; } }
+
+
+/* Top-of-landing capture is a short, guide-first route; the bottom captures
+   enquiries with the existing express-first layout. Yggdrasil stays unchanged. */
+.topCapture {
+  width: 100%;
+  margin: 16px auto 28px;
+  padding: clamp(18px, 3vw, 27px);
+  border-color: #bddfdc;
+  background: linear-gradient(115deg, #f0faf8, #e7f5f8 60%, #f9f6e9);
+  box-shadow: 0 12px 32px rgba(30, 102, 116, .07);
+}
+.topCapture .eyebrow {
+  color: #217b8b;
+  letter-spacing: .10em;
+}
+.topCapture .title {
+  max-width: none;
+  margin-top: 11px;
+  color: #184b59;
+  font-size: clamp(26px,3.2vw,35px);
+}
+.topCapture .lead {
+  max-width: 75ch;
+  font-size: 15px;
+}
+.topCapture .priceLine {
+  margin-top: 10px;
+  font-size: 13px;
+}
+.topCapture .question {
+  margin: 18px 0 10px;
+  color: #215c67;
+}
+.topCapture .choices {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.topCapture .choice,
+.topCapture .choice:nth-child(3) {
+  grid-column: auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid #bfdbd7;
+  background: #fff;
+  color: #275967;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.topCapture .choice[data-selected="true"] {
+  border-color: #1b7583;
+  color: #fff;
+  background: #196e7e;
+}
+.topCapture .action {
+  max-width: 540px;
+  margin-top: 15px;
+  border-radius: 13px;
+  background: #146f7e;
+  box-shadow: 0 8px 22px rgba(20, 102, 121, .15);
+}
+.topCapture .action:hover {
+  background: #115566;
+}
+.topCapture .action[data-reiki-choice-action="express"],
+.topCapture .action[data-reiki-choice-action="personal"] {
+  background: #cf7458;
+}
+.topCapture .action[data-reiki-choice-action="express"]:hover,
+.topCapture .action[data-reiki-choice-action="personal"]:hover {
+  background: #b9654c;
+}
+.topCapture .note {
+  font-size: 12px;
+  margin-top: 10px;
+}
+.topCapture .footer {
+  display: none;
+}
+/* Always-visible alternative to enrolment for the bottom capture. */
+.alwaysDownload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-top: 13px;
+  min-height: 47px;
+  border: 1px solid #6dabb6;
+  border-radius: 12px;
+  padding: 11px 16px;
+  color: #146d7e;
+  background: #fbffff;
+  font: 800 14px/1.4 Arial, sans-serif;
+  text-decoration: none;
+}
+.alwaysDownload:hover {
+  color: #fff;
+  background: #1c7585;
+  border-color: #1c7585;
+}
+.alwaysDownload svg {
+  flex: 0 0 auto;
+}
+@media (max-width: 680px) {
+  .topCapture {
+    margin: 12px auto 20px;
+    padding: 19px 15px;
+    border-radius: 20px;
+  }
+  .topCapture .title {
+    font-size: clamp(27px,7.4vw,34px);
+  }
+  .topCapture .lead {
+    font-size: 15px;
+    line-height: 1.52;
+  }
+  .topCapture .priceLine {
+    font-size: 12px;
+  }
+  .topCapture .choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .topCapture .choice,
+  .topCapture .choice:nth-child(3) {
+    min-height: 82px;
+    font-size: 13px;
+  }
+  .topCapture .choice:nth-child(3) {
+    grid-column: 1 / -1;
+    min-height: 58px;
+  }
+  .topCapture .action {
+    font-size: 15px;
+    min-height: 54px;
+  }
+  .alwaysDownload {
+    display: flex;
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}

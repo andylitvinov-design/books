@@ -10,7 +10,7 @@ test('approved My Courses dashboard has localized course plan and explanatory be
   assert.match(component, /motto: 'Лучшее в тебе уже здесь'/)
   assert.match(component, /benefitsTitle: 'Что вы найдёте в наших курсах'/)
   assert.match(component, /benefitsTitle: 'What you will find in your courses'/)
-  assert.match(component, /<Course14DayOverview locale={locale} programId=\{courseProgramFromTopics/)
+  assert.match(component, /<Course14DayOverview locale=\{locale\}\s+programId=\{courseProgramFromTopics/)
   assert.match(component, /aria-expanded={showPlan}/)
   assert.match(component, /data-current-course-card/)
   assert.match(component, /data-add-course/)

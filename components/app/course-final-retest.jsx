@@ -23,6 +23,10 @@ const COPY = {
     primary: 'Main state measure', supplementary: 'Supplementary questionnaire',
     screening: 'Symptom screening · not a diagnosis',
     stable: 'Stable profile · no short-course retest requested',
+    primaryScale:'Main Anti-Stress outcome',windows:{
+      'past-7-days':'Past 7 days','past-2-weeks':'Past 14 days','right-now':'Right now',
+    },
+    noCausalClaim:'These raw scores are self-reports, not proof of a treatment effect.',
   },
   ru: {
     eyebrow: 'ПОСЛЕ КУРСА · НЕОБЯЗАТЕЛЬНЫЙ ЗАМЕР', heading: 'Сравните исходное и последующее состояние',
@@ -42,6 +46,10 @@ const COPY = {
     primary: 'Основной показатель состояния', supplementary: 'Дополнительный опросник',
     screening: 'Скрининг симптомов · не диагноз',
     stable: 'Устойчивый профиль · повтор за короткий курс не требуется',
+    primaryScale:'Главная шкала Антистресса',windows:{
+      'past-7-days':'Последние 7 дней','past-2-weeks':'Последние 14 дней','right-now':'Прямо сейчас',
+    },
+    noCausalClaim:'Это ваши самооценки, а не доказательство лечебного эффекта курса.',
   },
 }
 
@@ -71,14 +79,18 @@ export default function CourseFinalRetest({ locale='en', plan, onStart, busyKey=
               </small>
             </div>
             {item.completed && <CheckCircle2 size={21} aria-label={t.done} className={styles.check}/>}
+            {item.timeframe&&<small className={styles.outcomeWindow}>{t.windows[item.timeframe]||item.timeframe}</small>}
           </div>
           <div className={styles.resultDates}>
             <span>{t.baseline}: <strong>{item.baselineDate?.slice(0,10)||'—'}</strong></span>
             <span>{t.final}: <strong>{item.afterDate?.slice(0,10)||'—'}</strong></span>
           </div>
           {item.comparison?.length>0 && <div className={styles.comparison} aria-label={t.changed}>
-            {item.comparison.map(scale=><div key={scale.key}>
-              <span>{scale.label}</span>
+            {item.comparison.map(scale=><div key={scale.key}
+              data-antistress-t14-role={scale.measureRole||undefined}>
+              <span>{scale.measureRole==='primary'&&
+                <em className={styles.outcomeMain}>{t.primaryScale}</em>}
+                {scale.label}</span>
               <strong>{scale.from} <ArrowRight size={14} aria-hidden="true"/> {scale.to}
                 <small className={styles.delta}>({scale.delta>0?'+':''}{scale.delta})</small>
               </strong>

@@ -2,6 +2,8 @@
 
 Approved October 13, 2026. Supersedes any description treating the last day as merely another lesson.
 
+> **October 15 pricing and final-slide correction:** superseded by `docs/my-course/2026-10-15-membership-free-final-slide.md`. Historic pricing and daily advertisement details below are retained only for decision history, not implementation.
+
 ## Journey
 
 1. Before enrolment: the user chooses and saves their own original assessment battery (often five fixed tests for curated courses). Only actual compatible owner-owned results enable course start. The cycle's original baseline is **frozen as of its trusted server-created timestamp**.
