@@ -46,7 +46,9 @@ test('Free paywall is informational until verified server billing is live', () =
   assert.match(membership, /regularMonthlyEUR: 20/)
   assert.match(membership, /introFirstMonthEUR: 10/)
   assert.match(membership, /introDiscountPercent: 50/)
-  assert.doesNotMatch(membership, /price: 100|price: 10, spots:/)
+  assert.match(membership, /premiumMonthlyEUR: 100/)
+  assert.match(membership, /id: 'premium'/)
+  assert.doesNotMatch(membership, /id: 'start'|price: 10, spots:/)
   assert.match(entry, /Subscription checkout is not available yet/)
   assert.match(entry, /Оформление подписки пока недоступно/)
   assert.doesNotMatch(entry, /checkout\/start|localStorage|sessionStorage|stripe\.redirect/)
@@ -75,11 +77,14 @@ test('the current course has a real photo to the left and a compact mobile add t
   assert.match(css, /@media\(max-width:340px\)/)
 })
 
-test('membership modal has Free and a single €20 paid plan with a €10 intro month', () => {
+test('membership modal has Free, Advanced €20 and Premium €100, with only Advanced €10 first month', () => {
   const plans = read('lib/inner-growth/course-membership.js')
   assert.match(entry, /const PLANS = COURSE_PUBLIC_PLANS/)
   assert.match(plans, /regularMonthlyEUR: 20/)
   assert.match(plans, /introFirstMonthEUR: 10/)
+  assert.match(plans, /premiumMonthlyEUR: 100/)
+  assert.match(plans, /id: 'premium'/)
+  assert.match(entry, /premium: 'Premium'/)
   assert.match(entry, /free: 'Free'/)
   assert.match(entry, /ads: 'Final course offer'/)
   assert.match(entry, /data-first-month-offer/)

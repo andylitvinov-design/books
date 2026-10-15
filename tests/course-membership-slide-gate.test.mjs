@@ -6,15 +6,19 @@ import { withFinalFreeOffer, verifyCourseSlideVisitOrder } from '../lib/inner-gr
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('only €20/month Advanced is paid; €10 is the introductory first-month discount',()=>{
-  assert.deepEqual(COURSE_PUBLIC_PLANS.map(plan=>[plan.id,plan.price]),[['free',0],['advanced',20]])
+test('Free, €20 Advanced and €100 Premium; €10 only discounts Advanced first month',()=>{
+  assert.deepEqual(COURSE_PUBLIC_PLANS.map(plan=>[plan.id,plan.price]),[['free',0],['advanced',20],['premium',100]])
   assert.equal(COURSE_MEMBERSHIP.regularMonthlyEUR,20)
   assert.equal(COURSE_MEMBERSHIP.introFirstMonthEUR,10)
   assert.equal(COURSE_MEMBERSHIP.introDiscountPercent,50)
+  assert.equal(COURSE_MEMBERSHIP.premiumMonthlyEUR,100)
+  assert.deepEqual(COURSE_PUBLIC_PLANS.find(plan=>plan.id==='premium').items,['noAds','tests','session'])
   assert.equal(COURSE_MEMBERSHIP.regularMonthlyEUR*(1-COURSE_MEMBERSHIP.introDiscountPercent/100),10)
   const modal=read('components/app/course-entry-selector.jsx')
   assert.match(modal,/data-first-month-offer/)
-  assert.doesNotMatch(modal,/id: 'start'|id: 'premium'/)
+  assert.doesNotMatch(modal,/id: 'start'/)
+  assert.match(modal,/premium: 'Premium'/)
+  assert.match(modal,/plan\.id === COURSE_MEMBERSHIP\.paidPlanId/)
 })
 
 test('one final Free ad is included only in the unsaved last day of the 14-day course',()=>{

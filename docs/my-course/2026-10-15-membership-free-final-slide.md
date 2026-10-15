@@ -1,12 +1,13 @@
 # Holistic House — Membership pricing, Free final slide, lesson completion
 
-Approved 2026-10-15. Supersedes the pricing and promotional timing in `day14-retest-daily-gate-subscription-offer-2026-10-13.md`.
+Approved 2026-10-15, with Premium €100 restored by user request. Supersedes the pricing and promotional timing in `day14-retest-daily-gate-subscription-offer-2026-10-13.md`.
 
 ## Commercial structure
 - **Free**: €0; one active course; one optional Holistic House advertisement as the last slide of the **complete 14-day course**.
-- **Advanced**: the **only paid recurring membership**: €20/month; up to five simultaneous courses, no promotional slide.
+- **Advanced**: €20/month; up to five simultaneous courses, no promotional slide.
 - **New-subscriber promotion**: first month **€10 (50% off)**, **then €20/month** from the second month. The €10 amount is an introductory price for the same Advanced plan, **not** a separate €10 recurring subscription.
-- Do not show old Start (€10/month) or Premium (€100/month) as separate memberships.
+- **Premium**: €100/month; up to five simultaneous courses, no advertising, included tests and one personal session per month (service and scheduling terms to be confirmed before checkout).
+- Do not show old Start (€10/month) as a separate recurring membership. The €10 promotion belongs **only** to Advanced; Premium remains €100/month.
 - Checkout is not activated by this change: show price terms but never imply a click charges or subscribes. Eligibility, taxes, renewals, invoices and discounts need account-bound verification in billing before activation.
 
 ## Course slide and save contract

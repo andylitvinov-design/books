@@ -43,6 +43,7 @@
 .planGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .planCard{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:7px 9px;min-width:0;min-height:135px;padding:15px;border:1px solid #cce7eb;border-radius:17px;background:#f6fcfd}
 .planCard[data-plan=free]{background:#fbfefd;border-color:#cbdfe4}
+.planCard[data-plan=premium]{grid-column:1/-1;background:linear-gradient(125deg,#f3faff,#f1f9f9);border-color:#bfdce8}
 .planCard[data-recommended=true]{border:2px solid #10a3b4;background:linear-gradient(130deg,#eafafb,#f4fffc)}
 .planCard>strong{grid-column:1;font-size:18px;line-height:1.25}
 .price{grid-column:2;font-size:25px;line-height:1.2;white-space:nowrap}
