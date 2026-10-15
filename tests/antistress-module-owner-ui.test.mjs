@@ -6,7 +6,8 @@ const scales=['load','tension','functioning'].map(key=>({id:'hh-weekly-pulse::we
 const extraModules={
  '@/lib/inner-growth/course-strategy':{courseMeasuredProfile:()=>({eligible:scales,scales}),courseRecommendedTests:()=>[],courseSuggestedFocus:()=>scales},
  '@/lib/inner-growth/course-programs':{...programs,suggestCourseProgramScales:()=>scales},
- './course-completion-review':{default:()=>null},'./course-focus-picker':{default:()=>null},
+ './course-completion-review':{default:Object.assign(()=>null,{testName:'CourseCompletionReview'})},
+ './course-focus-picker':{default:Object.assign(()=>null,{testName:'CourseFocusPicker'})},
 }
 const current={...courseA,stage:3,focusTags:['stress','mood','energy'],presetId:null,testKeys:['hh-weekly-pulse']}
 const selection={answers:{F1:null,F5:2},goal:'AS4',moduleId:'AS4'}
