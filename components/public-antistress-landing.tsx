@@ -5,6 +5,8 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, Heart, Leaf, LockKeyhole, PauseCircle, ShieldCheck, Sparkles, Target, Waves } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
+import { PublicAntistressRouteMap } from "@/components/public-antistress-route-map";
+import { oporaRecoveryStages } from "@/lib/inner-growth/antistress-recovery-pathway";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
 import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -21,7 +23,7 @@ const copy = {
     "heroImageLine": "Спокойствие не нужно заслуживать.",
     "free": "Первый курс бесплатно",
     "factDays": "14 занятий",
-    "factSkills": "7 навыков",
+    "factSkills": "5 маршрутов",
     "factTime": "В своём темпе",
     "start": "Начать курс бесплатно",
     "explore": "Посмотреть программу",
@@ -72,8 +74,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "ПРОГРАММА НА 14 ДНЕЙ",
-    "skillsTitle": "Семь навыков. По два занятия на каждый.",
-    "skillsLead": "Сначала знакомство и безопасная проба, затем повторение в новой повседневной ситуации. Нажмите на навык, чтобы увидеть темы двух занятий.",
+    "skillsTitle": "От безопасности к устойчивости: 7 этапов восстановления.",
+    "skillsLead": "Каждый этап занимает два занятия и включает практику, а не заучивание теории. Названия показывают общую последовательность; упражнения различаются в пяти вариантах курса.",
     "daysWord": "Дни",
     "dayWord": "День",
     "skills": [
@@ -227,7 +229,7 @@ const copy = {
     "heroImageLine": "You do not have to earn a moment of calm.",
     "free": "Your first course is free",
     "factDays": "14 lessons",
-    "factSkills": "7 skills",
+    "factSkills": "5 learning routes",
     "factTime": "At your own pace",
     "start": "Start the free course",
     "explore": "Explore the 14 days",
@@ -278,8 +280,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "YOUR 14-DAY PATH",
-    "skillsTitle": "Seven skills. Two lessons for each.",
-    "skillsLead": "Explore a skill gently, then revisit it in a new everyday situation. Open any skill to see its two lessons.",
+    "skillsTitle": "From safety to resilience: seven recovery steps.",
+    "skillsLead": "Two practical lessons per step, with activities adapted to your selected stress route. This is trauma-informed education, not trauma treatment.",
     "daysWord": "Days",
     "dayWord": "Day",
     "skills": [
@@ -433,7 +435,7 @@ const copy = {
     "heroImageLine": "No necesitas ganarte un momento de calma.",
     "free": "Tu primer curso es gratis",
     "factDays": "14 lecciones",
-    "factSkills": "7 habilidades",
+    "factSkills": "5 rutas",
     "factTime": "A tu propio ritmo",
     "start": "Empezar el curso gratis",
     "explore": "Ver los 14 días",
@@ -484,8 +486,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "TU CAMINO DE 14 DÍAS",
-    "skillsTitle": "Siete habilidades. Dos lecciones por habilidad.",
-    "skillsLead": "Primero una práctica sencilla y después una repetición en otra situación cotidiana. Abre cada habilidad para conocer sus lecciones.",
+    "skillsTitle": "De la seguridad a la resiliencia: siete etapas.",
+    "skillsLead": "Dos prácticas por etapa. Los ejercicios varían según el nivel de estrés percibido. No es un tratamiento del trauma.",
     "daysWord": "Días",
     "dayWord": "Día",
     "skills": [
@@ -633,9 +635,9 @@ const copy = {
 
 const challengeIcons = [Waves, PauseCircle, Leaf, ShieldCheck] as const;
 const chapterLinks = {
-  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
-  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
-  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
+  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "stress-levels", title: "5 уровней" }, { id: "programme", title: "7 этапов" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
+  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "stress-levels", title: "5 routes" }, { id: "programme", title: "7 stages" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
+  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "stress-levels", title: "5 rutas" }, { id: "programme", title: "7 etapas" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
 } as const;
 const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
@@ -647,6 +649,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
     days: {title:string}[];
   };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
+  const recoveryStages = oporaRecoveryStages(locale);
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
   const aboutPath = "/" + locale + "/courses";
@@ -734,6 +737,8 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
+        <PublicAntistressRouteMap locale={locale} />
+
         <section className={styles.section} id="programme" aria-labelledby="antistress-programme">
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>{t.skillsEyebrow}</p>
@@ -749,8 +754,8 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
                   <small>{t.daysWord} {skill.days[0]}–{skill.days[1]}</small>
-                  <strong>{skill.title}</strong>
-                  <span>{skill.description}</span>
+                  <strong>{recoveryStages[index]?.title||skill.title}</strong>
+                  <span>{recoveryStages[index]?.description||skill.description}</span>
                 </span>
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
