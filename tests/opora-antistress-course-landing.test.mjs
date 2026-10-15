@@ -40,12 +40,15 @@ test('14 lessons are organized in seven localized expandable skill pairs', () =>
     assert.ok(match, lang + ' locale must be present')
     assert.equal((match[1].match(/"days": "0[13579]|"days": "1[13]/g) || []).length, 7)
   }
-  assert.match(source, /t\.skills\.map\(\(skill, index\)/)
+  assert.match(source, /programme\.skills\.map\(\(skill, index\)/)
   assert.match(source, /index \* 2 \+ 1/)
   assert.match(source, /index \* 2 \+ 2/)
   assert.match(source, /<details className=\{styles\.skill\}/)
-  assert.match(source, /skill\.d1/)
-  assert.match(source, /skill\.d2/)
+  assert.match(source, /programme\.days\[index \* 2\]\.title/)
+  assert.match(source, /programme\.days\[index \* 2 \+ 1\]\.title/)
+  assert.match(source, /skill\.outcome/)
+  assert.match(source, /PublicAntistressEvidence/)
+  assert.match(source, /data-antistress-full-day-scheme/)
 })
 
 test('promotional landing uses the approved full photo, responsive design and interactive optional choice', () => {
