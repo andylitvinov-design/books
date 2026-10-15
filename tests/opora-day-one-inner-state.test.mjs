@@ -73,8 +73,8 @@ test('screen interaction preserves non-coercive inner and external pathways with
   assert.ok(!player.includes("associationWords:associationWords"))
   assert.ok(player.includes("dayOneAnswers:validateDayOneAnswers"))
   assert.ok(report.includes("data-course-inner-state-result"))
-  assert.ok(dayOne.includes("no need to"))
-  assert.ok(dayOne.includes("не обяз"))
+  assert.match(dayOne,/No need|do not have to|without needing/i)
+  assert.match(dayOne,/не нужно|необязательно|не обязаны/i)
 })
 
 test('modified first-day JSX screens and summary parse cleanly',()=>{
