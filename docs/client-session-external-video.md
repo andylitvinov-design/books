@@ -1,5 +1,5 @@
 # Private client video storage — Holistic House
-**Status:** optional, **OFF by default**. Extend existing session-only media, do not publish client recordings to YouTube/Metricool or public R2 URLs.
+**Status:** optional external provider, **OFF by default**. New personal MP4 uploads are fail-closed until configured, rather than silently filling the Supabase Free 1 GB quota. Extend existing session-only media, do not publish client recordings to YouTube/Metricool or public R2 URLs.
 
 ## Existing system
 Canonical `codex/public-book-library`: PR #592 private audio/video/session per-client drafts; PR #601 HTML report; PR #605 Google consented save; PR #610 private photos. This feature extends the existing upload/finalize/streaming endpoints and `app_private.client_delivery_assets`, with a backward-compatible `storage_provider` column. No duplicate video master or unrelated client-session access.
@@ -20,8 +20,9 @@ Only after review, add all variables with the provider's protected-secrets inter
 - `HH_CLIENT_VIDEO_BUCKET` — dedicated private bucket, same for one provider
 - `HH_CLIENT_VIDEO_ACCESS_KEY_ID` and `HH_CLIENT_VIDEO_SECRET_ACCESS_KEY` — server-only bucket-scoped credentials
 - `HH_CLIENT_R2_ACCOUNT_ID` — 32-char Cloudflare account ID, **R2 only**
+- `HH_CLIENT_VIDEO_SUPABASE_UPLOADS_ALLOWED=true` — **optional temporary pilot only**, never enabled by default; if explicitly enabled without external storage, permits legacy private Supabase MP4 uploads up to 45 MB. Existing stored Supabase video playback does NOT require this flag.
 
-External videos cap at 200,000,000 bytes of MP4 `video/mp4` while old Supabase MP4 remains capped at 45,000,000. PDFs/photos/audio stay in private Supabase Storage and need no conversion. **MOV/HEVC is not transcoded**: use H.264/AAC MP4 when producing phone video; only a privacy-approved transcoding service can add auto-conversion. The browser uploads directly to the object-store signed PUT URL (15-min expiry) with Content-Type signed and bucket CORS limited to the Holistic House admin origin and PUT/Content-Type/If-None-Match. A signed create-only precondition prevents replacing a saved object. Example R2 CORS:
+External videos cap at 200,000,000 bytes of MP4 `video/mp4`; new Supabase MP4 uploads are blocked by default to protect its 1 GB Free bucket. Existing Supabase MP4 playback is backward compatible; optional explicitly approved temporary Supabase uploads remain capped at 45,000,000 bytes. PDFs/photos/audio stay in private Supabase Storage and need no conversion. **MOV/HEVC is not transcoded**: use H.264/AAC MP4 when producing phone video; only a privacy-approved transcoding service can add auto-conversion. The browser uploads directly to the object-store signed PUT URL (15-min expiry) with Content-Type signed and bucket CORS limited to the Holistic House admin origin and PUT/Content-Type/If-None-Match. A signed create-only precondition prevents replacing a saved object. Example R2 CORS:
 ```json
 [{"AllowedOrigins":["https://holistichouse.vercel.app"],"AllowedMethods":["PUT"],"AllowedHeaders":["Content-Type","If-None-Match"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":900}]
 ```
