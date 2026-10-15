@@ -173,3 +173,14 @@ test('retesting cannot claim success before the actual 14-day GAD7 interval or w
   assert.equal(missing.tests[0].comparison,null)
   assert.equal(missing.completedCount,0)
 })
+
+
+test('existing non-Anti-Stress programmes keep their original test scale order and labels',()=>{
+  const old=buildFinalCourseRetest({...frame,antiStress:false,
+    testKeys:['hh-weekly-pulse'],metadata:meta,results:[weeklyBefore,weeklyAfter]})
+  assert.equal(old.tests[0].role,'primary_outcome')
+  assert.equal(old.tests[0].timeframe,undefined)
+  assert.deepEqual(old.tests[0].comparison.map(x=>x.key),
+    weeklyBefore.dimensions.map(x=>x.key))
+  assert.equal(old.tests[0].comparison[0].measureRole,undefined)
+})
