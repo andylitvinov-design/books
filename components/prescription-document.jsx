@@ -38,7 +38,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   return <Root className="prescription-shell canonical-shell">
     {!admin && selector && <div className="prescription-toolbar">
       <Link href={`/${alternateLocale}/prescriptions/${selector}`}>{alternateLocale.toUpperCase()}</Link>
-      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} />{cabinetAction}
+      <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} mobilePdf />{cabinetAction}
     </div>}
     <article className="canonical-document canonical-document--editorial">
       <DocumentAutoPrint enabled={admin && autoPrint} />
