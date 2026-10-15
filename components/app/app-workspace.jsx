@@ -99,6 +99,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const page = path[0] || 'tests',
     recordId = path[1],
     root = `/${locale}/app`
+  const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
   const load = useCallback(async () => {
     setError(null)
     try {
@@ -307,18 +308,26 @@ export default function AppWorkspace({ locale, path = [] }) {
       <main className="hh-app">
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
-          <h1>{state === 'unavailable' ? c.unavailable : page === 'course'
-            ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
-          <p>{state === 'unavailable' ? c.unavailableText : page === 'course'
-            ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
-              : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
+          <h1>{state === 'unavailable' ? c.unavailable : stressSignup
+            ? (locale === 'ru' ? 'ОПОРА — Антистресс: сначала тесты' : 'OPORA Stress Relief: assessments first')
+            : page === 'course'
+              ? (locale === 'ru' ? 'Личный курс на 14 дней' : 'Your personal 14-day course') : c.welcome}</h1>
+          <p>{state === 'unavailable' ? c.unavailableText : stressSignup
+            ? (locale === 'ru'
+              ? 'После входа: основной исходный HH Weekly Pulse (8 вопросов) до урока 1, дополнительные GAD-7 и Resource Pulse — по желанию. Уже пройденный совместимый результат учитывается.'
+              : 'After sign-in: complete HH Weekly Pulse (8 questions) before lesson 1. GAD-7 and Resource Pulse are optional; recent compatible results count.')
+            : page === 'course'
+              ? (locale === 'ru' ? 'Узнайте план курса до входа в кабинет. Вы сами выбираете темы, тесты и ежедневные практики.'
+                : 'Explore the course plan before signing in. You choose the focus, tests and daily practices.') : c.intro}</p>
           <p className="hh-muted">{c.private}</p>
           {state !== 'unavailable' && (
             <button className="hh-primary" onClick={signin} disabled={busy}>
-              {c.signin}
+              {stressSignup ? (locale === 'ru' ? 'Войти и перейти к стартовым тестам' : 'Sign in to start the assessments') : c.signin}
             </button>
           )}
-          {page === 'course' && <Course14DayOverview locale={locale} compact />}
+          {page === 'course' && (stressSignup
+            ? <Course14DayOverview locale={locale} programId="stress" compact />
+            : <Course14DayOverview locale={locale} compact />)}
           {state === 'error' && <button onClick={load}>{c.retry}</button>}
           {error && state !== 'signed-out' && state !== 'unavailable' && (
             <p role="alert">{message(error, c)}</p>

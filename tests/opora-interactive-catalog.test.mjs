@@ -20,9 +20,9 @@ test('fourteen-day interactive methods align with the live anti-stress content s
     assert.ok(plan.methods.every(key=>Boolean(INTERACTIVE_METHODS[key])))
   }
 })
-test('first-day live methods are clearly separated from planned days 2–14',()=>{
+test('first-day full experience is distinct from a core implemented activity on days 2–14',()=>{
   assert.equal(antistressInteractiveDay(1,'ru').status,'implemented')
-  for(let day=2;day<=14;day++)assert.equal(antistressInteractiveDay(day).status,'planned')
+  for(let day=2;day<=14;day++)assert.equal(antistressInteractiveDay(day).status,'core_implemented')
 })
 test('day map includes distinct therapeutic educational mechanisms and safety options',()=>{
   const all=new Set(ANTISTRESS_INTERACTIVE_CURRICULUM.flatMap(day=>day.methods))
