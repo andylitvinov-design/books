@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { privateDelivery } from '@/lib/clients/delivery-http'
 import { authorizeSessionGuest,readSessionViewerCookie } from '@/lib/clients/session-delivery-access'
+import { getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { privateHeaders } from '@/lib/clients/session'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
@@ -16,7 +17,7 @@ export async function GET(request,{params}) {
     const access=await authorizeSessionGuest(config,store,selector,readSessionViewerCookie(request.cookies,selector))
     const id=access.session.report?.id
     if(!id) return new NextResponse(null,{status:404,headers:privateHeaders})
-    const record=await store.findById(id)
+    const record=await getPublishedSessionReport(config,store,access.clientId,access.sessionId)
     if(!record||record.clientId!==access.clientId||record.status!=='active'||record.kind==='report')
       return new NextResponse(null,{status:404,headers:privateHeaders})
     const payment=record.kind==='payment'
@@ -28,3 +29,4 @@ export async function GET(request,{params}) {
       'Content-Disposition':'attachment; filename="holistic-house-session.pdf"'}})
   })
 }
+

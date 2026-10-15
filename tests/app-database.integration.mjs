@@ -1843,5 +1843,32 @@ test('private session share grants enforce per-consultation ownership under real
     }
     const permitted=await rawAs(a,'hh_app_backend',database=>database.query('select count(*)::int as total from app_private.client_delivery_sessions'))
     assert.equal(permitted.rows[0].total,2)
+    // Two isolated connections exercise both winners of finalization vs cleanup.
+    // Only pending, never-ready rows may be claimed; published/ready keys survive.
+    const finishing=await adminClient(),cleaning=await adminClient()
+    const assetA=randomUUID(),assetB=randomUUID()
+    const claim="update app_private.client_delivery_assets set status='removed' where id in (select id from app_private.client_delivery_assets where legacy_client_id=$1 and session_id=$2 and ready_at is null and status in ('pending','removed') and created_at < now()-interval '24 hours' order by created_at limit 30 for update skip locked) and ready_at is null and status in ('pending','removed') returning object_key"
+    try {
+      for(const id of [assetA,assetB])await db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status,created_at) values($1,$2,$3,'audio','client',$4,'audio/mp4',512,'pending',now()-interval '2 days')",[id,clientA,sessionA,'synthetic-race-'+id])
+      await finishing.query('begin');await finishing.query('set local role hh_app_backend')
+      await finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending'",[assetA])
+      await cleaning.query('begin');await cleaning.query('set local role hh_app_backend')
+      await cleaning.query("set local statement_timeout='2s'")
+      const claimed=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(claimed.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      // A concurrent finalizer can no longer turn the claimed row ready.
+      const rejectedFinish=finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending' returning id",[assetB])
+      await cleaning.query('commit')
+      assert.equal((await rejectedFinish).rowCount,0)
+      await finishing.query('commit')
+      const retryClaim=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(retryClaim.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      assert.equal((await db.query('select status from app_private.client_delivery_assets where id=$1',[assetA])).rows[0].status,'ready')
+    } finally {
+      await cleaning.query('rollback');await finishing.query('rollback')
+      await finishing.end();await cleaning.end()
+    }
+
   }finally{await db.end()}
 })
+

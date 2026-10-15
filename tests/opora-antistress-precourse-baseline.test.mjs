@@ -62,7 +62,7 @@ test('the private step-2 interface visibly leads through starting tests before t
   const css=read('components/app/course-r3-steps.module.css')
   const root=read('components/app/my-course.jsx')
   const testFlow=read('lib/app/course-test-flow.js')
-  assert.match(root,/request\(\{ action: 'start', consent: true \}\)/)
+  assert.match(root,/request\(accountId, \{ action: 'start', consent: true, courseId: requestedCourseId/)
   assert.match(root,/action: 'intake'/)
   assert.match(root,/Weekly Pulse baseline/)
   assert.match(wizard,/data-course-antistress-pretests/)
@@ -89,4 +89,35 @@ test('marketing and Academy course URLs retain the standard sign-up path and tru
   assert.match(landing,/app\/course\?program=stress/)
   assert.match(catalogue,/Weekly Pulse \(8 questions\)/)
   assert.match(catalogue,/Weekly Pulse \(8 вопросов\)/)
+})
+
+test('combined server guards allow Weekly-only Anti-Stress and preserve fixed preset contracts', async () => {
+  const { coursePresetForTags, coursePresetTags, getCoursePreset, matchesFixedPresetTests } = await import('../lib/inner-growth/course-presets.js')
+  const { courseProgramFromTopics } = await import('../lib/inner-growth/course-programs.js')
+  const source=read('lib/app/growth-course.js')
+  const start=source.indexOf('          const preset =',source.indexOf("} else if (action === 'confirm-tests')"))
+  const end=source.indexOf('          // Highlighted suggestions',start)
+  const check=new Function('row','keys','coursePresetForTags','matchesFixedPresetTests','hasAntistressRequiredBaseline','courseProgramFromTopics','reject',source.slice(start,end))
+  const run=(tags,keys)=>check({focus_tags:tags},keys,coursePresetForTags,matchesFixedPresetTests,hasAntistressRequiredBaseline,courseProgramFromTopics,(code)=>{throw new Error(code)})
+  const stress=getCourseProgram('stress')
+  const tags=stress.topics || stress.focusTags || ['stress']
+  assert.equal(courseProgramFromTopics(tags)?.id,'stress')
+  assert.doesNotThrow(()=>run(tags,['hh-weekly-pulse']))
+  assert.throws(()=>run(tags,['gad-7']),/COURSE_ANTISTRESS_BASELINE_REQUIRED/)
+  for(const id of ['calm_balance','business_focus','confidence']){
+    const preset=getCoursePreset(id)
+    assert.doesNotThrow(()=>run(coursePresetTags(id),preset.testKeys))
+    assert.throws(()=>run(coursePresetTags(id),preset.testKeys.slice(1)),/COURSE_PRESET_TESTS_FIXED/)
+  }
+  assert.match(source,/const stressIntake=row\?\.stage===2 && !coursePresetForTags/)
+  assert.match(source,/const recentStress=!preset &&/)
+})
+
+test('actual T0 recency recheck preserves the separate fixed preset battery',()=>{
+ const source=read('lib/app/growth-course.js')
+ const block=source.slice(source.indexOf("} else if (action === 'choose-goals')"),source.indexOf('          let goals, scales = []'))
+ assert.match(block,/if \(!coursePresetForTags\(row.focus_tags\) && courseProgramFromTopics\(row.focus_tags\|\|\[\]\)\?\.id==='stress'\)/)
+ assert.match(block,/where account_id=\$1/)
+ assert.match(block,/\[actor.id\]/)
+ assert.match(block,/compatibleResult\(before,key,\{requireRecent:true\}\)/)
 })

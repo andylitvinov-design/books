@@ -57,3 +57,13 @@ test('path preview hover retains AA contrast after its inherited brightness filt
   const preview = rules('course-quest', '.pathPreview .primaryButton')[0];
   assertSpan(property(preview, 'color'), property(preview, 'background'), Number(amount[1]));
 });
+
+test('scenic overlay CTA keeps AA contrast through every more-specific background override', () => {
+  const overlays = rules('course-slide-player', '.overlay .primary').filter(body => /(?:^|;)\s*background:/.test(body));
+  assert.ok(overlays.length > 0, 'Expected the scenic overlay CTA background override');
+  for (const body of overlays) {
+    assert.match(body, /background:[^;]+!important/);
+    const foreground = /(?:^|;)\s*color:/.test(body) ? property(body, 'color') : property(primary, 'color');
+    assertSpan(foreground, property(body, 'background'));
+  }
+});

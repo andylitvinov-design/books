@@ -24,7 +24,7 @@ function PrivatePlayer({item,session,mode,selector,locale}) {
         headers:{'content-type':'application/json'},body:'{}'})
       if(!response.ok)throw new Error('unavailable')
       const data=await response.json()
-      if(typeof data.url!=='string'||!data.url.startsWith('https://'))throw new Error('unavailable')
+      if(typeof data.url!=='string'||data.url!==route)throw new Error('unavailable')
       setExpiry(Date.now()+Math.min(300,Math.max(1,Number(data.expiresIn)||300))*1000)
       setSource(data.url)
     }catch{
@@ -35,7 +35,8 @@ function PrivatePlayer({item,session,mode,selector,locale}) {
   function maybeRenew(){
     // A 5-minute signed URL is valid for initial playback but can expire while
     // listening to a 10-minute practice or after seeking on a slow phone.
-    if(source&&expiry&&Date.now()>expiry-45000&&!busy.current)void load(true)
+    // New media range requests are authorized server-side; no expiring Storage
+    // bearer is exposed to the player, so continuous playback needs no URL swap.
   }
   function restorePosition(){
     const checkpoint=resume.current,element=player.current
@@ -105,3 +106,4 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     </footer>
   </main>
 }
+

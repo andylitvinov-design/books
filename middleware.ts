@@ -63,7 +63,9 @@ export function middleware(request: NextRequest) {
   // Client cabinets and every other private page keep frame-src 'none'.
   const practitionerDraftPreview = pathname === '/admin/consultations/new'
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
-  const deliveryPath = /^\/admin\/clients\/[^/]+\/sessions(?:\/|$)/.test(pathname)
+  const deliveryPath = /^\/admin\/prescriptions\/[^/]+\/?$/.test(pathname)
+    || /^\/admin\/clients\/[^/]+\/assessments\/[^/]+\/edit\/?$/.test(pathname)
+    || /^\/admin\/clients\/[^/]+\/sessions(?:\/|$)/.test(pathname)
     || /^\/admin\/documents\/[^/]+\/?$/.test(pathname)
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
     || /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
@@ -104,3 +106,4 @@ export function middleware(request: NextRequest) {
   return response
 }
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)', '/', '/books/:path*', '/sitemap.xml', '/robots.txt', '/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }
+

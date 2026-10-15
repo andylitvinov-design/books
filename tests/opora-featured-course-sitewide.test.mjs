@@ -15,8 +15,9 @@ test('public course enrollments focus on Anti-Stress without deleting old progra
   const ui = read('components/app/my-course.jsx')
   assert.match(ui, /program.id !== ACTIVE_COURSE_PROGRAM_ID/)
   assert.match(ui, /data-coming-soon/)
-  assert.match(ui, /setSelectedProgram\(programId === ACTIVE_COURSE_PROGRAM_ID/)
-  assert.match(ui, /courseConcernsFromIntent\(courseEntry, locale\)/)
+  assert.match(ui, /programId !== null && programId !== ACTIVE_COURSE_PROGRAM_ID/)
+  assert.match(ui, /const entryConcerns=courseConcernsFromIntent\(entry, locale\)/)
+  assert.match(ui, /applyProgramIntake\(started,programme,epoch,entryConcerns\)/)
 })
 
 test('one localized, unobtrusive top ribbon shares a stress CTA and excludes sensitive work', () => {

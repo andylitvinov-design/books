@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { getAppConfig } from '@/lib/app/config'
-import { getPublishedClientSession } from '@/lib/clients/session-delivery-service'
+import { getPublishedClientSession,getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionPage } from '@/components/client-session-page'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getClientPaymentDocument } from '@/lib/documents/payment'
@@ -20,7 +20,7 @@ export default async function CabinetSession({params}) {
   catch{notFound()}
   let reportContent=null
   if(session.report) {
-    const record=await access.store.findById(session.report.id)
+    const record=await getPublishedSessionReport(getAppConfig(),access.store,access.client.id,sessionId).catch(()=>null)
     if(record?.status==='active'&&record.clientId===access.client.id) {
       const payment=record.kind==='payment'
       const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
@@ -31,3 +31,4 @@ export default async function CabinetSession({params}) {
   return <ClientSessionPage locale={locale} session={session} selector={selector}
     mode="cabinet" reportContent={reportContent}/>
 }
+

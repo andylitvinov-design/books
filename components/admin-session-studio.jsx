@@ -119,8 +119,10 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
+      <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
       {!draft.media.length&&<p>{ru?'Запишите аудио или загрузите MP4, чтобы прикрепить материал.':
         'Record audio or upload an MP4 to attach media here.'}</p>}
+      <p>{ru?'Расшифровка вводится вручную, до 12 000 символов. Автоматическая отправка аудио сервисам распознавания не настроена.':'Transcripts are entered manually, up to 12,000 characters. Audio is not automatically sent to a transcription service.'}</p>
       {draft.media.map((row,index)=>{
         const asset=activeAssets.get(row.assetId)
         return <div key={row.assetId} className={styles.mediaEditor}>
@@ -170,3 +172,4 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     {error&&<p role="alert" className={styles.error}>{error}</p>}
   </div>
 }
+

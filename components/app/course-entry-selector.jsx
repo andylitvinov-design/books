@@ -6,6 +6,7 @@ import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVerti
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
 import { COURSE_MEMBERSHIP, COURSE_PUBLIC_PLANS } from '@/lib/inner-growth/course-membership'
+import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-entry-selector.module.css'
@@ -29,7 +30,7 @@ const COPY = {
     plans: 'Membership plans', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Final course offer',
     one: '1 active course', five: 'Up to 5 active courses', noAds: 'No ads',
     introLabel: 'Advanced first month for new members', thenPrice: 'Then',
-    tests: 'Included tests', session: '1 personal session per month',
+    tests: 'Included tests', session: '1 personal 60-minute session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
     unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
     conditions: 'Advanced only: 50% off the first month (€10), then €20/month. Premium is €100/month; included-test and personal-session terms will be confirmed before purchase. No subscription starts on this screen.',
@@ -59,7 +60,7 @@ const COPY = {
     plans: 'Тарифы подписки', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Реклама в финале курса',
     one: '1 активный курс', five: 'До 5 активных курсов', noAds: 'Без рекламы',
     introLabel: 'Первый месяц Advanced для новых подписчиков', thenPrice: 'Затем',
-    tests: 'Включённые тесты', session: '1 персональная сессия в месяц',
+    tests: 'Тесты включены', session: '1 персональная сессия на 60 минут в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
     unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
     conditions: 'Акция только для Advanced: первый месяц 10 € (−50%), затем 20 € в месяц. Premium — 100 € в месяц; условия включённых тестов и личной сессии уточняются до оплаты. На этом экране подписка не оформляется.',
@@ -90,10 +91,16 @@ function courseTitle(course, locale, t) {
 
 const PLANS = COURSE_PUBLIC_PLANS
 
-export default function CourseEntrySelector({ course, locale = 'en', onOpen, onCloseCourse, closing = false }) {
+export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
-  const hasCourse = Boolean(course?.stage > 0)
-  const [daily, setDaily] = useState(null)
+  const hasCourse = Boolean(course?.stage > 0 && !['closed','archived'].includes(course?.status))
+  const [progressSnapshot, setProgressSnapshot] = useState(null)
+  const scope = accountId + ':' + (course?.id || '')
+  const daily = progressSnapshot?.scope === scope ? progressSnapshot.value : null
+  const activeCount = Number.isInteger(access?.activeCourseCount) ? access.activeCourseCount : (hasCourse ? 1 : 0)
+  const activeLimit = Number.isInteger(access?.activeCourseLimit) ? access.activeCourseLimit : 1
+  const tier = ({ free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium' })[access?.tier] || 'Free'
+  const canAdd = access?.multiCourseEnabled === true && activeCount < activeLimit
   const [showPlan, setShowPlan] = useState(false)
   const [progressError, setProgressError] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -103,6 +110,10 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
   const dialogRef = useRef(null)
   const searchParams = useSearchParams()
   const requestedAdd = searchParams.get('add') === '1'
+  const addIntent = useRef(null)
+  if (!requestedAdd) addIntent.current = null
+  else if (!addIntent.current) addIntent.current = { accountId, courseId: course?.id, consumed: false, invalidated: false }
+  else if (addIntent.current.accountId !== accountId || addIntent.current.courseId !== course?.id) addIntent.current.invalidated = true
 
   useEffect(() => {
     if (!menuOpen) return
@@ -134,30 +145,35 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
     else setCloseError(true)
   }
 
-  // A public landing link can request the existing subscription modal.
-  // Never start or charge for a second course in the browser.
+  // A public link gets the same server-confirmed choice as the Add button,
+  // once for its original account/course. Opening the consent flow never writes.
   useEffect(() => {
-    if (requestedAdd && hasCourse && dialogRef.current && !dialogRef.current.open) {
-      dialogRef.current.showModal()
-      dialogRef.current.scrollTo({ top: 0 })
-    }
-  }, [requestedAdd, hasCourse])
+    const intent = addIntent.current
+    if (!requestedAdd || !intent || intent.consumed) return
+    intent.consumed = true
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('add') !== '1') return
+    url.searchParams.delete('add')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    if (intent.invalidated || !hasCourse || !accountId || !course?.id ||
+        intent.accountId !== accountId || intent.courseId !== course.id) return
+    addCourse()
+  }, [requestedAdd, hasCourse, accountId, course?.id, canAdd, onAdd])
 
   useEffect(() => {
-    if (!hasCourse || course.stage !== 4) return
+    setProgressError(false)
+    if (!hasCourse || course.stage !== 4 || !accountId || !course.id) return
     let cancelled = false
-    fetch('/api/app/course/progress?locale=' + encodeURIComponent(locale), {
-      credentials: 'same-origin', cache: 'no-store',
-    }).then(response => {
-      if (!response.ok) throw new Error('COURSE_PROGRESS_UNAVAILABLE')
-      return response.json()
-    }).then(result => {
-      if (!cancelled) setDaily(result)
+    const controller = new AbortController()
+    appFetch('course/progress?locale=' + encodeURIComponent(locale) + '&courseId=' + encodeURIComponent(course.id),
+      undefined, 'GET', { accountId, signal: controller.signal }).then(result => {
+      if (!cancelled && result?.courseId === course.id) setProgressSnapshot({ scope, value: result })
+      else if (!cancelled) setProgressError(true)
     }).catch(() => {
       if (!cancelled) setProgressError(true)
     })
-    return () => { cancelled = true }
-  }, [hasCourse, course?.id, course?.stage, locale])
+    return () => { cancelled = true; controller.abort() }
+  }, [hasCourse, accountId, course?.id, course?.stage, locale, scope])
 
   const completed = Number.isInteger(daily?.progress?.practiceCount)
     ? Math.max(0, Math.min(14, daily.progress.practiceCount)) : null
@@ -169,10 +185,11 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
 
   function addCourse() {
     if (!hasCourse) { onOpen(); return }
-    // Never grant paid entitlements or create parallel courses in the browser.
-    // The existing server currently supports only one course per account.
+    // Server-confirmed capacity only opens the existing consented flow.
+    // The server rechecks capacity when the user actually starts a course.
+    if (canAdd && typeof onAdd === 'function') { onAdd(); return }
     dialogRef.current?.showModal()
-    dialogRef.current?.scrollTo({ top: 0 })
+    dialogRef.current?.scrollTo?.({ top: 0 })
   }
 
   return <div className={styles.page} data-my-course data-course-selector>
@@ -181,6 +198,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
       <div className={styles.headline}>
         <h1>{t.title}</h1>
         <span className={styles.headerMotto} aria-hidden="true">{t.motto}<Heart size={19} strokeWidth={1.7}/></span>
+        <span className={styles.limitPill}><BookOpen size={16} aria-hidden="true"/>{activeCount + ' / ' + activeLimit}</span>
       </div>
       <p>{t.intro}</p>
     </header>
@@ -277,7 +295,7 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
     </section>
 
     <p className={styles.footnote}><LockKeyhole size={15} aria-hidden="true"/>
-      {hasCourse ? t.freeLimit + ' · ' + t.currentLimit : t.freeLimit}
+      {access ? tier + ' · ' + activeCount + ' / ' + activeLimit : hasCourse ? t.freeLimit + ' · ' + t.currentLimit : t.freeLimit}
     </p>
 
     <dialog ref={closeCourseDialogRef} className={styles.closeCourseDialog}

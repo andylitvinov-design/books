@@ -1,0 +1,10 @@
+.card { border: 1px solid #bdb5a8; border-radius: 1rem; padding: clamp(1rem, 3vw, 1.5rem); background: #fffdf8; color: #31291f; max-width: 44rem; overflow-wrap: anywhere; }
+.card h2 { font-size: 1.35rem; margin: 0 0 .75rem; }
+.card p, .card small { line-height: 1.6; }
+.card button { min-height: 44px; min-width: 44px; border: 1px solid #645541; border-radius: .6rem; padding: .6rem .85rem; margin: .35rem .5rem .35rem 0; color: #30271d; background: #f1eadc; font: inherit; cursor: pointer; white-space: normal; text-align: start; }
+.card button:disabled { opacity: .65; cursor: not-allowed; }
+.card :is(button, input):focus-visible { outline: 3px solid #175cad; outline-offset: 3px; }
+.choice { display: flex; align-items: flex-start; gap: .75rem; padding: .65rem 0; line-height: 1.6; }
+.choice input { width: 22px; height: 22px; flex: 0 0 22px; margin-top: .15rem; }
+.fields { display: grid; gap: .6rem; min-width: 0; border: 1px solid #c5bdaf; border-radius: .6rem; padding: 1rem; margin-top: 1rem; }
+.fields input:not([type='checkbox']) { font: inherit; min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; border: 1px solid #877965; border-radius: .35rem; padding: .5rem; background: white; color: #31291f; }

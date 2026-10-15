@@ -2,8 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
@@ -64,11 +63,24 @@ const copy = {
   },
 } as const
 
-async function request(path: string, body?: unknown, method = 'POST') {
+type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
+
+function stopAttempt(attempt: StartAttempt | null) {
+  if (!attempt) return
+  attempt.controller.abort()
+  try {
+    if (attempt.intent && !attempt.handedOff && window.sessionStorage.getItem(PENDING_TEST_SELECTION_KEY) === attempt.intent) {
+      window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY)
+    }
+  } catch { /* Storage may be unavailable; cancellation must still finish. */ }
+}
+
+async function request(path: string, body?: unknown, method = 'POST', options: { accountId?: string; signal?: AbortSignal } = {}) {
   const response = await fetch('/api/app/' + path, {
     method, credentials: 'same-origin', cache: 'no-store',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(options.accountId ? { 'X-HH-Account-ID': options.accountId } : {}) },
     body: body ? JSON.stringify(body) : undefined,
+    signal: options.signal,
   })
   const value = await response.json().catch(() => ({ error: 'SERVICE_UNAVAILABLE' }))
   if (!response.ok) throw Object.assign(new Error(value.error || 'SERVICE_UNAVAILABLE'), { status: response.status })
@@ -82,13 +94,62 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
 }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const c = copy[language]
-  const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
   const recommended = suggestions[selected.slice().sort().join(',')] || []
+  const scope = JSON.stringify([language, journey.id, selected, recommended.map((item) => [item.key, item.definition])])
+  const scopeRef = useRef(scope)
+  scopeRef.current = scope
+  const activeRef = useRef(false)
+  const attemptRef = useRef<StartAttempt | null>(null)
+
+  function cancelStart() {
+    const attempt = attemptRef.current
+    attemptRef.current = null
+    stopAttempt(attempt)
+    setStarting(false)
+  }
+
+  useEffect(() => {
+    activeRef.current = true
+    const cancel = () => {
+      const attempt = attemptRef.current
+      attemptRef.current = null
+      stopAttempt(attempt)
+      setStarting(false)
+    }
+    const leave = () => { activeRef.current = false; cancel() }
+    const returnToPage = () => { activeRef.current = true }
+    const visibility = () => { if (document.visibilityState === 'hidden') cancel() }
+    let channel: BroadcastChannel | null = null
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel('hh-app-session')
+        channel.onmessage = (event) => { if (event.data === 'signed-out') cancel() }
+      }
+    } catch { /* Owner-bound requests remain authoritative without cross-tab hints. */ }
+    window.addEventListener('pagehide', leave)
+    window.addEventListener('pageshow', returnToPage)
+    window.addEventListener('popstate', cancel)
+    document.addEventListener('visibilitychange', visibility)
+    setStarting(false)
+    setError('')
+    return () => {
+      activeRef.current = false
+      const attempt = attemptRef.current
+      attemptRef.current = null
+      stopAttempt(attempt)
+      channel?.close()
+      window.removeEventListener('pagehide', leave)
+      window.removeEventListener('pageshow', returnToPage)
+      window.removeEventListener('popstate', cancel)
+      document.removeEventListener('visibilitychange', visibility)
+    }
+  }, [scope])
+
   const testHref = '/' + language + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
     '&journey=' + journey.id + '&topics=' + encodeURIComponent(selected.join(','))
   const courseHref = testHref + '&mode=course'
@@ -98,20 +159,31 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
 
   async function startRecommended() {
-    if (starting || recommended.length === 0) return
+    if (attemptRef.current || !activeRef.current || recommended.length === 0) return
+    const attempt: StartAttempt = { controller: new AbortController(), scope, href: window.location.href, handedOff: false }
+    attemptRef.current = attempt
+    const current = () => activeRef.current && attemptRef.current === attempt &&
+      !attempt.controller.signal.aborted && scopeRef.current === attempt.scope &&
+      window.location.href === attempt.href && document.visibilityState !== 'hidden'
+    const options = { signal: attempt.controller.signal }
     setStarting(true)
     setError('')
     const preferences = { focus, problems }
     try {
       const intent = makeTestSelectionIntent(recommended.map((item) => item.key), Date.now(), preferences)
-      let signedIn = false
+      let accountId: string | null = null
       try {
-        const session = await request('bootstrap', undefined, 'GET')
-        signedIn = Boolean(session.account?.id)
+        const session = await request('bootstrap', undefined, 'GET', options)
+        if (!current()) return
+        if (typeof session.account?.id !== 'string' || !session.account.id.trim()) throw new Error('INVALID_ACCOUNT')
+        accountId = session.account.id
       } catch (cause) {
+        if (!current()) return
         if (!(cause instanceof Error && 'status' in cause && cause.status === 401)) throw cause
       }
-      if (signedIn) {
+      if (!current()) return
+      if (accountId) {
+        const ownerOptions = { ...options, accountId }
         const saved = await request('test-plans', {
           items: recommended.map((item) => ({
             definitionKey: item.definition.key,
@@ -121,19 +193,38 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           operationId: crypto.randomUUID(),
           appendActive: true,
           selectionPreferences: preferences,
-        })
-        if (!saved.id) throw new Error('MISSING_TEST_PLAN')
-        router.push('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
+        }, 'POST', ownerOptions)
+        if (!current()) return
+        if (typeof saved.id !== 'string' || !saved.id.trim()) throw new Error('MISSING_TEST_PLAN')
+        const session = await request('bootstrap', undefined, 'GET', ownerOptions)
+        if (!current()) return
+        if (session.account?.id !== accountId) throw new Error('ACCOUNT_CHANGED')
+        // Cross public -> private CSP policies with one fresh document.
+        // A soft transition would start chunks that the CSP boundary must cancel.
+        window.location.assign('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
         return
       }
       // Store only the editorial test identifiers, never personal answers.
+      attempt.intent = intent
       window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
-      const auth = await request('auth/start', { locale: language, continueTo: 'tests' })
+      const auth = await request('auth/start', { locale: language, continueTo: 'tests' }, 'POST', options)
+      if (!current()) return
       if (!auth.redirectUrl) throw new Error('SIGN_IN_UNAVAILABLE')
       window.location.assign(auth.redirectUrl)
+      attempt.handedOff = true
     } catch (cause) {
+      if (!current()) return
       setError(cause instanceof Error && cause.message === 'SIGN_IN_UNAVAILABLE' ? c.signinError : c.error)
-      setStarting(false)
+      cancelStart()
+    } finally {
+      // A response can outlive a route/selection change even when fetch ignores abort.
+      if (!current()) {
+        stopAttempt(attempt)
+        if (attemptRef.current === attempt) {
+          attemptRef.current = null
+          if (activeRef.current) setStarting(false)
+        }
+      }
     }
   }
 
@@ -144,7 +235,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
       </div>
       <div className={styles.heroCopy}>
-        <Link href={'/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
+        <Link onClick={cancelStart} href={'/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
           <ArrowLeft size={16} aria-hidden="true" />{c.back}
         </Link>
         <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
@@ -199,7 +290,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         <ArrowRight size={22} aria-hidden="true" className={styles.primaryArrow} />
       </button>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <Link href={browseHref} className={styles.browseLink} data-topic-action="browse">
+      <Link onClick={cancelStart} href={browseHref} className={styles.browseLink} data-topic-action="browse">
         <Search size={18} aria-hidden="true" />{c.browse}<ArrowRight size={16} aria-hidden="true" />
       </Link>
     </section>
@@ -210,12 +301,12 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         <h2 id="hh-topic-actions-heading">{c.options}</h2>
       </div>
       <div className={styles.secondaryActions}>
-        <Link href={courseHref} className={styles.secondaryLink} data-topic-action="course">
+        <Link onClick={cancelStart} href={courseHref} className={styles.secondaryLink} data-topic-action="course">
           <BookOpen size={21} aria-hidden="true" />
           <span><strong>{c.course}</strong><small>{c.courseDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
-        <Link href={'/' + language + '/services/free-situation-review'} className={styles.secondaryLink} data-topic-action="review">
+        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review'} className={styles.secondaryLink} data-topic-action="review">
           <HeartHandshake size={21} aria-hidden="true" />
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />

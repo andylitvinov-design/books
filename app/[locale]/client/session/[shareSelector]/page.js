@@ -4,6 +4,7 @@ import { deliveryEnabled,validSelector,guestSessionProjection } from '@/lib/clie
 import { getAppConfig } from '@/lib/app/config'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { readSessionViewerCookie,authorizeSessionGuest } from '@/lib/clients/session-delivery-access'
+import { getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
 import { ClientSessionShareGate } from '@/components/client-session-share-gate'
 import { ClientSessionPage } from '@/components/client-session-page'
 import { getClientPrescription } from '@/lib/prescriptions/service'
@@ -23,7 +24,7 @@ export default async function ClientSessionSharePage({params}) {
     const {session}=await authorizeSessionGuest(config,store,shareSelector,credential)
     let reportContent=null
     if(session.report) {
-      const record=await store.findById(session.report.id)
+      const record=await getPublishedSessionReport(config,store,session.clientId,session.id)
       if(record?.status==='active'&&record.clientId===session.clientId) {
         const payment=record.kind==='payment'
         const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
@@ -35,3 +36,4 @@ export default async function ClientSessionSharePage({params}) {
       mode="guest" reportContent={reportContent}/>
   } catch{return <ClientSessionShareGate locale={locale} selector={shareSelector}/>}
 }
+

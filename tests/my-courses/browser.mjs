@@ -7,6 +7,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
+import * as publicPlans from '../../lib/billing/public-plan.js'
 
 // Render the actual My Courses React component with synthetic state.
 // No account, payment, backend mutations, credentials or patient data.
@@ -27,6 +28,9 @@ const goals = {
   calm_regulation: { title:{ru:'Спокойствие и заземление',en:'Calm & grounding'} },
 }
 const CourseEntrySelector = loadComponent('components/app/course-entry-selector.jsx', {
+  'next/navigation':{useSearchParams:()=>new URLSearchParams()},
+  '@/lib/billing/public-plan':publicPlans,
+  '@/lib/app/client-fetch':{appFetch:()=>{throw new Error('Synthetic layout fixture must not request account data')}},
   '@/lib/inner-growth/course-model':{GROWTH_GOALS:goals,COURSE_TOPICS:[]},
   '@/lib/inner-growth/course-programs':{courseProgramFromTopics:()=>null},
   './course-14-day-overview':() => React.createElement('section', {'data-course-14-day-overview':true},'Synthetic course overview'),

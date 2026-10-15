@@ -35,3 +35,39 @@ Primary route paths: /admin/clients/[id], /admin/clients/[id]/sessions/[sessionI
 
 ### Free-tier media cap correction (2026-10-15)
 The connected Supabase organization uses Free (single-file maximum **50 MB**; egress limit **10 GB** split between cached/uncached bandwidth). Limit private video uploads to **45 MB** and audio to **20 MB**. The first production bucket was mistakenly configured to 100 MiB; reduce its storage.bucket file_size_limit to 50,000,000 bytes without changing visibility or objects. Larger original 1080p MP4 masters remain in approved restricted archives; private cabinet gets a compressed playback copy. No plan upgrade authorized. 5-minute signed URLs are renewed during longer audio/video playback without exposing other consultations.
+
+
+## Recorder hardening and release gates
+
+- Saved consultation, recommendation and practitioner assessment editors open a
+  recorder pinned to that saved source and client. An assessment's result/private
+  comment is not copied into a session; existing assessment/report/PDF permissions
+  remain separate. Save a new source before recording to it.
+- Audio and MP4 video capture support pause/resume/finish. Unsupported MP4 capture
+  offers existing-file upload. Physical iPhone Safari acceptance is still required;
+  cloud WebKit with mocked MediaRecorder proves UI state only.
+- Retry retains the in-memory file, client/session, privacy scope and stable intent
+  UUID. A lost intent/finalization response does not intentionally create another
+  asset. Keep the page open until upload succeeds; mobile OS termination cannot be
+  recovered from memory. Interrupted recordings are not automatically published.
+- New upload intents pin exact byte size in max_bytes. Old pending intents created
+  with a MIME ceiling must be discarded/recreated; do not relax exact validation.
+  Ready assets are unaffected. Header sniffing and byte counts do not constitute a
+  full codec/decode or malware scan; actual playback acceptance remains required.
+- Explicit cleanup claims only never-ready pending/failed tombstones older than
+  24 hours, then removes Storage objects and successful tombstones. Never select
+  ready assets for cleanup, including detached media from older publications.
+- Client media uses an authenticated, same-origin streaming GET/HEAD with single
+  byte Range support. Each new request rechecks grant expiry/revocation and the
+  published client/session/scope association. No client Storage bearer URL is
+  returned. Already authorized in-flight transfers or downloaded/buffered bytes
+  cannot be revoked. Owner preview still uses owner-authorized short signed URLs.
+- PDF and HTML rendering use the exact fingerprint-verified published source,
+  never a fresh unchecked second document read.
+- Transcription remains manual (12,000 characters); no external transcription
+  processor or consent flow has been enabled.
+- Before release: exact-commit CI/build/CSP checks, isolated SQL concurrency tests,
+  secure server key configuration, synthetic signed upload/finalize/playback,
+  proxy Range 200/206/416 including >4.5MB synthetic video on Vercel, grant
+  expiry/revocation/cross-client checks, and physical iPhone capture acceptance.
+  Keep HH_CLIENT_DELIVERY_ENABLED OFF until approved acceptance is complete.

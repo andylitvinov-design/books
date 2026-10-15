@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpenCheck, LockKeyhole, Plus, Sparkles } from 'lucide-react'
+import { appFetch } from '@/lib/app/client-fetch'
 import styles from './public-growth-courses.module.css'
 
 type Locale = 'ru' | 'en'
 type Course = { id?: string; stage?: number; focusTags?: string[] }
 type CourseResponse = { course?: Course | null }
-type CourseProgress = { progress?: { practiceCount?: number } }
+type CourseProgress = { courseId?: string; progress?: { practiceCount?: number } }
+type CabinetSnapshot = { locale: Locale; loaded: boolean; course: Course | null; completed: number | null }
 
 const copy = {
   ru: {
@@ -51,38 +53,83 @@ function courseTitle(course: Course, t: typeof copy.ru | typeof copy.en) {
 
 export function PublicCourseCabinet({ locale }: { locale: Locale }) {
   const t = copy[locale] || copy.en
-  const [loaded, setLoaded] = useState(false)
-  const [course, setCourse] = useState<Course | null>(null)
-  const [completed, setCompleted] = useState<number | null>(null)
+  const [snapshot, setSnapshot] = useState<CabinetSnapshot | null>(null)
+  // A locale/navigation render cannot briefly reuse the previous private view.
+  const current = snapshot?.locale === locale ? snapshot : null
+  const loaded = current?.loaded || false
+  const course = current?.course || null
+  const completed = current?.completed ?? null
   const courseUrl = '/' + locale + '/app/course'
 
   useEffect(() => {
-    let cancelled = false
+    let stopped = false, leaving = false, generation = 0
+    let controller: AbortController | null = null
+    const empty = (loaded: boolean): CabinetSnapshot => ({ locale, loaded, course: null, completed: null })
+    function clear(loaded = false) {
+      generation += 1
+      controller?.abort()
+      controller = null
+      setSnapshot(empty(loaded))
+    }
     async function load() {
+      if (stopped || leaving || document.visibilityState === 'hidden') return
+      const version = ++generation
+      controller?.abort()
+      const request = new AbortController()
+      controller = request
+      const isCurrent = () => !stopped && !leaving && generation === version && !request.signal.aborted
+      setSnapshot(empty(false))
       try {
-        const response = await fetch('/api/app/course', { credentials: 'same-origin', cache: 'no-store' })
-        if (!response.ok) return
-        const data: CourseResponse = await response.json()
-        const owned = data?.course && Number(data.course.stage || 0) > 0 ? data.course : null
-        if (cancelled) return
-        setCourse(owned)
-        if (owned?.stage !== 4) return
-        const progressResponse = await fetch('/api/app/course/progress?locale=' + encodeURIComponent(locale), {
-          credentials: 'same-origin', cache: 'no-store',
-        })
-        if (!progressResponse.ok) return
-        const details: CourseProgress = await progressResponse.json()
-        if (!cancelled && Number.isInteger(details?.progress?.practiceCount)) {
-          setCompleted(Math.max(0, Math.min(14, Number(details.progress?.practiceCount))))
+        const bootstrap = await appFetch('bootstrap', undefined, 'GET', { signal: request.signal })
+        if (!isCurrent() || bootstrap.account.onboardingState !== 'active' || !bootstrap.account.id) return
+        const accountId = bootstrap.account.id
+        const options = { accountId, signal: request.signal }
+        const data: CourseResponse = await appFetch('course', undefined, 'GET', options)
+        if (!isCurrent()) return
+        const owned = typeof data?.course?.id === 'string' && data.course.id && Number(data.course.stage || 0) > 0 ? data.course : null
+        let completed: number | null = null
+        if (owned?.stage === 4) {
+          const details: CourseProgress = await appFetch('course/progress?locale=' + encodeURIComponent(locale)
+            + '&courseId=' + encodeURIComponent(owned.id!), undefined, 'GET', options)
+          if (!isCurrent()) return
+          if (details?.courseId !== owned.id) throw new Error('COURSE_CHANGED')
+          if (Number.isInteger(details?.progress?.practiceCount)) {
+            completed = Math.max(0, Math.min(14, Number(details.progress?.practiceCount)))
+          }
         }
+        // The cookie/session may change while an already-authorized read is in flight.
+        const fresh = await appFetch('bootstrap', undefined, 'GET', options)
+        if (!isCurrent()) return
+        if (fresh.account.id !== accountId || fresh.account.onboardingState !== 'active') throw new Error('ACCOUNT_CHANGED')
+        setSnapshot({ locale, loaded: true, course: owned, completed })
       } catch {
         // Public page stays usable when the visitor has not signed in.
+        if (isCurrent()) setSnapshot(empty(true))
       } finally {
-        if (!cancelled) setLoaded(true)
+        if (isCurrent()) setSnapshot(value => value?.locale === locale ? { ...value, loaded: true } : empty(true))
       }
     }
+    const hide = () => { leaving = true; clear() }
+    const show = () => { leaving = false; void load() }
+    const focus = () => { void load() }
+    const visibility = () => { if (document.visibilityState === 'hidden') clear(); else void load() }
+    let channel: BroadcastChannel | undefined
+    try {
+      channel = new BroadcastChannel('hh-app-session')
+      channel.onmessage = event => { if (event.data === 'signed-out') clear(true) }
+    } catch { /* No browser storage or persistent fallback. */ }
+    window.addEventListener('pagehide', hide)
+    window.addEventListener('pageshow', show)
+    window.addEventListener('focus', focus)
+    document.addEventListener('visibilitychange', visibility)
     void load()
-    return () => { cancelled = true }
+    return () => {
+      stopped = true; generation += 1; controller?.abort(); channel?.close()
+      window.removeEventListener('pagehide', hide)
+      window.removeEventListener('pageshow', show)
+      window.removeEventListener('focus', focus)
+      document.removeEventListener('visibilitychange', visibility)
+    }
   }, [locale])
 
   const stage = course?.stage || 0

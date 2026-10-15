@@ -5,5 +5,5 @@ alter table app_private.growth_courses
   drop constraint if exists growth_courses_status_check;
 alter table app_private.growth_courses
   add constraint growth_courses_status_check
-  check (status in ('active','paused','closed'));
+  check (status in ('active','paused','completed','archived','closed'));
 commit;

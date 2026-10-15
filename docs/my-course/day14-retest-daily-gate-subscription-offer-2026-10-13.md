@@ -17,7 +17,7 @@ Approved October 13, 2026. Supersedes any description treating the last day as m
 ## Data contracts
 
 - No new client test table or replacement of scoring keys; reuse private `growth_courses.test_keys`, `growth_cycles.created_at`, `growth_sessions.completed_at` and `app.assessment_results`.
-- Day-14 test list and results are produced only from the authenticated, account-scoped daily course read.
+- Day-14 test list and results are produced only from the authenticated, account-scoped daily course read. Retest requests and return navigation retain the selected course and cycle; stale account/course/cycle callbacks are discarded before further work and after each asynchronous boundary.
 - Exact-version/same scoring and matching dimension range/direction are mandatory for score comparison.
 - Result at or before the cycle start = original. Result at or after the saved final lesson = follow-up. Interim tests do **not** count as course-end tests.
 - Recommendations on retest spacing from the verified catalog are disclosed. Longer intervals remain advisory; original tests may be repeated voluntarily if available and approved. Do not invent a clinical diagnosis, guaranteed skill score or professional test norms.
@@ -25,9 +25,10 @@ Approved October 13, 2026. Supersedes any description treating the last day as m
 
 ## Subscription offer and naming
 
-Current approved commercial plan is **Advanced**, €20 per month, five parallel active courses and no promotional blocks; the promo headline may say `Pro features`, but never invent a new Pro SKU. Free remains one course; Start at €10 also removes ads; Premium at €100 adds available tests and a personal session benefit (separate scheduling). Paid billing is being integrated in a different PR and is not production-enabled by this feature.
+Current approved commercial plan is **Advanced**, €20 per month, five parallel active courses and no promotional blocks; the promo headline may say `Pro features`, but never invent a new Pro SKU. Free remains one course; Start at €10 also removes ads; Premium at €100 adds available tests and a personal session benefit (separate scheduling). This feature is composed with the subscription implementation in PR427; source integration does not approve production billing activation.
 
-- Only show a new post-lesson advertisement to accounts that are **not** verified ad-free. Use the account-bound authenticated billing status when available. A transient entitlement-read failure hides promotions rather than misrepresenting paid users.
+- Use the existing account-bound SubscriptionProvider as the sole billing-read authority. Only a confirmed Free state can show an offer; unknown state, a missing endpoint or failed read suppresses it. Paid/ad-free status always suppresses it.
+- One provider-owned, server-confirmed completion token controls presentation: the V6 player consumes it in the canonical inline Advanced slide, while the legacy save path uses the existing aside. These presentations never run together. Match account, selected course, cycle, day and lesson; closing the presenter dismisses only that token and retains replay deduplication.
 - In the current free-only release, display the offer but state checkout is not active. Show an actual account subscription link only when production-paid checkout for Advanced is enabled. Never imply that viewing a slide creates a subscription.
 - This is separate from app/platform ads; it is a first-party Holistic House promotional card.
 - Respect the saved completion and optional skip. Do not incentivize more symptoms, test retakes or scores via XP.

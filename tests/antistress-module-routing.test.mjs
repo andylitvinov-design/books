@@ -35,7 +35,8 @@ test('one programme offers five different bilingual 14-day routes while preservi
    assert.equal(a.every(x=>x.title && x.sections?.length===5),true)
    if(mod.id==='AS2')assert.equal(a[0].antiStress?.skillId,'S1')
    else {
-    assert.equal(a.every(x=>x.antiStress===undefined),true)
+    assert.equal(a.every(x=>x.antiStress?.routePlan?.schema==='opora-nav2-interactions-1'),true)
+    assert.equal(new Set(a.map(x=>x.antiStress.skillId)).size,14)
     assert.equal(new Set(a.map(x=>x.sections.find(s=>s.kind==='meditation')?.text)).size,14)
     assert.ok(a.every(x=>x.accessibility.stopAnytime))
    }

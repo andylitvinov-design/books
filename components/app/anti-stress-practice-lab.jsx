@@ -9,14 +9,22 @@ import styles from './anti-stress-practice-lab.module.css'
 // does not certify that the person actually performed the suggested action.
 export default function AntiStressPracticeLab({
   day,locale='en',part='main',value='',onChange,attempt='',onAttempt,
-  disabled=false,onSaveReflection,
+  disabled=false,onSaveReflection,plan:routePlan=null,hintUsed=false,onHint,draft:retainedDraft,onDraftChange,
 }){
-  const ru=locale==='ru',plan=antiStressLabFor(day,locale),card=plan?.[part]
+  const ru=locale==='ru',plan=routePlan||antiStressLabFor(day,locale),card=plan?.[part]
   const [step,setStep]=useState(0)
   const [hint,setHint]=useState(false)
-  const [words,setWords]=useState(['','','','',''])
-  const [qualities,setQualities]=useState(['','','','',''])
+  const [localWords,setLocalWords]=useState(['','','','',''])
+  const [localQualities,setLocalQualities]=useState(['','','','',''])
   const [savedNote,setSavedNote]=useState(false)
+  const [copyError,setCopyError]=useState(false)
+  const [localDraft,setLocalDraft]=useState({})
+  const draft=retainedDraft||localDraft
+  const setDraft=onDraftChange||setLocalDraft
+  const words=Array.isArray(draft.words)?draft.words:localWords
+  const qualities=Array.isArray(draft.qualities)?draft.qualities:localQualities
+  const setWords=onDraftChange?next=>setDraft(previous=>({...previous,words:next})):setLocalWords
+  const setQualities=onDraftChange?next=>setDraft(previous=>({...previous,qualities:next})):setLocalQualities
   if(!card)return null
   const t=(a,b)=>ru?a:b
   const add=(items,index,value,fn)=>{
@@ -29,8 +37,9 @@ export default function AntiStressPracticeLab({
     if(!lines.length||typeof onSaveReflection!=='function')return
     const text=t('Мои ассоциации: ','My associations: ')+
       lines.map(item=>[item.word,item.quality].filter(Boolean).join(' — ')).join('; ')
-    onSaveReflection(text.slice(0,440))
-    setSavedNote(true)
+    const accepted=onSaveReflection(text)
+    setSavedNote(accepted!==false)
+    setCopyError(accepted===false)
   }
   return <section className={styles.lab} data-opora-practical-lab={part}
     data-opora-lab-method={card.method} aria-label={card.title}>
@@ -58,7 +67,7 @@ export default function AntiStressPracticeLab({
       {t('Какой вариант вам сейчас подходит?','Which option feels accessible now?')}
     </p>
     <div className={styles.options} role="group" aria-label={card.title} data-practical-choices>
-      {card.options.map(item=><button type="button" key={item.id} disabled={disabled}
+      {card.options.map(item=><button type="button" key={item.id} disabled={disabled||(hintUsed&&item.id.endsWith('_independent'))}
         aria-pressed={value===item.id} onClick={()=>onChange(item.id)}>
         <span>{item.label}</span>{value===item.id&&<Check size={18} aria-hidden="true"/>}
       </button>)}
@@ -67,9 +76,9 @@ export default function AntiStressPracticeLab({
       {t('Ваш выбор записан как выбор, а не как подтверждение результата.',
         'Your choice is recorded as a choice, not proof of an outcome.')}
     </p>}
-    {['retrieval_try','situation_match','fact_guess'].includes(card.method)&&
+    {(routePlan||['retrieval_try','situation_match','fact_guess'].includes(card.method))&&
       <div className={styles.hintBlock}>
-        <button type="button" disabled={disabled} onClick={()=>setHint(x=>!x)}
+        <button type="button" disabled={disabled} onClick={()=>{if(!hint)onHint?.();setHint(x=>!x)}}
           aria-expanded={hint}><CircleHelp size={16}/>{hint?t('Скрыть подсказку','Hide hint'):t('Подсказка без оценивания','Show a non-grading hint')}</button>
         {hint&&<p>{t('Нейтральный ориентир, небольшая пауза или отдых тоже могут быть ответом. Здесь нет оценки «правильно/неправильно».',
           'A neutral detail, a brief pause or rest may also be an answer. There is no right/wrong grade.')}</p>}
@@ -88,10 +97,25 @@ export default function AntiStressPracticeLab({
       <button className={styles.journalButton} type="button"
         disabled={disabled||!words.some(x=>x.trim())&&!qualities.some(x=>x.trim())}
         onClick={keepAssociations}><Leaf size={17}/>{t('Добавить в мой личный дневник','Add to my private journal')}</button>
+      {copyError&&<p role="alert" data-route-journal-capacity>{t('Не добавлено: заметка ограничена 500 символами. Сократите черновик или отредактируйте заметку. Черновик сохранён на время занятия.','Not added: the lesson note has a 500-character limit. Shorten this draft or edit your note. Your draft is still here for this session.')}</p>}
       {savedNote&&<p role="status" className={styles.note}>
         {t('Текст добавлен к заметке этого урока. Сохранится при завершении занятия.',
           'Added to this lesson note. It will save when you finish the lesson.')}
       </p>}
+    </div>}
+    {card.format==='worksheet'&&<div className={styles.associations} data-route-practice-worksheet>
+      <p>{t('Необязательный черновик остаётся здесь, пока вы сами не добавите его в дневник. Не указывайте имена или тяжёлые воспоминания.',
+        'This optional draft stays here unless you add it to your journal. Avoid names or distressing memories.')}</p>
+      {card.fields.map((label,i)=><label className={styles.associationRow} key={i}>
+        <span>{label}</span><input type="text" maxLength={72} value={draft[i]||''} disabled={disabled}
+          onChange={event=>{setDraft(previous=>({...previous,[i]:event.target.value.slice(0,72).replace(/[\r\n]/g,' ')}));setSavedNote(false)}}/>
+      </label>)}
+      <button type="button" className={styles.journalButton}
+        disabled={disabled||!Object.values(draft).some(value=>value.trim())||typeof onSaveReflection!=='function'}
+        onClick={()=>{const accepted=onSaveReflection(card.fields.map((label,i)=>draft[i]?.trim()?label+': '+draft[i].trim():'').filter(Boolean).join('; '));setSavedNote(accepted!==false);setCopyError(accepted===false)}}>
+        <Leaf size={17}/>{t('Добавить в мой личный дневник','Add to my private journal')}</button>
+      {copyError&&<p role="alert" data-route-journal-capacity>{t('Не добавлено: заметка ограничена 500 символами. Сократите черновик или отредактируйте заметку. Черновик сохранён на время занятия.','Not added: the lesson note has a 500-character limit. Shorten this draft or edit your note. Your draft is still here for this session.')}</p>}
+      {savedNote&&<p role="status">{t('Добавлено к заметке занятия; сохранится при завершении.','Added to the lesson note; saved when you finish.')}</p>}
     </div>}
     {part==='main'&&<div className={styles.attempt} data-practical-attempt>
       <p>{t('Что вы действительно сделали? (необязательно)','What did you actually do? (optional)')}</p>
