@@ -9,7 +9,7 @@ import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS } from '@/lib/assessments/test-kinds'
-import { groupViaRecommendations, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
+import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
 
 const TEXT = {
   en: {
@@ -145,7 +145,7 @@ export function SimpleTestPicker({
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
+  matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
@@ -173,6 +173,7 @@ export function SimpleTestPicker({
   }, [focusKey, depth, maxMinutes, testKindsKey, problemKey])
   const selectedKeys = new Set(activeBattery.map((item) => item.key))
   const via = groupViaRecommendations(recommendations, selectedKeys, showIndividualVia)
+  const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
   const viaCopy = VIA_COPY[locale] || VIA_COPY.en
   const groupedRecommendations = via.visible
   const visibleRecommendations = groupedRecommendations.slice(0, visibleCount)
@@ -332,19 +333,19 @@ export function SimpleTestPicker({
         <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
         <p>{c.whyText}</p>
       </details>
-      {(via.profile || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
         <div className={styles.viaFamilyIntro}>
           <strong>{viaCopy.title}</strong>
           <p>{viaCopy.description}</p>
         </div>
-        {via.profile && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
-          <span><ListChecks size={14} aria-hidden="true" />{via.profile.questionCount} {c.questionUnit} · ~{via.profile.durationMinutes} {c.minuteUnit}</span>
+        {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
+          <span><ListChecks size={14} aria-hidden="true" />{fullVia.questionCount} {c.questionUnit} · ~{fullVia.durationMinutes} {c.minuteUnit}</span>
           <button type="button" className={styles.viaSelect} aria-pressed={selectedKeys.has(VIA_PROFILE_KEY)}
             onClick={() => onToggleTest(VIA_PROFILE_KEY)} disabled={starting}>
             {selectedKeys.has(VIA_PROFILE_KEY) ? viaCopy.selected : viaCopy.select}
           </button>
           <button type="button" className={styles.takeTest} data-test-action="start"
-            onClick={() => onStartSingle?.(via.profile)} disabled={starting || !onStartSingle}>
+            onClick={() => onStartSingle?.(fullVia)} disabled={starting || !onStartSingle}>
             {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
           </button>
         </div>}
