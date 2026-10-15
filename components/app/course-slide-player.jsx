@@ -11,6 +11,7 @@ import CoursePracticeVoice from './course-practice-voice'
 import AntiStressMethodActivity from './anti-stress-method-activity'
 import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
 import AntiStressPracticeLab from './anti-stress-practice-lab'
+import OporaModuleActivity from './opora-module-activity'
 import CourseLessonResult from './course-lesson-result'
 import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
 import { buildCourseSlides } from '@/lib/inner-growth/course-slide-sequence'
@@ -319,6 +320,7 @@ export default function CourseSlidePlayer({
   const [dayOneAnswers,setDayOneAnswers]=useState(session?.signals?.dayOne||{})
   const [associationWords,setAssociationWords]=useState('')
   const [practiceLab,setPracticeLab]=useState(session?.signals?.practiceLab||{})
+  const [moduleActivityChoice,setModuleActivityChoice]=useState(session?.signals?.moduleActivityChoice||'')
   const updatePracticeLab=(key,value)=>setPracticeLab(previous=>({...previous,[key]:value}))
   const dayOneFocus=data.dayOneFocusOptions?.find(item=>item.id===dayOneAnswers.focusId)||null
   function recordDayOne(field,value){
@@ -453,7 +455,8 @@ export default function CourseSlidePlayer({
         ...(lesson.antiStress&&cycle.day>1&&data.programme?.id==='stress'
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
           : {}),
-        ...(isExtendedStress ? {practiceLab} : {})
+        ...(isExtendedStress ? {practiceLab} : {}),
+        ...(isOporaModule ? {moduleActivityChoice:moduleActivityChoice||null} : {})
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
       else setError(words.saveError)
@@ -625,6 +628,7 @@ export default function CourseSlidePlayer({
             <div className={styles.welcomeContent}>
               <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
               <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
+              {isOporaModule&&<p className={styles.welcomeModule} data-opora-welcome-theme>{lesson.oporaModule.theme}</p>}
               <p className={styles.welcomePrompt}>{words.welcomePrompt}</p>
               <div className={styles.welcomeChoices} role="group" aria-label={words.welcome}>
                 {welcomeFeelingChoices(cycle.activeGoal || cycle.primaryGoal, locale).map((choice, choiceIndex) => {
@@ -809,9 +813,16 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'ritual' && <>
-            <IllustratedMoment kind={slide.kind}/>
-            <p className={styles.prompt}>{lesson.ritual}</p>
+            {!isOporaModule&&<IllustratedMoment kind={slide.kind}/>}
+            <p className={styles.prompt}>{isOporaModule?lesson.oporaModule.learningOutcome:lesson.ritual}</p>
             <p className={styles.helper}>{words.transferHint}</p>
+            {isOporaModule&&<OporaModuleActivity key={cycle.id+':'+cycle.day} day={cycle.day}
+              locale={locale} moduleId={lesson.oporaModule.id} routerVersion={lesson.oporaModule.version}
+              value={moduleActivityChoice} onChange={setModuleActivityChoice} disabled={locked}
+              onAddReflection={addition=>setReflection(previous=>{
+                const clean=String(addition||'').slice(0,240)
+                return clean&&!previous.includes(clean)?[previous.trim(),clean].filter(Boolean).join('\n').slice(0,500):previous
+              })}/>}
             {(lesson.antiStress||isOporaModule)&&<section data-course-practice-attempt>
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
