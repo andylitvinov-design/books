@@ -22,7 +22,7 @@ async function handle(request,{params}){
     const actor=await auth.verified()
     const saved=await readSavedSession(config,getPrescriptionStore(),actor,id,{markOpened:false})
     const sharedGuide=assetId===GRANULES_GUIDE_ID&&sharedGranulesGuideReady()
-    if(!sharedGuide&&!saved.session.media.some(item=>item.assetId===assetId&&['audio','video','pdf'].includes(item.kind)))
+    if(!sharedGuide&&!saved.session.media.some(item=>item.assetId===assetId&&['audio','video','pdf','image'].includes(item.kind)))
       return fail()
     if(request.method==='POST')
       return auth.apply(NextResponse.json({url:'/api/app/saved-sessions/'+id+'/media/'+assetId,expiresIn:300},
