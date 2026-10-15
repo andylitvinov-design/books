@@ -174,3 +174,9 @@
   .dayExerciseContent{padding:11px}
   .screenDetails>ol{grid-template-columns:1fr}
 }
+
+/* Shared assessment bookends for 5 routes × 7 recovery phases × 14 lessons. */
+.assessmentRail{display:flex;align-items:center;flex-wrap:wrap;gap:5px 16px;margin:0!important;padding:12px 15px;border:1px solid #d9dfea;border-radius:12px;background:#f8f4f6;color:#263e56;font-size:12px;line-height:1.5}
+.assessmentRail strong{font-weight:850;color:#74354f}
+.assessmentRail span{color:#4e687d}
+@media(max-width:530px){.assessmentRail{padding:10px}}
