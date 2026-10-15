@@ -289,9 +289,9 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
         'select * from app_private.manual_billing_orders')),errorCode('42501'))
       await assert.rejects(rawAs(owner,'hh_app_inbox',db=>db.query(
         'select * from app_private.manual_billing_orders')),errorCode('42501'))
-      await assert.rejects(rawAs(owner,'hh_app_backend',db=>db.query(
-        "update app_private.manual_billing_orders set status='quoted',invoice_amount_minor=2000 where id=$1",[order.id])),
-      errorCode('42501'))
+      const deniedUpdate = await rawAs(owner,'hh_app_backend',db=>db.query(
+        "update app_private.manual_billing_orders set status='quoted',invoice_amount_minor=2000 where id=$1",[order.id]))
+      assert.equal(deniedUpdate.rowCount,0,'RLS update without a reviewer policy must affect no rows')
       await assert.rejects(rawAs(owner,'hh_app_backend',db=>db.query(
         "insert into app_private.manual_billing_orders(account_id,operation_id,plan_id,method_id,currency,reference_euro_cents,status,invoice_amount_minor) values($1,$2,'premium','paypal-eur','EUR',10000,'paid',10000)",
         [owner.id,randomUUID()])),errorCode('42501'))
@@ -302,9 +302,9 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
       assert.equal(reviewed.status,'quoted')
       assert.equal((await rawAs(owner,'hh_app_backend',db=>db.query(
         'select id from app_private.manual_billing_orders where account_id=$1',[owner.id]))).rows.length,1)
-      await assert.rejects(rawAs(foreign,'hh_app_backend',db=>db.query(
-        "update app_private.manual_billing_orders set status='rejected' where id=$1",[order.id])),
-      errorCode('42501'))
+      const foreignChange = await rawAs(foreign,'hh_app_backend',db=>db.query(
+        "update app_private.manual_billing_orders set status='rejected' where id=$1",[order.id]))
+      assert.equal(foreignChange.rowCount,0,'another account cannot alter the order')
     })
     await applyIsolatedProposal(admin, 'proposed-premium-session-schema.sql',
       "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL: explicit approval required'; END $$;")
