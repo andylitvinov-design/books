@@ -169,11 +169,15 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
   }
   function copyLink(id) {
     const link = videoWatchUrl(id)
-    if (!navigator.clipboard?.writeText) {setError(t.errors.unknown); return}
+    const manualCopy = () => {
+      // Useful for restrictive iOS webviews where the Clipboard API is unavailable.
+      window.prompt(locale === 'ru' ? 'Скопируйте ссылку:' : 'Copy video link:', link)
+    }
+    if (!navigator.clipboard?.writeText) {manualCopy(); return}
     navigator.clipboard.writeText(link).then(() => {
       setCopiedId(id)
       setError('')
-    }).catch(() => setError(t.errors.unknown))
+    }).catch(manualCopy)
   }
 
   useEffect(() => {
