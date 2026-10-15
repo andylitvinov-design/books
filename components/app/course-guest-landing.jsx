@@ -4,6 +4,7 @@ import {
   Compass, HeartHandshake, Leaf, LockKeyhole, ShieldCheck, Sparkles, Waves,
 } from 'lucide-react'
 import Course14DayOverview from './course-14-day-overview'
+import AntiStressModuleJourney from '@/components/antistress-module-journey'
 import styles from './course-guest-landing.module.css'
 
 const COPY = {
@@ -11,8 +12,8 @@ const COPY = {
     breadcrumb: 'Курсы', eyebrow: 'HOLISTIC HOUSE · КУРС ОПОРА', free: 'Первый курс бесплатно',
     brand: 'ОПОРА', title: 'Антистресс',
     headline: 'Меньше борьбы с собой. Больше внутренней опоры.',
-    introduction: '14 небольших занятий, чтобы лучше понимать своё состояние и находить простые способы поддержки в повседневной жизни.',
-    facts: ['14 дней', '7 навыков', '5–12 минут в день'],
+    introduction: 'Одна программа и шесть вариантов по 14 дней. Пройдите стартовые опросы, узнайте подходящий модуль и самостоятельно подтвердите свой выбор.',
+    facts: ['6 модулей', '14 дней каждый', '5–12 минут в день'],
     start: 'Начать курс бесплатно', startTests: 'Войти и пройти стартовые тесты',
     programme: 'Посмотреть программу',
     privacy: 'Сначала вход и стартовая оценка состояния. Выбор тестов и участие — только с вашего согласия.',
@@ -25,11 +26,11 @@ const COPY = {
       { title: 'Находить свою опору', text: 'Пробовать мягкие телесные, образные и повседневные способы поддержки.' },
       { title: 'Выбирать, а не заставлять', text: 'Развивать гибкость и право остановиться, изменить или пропустить упражнение.' },
     ],
-    planEyebrow: 'ПРОГРАММА КУРСА', planTitle: 'Ваш путь за 14 дней',
-    planLead: 'Семь навыков, по два дня на каждый. Нажмите на этап, чтобы посмотреть занятия; подробные упражнения доступны отдельно.',
+    planEyebrow: 'ПРОГРАММА КУРСА', planTitle: 'Пример программы: Антистресс 2',
+    planLead: 'Здесь раскрыт модуль стабилизации. В других модулях на каждый день предусмотрены отдельные темы и практики.',
     howEyebrow: 'КАК ЭТО РАБОТАЕТ', howTitle: 'Просто начать. Удобно продолжать.',
     how: [
-      { title: 'Определите точку старта', text: 'После входа заполните HH Weekly Pulse — 8 коротких вопросов. Дополнительные тесты по желанию.' },
+      { title: 'Определите точку старта', text: 'После входа заполните HH Weekly Pulse (8 вопросов), затем Module Finder (8 вопросов с правом пропуска). GAD-7 и Resource Pulse по желанию.' },
       { title: 'Практикуйтесь каждый день', text: 'Один небольшой урок, интерактивное упражнение и выбор комфортного темпа.' },
       { title: 'Заметьте свои изменения', text: 'В конце можно повторить стартовый тест и сравнить сопоставимые результаты.' },
     ],
@@ -43,8 +44,8 @@ const COPY = {
     breadcrumb: 'Courses', eyebrow: 'HOLISTIC HOUSE · OPORA COURSE', free: 'Your first course is free',
     brand: 'OPORA', title: 'Stress Relief',
     headline: 'Less pressure on yourself. More room to feel supported.',
-    introduction: 'Fourteen short lessons to understand your responses and explore small, practical ways to support yourself each day.',
-    facts: ['14 days', '7 skills', '5–12 min a day'],
+    introduction: 'One programme, six different 14-day modules. Complete the starting assessments, see your suggested module and decide what works for you.',
+    facts: ['6 modules', '14 days each', '5–12 min a day'],
     start: 'Start the free course', startTests: 'Sign in and start the assessments',
     programme: 'Explore the programme',
     privacy: 'Sign in and take a starting assessment first. Tests and participation are always your choice.',
@@ -57,11 +58,11 @@ const COPY = {
       { title: 'Find your own supports', text: 'Explore gentle body-based, imagery and everyday grounding practices.' },
       { title: 'Choose rather than force', text: 'Build flexibility and permission to pause, adjust or skip an exercise.' },
     ],
-    planEyebrow: 'COURSE CURRICULUM', planTitle: 'Your 14-day journey',
-    planLead: 'Seven skills, two days per skill. Open a stage to see its lessons; detailed exercises are available separately.',
+    planEyebrow: 'COURSE CURRICULUM', planTitle: 'Example: the Anti-Stress 2 module',
+    planLead: 'This preview shows the stabilization module. Other modules offer different daily themes and exercises.',
     howEyebrow: 'HOW IT WORKS', howTitle: 'Easy to start. Simple to keep going.',
     how: [
-      { title: 'See your starting point', text: 'After signing in, complete the 8-question HH Weekly Pulse. Extra assessments are optional.' },
+      { title: 'See your starting point', text: 'After signing in, complete 8 Weekly Pulse questions and 8 Module Finder items. GAD-7 and Resource Pulse remain optional.' },
       { title: 'Practise each day', text: 'One short lesson, an interactive exercise and a pace that feels right.' },
       { title: 'Notice what changes', text: 'At the end, you can repeat the same assessment and compare eligible results.' },
     ],
@@ -75,8 +76,8 @@ const COPY = {
     breadcrumb: 'Cursos', eyebrow: 'HOLISTIC HOUSE · CURSO OPORA', free: 'Tu primer curso es gratis',
     brand: 'OPORA', title: 'Menos estrés',
     headline: 'Menos exigencia. Más apoyo interior.',
-    introduction: 'Catorce lecciones breves para comprender tus reacciones y explorar maneras sencillas de cuidarte cada día.',
-    facts: ['14 días', '7 habilidades', '5–12 min al día'],
+    introduction: 'Un programa con seis módulos diferentes de 14 días. Completa la evaluación inicial, recibe una sugerencia y elige libremente.',
+    facts: ['6 módulos', '14 días cada uno', '5–12 min al día'],
     start: 'Empezar gratis', startTests: 'Iniciar sesión y hacer la evaluación inicial',
     programme: 'Ver el programa',
     privacy: 'Primero inicia sesión y completa la evaluación inicial. Participar es siempre tu elección.',
@@ -89,11 +90,11 @@ const COPY = {
       { title: 'Encontrar apoyo', text: 'Probar recursos corporales, imaginativos y cotidianos.' },
       { title: 'Elegir sin forzarte', text: 'Poder detener, adaptar o saltar un ejercicio.' },
     ],
-    planEyebrow: 'PROGRAMA', planTitle: 'Tu recorrido de 14 días',
-    planLead: 'Siete habilidades, dos días cada una. Abre una etapa para ver sus sesiones.',
+    planEyebrow: 'PROGRAMA', planTitle: 'Ejemplo: módulo Antiestrés 2',
+    planLead: 'Aquí se muestra el módulo de estabilización. Los demás tienen diferentes temas y prácticas.',
     howEyebrow: 'CÓMO FUNCIONA', howTitle: 'Fácil de empezar y continuar.',
     how: [
-      { title: 'Conoce tu punto de partida', text: 'Después de iniciar sesión, completa el HH Weekly Pulse de 8 preguntas. El resto es opcional.' },
+      { title: 'Conoce tu punto de partida', text: 'Después de iniciar sesión, completa 8 preguntas del Weekly Pulse y 8 sobre habilidades. GAD-7 y Resource Pulse son opcionales.' },
       { title: 'Practica cada día', text: 'Una lección corta, un ejercicio interactivo y tu propio ritmo.' },
       { title: 'Observa tus cambios', text: 'Al final, puedes repetir la evaluación y comparar los resultados compatibles.' },
     ],
@@ -138,7 +139,7 @@ export default function CourseGuestLanding({
               data-antistress-start data-antistress-start-tests={stressSignup ? '' : undefined}>
               {stressSignup ? t.startTests : t.start}<ArrowRight size={18} aria-hidden="true" />
             </button>
-            <a href="#opora-guest-plan" className={styles.secondary}>{t.programme}<ArrowRight size={16} aria-hidden="true" /></a>
+            <a href="#opora-guest-modules" className={styles.secondary}>{t.programme}<ArrowRight size={16} aria-hidden="true" /></a>
           </div>
           <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.privacy}</p>
         </div>
@@ -150,6 +151,8 @@ export default function CourseGuestLanding({
           <figcaption><span aria-hidden="true">✦</span> {t.caption}</figcaption>
         </figure>
       </section>
+
+      <AntiStressModuleJourney locale={locale} sectionId="opora-guest-modules" />
 
       <section className={styles.benefits} aria-labelledby="opora-guest-benefits">
         <div className={styles.sectionIntro}>
