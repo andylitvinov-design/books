@@ -6,15 +6,17 @@ const home = readFileSync(new URL("../components/holistic-house-home.tsx", impor
 const form = readFileSync(new URL("../components/free-situation-review-form.tsx", import.meta.url), "utf8");
 const testimonials = readFileSync(new URL("../components/personal-testimonials.tsx", import.meta.url), "utf8");
 
-test("iteration 1: home hero opens the single three-way free chooser", () => {
-  assert.match(home, /heroPrimary: "Start for free"/);
-  assert.match(home, /heroPrimary: "Начать бесплатно"/);
-  assert.match(home, /href="#home-consultation"/);
+test("iteration 1: home hero offers direct routes, visible photo services and bottom free chooser", () => {
+  assert.match(home, /heroPrimary: "Free situation review"/);
+  assert.match(home, /heroPrimary: "Бесплатный разбор ситуации"/);
+  assert.match(home, /href="#core-services"/);
+  assert.match(home, /services\/free-situation-review/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
   assert.match(home, /event="service_request_start"/);
   assert.match(home, /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf('<section className="service-home-start"'));
-  assert.match(home, /data-home-path="free-results-optional-session"/);
+  assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
+  assert.doesNotMatch(home, /data-home-extra-paths|service-home-progress/);
 });
 
 test("iteration 2: first contact is a real coaching form with a drawing requirement, without server-side storage", () => {
