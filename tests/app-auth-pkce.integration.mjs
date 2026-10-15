@@ -100,10 +100,10 @@ routeSource = routeSource
   .replace(/from '(@\/[^']+)'/g, (_, name) => `from '${new URL('../' + name.slice(2) + '.js', import.meta.url)}'`)
   .replace("from 'next/server.js'", `from '${new URL('../node_modules/next/server.js', import.meta.url)}'`)
 const route = await import('data:text/javascript;base64,' + Buffer.from(routeSource).toString('base64'))
-async function routeStart(cookies = [], intentId) {
+async function routeStart(cookies = [], intentId, continueTo = null) {
   const req = new NextRequest(origin + '/api/app/auth/start', { method:'POST', headers:{
     origin, 'content-type':'application/json', cookie:cookies.map(c=>`${c.name}=${encodeURIComponent(c.value)}`).join('; '),
-  }, body:JSON.stringify({locale:'en', ...(intentId ? {intentId} : {})}) })
+  }, body:JSON.stringify({locale:'en', ...(intentId ? {intentId} : {}), ...(continueTo ? {continueTo} : {})}) })
   const response = await route.POST(req, {params:Promise.resolve({path:['auth','start']})})
   assert.equal(response.status, 200)
   const {redirectUrl} = await response.json(), url = new URL(redirectUrl)
@@ -176,4 +176,26 @@ test('explicit missing or malformed flow never falls back to another tab verifie
     assert.equal(response.headers.get('location'),origin+'/en/app?auth=failed')
   }
   assert.equal(calls(),0)
+})
+
+test('session cabinet one-tap OAuth accepts only allowlisted app destinations, never guest secrets', async t => {
+ const cases = [
+  ['cabinet','/en/app/portrait'],['my-tests','/en/app/tests'],
+  ['my-courses','/en/app/course'],['reports','/en/app/portrait#personal-reports']
+ ]
+ for (const [continuation,path] of cases) {
+  const flow = await routeStart([],null,continuation)
+  assert.equal(flow.callback.searchParams.get('continue'),continuation)
+  const response = await routeCallback(flow,flow.cookies,{cancelled:true})
+  const url=new URL(response.headers.get('location'))
+  assert.equal(url.pathname+url.hash,path)
+  assert.equal(url.searchParams.get('auth'),'cancelled')
+  assert(!url.href.includes('client/session/'))
+ }
+ const forbidden = new NextRequest(origin + '/api/app/auth/start',{
+  method:'POST',headers:{origin,'content-type':'application/json'},
+  body:JSON.stringify({locale:'en',continueTo:'https://outside.example.invalid/steal'})
+ })
+ const rejected=await route.POST(forbidden,{params:Promise.resolve({path:['auth','start']})})
+ assert.equal(rejected.status,400)
 })

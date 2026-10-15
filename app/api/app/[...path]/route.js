@@ -71,7 +71,7 @@ async function handle(request, { params }) {
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
         program = body.program || null
-      if (continueTo !== null && !['tests', 'course'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (continueTo !== null && !['tests','course','cabinet','my-tests','my-courses','reports'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -89,7 +89,7 @@ async function handle(request, { params }) {
         provider: 'google',
         options: {
           scopes: 'openid email profile',
-          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo === 'tests' ? '&continue=tests' : continueTo === 'course' ? '&continue=course' : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}`,
+          redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}`,
           skipBrowserRedirect: true,
         },
       })
@@ -108,7 +108,7 @@ async function handle(request, { params }) {
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests', 'course'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
@@ -117,10 +117,18 @@ async function handle(request, { params }) {
             ? `${origin}/${locale}/app/tests?selection=pending`
             : continueTo === 'course'
               ? `${origin}/${locale}/app/course${program ? `?program=${encodeURIComponent(program)}` : ''}`
-              : `${origin}/${locale}/app`
+              : continueTo === 'cabinet'
+                ? `${origin}/${locale}/app/portrait`
+                : continueTo === 'my-tests'
+                  ? `${origin}/${locale}/app/tests`
+                  : continueTo === 'my-courses'
+                    ? `${origin}/${locale}/app/course`
+                    : continueTo === 'reports'
+                      ? `${origin}/${locale}/app/portrait#personal-reports`
+                      : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
-          NextResponse.redirect(destination + (destination.includes('?') ? '&auth=cancelled' : '?auth=cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(destination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -132,7 +140,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return auth.apply(
-          NextResponse.redirect(destination + (destination.includes('?') ? '&auth=failed' : '?auth=failed'), {
+          NextResponse.redirect((value => { const url = new URL(destination); url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),

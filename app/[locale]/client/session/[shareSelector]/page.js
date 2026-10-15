@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { deliveryEnabled,validSelector,guestSessionProjection } from '@/lib/clients/delivery-model'
-import { getAppConfig } from '@/lib/app/config'
+import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { readSessionViewerCookie,authorizeSessionGuest } from '@/lib/clients/session-delivery-access'
 import { getPublishedSessionReport } from '@/lib/clients/session-delivery-service'
@@ -33,7 +33,7 @@ export default async function ClientSessionSharePage({params}) {
     }
     const client=await store.findClientById(session.clientId)
     return <ClientSessionPage locale={locale} session={guestSessionProjection(session)} selector={shareSelector}
-      mode="guest" clientName={recommendation?.patientName||client?.fullName||''}
+      mode="guest" appAvailable={appEnabled()} clientName={recommendation?.patientName||client?.fullName||''}
       recommendation={recommendation} reportContent={reportContent}/>
   } catch{return <ClientSessionShareGate locale={locale} selector={shareSelector}/>}
 }

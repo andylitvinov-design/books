@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
+import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale}) {
@@ -66,7 +67,7 @@ function PrivatePlayer({item,session,mode,selector,locale}) {
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName=''}) {
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
@@ -89,12 +90,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
-  return <main className={styles.clientPage+' '+styles.courseSessionPage} lang={locale}>
+  return <main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
       <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
-      <LockKeyhole size={22} aria-label={ru?'Приватная страница':'Private page'}/>
+      <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>
     </header>
     <section className={styles.sessionHero} aria-labelledby="session-title">
       <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
@@ -212,6 +213,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <ExternalLink size={17} aria-hidden="true"/>
       </a>)}
     </section>}
+
+    <ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':

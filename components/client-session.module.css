@@ -254,3 +254,148 @@
 @media(prefers-reduced-motion:reduce){.remedyChevron{transition:none}}
 
 .courseSessionPage .prescriptionItemHow{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:#385f6c;font-size:13px;line-height:1.5}
+
+
+/* Session report v3: share the signed-in Google Cabinet's design language.
+   This is still a *single session*, never the account navigation shell. */
+.cabinetSessionPage {
+  --hh-ink:#3e342e;--hh-paper:#fffdf7;--hh-line:#e6dbcc;
+  --hh-accent:#bf4f2e;--hh-muted:#74685e;
+  --hh-green:#3c7968;
+  width:min(100%,1020px);max-width:1020px;margin:0 auto;
+  color:var(--hh-ink);background:#fffdf8;
+  min-height:100svh;padding:clamp(15px,3vw,30px);
+  font:16px/1.6 system-ui,-apple-system,sans-serif;
+  overflow-wrap:anywhere
+}
+.cabinetSessionPage *{box-sizing:border-box}
+.cabinetSessionPage h1,.cabinetSessionPage h2,.cabinetSessionPage h3{
+  color:#40382f;font-family:Georgia,serif;line-height:1.19;letter-spacing:-.02em}
+.cabinetSessionPage .clientHeader{
+  padding:0 0 18px;border-bottom:1px solid #e6dbcc;
+  gap:15px;align-items:center;margin-bottom:18px
+}
+.cabinetSessionPage .clientBrand{gap:4px}
+.cabinetSessionPage .clientBrand .eyebrow{letter-spacing:.11em;font-size:12px;color:#705943}
+.cabinetSessionPage .privateLabel{color:#6a8071;font-size:12px;font-weight:600}
+.cabinetHeaderEntry{display:grid;gap:5px;align-items:center;justify-items:end;flex:none;max-width:52%}
+.cabinetHeaderButton{
+  min-height:45px;display:inline-flex;align-items:center;justify-content:center;
+  gap:9px;padding:10px 14px;border-radius:12px;border:1px solid #d3c2b1;
+  background:#fffaf3;color:#5b4638;font-size:14px;font-weight:800;cursor:pointer;
+  box-shadow:0 3px 12px #58442c0b
+}
+.cabinetHeaderButton:hover,.cabinetHeaderButton:focus-visible{
+  background:#f5efe7;border-color:#ad917c}
+.cabinetHeaderButton:disabled,.cabinetBridge button:disabled{opacity:.55;cursor:not-allowed}
+.cabinetEntryError{color:#9a3b2e;font-size:13px;margin:5px 0}
+.cabinetSessionPage .sessionHero{
+  background:linear-gradient(125deg,#fffdf7 0%,#f4f4e9 58%,#ebf2eb 100%);
+  border:1px solid #dedbcc;border-radius:22px;box-shadow:0 8px 25px #4a45320b
+}
+.cabinetSessionPage .sessionHero h1{
+  color:#3b4137;font-weight:600;font-size:clamp(29px,4.5vw,40px);
+  letter-spacing:-.035em;margin:8px 0 18px
+}
+.cabinetSessionPage .sectionKicker{color:#9b6c50}
+.cabinetSessionPage .sessionIdentity div{background:#fffdf9;border-color:#e3dacf}
+.cabinetSessionPage .sessionIdentity dt{color:#796a60}
+.cabinetSessionPage .sessionIdentity dd{color:#493d35}
+.cabinetSessionPage .sessionHero .sessionSummary{color:#64594f}
+.cabinetSessionPage .nextStepCard{
+  border-color:#d4e0d2;background:#fffdf8;border-radius:17px;
+  box-shadow:0 5px 17px #4b684610
+}
+.cabinetSessionPage .nextStepCard p{color:#3e5147}
+.cabinetSessionPage .nextStepLink,
+.cabinetBridgePrimary{
+  min-height:48px;display:inline-flex;align-items:center;justify-content:center;
+  padding:12px 18px;border:1px solid #ac4b31;border-radius:13px;
+  background:#b85136;color:#fff!important;box-shadow:0 5px 15px #893f2516;
+  text-decoration:none;font-size:15px;font-weight:800;cursor:pointer;
+  gap:9px;border-bottom:3px solid #9d3d26
+}
+.cabinetSessionPage .nextStepLink:hover,.cabinetBridgePrimary:hover{background:#99422c;color:white}
+.cabinetSessionPage .practitionerCredit{color:#7c7166}
+.cabinetSessionPage .sectionHeader{color:#5a806c}
+.cabinetSessionPage .sectionHeader h2{color:#423b32;font-weight:600}
+.cabinetSessionPage .sectionIcon{color:#3f7868;background:#eef5ed;border:1px solid #d2e1d2}
+.cabinetSessionPage .sectionIntro{color:#786e62}
+.cabinetSessionPage .clientMediaCard,.cabinetSessionPage .remedyAccordion{
+  background:#fffdf9;border-color:#e1d9cd;box-shadow:0 5px 20px #51422e09
+}
+.cabinetSessionPage .playButton{
+  background:#eff5ed;border-color:#cddfce;color:#366d5a;
+  border-radius:12px;min-height:49px
+}
+.cabinetSessionPage .prescriptionSummary{
+  background:linear-gradient(130deg,#fffdf8,#f0f5ec);
+  border-color:#d4e0d0;box-shadow:0 7px 20px #574a2e09
+}
+.cabinetSessionPage .prescriptionOverviewList li,.cabinetSessionPage .reportPanel,
+.cabinetSessionPage .adviceCard,.cabinetSessionPage .practiceCard{
+  background:#fffdf9;border-color:#dfdfd2
+}
+.cabinetSessionPage .prescriptionOverviewList strong,.cabinetSessionPage .remedyAccordionText strong{
+  color:#423d35
+}
+.cabinetSessionPage .prescriptionOverviewList small,.cabinetSessionPage .remedyAccordionText small{color:#796e63}
+.cabinetSessionPage .remedyIndex{background:#e8f1e7;color:#3b705d}
+.cabinetSessionPage .instructionPanel{border-left-color:#54806b;background:#fffdf9}
+.cabinetSessionPage .instructionPanel strong{color:#3e735c}
+.cabinetSessionPage .instructionPanel p,.cabinetSessionPage .remedyFields dd{color:#50493f}
+.cabinetSessionPage .remedyAccordion[open]{background:#fffefa;border-color:#c7d9c8}
+.cabinetSessionPage .remedyAccordionBody{border-top-color:#e8e4dc}
+.cabinetSessionPage .remedyChevron,.cabinetSessionPage .attachmentCard>svg{color:#59826c}
+.cabinetSessionPage .remedyLearnMore{color:#34705e}
+.cabinetSessionPage .downloadButton{
+  background:#b85036;border-color:#a4422c;color:white;
+  border-bottom:3px solid #983d27;border-radius:13px;box-shadow:0 5px 13px #8f42201b
+}
+.cabinetSessionPage .downloadButton:hover{background:#9d402c;color:white}
+.cabinetSessionPage .detailSection,.cabinetSessionPage .reportDetails,
+.cabinetSessionPage .attachmentCard{background:#fffefa;border-color:#e3dad0}
+.cabinetSessionPage .detailSection>summary{color:#4d5c4c}
+.cabinetSessionPage .attachmentCard strong{color:#403d34}
+.cabinetSessionPage .attachmentCard>a{color:#39735c}
+.cabinetSessionPage .reportContent{font-size:17px;line-height:1.55}
+.cabinetSessionPage .clientFooter{border-color:#e9e1d5;color:#71675d}
+.cabinetSessionPage .safetyLine{color:#85776b}
+.cabinetBridge{
+  margin:28px 0 18px;padding:clamp(18px,3vw,30px);
+  border:1px solid #d9dfd3;background:linear-gradient(130deg,#f6f8f0,#fffdf8 82%);
+  border-radius:23px;box-shadow:0 7px 24px #4c4e3210
+}
+.cabinetBridgeHeading{display:flex;align-items:center;gap:14px;margin-bottom:13px}
+.cabinetBridgeHeading>div{min-width:0;flex:1}
+.cabinetBridgeHeading h2{margin:5px 0 0;font:600 clamp(22px,3.3vw,30px)/1.16 Georgia,serif;color:#433d35}
+.cabinetBridgeIcon{width:51px;height:51px;display:grid;place-items:center;border-radius:16px;
+  color:#3e765e;background:#e7f1e5;border:1px solid #cfdfce;flex:none}
+.cabinetBridgeDescription{font-size:15px;color:#70685e;max-width:710px;line-height:1.55;margin:0 0 15px}
+.cabinetBridgeLinks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0}
+.cabinetBridgeLinks button{min-height:53px;display:flex;align-items:center;gap:8px;padding:10px 12px;
+  border-radius:13px;border:1px solid #d9daca;background:#fffefa;color:#426654;
+  font-size:14px;font-weight:750;cursor:pointer;text-align:left}
+.cabinetBridgeLinks button span{flex:1;min-width:0}
+.cabinetBridgeLinks button:hover{border-color:#aac6ad;background:#f0f7ed}
+.cabinetBridgeLinks button svg{flex:none}
+.cabinetBridgePrivacy{display:flex;align-items:flex-start;gap:9px;border-top:1px solid #e0e3d5;
+  padding-top:15px;font-size:13px;line-height:1.55;color:#767469;margin:0}
+.cabinetBridgePrivacy svg{flex:none;margin-top:2px;color:#558269}
+.cabinetSessionPage :is(a,button,summary):focus-visible{outline:3px solid #47806e;outline-offset:3px}
+@media(max-width:700px){
+  .cabinetSessionPage{padding:12px 13px 25px}
+  .cabinetSessionPage .clientHeader{align-items:center;gap:9px}
+  .cabinetSessionPage .clientBrand .eyebrow{font-size:11px}
+  .cabinetSessionPage .privateLabel{font-size:11px}
+  .cabinetHeaderEntry{max-width:55%}
+  .cabinetHeaderButton{padding:8px 11px;font-size:13px;gap:6px;min-height:44px}
+  .cabinetHeaderButton svg:last-child{display:none}
+  .cabinetSessionPage .sessionHero{padding:19px 16px}
+  .cabinetSessionPage .sessionHero h1{font-size:clamp(27px,7vw,36px)}
+  .cabinetBridge{padding:18px 16px;border-radius:19px}
+  .cabinetBridgeLinks{grid-template-columns:1fr;gap:7px}
+  .cabinetBridgePrimary{width:100%;min-height:49px}
+  .cabinetBridgeLinks button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){.cabinetSessionPage *{scroll-behavior:auto}}
