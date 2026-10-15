@@ -146,9 +146,6 @@ export function MyCourse({ data, locale = 'en' }) {
   const router = useRouter()
   const [showCourse, setShowCourse] = useState(false)
   const requestedProgram = searchParams.get('program') === ACTIVE_COURSE_PROGRAM_ID ? getCourseProgram(ACTIVE_COURSE_PROGRAM_ID) : null
-  // A direct Anti-Stress CTA is not an invitation to repeat the catalogue/wizard.
-  const fastAntistressEntry = Boolean(requestedProgram) ||
-    (showCourse && (state?.course?.stage || 0) <= 2 && searchParams.get('entry') !== 'personal')
   const [state, setState] = useState(undefined)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -156,6 +153,9 @@ export function MyCourse({ data, locale = 'en' }) {
   const [selectedProgram, setSelectedProgram] = useState(null)
   const [courseEntry, setCourseEntry] = useState(null)
   const startDialogRef = useRef(null)
+  // A direct Anti-Stress CTA is not an invitation to repeat the catalogue/wizard.
+  const fastAntistressEntry = Boolean(requestedProgram) ||
+    (showCourse && (state?.course?.stage || 0) <= 2 && searchParams.get('entry') !== 'personal')
   useEffect(() => {
     // OAuth may return without a programme query. A separate navigation helper
     // restores validated public choices, never stored course state.
