@@ -59,3 +59,16 @@
 .page a:focus-visible,.page summary:focus-visible{outline:3px solid #bb8858;outline-offset:4px}
 @media(max-width:900px){.hero{grid-template-columns:1fr 41%}.heroContent{padding:29px}.hero h1{font-size:clamp(32px,4vw,43px)}.mainColumns{grid-template-columns:minmax(0,1fr) minmax(300px,.8fr);gap:25px}}
 @media(max-width:767px){.container{width:calc(100% - 26px)}.breadcrumb{padding:10px 3px}.hero{grid-template-columns:1fr;border-radius:20px}.heroContent{padding:25px 21px}.hero h1{font-size:clamp(34px,8.2vw,43px)}.lead{font-size:15px;line-height:1.68}.heroMedia{min-height:205px;grid-row:1}.mediaCaption{bottom:18px;left:21px;font-size:22px}.heroActions{align-items:stretch}.heroActions .primary,.heroActions .secondary{width:100%;justify-content:center}.mainColumns{grid-template-columns:1fr;margin-top:34px;gap:32px}.order{grid-row:1;scroll-margin-top:20px}.orderCard{position:static;padding:24px 20px}.section{margin-bottom:35px}.faq{margin-top:54px}.closing{margin-top:51px;padding:30px 20px}}
+
+/* Brand treatment: deep navy and burgundy for the business/goal-activation page. */
+.page[data-personal-service="business-consulting"]{background:#f6f8fc;color:#142744}
+.page[data-personal-service="business-consulting"] .hero{background:linear-gradient(135deg,#142946,#27496f);color:#fff}
+.page[data-personal-service="business-consulting"] .hero h1{color:#fff}
+.page[data-personal-service="business-consulting"] .eyebrow{color:#f2c7d5}
+.page[data-personal-service="business-consulting"] .lead{color:#e4eaf3}
+.page[data-personal-service="business-consulting"] .practitioner{color:#e5eaf2}
+.page[data-personal-service="business-consulting"] .primary{background:#812d4d;color:#fff}
+.page[data-personal-service="business-consulting"] .primary:hover{background:#9b3e61}
+.page[data-personal-service="business-consulting"] .secondary{color:#f1d9e4}
+.page[data-personal-service="business-consulting"] .questions li svg,.page[data-personal-service="business-consulting"] .number{color:#8c3554}
+.page[data-personal-service="business-consulting"] .safety{background:#eaf0f8;border-color:#cdd9e9}

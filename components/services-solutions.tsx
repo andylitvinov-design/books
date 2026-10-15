@@ -14,6 +14,7 @@ const homepageMedia = {
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  business: "/images/holistic-house/video-posters/constellations-en-v1.webp",
 } as const;
 
 const copy = {
@@ -22,7 +23,7 @@ const copy = {
     homeEyebrow: "FOUR WAYS TO WORK TOGETHER",
     title: "Personal support for your next step",
     homeTitle: "How I can help",
-    lead: "After exploring your question, you can choose a personal Alchemy of the Soul session or a guided-imagery course.",
+    lead: "Choose an Alchemy of the Soul session, a guided-imagery course or business consulting with constellations and goal activation.",
     homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests above.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
@@ -38,7 +39,7 @@ const copy = {
     homeEyebrow: "ЧЕТЫРЕ ОСНОВНЫХ ПРЕДЛОЖЕНИЯ",
     title: "Личная работа для следующего шага",
     homeTitle: "Чем я могу помочь",
-    lead: "После бесплатного знакомства со своим запросом можно выбрать сессию «Алхимия души» или курс образной работы.",
+    lead: "Выберите «Алхимию души», курс образной работы или бизнес-консалтинг с расстановкой и активацией цели.",
     homeLead: "Два бесплатных письменных разбора и два формата личной работы. Выше также доступны бесплатные тесты стресса и личности.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
@@ -57,8 +58,8 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
   // Keep the approved four image-left cards on Home. The Services page already displays
   // the three free options above, so only personal-work cards repeat there.
   const allOffers = coreServiceOffers(locale);
-  const personalOffers = allOffers.filter((offer) => offer.id === "alchemy" || offer.id === "hypnotherapy");
-  const visibleOffers = isHome ? allOffers : personalOffers;
+  const personalOffers = allOffers.filter((offer) => offer.id === "alchemy" || offer.id === "hypnotherapy" || offer.id === "business");
+  const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : personalOffers;
   return (
     <section className={[styles.solutions, isHome ? styles.home : ""].filter(Boolean).join(" ")} id={isHome ? "core-services" : "solutions"} aria-labelledby={isHome ? "home-core-services-title" : "services-solutions-title"} data-core-service-offers={variant}>
       <header className={styles.header}>
@@ -68,8 +69,8 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
       </header>
       <div className={styles.grid}>
         {visibleOffers.map((offer, index) => (
-          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : undefined} data-core-service-id={offer.id}>
-            {!isHome && offer.id === "alchemy" ? <><span id="business" className={styles.anchor} /><span id="archetypal" className={styles.anchor}/></> : null}
+          <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : offer.id === "business" ? "business" : undefined} data-core-service-id={offer.id}>
+            {!isHome && offer.id === "alchemy" ? <span id="archetypal" className={styles.anchor}/> : null}
             <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
               <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp") || (isHome ? homepageMedia[offer.id] : offer.image) === "/academy/reiki-yggdrasil/source/eastern-tradition.png"} sizes={isHome ? "(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" : "(max-width: 760px) 96px, (max-width: 1080px) 140px, 200px"} loading={index === 0 ? "eager" : "lazy"} />
             </Link>

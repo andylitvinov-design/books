@@ -1,6 +1,6 @@
 import type { Locale } from "@/data/remedies";
 
-export type CoreServiceId = "situation" | "dao" | "alchemy" | "hypnotherapy";
+export type CoreServiceId = "situation" | "dao" | "alchemy" | "hypnotherapy" | "business";
 
 export type CoreServiceOffer = {
   id: CoreServiceId;
@@ -18,6 +18,7 @@ const images = {
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  business: "/images/holistic-house/video-posters/constellations-en-v1.webp",
 } as const;
 
 const offers = {
@@ -62,6 +63,16 @@ const offers = {
       route: "hypnotherapy-course",
       action: "Explore the course",
     },
+    {
+      id: "business",
+      label: "Business · Personal session",
+      title: "Business consulting & goal activation",
+      promise: "Explore the business system through a constellation and turn one clear goal into your next action.",
+      benefit: "System map · goal activation · 14-day action plan",
+      image: images.business,
+      route: "business-consulting",
+      action: "Explore business consulting",
+    },
   ],
   ru: [
     {
@@ -103,6 +114,16 @@ const offers = {
       image: images.hypnotherapy,
       route: "hypnotherapy-course",
       action: "О курсе",
+    },
+    {
+      id: "business",
+      label: "Бизнес · Личная сессия",
+      title: "Бизнес-консалтинг и активация цели",
+      promise: "Исследуем бизнес через расстановку и превращаем выбранную цель в конкретное решение и план.",
+      benefit: "Карта системы · активация цели · план на 14 дней",
+      image: images.business,
+      route: "business-consulting",
+      action: "Подробнее о бизнес-сессии",
     },
   ],
 } as const satisfies Record<Locale, readonly (Omit<CoreServiceOffer, "href"> & { route: string })[]>;
