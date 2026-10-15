@@ -8,7 +8,7 @@ import { ProfileDomains } from './app/profile-domains'
 import { ClientAssessments } from './client-assessments'
 import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 
-export function ClientCabinet({ name, locale, selector, documents, materials = [], assessments = [], homeopathyUpdates = [], view = 'documents' }) {
+export function ClientCabinet({ name, locale, selector, documents, materials = [], assessments = [], homeopathyUpdates = [], sessions = [], view = 'documents' }) {
   const [filter, setFilter] = useState('all')
   const ru = locale === 'ru'
   // A cabinet enquiry must never include the private selector, document IDs or client name.
@@ -51,6 +51,17 @@ export function ClientCabinet({ name, locale, selector, documents, materials = [
     <section className="client-cabinet-welcome" aria-label={copy.welcome}><p>{copy.cabinet}</p><h2>{ru ? `Здравствуйте, ${name}` : `Welcome, ${name}`}</h2><span>{copy.welcome}</span>{latestDate ? <div className="client-cabinet-latest"><span>{copy.latest}</span><strong>{formatDate(latestDate)}</strong><small>{latest.length} {latest.length === 1 ? copy.document : copy.documents}</small></div> : <p className="client-cabinet-empty-intro">{copy.empty}</p>}</section>
     <section className="client-cabinet-google-bridge"><div><strong>{ru ? 'Хотите сохранить материалы в постоянном кабинете?' : 'Keep selected documents in your Google Cabinet'}</strong><p>{ru ? 'Откройте нужный документ и нажмите «Сохранить в мой кабинет через Google». В аккаунт добавится только выбранный документ — остальные не переносятся автоматически.' : 'Open a document and choose “Save to my Cabinet with Google”. Only the document you confirm will be saved; other private records are not imported automatically.'}</p></div><a href={'/' + locale + '/app'}>{ru ? 'Мой Google-кабинет' : 'My Google Cabinet'} →</a></section>
     {latestDate && <section className="client-cabinet-next-step" aria-label={copy.nextStep}><div><p>{copy.nextStep}</p><h2>{copy.latest}</h2><span>{copy.nextStepDetail(formatDate(latestDate), latest.length)}</span></div><div className="client-cabinet-next-step-actions"><a href={contactUrl} target="_blank" rel="noreferrer">{copy.contact}</a><a href={consultationUrl} target="_blank" rel="noreferrer">{copy.request}</a></div></section>}
+    {sessions.length>0&&<section className="client-cabinet-timeline" aria-label={ru?'Ваши личные сессии':'Your personal sessions'}>
+      <h2>{ru?'Мои персональные сессии':'My personal sessions'}</h2>
+      {sessions.map(session=><article className="client-cabinet-consultation" key={session.id}>
+        <h3>{formatDate(session.occurredOn)}</h3>
+        <div className="client-cabinet-document"><div><span>{ru?'Сессия':'Session'}</span><h4>{session.title}</h4></div>
+          <div className="client-cabinet-document-actions">
+            <Link href={'/'+locale+'/client/'+selector+'/sessions/'+session.id} prefetch={false}>
+              {ru?'Открыть отчёт, аудио и видео':'Open report, audio & video'}
+            </Link>
+          </div></div></article>)}
+    </section>}
     <nav className="client-cabinet-filters" aria-label={copy.filters}>{Object.entries(labels).map(([key, label]) => { const Icon = key === 'payment' ? ReceiptText : key === 'recommendation' ? Sparkles : FileText; return <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}><Icon aria-hidden="true" />{label}</button> })}</nav>
     <section className="client-cabinet-timeline" aria-label={copy.timeline}><h2>{copy.timeline}</h2>{groups.map(([key, group]) => <article className="client-cabinet-consultation" key={key}><h3>{formatDate(group[0].date)}</h3>{group.map((document) => <div className="client-cabinet-document" key={document.id}><div><span>{labels[document.type]}</span><h4>{document.title}</h4></div>{document.type === 'report' ? <span className="client-cabinet-legacy-note">{ru ? 'Старый отчёт · попросите новую ссылку у Andy' : 'Older report · ask Andy for an updated link'}</span> : <div className="client-cabinet-document-actions"><a href={`/${locale}/client/${selector}/documents/${document.id}`}>{copy.view}</a><a href={`/api/client/${selector}/documents/${document.id}/pdf?locale=${locale}`} download>{copy.pdf}</a></div>}</div>)}</article>)}{!groups.length && <p className="client-cabinet-empty">{copy.empty}</p>}</section>
     {materials.length > 0 && <section className="client-cabinet-shared-materials" aria-label={ru ? 'Материалы от специалиста' : 'Materials from practitioner'}><h2>{ru ? 'Материалы от Andy' : 'Study materials from Andy'}</h2><div>{materials.map(material => <a className="client-cabinet-material-row" href={material.url} key={material.id} target="_blank" rel="noopener noreferrer"><span>{material.title}</span><span aria-hidden="true">↗</span></a>)}</div></section>}

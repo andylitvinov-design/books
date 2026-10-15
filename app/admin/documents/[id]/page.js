@@ -12,6 +12,8 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getClientPrescription } from '@/lib/prescriptions/service'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import styles from './document-preview.module.css'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { SessionAudioRecorder } from '@/components/session-audio-recorder'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'Client document preview · Holistic House' }
@@ -111,6 +113,8 @@ export default async function AdminDocumentPreview({ params, searchParams }) {
         {ru ? 'Открыть PDF с крупным текстом' : 'Open large-type PDF'}
       </a>
     </p>}
+
+    {deliveryEnabled() && record.clientId && record.kind !== 'report' && record.status === 'active' && <div style={{maxWidth:850,margin:'22px auto'}}><SessionAudioRecorder clientId={record.clientId} documentId={record.id} locale={locale} /></div>}
 
     <section id="document-preview" className={styles.previewSection} aria-label={ru ? 'Просмотр готового отчёта' : 'Saved document preview'}>
       <div className={styles.previewCaption}>

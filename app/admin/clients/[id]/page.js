@@ -12,6 +12,9 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { uiLocaleCookie } from '@/lib/ui-locale'
 import { appEnabled, getAppConfig } from '@/lib/app/config'
 import { getLegacyClientBinding } from '@/lib/app/client-account-binding'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { listClientSessions } from '@/lib/clients/session-delivery-service'
+import { OwnerClientSessions } from '@/components/client-session-list'
 
 import { addClientMaterialAction, editClientAction, removeClientMaterialAction, revokeClientAction, rotateClientAction } from '../actions'
 import '../client-workspace.css'
@@ -67,6 +70,7 @@ export default async function ClientDetail({ params }) {
     }
   }
   const documents = await store.listClientDocuments(id)
+  const deliverySessions = deliveryEnabled() && client.status === 'active' ? await listClientSessions(getAppConfig(),store,id).catch(()=>[]) : []
   const groups = Object.entries(Object.groupBy(documents, (document) => `${document.dateIssued}|${document.consultationId ?? document.id}`)).sort(([left], [right]) => right.localeCompare(left))
   const lastConsultation = documents.map((document) => document.dateIssued).sort().at(-1)
   const assessments = (await store.listClientAssessments(id)).sort((left, right) => right.occurredOn.localeCompare(left.occurredOn) || right.id.localeCompare(left.id))
@@ -109,6 +113,8 @@ export default async function ClientDetail({ params }) {
       </dl>
       {(client.email || client.phone) && <p className="client-detail-contact">{[client.email, client.phone].filter(Boolean).join(' · ')}</p>}
     </section>
+
+    {deliveryEnabled() && client.status === 'active' && <OwnerClientSessions clientId={id} sessions={deliverySessions} documents={documents} locale={ru?'ru':'en'} />}
 
     <section className="client-detail-history" aria-label={copy.history}>
       <div className="client-detail-section-heading">
