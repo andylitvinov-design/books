@@ -236,7 +236,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         ...(isMeasured ? {scaleKeys:keys} : {goals:chosenGoals}),
         ...(moduleSelection?{
           moduleAnswers:moduleSelection.answers,moduleGoal:moduleSelection.goal,
-          moduleId:moduleSelection.moduleId,moduleLocale:locale,
+          moduleId:moduleSelection.moduleId,moduleLocale:locale==='ru'?'ru':'en',
         }:{}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
