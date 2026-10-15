@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { appFetch } from '@/lib/app/client-fetch'
+import { startCourseWithRecovery } from '@/lib/inner-growth/course-start-recovery'
 import { coursePendingKeys, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 import { ArrowRight, Check, ClipboardList, Plus } from 'lucide-react'
 import { COURSE_TOPICS, suggestedCourseTopics } from '@/lib/inner-growth/course-model'
@@ -204,9 +205,17 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
   async function submitFocusSelection(keys, isMeasured = true, moduleSelection = null) {
     if(actionLock.current || busy || localBusy) return
-    const requested = isMeasured ? keys : fallbackGoals
-    if(!Array.isArray(requested) || !requested.length) return
-    if(isMeasured && (requested.length < minScales || requested.length > 5)) return
+    // The optional skill questionnaire cannot block an explicitly approved
+    // Anti-Stress route when no directional practice scales are available.
+    // This is a general learning goal, never a fabricated measurement.
+    const chosenGoals = !isMeasured && moduleSelection && !fallbackGoals.length
+      ? getCourseProgram('stress').primaryGoals.slice(0, 1) : fallbackGoals
+    const requested = isMeasured ? keys : chosenGoals
+    if(!Array.isArray(requested) || !requested.length ||
+        (isMeasured && (requested.length < minScales || requested.length > 5))) {
+      onError('COURSE_SCALES_UNAVAILABLE')
+      return
+    }
     actionLock.current=true
     setLocalBusy(true)
     onError('')
@@ -222,16 +231,19 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
       const firstSelected=profile.eligible.find(item=>isMeasured && keys.includes(item.id))?.label
       const label=(problemLabel.trim() || firstSelected || (ru?'Моё ежедневное наблюдение':'My daily observation')).slice(0,160)
-      const result=await appFetch('course',{
+      const payload={
         action:'choose-goals',expectedRevision:revision,
-        ...(isMeasured ? {scaleKeys:keys} : {goals:fallbackGoals}),
+        ...(isMeasured ? {scaleKeys:keys} : {goals:chosenGoals}),
         ...(moduleSelection?{
           moduleAnswers:moduleSelection.answers,moduleGoal:moduleSelection.goal,
           moduleId:moduleSelection.moduleId,
         }:{}),
         consent:true,durationDays:14,
         problemLabel:label,intention,timeZone:courseTimeZone(),
-      })
+      }
+      // If the POST response was interrupted, first check whether the course
+      // was already committed. Retry once only while the revision is unchanged.
+      const result=await startCourseWithRecovery(body=>appFetch('course',body),payload)
       onState(result)
     } catch(error) {
       onError(error.message || 'COURSE_GOALS_UNAVAILABLE')
