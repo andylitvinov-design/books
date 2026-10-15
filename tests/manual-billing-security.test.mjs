@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { manualBillingConfig } from '../lib/billing/manual-orders.js'
+import { manualBillingConfig } from '../lib/billing/manual-config.js'
 
 const file = name => readFileSync(new URL('../'+name, import.meta.url), 'utf8')
 test('manual billing must fail closed until merchant, RLS, course and Premium fulfillment gates all approved',()=>{

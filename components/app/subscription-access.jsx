@@ -355,6 +355,9 @@ export function SubscriptionSettings() {
       <Benefits t={t} planId={planId}/>
       <p className={styles.fine}>{t.history}</p>
       {status.entitlement.adFree && <p>{t.adFree}</p>}
+      {status.manual?.autoRenew === false && <p className={styles.fine}>{locale === 'ru'
+        ? 'Оплата подтверждена на один месяц. Автоматического продления нет — следующий месяц оплачивается отдельно.'
+        : 'This payment covers one month only. There is no automatic renewal; another payment is needed for the next month.'}</p>}
       {status.entitlement.monthlySessions > 0 && <SessionBenefit key={status.sessionBenefit?.periodEnd || status.entitlement.paidThrough} t={t}/>}
       {subscription?.cancelAtPeriodEnd ? <p>{date ? t.renewalEnds + ' ' + date + '.' : t.scheduled}</p> :
         date && status.entitlement.active ? <p>{t.paidThrough} {date}.</p> : null}
