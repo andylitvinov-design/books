@@ -12,5 +12,6 @@
       "chatgpt/**": false,
       "codex/public-book-library": true
     }
-  }
+  },
+  "ignoreCommand": "node scripts/vercel-ignore-build.mjs"
 }
