@@ -4,6 +4,7 @@ import {getAppConfig} from '@/lib/app/config'
 import {getPrescriptionStore} from '@/lib/prescriptions/store'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {checkPrivateMediaStorage} from '@/lib/clients/session-delivery-storage'
+import {configuredVideoUploadStore} from '@/lib/clients/private-video-object-store'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -24,7 +25,17 @@ export async function GET(request,{params}) {
     if(!client||client.status!=='active')
       return privateJson({ready:false,error:'SESSION_UNAVAILABLE'},404)
     await checkPrivateMediaStorage(config)
-    return privateJson({ready:true})
+    // Only metadata for the authorized owner. Never return bucket, object key,
+    // upload URL or credential. Audio/PDF/photo remain available when optional
+    // external video is misconfigured, so return a separate video readiness flag.
+    let videoProvider='supabase',videoLimitBytes=45_000_000,videoReady=true
+    try{
+      const external=configuredVideoUploadStore()
+      if(external){videoProvider=external.provider;videoLimitBytes=200_000_000}
+    }catch{
+      videoProvider='unavailable';videoLimitBytes=0;videoReady=false
+    }
+    return privateJson({ready:true,videoReady,videoProvider,videoLimitBytes})
   }catch{
     return privateJson({ready:false,error:'MEDIA_STORAGE_UNAVAILABLE'},503)
   }

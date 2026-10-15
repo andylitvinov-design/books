@@ -35,6 +35,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   const [sessionId,setSessionId]=useState(providedSessionId)
   const [stage,setStage]=useState('idle')
   const [uploadProgress,setUploadProgress]=useState(null)
+  const [videoStatus,setVideoStatus]=useState(null)
   const [seconds,setSeconds]=useState(0)
   const [scope,setScope]=useState('client')
   const [error,setError]=useState('')
@@ -57,6 +58,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     const data=await response.json().catch(()=>({}))
     if(!response.ok||data.ready!==true)
       throw new Error(data.error||'MEDIA_STORAGE_UNAVAILABLE')
+    if(mountedRef.current)setVideoStatus({provider:data.videoProvider||'supabase',limit:data.videoLimitBytes||0,ready:data.videoReady!==false})
+    return data
   }
   async function ensureSession() {
     if(sessionId) return sessionId
@@ -80,6 +83,9 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
             xhr.withCredentials=false
             xhr.timeout=900000
             xhr.setRequestHeader('Content-Type',mime)
+            // Signed create-only condition: an expired/retried upload cannot
+            // overwrite an earlier completed consultation video.
+            xhr.setRequestHeader('If-None-Match','*')
             xhr.upload.onprogress=event=>{
               if(event.lengthComputable&&mountedRef.current)
                 setUploadProgress(Math.min(100,Math.round(100*event.loaded/event.total)))
@@ -122,7 +128,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setStage('preparing')
     let sid
     try {
-      await checkReady()
+      const availability=await checkReady()
+      if(kind==='video'&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
       sid=await ensureSession()
       const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},...(kind==='video'?{video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{})})
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
@@ -193,6 +200,12 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       if(file.type==='video/quicktime'||file.name.toLowerCase().endsWith('.mov'))
         throw new Error(ru?'Для просмотра на любом телефоне требуется MP4 (H.264). Запишите MP4 или преобразуйте MOV перед загрузкой.':'Use H.264 MP4 for reliable playback. Convert this MOV before uploading.')
       await checkReady()
+      const availability=await checkReady()
+      const video=file.type.startsWith('video/')||/\.mp4$/i.test(file.name)
+      if(video&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
+      if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
+        throw new Error(ru?('Видео превышает лимит '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' МБ.'):
+          ('Video exceeds the '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' MB storage limit.'))
       const sid=await ensureSession()
       if(file.type.startsWith('video/')||file.type.startsWith('audio/')){
         setPlaybackKind(file.type.startsWith('video/')?'video':'audio')
@@ -243,7 +256,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {uploadProgress!==null?' '+uploadProgress+'%':''}</p>
       {uploadProgress!==null&&<progress value={uploadProgress} max="100" aria-label={ru?'Прогресс загрузки':'Upload progress'}/>}
     </div>}
-    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}</p>
+    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}
+      {videoStatus&&<span> {videoStatus.ready?
+        (ru?'Лимит видео: ':'Video limit: ')+Math.floor(videoStatus.limit/1_000_000)+' MB ('+(videoStatus.provider==='supabase'?'Supabase':videoStatus.provider==='s3_ca'?'S3 Canada':'R2')+')':
+        (ru?'Внешнее видеохранилище пока не настроено.':'External video storage is not configured.')}</span>}
+    </p>
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
