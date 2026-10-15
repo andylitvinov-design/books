@@ -418,3 +418,29 @@
   .compactTests h2{font-size:25px}.shortTestRow{min-height:58px;padding:10px 11px}
   .shortTestBody strong{font-size:13.5px}.shortTestBody small{font-size:11px}
   .fastTestButton{min-height:51px;font-size:15px}}
+
+/* Pre-lesson confirmation: the chosen module is a draft until these
+   owner-scoped measurements are explicitly approved by the learner. */
+.scaleConfirmationJourney{display:grid;gap:14px;max-width:920px;min-width:0;margin-inline:auto;width:100%}
+.selectedModuleBar{display:flex;align-items:center;flex-wrap:wrap;gap:13px;
+  padding:clamp(15px,2.5vw,22px)!important;border:1px solid #b8e6eb!important;
+  background:linear-gradient(140deg,#effaff,#fff)!important}
+.selectedModuleBar>div{display:grid;gap:7px;min-width:0;flex:1 1 270px}
+.selectedModuleBar small{color:#0b8299;font-size:11px;font-weight:800;letter-spacing:.04em}
+.selectedModuleBar h2{font-size:clamp(19px,3vw,25px);line-height:1.25;color:#16334f;margin:0}
+.selectedModuleBar p{font-size:13px;line-height:1.5;color:#4c6979;margin:0}
+.selectedModuleBar strong{font-size:12px;color:#156b7f}
+.selectedModuleBar button.whiteSecondary{min-height:43px;padding:10px 13px;
+  border:1px solid #b9dfe4;border-radius:12px;background:#fff;color:#177e92;
+  font-weight:750;font-size:12px;cursor:pointer}
+.selectedModuleBar button.whiteSecondary:disabled{opacity:.55;cursor:wait}
+.selectedModuleBar button.whiteSecondary:focus-visible{outline:3px solid #e9b566;outline-offset:3px}
+.collapsibleSummary{border:1px solid #cde7eb;border-radius:15px;background:#fff;min-width:0;overflow:hidden}
+.collapsibleSummary>summary{cursor:pointer;padding:16px;color:#176b83;font-size:14px;font-weight:800;
+  list-style-position:inside}
+.collapsibleSummary>summary:focus-visible{outline:3px solid #e9b566;outline-offset:-3px}
+.collapsibleSummary[open]>summary{border-bottom:1px solid #d4e9ed}
+.collapsibleSummary>.briefSummary{border:0;box-shadow:none;padding:14px;background:transparent}
+@media(max-width:530px){.selectedModuleBar{padding:14px 12px!important}
+  .selectedModuleBar button.whiteSecondary{width:100%}
+  .collapsibleSummary>summary{padding:14px 12px}}
