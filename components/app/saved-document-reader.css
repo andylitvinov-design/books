@@ -135,3 +135,22 @@
     padding: 0;
   }
 }
+
+
+/* Saved legacy documents: direct PDF reading is primary, A4 archive secondary. */
+.hh-app--document-reader .hh-saved-document-reader__toolbar .hh-saved-document-reader__pdf-preview {
+  border-color: #147b88;
+  background: #147b88;
+  color: #fff;
+  font-size: 14px;
+}
+.hh-app--document-reader .hh-saved-document-reader__toolbar .hh-saved-document-reader__pdf-preview:hover {
+  background: #0e6471;
+  color: #fff;
+}
+@media(max-width:600px) {
+  .hh-app--document-reader .hh-saved-document-reader__actions > a {
+    flex: 1 1 auto;
+    font-size: 14px;
+  }
+}
