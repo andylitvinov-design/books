@@ -350,20 +350,25 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
       <p>{programme?.id==='stress'?t.stressTestsIntro:t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
       <div className={styles.testList} aria-label={t.testsTitle}>
-        {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
+        {visible.map((item,index)=>{
+          const actual=confirmedStatuses.find(status=>status.key===item.key)
+          const hasBaseline=actual?actual.completed:item.completed
+          return <label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
           <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
             (!chosenTests.includes(item.key)&&chosenTests.length>=12)}
             onChange={()=>toggleTest(item.key)}/>
           <span className={styles.testBody}><strong>{item.title}</strong>
             <small>{item.measurementAxes.slice(0,3).join(' · ')}</small>
-            <small className={item.completed?styles.completed:styles.pending}>
-              {item.completed?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
+            <small className={hasBaseline?styles.completed:styles.pending}>
+              {hasBaseline?<><Check size={13}/> {t.completed} · {formatDate(actual?.completedAt||item.completedAt,locale)}</>
                 :<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
+              {actual?.outdated&&<em> · {ru?'Нужен свежий исходный замер':'Fresh baseline needed'}</em>}
+              {actual?.instrumentLocale&&<em> · {actual.instrumentLocale.toUpperCase()}</em>}
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
           <span className={styles.match}>{item.matchPercent}%<small>{t.relevance}</small></span>
-        </label>)}
+        </label>})}
       </div>
       <div className={styles.controls}>
         <button type="button" className={styles.secondary} onClick={()=>setShowAll(value=>!value)}>
@@ -383,7 +388,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           {confirmedStatuses.map(item=>{
             const meta=optionByKey.get(item.key)
             return <div key={item.key}><span>{item.completed?<Check size={15}/>:<ClipboardList size={15}/>}
-              {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}</small></div>
+              {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}
+                {item.outdated&&<> · {ru?'нужен свежий результат':'fresh baseline required'}</>}
+                {item.instrumentLocale&&<> · {item.instrumentLocale.toUpperCase()}</>}</small></div>
           })}
         </div>
         {pending.length===0?<p className={styles.completed}>{t.allDone}</p>:
