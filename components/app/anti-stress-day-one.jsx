@@ -1,17 +1,26 @@
 'use client'
 
-import { Check, ChevronDown, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves } from 'lucide-react'
+import { useState } from 'react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Compass, Eye, HeartHandshake, Leaf, Lightbulb, PauseCircle, Sparkles, Waves, MapPin, BookOpen, CircleHelp, ArrowUpRight, MousePointerClick } from 'lucide-react'
 import CoursePracticeVoice from './course-practice-voice'
 import styles from './anti-stress-day-one.module.css'
 
 const PHOTO = '/images/holistic-house/course-focus-mountain-boy.webp'
 
-export function DayOneChoices({ label, options, value, onSelect, disabled = false, compact = false }) {
-  return <div className={compact ? styles.compactChoices : styles.choices} role="group" aria-label={label}>
-    {options.map(item => <button type="button" key={item.value}
-      disabled={disabled} aria-pressed={value===item.value} onClick={()=>onSelect(item.value)}>
-      <span>{item.label}</span>{value===item.value&&<Check size={18} aria-hidden="true"/>}
-    </button>)}
+export function DayOneChoices({ label, options, value, onSelect, disabled = false, compact = false, cards = false }) {
+  const klass = [compact ? styles.compactChoices : styles.choices,cards ? styles.tileChoices : ''].filter(Boolean).join(' ')
+  return <div className={klass} role="group" aria-label={label}>
+    {options.map((item,index) => {
+      const Glyph=item.icon
+      return <button type="button" key={item.value}
+        disabled={disabled} aria-pressed={value===item.value} onClick={()=>onSelect(item.value)}>
+        {Glyph ? <span className={styles.tileIcon}><Glyph size={19} aria-hidden="true"/></span>
+          : cards ? <span className={styles.tileIcon}>{index+1}</span> : null}
+        <span className={styles.tileCopy}><strong>{item.label}</strong>
+          {item.detail&&<small>{item.detail}</small>}</span>
+        {value===item.value?<Check size={18} aria-hidden="true"/>:null}
+      </button>
+    })}
   </div>
 }
 const t = (locale,ru,en)=>locale==='ru'?ru:en
@@ -50,8 +59,18 @@ export default function DayOneExercise({
 }) {
   const ru=locale==='ru'
   const text=(a,b)=>t(locale,a,b)
+  const [guidedStep,setGuidedStep]=useState(0)
+  const [hintOpen,setHintOpen]=useState(false)
+  const [wordQuality,setWordQuality]=useState('')
+  const wordTokens=associationWords.split('\n').slice(0,3)
+  const changeWord=(index,value)=>{
+    const tokens=[wordTokens[0]||'',wordTokens[1]||'',wordTokens[2]||'']
+    tokens[index]=value.replace(/[\r\n]/g,' ').slice(0,40)
+    onAssociationWords(tokens.join('\n'))
+  }
+  const wordCount=wordTokens.filter(word=>word?.trim()).length
   const choice=(field,options,extra={})=><DayOneChoices label={extra.label||text('Выберите подходящий вариант','Choose what fits')}
-    options={options} value={answers[field]} disabled={locked}
+    options={options} value={answers[field]} disabled={locked} compact={extra.compact} cards={extra.cards}
     onSelect={value=>{onAnswer(field,value);if((field==='experience'||field==='comfort')&&value==='uncomfortable')onDiscomfort()}}/>
   const photo=<Scene locale={locale}/>
   const helper=<p className={styles.hint}>{text(
