@@ -63,6 +63,21 @@ export function middleware(request: NextRequest) {
   // Client cabinets and every other private page keep frame-src 'none'.
   const practitionerDraftPreview = pathname === '/admin/consultations/new'
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
+  const deliveryPath = /^\/admin\/prescriptions\/[^/]+\/?$/.test(pathname)
+    || /^\/admin\/clients\/[^/]+\/assessments\/[^/]+\/edit\/?$/.test(pathname)
+    || /^\/admin\/clients\/[^/]+\/sessions(?:\/|$)/.test(pathname)
+    || /^\/admin\/documents\/[^/]+\/?$/.test(pathname)
+    || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
+  const deliveryOrigin = (() => {
+    if(process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true' || !deliveryPath) return ''
+    try {
+      const value = new URL(process.env.HH_APP_SUPABASE_URL || '')
+      if (value.protocol !== 'https:' || !value.hostname.endsWith('.supabase.co')) return ''
+      return ' ' + value.origin
+    } catch {return ''}
+  })()
   const cspClass = videoManager ? 'video-manager'
     : privateDocument ? 'private'
       : tantraReikiPage ? 'tantra-media'
@@ -72,8 +87,8 @@ export function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
     publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'",
-    "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + (deliveryOrigin ? ' blob:' + deliveryOrigin : ''),
+    "font-src 'self'", "connect-src 'self'" + deliveryOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
@@ -91,3 +106,4 @@ export function middleware(request: NextRequest) {
   return response
 }
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)', '/', '/books/:path*', '/sitemap.xml', '/robots.txt', '/ru/:path*', '/en/:path*', '/api/:path*', '/admin/:path*', '/document-preview/:path*'] }
+

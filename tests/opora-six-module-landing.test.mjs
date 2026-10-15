@@ -47,7 +47,7 @@ test('My Courses keeps the selected route without overriding legacy lesson versi
  const daily=read('lib/app/growth-daily.js')
  const seo=read('app/[locale]/courses/antistress/page.tsx')
  assert.match(selector,/course\?\.moduleChoice\?\.id/)
- assert.match(selector,/antistressModuleTitle\(moduleId,locale\)/)
+ assert.match(selector,/antistressModuleTitle\(moduleId,locale,course\.moduleChoice\.version\|\|''\)/)
  assert.match(selector,/moduleId=\{course\?\.moduleChoice\?\.id\|\|null\}/)
  assert.match(selector,/routerVersion=\{course\?\.moduleChoice\?\.version\|\|null\}/)
  assert.match(daily,/oporaModuleRouter/)

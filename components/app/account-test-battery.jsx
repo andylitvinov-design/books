@@ -157,6 +157,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights)
+  const [explorerMounted, setExplorerMounted] = useState(false)
+  const [explorerRevision, setExplorerRevision] = useState(0)
   useEffect(() => {
     if (!openFromInsights) return
     setExploring(true)
@@ -232,6 +234,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     return [...regular, ...missing].map(row => completedKeys.has(row.key)
       ? { ...row, completedInPlan: true } : row)
   }, [currentPlan, data, locale, courseState])
+  const explorerVisible = exploring || (!rows.length && !initializing && !conflict)
+  useEffect(() => {
+    if (explorerVisible) setExplorerMounted(true)
+  }, [explorerVisible])
   const completed = rows.filter((row) => row.completedInPlan).length
   const pastRows = useMemo(() => {
     const ids = [...new Set((data.results || []).map((result) => result.definitionId).filter(Boolean))]
@@ -279,12 +285,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         appendActive: !replaceActive,
         ...(selectionPreferences === undefined ? {} : { selectionPreferences }),
       })
-      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
-      setConflict(null)
-      setPlan(created)
-      setNotice(c.added)
-      setExploring(false)
-      setShowList(true)
       // When the person came from My Course, these are the EXACT tests they
       // deliberately checked in the full Explorer. Explicitly bind them to
       // that private course, not the default five or the account's entire
@@ -306,6 +306,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       // Otherwise a concurrent bootstrap render can leave ?selection=pending visible.
       await reload()
       if (!isCurrent()) return
+      // Keep the unsaved draft available if course confirmation or reload fails.
+      try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Storage may be blocked. */ }
+      setConflict(null)
+      setPlan(created)
+      setExplorerRevision((revision) => revision + 1)
+      setNotice(c.added)
+      setExploring(false)
+      setShowList(true)
       router.replace(fromCourse ? courseHref({}, returnCourseId) : root + '/tests?plan=' + encodeURIComponent(created.id))
     } catch (cause) {
       if (!isCurrent()) return
@@ -404,6 +412,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   function keepSavedSet() {
     try { window.sessionStorage.removeItem(PENDING_TEST_SELECTION_KEY) } catch { /* Browsers may block storage. */ }
     setConflict(null)
+    setExplorerRevision((revision) => revision + 1)
     setPlan(data.activeTestPlan || data.latestTestPlan || null)
     setExploring(false)
     router.replace(root)
@@ -631,8 +640,11 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           portrait={buildPsychPortrait(data.results)}/>
       </details>
     </div>
-    {(exploring || (!rows.length && !initializing && !conflict)) &&
-      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}>
+    {/* Collapsing only hides this tab-local draft. Saving/discarding or changing
+        account, plan or category replaces it; nothing is written on collapse. */}
+    {(explorerVisible || explorerMounted) &&
+      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}
+        hidden={!explorerVisible} style={explorerVisible ? undefined : { display: 'none' }}>
         {conflict && <aside className={styles.reviewSelection} data-pending-selection>
           <div>
             <strong>{c.pendingReview}</strong>
@@ -643,8 +655,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={(currentPlan?.id || 'new') + ':' + (openFromInsights ? insightsCategory || 'all' : 'saved')} locale={locale}
+        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
           audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
+          simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}

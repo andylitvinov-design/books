@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
@@ -32,7 +33,7 @@ test('every active test has one separate bilingual source document and correct s
     assert.match(document,/What this test explores/)
     for (const language of ['en','ru']) {
       const def=defFor(item,language)
-      const result=scoreAssessment(def,answers(def))
+      const result=scoreAssessment(def,answers(def), syntheticTraumaContext(def))
       const guide=getTestScaleGuide(item.key,language)
       assert.ok(guide,item.key+'/'+language)
       assert.equal(guide.scales.length,result.dimensions.length,item.key+'/'+language)
@@ -112,8 +113,9 @@ test('simple picker uses topic cards as measured-scale intent, without a duplica
   assert.match(simple,/onToggleFocus\(key\)/)
   assert.match(simple,/data-topic-problem-filter/)
   assert.match(simple,/TestScaleGuide guide=\{entry\.scaleGuide\} locale=\{locale\}/)
-  assert.match(full,/simpleMode \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
-  assert.match(full,/setAxes\(\[\]\); setBrowseFull\(false\)/)
+  assert.match(full,/preserveScaleFilters = false/)
+  assert.match(full,/simpleMode && !preserveScaleFilters \? \[\] : \(initialPreferences\?\.axes \?\? \[\]\)/)
+  assert.match(full,/if \(!preserveScaleFilters\) setAxes\(\[\]\); setBrowseFull\(false\)/)
   // The full database keeps its explicit measured-scale refinement controls.
   assert.match(full,/data-scale-first-selection/)
   assert.match(full,/measurementAxes\?\.includes\(key\)/)

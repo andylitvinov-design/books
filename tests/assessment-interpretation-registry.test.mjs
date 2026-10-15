@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -22,13 +23,13 @@ const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'max' ? (q.max ?? def.answerScale?.max) : (q.min ?? def.answerScale?.min),
 ]))
 
-test('all 135 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
+test('all 137 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.equal(coverage.total, 135)
-  assert.equal(coverage.registered, 135)
+  assert.equal(coverage.total, 137)
+  assert.equal(coverage.registered, 137)
   assert.deepEqual(coverage.uncovered, [])
   assert.deepEqual(coverage.obsolete, [])
-  assert.equal(new Set(runnable.map(d => d.key)).size, 135)
+  assert.equal(new Set(runnable.map(d => d.key)).size, 137)
   assert.equal(interpretationPlan('hh-current-state', 'v2')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v1')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v3'), null)
@@ -46,7 +47,7 @@ test('all 135 runnable tests have exact-version plans; unavailable licensed test
 
 test('every score dimension in each runnable test has a localized report at valid extremes', () => {
   for (const def of runnable) for (const extreme of ['min', 'max']) {
-    const result = scoreAssessment(def, answersFor(def, extreme))
+    const result = scoreAssessment(def, answersFor(def, extreme), syntheticTraumaContext(def))
     assert.ok(result.dimensions.length, def.key)
     for (const language of ['en','ru']) {
       const report = buildAssessmentResultReport(result, language)
@@ -63,7 +64,7 @@ test('every score dimension in each runnable test has a localized report at vali
       for (const section of report.sections) {
         assert.ok(section.construct.length > 2, def.key + ':' + section.key)
         assert.ok(section.meaning.length > 45, def.key + ':' + section.key)
-        assert.ok(section.steps.length >= 2, def.key + ':' + section.key)
+        assert.ok(def.administration ? section.steps.length === 0 : section.steps.length >= 2, def.key + ':' + section.key)
         assert.ok(section.steps.every(step => step.length > 18), def.key + ':' + section.key)
         assert.ok(section.followUp.length > 25, def.key + ':' + section.key)
         assert.ok(['screening','published-reference','descriptive'].includes(section.bandBasis))
@@ -76,7 +77,7 @@ test('every score dimension in each runnable test has a localized report at vali
 test('every single numeric value in all integer-scale score ranges maps to one total, unambiguous interpretation', () => {
   let checked = 0
   for (const def of runnable) {
-    const scored = scoreAssessment(def, answersFor(def, 'min'))
+    const scored = scoreAssessment(def, answersFor(def, 'min'), syntheticTraumaContext(def))
     for (const d of scored.dimensions) {
       const min = d.min, max = d.max
       assert.ok(Number.isFinite(min) && Number.isFinite(max) && max > min)
@@ -87,7 +88,8 @@ test('every single numeric value in all integer-scale score ranges maps to one t
       for (const value of new Set(values)) {
         const dimension = { ...d, value }
         for (const locale of ['en','ru']) {
-          const info = interpretationForDimension(scored, dimension, locale)
+          const interpretationResult = def.administration ? {...scored, dimensions: scored.dimensions.map(item => item.key === dimension.key ? dimension : item)} : scored
+          const info = interpretationForDimension(interpretationResult, dimension, locale)
           assert.ok(info.code && info.meaning && info.label, def.key + '/' + d.key + '/' + value)
           assert.ok(['screening','published-reference','descriptive','unavailable'].includes(info.basis))
           // Fractional synthetic values are impossible on official summed
@@ -113,7 +115,7 @@ test('every single numeric value in all integer-scale score ranges maps to one t
 test('Bach weighted profiles keep 38 separately authored themes instead of converting weighted matches into clinical thresholds', () => {
   const definition = runnable.find(item => item.key === 'hh-bach-flower-profile' && item.instrumentLocale === 'en')
   assert.ok(definition)
-  const result = scoreAssessment(definition, answersFor(definition,'max'))
+  const result = scoreAssessment(definition, answersFor(definition,'max'), syntheticTraumaContext(definition))
   assert.equal(result.dimensions.length,38)
   const report = buildAssessmentResultReport(result,'en')
   assert.equal(report.sections.length,38)
@@ -154,7 +156,7 @@ test('boundary cutoffs follow published values exactly and do not leak to change
 test('new IPIP-50 uses five separate descriptive non-diagnostic trait profiles', () => {
   const def = runnable.find(item => item.key === 'ipip-big-five-50')
   assert.ok(def)
-  const scored = scoreAssessment(def, answersFor(def,'max'))
+  const scored = scoreAssessment(def, answersFor(def,'max'), syntheticTraumaContext(def))
   assert.equal(scored.dimensions.length, 5)
   const report = buildAssessmentResultReport(scored,'ru')
   assert.equal(report.sections.length, 5)

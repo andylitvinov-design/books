@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -29,8 +30,8 @@ test('17 new legal professional IPIP-VIA-R forms complete the existing 24 streng
   assert.equal(new Set(definitions.map(d=>d.key)).size,17)
   const existing = ASSESSMENT_DEFINITIONS.filter(d=>d.key.startsWith('ipip-via-r-'))
   assert.equal(new Set(existing.map(d=>d.key)).size,27,'24 strength scales and three global core composites')
-  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,135)
-  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:135,registered:135,uncovered:[],obsolete:[]})
+  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,137)
+  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:137,registered:137,uncovered:[],obsolete:[]})
 })
 
 test('published verbatim EN items, source names, key signs and immutable hashes remain consistent', () => {
@@ -81,7 +82,7 @@ test('correct reverse coding yields 1..5 means without synthetic norms or diagno
     const high=Object.fromEntries(d.questions.map(q=>[q.id,spec.reverseItems.includes(q.id)?1:5]))
     const low=Object.fromEntries(d.questions.map(q=>[q.id,spec.reverseItems.includes(q.id)?5:1]))
     for(const [answers,expected] of [[balanced,3],[high,5],[low,1]]){
-      const result=scoreAssessment(d,answers)
+      const result=scoreAssessment(d,answers, syntheticTraumaContext(d))
       assert.equal(result.dimensions.length,1)
       assert.equal(result.dimensions[0].value,expected,d.key)
       assert.equal(result.dimensions[0].key,spec.key)
@@ -103,8 +104,8 @@ test('correct reverse coding yields 1..5 means without synthetic norms or diagno
     assert.ok(guideEN.scales[0].type==='trait'&&!guideEN.scales[0].canChooseSkill)
     assert.ok(guideRU.scales[0].label.length>3)
     assert.ok(guideRU.scales[0].action.length>25)
-    assert.throws(()=>scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,6]))))
-    assert.throws(()=>scoreAssessment(d,Object.fromEntries(d.questions.slice(1).map(q=>[q.id,3]))))
+    assert.throws(()=>scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,6])), syntheticTraumaContext(d)))
+    assert.throws(()=>scoreAssessment(d,Object.fromEntries(d.questions.slice(1).map(q=>[q.id,3])), syntheticTraumaContext(d)))
   }
 })
 

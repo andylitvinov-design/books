@@ -1,4 +1,5 @@
 import test, { before, after } from 'node:test'
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { createAppRepository } from '../lib/app/repository.js'
@@ -1103,11 +1104,31 @@ test('every published monitoring test completes through the repository and retur
       instrumentLocale: definition.instrumentLocale,
       operationId: randomUUID(),
     })
+    const context = syntheticTraumaContext(definition)
+    let ready = run
+    if (Object.keys(context).length) {
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context: {},
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      await assert.rejects(repo.saveRun(a, run.id, {
+        answers: minimumMonitoringAnswers(definition), context,
+        progress: definition.questions.length, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      }), error => error.code === 'REQUIRED_CONTEXT')
+      ready = await repo.saveRun(a, run.id, {
+        answers: {}, context, progress: 0, expectedRevision: run.revision,
+        operationId: randomUUID(),
+      })
+      assert.deepEqual(ready.context, context)
+      assert.deepEqual(ready.answers, {})
+    }
     const saved = await repo.saveRun(a, run.id, {
       answers: minimumMonitoringAnswers(definition),
-      context: {},
+      context,
       progress: definition.questions.length,
-      expectedRevision: run.revision,
+      expectedRevision: ready.revision,
       operationId: randomUUID(),
     })
     const result = await repo.submitRun(a, run.id, { expectedRevision: saved.revision })
@@ -1711,15 +1732,31 @@ test('ASRS6 EN/RU account zero and mixed results preserve discrete counts and al
 test('push subscriptions and preferences are account-owned, RLS-protected and removable', async () => {
   const {createECDH,randomBytes} = await import('node:crypto')
   const {createNotificationRepository} = await import('../lib/app/notification-repository.js')
+  const {pushConfig} = await import('../lib/app/web-push.js')
+  // OpenSSL may omit leading zero bytes from a valid synthetic scalar.
+  const fixedPrivateKey = key => {
+    const scalar=key.getPrivateKey(),padded=Buffer.alloc(32)
+    scalar.copy(padded,padded.length-scalar.length)
+    return padded.toString('base64url')
+  }
+  const short=createECDH('prime256v1');short.setPrivateKey(Buffer.from([1]))
+  const shortEnv={HH_PUSH_PUBLIC_KEY:short.getPublicKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:short.getPrivateKey().toString('base64url'),
+    HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
+  assert.equal(short.getPrivateKey().length,1,'deterministic leading-zero regression fixture')
+  assert.equal(pushConfig(shortEnv).supported,false,'production still rejects non-32-byte encoding')
+  assert.equal(pushConfig({...shortEnv,HH_PUSH_PRIVATE_KEY:fixedPrivateKey(short)}).supported,true)
   const vapid=createECDH('prime256v1');vapid.generateKeys()
   const env={HH_PUSH_PUBLIC_KEY:vapid.getPublicKey().toString('base64url'),
-    HH_PUSH_PRIVATE_KEY:vapid.getPrivateKey().toString('base64url'),
+    HH_PUSH_PRIVATE_KEY:fixedPrivateKey(vapid),
     HH_PUSH_SUBJECT:'mailto:tests@example.invalid'}
   const push=createNotificationRepository(config,env)
   const key=createECDH('prime256v1');key.generateKeys()
   const subscription={endpoint:'https://web.push.apple.com/synthetic-test-'+randomUUID(),keys:{
     p256dh:key.getPublicKey().toString('base64url'),auth:randomBytes(16).toString('base64url')}}
-  assert.equal((await push.state(a)).enabled,false)
+  const initial=await push.state(a)
+  assert.equal(initial.ready,true,'synthetic VAPID fixture must be valid')
+  assert.equal(initial.enabled,false)
   const saved=await push.subscribe(a,{subscription,locale:'ru',timeZone:'America/Toronto'})
   assert.equal(saved.enabled,true);assert.equal(saved.deviceCount,1);assert.equal(saved.locale,'ru')
   const changed=await push.preferences(a,{enabled:true,courseReminders:false,
@@ -1813,3 +1850,70 @@ test('OPORA stage-3 consent creates exactly one Day 1 cycle and keeps saved test
     await db.end()
   }
 })
+
+
+test('private session share grants enforce per-consultation ownership under real Postgres roles', async()=>{
+  // Synthetic A/B test uses the exact deployed migration; never a production DB.
+  const {readFile}=await import('node:fs/promises')
+  const db=await adminClient()
+  try{
+    await db.query('create schema if not exists storage')
+    await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
+    await db.query(sql)
+    // The private PDF extension is additive and does not grant browser DB access.
+    const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
+    await db.query(pdfExtension)
+    const permittedMime=(await db.query("select allowed_mime_types from storage.buckets where id='hh-client-private-media'")).rows[0].allowed_mime_types
+    assert.ok(permittedMime.includes('application/pdf'))
+    const bucket=(await db.query("select public,file_size_limit from storage.buckets where id='hh-client-private-media'")).rows[0]
+    assert.ok(bucket)
+    assert.equal(bucket.public,false)
+    assert.equal(Number(bucket.file_size_limit),50_000_000)
+    const clientA=randomUUID(),clientB=randomUUID(),sessionA=randomUUID(),sessionB=randomUUID()
+    const pdfConstraint=(await db.query("select pg_get_constraintdef(c.oid) as definition from pg_constraint c where c.conname='client_delivery_assets_asset_kind_check'")).rows[0].definition
+    assert.match(pdfConstraint,/pdf/)
+
+    for(const [id,clientId] of [[sessionA,clientA],[sessionB,clientB]]){
+      await db.query("insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,status) values($1,$2,'2026-10-15','synthetic-encrypted-fixture','draft')",[id,clientId])
+    }
+    const grant=randomUUID()
+    await db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[grant,sessionA,clientA,'aaaaaaaaaaaaaaaaaaaaaa','a'.repeat(64)])
+    // A grant for Session B cannot be spoofed as Client A, even with Session B's UUID.
+    await assert.rejects(db.query("insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,expires_at) values($1,$2,$3,$4,$5,now()+interval '30 days')",[randomUUID(),sessionB,clientA,'bbbbbbbbbbbbbbbbbbbbbb','b'.repeat(64)]),e=>e.code==='23503')
+    await assert.rejects(db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status) values($1,$2,$3,'audio','practitioner','synthetic-path','audio/mp4',1024,'pending')",[randomUUID(),clientB,sessionA]),e=>e.code==='23503')
+    for(const table of ['client_delivery_sessions','client_delivery_assets','client_session_share_grants','client_session_viewer_sessions']){
+      await assert.rejects(rawAs(a,'authenticated',database=>database.query('select * from app_private.'+table)),e=>e.code==='42501')
+      assert.equal((await db.query('select relrowsecurity from pg_class where oid=$1::regclass',['app_private.'+table])).rows[0].relrowsecurity,true)
+    }
+    const permitted=await rawAs(a,'hh_app_backend',database=>database.query('select count(*)::int as total from app_private.client_delivery_sessions'))
+    assert.equal(permitted.rows[0].total,2)
+    // Two isolated connections exercise both winners of finalization vs cleanup.
+    // Only pending, never-ready rows may be claimed; published/ready keys survive.
+    const finishing=await adminClient(),cleaning=await adminClient()
+    const assetA=randomUUID(),assetB=randomUUID()
+    const claim="update app_private.client_delivery_assets set status='removed' where id in (select id from app_private.client_delivery_assets where legacy_client_id=$1 and session_id=$2 and ready_at is null and status in ('pending','removed') and created_at < now()-interval '24 hours' order by created_at limit 30 for update skip locked) and ready_at is null and status in ('pending','removed') returning object_key"
+    try {
+      for(const id of [assetA,assetB])await db.query("insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,status,created_at) values($1,$2,$3,'audio','client',$4,'audio/mp4',512,'pending',now()-interval '2 days')",[id,clientA,sessionA,'synthetic-race-'+id])
+      await finishing.query('begin');await finishing.query('set local role hh_app_backend')
+      await finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending'",[assetA])
+      await cleaning.query('begin');await cleaning.query('set local role hh_app_backend')
+      await cleaning.query("set local statement_timeout='2s'")
+      const claimed=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(claimed.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      // A concurrent finalizer can no longer turn the claimed row ready.
+      const rejectedFinish=finishing.query("update app_private.client_delivery_assets set status='ready',ready_at=now(),bytes=512 where id=$1 and status='pending' returning id",[assetB])
+      await cleaning.query('commit')
+      assert.equal((await rejectedFinish).rowCount,0)
+      await finishing.query('commit')
+      const retryClaim=await cleaning.query(claim,[clientA,sessionA])
+      assert.deepEqual(retryClaim.rows.map(row=>row.object_key),['synthetic-race-'+assetB])
+      assert.equal((await db.query('select status from app_private.client_delivery_assets where id=$1',[assetA])).rows[0].status,'ready')
+    } finally {
+      await cleaning.query('rollback');await finishing.query('rollback')
+      await finishing.end();await cleaning.end()
+    }
+
+  }finally{await db.end()}
+})
+

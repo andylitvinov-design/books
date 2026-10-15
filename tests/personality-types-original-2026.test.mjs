@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
@@ -34,7 +35,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,135)
+  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,137)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)
@@ -61,7 +62,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
       assert.equal(new Set(def.scoring.dimensions.flatMap(d=>d.items)).size,questionCount)
       assert.ok(def.scoring.dimensions.every(d=>d.dimensionClass==='trait' && d.direction==='non-normative'))
       for(const value of [minAnswers(def),maxAnswers(def)]){
-        const scored=scoreAssessment(def,value)
+        const scored=scoreAssessment(def,value, syntheticTraumaContext(def))
         assert.deepEqual(scored.dimensions.map(d=>d.value),def.scoring.dimensions.map(d=>value===null?0:(value[def.questions[0].id]===1?d.min:d.max)))
       }
     }
@@ -72,10 +73,10 @@ test('socionics: all 16 codes are reachable without converting to MBTI, ties abs
   assert.equal(SOCIONICS_TYPE_CODES.length,16)
   assert.equal(new Set(SOCIONICS_TYPE_CODES).size,16)
   const d=getAssessmentDefinition('hh-socionics-32','v1','en')
-  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['e','n','l','p']))),'en').code,'ILE')
-  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['e','n','l','j']))),'en').code,'LIE')
-  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['i','s','f','p']))),'en').code,'SEI')
-  const tied=personalityTypeHypothesis(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,3]))),'ru')
+  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['e','n','l','p'])), syntheticTraumaContext(d)),'en').code,'ILE')
+  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['e','n','l','j'])), syntheticTraumaContext(d)),'en').code,'LIE')
+  assert.equal(personalityTypeHypothesis(scoreAssessment(d,orientedAnswers(d,new Set(['i','s','f','p'])), syntheticTraumaContext(d)),'en').code,'SEI')
+  const tied=personalityTypeHypothesis(scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,3])), syntheticTraumaContext(d)),'ru')
   assert.equal(tied.code,null)
   assert.match(tied.headline,/не определяется/)
   assert.match(tied.warning,/MBTI/)
@@ -88,12 +89,12 @@ test('enneagram, behavioral and temperament results select only an unambiguous h
     ['hh-temperaments-16','melancholic','melancholic'],
   ]){
     const d=getAssessmentDefinition(key,'v1','ru')
-    const result=scoreAssessment(d,orientedAnswers(d,new Set([high])))
+    const result=scoreAssessment(d,orientedAnswers(d,new Set([high])), syntheticTraumaContext(d))
     const analysis=personalityTypeHypothesis(result,'ru')
     assert.equal(analysis.code,wanted)
     assert.ok(analysis.headline.length>20)
     assert.ok(analysis.description.length>70)
-    const tie=personalityTypeHypothesis(scoreAssessment(d,minAnswers(d)),'en')
+    const tie=personalityTypeHypothesis(scoreAssessment(d,minAnswers(d), syntheticTraumaContext(d)),'en')
     assert.equal(tie.code,null)
     assert.ok(tie.alternatives.length>0)
   }
@@ -103,7 +104,7 @@ test('personal result reports carry bilingual type hypotheses and distinct, safe
   for(const [key] of CASES){
     for(const locale of ['ru','en']){
       const def=getAssessmentDefinition(key,'v1',locale)
-      const report=buildAssessmentResultReport(scoreAssessment(def,minAnswers(def)),locale)
+      const report=buildAssessmentResultReport(scoreAssessment(def,minAnswers(def), syntheticTraumaContext(def)),locale)
       assert.equal(report.sections.length,def.scoring.dimensions.length)
       assert.ok(report.personalityType?.headline)
       assert.ok(report.personalityType.warning.length>50)
@@ -149,7 +150,7 @@ test('new typology scales coexist with Mini-IPIP and IPIP-50 in one owner-scoped
   const values=[MINI_IPIP_20_EN_V1,IPIP_BIG_FIVE_50_EN_V1,...CASES.map(([key])=>getAssessmentDefinition(key,'v1','en'))]
   const results=values.map(d=>({
     id:randomUUID(),accountId,measurementAt:'2026-10-11T19:00:00.000Z',
-    ...scoreAssessment(d,minAnswers(d)),
+    ...scoreAssessment(d,minAnswers(d), syntheticTraumaContext(d)),
   }))
   const snapshot=createProfileSnapshot({
     id:randomUUID(),accountId,generatedResult:results.at(-1),carriedResults:results.slice(0,-1),
@@ -196,12 +197,12 @@ test('source-independent keyed fixtures, missing answers and exact immutable has
   for (const [index,d] of PERSONALITY_TYPE_DEFINITIONS.entries()) {
     assert.equal(d.contentHash,'sha256:'+hashes[index])
     const answers = Object.fromEntries(d.questions.map((q,i)=>[q.id,1+i%5]))
-    const score = scoreAssessment(d,answers)
+    const score = scoreAssessment(d,answers, syntheticTraumaContext(d))
     assert.deepEqual(score.dimensions.map(x=>x.value), expected[d.key])
     for (const invalid of [undefined,null,0,6,2.5,'3']) {
       const broken={...answers,[d.questions[0].id]:invalid}
       if(invalid===undefined)delete broken[d.questions[0].id]
-      assert.throws(()=>scoreAssessment(d,broken),d.key+': '+invalid)
+      assert.throws(()=>scoreAssessment(d,broken, syntheticTraumaContext(d)),d.key+': '+invalid)
     }
     assert.equal(personalityTypeHypothesis({...score,definitionVersion:'v999'}),null)
     assert.equal(personalityTypeHypothesis({...score,dimensions:score.dimensions.slice(1)}),null)
@@ -214,7 +215,7 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
   const cases={enlp:'ILE',isfp:'SEI',esfj:'ESE',inlj:'LII',enfj:'EIE',islj:'LSI',eslp:'SLE',infp:'IEI',esfp:'SEE',inlp:'ILI',enlj:'LIE',isfj:'ESI',eslj:'LSE',infj:'EII',enfp:'IEE',islp:'SLI'}
   for(const [letters,code] of Object.entries(cases)){
     const answers=Object.fromEntries(d.questions.map(q=>[q.id,letters.includes(q.id.split('.')[1])?5:1]))
-    for(const locale of ['en','ru'])assert.equal(personalityTypeHypothesis(scoreAssessment(d,answers),locale).code,code)
+    for(const locale of ['en','ru'])assert.equal(personalityTypeHypothesis(scoreAssessment(d,answers, syntheticTraumaContext(d)),locale).code,code)
   }
 })
 
@@ -222,7 +223,7 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
 test('canonical 170 prior definitions and earlier 169/153-definition baselines remain unchanged',()=>{
   const ids=new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id))
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6'&&!ids.has(d.id))
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6'&&!ids.has(d.id))
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   assert.equal(prior.length,170)
   assert.equal(digest(prior),'2b7a4c102bbcf65ed0b6f3d3530d803c93dfa8f27456b5c2bf4a490ea6fc3e93')

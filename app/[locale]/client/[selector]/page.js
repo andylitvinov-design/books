@@ -5,6 +5,9 @@ import { notFound } from 'next/navigation'
 import { PrescriptionAccessGate } from '@/components/prescription-access-gate'
 import { ClientCabinet } from '@/components/client-cabinet'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
+import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { getAppConfig } from '@/lib/app/config'
+import { listClientSessions } from '@/lib/clients/session-delivery-service'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Holistic House · Private cabinet', robots: { index: false, follow: false } }
 export default async function CabinetPage({ params, searchParams }) {
@@ -29,5 +32,6 @@ export default async function CabinetPage({ params, searchParams }) {
         .map(item => String(item.displayName || '').trim()).filter(Boolean))]
       return { id: record.id, date: record.dateIssued, remedies }
     }).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
-  return <ClientCabinet homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
+  const sessions = deliveryEnabled() ? await listClientSessions(getAppConfig(),access.store,access.client.id,{publishedOnly:true}).catch(()=>[]) : []
+  return <ClientCabinet sessions={sessions} homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
 }

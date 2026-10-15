@@ -64,7 +64,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
     ? oporaRecoveryStages(locale).map(stage=>({id:stage.id,start:stage.days[0],end:stage.days[1],title:stage.title,summary:stage.description}))
     : blueprint.skills.map(skill=>({id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:skill.description})))
     : coursePreEnrolmentPlan(locale)
-  const chosenTitle=stress&&moduleId?antistressModuleTitle(moduleId,locale):null
+  const chosenTitle=stress&&moduleId?antistressModuleTitle(moduleId,locale,routerVersion):null
   const days=stress ? blueprint.days.map(day=>{
     const adapted=moduleId?moduleDayMeta(moduleId,day.day,locale,routerVersion):null
     return adapted?{...day,title:adapted.title,exercise:adapted.exercise,skill:groups[Math.floor((day.day-1)/2)]?.title||day.skill,adapted:true}:day

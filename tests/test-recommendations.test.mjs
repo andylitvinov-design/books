@@ -109,11 +109,11 @@ test('public and signed-in routes share the complete Test Explorer rather than a
 
 test('active assessment inventory is classified for style and length filters', () => {
   const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 135)
+  assert.equal(active.length, 137)
   assert.equal(active.filter((item) => item.testStyle === 'engaging').length, 67)
-  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 68)
+  assert.equal(active.filter((item) => item.testStyle === 'professional').length, 70)
   assert.equal(active.filter((item) => item.testLength === 'short').length, 58)
-  assert.equal(active.filter((item) => item.testLength === 'medium').length, 63)
+  assert.equal(active.filter((item) => item.testLength === 'medium').length, 65)
   assert.equal(active.filter((item) => item.testLength === 'comprehensive').length, 14)
   assert.ok(active.every((item) => TEST_STYLE_FILTERS.some((filter) => filter.key === item.testStyle)))
   assert.ok(active.every((item) => TEST_LENGTH_FILTERS.some((filter) => filter.key === item.testLength)))
@@ -136,7 +136,7 @@ test('style and length filters combine before recommendation ranking', () => {
   })
   assert.deepEqual(
     professionalMedium.map((definition) => definition.key).sort(),
-    ['cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10',
+    ['pcl-5','itq-adult','cbi-client','cbi-personal','cbi-work','cdc-healthy-days-symptoms','cdc-hrqol-4','erq', 'gad-7', 'phq-9', 'rses-10',
       'ipip-aspect-volatility-10','ipip-aspect-withdrawal-10','ipip-aspect-compassion-10',
       'ipip-aspect-industriousness-10','ipip-aspect-orderliness-10','ipip-aspect-intellect-10','ipip-aspect-openness-10','ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].sort(),
   )

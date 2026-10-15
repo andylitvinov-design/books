@@ -140,10 +140,12 @@ export function repositoryHarness({ presetId, storedCycle } = {}) {
       const id = await runtime.exports.createNewCycle(db, { id: OWNER }, course, config,
         { problemLabel: 'Synthetic ordinary workload', intention: 'Synthetic manageable step', timeZone: 'UTC',
           moduleId: moduleId==='AS4'?'AS2':moduleId })
-      cycle.preferences = {length:'standard',imagery:'optional',checkinFrequency:'daily',
-        oporaModuleId:moduleId,oporaModuleRouter:router.ANTISTRESS_PREVIOUS_ROUTER_VERSION}
-      cycle.content_version = moduleId==='AS2'
-        ? lessons.COURSE_ANTISTRESS_OUTCOME_V3 : lessons.COURSE_CONTENT_V4
+      if (!presetId) {
+        cycle.preferences = {length:'standard',imagery:'optional',checkinFrequency:'daily',
+          oporaModuleId:moduleId,oporaModuleRouter:router.ANTISTRESS_PREVIOUS_ROUTER_VERSION}
+        cycle.content_version = moduleId==='AS2'
+          ? lessons.COURSE_ANTISTRESS_OUTCOME_V3 : lessons.COURSE_CONTENT_V4
+      }
       clock.now = now; assert.equal(id, cycle.id); return clone(cycle)
     },
     seedDay(day) {

@@ -61,3 +61,34 @@ test('client homepage RSC cancellation requires the exact private-to-About histo
   for (const override of [{ engine: 'chromium' }, { readiness: 'loaded-history' }]) assert.equal(classifyCspNavigationCancellation(diagnostic(), { ...privateDetail, ...override }), null);
   assert.equal(classifyCspNavigationCancellation({ time: 125, stack: 'Refused to connect because it violates Content Security Policy' }, privateDetail), null);
 });
+
+
+test('About client-link prefetch teardown requires the observed Back-to-home replacement', () => {
+  const homeLife = [
+    { type: 'init', time: 1, documentProbe: 'old', url: origin + '/en/about' },
+    { type: 'navigate', time: 95, documentProbe: 'old', url: origin + '/en/about', documentClass: 'public-video', sameDocument: true, navigationType: 'traverse', destination: origin + '/' },
+    { type: 'navigate', time: 100, documentProbe: 'old', documentClass: 'public-video', sameDocument: false, navigationType: 'replace', destination: origin + '/' },
+    { type: 'pagehide', time: 140, documentProbe: 'old' },
+    { type: 'init', time: 150, documentProbe: 'new', url: origin + '/' },
+  ];
+  const info = { ...detail, lifecycle: homeLife };
+  const scopedDiagnostic = (url) => ({...diagnostic(url), phase:'back-to-public-home'});
+  const error = scopedDiagnostic(origin + '/en/client?_rsc=probe');
+  assert.ok(classifyCspNavigationCancellation(error, info));
+  assert.equal(classifyCspNavigationCancellation({...error,phase:'initial'},info),null);
+  for (const [index, change] of [
+    [0, {url: origin + '/en/about?other=1'}], [0, {url: origin + '/en/services'}],
+    [1, {sameDocument: false}], [1, {navigationType: 'push'}], [1, {time: 101}],
+    [1, {documentProbe: 'other'}], [1, {destination: origin + '/en/services'}],
+    [1, {documentClass: 'private'}], [1, {url: origin + '/'}],
+    [2, {sameDocument: true}], [2, {navigationType: 'traverse'}],
+    [2, {documentClass: 'private'}], [2, {destination: origin + '/en/about'}],
+    [4, {url: origin + '/en/about'}], [4, {documentProbe: 'old'}],
+  ]) assert.equal(classifyCspNavigationCancellation(error, {...info, lifecycle:homeLife.map((e,i)=>i===index?{...e,...change}:e)}), null);
+  for (const index of [1,2,3,4]) assert.equal(classifyCspNavigationCancellation(error,{...info,lifecycle:homeLife.filter((_,i)=>i!==index)}),null);
+  for (const path of ['/en/client','/en/client?_rsc=x&other=y','/ru/client?_rsc=x','/api/client?_rsc=x','/en/client?_rsc=']) assert.equal(classifyCspNavigationCancellation(scopedDiagnostic(origin+path),info),null);
+  assert.equal(classifyCspNavigationCancellation(scopedDiagnostic('https://elsewhere.test/en/client?_rsc=x'),info),null);
+  for (const time of [99,141,150,151]) assert.equal(classifyCspNavigationCancellation({...error,time},info),null);
+  for (const type of ['window-error','unhandled-rejection']) assert.equal(classifyCspNavigationCancellation(error,{...info,lifecycle:[...homeLife,{type,time:125}]}),null);
+  for (const override of [{engine:'chromium'},{readiness:'loaded-history'}]) assert.equal(classifyCspNavigationCancellation(error,{...info,...override}),null);
+});

@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -33,7 +34,7 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
       const mid=Object.fromEntries(def.questions.map(q=>[q.id,2]))
       assert.equal(Object.keys(validateAnswers(def,mid)).length,6)
       for(const extreme of [0,2,4]){
-        const score=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,extreme])))
+        const score=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,extreme])), syntheticTraumaContext(def))
         assert.equal(score.dimensions.length,2)
         assert.ok(score.dimensions.every(s=>s.value===extreme && s.min===0 && s.max===4))
         for(const lang of ['en','ru']){
@@ -61,7 +62,7 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.equal(count,135)
+  assert.equal(count,137)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
   assert.equal(coverage.registered,coverage.total)
@@ -98,19 +99,19 @@ test('independent identity, item-group and numeric fixtures preserve zero and re
       [[0,1,4,4,2,0],[1.67,2]],[[0,0,4,0,4,4],[1.33,2.67]],
     ]){
       const answers=Object.fromEntries(ids.map((id,i)=>[id,values[i]]))
-      assert.deepEqual(scoreAssessment(d,answers).dimensions.map(s=>s.value),wanted)
+      assert.deepEqual(scoreAssessment(d,answers, syntheticTraumaContext(d)).dimensions.map(s=>s.value),wanted)
     }
     for(const invalid of [undefined,null,-1,5,1.5,'2',NaN]){
       const answers=Object.fromEntries(ids.map(id=>[id,0]))
       if(invalid===undefined)delete answers[ids[0]];else answers[ids[0]]=invalid
-      assert.throws(()=>scoreAssessment(d,answers),d.key+': '+invalid)
+      assert.throws(()=>scoreAssessment(d,answers, syntheticTraumaContext(d)),d.key+': '+invalid)
     }
   }
 })
 
 test('bilingual saved report and PDF models retain experimental status and consent limits', () => {
   for(const d of RELATIONSHIPS_INTIMACY_DEFINITIONS){
-    const result={...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,0]))),id:d.id,measurementAt:'2026-10-12T06:00:00.000Z'}
+    const result={...scoreAssessment(d,Object.fromEntries(d.questions.map(q=>[q.id,0])), syntheticTraumaContext(d)),id:d.id,measurementAt:'2026-10-12T06:00:00.000Z'}
     for(const locale of ['en','ru']){
       const report=buildAssessmentResultReport(result,locale)
       assert.match(report.contextNote,locale==='ru'?/Экспериментальные.*Holistic House/:/experimental Holistic House/)
@@ -128,7 +129,7 @@ test('bilingual saved report and PDF models retain experimental status and conse
 
 test('relationship guide boundaries match the stored two-decimal means without rescoring history', () => {
   for(const d of RELATIONSHIPS_INTIMACY_DEFINITIONS) {
-    const result=scoreAssessment(d,Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,0,4,0,4,4][i]])))
+    const result=scoreAssessment(d,Object.fromEntries(d.questions.map((q,i)=>[q.id,[0,0,4,0,4,4][i]])), syntheticTraumaContext(d))
     assert.deepEqual(result.dimensions.map(x=>x.value),[1.33,2.67])
     for(const locale of ['en','ru']) {
       assert.deepEqual(result.dimensions.map(x=>interpretationForDimension(result,x,locale).code),['lower','upper'])

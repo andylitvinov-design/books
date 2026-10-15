@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -13,7 +14,7 @@ test('v4 has ten distinct non-diagnostic bilingual questionnaires with reproduci
   assert.equal(EXPANDED_BATTERY_V4_DEFINITIONS.length, 20)
   assert.equal(new Set(EXPANDED_BATTERY_V4_KEYS).size, 10)
   assert.equal(new Set(EXPANDED_BATTERY_V4_DEFINITIONS.map(({ id }) => id)).size, 20)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 135)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 137)
   for (const key of EXPANDED_BATTERY_V4_KEYS) {
     const item = MONITORING_CATALOG.find(entry => entry.key === key)
     assert.equal(item?.guestEligible, true)
@@ -30,7 +31,7 @@ test('v4 has ten distinct non-diagnostic bilingual questionnaires with reproduci
       assert.equal(new Set(d.questions.map(q => q.id)).size, 6)
       const answers = Object.fromEntries(d.questions.map(q => [q.id, 2]))
       assert.equal(Object.keys(validateAnswers(d, answers)).length, 6)
-      const scored = scoreAssessment(d, answers)
+      const scored = scoreAssessment(d, answers, syntheticTraumaContext(d))
       assert.equal(scored.dimensions.length, 1)
       assert.equal(scored.dimensions[0].value, 2)
       assert.equal(scored.dimensions[0].direction, 'higher-reported-resource')

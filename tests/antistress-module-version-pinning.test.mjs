@@ -222,7 +222,7 @@ for (const moduleId of ['AS1', 'AS3', 'AS4', 'AS5']) {
     for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       const base = baseFor(moduleId, locale, day)
       const legacy = moduleLesson(base, moduleId, day, locale, NAV1)
-      const current = moduleLesson(base, moduleId, day, locale, router.ANTISTRESS_ROUTER_VERSION)
+      const current = moduleLesson(base, moduleId, day, locale, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION)
       assert.notEqual(current.id, legacy.id); assert.ok(current.id.startsWith(legacy.id + '-'))
       assert.notEqual(current.source, legacy.source)
       assert.equal(digest(legacy), snapshotFor(moduleId, locale, day).sha256)
@@ -230,15 +230,16 @@ for (const moduleId of ['AS1', 'AS3', 'AS4', 'AS5']) {
   })
 }
 
-test('AS2 retains its approved sequence under both router versions and AS6 can only render its legacy content', () => {
+test('NAV1/NAV2 retain AS2 and AS6 content while the new router separately enables AS6', () => {
   for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
     const as2 = baseFor('AS2', locale, day)
     assert.equal(moduleLesson(as2, 'AS2', day, locale, NAV1), as2)
-    assert.equal(moduleLesson(as2, 'AS2', day, locale, router.ANTISTRESS_ROUTER_VERSION), as2)
-    const legacy6 = moduleLesson(baseFor('AS6', locale, day), 'AS6', day, locale, router.ANTISTRESS_ROUTER_VERSION)
+    assert.equal(moduleLesson(as2, 'AS2', day, locale, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION), as2)
+    const legacy6 = moduleLesson(baseFor('AS6', locale, day), 'AS6', day, locale, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION)
     assert.equal(digest(legacy6), snapshotFor('AS6', locale, day).sha256)
   }
-  assert.equal(router.ANTISTRESS_ACTIVE_MODULE_IDS.includes('AS6'), false)
+  assert.equal(router.ANTISTRESS_ACTIVE_MODULE_IDS.includes('AS6'), true)
+  assert.equal(moduleLesson(baseFor('AS6', 'en', 1), 'AS6', 1, 'en', router.ANTISTRESS_ROUTER_VERSION).oporaModule.version, router.ANTISTRESS_ROUTER_VERSION)
   assert.equal(router.ANTISTRESS_MODULE_IDS.includes('AS6'), true)
 })
 
@@ -325,12 +326,32 @@ test('actual repository reads an unversioned legacy AS6 cycle without upgrading 
 })
 
 test('actual repository uses the persisted NAV2 version for the new current lesson and roadmap', async () => {
-  const h = dailyReader('AS4', router.ANTISTRESS_ROUTER_VERSION), result = await h.read('ru')
-  const current = moduleLesson(baseFor('AS4', 'ru', 1), 'AS4', 1, 'ru', router.ANTISTRESS_ROUTER_VERSION)
+  const h = dailyReader('AS4', router.ANTISTRESS_PREVIOUS_ROUTER_VERSION), result = await h.read('ru')
+  const current = moduleLesson(baseFor('AS4', 'ru', 1), 'AS4', 1, 'ru', router.ANTISTRESS_PREVIOUS_ROUTER_VERSION)
   assert.equal(result.lesson.id, current.id); assert.equal(digest(result.lesson), digest(current))
   assert.notEqual(result.lesson.id, snapshotFor('AS4', 'ru', 1).id)
   for (const day of result.roadmap) assert.equal(day.title,
-    moduleLesson(baseFor('AS4', 'ru', day.day), 'AS4', day.day, 'ru', router.ANTISTRESS_ROUTER_VERSION).title)
+    moduleLesson(baseFor('AS4', 'ru', day.day), 'AS4', day.day, 'ru', router.ANTISTRESS_PREVIOUS_ROUTER_VERSION).title)
   assert.equal(JSON.stringify(h.stored), h.before)
 })
 
+
+for (const version of [NAV1, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION, undefined]) {
+  test(`persisted AS4 keeps its nonclinical title under ${version || 'unversioned history'}`, async () => {
+    const h = dailyReader('AS4', version), result = await h.read('en')
+    assert.equal(result.programme.title, 'Anti-Stress 4 · Flexibility with everyday stress')
+    assert.equal(JSON.stringify(h.stored), h.before)
+    assert.ok(h.queries.every(q => q.sql.startsWith('select ')))
+  })
+}
+test('current AS4 label stays clinical while public title defaults stay current', async () => {
+  const h = dailyReader('AS4', router.ANTISTRESS_ROUTER_VERSION), result = await h.read('en')
+  assert.equal(result.programme.title, 'Anti-Stress 4 · Clinician-supported trauma care')
+  assert.equal(router.antistressModuleTitle('AS4', 'en'), 'Clinician-supported trauma care')
+  assert.equal(router.antistressModuleTitle('AS6', 'en', ''), 'Returning to daily life')
+  assert.equal(router.antistressModuleTitle('AS6', 'en'), 'Returning to everyday life')
+})
+test('persisted course cards and curriculum labels pass their stored router version', () => {
+  assert.match(readFileSync(resolve(root, 'components/app/course-entry-selector.jsx'), 'utf8'), /antistressModuleTitle\(moduleId,locale,course\.moduleChoice\.version\|\|''\)/)
+  assert.match(readFileSync(resolve(root, 'components/app/course-14-day-overview.jsx'), 'utf8'), /antistressModuleTitle\(moduleId,locale,routerVersion\)/)
+})

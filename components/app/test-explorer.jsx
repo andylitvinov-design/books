@@ -131,7 +131,7 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -191,7 +191,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [depth, setDepth] = useState(() => initialPreferences?.depth ?? 'balanced')
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
-  const [axes, setAxes] = useState(() => simpleMode ? [] : (initialPreferences?.axes ?? []))
+  const [axes, setAxes] = useState(() => simpleMode && !preserveScaleFilters ? [] : (initialPreferences?.axes ?? []))
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -336,7 +336,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
 
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
-      locale={locale}
+      locale={locale} authenticated={authenticated}
       initialMode={initialMode}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
@@ -380,7 +380,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   }
 
   return <section className={`${styles.explorer} ${embedded ? styles.embedded : ''}`}>
-    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { setAxes([]); setBrowseFull(false); setCustomizeOpen(false) }}>
+    {simpleMode && browseFull && <button type="button" className={styles.simpleBack} onClick={() => { if (!preserveScaleFilters) setAxes([]); setBrowseFull(false); setCustomizeOpen(false) }}>
       ← {locale === 'ru' ? 'Назад к простому подбору' : locale === 'es' ? 'Volver al selector sencillo' : 'Back to easy selection'}
     </button>}
     <div className={styles.explorerHero}>

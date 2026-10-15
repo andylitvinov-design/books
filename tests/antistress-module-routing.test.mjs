@@ -142,7 +142,9 @@ test('seven skill pairs remain within each educational route',()=>{
  }
  const old=moduleDayMeta('AS4',1,'ru','opora-nav-1.3-20261014')
  const current=moduleDayMeta('AS4',1,'ru',ANTISTRESS_ROUTER_VERSION)
- assert.equal(old.title,current.title)
+ assert.equal(old.title,'Замечаю привычный ответ')
+ assert.equal(current.title,'Как устроена терапевтическая работа')
+ assert.notEqual(old.title,current.title)
  assert.notEqual(old.exercise,current.exercise)
 })
 test('public and personal maps show five routes and precise phase cards',()=>{
