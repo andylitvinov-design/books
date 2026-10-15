@@ -13,7 +13,7 @@ const keyOrder=['weekly.load','weekly.tension','weekly.recovery','weekly.functio
 const baselineTime='2026-10-14T08:00:00Z'
 const completeTime='2026-10-29T11:00:00Z'
 const frame={startedAt:'2026-10-14T12:00:00Z',completedAt:'2026-10-29T10:00:00Z',
-  now:'2026-10-29T12:00:00Z',primaryTestKey:'hh-weekly-pulse'}
+  now:'2026-10-29T12:00:00Z',primaryTestKey:'hh-weekly-pulse',antiStress:true}
 const results=(key,id,at,points)=>{
   const weekly=key==='hh-weekly-pulse',gad=key==='gad-7'
   const instrument=weekly?'past-7-days':gad?'past-2-weeks':'right-now'
