@@ -265,10 +265,15 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     </section>
     <section className={styles.editorCard}>
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
+      {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
+        href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+locale}
+        target="_blank" rel="noopener noreferrer">
+        {ru?'Открыть полную страницу клиента с вложениями ↗':'Open full client page with attachments ↗'}
+      </a><small>{ru?'Показываются сохранённые изменения. Перед просмотром сохраните черновик.':'Shows saved changes. Save the draft first to preview your latest edits.'}</small></p>}
       <button type="button" className={styles.secondaryButton} aria-expanded={showClientPreview}
         onClick={()=>setShowClientPreview(value=>!value)}>
         {showClientPreview?(ru?'Скрыть предпросмотр':'Hide client preview'):
-          (ru?'Предпросмотр страницы клиента':'Preview client page')}
+          (ru?'Краткий предпросмотр':'Quick draft summary')}
       </button>
       {showClientPreview&&<div className={styles.ownerPreview}>
         <span className={styles.eyebrow}>{ru?'ПРЕДПРОСМОТР · НЕ ОПУБЛИКОВАНО':'PREVIEW · NOT PUBLISHED'}</span>
