@@ -29,15 +29,15 @@ export async function GET(request, { params }) {
   const payment = record.kind === 'payment'
   const document = payment ? getClientPaymentDocument({ ...record, status: 'active' }, locale) : getClientPrescription({ ...record, status: 'active' }, locale)
   if (!document) return new NextResponse(null, { status: 404, headers: privateHeaders })
-  const params = new URL(request.url).searchParams
-  const preview = params.get('preview') === '1'
+  const query = new URL(request.url).searchParams
+  const preview = query.get('preview') === '1'
   // Older saved recommendations use the SAME large-type mobile preview
   // as newly shared client reports; A4 remains the explicit download.
-  const mobile = !payment && preview && params.get('layout') !== 'a4'
+  const mobile = !payment && preview && query.get('layout') !== 'a4'
   const pdf = await (payment ? buildPaymentPdf : mobile ? buildPrescriptionMobilePdf : buildPrescriptionPdf)(
     document, locale, metadataBaseFor().origin,
   )
   const filename = payment ? (record.paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename(document)
-  const disposition = preview ? 'inline' : 'attachment'
+  const disposition = new URL(request.url).searchParams.get('preview') === '1' ? 'inline' : 'attachment'
   return new NextResponse(pdf, { headers: { ...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': `${disposition}; filename="${filename}"` } })
 }
