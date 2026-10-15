@@ -23,6 +23,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const [message,setMessage]=useState('')
   const [error,setError]=useState('')
   const [link,setLink]=useState('')
+  const [showClientPreview,setShowClientPreview]=useState(false)
   const [playerUrls,setPlayerUrls]=useState({})
   const base='/api/admin/clients/'+clientId+'/sessions/'+session.id
   const activeAssets=new Map((session.assets||[]).map(row=>[row.id,row]))
@@ -209,6 +210,42 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     </section>
     <section className={styles.editorCard}>
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
+      <button type="button" className={styles.secondaryButton} aria-expanded={showClientPreview}
+        onClick={()=>setShowClientPreview(value=>!value)}>
+        {showClientPreview?(ru?'Скрыть предпросмотр':'Hide client preview'):
+          (ru?'Предпросмотр страницы клиента':'Preview client page')}
+      </button>
+      {showClientPreview&&<div className={styles.ownerPreview}>
+        <span className={styles.eyebrow}>{ru?'ПРЕДПРОСМОТР · НЕ ОПУБЛИКОВАНО':'PREVIEW · NOT PUBLISHED'}</span>
+        <h3>{draft.title}</h3>
+        {draft.summary&&<p className={styles.sessionSummary}>{draft.summary}</p>}
+        {plan.nextStep&&<p><strong>{ru?'Следующий шаг':'Next step'}:</strong> {plan.nextStep}</p>}
+        {plan.focus&&<p><strong>{ru?'Фокус':'Focus'}:</strong> {plan.focus}</p>}
+        {(plan.takeaways||[]).some(Boolean)&&<>
+          <h4>{ru?'Выводы':'Key takeaways'}</h4>
+          <ol>{plan.takeaways.filter(Boolean).map((point,index)=><li key={index}>{point}</li>)}</ol>
+        </>}
+        {draft.media.some(item=>item.scope==='client')&&<>
+          <h4>{ru?'Личные медиа':'Client media'}</h4>
+          {draft.media.filter(item=>item.scope==='client').map(item=>
+            <p key={item.assetId}>♫ {item.title||mediaTitle(activeAssets.get(item.assetId),locale)}
+              {item.transcript&&<small> · {ru?'Есть текст записи':'Transcript available'}</small>}
+            </p>)}
+        </>}
+        {draft.reportDocumentId&&<p>▣ {ru?'Привязан отчёт в формате PDF':'A PDF report is attached'}</p>}
+        {(plan.practices||[]).length>0&&<>
+          <h4>{ru?'Практики':'Practices'}</h4>
+          {plan.practices.map((practice,index)=><div key={index}>
+            <strong>{practice.title}</strong>
+            {practice.instructions&&<p>{practice.instructions}</p>}
+          </div>)}
+        </>}
+        <p className={styles.previewDisclaimer}>{ru?
+          'В предпросмотре не показываются личные заметки специалиста. Медиа доступны для проверки через отдельные кнопки выше.':
+          'Owner-only notes are omitted. Preview media using the separate secure controls above.'}
+        </p>
+      </div>}
+
       <p>{ru?'Аудио сохраняется автоматически как черновик. Только кнопка «Опубликовать» обновляет страницу клиента. Личные заметки туда не попадают.':
         'Recordings save as drafts automatically. Only Publish updates the client page. Private notes are never included.'}</p>
       <div className={styles.actions}>

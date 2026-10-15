@@ -122,3 +122,10 @@
  .practiceCard{padding:15px}
  .reportContent{padding:12px 0}
 }
+
+.ownerPreview{background:#f8fbfa;border:1px solid #bcdde0;border-radius:16px;margin-top:14px;padding:clamp(18px,3vw,25px);max-width:750px;color:#254852}
+.ownerPreview h3{font-size:clamp(23px,4vw,30px);margin:12px 0 10px;line-height:1.2}
+.ownerPreview h4{font-size:17px;margin:20px 0 8px}
+.ownerPreview p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.ownerPreview li{margin:8px 0}
+.ownerPreview .previewDisclaimer{border-top:1px solid #d8e9e9;padding-top:12px;font-size:13px;color:#637f86;margin-top:20px}

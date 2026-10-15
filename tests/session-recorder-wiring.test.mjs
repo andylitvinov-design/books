@@ -18,3 +18,13 @@ test('Storage CSP expansion stays confined to explicit session/editor routes',()
  for(const path of ['/admin/login','/en/app/profile','/en/reports/a','/admin/clients/a/assessments/new','/admin/clients/a','/api/client/session/a','/en/academy/reiki'])assert.equal(matches(path),false,path)
  assert.ok(source.includes("process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true' || !deliveryPath"))
 })
+
+
+test('owner preview contains client-scope materials only, not practitioner notes',()=>{
+ const studio=read('components/admin-session-studio.jsx')
+ assert.match(studio,/showClientPreview/)
+ assert.match(studio,/filter\(item=>item.scope==='client'\)/)
+ assert.match(studio,/ПРЕДПРОСМОТР · НЕ ОПУБЛИКОВАНО/)
+ assert.match(studio,/Owner-only notes are omitted/)
+ assert.match(studio,/action==='publish'/)
+})
