@@ -12,7 +12,8 @@ const copy = {
     topics: "5 направлений",
     results: "Результаты и динамика",
     action: "Выбрать тему и пройти тесты",
-    note: "Начните бесплатно — с темы, которая важна именно вам.",
+    note: "Выбор тем открыт без входа; для запуска полного набора тестов нужен Google.",
+    guestLink: "Короткие тесты без регистрации",
     caution: "Самооценка для личного развития, не медицинская диагностика.",
     visualCaption: "От вопроса — к ясности",
     visualLabel: "НАПРАВЛЕНИЙ",
@@ -25,7 +26,8 @@ const copy = {
     topics: "5 topic areas",
     results: "Results and trends",
     action: "Choose a topic and take free tests",
-    note: "Start free — with the topic that matters to you.",
+    note: "Browse topics freely; starting a full test set requires Google sign-in.",
+    guestLink: "Try guest self-checks",
     caution: "Self-reflection for personal growth, not a medical diagnosis.",
     visualCaption: "From questions to clarity",
     visualLabel: "TOPICS",
@@ -52,7 +54,7 @@ export function HomeFreeTestsBanner({ locale }: { locale: Locale }) {
             <Link className={styles.cta} href="#hh-topic-journeys" prefetch={false}>
               {t.action}<ArrowRight size={19} aria-hidden="true" />
             </Link>
-            <span className={styles.note}>{t.note}</span>
+            <span className={styles.note}>{t.note} <Link href={`/${locale}/client`} prefetch={false}>{t.guestLink} →</Link></span>
           </div>
           <p className={styles.caution}>{t.caution}</p>
         </div>
