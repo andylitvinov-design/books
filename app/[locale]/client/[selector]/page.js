@@ -1,4 +1,5 @@
 import { clientAssessmentSummary } from '@/lib/clients/assessments'
+import { sessionPagesEnabled,listClientSessions } from '@/lib/clients/session-delivery'
 import { legacyDocumentProjection } from '@/lib/app/legacy-document'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { notFound } from 'next/navigation'
@@ -29,5 +30,5 @@ export default async function CabinetPage({ params, searchParams }) {
         .map(item => String(item.displayName || '').trim()).filter(Boolean))]
       return { id: record.id, date: record.dateIssued, remedies }
     }).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
-  return <ClientCabinet homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} view={view} />
+  return <ClientCabinet homeopathyUpdates={homeopathyUpdates} assessments={assessments} name={access.client.fullName} locale={locale} selector={selector} documents={documents} materials={access.client.sharedMaterials ?? []} sessions={sessionPagesEnabled() ? await listClientSessions(access.client.id).catch(() => []) : []} view={view} />
 }

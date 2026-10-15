@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { OwnerAssessments } from '@/components/owner-assessments'
+import { ClientSessionEditor } from '@/components/client-session-editor'
+import { sessionPagesEnabled } from '@/lib/clients/session-delivery'
 import { notFound, redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
@@ -130,6 +132,11 @@ export default async function ClientDetail({ params }) {
         {!groups.length && <div className="client-detail-empty"><p>{labels.noDocumentsHint}</p></div>}
       </div>
     </section>
+
+    {sessionPagesEnabled() && <ClientSessionEditor clientId={id} locale={client.preferredLocale}
+      reports={assessments.filter(r => r.status === 'shared').map(r => ({ id: r.id, title: r.title, occurredOn: r.occurredOn }))}
+      documents={documents.filter(r => r.status === 'active' && r.kind !== 'report').map(r => ({id: r.id, title: r.kind === 'payment' ? copy.invoice : copy.recommendation, date: r.dateIssued, consultationId: r.consultationId ?? r.id}))}
+    />}
 
     <div className="client-detail-assessments">
       <OwnerAssessments records={assessments} clientId={id} locale={client.preferredLocale} temporary={store.assessmentStorage === 'memory'} />

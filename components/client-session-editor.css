@@ -1,0 +1,30 @@
+.hh-owner-sessions{margin:23px 0;padding:clamp(17px,3.5vw,28px);border:1px solid #bde1e5;border-radius:22px;background:linear-gradient(135deg,#f3fcff,#f1faf6);box-shadow:0 8px 28px #2b657011;color:#21465a;font:15px/1.5 system-ui,-apple-system,sans-serif}
+.hh-owner-sessions-heading p{color:#358494;font-size:11px;font-weight:850;letter-spacing:.11em}
+.hh-owner-sessions-heading h2{font:400 clamp(26px,4vw,33px)/1.2 Georgia,serif;margin:5px 0}
+.hh-owner-sessions-heading span{font-size:13px;color:#5d7b8a}
+.hh-owner-sessions button{cursor:pointer;min-height:44px;border-radius:12px;border:1px solid #b8d9df;padding:10px 14px;background:#fff;color:#245769}
+.hh-owner-sessions button:disabled{opacity:.55;cursor:default}
+.hh-owner-sessions :is(input,select,textarea){min-width:0;width:100%;padding:10px 12px;border-radius:12px;border:1px solid #bbd8db;background:#fff;color:#183e50;font:16px/1.4 system-ui}
+.hh-owner-sessions label{display:grid;gap:6px;color:#2c6072;font-size:13px;font-weight:750;min-width:0}
+.hh-owner-sessions :is(button,input,textarea,select):focus-visible{outline:3px solid #1782a0;outline-offset:2px}
+.hh-owner-sessions-new{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin:18px 0}
+.hh-owner-sessions-new button,.hh-owner-sessions .hh-owner-primary{background:#19798b;color:white;border-color:#19798b;font-weight:800}
+.hh-owner-session-list{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:17px}
+.hh-owner-session-list button{display:grid;text-align:left;gap:3px;max-width:100%;min-width:140px}
+.hh-owner-session-list button[aria-pressed=true]{border-color:#166c83;background:#def3f6}
+.hh-owner-session-list button small{color:#66818a}
+.hh-owner-session-editor{background:#fff;border:1px solid #d6e7e9;border-radius:18px;padding:clamp(14px,3vw,22px);display:grid;gap:14px}
+.hh-owner-session-editor-head{display:flex;align-items:center;justify-content:space-between}
+.hh-owner-session-editor h3{font:400 25px Georgia,serif;margin:0}.hh-owner-session-editor h4{font-size:15px;margin:0 0 9px}
+.hh-owner-session-items{border-top:1px solid #dce9eb;padding-top:16px}
+.hh-owner-session-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #eef3f4;padding:8px 0}
+.hh-owner-session-item>div:first-child{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.hh-owner-session-item small{color:#72909a}
+.hh-owner-session-item>div:last-child{display:flex;gap:5px}
+.hh-owner-session-add{display:grid;gap:12px;margin-top:15px;padding:17px;border:1px solid #e2eff0;border-radius:15px;background:#f7fcfc}
+.hh-owner-session-add>button{justify-self:start}
+.hh-owner-record{display:flex;gap:9px;flex-wrap:wrap}
+.hh-owner-session-actions{display:flex;gap:9px;flex-wrap:wrap}
+.hh-owner-session-status{margin-top:14px;background:#e6f6f4;padding:12px;border-radius:12px;color:#245d66}
+.hh-owner-upload-label input{padding:12px}
+.hh-owner-hint{font-size:12px;color:#5d7881}
+@media(max-width:560px){.hh-owner-sessions-new{grid-template-columns:1fr}.hh-owner-sessions-new button{width:100%}.hh-owner-session-actions button{width:100%}.hh-owner-session-list{display:grid;grid-template-columns:1fr}}

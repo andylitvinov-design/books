@@ -59,6 +59,21 @@ export function middleware(request: NextRequest) {
   // Public video pages use only these two reviewed embed providers. Keep the
   // cabinet, reports, APIs and document previews on the restrictive policy.
   const publicVideoDocument = publicDocument || videoManager
+  // Session pages stream only short-lived signed private Supabase media. The
+  // origin is deployment-configured and never read from a user's URL.
+  const sessionStorageOrigin = (() => {
+    try {
+      const url = new URL(process.env.HH_APP_SUPABASE_URL || '')
+      return url.protocol === 'https:' && /^[-a-z0-9]+\.supabase\.co$/i.test(url.hostname) ? url.origin : ''
+    } catch { return '' }
+  })()
+  const privateSessionPage = /^\/(en|ru)\/client\/(?:session\/|[^/]+\/sessions\/)/.test(pathname)
+  const sessionOwnerPage = /^\/admin\/clients\/[0-9a-f-]{36}\/?$/i.test(pathname)
+  const sessionMediaPolicy = privateSessionPage && sessionStorageOrigin ? `media-src 'self' ${sessionStorageOrigin}` : "media-src 'self'"
+  const sessionConnectPolicy = sessionOwnerPage && sessionStorageOrigin
+    ? `connect-src 'self' ${sessionStorageOrigin} https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com`
+    : "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"
+
   // Only the practitioner consultation editor may frame a locally generated PDF blob.
   // Client cabinets and every other private page keep frame-src 'none'.
   const practitionerDraftPreview = pathname === '/admin/consultations/new'
@@ -72,8 +87,8 @@ export function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
     publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'",
-    "font-src 'self'", "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com", "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    tantraReikiPage ? "media-src 'self' https://psitrends.com" : sessionMediaPolicy,
+    "font-src 'self'", sessionConnectPolicy, "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
