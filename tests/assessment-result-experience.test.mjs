@@ -85,7 +85,7 @@ test('account and guest Quick/Guided flows render the same two explicit finish a
     assert.match(ui, /onNext=\{\(\) =>/)
     assert.match(ui, /<PersonalResultReport result=/)
   }
-  assert.match(account, /onComplete\(result, destination\)/)
+  assert.match(account, /onComplete\(result, pending\.destination\)/)
   assert.match(account, /root \+ '\/results\/' \+ encodeURIComponent\(result\.id\)/)
   assert.match(account, /advanced\.definitionIds\?\.\[advanced\.currentIndex\]/)
   assert.match(account, /await appFetch\('runs', \{/)
@@ -100,7 +100,7 @@ test('both report surfaces use persisted scored dimensions; guest Google save is
   const guest = source('components/app/cabinet-landing.jsx')
   assert.match(account, /appFetch\('results\/' \+ id\)/)
   assert.match(account, /<PersonalResultReport result=\{result\}/)
-  assert.match(guest, /guest\/runs\/' \+ currentRun\.id \+ '\/submit'/)
+  assert.match(guest, /guest\/runs\/' \+ pending\.run\.id \+ '\/submit'/)
   assert.match(guest, /<PersonalResultReport result=\{guestResult\}/)
   assert.match(guest, /sourceKind: 'guest_result'/)
   assert.match(guest, /onClick=\{saveToCabinet\}/)
