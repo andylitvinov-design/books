@@ -33,6 +33,15 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     setDraft(result.session.draft)
     return result.session
   }
+  async function refreshAfterMedia() {
+    const result=await api(base)
+    setSession(result.session)
+    setDraft(current=>{
+      if(JSON.stringify(current)===JSON.stringify(session.draft)) return result.session.draft
+      const ids=new Set(current.media.map(item=>item.assetId))
+      return {...current,media:[...current.media,...result.session.draft.media.filter(item=>!ids.has(item.assetId))]}
+    })
+  }
   async function save() {
     const result=await api(base,'PATCH',{expectedRevision:session.draftRevision,draft})
     const updated=await load()
@@ -107,7 +116,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>{if(changed){setMessage(ru?'Запись сохранена. Сначала сохраните ваши текстовые изменения, затем обновите страницу.':'Recording saved. Save your text changes before refreshing.')}else load().catch(e=>setError(e.message))}}/>
+    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       {!draft.media.length&&<p>{ru?'Запишите аудио или загрузите MP4, чтобы прикрепить материал.':
