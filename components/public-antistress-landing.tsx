@@ -630,6 +630,11 @@ const copy = {
 } as const;
 
 const challengeIcons = [Waves, PauseCircle, Leaf, ShieldCheck] as const;
+const chapterLinks = {
+  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Формат занятий" }, { id: "questions", title: "Вопросы" }] },
+  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "How it works" }, { id: "questions", title: "Questions" }] },
+  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Cómo funciona" }, { id: "questions", title: "Preguntas" }] },
+} as const;
 const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
 export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
@@ -641,7 +646,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   const methodPath = "/" + locale + "/courses/methodology";
 
   return (
-    <main className={styles.root} lang={locale} data-opora-antistress-landing>
+    <main className={styles.root} lang={locale} data-opora-antistress-landing data-course-visual-style="academy-light">
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <div className={styles.container}>
         <nav className={styles.crumbs} aria-label={t.back}>
@@ -681,6 +686,13 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <span>{t.today}</span>
           <a href="#how">{t.howLink}<ArrowRight size={15} aria-hidden="true" /></a>
         </div>
+        <nav className={styles.chapterNav} aria-label={chapterLinks[locale].label} data-course-chapter-navigation>
+          {chapterLinks[locale].links.map((item, index) => (
+            <a key={item.id} href={"#" + item.id}>
+              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{item.title}
+            </a>
+          ))}
+        </nav>
 
         <section className={styles.section} id="for-whom" aria-labelledby="antistress-for-whom">
           <div className={styles.sectionIntro}>
@@ -721,10 +733,13 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
             <h2 id="antistress-programme">{t.skillsTitle}</h2>
             <p>{t.skillsLead}</p>
           </div>
+          <div className={styles.pathIllustration} aria-hidden="true">
+            <img src="/images/holistic-house/course-journey-landscape.svg" width={860} height={245} alt="" loading="lazy" decoding="async" />
+          </div>
           <div className={styles.skills}>
             {t.skills.map((skill, index) => <details className={styles.skill} key={skill.days} data-antistress-skill={index + 1}>
               <summary>
-                <span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span>
+                <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
                   <small>{t.daysWord} {skill.days}</small>
                   <strong>{skill.title}</strong>
@@ -740,11 +755,9 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.section} id="daily-programme" data-antistress-full-day-scheme>
-          <Course14DayOverview locale={locale} programId="stress" compact />
-        </section>
-
-        <section className={styles.detailedDays} aria-label={locale==="ru"?"Практики, результаты и измерения каждого дня":locale==="es"?"Ejercicios, resultados y medidas de cada día":"Exercises, outcomes and measurements for all 14 days"} data-antistress-detailed-14-day-scheme>
+        <section className={styles.detailedDays} id="daily-programme"
+          aria-label={locale==="ru"?"Практики, результаты и измерения каждого дня":locale==="es"?"Ejercicios, resultados y medidas de cada día":"Exercises, outcomes and measurements for all 14 days"}
+          data-antistress-full-day-scheme data-antistress-detailed-14-day-scheme>
           <Course14DayOverview locale={locale} programId="stress" compact />
         </section>
         <section className={styles.process} id="how" aria-labelledby="antistress-how">
