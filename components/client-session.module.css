@@ -515,3 +515,42 @@
    padding:25px 19px calc(22px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){.sessionSaveBackdrop{backdrop-filter:none}}
+
+/* Phone videos: compact authenticated upload; no public CDN, no Vercel MP4 uploads. */
+.videoUploader{background:linear-gradient(145deg,#f7fbfa,#fffaf8);border-color:#dce8e7}
+.videoUploader .sectionHeading h3{display:flex;align-items:center;gap:10px}
+.videoStorageMeter,.videoStorageAdmin{border:1px solid #d7e5df;border-radius:13px;
+  background:#f2f8f5;padding:13px 15px;color:#345f61;line-height:1.5}
+.videoStorageMeter{display:flex;align-items:center;gap:10px;margin:15px 0;font-size:14px;font-weight:700}
+.videoStorageMeter svg{flex:none}
+.videoEconomyLink{display:inline-flex;align-items:center;gap:8px;min-height:44px;
+  padding:10px 13px;border-radius:11px;border:1px solid #bfd8db;color:#226c77;
+  font-size:14px;font-weight:750;text-decoration:none}
+.videoEconomyLink:hover{background:#e7f4f3}
+.videoUploader .photoHint{display:flex;gap:8px;align-items:flex-start;font-size:13px!important}
+.videoUploader .photoHint svg{flex:none;margin-top:2px}
+.videoReview{border:1px solid #d4e3e1;border-radius:14px;background:#fff;
+  margin:18px 0;padding:15px}
+.videoReviewFacts{display:flex;gap:5px;flex-direction:column;font-size:14px;overflow-wrap:anywhere}
+.videoReviewFacts strong{color:#244f55}
+.videoReviewFacts span{color:#586d71}
+.videoReview video{max-height:360px;max-width:100%}
+.videoReview .recordControls{margin-top:12px}
+.videoStorageAdmin{margin:16px 0 20px}
+.videoStorageAdmin>strong{display:block;font-size:16px;color:#294b50}
+.videoStorageAdmin>span{display:block;margin:5px 0 10px;font-weight:750;font-size:14px}
+.videoStorageAdmin p{font-size:13px;color:#657977;line-height:1.52}
+.videoCleanupList{display:grid;gap:8px;margin:14px 0}
+.videoCleanupList>div{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border-radius:11px;background:#fff;border:1px solid #e0e9e5;padding:10px 12px}
+.videoCleanupList span{font-size:14px;overflow-wrap:anywhere}
+.videoCleanupList button{min-height:44px;display:inline-flex;align-items:center;gap:7px;
+  border-radius:10px;padding:9px 11px;border:1px solid #ddc3c4;background:#fff5f5;
+  color:#822d42;font-size:13px;font-weight:750;cursor:pointer}
+.videoCleanupList button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){
+ .videoUploader .recordControls{align-items:stretch;flex-direction:column}
+ .videoUploader .filePicker,.videoEconomyLink{width:100%;justify-content:center}
+ .videoCleanupList>div{flex-direction:column;align-items:stretch}
+ .videoCleanupList button{justify-content:center}
+}
