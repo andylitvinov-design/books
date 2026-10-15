@@ -930,3 +930,35 @@
 @media(prefers-reduced-motion:reduce){
   .shell :is(.topic,.problemChip,.promoAction,.takeTest){transition:none}
 }
+
+
+/* VIA strength family: one source-cleared long profile, 27 optional short scales. */
+.shell .viaFamily{
+  display:grid;gap:10px;margin:10px 0 14px;padding:14px 15px;
+  border:1px solid #b6c9d7;border-radius:14px;
+  background:linear-gradient(135deg,#f0f5f8,#fff9f8);color:#173957;
+}
+.shell .viaFamilyIntro strong{display:block;font-size:1rem;font-weight:750;line-height:1.3}
+.shell .viaFamilyIntro p{margin:5px 0 0;font-size:.78rem;line-height:1.47;color:#4a6070}
+.shell .viaFamilyActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.shell .viaFamilyActions>span{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;color:#37526a;margin-right:auto}
+.shell .viaFamilyActions>button,.shell .viaToggle{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:9px 12px;border:1px solid #234562;
+  border-radius:10px;font-size:.77rem;font-weight:700;line-height:1.2;cursor:pointer;
+}
+.shell .viaSelect,.shell .viaToggle{background:#fff;color:#173957}
+.shell .viaSelect[aria-pressed=true]{background:#173957;color:#fff;border-color:#173957}
+.shell .viaFamilyActions .takeTest{
+  position:static;grid-column:auto;grid-row:auto;justify-self:auto;min-width:0;
+  background:#873b53!important;border-color:#873b53!important;color:#fff!important;
+}
+.shell .viaToggle{justify-self:start}
+.shell .viaFamily :is(button,input):focus-visible{outline:3px solid #2a6580;outline-offset:2px}
+.shell .viaFamily button:disabled{cursor:not-allowed;opacity:.55}
+@media(max-width:600px){
+  .shell .viaFamily{padding:12px 11px;gap:9px}
+  .shell .viaFamilyActions>span{flex-basis:100%}
+  .shell .viaFamilyActions>button{flex:1 1 135px}
+  .shell .viaToggle{width:100%}
+}
