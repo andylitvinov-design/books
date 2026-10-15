@@ -2,6 +2,7 @@
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 import { canAutoContinueSave, savedResourcePath } from '@/lib/app/client-handoff'
+import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
@@ -637,7 +638,12 @@ function SaveContinuation({ data, locale, reload }) {
     try {
       const saved = await appFetch('save-intents/' + intentId + '/commit', { confirmed: true })
       await reload()
-      router.replace(savedResourcePath(locale, saved.sourceKind, saved.resource.id))
+      // A confirmed session Save may have been initiated by a navigation click.
+      // Continue to exactly the first-party section selected before OAuth.
+      const next=saved.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      router.replace(next||savedResourcePath(locale,saved.sourceKind,saved.resource.id))
     } catch (e) {
       setError(
         e?.code === 'SAVE_INTENT_EXPIRED'
@@ -665,7 +671,10 @@ function SaveContinuation({ data, locale, reload }) {
     if (autoStarted.current === intentId) return
     autoStarted.current = intentId
     if (intent.status === 'committed' && intent.resourceId) {
-      router.replace(savedResourcePath(locale, intent.sourceKind, intent.resourceId))
+      const next=intent.sourceKind==='client_session' && typeof window!=='undefined'
+        ? consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)
+        : null
+      router.replace(next||savedResourcePath(locale,intent.sourceKind,intent.resourceId))
       return
     }
     void commit()

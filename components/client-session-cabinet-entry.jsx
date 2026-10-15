@@ -3,6 +3,7 @@
 import {useState} from 'react'
 import {BookOpen,ClipboardList,FolderOpen,House,LogIn,ShieldCheck,ChevronRight} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
+import {useSessionExitNavigation} from './session-exit-save-guard'
 import styles from './client-session.module.css'
 
 // These are fixed, public cabinet destinations. Never send a private session
@@ -19,8 +20,10 @@ export function ClientSessionCabinetEntry({locale='en',variant='header',appAvail
   const [busy,setBusy]=useState(null)
   const [error,setError]=useState('')
   const base='/'+locale+'/app'
+  const exit=useSessionExitNavigation()
   const navigate=async(kind)=>{
     if(busy||!sections[kind])return
+    if(exit){exit.requestExit(base+'/'+sections[kind].path);return}
     if(!appAvailable) {
       setError(ru?'Личный кабинет временно недоступен. Материалы текущей консультации остаются на этой странице.':
         'The Google Cabinet is temporarily unavailable. You can still read this session here.')

@@ -4,6 +4,7 @@ import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,Lis
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
+import { SessionExitSaveGuard } from './session-exit-save-guard'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
@@ -93,7 +94,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
-  return <main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
+  const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
       <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
@@ -236,4 +237,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Все мои консультации':'All my sessions'}</a>}
     </footer>
   </main>
+  return mode==='saved'?content:<SessionExitSaveGuard locale={locale} selector={selector}
+    sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}>{content}</SessionExitSaveGuard>
 }
