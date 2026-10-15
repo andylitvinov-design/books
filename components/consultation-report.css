@@ -2905,3 +2905,80 @@
   .canonical-document--editorial .canonical-remedy {break-inside:avoid}
   .canonical-document--editorial .canonical-remedy-profile::after {display:none}
 }
+
+
+/* Premium report composition v7: factual two-gauge dashboard plus the narrow
+   editorial quotation column from the approved first-page mockup. */
+.canonical-document--editorial .canonical-progress-grid {
+  display:grid;
+  grid-template-columns:minmax(0,.93fr) minmax(0,.93fr) minmax(125px,1fr);
+  align-items:center;
+  max-width:none;
+  gap:12px;
+  margin-top:15px;
+}
+.canonical-document--editorial .canonical-progress-item {
+  min-width:0;
+  padding:8px 0;
+  background:transparent;
+}
+.canonical-document--editorial .canonical-progress-dial {
+  width:79px;
+  height:79px;
+  flex:0 0 79px;
+}
+.canonical-document--editorial .canonical-progress-note {
+  display:flex;
+  position:relative;
+  flex-direction:column;
+  justify-content:center;
+  min-height:92px;
+  padding:15px 12px 15px 26px;
+  margin:0;
+  border-left:1px solid #cbd8d3;
+  border-radius:0;
+  background:
+    url('/images/holistic-house/homepage-botanical.svg') right 10px bottom 5px/29px auto no-repeat,
+    linear-gradient(105deg,#faf5ef,#f4f9f5);
+}
+.canonical-document--editorial .canonical-progress-note span {
+  position:relative;
+  z-index:1;
+  display:block;
+  padding-right:15px;
+  color:#5c4654;
+  font:italic 13px/1.45 Georgia,'Times New Roman',serif;
+  text-wrap:pretty;
+}
+@media(max-width:680px) {
+  .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .canonical-document--editorial .canonical-progress-dial {width:67px;height:67px;flex-basis:67px}
+  .canonical-document--editorial .canonical-progress-note {
+    grid-column:1/-1;
+    min-height:0;
+    margin-top:2px;
+    padding:11px 14px 11px 18px;
+  }
+  .canonical-document--editorial .canonical-progress-note span {
+    font-size:12px;
+  }
+}
+@media print {
+  .canonical-document--editorial .canonical-progress-grid {
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(125px,1fr);
+    gap:10px;
+    break-inside:avoid;
+  }
+  .canonical-document--editorial .canonical-progress-dial {width:69px;height:69px;flex-basis:69px}
+  .canonical-document--editorial .canonical-progress-note {
+    grid-column:auto;
+    background:#faf5ef!important;
+    min-height:75px;
+    padding:10px 9px 10px 18px;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+}
