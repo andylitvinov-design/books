@@ -205,6 +205,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [customizeOpen, setCustomizeOpen] = useState(Boolean(openFiltersInitially))
   const [activeFilterGroup, setActiveFilterGroup] = useState(initialFilterGroup)
   const [showAll, setShowAll] = useState(false)
+  const [showStandaloneVia, setShowStandaloneVia] = useState(false)
   const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
   const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
@@ -247,6 +248,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     if (sort === 'type') return (TEST_KIND_ORDER[a.testKind] ?? 9) - (TEST_KIND_ORDER[b.testKind] ?? 9) || a.title.localeCompare(b.title, locale)
     return 0
   }), [ranked, sort, locale, axisFilter, selectedKeys])
+  // Preserve all 27 source-clear individual VIA strengths/core scales, but show one complete
+  // 96-item card by default. Explicit selections, search and already-saved results remain visible.
+  const isStandaloneVia = (key) => /^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(key)
+  const visibleCatalog = visible.filter((entry) =>
+    showStandaloneVia || query.trim() || selectedKeys.includes(entry.key) || !isStandaloneVia(entry.key))
+  const viaStandaloneMatches = visible.filter((entry) => isStandaloneVia(entry.key)).length
+  const collapsedViaCount = visible.length - visibleCatalog.length
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
@@ -523,14 +531,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       </div>
     </section>
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
-      {visible.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
-      <div className={styles.list}>{(showAll ? visible : visible.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
+      {viaStandaloneMatches > 0 && !query.trim() && <div className={styles.viaFamilyNote} data-via-family-collapsed={collapsedViaCount}>
+        <span>{locale === 'ru' ? 'IPIP-VIA-R: полный профиль 24 сильных сторон доступен одним тестом на 96 вопросов. Отдельные шкалы сохранены.' : locale === 'es' ? 'IPIP-VIA-R: explora las 24 fortalezas con una prueba de 96 preguntas. Las escalas individuales siguen disponibles.' : 'IPIP-VIA-R: explore 24 strengths in one optional 96-question test. Individual scales remain available.'}</span>
+        <button type="button" aria-expanded={showStandaloneVia} onClick={() => setShowStandaloneVia((value) => !value)}>{showStandaloneVia ? (locale === 'ru' ? 'Свернуть отдельные шкалы' : locale === 'es' ? 'Ocultar escalas individuales' : 'Hide individual scales') : (locale === 'ru' ? `Показать отдельные шкалы (${viaStandaloneMatches})` : locale === 'es' ? `Mostrar escalas individuales (${viaStandaloneMatches})` : `Show individual scales (${viaStandaloneMatches})`)}</button>
+      </div>}
+      {visibleCatalog.length === 0 && <p className={styles.emptyState} role="status">{c.noMatches}</p>}
+      <div className={styles.list}>{(showAll ? visibleCatalog : visibleCatalog.slice(0, 8)).map((entry, index) => <article key={entry.key} className={`${styles.row} ${selectedKeys.includes(entry.key) ? styles.rowSelected : ''} ${axisFilter && entry.measurementAxes?.includes(axisFilter) ? styles.rowAxis : ''}`}>
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}<TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />{audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
 
       </article>)}</div>
-        {visible.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visible.length})`}</button>}
+        {visibleCatalog.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visibleCatalog.length})`}</button>}
       </div>
     </div>
       <footer className={styles.battery}>

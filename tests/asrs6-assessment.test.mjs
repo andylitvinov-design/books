@@ -98,7 +98,7 @@ test('all six valid answers required, including zero; missing/null never become 
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,139)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
