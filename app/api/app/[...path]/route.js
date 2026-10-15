@@ -71,7 +71,8 @@ async function handle(request, { params }) {
         serviceId = body.serviceId || null,
         continueTo = body.continueTo || null,
         program = body.program || null
-      if (continueTo !== null && !['tests','course','cabinet','my-tests','my-courses','reports'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+      if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
+        !['cabinet','my-tests','my-courses','reports'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
