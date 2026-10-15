@@ -331,7 +331,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
   async function finish(entry, resultId, auth, channelId) {
     const actual = await readUploadedVisibility(resultId,auth.value)
     update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual || 'unknown',saved:false})
-    await saveLink(entry.id,resultId,actual,entry.title,entry.target,channelId)
+    const archived = await saveLink(entry.id,resultId,actual,entry.title,entry.target,channelId)
+    if (!archived) throw new Error('history_unavailable')
   }
   async function runUploads() {
     const desired = channels[target]
@@ -392,7 +393,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', i
       if (currentId && entriesRef.current.find(item => item.id === currentId)?.state !== 'done') {
         update(currentId,{state:controller.signal.aborted ? 'paused':'failed'})
       }
-      setError(humanError(reason,t))
+      setError(reason instanceof Error && reason.message === 'history_unavailable' ? t.historyError : humanError(reason,t))
     } finally {
       active.current = false
       setBusy(false)
