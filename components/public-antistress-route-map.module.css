@@ -7,3 +7,10 @@
 .bottom{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:20px;flex-wrap:wrap}.bottom span{display:flex;align-items:flex-start;gap:9px;max-width:520px;font-size:12px;line-height:1.55;color:#dce5ea}.bottom span svg{flex:none;color:#f1bacb}.bottom a{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:12px 16px;border-radius:11px;background:#873854;color:#fff;font-size:13px;font-weight:820;text-decoration:none}.bottom a:hover{background:#9c4763}.bottom a:focus-visible,.route summary:focus-visible,.method summary:focus-visible{outline:3px solid #f0becd;outline-offset:3px}
 @media(max-width:640px){.root{margin-top:34px;padding:20px 16px;border-radius:19px}.routes{grid-template-columns:minmax(0,1fr)}.route summary{min-height:70px;padding:11px}.routeDetail{padding-left:64px}.bottom{align-items:stretch}.bottom a{width:100%}}
 @media(prefers-reduced-motion:reduce){.route summary>svg,.method summary svg{transition:none}}
+
+.route[data-selected=true]{border-color:#f6c7d5;background:rgba(137,51,83,.27)}
+.route[data-selected=true] .number{background:#f0c2d2;color:#62233b}
+.routeDetail .preview{display:inline-flex;align-items:center;gap:7px;width:max-content;max-width:100%;margin-top:12px;padding:9px 13px;border-radius:9px;border:1px solid #ecc6d5;color:#fff;background:#75364f;font-size:12px;font-weight:800;line-height:1.4;text-decoration:none;min-height:42px}
+.routeDetail .preview[aria-current=true]{background:#e9b9cb;color:#55233c}
+.routeDetail .preview:hover{background:#9a4c68}
+.routeDetail .preview:focus-visible{outline:3px solid #fff;outline-offset:2px}
