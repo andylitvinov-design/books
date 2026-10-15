@@ -287,3 +287,7 @@
 @media(max-width:530px){.fastEntry{gap:12px;padding:20px 16px;border-radius:19px}
   .fastEntry h1{font-size:32px}.fastEntry .fastConsent{font-size:12.5px}
   .fastEntry .fastStartButton{min-height:52px}}
+
+/* On the post-assessment screen, the recommended module/Day 1 button is the primary first-view action. */
+.routeBack{padding:4px 7px!important;min-height:30px!important;background:transparent!important;border-color:transparent!important;color:#3a7990!important;font-size:12px!important;box-shadow:none!important}
+@media(max-width:530px){.routeBack{padding:2px 5px!important;min-height:25px!important}}
