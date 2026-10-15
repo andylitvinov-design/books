@@ -76,9 +76,13 @@ function publicHarness({ signedIn = false, guestHandler = async () => {} } = {})
       await guestHandler(entry)
     },
   })
-  const find = (n) => n?.type === 'TestExplorer' ? n :
-    Array.isArray(n?.props?.children) ? n.props.children.map(find).find(Boolean) :
-      find(n?.props?.children)
+  const find = (n) => {
+    if (!n || typeof n !== 'object') return null
+    if (n.type === 'TestExplorer') return n
+    const children = n.props?.children
+    if (Array.isArray(children)) return children.map(find).find(Boolean) || null
+    return children ? find(children) : null
+  }
   const explorer = find(node)
   assert.ok(explorer?.props?.onStart)
   return { requests, storage, redirects, navigation, guest, onStart: explorer.props.onStart }
