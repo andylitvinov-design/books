@@ -14,7 +14,7 @@ Status 2026-10-15: PR #592; schema and private bucket provisioned in existing Ca
 - Existing repo and Vercel project used; do not deploy the PR without verification.
 - Migration file: sql/client-delivery-sessions-20261015.sql. It was applied to production Supabase 2026-10-15.
 - Four app_private RLS tables restricted to hh_app_backend. Encrypted draft and published snapshots use HH_APP_ENCRYPTION_KEY with per-record AAD.
-- Private Supabase bucket hh-client-private-media (public=false), allowlisted MIME types and 100MiB bucket cap. No public Storage SELECT policies. Audio max 25MiB, MP4 max 100MiB subject to organization limits.
+- Private Supabase bucket hh-client-private-media (public=false), allowlisted MIME types and 50MB bucket cap (Supabase Free global maximum). No public Storage SELECT policies. Audio max 20 MB, MP4 max 45 MB to remain under the existing Free-tier 50 MB global upload ceiling.
 - Browser upload uses temporary signed upload token, not a large Vercel file POST. Backend validates object type/size, and playback is authorized separately.
 - Feature flag HH_CLIENT_DELIVERY_ENABLED is OFF by default.
 
@@ -32,3 +32,6 @@ Status 2026-10-15: PR #592; schema and private bucket provisioned in existing Ca
 - iPhone hardware acceptance and live media end-to-end playback remain unverified until server key and preview test environment are configured.
 
 Primary route paths: /admin/clients/[id], /admin/clients/[id]/sessions/[sessionId], /admin/documents/[id], /admin/consultations/[id]/edit, /en/client/session/[selector], /en/client/[selector]/sessions/[sessionId].
+
+### Free-tier media cap correction (2026-10-15)
+The connected Supabase organization uses Free (single-file maximum **50 MB**; egress limit **10 GB** split between cached/uncached bandwidth). Limit private video uploads to **45 MB** and audio to **20 MB**. The first production bucket was mistakenly configured to 100 MiB; reduce its storage.bucket file_size_limit to 50,000,000 bytes without changing visibility or objects. Larger original 1080p MP4 masters remain in approved restricted archives; private cabinet gets a compressed playback copy. No plan upgrade authorized. 5-minute signed URLs are renewed during longer audio/video playback without exposing other consultations.

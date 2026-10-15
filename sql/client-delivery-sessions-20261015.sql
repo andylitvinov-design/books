@@ -95,10 +95,10 @@ create policy hh_delivery_grant_server_only on app_private.client_session_share_
 create policy hh_delivery_viewer_server_only on app_private.client_session_viewer_sessions
  for all to hh_app_backend using (true) with check (true);
 
--- Supabase Storage bucket: separate from public assets. 100 MiB per object.
+-- Supabase Storage bucket: separate from public assets. 50 MB per object on the existing Supabase Free plan..
 -- No storage.objects policies are granted to anon/authenticated.
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('hh-client-private-media','hh-client-private-media',false,104857600,
+values('hh-client-private-media','hh-client-private-media',false,50000000,
   array['audio/webm','audio/mp4','audio/x-m4a','audio/mpeg','video/mp4'])
 on conflict(id) do nothing;
 

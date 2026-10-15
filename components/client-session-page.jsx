@@ -1,45 +1,67 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,CalendarDays } from 'lucide-react'
 import styles from './client-session.module.css'
 
-async function requestPlayback(url) {
-  const res=await fetch(url,{method:'POST',credentials:'same-origin',cache:'no-store',
-    headers:{'content-type':'application/json'},body:'{}'})
-  if(!res.ok) throw new Error('Private media unavailable')
-  const data=await res.json()
-  if(!data.url||!data.url.startsWith('https://')) throw new Error('Private media unavailable')
-  return data.url
-}
 function PrivatePlayer({item,session,mode,selector,locale}) {
   const [source,setSource]=useState('')
+  const [expiry,setExpiry]=useState(0)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
-  const isVideo=item.kind==='video'
-  const ru=locale==='ru'
+  const busy=useRef(false),player=useRef(null),resume=useRef(null)
+  const isVideo=item.kind==='video',ru=locale==='ru'
   const route=mode==='guest'
     ? '/api/client-session-viewer/'+selector+'/media/'+item.assetId
     : '/api/client/'+selector+'/sessions/'+session.id+'/media/'+item.assetId
-  async function load() {
-    setLoading(true);setError('')
-    try{setSource(await requestPlayback(route))}
-    catch(e){setError(ru?'Запись недоступна. Попробуйте ещё раз.':'Recording unavailable. Please try again.')}
-    finally{setLoading(false)}
+
+  async function load(renew=false) {
+    if(busy.current)return
+    busy.current=true;setLoading(true);setError('')
+    const element=player.current
+    resume.current=renew&&element?{time:element.currentTime,play:!element.paused}:null
+    try{
+      const response=await fetch(route,{method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'content-type':'application/json'},body:'{}'})
+      if(!response.ok)throw new Error('unavailable')
+      const data=await response.json()
+      if(typeof data.url!=='string'||!data.url.startsWith('https://'))throw new Error('unavailable')
+      setExpiry(Date.now()+Math.min(300,Math.max(1,Number(data.expiresIn)||300))*1000)
+      setSource(data.url)
+    }catch{
+      setError(ru?'Запись недоступна. Попробуйте ещё раз.':'Recording unavailable. Please try again.')
+      if(renew)setSource('')
+    }finally{busy.current=false;setLoading(false)}
+  }
+  function maybeRenew(){
+    // A 5-minute signed URL is valid for initial playback but can expire while
+    // listening to a 10-minute practice or after seeking on a slow phone.
+    if(source&&expiry&&Date.now()>expiry-45000&&!busy.current)void load(true)
+  }
+  function restorePosition(){
+    const checkpoint=resume.current,element=player.current
+    if(!checkpoint||!element)return
+    resume.current=null
+    try{if(Number.isFinite(checkpoint.time)&&checkpoint.time>0)element.currentTime=checkpoint.time}catch{}
+    if(checkpoint.play)void element.play().catch(()=>{})
+  }
+  function playbackError(){
+    if(expiry&&Date.now()>expiry-45000&&!busy.current)void load(true)
+    else{setSource('');setError(ru?'Откройте запись повторно':'Please reopen the recording')}
   }
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
       <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
         <small>{isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     </div>
-    {!source?<button className={styles.playButton} type="button" disabled={loading} onClick={load}>
+    {!source?<button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
       <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}</button>
-      :isVideo?<video className={styles.video} controls playsInline preload="metadata" src={source}
-        onError={()=>{setSource('');setError(ru?'Откройте запись повторно':'Please reopen the recording')}}/>:
-        <audio className={styles.audio} controls preload="metadata" src={source}
-          onError={()=>{setSource('');setError(ru?'Откройте запись повторно':'Please reopen the recording')}}/>}
+      :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
+        onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
+        <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
+          onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
       <p>{item.transcript}</p></details>}
-    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={load}>{ru?'Повторить':'Retry'}</button></p>}
+    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
 export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null}) {

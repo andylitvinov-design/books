@@ -16,6 +16,8 @@ test('private storage MIME and size restrictions',()=>{
   assert.equal(PRIVATE_MEDIA_BUCKET,'hh-client-private-media')
   assert.equal(SESSION_MEDIA_TYPES['audio/mp4'].kind,'audio')
   assert.equal(SESSION_MEDIA_TYPES['video/mp4'].kind,'video')
+  assert.equal(SESSION_MEDIA_TYPES['video/mp4'].max,45_000_000)
+  assert.equal(SESSION_MEDIA_TYPES['audio/mp4'].max,20_000_000)
   assert.ok(SESSION_MEDIA_TYPES['audio/mp4'].max<SESSION_MEDIA_TYPES['video/mp4'].max)
   assert.equal(SESSION_MEDIA_TYPES['image/svg+xml'],undefined)
 })
