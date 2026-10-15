@@ -80,6 +80,9 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
             xhr.withCredentials=false
             xhr.timeout=900000
             xhr.setRequestHeader('Content-Type',mime)
+            // Signed create-only condition: an expired/retried upload cannot
+            // overwrite an earlier completed consultation video.
+            xhr.setRequestHeader('If-None-Match','*')
             xhr.upload.onprogress=event=>{
               if(event.lengthComputable&&mountedRef.current)
                 setUploadProgress(Math.min(100,Math.round(100*event.loaded/event.total)))
