@@ -1859,8 +1859,11 @@ test('private session share grants enforce per-consultation ownership under real
   try{
     await db.query('create schema if not exists storage')
     await db.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
-    const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
-    await db.query(sql)
+    const already=(await db.query("select to_regclass('app_private.client_delivery_sessions') as found")).rows[0].found
+    if(!already){
+      const sql=await readFile(new URL('../sql/client-delivery-sessions-20261015.sql',import.meta.url),'utf8')
+      await db.query(sql)
+    }
     // The private PDF extension is additive and does not grant browser DB access.
     const pdfExtension=await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8')
     await db.query(pdfExtension)
@@ -1925,7 +1928,8 @@ test('saving exactly one consultation in Google Cabinet uses owner-bound RLS and
   const db=await adminClient()
   try{
     const ddl=await readFile(new URL('../sql/client-session-account-save-20261015.sql',import.meta.url),'utf8')
-    await db.query(ddl)
+    const ready=(await db.query("select to_regclass('app.saved_sessions') as found")).rows[0].found
+    if(!ready)await db.query(ddl)
     const sa=randomUUID(),sb=randomUUID(),clientA=randomUUID(),clientB=randomUUID(),grantA=randomUUID()
     for(const [id,owner] of [[sa,clientA],[sb,clientB]])
       await db.query(
