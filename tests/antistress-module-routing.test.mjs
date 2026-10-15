@@ -124,7 +124,7 @@ test('connected intake screens and server enforce the owner-scoped selection',()
  assert.match(day, /oporaModuleRouter:ANTISTRESS_ROUTER_VERSION/)
  assert.match(day, /activePreferences\.oporaModuleRouter/)
  assert.match(day, /cycle\.preferences\?\.oporaModuleRouter/)
- assert.match(day, /primaryTestKey=isActiveStress && selected\.includes\('hh-weekly-pulse'\)/)
+ assert.match(day, /primaryTestKey=isActiveStress && \['AS2','AS6'\]\.includes\(moduleId\)/)
  assert.match(day, /antiStress:isActiveStress/)
 })
 
