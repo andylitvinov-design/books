@@ -41,6 +41,8 @@ test("home SEO metadata and all three languages have real human-readable variant
   assert.match(russian, /locale="ru"/);
   assert.match(spanish, /spanishMetadata\('\/es'/);
   assert.match(spanishMeta, /absolute\(suffix \? '\/ru' \+ suffix : '\/ru'\)/);
+  assert.match(spanishMeta, /metadataBase: base/);
+  assert.doesNotMatch(spanishMeta, /metadataBase: null/);
   assert.match(sitemap, /homepageLanguages/);
   assert.match(sitemap, /\.\.\.network, \.\.\.homes/);
 });
