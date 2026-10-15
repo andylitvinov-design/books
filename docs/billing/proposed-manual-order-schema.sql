@@ -1,8 +1,9 @@
--- Holistic House: standalone manual invoice requests. ADDITIVE and privately scoped.
+-- UNAPPLIED: Holistic House manual billing, additive private ledger.
 -- Review exact target / role grants / RLS and apply through a controlled migration.
 -- Pending orders NEVER grant entitlements; those require a separately reviewed
 -- receipt-confirmation + multi-course rollout. No bank account or PII stored.
-begin;
+DO $ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $;
+BEGIN;
 
 create table app_private.manual_billing_orders (
   id uuid primary key default gen_random_uuid(),
@@ -61,4 +62,4 @@ create policy manual_orders_reviewer_change on app_private.manual_billing_orders
 
 -- No client, network practitioner or non-moderator role can create a paid receipt.
 -- External reference is stored only as an HMAC digest, globally unique to stop reuse.
-commit;
+COMMIT;

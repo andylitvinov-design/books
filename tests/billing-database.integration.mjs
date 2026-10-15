@@ -269,6 +269,43 @@ test('real isolated billing and CRM SQL grants, RLS, rollback and races', { time
       assertIsolated()
       await admin.query(await readFile(new URL('../supabase/migrations/'+migration,import.meta.url),'utf8'))
     }
+    await applyIsolatedProposal(admin, 'proposed-manual-order-schema.sql',
+      "DO $ BEGIN RAISE EXCEPTION 'UNAPPLIED MANUAL BILLING PROPOSAL: explicit approval required'; END $;")
+    await t.test('manual invoice RLS, duplicate request key and reviewer-only payment writes', async () => {
+      const owner = await createOwner(admin), foreign = await createOwner(admin)
+      const op = randomUUID()
+      const order = (await rawAs(owner, 'hh_app_backend', db => db.query(
+        "insert into app_private.manual_billing_orders(account_id,operation_id,plan_id,method_id,currency,reference_euro_cents) values($1,$2,'advanced','paypal-eur','EUR',2000) returning *",
+        [owner.id,op]))).rows[0]
+      assert.equal(order.status, 'requested')
+      assert.equal((await rawAs(owner, 'hh_app_backend', db => db.query(
+        'select id from app_private.manual_billing_orders'))).rows.length, 1)
+      assert.equal((await rawAs(foreign, 'hh_app_backend', db => db.query(
+        'select id from app_private.manual_billing_orders'))).rows.length, 0)
+      await assert.rejects(rawAs(foreign,'hh_app_backend',db=>db.query(
+        "insert into app_private.manual_billing_orders(account_id,operation_id,plan_id,method_id,currency,reference_euro_cents) values($1,$2,'advanced','paypal-eur','EUR',2000)",[owner.id,randomUUID()])),
+      errorCode('42501'))
+      await assert.rejects(rawAs(owner,'authenticated',db=>db.query(
+        'select * from app_private.manual_billing_orders')),errorCode('42501'))
+      await assert.rejects(rawAs(owner,'hh_app_inbox',db=>db.query(
+        'select * from app_private.manual_billing_orders')),errorCode('42501'))
+      await assert.rejects(rawAs(owner,'hh_app_backend',db=>db.query(
+        "update app_private.manual_billing_orders set status='quoted',invoice_amount_minor=2000 where id=$1",[order.id])),
+      errorCode('42501'))
+      await assert.rejects(rawAs(owner,'hh_app_backend',db=>db.query(
+        "insert into app_private.manual_billing_orders(account_id,operation_id,plan_id,method_id,currency,reference_euro_cents,status,invoice_amount_minor) values($1,$2,'premium','paypal-eur','EUR',10000,'paid',10000)",
+        [owner.id,randomUUID()])),errorCode('42501'))
+      const reviewed=(await rawAs(owner,'hh_app_backend',async db=>{
+        await db.query("select set_config('hh.moderator','1',true)")
+        return db.query("update app_private.manual_billing_orders set status='quoted',invoice_amount_minor=2000,invoice_currency='EUR',quote_confirmed_at=now(),revision=revision+1 where id=$1 returning *",[order.id])
+      })).rows[0]
+      assert.equal(reviewed.status,'quoted')
+      assert.equal((await rawAs(owner,'hh_app_backend',db=>db.query(
+        'select id from app_private.manual_billing_orders where account_id=$1',[owner.id]))).rows.length,1)
+      await assert.rejects(rawAs(foreign,'hh_app_backend',db=>db.query(
+        "update app_private.manual_billing_orders set status='rejected' where id=$1",[order.id])),
+      errorCode('42501'))
+    })
     await applyIsolatedProposal(admin, 'proposed-premium-session-schema.sql',
       "DO $$ BEGIN RAISE EXCEPTION 'UNAPPLIED PREMIUM SESSION PROPOSAL: explicit approval required'; END $$;")
     await applyIsolatedProposal(admin, 'proposed-concurrent-course-schema.sql',
