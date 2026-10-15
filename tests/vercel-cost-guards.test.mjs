@@ -46,7 +46,7 @@ test("Vercel shallow clones use a bounded public GitHub compare without download
   assert.deepEqual(await changedFilesViaGithub(prev,head,fakeFetch),["docs/myspace/README.md"]);
   assert.equal(called,1);
   const fake = data => async () => ({ok:true,json:async()=>data});
-  assert.equal(await changedFilesViaGithub(prev,head,fake(compare({files:["docs/myspace/README.md","components/site-navigation.tsx"]}))).length,2);
+  assert.equal((await changedFilesViaGithub(prev,head,fake(compare({files:["docs/myspace/README.md","components/site-navigation.tsx"]})))).length,2);
   assert.equal(await changedFilesViaGithub(prev,head,fake(compare({status:"diverged"}))),null);
   assert.equal(await changedFilesViaGithub(prev,head,fake(compare({ahead_by:251}))),null);
   assert.equal(await changedFilesViaGithub(prev,head,fake(compare({base_commit:{sha:"c".repeat(40)}}))),null);
