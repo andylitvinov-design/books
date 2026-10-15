@@ -19,7 +19,7 @@ export default async function YoutubeUploadPage() {
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
   const clientId = process.env.HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID || ''
   const enabled = process.env.HH_YOUTUBE_PHONE_UPLOAD_ENABLED === 'true'
-    && /^[A-Za-z0-9._-]+\\.apps\\.googleusercontent\\.com$/.test(clientId)
+    && /^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/.test(clientId)
   const initialChannels = {
     ru:{id:RUSSIAN_CHANNEL_ID,name:'Академия Древних Культур',handle:'@shamanic_academy'},
     en:null,
