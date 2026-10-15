@@ -245,7 +245,7 @@ export const MONITORING_CATALOG = deepFreeze([
   {
     key: 'gad-7',
     version: 'v1',
-    instrumentLocale: 'en',
+    instrumentLocale: 'dynamic',
     axis: 'symptoms',
     resultAxes: ['symptoms'],
     topics: ['anxiety'],
@@ -266,10 +266,10 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'anxiety', weight: 1 }, { key: 'stress', weight: 0.75 }, { key: 'emotional_regulation', weight: 0.6 },
       { key: 'sleep', weight: 0.35 }, { key: 'focus', weight: 0.35 },
     ],
-    title: { en: 'Anxiety Deep Dive', ru: 'Глубокая проверка тревожности · EN' },
+    title: { en: 'Anxiety Deep Dive', ru: 'Тревожность · GAD-7 · 7 вопросов' },
     description: {
       en: 'A GAD-7 check of anxiety symptom intensity over the past two weeks.',
-      ru: 'Шкала GAD-7 выраженности тревожных симптомов за две недели; вопросы на английском.',
+      ru: 'GAD-7 за последние две недели. Русская версия Holistic House — отдельный перевод, не прошедший самостоятельную психометрическую валидацию.',
     },
   },
   {

@@ -14,6 +14,7 @@ const COPY = {
     unavailable: 'The original version is no longer available for retesting. Your earlier result stays in My Tests.',
     noBaseline: 'No comparable original result is available for this cycle.',
     suggested: 'This questionnaire recommends waiting at least {days} days between measurements. Consider returning later.',
+    dueMinimum:'For a comparable result, this questionnaire can be repeated from {date}.',
     private: 'Only you can view these saved results in your account. Ratings do not prove the course caused a change.',
     openBefore: 'Open original report', openAfter: 'Open final report',
     doneAll: 'You have repeated all available comparable tests. Review your results and reflections.',
@@ -32,6 +33,7 @@ const COPY = {
     unavailable: 'Исходная версия больше недоступна для повторения. Старый результат сохранён в «Моих тестах».',
     noBaseline: 'Для этого цикла нет сопоставимого начального результата.',
     suggested: 'Для этого опросника рекомендован интервал от {days} дней. Возможно, полезнее вернуться к нему позже.',
+    dueMinimum:'Для сопоставимого результата этот тест можно повторить с {date}.',
     private: 'Результаты доступны только в вашем кабинете. Разница баллов не доказывает, что её вызвал курс.',
     openBefore: 'Исходный отчёт', openAfter: 'Итоговый отчёт',
     doneAll: 'Повторные тесты завершены. Можно посмотреть результаты и личные наблюдения.',
@@ -75,16 +77,21 @@ export default function CourseFinalRetest({ locale='en', plan, onStart, busyKey=
             <span>{t.final}: <strong>{item.afterDate?.slice(0,10)||'—'}</strong></span>
           </div>
           {item.comparison?.length>0 && <div className={styles.comparison} aria-label={t.changed}>
-            {item.comparison.slice(0,3).map(scale=><div key={scale.key}>
+            {item.comparison.map(scale=><div key={scale.key}>
               <span>{scale.label}</span>
-              <strong>{scale.from} <ArrowRight size={14} aria-hidden="true"/> {scale.to}</strong>
+              <strong>{scale.from} <ArrowRight size={14} aria-hidden="true"/> {scale.to}
+                <small className={styles.delta}>({scale.delta>0?'+':''}{scale.delta})</small>
+              </strong>
             </div>)}
           </div>}
           {item.versionChanged && <p className={styles.hint}>{t.version}</p>}
           {!item.baselineResultId && <p className={styles.hint}>{t.noBaseline}</p>}
-          {item.baselineResultId && !item.canRepeat && !item.completed && item.role!=='stable_profile' &&
-            <p className={styles.hint}>{t.unavailable}</p>}
-          {item.repeatSuggestedLater && !item.completed && <p className={styles.hint}>
+          {item.hardBlocked && !item.completed && <p className={styles.dueNotice}>
+            {t.dueMinimum.replace('{date}',item.hardDueAt?.slice(0,10)||'—')}
+          </p>}
+          {item.baselineResultId && !item.canRepeat && !item.completed && !item.hardBlocked &&
+            item.role!=='stable_profile' && <p className={styles.hint}>{t.unavailable}</p>}
+          {item.repeatSuggestedLater && !item.hardBlocked && !item.completed && <p className={styles.hint}>
             {t.suggested.replace('{days}',String(item.suggestedRepeatDays))}
             {item.nextSuggestedAt && <small> ({item.nextSuggestedAt.slice(0,10)})</small>}</p>}
           <div className={styles.actions}>

@@ -66,3 +66,42 @@
   .daysList li{padding:8px 9px}
 }
 @media(prefers-reduced-motion:reduce){.overview *{animation:none!important;transition:none!important}}
+
+/* Outcome-linked Anti-Stress daily schema; scoped to this overview. */
+.overview:has([data-antistress-day-schema]) { background:linear-gradient(150deg,#f5f7fa,#fff);border-color:#c7d5e5;color:#20364f; }
+.overview:has([data-antistress-day-schema]) .kicker{color:#863b57}
+.overview:has([data-antistress-day-schema]) .phase{background:#203b5b;border-color:#24415e;color:#fff}
+.overview:has([data-antistress-day-schema]) .phase h3{color:#fff}
+.overview:has([data-antistress-day-schema]) .phase p{color:#c4d9e5}
+.overview:has([data-antistress-day-schema]) .phaseRange{background:#683047;color:#fff}
+.overview:has([data-antistress-day-schema]) .phaseIndex{color:#e6adc6}
+.overview:has([data-antistress-day-schema]) .daysList{grid-template-columns:1fr}
+.overview:has([data-antistress-day-schema]) .daysList>li{display:block;min-width:0;padding:0;background:#fff;border:1px solid #dae2eb;overflow:hidden}
+.dayExercise{display:block;min-width:0}
+.dayExercise>summary{display:flex;align-items:center;gap:11px;min-height:55px;padding:11px 13px;cursor:pointer;list-style:none}
+.dayExercise>summary::-webkit-details-marker{display:none}
+.dayExercise>summary::marker{content:''}
+.dayExercise>summary>svg{color:#825068;flex:none;transition:transform .16s ease}
+.dayExercise[open]>summary>svg{transform:rotate(180deg)}
+.dayExercise .dayName{flex:1;color:#263e56;font-size:13px}
+.dayExercise .dayName small{display:block;margin-top:3px;color:#70859b;font-size:11px;font-weight:500}
+.dayCheck{color:#783d53;font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;background:#f8e9ef}
+.dayExerciseContent{display:grid;gap:10px;border-top:1px solid #e5ebf1;background:#f9fafc;padding:12px 15px}
+.dayExerciseContent p{font-size:12px;line-height:1.55;margin:0;color:#3a5068}
+.dayExerciseContent p strong{color:#183b5c}
+.axisList{display:flex;gap:6px;flex-wrap:wrap}
+.axisList span{font-size:10px;line-height:1.4;color:#4c3651;background:#f5eaf0;border-radius:7px;padding:5px 8px}
+.screenDetails{min-width:0}
+.screenDetails>summary{color:#783b55;cursor:pointer;font-size:11px;font-weight:800;padding:6px 0}
+.screenDetails>ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:0;margin:8px 0;list-style:none}
+.screenDetails li{display:flex;align-items:baseline;gap:7px;border-radius:7px;background:#eff3f8;padding:8px;font-size:11px;line-height:1.4;color:#324b61}
+.screenDetails li span:first-child{font-weight:900;color:#80405b}
+.dayExercise>summary:focus-visible,.screenDetails>summary:focus-visible{outline:3px solid #a96581;outline-offset:-3px}
+@media(max-width:530px){
+  .overview:has([data-antistress-day-schema]) .daysList{grid-template-columns:1fr}
+  .dayExercise>summary{gap:7px;padding:10px 8px}
+  .dayExercise .dayName{font-size:12px}
+  .dayCheck{font-size:9px;padding:4px 5px}
+  .dayExerciseContent{padding:11px}
+  .screenDetails>ol{grid-template-columns:minmax(0,1fr)}
+}
