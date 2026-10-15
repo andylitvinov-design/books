@@ -785,9 +785,9 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
+            {!isOporaStateJourney&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
-            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.learningOutcome}</p>
+            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
             <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
@@ -822,7 +822,7 @@ export default function CourseSlidePlayer({
             {isDayOne && dayOneAnswers.quote==='disagree'&&<p className={styles.helper}>
               {locale==='ru'?'Необязательно соглашаться. Выберите то, что подходит именно вам.':'You may disagree. Choose what feels right for you.'}
             </p>}
-            {!isDayOne&&(lesson.antiStress||isOporaModule)&&<section data-course-aphorism-dialogue>
+            {!isDayOne&&lesson.antiStress&&<section data-course-aphorism-dialogue>
               <p className={styles.prompt}>{learning.aphorismTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.aphorismTitle}>
                 {[['agree',learning.agree],['unsure',learning.unsure],['disagree',learning.disagree]].map(([key,label])=>
@@ -846,25 +846,25 @@ export default function CourseSlidePlayer({
               <IllustratedMoment variant="calm" kind={slide.kind}/>
               <p className={styles.prompt}>{lesson.practiceV3?.recall}</p>
               <p className={styles.helper}>{words.recallHint}</p>
-              {(lesson.antiStress||isOporaModule)&&<div className={styles.feedbackOptions}
+              {lesson.antiStress&&<div className={styles.feedbackOptions}
                 role="group" aria-label={learning.recallTitle} data-course-active-recall-choice>
                 {[['yes',learning.recallYes],['hint',learning.recallHint],['skip',learning.recallSkip]].map(([key,label])=>
                   <button type="button" key={key} disabled={locked} aria-pressed={recallAttempt===key}
                     onClick={()=>setRecallAttempt(key)}>{label}</button>)}
               </div>}
-              {(lesson.antiStress||isOporaModule)&&recallAttempt==='hint'&&
+              {lesson.antiStress&&recallAttempt==='hint'&&
                 <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>}
             </>)}
 
           {slide.kind === 'phrase' && <>
-            <IllustratedMoment photo variant="books" kind={slide.kind}/>
+            {!isOporaStateJourney&&<IllustratedMoment photo variant="books" kind={slide.kind}/>}
             {cycle.day===5 && !lesson.antiStress && <div className={[styles.modeTabs, styles.thoughtChoices].join(" ")} role="group" aria-label={words.choiceTitle}>
               {[['cbt',words.cbtChoice],['act',words.actChoice],['neutral',words.neutralChoice]].map(([key,label])=><button key={key} type="button"
                 disabled={locked} aria-pressed={thoughtChoice===key} onClick={()=>setThoughtChoice(key)}>{label}</button>)}
             </div>}
             <blockquote className={styles.quote}>{cycle.day===5 && !lesson.antiStress ? (thoughtChoice==='cbt' ? words.cbtText : thoughtChoice==='act' ? words.actText : words.neutralText) : lesson.workbook?.workingPosition}</blockquote>
             <p className={styles.helper}>{words.phraseHint}</p>
-            {(lesson.antiStress||isOporaModule)&&<div data-course-support-phrase-choice>
+            {lesson.antiStress&&<div data-course-support-phrase-choice>
               <p className={styles.prompt}>{learning.phraseTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.phraseTitle}>
                 {[['fits',learning.fits],['unsure',learning.phraseUnsure],['no',learning.phraseNo]].map(([key,label])=>
@@ -939,9 +939,9 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'ritual' && <>
-            {!neutralMode&&(!isOporaModule||routePlan)&&<IllustratedMoment kind={slide.kind}/>}
-            <p className={styles.prompt}>{isOporaModule
-              ? lesson.oporaModule.practice : lesson.ritual}</p>
+            {!neutralMode&&!isOporaStateJourney&&(!isOporaModule||routePlan)&&<IllustratedMoment kind={slide.kind}/>}
+            {!(isOporaModule&&!routePlan)&&<p className={styles.prompt}>{isOporaModule
+              ? lesson.oporaModule.practice : lesson.ritual}</p>}
             <p className={styles.helper}>{words.transferHint}</p>
             {isOporaModule&&!routePlan&&!neutralMode&&
               <OporaModuleActivity moduleId={lesson.oporaModule.id} day={cycle.day}
@@ -1027,7 +1027,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'symbol' && <>
-            <IllustratedMoment variant="calm" kind={slide.kind}/>
+            {!isOporaStateJourney&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             <div className={styles.modeTabs} role="group" aria-label={words.symbol}>
               <button type="button" aria-pressed={symbolMode === 'words' || cycle.preferences?.imagery === 'no_imagery'}
                 onClick={() => setSymbolMode('words')}>{words.words}</button>
@@ -1047,7 +1047,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'reflection' && <>
-            <IllustratedMoment kind={slide.kind}/>
+            {!isOporaStateJourney&&<IllustratedMoment kind={slide.kind}/>}
             <p className={styles.prompt}>{lesson.workbook?.question || lesson.reflection}</p>
             <label className={styles.noteField}><span>{words.note}</span>
               <textarea maxLength={500} rows={4} value={reflection}
