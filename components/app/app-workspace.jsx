@@ -45,6 +45,7 @@ import MyCourse from '@/components/app/my-course'
 import NotificationSettings from '@/components/app/notification-settings'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
+import CourseGuestLanding from '@/components/app/course-guest-landing'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -301,6 +302,15 @@ export default function AppWorkspace({ locale, path = [] }) {
       <main className="hh-app" aria-busy="true">
         <p className="hh-kicker">Holistic House</p>
         <h1>{c.loading}</h1>
+      </main>
+    )
+  if (state !== 'ready' && page === 'course' && state !== 'unavailable')
+    return (
+      <main className="hh-app hh-app--course-guest">
+        <CourseGuestLanding locale={locale} onStart={signin} busy={busy} stressSignup={stressSignup}
+          errorMessage={state === 'error' && error ? message(error, c) : undefined}
+          onRetry={state === 'error' ? load : undefined}
+          legacyText={c.legacy} nonDiagnostic={c.nonDiagnostic} />
       </main>
     )
   if (state !== 'ready')

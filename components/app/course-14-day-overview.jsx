@@ -5,7 +5,7 @@ import styles from './course-14-day-overview.module.css'
 
 const COPY = {
   en: {
-    eyebrow: 'YOUR PERSONAL LEARNING PATH',
+    eyebrow: 'THE 14-DAY JOURNEY',
     title: 'What happens during the 14 days?',
     intro: 'A clear journey from understanding your reactions to practising small, useful choices in everyday life.',
     daily: 'One lesson each day · 5–12 min',
@@ -17,7 +17,7 @@ const COPY = {
     notTreatment: 'Self-guided education and reflection, not diagnosis or a substitute for professional care.',
   },
   ru: {
-    eyebrow: 'ВАШ ЛИЧНЫЙ ПУТЬ РАЗВИТИЯ',
+    eyebrow: 'ПРОГРАММА · 14 ДНЕЙ',
     title: 'Что вас ждёт за 14 дней?',
     intro: 'Понятный путь от изучения своих реакций к небольшим полезным действиям в повседневной жизни.',
     daily: 'Один урок в день · 5–12 минут',
@@ -31,22 +31,22 @@ const COPY = {
 }
 
 const STRESS = {
-  en: { title:'OPORA Anti-Stress · 7 skills, 14 lessons',
-    intro:'Each pair trains one skill. Open a day to view its exercise, expected result and related measures.',
+  en: { title:'Seven skills for steadier days',
+    intro:'Every two days explore one skill. Open a stage to preview the two lessons, or see all 14 exercises below.',
     allDays:'All 14 daily exercises and results',
-    hint:'Seven two-lesson skills · measured changes and real practice',
+    hint:'Exercises, outcomes and related measurements',
     practice:'Exercise', result:'Observable learning result', scales:'Related scales', check:'Skill check',
     screens:'The 15 learning + 3 closing screens', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
-  ru: { title:'ОПОРА · Антистресс — 7 навыков за 14 дней',
-    intro:'Каждые два занятия тренируют один навык. Откройте день, чтобы увидеть упражнение, ожидаемый результат и шкалы.',
+  ru: { title:'Ваши 7 навыков опоры',
+    intro:'Каждые два дня — один навык. Раскройте этап, чтобы увидеть занятия, или посмотрите упражнения всех 14 дней ниже.',
     allDays:'Практики и результаты всех 14 дней',
-    hint:'Семь пар навыков · реальные упражнения и измерения',
+    hint:'Упражнения, результаты и связанные шкалы',
     practice:'Упражнение',result:'Ожидаемый результат',scales:'Связанные шкалы',check:'Проверка навыка',
     screens:'15 учебных + 3 завершающих интерактивных слайда', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
-  es: { title:'OPORA · Menos estrés: 7 habilidades en 14 días',
-    intro:'Cada dos clases practicas una habilidad. Abre cada día para ver su ejercicio y resultado.',
+  es: { title:'Siete habilidades de apoyo',
+    intro:'Dos días para cada habilidad. Abre una etapa para ver sus lecciones y ejercicios.',
     allDays:'Ejercicios y resultados de los 14 días',
-    hint:'Siete pares de habilidades · práctica y mediciones',
+    hint:'Ejercicios, resultados y medidas relacionadas',
     practice:'Ejercicio',result:'Resultado observable',scales:'Escalas relacionadas',check:'Prueba de habilidad',
     screens:'15 pasos de práctica + 3 de cierre', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
 }
@@ -70,16 +70,38 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
       </div>
       <span className={styles.duration}><Clock3 size={16} aria-hidden="true"/>{t.daily}</span>
     </header>
-    <div className={styles.phases} role="list" aria-label={t.title}>
-      {groups.map((group, index) => <article role="listitem" className={styles.phase}
-        key={group.id} data-course-phase={group.id}>
-        <div className={styles.phaseTop}>
-          <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
-          <span className={styles.phaseIndex} aria-hidden="true">{index + 1}<span>/{groups.length}</span></span>
-        </div>
-        <h3>{group.title}</h3>
-        <p>{group.summary}</p>
-      </article>)}
+    <div className={styles.phases} role={stress ? undefined : 'list'} aria-label={t.title}>
+      {groups.map((group, index) => stress ? (
+        <details className={`${styles.phase} ${styles.phaseExpandable}`} key={group.id}
+          data-course-phase={group.id} data-course-skill-accordion={index + 1}>
+          <summary className={styles.phaseSummary}>
+            <span className={styles.phaseNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            <span className={styles.phaseBody}>
+              <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+              <strong>{group.title}</strong>
+            </span>
+            <ChevronDown className={styles.phaseChevron} size={18} aria-hidden="true" />
+          </summary>
+          <div className={styles.phaseDetails}>
+            <p>{group.summary}</p>
+            <div className={styles.phaseLessons}>
+              {days.filter(day => day.day === group.start || day.day === group.end).map(day => (
+                <p key={day.day}>
+                  <span>{t.day} {day.day}</span><strong>{day.title}</strong>
+                </p>
+              ))}
+            </div>
+          </div>
+        </details>
+      ) : (
+        <article role="listitem" className={styles.phase} key={group.id} data-course-phase={group.id}>
+          <div className={styles.phaseTop}>
+            <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+            <span className={styles.phaseIndex} aria-hidden="true">{index + 1}<span>/{groups.length}</span></span>
+          </div>
+          <h3>{group.title}</h3><p>{group.summary}</p>
+        </article>
+      ))}
     </div>
     <details className={styles.dayDisclosure} data-course-14-day-list>
       <summary className={styles.dayToggle}>
