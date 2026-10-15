@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,ChevronDown } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -105,7 +105,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
   const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
-      <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
+      <div className={styles.clientBrand}>
+        <span className={styles.clientWordmark}>Holistic House</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
       {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
@@ -167,7 +168,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
       </div>
       {reportContent&&<details className={styles.reportDetails}>
-        <summary>{ru?'Развернуть полную HTML-версию':'Read the full HTML document'}</summary>
+        <summary><BookOpen size={18} aria-hidden="true"/><span>{ru?'Читать полный отчёт на странице':'Read the complete report here'}</span><ChevronDown size={18} className={styles.reportExpandIcon} aria-hidden="true"/></summary>
         <div className={styles.reportContent}>{reportContent}</div>
       </details>}
     </section>}
