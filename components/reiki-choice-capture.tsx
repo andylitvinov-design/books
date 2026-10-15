@@ -222,7 +222,9 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
             onClick={() => setSelected(choice)}
           >
             {selected === choice ? <Check size={18} strokeWidth={2.7} aria-hidden="true" /> : <span className={styles.unselected} aria-hidden="true" />}
-            <span>{t.common.options[choice]}</span>
+            <span>{course === "tantra" && choice === "guide"
+              ? (locale === "ru" ? "Скачать методичку PDF для телефона" : locale === "es" ? "Descargar guía PDF móvil" : "Download mobile study PDF")
+              : t.common.options[choice]}</span>
           </button>
         ))}
       </div>
@@ -238,11 +240,15 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
         onClick={() => emitPublicAnalyticsEvent(download ? "academy_study_material_request_click" : selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click")}
       >
         {download ? <Download size={21} aria-hidden="true" /> : <WhatsAppMark size={22} />}
-        <span>{t.common.action[selected]}</span>
+        <span>{download && course === "tantra"
+          ? (locale === "ru" ? "Скачать PDF Тантра Рейки" : locale === "es" ? "Descargar PDF Tantra Reiki" : "Download Tantra Reiki mobile PDF")
+          : t.common.action[selected]}</span>
         <ArrowUpRight size={20} aria-hidden="true" />
       </a>
-      <p className={styles.note}>{download ? t.common.downloadNote : t.common.messageNote}</p>
-      {course === "tantra" && !isTop && !download ? (
+      <p className={styles.note}>{download && course === "tantra"
+        ? (locale === "ru" ? "PDF для телефона: крупный шрифт, девять ступеней, практики и актуальная стоимость инициации." : locale === "es" ? "PDF para móvil: letra grande, nueve etapas, prácticas y precio de iniciación." : "Phone-friendly PDF: larger type, nine levels, practice ideas and Level 1 pricing.")
+        : download ? t.common.downloadNote : t.common.messageNote}</p>
+      {course === "tantra" && !download ? (
         <a
           className={styles.alwaysDownload}
           data-reiki-choice-action="guide-secondary"
@@ -263,7 +269,7 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
       <div className={styles.footer}>
         <div className={styles.trust}><span><Check size={15} aria-hidden="true" /> {t.common.reply}</span><span><Check size={15} aria-hidden="true" /> {t.common.obligation}</span></div>
         <div className={styles.secondary}>
-          <a href={consultationUrl} id="reiki-free-consultation" target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
+          <a href={consultationUrl} id={isTop ? undefined : "reiki-free-consultation"} target="_blank" rel="noopener noreferrer">{t.common.consultation}</a>
           <a href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer"><Send size={14} aria-hidden="true" /> {t.common.telegram}</a>
         </div>
       </div>
