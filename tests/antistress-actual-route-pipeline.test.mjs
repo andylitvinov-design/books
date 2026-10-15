@@ -6,6 +6,7 @@ import { repositoryHarness, router, presets, lessons, methods, labs, moduleActiv
   findPart, findButton, clone } from './helpers/route-pipeline-harness.mjs'
 
 const NAV1 = 'opora-nav-1.3-20261014'
+const LEGACY_NAV2_IDS = ['AS1','AS2','AS3','AS4','AS5']
 const CYCLE_DEFAULTS = { length: 'standard', imagery: 'optional', checkinFrequency: 'daily' }
 const snapshots = JSON.parse(readFileSync(new URL('./fixtures/antistress-nav1-lessons.json', import.meta.url), 'utf8'))
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -194,11 +195,11 @@ async function playActualLesson(data, locale, { choose = true } = {}) {
   return { submitted, seen, chosen }
 }
 
-for (const moduleId of router.ANTISTRESS_ACTIVE_MODULE_IDS) for (const locale of ['en', 'ru']) {
+for (const moduleId of LEGACY_NAV2_IDS) for (const locale of ['en', 'ru']) {
   for (let day = 1; day <= 14; day++) {
     test(`actual NAV2 ${moduleId} ${locale} day ${day}: create → repository lesson → player choices → session storage`, async () => {
       const h = repositoryHarness(), created = await h.create(moduleId)
-      assert.deepEqual(created.preferences, { ...CYCLE_DEFAULTS, oporaModuleId: moduleId, oporaModuleRouter: router.ANTISTRESS_ROUTER_VERSION })
+      assert.deepEqual(created.preferences, { ...CYCLE_DEFAULTS, oporaModuleId: moduleId, oporaModuleRouter: router.ANTISTRESS_PREVIOUS_ROUTER_VERSION })
       assert.equal(created.content_version, moduleId === 'AS2' ? lessons.COURSE_ANTISTRESS_OUTCOME_V3 : lessons.COURSE_CONTENT_V4)
       assert.equal(h.writes.length, 2, 'Real factory writes only the new cycle and target')
       h.seedDay(day)
@@ -254,7 +255,7 @@ for (const moduleId of router.ANTISTRESS_ACTIVE_MODULE_IDS) for (const locale of
   }
 }
 
-for (const moduleId of router.ANTISTRESS_ACTIVE_MODULE_IDS.filter(id => id !== 'AS2')) {
+for (const moduleId of LEGACY_NAV2_IDS.filter(id => id !== 'AS2')) {
   test(`actual ${moduleId} session validator rejects malformed and untrusted route signals without writes`, async () => {
     const h = repositoryHarness(); await h.create(moduleId); h.seedDay(1)
     const data = await h.read('en'), writes = h.writes.length
@@ -287,7 +288,7 @@ for (const preset of presets.COURSE_PRESETS) for (const day of [1, 7, 14]) {
       const h = repositoryHarness({ presetId: preset.id }); await h.create('AS4'); h.seedDay(day)
       assert.deepEqual(h.cycle.preferences, CYCLE_DEFAULTS); assert.equal(h.cycle.content_version, lessons.COURSE_CONTENT_V4)
       const original = await h.read('en')
-      if (injectedPreferences) h.cycle.preferences = { oporaModuleId: 'AS4', oporaModuleRouter: router.ANTISTRESS_ROUTER_VERSION }
+      if (injectedPreferences) h.cycle.preferences = { oporaModuleId: 'AS4', oporaModuleRouter: router.ANTISTRESS_PREVIOUS_ROUTER_VERSION }
       const beforeRead = JSON.stringify(h.cycle), readWrites = h.writes.length
       const data = await h.read('en')
       assert.equal(data.cycle.moduleId, null); assert.equal(data.lesson.antiStress, undefined)
@@ -311,7 +312,7 @@ for (const preset of presets.COURSE_PRESETS) for (const day of [1, 7, 14]) {
 }
 
 test('actual AS2 repository preserves its historical learningSkills interpretation and saved signals', async () => {
-  for (const routerVersion of [NAV1, router.ANTISTRESS_ROUTER_VERSION]) for (const locale of ['en', 'ru']) {
+  for (const routerVersion of [NAV1, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION]) for (const locale of ['en', 'ru']) {
     const h = repositoryHarness(); await h.create('AS2')
     h.cycle.preferences.oporaModuleRouter = routerVersion
     h.seedDay(2)
@@ -351,7 +352,7 @@ test('actual AS2 repository preserves its historical learningSkills interpretati
   }
 })
 
-const routedModules = router.ANTISTRESS_ACTIVE_MODULE_IDS.filter(id => id !== 'AS2')
+const routedModules = LEGACY_NAV2_IDS.filter(id => id !== 'AS2')
 for (const [index, moduleId] of routedModules.entries()) {
   test(`actual ${moduleId} repository learningSkills reports saved attempts and hints independently`, async () => {
     for (const day of [13, 14]) for (const [attempt, tried] of [
@@ -381,10 +382,10 @@ for (const [index, moduleId] of routedModules.entries()) {
     for (let day = 1; day <= 14; day++) {
       const h = repositoryHarness(); await h.create(moduleId); h.seedDay(day)
       const data = await h.read('en'), writes = h.writes.length
-      const generic = moduleActivities.oporaModuleActivity(moduleId, day, 'en', router.ANTISTRESS_ROUTER_VERSION)
+      const generic = moduleActivities.oporaModuleActivity(moduleId, day, 'en', router.ANTISTRESS_PREVIOUS_ROUTER_VERSION)
       const choice = generic.options[(day - 1) % generic.options.length].id
       const scoped = data.lesson.antiStress.routePlan
-      const foreignDay = moduleActivities.oporaModuleActivity(moduleId, day === 14 ? 1 : day + 1, 'en', router.ANTISTRESS_ROUTER_VERSION)
+      const foreignDay = moduleActivities.oporaModuleActivity(moduleId, day === 14 ? 1 : day + 1, 'en', router.ANTISTRESS_PREVIOUS_ROUTER_VERSION)
       const incompatible = foreignDay.options.find(option => !generic.options.some(own => own.id === option.id))
       assert.ok(incompatible, 'A generic choice from a different day can be incompatible without implying route provenance')
       for (const extra of [
@@ -561,7 +562,7 @@ for (const moduleId of ['AS1', 'AS2', 'AS3', 'AS4', 'AS5', 'AS6']) for (const lo
   })
 }
 
-for (const moduleId of router.ANTISTRESS_ACTIVE_MODULE_IDS) for (const locale of ['en', 'ru']) {
+for (const moduleId of LEGACY_NAV2_IDS) for (const locale of ['en', 'ru']) {
   test(`completed NAV2 ${moduleId} ${locale} preserves missing historical signals and read-only replay`, async () => {
     const historyCases = [[1, null], [7, {}], [14, {
       window: 'practice_v15', comfort: 'neutral', usefulness: 'unchanged', flexibility: 'same',
@@ -611,7 +612,7 @@ for (const moduleId of router.ANTISTRESS_ACTIVE_MODULE_IDS) for (const locale of
         assert.equal(summary.attempt, locale === 'ru' ? 'Не отмечено' : 'Not reported')
         assert.equal(summary.anchor, null); assert.equal(summary.anotherChoice, null)
         const expectedLabel = expectedActivityId ? moduleActivities.oporaModuleActivity(moduleId, day, locale,
-          router.ANTISTRESS_ROUTER_VERSION).options.find(option => option.id === expectedActivityId).label : null
+          router.ANTISTRESS_PREVIOUS_ROUTER_VERSION).options.find(option => option.id === expectedActivityId).label : null
         assert.equal(summary.savedActivity, expectedLabel, 'Only a genuine saved live-f7 dialect yields a generic choice label')
         assert.equal(receipt.props.moduleActivityChoice, expectedActivityId || null,
           'Missing or mismatched schema/route/day provenance cannot reinterpret a historical choice')
@@ -830,8 +831,8 @@ for (const locale of ['en', 'ru']) for (const copyToJournal of [false, true]) {
 }
 
 const acknowledgementTargets = [
-  ...[NAV1, router.ANTISTRESS_ROUTER_VERSION].flatMap(routerVersion =>
-    (routerVersion === NAV1 ? ['AS1', 'AS2', 'AS3', 'AS4', 'AS5', 'AS6'] : router.ANTISTRESS_ACTIVE_MODULE_IDS)
+  ...[NAV1, router.ANTISTRESS_PREVIOUS_ROUTER_VERSION].flatMap(routerVersion =>
+    (routerVersion === NAV1 ? ['AS1', 'AS2', 'AS3', 'AS4', 'AS5', 'AS6'] : LEGACY_NAV2_IDS)
       .map(moduleId => ({ moduleId, routerVersion, name: (routerVersion === NAV1 ? 'NAV1' : 'NAV2') + ' ' + moduleId }))),
   ...presets.COURSE_PRESETS.map(preset => ({ presetId: preset.id, moduleId: 'AS4', name: 'preset ' + preset.id })),
 ]
@@ -854,7 +855,7 @@ for (const target of acknowledgementTargets) for (const locale of ['en', 'ru']) 
       if (target.presetId) assert.equal(data.lesson.antiStress, undefined)
       if (day === 1 && target.moduleId === 'AS2' && !target.presetId)
         assert.ok(visited.some(slide => slide.kind.startsWith('day1-')), 'AS2 day 1 uses its genuine special sequence')
-      if (target.routerVersion === router.ANTISTRESS_ROUTER_VERSION && target.moduleId !== 'AS2')
+      if (target.routerVersion === router.ANTISTRESS_PREVIOUS_ROUTER_VERSION && target.moduleId !== 'AS2')
         assert.equal(visited.some(slide => slide.kind.startsWith('day1-')), false, 'A routed lesson cannot be acknowledged as AS2 day 1')
       if (day === 1 || day === 14) {
         const actualKeys = submitted.visitedSlideKeys
