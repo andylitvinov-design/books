@@ -97,3 +97,40 @@ test('homepage language remains on chosen first-party route after Google save',(
   const config=read('next.config.ts')
   assert.ok(config.includes('{ source: "/ru", destination: "/?lang=ru", permanent: true }'))
 })
+
+
+test('only fixed Google Cabinet menu destinations may be carried across OAuth',()=>{
+  for(const path of [
+    '/en/app','/ru/app/','/ru/app/tests','/en/app/course',
+    '/ru/app/portrait#personal-reports'
+  ]) assert.ok(safeSessionExitTarget(path,origin,current),path)
+  for(const path of [
+    '/en/app/sessions/'+id,
+    '/ru/app/reports/'+id,
+    '/en/app/document-view/'+id,
+    '/ru/app/results/'+id,
+    '/ru/app/portrait/export',
+    '/es/app/tests'
+  ]) {
+    assert.equal(safeSessionExitTarget(path,origin,current),null,path)
+    const store=makeStore()
+    assert.equal(rememberSessionSaveTarget(id,path,origin,store),false,path)
+    assert.equal(store.data.size,0)
+  }
+  assert.equal(safeSessionExitTarget('/ru/app/tests?private=1',origin,current),'/ru/app/tests')
+})
+
+test('stale Google session is revalidated against the live published revision',()=>{
+  const guard=read('components/session-exit-save-guard.jsx')
+  const api=read('app/api/app/[...path]/route.js')
+  const service=read('lib/app/client-session-save-flow.js')
+  assert.ok(guard.includes("appFetch('bootstrap')"))
+  assert.ok(guard.includes("appFetch('saved-sessions/'+found.id+'/status')"))
+  assert.ok(guard.includes("checked?.available===true && checked?.id===found.id"))
+  assert.ok(guard.includes('catch{if(live)setSavedSessionId(null)}'))
+  assert.match(api,/path\[2\]==='status' && method==='GET'/)
+  assert.match(api,/readSavedSession\(config,getPrescriptionStore\(\),actor,path\[1\],\{markOpened:false\}\)/)
+  assert.match(api,/return json\(\{id:saved.id,available:true\}\)/)
+  assert.match(service,/published_revision!==ref.source_revision/)
+  assert.match(service,/current.hash!==ref.source_hash/)
+})
