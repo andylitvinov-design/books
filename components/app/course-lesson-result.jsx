@@ -33,6 +33,15 @@ export default function CourseLessonResult(props){
         <small>{ru?'Это ваш добровольный самоотчёт, а не подтверждение изменения или освоения навыка.':
           'This is your optional self-report, not proof of change or mastery.'}</small>
       </span></div>}
+      {r.stateJourney&&<div data-opora-state-result><Heart size={18} aria-hidden="true"/><span>
+        <small>{ru?'МОЯ ОПОРА · СОСТОЯНИЕ И ВОЗМОЖНЫЙ ШАГ':'MY OPORA · STATE AND A POSSIBLE STEP'}</small>
+        {r.stateJourney.signal&&<strong>{ru?'Заметил(а): ':'Noticed: '}{r.stateJourney.signal}</strong>}
+        {r.stateJourney.need&&<small>{ru?'Что может помочь: ':'What might help: '}{r.stateJourney.need}</small>}
+        {r.stateJourney.support&&<small>{ru?'Мой выбор: ':'My choice: '}{r.stateJourney.support}</small>}
+        {r.stateJourney.experience&&<small>{ru?'Самоотчёт после практики: ':'After the practice, self-reported: '}{r.stateJourney.experience}</small>}
+        <small>{ru?'Выбор или план не подтверждают выполнения действия. Это не диагноз и не доказательство изменения состояния.':
+          'A choice or plan does not prove an action was taken. It is neither a diagnosis nor proof of change.'}</small>
+      </span></div>}
       {r.savedActivity&&<div data-course-saved-module-choice><Compass size={18} aria-hidden="true"/><span>
         <small>{ru?'Сохранённый выбор практики':'Saved practice choice'}</small><strong>{r.savedActivity}</strong>
         <small>{ru?'Выбор не подтверждает выполненную попытку.':'A choice does not confirm an attempted practice.'}</small>
