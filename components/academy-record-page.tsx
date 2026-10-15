@@ -7,6 +7,7 @@ import { EnglishGuidedMeditations } from "@/components/english-guided-meditation
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { TantraReikiLeadForms } from "@/components/tantra-reiki-lead-forms";
+import { ReikiChoiceCapture } from "@/components/reiki-choice-capture";
 import { TantraReikiFestivalMoments, TantraReikiTeacher } from "@/components/tantra-reiki-story";
 import { TantraReikiProgrammeModules } from "@/components/tantra-reiki-programme-modules";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -167,6 +168,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
+            <ReikiChoiceCapture locale={locale} course="tantra" placement="top" />
             <TantraReikiFestivalMoments locale={locale} />
             <section className="tantra-mobile-guide" aria-labelledby="tantra-mobile-guide-heading">
               <div className="tantra-mobile-guide__cover" aria-hidden="true">
