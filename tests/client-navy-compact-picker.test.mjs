@@ -45,3 +45,30 @@ test('the public client page uses navy text, burgundy controls, and narrow-scree
   assert.match(routeCss, /\.client-entry-shell \.house-header/)
   assert.doesNotMatch(routeCss, /\.client-cabinet\s*\{/)
 })
+
+test('compact navy/wine test details show type, time and measured scales before optional methodology', () => {
+  assert.match(picker, /const COMPACT_KIND_LABELS/)
+  assert.match(picker, /data-test-kind-badge/)
+  assert.match(picker, /data-compact-test-scales/)
+  assert.match(picker, /entry\.scaleGuide\.scales\.slice\(0, 3\)/)
+  assert.match(picker, /<details className=\{styles\.researchDetails\}>/)
+  assert.match(picker, /entry\.methodology/)
+  assert.match(picker, /methodDetails:'Method & sources'/)
+  assert.match(picker, /methodDetails:'Методика и источники'/)
+  assert.match(picker, /methodDetails:'Método y fuentes'/)
+  assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
+  assert.match(picker, /<ListChecks size=\{14\}/)
+  assert.match(css, /\.testDetailsBody\{padding:12px/)
+  assert.match(css, /\.testInfo \.testKindBadge\{display:inline-flex\}/)
+  assert.doesNotMatch(css, /\.testInfo \.testKindBadge\{display:none\}/)
+  assert.match(css, /\.scalePills\{/)
+  assert.match(css, /\.researchDetails\{/)
+});
+
+test('softer palette does not remove the original single-test action or its authenticated flow', () => {
+  assert.match(css, /Soft navy & burgundy My Tests/)
+  assert.match(css, /--ink:#172f4b/)
+  assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
+  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(publicFlow, /request\('auth\/start'/)
+});
