@@ -265,3 +265,25 @@
 /* Other programs stay visible as future topics, never available for new enrollment. */
 .programCard[data-coming-soon="true"],.programCard[data-coming-soon="true"]:hover{opacity:.64;filter:saturate(.56);cursor:not-allowed;box-shadow:none;transform:none;border-color:#d8e0e7}
 .programCard[data-coming-soon="true"] .programAction{background:#edf0f4;color:#667785}
+
+
+/* Direct OPORA CTA: the consent and the first assessment fit in one mobile view. */
+.fastEntry{display:grid;gap:15px;justify-items:start;max-width:690px;margin:0 auto;
+  padding:clamp(20px,4vw,36px);border:1px solid #b8dfe7;border-radius:22px;
+  background:linear-gradient(135deg,#f8fdfc,#e4f8f8);color:#163f5b}
+.fastKicker{font:800 12px/1.4 system-ui,sans-serif;letter-spacing:.12em;color:#07879c}
+.fastEntry h1{font:500 clamp(30px,5vw,44px)/1.13 Georgia,serif;color:#173e59;letter-spacing:-.03em;margin:0}
+.fastEntry p{margin:0;color:#517487;line-height:1.5;font-size:clamp(15px,2vw,17px)}
+.fastEntry .fastConsent{display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 13px;
+  background:#fff;border:1px solid #cce4e7;border-radius:12px;color:#27556a;font-size:13px}
+.fastConsent svg{flex:none;margin-top:1px;color:#038b9f}
+.fastEntry .fastStartButton{display:flex;align-items:center;justify-content:center;gap:11px;
+  width:100%;min-height:54px;border-radius:14px;background:#913350!important;
+  border:1px solid #913350!important;color:#fff!important;font-size:16px;font-weight:800;
+  box-shadow:0 4px 0 #62233a}
+.fastEntry .fastStartButton:disabled{opacity:.7;cursor:wait}
+.fastEntry .fastStartButton:focus-visible{outline:3px solid #f4b44e;outline-offset:4px}
+.fastEntry>small{font-size:12px;line-height:1.5;color:#68808b}
+@media(max-width:530px){.fastEntry{gap:12px;padding:20px 16px;border-radius:19px}
+  .fastEntry h1{font-size:32px}.fastEntry .fastConsent{font-size:12.5px}
+  .fastEntry .fastStartButton{min-height:52px}}
