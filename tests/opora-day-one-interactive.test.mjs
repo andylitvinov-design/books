@@ -65,3 +65,13 @@ test('every optional day-one response has a safe explicit decline or honest fall
       'No opt-out available for '+field)
   }
 })
+
+test('a discomfort choice leads to a neutral visible alternative, never the same triggering exercise', () => {
+  const player=readFileSync('components/app/course-slide-player.jsx','utf8')
+  const dayOne=readFileSync('components/app/anti-stress-day-one.jsx','utf8')
+  assert.match(player,/if\(isDayOne\)setIndex\(current=>Math\.max\(5,current\)\)/)
+  assert.match(player,/neutralMode=\{neutralMode\}/)
+  assert.match(dayOne,/if\(neutralMode\)return <section/)
+  assert.match(dayOne,/onReturnToPractice/)
+  assert.match(dayOne,/data-day-one-activity="neutral-support"/)
+})
