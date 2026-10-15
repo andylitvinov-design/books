@@ -268,87 +268,126 @@ export default function DayOneExercise({
   </section>
 
   if(kind==='day1-independent')return <section className={styles.section} data-day-one-activity="independent">
-    <div className={styles.visualIcon}><Eye size={42}/></div>
-    <p className={styles.headline}>{text(
-      'Попробуйте ещё раз найти нейтральную деталь без длинной инструкции.',
-      'Try finding an ordinary neutral detail once again, without a long guide.')}</p>
+    <div className={styles.overline}><Eye size={16}/>{text('ШАГ 12 · ПРИМЕНЯЮ НАВЫК','STEP 12 · TRYING THE SKILL')}</div>
+    <div className={styles.softIllustration}><Eye size={38}/><span>{text('Моя проба без экзамена','My attempt, not an exam')}</span></div>
+    <p className={styles.headline}>{text('Попробуйте выбрать нейтральную деталь без длинной инструкции','Try choosing one neutral detail without a long guide')}</p>
+    <p className={styles.hint}>{text('Что было бы проще найти вокруг прямо сейчас?','What would be easiest to find near you now?')}</p>
+    {choice('independentCue',[
+      {value:'colour',label:text('Цвет','A colour'),icon:Sparkles},
+      {value:'shape',label:text('Форму','A shape'),icon:Compass},
+      {value:'object',label:text('Предмет','An object'),icon:MapPin},
+      {value:'rest',label:text('Лучше отдохнуть','Prefer rest'),icon:PauseCircle},
+      {value:'skip',label:text('Не выбирать','No choice'),icon:CircleHelp},
+    ],{compact:true})}
+    <button type="button" className={styles.hintToggle} disabled={locked}
+      aria-expanded={hintOpen} onClick={()=>{setHintOpen(value=>!value);if(!hintOpen)onAnswer('independent','guided')}}>
+      <Lightbulb size={18}/>{hintOpen?text('Скрыть подсказку','Hide the hint'):text('Мне нужна подсказка','Show a hint')}
+      <ChevronDown size={16} aria-hidden="true"/>
+    </button>
+    {hintOpen&&<div className={styles.resourceCard} role="status"><Lightbulb size={21}/>
+      <span>{text('Посмотрите на ближайший предмет. Можно выбрать один видимый цвет или линию. Дыхание не меняйте специально.',
+        'Look at the nearest ordinary object. You may choose one visible colour or line. No need to change your breathing.')}</span>
+    </div>}
+    <p className={styles.headline}>{text('Как вы попробовали?','How did you try?')}</p>
     {choice('independent',[
-      {value:'independent',label:text('Выбрал(а) ориентир самостоятельно','I chose an anchor independently')},
-      {value:'guided',label:text('Мне нужна подсказка','I would like a hint')},
-      {value:'deferred',label:text('Лучше попробую в другой раз','I would rather try later')},
+      {value:'independent',label:text('Самостоятельно','Independently')},
+      {value:'guided',label:text('С подсказкой','With a hint')},
+      {value:'deferred',label:text('Попробую позже','I will try later')},
       {value:'skip',label:text('Пропустить','Skip')},
-    ])}
-    {answers.independent==='guided'&&<div className={styles.resourceCard} role="status">
-      <Lightbulb size={20}/><span>{text(
-        'С открытыми глазами заметить одну форму или цвет вокруг — уже подходящий первый шаг.',
-        'Noticing one shape or colour around you with eyes open is a valid first step.')}</span></div>}
+    ],{compact:true})}
     {helper}
   </section>
 
   if(kind==='day1-experience')return <section className={styles.section} data-day-one-activity="experience">
-    <div className={styles.visualIcon}><Sparkles size={42}/></div>
-    <p className={styles.headline}>{text('Что вы действительно заметили?','What did you actually notice?')}</p>
+    <div className={styles.overline}><Sparkles size={16}/>{text('ШАГ 13 · МОЁ НАБЛЮДЕНИЕ','STEP 13 · MY OBSERVATION')}</div>
+    <div className={styles.softIllustration}><Sparkles size={36}/><span>{text('Каждый честный ответ подходит','Every honest response is valid')}</span></div>
+    <p className={styles.headline}>{text('Что действительно изменилось — или осталось прежним?','What actually changed, or stayed the same?')}</p>
     {choice('experience',[
-      {value:'easier',label:text('Мне стало немного легче','I feel a little easier')},
-      {value:'more_choice',label:text('Состояние прежнее, но выбрать стало проще','I feel the same, but choosing feels easier')},
-      {value:'unchanged',label:text('Ничего не изменилось','Nothing changed')},
-      {value:'unsure',label:text('Пока трудно сказать','I am not sure yet')},
-      {value:'uncomfortable',label:text('Мне стало некомфортно','I felt uncomfortable')},
-      {value:'skip',label:text('Не хочу отвечать','I prefer not to answer')},
-    ])}
-    {helper}
+      {value:'easier',label:text('Мне немного легче','A little easier'),detail:text('Только если вы это действительно заметили','Only if that is what you noticed'),icon:Leaf},
+      {value:'more_choice',label:text('Чувство прежнее, выбирать проще','Same feeling, more choice'),detail:text('Это отдельный возможный результат','A separate possible outcome'),icon:Compass},
+      {value:'unchanged',label:text('Без изменений','No change'),detail:text('Такой результат тоже нормален','This response is equally valid'),icon:PauseCircle},
+      {value:'unsure',label:text('Не могу пока сказать','Not sure yet'),icon:CircleHelp},
+      {value:'uncomfortable',label:text('Стало некомфортно','I felt uncomfortable'),icon:HeartHandshake},
+      {value:'skip',label:text('Предпочитаю не отвечать','Prefer not to answer'),icon:BookOpen},
+    ],{cards:true})}
+    {answers.experience&&answers.experience!=='uncomfortable'&&<div className={styles.reflectionCard} role="status">
+      <span>{text('Ваше наблюдение — не экзаменационная оценка','Your observation is not a test result')}</span>
+      <p>{answers.experience==='easier'?text('Вы отметили некоторое облегчение.','You reported some relief.')
+        :answers.experience==='more_choice'?text('Вы отметили больше доступного выбора.','You reported more available choice.')
+        :answers.experience==='unchanged'?text('Вы отметили отсутствие заметных изменений.','You reported no noticeable change.')
+        :text('Не обязательно знать ответ прямо сейчас.','You do not have to know right now.')}</p>
+    </div>}
   </section>
 
   if(kind==='day1-adapt')return <section className={styles.section} data-day-one-activity="adapt">
-    <div className={styles.visualIcon}><HeartHandshake size={42}/></div>
-    <p className={styles.headline}>{text('Насколько комфортной была практика?','How comfortable was the practice?')}</p>
+    <div className={styles.overline}><HeartHandshake size={16}/>{text('ШАГ 14 · НАСТРАИВАЮ ПРАКТИКУ','STEP 14 · ADJUSTING THE PRACTICE')}</div>
+    <div className={styles.softIllustration}><HeartHandshake size={36}/><span>{text('Вы определяете удобный формат','You choose what fits')}</span></div>
+    <p className={styles.headline}>{text('Насколько комфортно вам было?','How comfortable did it feel?')}</p>
     {choice('comfort',[
       {value:'comfortable',label:text('Комфортно','Comfortable')},
-      {value:'neutral',label:text('Нейтрально или терпимо','Neutral or tolerable')},
+      {value:'neutral',label:text('Нейтрально','Neutral')},
       {value:'uncomfortable',label:text('Некомфортно','Uncomfortable')},
-      {value:'skip',label:text('Не хочу оценивать','Prefer not to rate')},
-    ])}
-    <p className={styles.headline}>{text(
-      'Что сделать с практикой на будущее? Это ваш выбор.',
-      'What would you choose for next time? It is up to you.')}</p>
+      {value:'skip',label:text('Не отвечать','Skip')},
+    ],{compact:true})}
+    <div className={styles.verticalRule}/>
+    <p className={styles.headline}>{text('Что оставить для следующего раза?','What would you choose for next time?')}</p>
     {choice('adaptation',[
-      {value:'keep',label:text('Оставить как есть','Keep it as it is')},
-      {value:'simplify',label:text('Сделать короче и проще','Make it shorter and simpler')},
-      {value:'neutral',label:text('Выбрать внешнюю нейтральную опору','Choose a neutral external anchor')},
-      {value:'skip',label:text('Пока не выбирать','No choice now')},
-    ])}
+      {value:'keep',label:text('Оставить','Keep'),detail:text('Тот же способ и темп','Same approach and pace'),icon:Check},
+      {value:'simplify',label:text('Упростить','Simplify'),detail:text('Короче и с меньшей нагрузкой','Shorter and with less effort'),icon:PauseCircle},
+      {value:'neutral',label:text('Заменить','Replace'),detail:text('Только внешняя нейтральная опора','Only neutral external orientation'),icon:Compass},
+      {value:'skip',label:text('Решу позже','Decide later'),icon:CircleHelp},
+    ],{cards:true})}
+    {answers.adaptation&&!['skip'].includes(answers.adaptation)&&<p className={styles.selectedNotice} role="status">
+      <Check size={16}/>{text('Изменение будет применено только после сохранения урока.','This change will apply only after the lesson is saved.')}</p>}
   </section>
 
-  if(kind==='day1-transfer')return <section className={styles.section} data-day-one-activity="transfer">
-    <div className={styles.visualIcon}><Leaf size={42}/></div>
-    <p className={styles.headline}>{text(
-      'В какой обычный момент вы могли бы вспомнить свою опору?',
-      'When might you remember your anchor during an ordinary day?')}</p>
-    {choice('transferCue',[
-      {value:'after_task',label:text('После завершения обычного дела','After finishing an ordinary task')},
-      {value:'hurry',label:text('Когда замечу внутреннюю спешку','When I notice rushing')},
-      {value:'before_rest',label:text('Перед коротким отдыхом','Before taking a break')},
-      {value:'no_plan',label:text('Пока ничего не планирую','I am not planning anything yet')},
-      {value:'skip',label:text('Пропустить','Skip')},
-    ])}
-    {answers.transferCue&&!['no_plan','skip'].includes(answers.transferCue)&&<>
-      <p className={styles.headline}>{text('Что вы могли бы выбрать?','What might you choose?')}</p>
-      {choice('transferAction',[
-        {value:'look',label:text('Посмотреть на нейтральный предмет','Look at an ordinary object')},
-        {value:'pause',label:text('Сделать короткую паузу','Take a short pause')},
-        {value:'rest',label:text('Отдохнуть','Rest')},
-        {value:'ask',label:text('Попросить поддержки человека','Ask another person for support')},
-        {value:'none',label:text('Пока ничего','Nothing for now')},
-      ])}
-    </>}
-    <div className={styles.personalCard}>
-      <span>{text('Моя первая карточка опоры','My first anchor card')}</span>
-      <strong>{skill}</strong>
-      {answers.anchor&&anchorLabels[answers.anchor]&&<p>{text('Мой ориентир: ','My anchor: ')}{anchorLabels[answers.anchor]}</p>}
-      <small>{text('План — приглашение, а не обязательство. Сохранение подтвердит сервер после нажатия кнопки ниже.',
-        'A plan is an invitation, not a commitment. The server will confirm your lesson after you tap Save below.')}</small>
-    </div>
-  </section>
+  if(kind==='day1-transfer') {
+    const cues={
+      after_task:text('после окончания обычного дела','after completing an ordinary task'),
+      hurry:text('когда замечу внутреннюю спешку','when I notice inner rushing'),
+      before_rest:text('перед отдыхом','before resting'),
+    }
+    const actions={
+      look:text('посмотреть на нейтральный предмет','look at a neutral object'),
+      pause:text('сделать короткую паузу','take a short pause'),
+      rest:text('отдохнуть','rest'),
+      ask:text('попросить поддержки','ask for support'),
+      none:text('ничего не предпринимать','do nothing'),
+    }
+    const hasPlan=Boolean(cues[answers.transferCue]&&actions[answers.transferAction])
+    return <section className={styles.section} data-day-one-activity="transfer">
+      <div className={styles.overline}><Leaf size={16}/>{text('ШАГ 15 · СОЗДАЮ ПЛАН ПОДДЕРЖКИ','STEP 15 · MY SUPPORT PLAN')}</div>
+      <p className={styles.headline}>{text('Когда в обычном дне может пригодиться опора?','When might a simple anchor be useful?')}</p>
+      {choice('transferCue',[
+        {value:'after_task',label:text('После дела','After a task'),icon:Check},
+        {value:'hurry',label:text('Когда спешу','When rushing'),icon:Waves},
+        {value:'before_rest',label:text('Перед отдыхом','Before rest'),icon:PauseCircle},
+        {value:'no_plan',label:text('Пока без плана','No plan now'),icon:HeartHandshake},
+        {value:'skip',label:text('Пропустить','Skip'),icon:CircleHelp},
+      ],{compact:true})}
+      {cues[answers.transferCue]&&<>
+        <p className={styles.headline}>{text('Что вы МОЖЕТЕ выбрать?','What COULD you choose?')}</p>
+        {choice('transferAction',[
+          {value:'look',label:text('Посмотреть вокруг','Look around'),icon:Eye},
+          {value:'pause',label:text('Пауза','Pause'),icon:PauseCircle},
+          {value:'rest',label:text('Отдых','Rest'),icon:Leaf},
+          {value:'ask',label:text('Поддержка','Support'),icon:HeartHandshake},
+          {value:'none',label:text('Ничего','Nothing'),icon:CircleHelp},
+        ],{compact:true})}
+      </>}
+      <div className={styles.personalCard} data-personal-transfer-preview>
+        <span><Leaf size={16}/>{text('МОЯ ПЕРВАЯ КАРТОЧКА ОПОРЫ','MY FIRST SUPPORT CARD')}</span>
+        <strong>{skill}</strong>
+        {answers.anchor&&anchorLabels[answers.anchor]&&<p>{text('Мой ориентир: ','My anchor: ')}{anchorLabels[answers.anchor]}</p>}
+        {hasPlan?<p className={styles.planSentence}>{text('Когда ','When ')}{cues[answers.transferCue]},
+          {text(' я могу ',' I could ')}{actions[answers.transferAction]}.</p>
+          :<p className={styles.planSentence}>{text('План пока не выбран. Это допустимо.','No plan selected yet. That is okay.')}</p>}
+        <small>{text('Это только возможный план, а не обещание выполнить его. Курс будет сохранён после подтверждения сервера.',
+          'This is only a possible plan, not a promise. The course will be saved after server confirmation.')}</small>
+      </div>
+    </section>
+  }
+
 
   return null
 }
