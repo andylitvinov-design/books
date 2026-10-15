@@ -49,8 +49,14 @@ for (const course of ["tantra", "yggdrasil"]) {
       assert.ok(pdf.toString("latin1").includes("/Info "));
       const rate = getReikiLevelPrice(course);
       assert.ok(pdf.toString("latin1").includes("EUR " + rate.amountEur + " per " + rate.durationMinutes + " minutes per level"));
-      assert.match(pdf.toString("latin1"), /0\.115 0\.263 0\.333 rg/); // dark branded cover
-      assert.match(pdf.toString("latin1"), /0\.886 0\.954 0\.941 rg/); // highlighted learning sections
+      if (course === "tantra") {
+        assert.match(pdf.toString("latin1"), /0\.090 0\.244 0\.290 rg/); // new mobile dark-teal cover
+        assert.match(pdf.toString("latin1"), /0\.893 0\.960 0\.943 rg/); // new mint learning cards
+        assert.match(pdf.toString("latin1"), /\/MediaBox \[0 0 390 694\]/); // portrait mobile pages
+      } else {
+        assert.match(pdf.toString("latin1"), /0\.115 0\.263 0\.333 rg/); // existing Yggdrasil cover
+        assert.match(pdf.toString("latin1"), /0\.886 0\.954 0\.941 rg/); // existing learning sections
+      }
       assert.match(pdf.toString("latin1"), /\/Count [2-9][0-9]* >>/); // separate cover + syllabus
     });
   }
