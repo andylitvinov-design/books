@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { ArrowRight, BookOpen, Check, Crown, Heart, Leaf, LockKeyhole, MoreVertical, Archive, Plus, ShieldCheck, Sparkles, TrendingUp, UsersRound, X } from 'lucide-react'
 import { GROWTH_GOALS, COURSE_TOPICS } from '@/lib/inner-growth/course-model'
 import { courseProgramFromTopics } from '@/lib/inner-growth/course-programs'
+import { COURSE_MEMBERSHIP, COURSE_PUBLIC_PLANS } from '@/lib/inner-growth/course-membership'
 import Course14DayOverview from './course-14-day-overview'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-entry-selector.module.css'
@@ -24,13 +25,14 @@ const COPY = {
     addNote: 'A new topic and its own 14-day journey', firstNote: '5 stress routes · 14 lessons each · your choice',
     courseLabel: 'OPORA · STRESS RELIEF', nextLabel: 'EXPLORE COURSES', courseAction: 'Start for free', nextAction: 'View options',
     freeLimit: 'Free · 1 active course', currentLimit: 'The current course remains available for free.',
-    upgrade: 'Add another learning journey', upgradeNote: 'One course at a time is included in Free and Start. Advanced and Premium are designed for up to five courses in parallel.',
-    plans: 'Membership plans', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'With ads',
+    upgrade: 'Add another learning journey', upgradeNote: 'Free includes one active course and a closing course offer. Advanced and Premium include up to five simultaneous courses without ads.',
+    plans: 'Membership plans', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Final course offer',
     one: '1 active course', five: 'Up to 5 active courses', noAds: 'No ads',
+    introLabel: 'Advanced first month for new members', thenPrice: 'Then',
     tests: 'Included tests', session: '1 personal session per month',
     perMonth: '/month', recommended: 'BEST FOR MULTIPLE COURSES',
     unavailable: 'Subscription checkout is not available yet. No payment will be taken on this screen.',
-    conditions: 'Premium session scheduling and included-test terms will be confirmed before purchase.',
+    conditions: 'Advanced only: 50% off the first month (€10), then €20/month. Premium is €100/month; included-test and personal-session terms will be confirmed before purchase. No subscription starts on this screen.',
     close: 'Not now',
     courseOptions: 'Course options', closeCourse: 'Close course',
     closeCourseTitle: 'Close this course?',
@@ -53,13 +55,14 @@ const COPY = {
     addNote: 'Ещё одна тема и отдельный путь на 14 дней', firstNote: '5 маршрутов · по 14 занятий · ваш выбор',
     courseLabel: 'ОПОРА · АНТИСТРЕСС', nextLabel: 'ДРУГИЕ НАПРАВЛЕНИЯ', courseAction: 'Начать бесплатно', nextAction: 'Посмотреть условия',
     freeLimit: 'Free · 1 активный курс', currentLimit: 'Текущий курс остаётся доступен бесплатно.',
-    upgrade: 'Добавить ещё один курс', upgradeNote: 'В Free и Start доступен один активный курс. Advanced и Premium рассчитаны на пять параллельных курсов.',
-    plans: 'Тарифы подписки', free: 'Free', start: 'Start', advanced: 'Advanced', premium: 'Premium', ads: 'С рекламой',
+    upgrade: 'Добавить ещё один курс', upgradeNote: 'Free — один активный курс с рекламным слайдом в конце программы. Advanced и Premium — до пяти курсов одновременно, без рекламы.',
+    plans: 'Тарифы подписки', free: 'Free', advanced: 'Advanced', premium: 'Premium', ads: 'Реклама в финале курса',
     one: '1 активный курс', five: 'До 5 активных курсов', noAds: 'Без рекламы',
-    tests: 'Тесты включены', session: '1 персональная сессия в месяц',
+    introLabel: 'Первый месяц Advanced для новых подписчиков', thenPrice: 'Затем',
+    tests: 'Включённые тесты', session: '1 персональная сессия в месяц',
     perMonth: '/мес.', recommended: 'ДЛЯ НЕСКОЛЬКИХ КУРСОВ',
     unavailable: 'Оформление подписки пока недоступно. На этом экране оплата не списывается.',
-    conditions: 'Условия записи на сессию и перечень включённых тестов будут подтверждены до оплаты.',
+    conditions: 'Акция только для Advanced: первый месяц 10 € (−50%), затем 20 € в месяц. Premium — 100 € в месяц; условия включённых тестов и личной сессии уточняются до оплаты. На этом экране подписка не оформляется.',
     close: 'Не сейчас',
     courseOptions: 'Меню курса', closeCourse: 'Закрыть курс',
     closeCourseTitle: 'Закрыть этот курс?',
@@ -85,12 +88,7 @@ function courseTitle(course, locale, t) {
   return topic?.title?.[locale] || t.defaultCourse
 }
 
-const PLANS = [
-  { id: 'free', price: 0, spots: 'one', items: ['ads'] },
-  { id: 'start', price: 10, spots: 'one', items: ['noAds'] },
-  { id: 'advanced', price: 20, spots: 'five', items: ['noAds'] },
-  { id: 'premium', price: 100, spots: 'five', items: ['noAds', 'tests', 'session'] },
-]
+const PLANS = COURSE_PUBLIC_PLANS
 
 export default function CourseEntrySelector({ course, locale = 'en', onOpen, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
@@ -314,7 +312,12 @@ export default function CourseEntrySelector({ course, locale = 'en', onOpen, onC
           data-plan={plan.id} data-recommended={plan.id === 'advanced'}>
           {plan.id === 'advanced' && <span className={styles.recommended}>{t.recommended}</span>}
           <strong>{t[plan.id]}</strong>
-          <div className={styles.price}>€{plan.price}<small>{t.perMonth}</small></div>
+          <div className={styles.price}>€{plan.price}<small>{plan.id === 'free' ? '' : t.perMonth}</small></div>
+           {plan.id === COURSE_MEMBERSHIP.paidPlanId && <p className={styles.introOffer} data-first-month-offer>
+             <Sparkles size={17} aria-hidden="true"/>
+             <span><strong>{t.introLabel}: €{COURSE_MEMBERSHIP.introFirstMonthEUR} (−{COURSE_MEMBERSHIP.introDiscountPercent}%)</strong>
+               <small>{t.thenPrice} €{COURSE_MEMBERSHIP.regularMonthlyEUR}{t.perMonth}</small></span>
+           </p>}
           <p><Check size={15} aria-hidden="true"/>{t[plan.spots]}</p>
           {plan.items.map(item => <p key={item}><Check size={15} aria-hidden="true"/>{t[item]}</p>)}
         </article>)}

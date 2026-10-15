@@ -108,6 +108,12 @@ export default async function AdminDocumentPreview({ params, searchParams }) {
       </div>
     </section>
 
+    {!payment && <p className={styles.mobilePdfAccess}>
+      <a href={`/admin/api/documents/${encodeURIComponent(record.id)}/pdf?locale=${locale}&preview=1`}>
+        {ru ? 'Открыть PDF с крупным текстом' : 'Open large-type PDF'}
+      </a>
+    </p>}
+
     {deliveryEnabled() && record.clientId && record.kind !== 'report' && record.status === 'active' && <div style={{maxWidth:850,margin:'22px auto'}}><SessionAudioRecorder clientId={record.clientId} documentId={record.id} locale={locale} /></div>}
 
     <section id="document-preview" className={styles.previewSection} aria-label={ru ? 'Просмотр готового отчёта' : 'Saved document preview'}>
