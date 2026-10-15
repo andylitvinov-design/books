@@ -37,5 +37,6 @@ test('account has its own session list, reader, independent PDF and per-file aut
   assert.match(pdf,/await readSavedSession\(config,store,actor,id/)
   assert.match(page,/createRequestAuth/)
   assert.match(client,/mode==='saved'/)
-  assert.match(source('components/app/app-workspace.jsx'),/SavedSessionsPanel/)
+  assert.match(source('components/app/personal-analysis-panel.jsx'),/SavedSessionsPanel/)
+  assert.match(source('components/app/app-workspace.jsx'),/savedSessions=\{data.savedSessions \|\| \[\]\}/)
 })

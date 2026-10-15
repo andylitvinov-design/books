@@ -54,7 +54,6 @@ import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
-import { SavedSessionsPanel } from '@/components/app/saved-sessions-panel'
 
 import { appFetch } from '@/lib/app/client-fetch'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
@@ -505,10 +504,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <>
               <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
-                reportsContent={<>
-                  <SavedSessionsPanel items={data.savedSessions || []} locale={locale}/>
-                  <PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded />
-                </>}>
+                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} embedded savedSessions={data.savedSessions || []} />}>
                 <Portrait data={data} locale={locale} />
               </ProfileDomains>
               <PracticeEntry data={data} locale={locale} />

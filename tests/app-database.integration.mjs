@@ -1927,6 +1927,11 @@ test('an explicitly selected Session is saved to exactly one Google Account, wit
   const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
   const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
   try{
+    const accountB=actor(randomUUID(),randomUUID())
+    await admin.query('insert into auth.users(id,email) values($1,$2)',[accountB.id,'test-'+randomUUID()+'@example.invalid'])
+    await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[accountB.claims.session_id,accountB.id])
+    await repo.ensureAccount(accountB)
+    await repo.onboarding(accountB,{adult:true,necessary:true,marketing:false,displayName:'Second Account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
     const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
     await admin.query(sql)
     const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
@@ -1949,12 +1954,12 @@ test('an explicitly selected Session is saved to exactly one Google Account, wit
     const saved=await readSavedSession(config,store,a,resource.id)
     assert.equal(saved.session.title,'Private session v1')
     assert.equal(saved.session.clientId,undefined)
-    await assert.rejects(readSavedSession(config,store,b,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+    await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
     const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
     assert.equal(bind.length,0)
     const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
     const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
-    await assert.rejects(commitSessionSaveIntent(config,store,b,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
     await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
       [sessionId,payload(2)])
     await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
