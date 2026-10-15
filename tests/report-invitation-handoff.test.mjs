@@ -61,3 +61,32 @@ test('private handoff uses one consent click, scoped cookies, blurred gate, and 
   assert.match(reportApi, /httpOnly: true/)
   assert.doesNotMatch(shared, /sessionStorage|localStorage/)
 })
+
+
+test('without-saving action opens the authorized inline PDF, not the HTML reader', async () => {
+  const [gate, page, route, styles, pdfGenerator] = await Promise.all([
+    readFile('components/app/report-invitation-gate.jsx', 'utf8'),
+    readFile('app/[locale]/prescriptions/[selector]/page.js', 'utf8'),
+    readFile('app/api/prescriptions/[selector]/pdf/route.js', 'utf8'),
+    readFile('components/app/report-invitation-gate.module.css', 'utf8'),
+    readFile('lib/prescriptions/pdf.js', 'utf8'),
+  ])
+  // Gate is rendered only after the saved report is session-authorized.
+  assert.match(page, /authorizePrescriptionRequest\(selector\)/)
+  assert.match(page, /viewPdfHref=\{/)
+  assert.match(page, /\/api\/prescriptions\/\$\{selector\}\/pdf\?locale=\$\{locale\}&preview=1/)
+  assert.match(gate, /viewPdfHref \? \(/)
+  assert.match(gate, /href=\{viewPdfHref\}/)
+  assert.match(gate, /\{isReport \? c\.viewReport : c\.viewDocument\}/)
+  assert.match(styles, /\.viewButton:is\(a\)/)
+  assert.match(route, /authorizePrescriptionRequest\(selector\)/)
+  assert.match(route, /getClientPrescription\(record, locale\)/)
+  assert.match(route, /inlinePreview \? 'inline' : 'attachment'/)
+  assert.match(route, /Content-Type': 'application\/pdf'/)
+  assert.match(route, /Cache-Control': 'private, no-store, max-age=0'/)
+  assert.match(route, /X-Robots-Tag': 'noindex, nofollow, noarchive'/)
+  assert.doesNotMatch(route, /findByPublicId|internalNotes|\.access\.secret/)
+  assert.match(pdfGenerator, /drawReportHeroArtwork/)
+  assert.doesNotMatch(pdfGenerator, /fill\(coastX,bottom\+2,178,18/,
+    'hard-edged tinted sea rectangle is removed from premium cover')
+})
