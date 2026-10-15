@@ -106,6 +106,12 @@ export default async function AdminDocumentPreview({ params, searchParams }) {
       </div>
     </section>
 
+    {!payment && <p className={styles.mobilePdfAccess}>
+      <a href={`/admin/api/documents/${encodeURIComponent(record.id)}/pdf?locale=${locale}&preview=1`}>
+        {ru ? 'Открыть PDF с крупным текстом' : 'Open large-type PDF'}
+      </a>
+    </p>}
+
     <section id="document-preview" className={styles.previewSection} aria-label={ru ? 'Просмотр готового отчёта' : 'Saved document preview'}>
       <div className={styles.previewCaption}>
         <div><FileText size={18} strokeWidth={1.8} aria-hidden="true" /><h2>{ru ? 'Предпросмотр документа' : 'Document preview'}</h2></div>
