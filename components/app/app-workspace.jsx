@@ -672,7 +672,9 @@ function SaveContinuation({ data, locale, reload }) {
   }, [autoSave, authFailure, intent, intentId, commit, locale, router])
 
   const sourceTitle =
-    intent?.sourceKind === 'delivered_report'
+    intent?.sourceKind === 'client_session'
+      ? ru ? 'Сохранение одной консультации' : 'Save one consultation'
+      : intent?.sourceKind === 'delivered_report'
       ? ru
         ? 'Полученный отчёт'
         : 'Received report'
@@ -693,7 +695,7 @@ function SaveContinuation({ data, locale, reload }) {
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
       <h1>{ru ? 'Сохранить в личном кабинете' : 'Save to your Cabinet'}</h1>
-      {autoSave && !authFailure && intent && !intent.expired && (
+      {canAutoContinueSave({automatic:autoSave,authStatus:authFailure,intent}) && (
         <p role="status">{ru ? 'Сохраняем и открываем ваш документ в личном кабинете…' : 'Saving and opening your document in your personal Cabinet…'}</p>
       )}
       {intent && !intent.expired && (
@@ -708,7 +710,11 @@ function SaveContinuation({ data, locale, reload }) {
             {ru ? 'Получающий Google-аккаунт' : 'Receiving Google Account'}: {data.email || data.account.displayName || (ru ? 'текущий Google-аккаунт' : 'current Google account')}
           </p>
           <p className="hh-muted">
-            {intent?.sourceKind === 'guest_result'
+            {intent?.sourceKind === 'client_session'
+              ? (ru
+                  ? 'Вы подтверждаете сохранение только этой консультации в показанный Google-аккаунт. Остальные записи клиента не будут привязаны или открыты автоматически.'
+                  : 'You are confirming this one consultation for the Google Account shown above. No other client records will be linked or unlocked automatically.')
+              : intent?.sourceKind === 'guest_result'
               ? (ru
                   ? 'Будет сохранён только этот выбранный результат.'
                   : 'Only this selected result will be saved.')

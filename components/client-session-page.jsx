@@ -3,18 +3,19 @@ import { useState, useRef } from 'react'
 import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
+import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import styles from './client-session.module.css'
 
-function PrivatePlayer({item,session,mode,selector,locale}) {
+function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [source,setSource]=useState('')
   const [expiry,setExpiry]=useState(0)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru'
-  const route=mode==='guest'
-    ? '/api/client-session-viewer/'+selector+'/media/'+item.assetId
-    : '/api/client/'+selector+'/sessions/'+session.id+'/media/'+item.assetId
+  const route=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
+    mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
+    '/api/client/'+selector+'/sessions/'+session.id+'/media/'+item.assetId
 
   async function load(renew=false) {
     if(busy.current)return
@@ -67,7 +68,7 @@ function PrivatePlayer({item,session,mode,selector,locale}) {
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
-export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true}) {
+export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null}) {
   const ru=locale==='ru'
   const date=new Intl.DateTimeFormat(ru?'ru-RU':'en-CA',{dateStyle:'long',timeZone:'UTC'})
     .format(new Date(session.occurredOn+'T12:00:00Z'))
@@ -82,10 +83,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const supplementary=media.filter(item=>item.kind==='pdf'||['meditation','additional'].includes(item.role)||
     (item.role==='instruction'&&item.kind==='audio'))
   const hasRecommendation=Boolean(recommendation?.items?.length)
-  const pdfPath=mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
+  const pdfPath=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/pdf?locale='+locale:
+    mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
-  const assetBase=mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
-    '/api/client/'+selector+'/sessions/'+session.id+'/media/'
+  const assetBase=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
+    mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
+    '/api/client/'+selector+'/sessions/'+session.id+'/media/
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
     session.report?'#session-report':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
@@ -95,7 +98,9 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <div className={styles.clientBrand}><span className={styles.eyebrow}>HOLISTIC HOUSE · {ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
-      <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>
+      {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
+        {ru?'← Мой кабинет':'← My Cabinet'}</a>
+        : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
     </header>
     <section className={styles.sessionHero} aria-labelledby="session-title">
       <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
@@ -129,7 +134,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </header>
       <div className={styles.mediaList}>
         {personalMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
-          session={session} mode={mode} selector={selector} locale={locale}/>)}
+          session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
       </div>
     </section>}
 
@@ -165,7 +170,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <p className={styles.sectionIntro}>{ru?'Дополнительное видео от специалиста. Индивидуальные дозировки остаются в вашем назначении выше.':
         'Your practitioner’s guidance video. Your personal dosage details remain in the written recommendation above.'}</p>
       <div className={styles.mediaList}>{guideMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
-        session={session} selector={selector} mode={mode} locale={locale}/>)}</div>
+        session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
     </section>}
 
     {hasAdvice&&<section id="session-recommendations" className={styles.clientSection}>
@@ -205,7 +210,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
             {ru?'Скачать PDF':'Download PDF'} <ExternalLink size={16}/>
           </a>
         </article>
-        :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale}/>)}
+        :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
       {resources.map((item,index)=><a className={styles.attachmentCard} key={index}
         href={item.url} target="_blank" rel="noopener noreferrer">
         <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
@@ -214,7 +219,10 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </a>)}
     </section>}
 
-    <ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>
+    {mode!=='saved'&&<SaveClientSessionToAccount locale={locale} selector={selector}
+      sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}/>}
+    {mode!=='saved'&&<ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>}
+
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':
@@ -222,6 +230,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <p className={styles.safetyLine}>{ru?
         'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
         'This information does not replace appropriate medical assessment or care.'}</p>
+      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}>
+        <ArrowLeft size={17}/>{ru?'Мои сохранённые отчёты':'My saved reports'}</a>}
       {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>
         {ru?'Все мои консультации':'All my sessions'}</a>}
     </footer>

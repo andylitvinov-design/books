@@ -29,6 +29,8 @@ import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/le
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
 import { legacyDocumentSourceHash } from '../lib/app/legacy-document.js'
+import { seal } from '../lib/app/crypto.js'
+import { createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession } from '../lib/app/client-session-save-flow.js'
 const config = getAppConfig(),
   repo = createAppRepository(config),
   practiceRepo = createPractitionerRepository(config),
@@ -1917,3 +1919,63 @@ test('private session share grants enforce per-consultation ownership under real
   }finally{await db.end()}
 })
 
+
+
+test('an explicitly selected Session is saved to exactly one Google Account, with pinned version and no Client binding', async()=>{
+  const {readFile}=await import('node:fs/promises')
+  const admin=await adminClient()
+  const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
+  const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
+  try{
+    const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
+    await admin.query(sql)
+    const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
+      reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
+    await admin.query(
+      "insert into app_private.client_delivery_sessions(id,legacy_client_id,occurred_on,draft_payload,published_payload,status,draft_revision,published_revision) values($1,$2,'2026-10-15','synthetic-owner-draft',$3,'published',1,1)",
+      [sessionId,clientId,payload(1)]
+    )
+    await admin.query(
+      "insert into app_private.client_session_share_grants(id,session_id,legacy_client_id,selector,secret_hash,access_version,expires_at) values($1,$2,$3,$4,$5,1,now()+interval '30 days')",
+      [grantId,sessionId,clientId,selector,'a'.repeat(64)]
+    )
+    const intent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    assert.equal(intent.sourceKind,'client_session')
+    const proof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[intent.id])).rows[0].browser_secret_hash
+    // The user explicitly confirms the destination Account after sign-in.
+    const resource=await commitSessionSaveIntent(config,store,a,intent.id,proof)
+    assert.ok(resource.id)
+    assert.equal((await commitSessionSaveIntent(config,store,a,intent.id,proof)).id,resource.id)
+    const saved=await readSavedSession(config,store,a,resource.id)
+    assert.equal(saved.session.title,'Private session v1')
+    assert.equal(saved.session.clientId,undefined)
+    await assert.rejects(readSavedSession(config,store,b,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+    const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
+    assert.equal(bind.length,0)
+    const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
+    await assert.rejects(commitSessionSaveIntent(config,store,b,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
+      [sessionId,payload(2)])
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
+    const newIntent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
+    const newProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[newIntent.id])).rows[0].browser_secret_hash
+    assert.equal((await commitSessionSaveIntent(config,store,a,newIntent.id,newProof)).id,resource.id)
+    assert.equal((await readSavedSession(config,store,a,resource.id)).session.title,'Private session v2')
+    const oldFlag=process.env.HH_CLIENT_DELIVERY_ENABLED
+    try{
+      process.env.HH_CLIENT_DELIVERY_ENABLED='true'
+      assert.equal((await repo.bootstrap(a)).savedSessions.filter(row=>row.id===resource.id).length,1)
+    }finally{if(oldFlag===undefined)delete process.env.HH_CLIENT_DELIVERY_ENABLED
+      else process.env.HH_CLIENT_DELIVERY_ENABLED=oldFlag}
+    await removeSavedSession(config,a,resource.id)
+    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+  }finally{await admin.end()}
+})
+
+test('saved session table is account-scoped and the raw recipient cannot write',async()=>{
+  const rows=await rawAs(a,'authenticated',db=>db.query('select id from app.saved_sessions'))
+  assert.ok(Array.isArray(rows.rows))
+  await assert.rejects(rawAs(b,'authenticated',db=>db.query('insert into app.saved_sessions(account_id,source_session_id,legacy_client_id,source_revision,source_hash,occurred_on) values($1,$2,$3,1,$4,current_date)',
+    [B,randomUUID(),randomUUID(),'sha256:'+'a'.repeat(64)])),e=>e.code==='42501')
+})

@@ -457,6 +457,17 @@ async function handle(request, { params }) {
         }
       }
       exported.savedReports = savedReports
+      if(deliveryEnabled()){
+        const store=getPrescriptionStore()
+        const exportedSessions=[]
+        for(const row of exported.savedSessions||[]){
+          try{
+            const saved=await readSavedSession(config,store,actor,row.id,{markOpened:false})
+            exportedSessions.push({...row,available:true,session:saved.session})
+          }catch{exportedSessions.push({...row,available:false})}
+        }
+        exported.savedSessions=exportedSessions
+      }
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
