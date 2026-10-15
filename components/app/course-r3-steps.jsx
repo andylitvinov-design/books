@@ -29,6 +29,11 @@ const UI = {
     stressRetake: 'Previous result is too old for the baseline; please repeat this test.',
     stressMissingBaseline: 'Add and complete Weekly Pulse before opening lesson 1.',
     stressExtraNote: 'Only tests you confirm are saved to the course. GAD-7 is a symptom screen, not a diagnosis.',
+    stressMeasuresTitle:'Your T0 measures before lesson one',
+    stressMeasuresIntro:'The same selected questionnaires are offered after lesson 14 when their repeat interval is met. All measures are separate from skill practice and never combined into a diagnostic score.',
+    stressPrimaryMeasure:'MAIN · ',stressWindowWeek:'Past 7 days',
+    stressWindowFortnight:'Past 14 days',stressWindowNow:'Right now',
+    stressScalesUnit:'separate scales',
     programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse is required before lessons; GAD-7 and Resource Pulse are optional. The Russian GAD-7 translation is not independently validated.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
@@ -86,6 +91,11 @@ const UI = {
     stressRetake: 'Ранее пройденный тест устарел для исходного замера — пройдите ещё раз.',
     stressMissingBaseline: 'Добавьте и пройдите Weekly Pulse перед началом занятий.',
     stressExtraNote: 'В курс включаются только подтверждённые вами тесты. GAD-7 — скрининг симптомов, а не диагноз.',
+    stressMeasuresTitle:'Исходное измерение T0 · до первого занятия',
+    stressMeasuresIntro:'После 14-го урока предлагаются те же подтверждённые тесты при соблюдении интервалов повторения. Шкалы состояния и освоение навыков не смешиваются в общий клинический балл.',
+    stressPrimaryMeasure:'ГЛАВНЫЙ · ',stressWindowWeek:'Последние 7 дней',
+    stressWindowFortnight:'Последние 14 дней',stressWindowNow:'Прямо сейчас',
+    stressScalesUnit:'отдельных шкал',
     programmeLabel: 'Ваш курс', programmeBattery: 'До первого урока нужен Weekly Pulse; GAD-7 и тест ресурсов — по желанию. Русский GAD-7 не прошёл самостоятельную валидацию.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
@@ -340,7 +350,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   if(stage===2 && confirmed && baselineConfirmed && pending.length===0 && !showCompletedOptions) {
     return <CourseCompletionReview
-      t={t} root={root} confirmedStatuses={confirmedStatuses}
+      t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
       optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
       busy={busy||localBusy}
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
@@ -383,6 +393,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
             <small className={resultValid?styles.completed:styles.pending}>
               {resultValid?<><Check size={13}/> {t.completed} · {formatDate(item.completedAt,locale)}</>
                 :outdated&&isAntistress?t.stressRetake:<>{t.needed} · ~{item.durationMinutes||'?'} min</>}
+              {serverStatus?.instrumentLocale&&<> · {serverStatus.instrumentLocale.toUpperCase()}</>}
               {item.recommended&&<> · {t.recommended}</>}
             </small>
           </span>
@@ -408,7 +419,9 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           {confirmedStatuses.map(item=>{
             const meta=optionByKey.get(item.key)
             return <div key={item.key}><span>{item.completed?<Check size={15}/>:<ClipboardList size={15}/>}
-              {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}</small></div>
+              {meta?.title||item.key}</span><small>{item.completed?t.completed:t.needed}
+                {item.outdated&&<> · {ru?'Нужен свежий исходный замер':'Fresh baseline needed'}</>}
+                {item.instrumentLocale&&<> · {item.instrumentLocale.toUpperCase()}</>}</small></div>
           })}
         </div>
         {pending.length===0?<p className={baselineConfirmed?styles.completed:styles.pending}>{baselineConfirmed?t.allDone:t.stressMissingBaseline}</p>:
@@ -424,7 +437,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   if(stage===3) {
     if(scaleView!=='manual') {
       return <CourseCompletionReview
-        t={t} root={root} confirmedStatuses={confirmedStatuses}
+        t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
         optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
         busy={busy||localBusy}
         onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}

@@ -369,3 +369,18 @@
 @media(max-width:530px){.stressBaselineIntro{grid-template-columns:1fr;gap:9px;padding:15px 13px}
   .baselineIcon{width:39px;height:39px;border-radius:12px}.stressBaselineIntro strong{font-size:17px}
   .stressBaselineIntro p{font-size:12px}}
+
+/* Start-of-course Anti-Stress measures. No color suggests a clinical grade. */
+.stressMeasureProtocol{display:grid;gap:8px;margin:14px 0;padding:15px 17px;background:#edf3f9;border:1px solid #cadaea;border-radius:13px}
+.stressMeasureProtocol>strong{font-size:15px;color:#1c3856}
+.stressMeasureProtocol p{font-size:12px;line-height:1.55;color:#4c6680;margin:0}
+.stressMeasureProtocol ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:5px 0 0;padding:0}
+.stressMeasureProtocol li{display:grid;gap:4px;min-width:150px;padding:10px 12px;background:#fff;border:1px solid #dce6ef;border-radius:10px}
+.stressMeasureProtocol li>span{font-size:12px;font-weight:800;color:#1e3c5c}
+.stressMeasureProtocol li>small{font-size:11px;color:#5a718a}
+.stressMeasureProtocol li>strong{font-size:11px;color:#793852}
+.primaryOutcomeTag{display:inline-block;margin:0 7px 0 0;padding:4px 6px;border-radius:5px;background:#f4e7ed;color:#753751;font-size:9px;font-weight:800;font-style:normal;letter-spacing:.03em}
+.completeScreen [data-antistress-measure-role="primary"]{background:#f9f0f4;border-radius:8px}
+@media(max-width:530px){.stressMeasureProtocol{padding:12px}.stressMeasureProtocol li{flex:1 1 140px;min-width:0}}
+
+.originalLanguage{display:inline-block;margin:4px 8px 4px 0;color:#687c92;font-size:10px;font-weight:700}
