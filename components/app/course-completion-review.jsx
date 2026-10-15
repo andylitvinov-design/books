@@ -39,7 +39,11 @@ export default function CourseCompletionReview({
       </div>}
       <p className={styles.small}>{t.scaleGuide}</p>
       {confirmedStatuses.map(item => {
-        const allScales=profile.scales.filter(scale=>scale.testKey===item.key)
+        // Do not display a newer score from a different language/run as
+        // the selected cycle's T0 measurement. The report link still opens the
+        // exact owner-scoped saved result if this summary has no matching row.
+        const allScales=profile.scales.filter(scale=>scale.testKey===item.key &&
+          (programId!=='stress'||!item.resultId||scale.resultId===item.resultId))
         const scales=programId==='stress'?orderAntistressScales(item.key,allScales):allScales
         const meta = optionByKey.get(item.key)
         return <article key={item.key} className={styles.summaryTest}>
