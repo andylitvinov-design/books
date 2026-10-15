@@ -518,3 +518,374 @@
    padding:25px 19px calc(22px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){.sessionSaveBackdrop{backdrop-filter:none}}
+
+
+/* Client consultation report v4 — compact, accessible, site-native editorial UI.
+   Scoped to the authorized single-session reader; does not affect owner editors,
+   invoices, PDF generation, Cabinet navigation, or protected media endpoints. */
+.cabinetSessionPage{
+  max-width:830px;
+  background:#fbfaf7;
+  color:#344842;
+  font-size:15px;
+  line-height:1.58;
+}
+.cabinetSessionPage .clientHeader{
+  margin-bottom:14px;
+  padding:0 0 14px;
+  border-bottom:1px solid #e4e6df;
+  gap:12px;
+}
+.cabinetSessionPage .clientBrand{gap:7px;min-width:0}
+.cabinetSessionPage .clientWordmark{
+  display:block;
+  font:600 clamp(19px,2.8vw,23px)/1.15 Georgia,serif;
+  letter-spacing:-.025em;
+  color:#30483d;
+}
+.cabinetSessionPage .privateLabel{
+  color:#637e70;
+  line-height:1.3;
+  font-size:11px;
+  font-weight:650;
+}
+.cabinetSessionPage .privateLabel svg{flex:none}
+.cabinetSessionPage .sessionHero{
+  padding:clamp(18px,3vw,26px);
+  border-radius:19px;
+  border-color:#dce4d9;
+  background:linear-gradient(127deg,#fffefb 0%,#fafbf6 65%,#f1f6f0 100%);
+  box-shadow:0 8px 24px #334b3608;
+}
+.cabinetSessionPage .sectionKicker{
+  color:#925e47;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.115em;
+  line-height:1.55;
+}
+.cabinetSessionPage .sessionHero h1{
+  color:#2e403a;
+  font:600 clamp(28px,4.1vw,36px)/1.14 Georgia,serif;
+  letter-spacing:-.035em;
+  margin:6px 0 15px;
+  text-wrap:balance;
+}
+.cabinetSessionPage .sessionIdentity{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0;
+  overflow:hidden;
+  margin:0 0 14px;
+  border:1px solid #e1e7dd;
+  border-radius:13px;
+  background:#fffefa;
+}
+.cabinetSessionPage .sessionIdentity>div{
+  min-width:0;
+  min-height:66px;
+  padding:10px 13px;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.cabinetSessionPage .sessionIdentity>div+div{border-left:1px solid #e5e8df}
+.cabinetSessionPage .sessionIdentity>div:only-child{grid-column:1/-1}
+.cabinetSessionPage .sessionIdentity dt{
+  color:#708077;
+  font-size:11px;
+  line-height:1.35;
+}
+.cabinetSessionPage .sessionIdentity dd{
+  color:#34433b;
+  font-size:14px;
+  font-weight:750;
+  line-height:1.4;
+}
+.cabinetSessionPage .sessionHero .sessionSummary{
+  font-size:15px;
+  line-height:1.6;
+  color:#465b54;
+}
+.cabinetSessionPage .nextStepCard{
+  margin-top:14px;
+  padding:15px 16px;
+  border:1px solid #d1e1d3;
+  border-radius:14px;
+  background:#f2f7f2;
+  box-shadow:none;
+  gap:7px;
+}
+.cabinetSessionPage .nextStepCard p{
+  margin:0;
+  color:#3b5748;
+  font-size:14px;
+  line-height:1.55;
+}
+.cabinetSessionPage .nextStepLink{
+  min-height:46px;
+  width:fit-content;
+  max-width:100%;
+  margin-top:6px;
+  padding:10px 16px;
+  background:#b34d34;
+  border:1px solid #a54530;
+  border-radius:11px;
+  box-shadow:none;
+  font-size:14px;
+  line-height:1.35;
+  font-weight:780;
+}
+.cabinetSessionPage .nextStepLink:hover{background:#99412c}
+.cabinetSessionPage .practitionerCredit{
+  margin-top:14px;
+  padding-top:11px;
+  border-top:1px solid #e3e7dd;
+  color:#777a70;
+  font-size:11px;
+  line-height:1.45;
+}
+.cabinetSessionPage .clientSection{margin:24px 0}
+.cabinetSessionPage .sectionHeader{
+  gap:10px;
+  align-items:center;
+  margin-bottom:11px;
+}
+.cabinetSessionPage .sectionIcon{
+  flex:none;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  color:#487666;
+  border:1px solid #d5e5d8;
+  background:#eff6ef;
+}
+.cabinetSessionPage .sectionIcon svg{width:19px;height:19px}
+.cabinetSessionPage .sectionHeader h2{
+  margin:3px 0 0;
+  color:#32473d;
+  font:600 clamp(22px,3vw,27px)/1.21 Georgia,serif;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+}
+.cabinetSessionPage .sectionIntro{color:#67746c;font-size:13px}
+.cabinetSessionPage .prescriptionSummary{
+  border:1px solid #d9e6da;
+  background:#f3f8f3;
+  border-radius:14px;
+  padding:13px 15px;
+  box-shadow:none;
+}
+.prescriptionSummaryLead{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px 14px;
+}
+.cabinetSessionPage .prescriptionCount{
+  display:inline-flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px;
+  margin:0;
+  color:#3d6050;
+  font-size:13px;
+  font-weight:700;
+}
+.cabinetSessionPage .prescriptionCount strong{
+  display:inline-grid;
+  place-items:center;
+  min-width:27px;
+  min-height:27px;
+  padding:1px 7px;
+  border-radius:9px;
+  color:#29684e;
+  background:#e1efe4;
+  font-size:16px;
+}
+.prescriptionHint{
+  flex:1 1 200px;
+  margin:0;
+  font-size:12px;
+  color:#697e70;
+  line-height:1.4;
+}
+.cabinetSessionPage .instructionPanel{
+  margin:12px 0 0;
+  padding:12px 14px;
+  background:#fffefa;
+  border:1px solid #dbe5d9;
+  border-left:3px solid #7b9c83;
+  border-radius:10px;
+  box-shadow:none;
+}
+.cabinetSessionPage .instructionPanel strong{color:#426f54;font-size:13px}
+.cabinetSessionPage .instructionPanel p{
+  margin-top:4px;
+  color:#47584e;
+  font-size:14px;
+  line-height:1.6;
+}
+.cabinetSessionPage .sessionFollowUp{
+  display:flex;
+  flex-wrap:wrap;
+  gap:3px 7px;
+  margin:11px 0 0;
+  padding-top:11px;
+  border-top:1px solid #dee7dc;
+  color:#42624e;
+  font-size:13px;
+  line-height:1.45;
+}
+.cabinetSessionPage .sessionFollowUp strong{font-weight:750}
+.cabinetSessionPage .remedyDetailSection{
+  margin-top:-13px;
+  scroll-margin-top:18px;
+}
+.cabinetSessionPage .remedyAccordions{gap:8px}
+.cabinetSessionPage .remedyAccordion{
+  border:1px solid #e0e5db;
+  border-radius:13px;
+  background:#fffefa;
+  box-shadow:none;
+}
+.cabinetSessionPage .remedyAccordion summary{
+  min-height:62px;
+  gap:11px;
+  padding:11px 13px;
+}
+.cabinetSessionPage .remedyAccordion[open]{
+  border-color:#b9d3bf;
+  background:#fffefa;
+}
+.cabinetSessionPage .remedyIndex{
+  width:33px;
+  height:33px;
+  border-radius:10px;
+  color:#37745d;
+  background:#e7f2e8;
+  font-size:12px;
+}
+.cabinetSessionPage .remedyAccordionText strong{
+  color:#313e37;
+  font-size:15px;
+  line-height:1.35;
+}
+.cabinetSessionPage .remedyAccordionText small{
+  color:#6b7a6d;
+  font-size:12px;
+  line-height:1.4;
+}
+.cabinetSessionPage .remedyAccordionBody{
+  padding:12px 15px 17px;
+  border-top:1px solid #e7ebe3;
+}
+.cabinetSessionPage .remedyFields{gap:10px}
+.cabinetSessionPage .remedyFields dt{color:#718074}
+.cabinetSessionPage .remedyFields dd{font-size:15px;line-height:1.58}
+.cabinetSessionPage .reportPanel{
+  padding:15px 16px;
+  background:#fffefa;
+  border:1px solid #e0e3d9;
+  border-radius:14px;
+  box-shadow:none;
+}
+.cabinetSessionPage .reportPanel p{
+  margin:0 0 13px;
+  color:#6a766c;
+  font-size:13px;
+  line-height:1.52;
+}
+.cabinetSessionPage .downloadButton{
+  min-height:46px;
+  width:fit-content;
+  max-width:100%;
+  padding:10px 17px;
+  border-radius:11px;
+  border:1px solid #a54530;
+  background:#b34d34;
+  box-shadow:none;
+  font-size:14px;
+  line-height:1.35;
+  font-weight:780;
+}
+.cabinetSessionPage .downloadButton:hover{background:#99412c}
+.cabinetSessionPage .reportDetails{
+  margin-top:9px;
+  padding:0;
+  border:1px solid #dfe7dd;
+  background:#fffefa;
+  border-radius:12px;
+}
+.cabinetSessionPage .reportDetails summary{
+  display:flex;
+  gap:9px;
+  align-items:center;
+  min-height:48px;
+  padding:11px 14px;
+  color:#365d4c;
+  font-size:14px;
+  font-weight:730;
+}
+.cabinetSessionPage .reportDetails summary span{flex:1;min-width:0}
+.cabinetSessionPage .reportExpandIcon{flex:none;transition:transform .2s ease}
+.cabinetSessionPage .reportDetails[open] .reportExpandIcon{transform:rotate(180deg)}
+.cabinetSessionPage .reportContent{
+  padding:14px;
+  border-top:1px solid #e5e9df;
+  color:#43574a;
+  font-size:15px;
+  line-height:1.65;
+  overflow-x:auto;
+}
+.cabinetSessionPage .adviceCard,.cabinetSessionPage .practiceCard{
+  border-radius:13px;
+  background:#fffefa;
+  box-shadow:none;
+}
+.cabinetSessionPage .clientMediaCard,.cabinetSessionPage .attachmentCard{
+  border-radius:13px;
+  box-shadow:none;
+}
+.cabinetSessionPage .clientFooter{
+  padding:14px 0;
+  border-top:1px solid #e5e7df;
+  color:#6c796e;
+  font-size:12px;
+  line-height:1.5;
+}
+.cabinetSessionPage .clientFooter p{align-items:flex-start;gap:7px}
+.cabinetSessionPage .clientFooter svg{flex:none;margin-top:3px}
+@media(max-width:700px){
+  .cabinetSessionPage{padding:12px 12px 26px;font-size:15px}
+  .cabinetSessionPage .sessionHero{padding:17px 15px;border-radius:17px}
+  .cabinetSessionPage .sessionHero h1{font-size:clamp(27px,7vw,32px)}
+  .cabinetSessionPage .sessionIdentity>div{padding:10px 11px}
+  .cabinetSessionPage .sessionIdentity dd{font-size:13px}
+  .cabinetSessionPage .clientSection{margin:21px 0}
+  .cabinetSessionPage .sectionHeader h2{font-size:22px}
+  .cabinetSessionPage .sectionIcon{width:36px;height:36px}
+  .cabinetSessionPage .nextStepLink,.cabinetSessionPage .downloadButton{width:100%}
+  .cabinetSessionPage .prescriptionSummary{padding:13px}
+  .cabinetSessionPage .remedyDetailSection{margin-top:-13px}
+}
+@media(max-width:355px){
+  .cabinetSessionPage .sessionIdentity{grid-template-columns:minmax(0,1fr)}
+  .cabinetSessionPage .sessionIdentity>div+div{
+    border-left:0;
+    border-top:1px solid #e5e8df;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .cabinetSessionPage .reportExpandIcon{transition:none}
+}
+@media print{
+  .cabinetSessionPage{max-width:none;background:white;padding:0}
+  .cabinetSessionPage .sessionHero,.cabinetSessionPage .prescriptionSummary,
+  .cabinetSessionPage .reportPanel,.cabinetSessionPage .remedyAccordion{
+    box-shadow:none;background:white;
+  }
+  .cabinetSessionPage .nextStepLink{display:none}
+}
