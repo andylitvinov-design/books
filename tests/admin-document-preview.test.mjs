@@ -15,11 +15,12 @@ test('standalone legacy recommendations and payment documents keep their existin
 })
 
 test('saved document preview shows edit first, keeps every existing action and prints only the report', async () => {
-  const [page, css, adminActions, consultationActions] = await Promise.all([
+  const [page, css, adminActions, consultationActions, sessionIssuer] = await Promise.all([
     readFile('app/admin/documents/[id]/page.js', 'utf8'),
     readFile('app/admin/documents/[id]/document-preview.module.css', 'utf8'),
     readFile('components/admin-document-panels.jsx', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
+    readFile('components/session-link-issuer.jsx', 'utf8'),
   ])
   assert.match(page, /requireAdminRequest\(\)/)
   assert.match(page, /const editHref = documentPreviewEditHref\(record, consultationId\)/)
@@ -28,7 +29,10 @@ test('saved document preview shows edit first, keeps every existing action and p
   assert.match(page, /<ConsultationDocumentActions recordId=\{record\.id\}/)
   assert.match(page, /autoPrint=\{query\.print === '1'\}/)
   assert.match(adminActions, /Download PDF/)
-  assert.match(adminActions, /Copy client link/)
+  assert.match(adminActions, /<SessionLinkIssuer recordId=\{record\.id\} locale=\{locale\}/)
+  assert.match(sessionIssuer, /Copy full consultation page link/)
+  assert.match(sessionIssuer, /'\/client\/session\/'\+data\.selector/)
+  assert.doesNotMatch(sessionIssuer, /getOwnerClientLink|\/prescriptions\//)
   assert.match(consultationActions, /href=\{urls\.print\}/)
   assert.match(css, /\.editButton\s*\{[^}]+background:\s*#783047/s)
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)

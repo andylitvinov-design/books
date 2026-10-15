@@ -24,3 +24,10 @@
 .panel :is(button,a,input,summary,textarea):focus-visible{outline:3px solid #b4467d;outline-offset:3px}
 @media(max-width:560px){.panel{padding:13px}.grid{grid-template-columns:1fr}.actions button,.actions a{width:100%}}
 @media print{.panel{display:none}}
+
+.order{display:grid;gap:5px;padding:12px;border:1px solid #adbccc;border-radius:12px;background:#f1f5fa}
+.order p{margin:0}
+.order code{font-size:11px;overflow-wrap:anywhere;user-select:all}
+.create{border:1px solid #243c5c;background:#243c5c;color:#fff}
+.refresh{justify-self:start;min-height:44px;padding:8px 12px;border:1px solid #aebbd1;border-radius:10px;background:#fff;color:#243c5c;font:inherit;cursor:pointer}
+.panel button:disabled{opacity:.55;cursor:not-allowed}

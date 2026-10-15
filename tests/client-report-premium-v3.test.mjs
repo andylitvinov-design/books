@@ -14,21 +14,28 @@ import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 const id = '30000000-0000-4000-8000-000000000001'
 
 test('Preview / Open navigates to a distinct owner-only full report instead of itself', async () => {
-  const [adminPage, adminControls, reader, readerStyle, actions, routes] = await Promise.all([
+  const [adminPage, adminControls, reader, readerStyle, actions, routes, sessionReader] = await Promise.all([
     readFile('app/admin/documents/[id]/page.js', 'utf8'),
     readFile('components/admin-document-panels.jsx', 'utf8'),
     readFile('app/admin/documents/[id]/view/page.js', 'utf8'),
     readFile('app/admin/documents/[id]/view/viewer.module.css', 'utf8'),
     readFile('components/consultation-document-actions.jsx', 'utf8'),
     readFile('lib/consultations/result-actions.js', 'utf8'),
+    readFile('app/admin/documents/[id]/session-preview/page.js', 'utf8'),
   ])
   for (const locale of ['en', 'ru']) {
-    assert.equal(documentActionUrls(id, locale).open, `/admin/documents/${id}/view?locale=${locale}`)
+    assert.equal(documentActionUrls(id, locale).open, `/admin/documents/${id}/session-preview?locale=${locale}`)
+    assert.equal(documentActionUrls(id, locale, 'payment').open, `/admin/documents/${id}/view?locale=${locale}`)
     assert.equal(documentActionUrls(id, locale).print, `/admin/documents/${id}/view?locale=${locale}&print=1`)
     assert.equal(documentActionUrls(id, locale).previewPdf, `/admin/api/documents/${id}/pdf?locale=${locale}&preview=1`)
   }
   assert.match(adminPage, /id="document-preview"/)
-  assert.match(adminControls, /\/view\?locale=\$\{locale\}/)
+  assert.match(adminControls, /record\.kind==='payment'\?'view':'session-preview'/)
+  assert.match(sessionReader, /requireAdminRequest\(\)/)
+  assert.match(sessionReader, /<ClientSessionPage mode="owner"/)
+  assert.match(sessionReader, /published\.report\?\.id===record\.id/)
+  assert.match(actions, /href=\{urls\.open\}[^>]*>\{ru \? 'Предпросмотр \/ открыть' : 'Preview \/ Open'\}/)
+  assert.match(actions, /href=\{urls\.previewPdf\}[^>]*>\{ru \? 'Открыть PDF крупным текстом' : 'Read large PDF'\}/)
   assert.doesNotMatch(adminControls, /href=\{\`\/admin\/documents\/\$\{record.id\}\?locale=/)
   assert.match(reader, /requireAdminRequest\(\)/)
   assert.match(reader, /getClientPrescription\(\{ \.\.\.record, status: 'active' \}, locale\)/)

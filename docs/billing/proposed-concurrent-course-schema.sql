@@ -24,7 +24,7 @@ CREATE UNIQUE INDEX growth_one_current_cycle_per_course ON app_private.growth_cy
 CREATE FUNCTION app_private.course_access(p_environment text)
 RETURNS TABLE(tier text,active_course_limit integer,active_course_count integer)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE owner uuid; paid_tier text;
+DECLARE owner uuid; paid_tier text; manual_tier text;
 BEGIN
   owner:=auth.uid();
   IF owner IS NULL OR p_environment NOT IN ('sandbox','live') OR NOT app_private.session_active()
@@ -36,6 +36,17 @@ BEGIN
     WHERE s.owner_id=owner AND s.environment=p_environment AND s.is_current
       AND s.revoked_at IS NULL AND s.paid_through_at>clock_timestamp()
       AND s.plan_id IN ('start','advanced','premium') LIMIT 1;
+  -- Manual transfer coverage is recognized only after separate operator approval.
+  IF current_setting('hh.manual_billing_access',true)='approved' THEN
+    SELECT m.plan_id INTO manual_tier FROM app_private.manual_billing_orders m
+      WHERE m.account_id=owner AND m.status='paid' AND m.paid_through_at>clock_timestamp()
+        AND (m.plan_id='advanced' OR (m.plan_id='premium'
+          AND current_setting('hh.manual_premium_access',true)='approved'))
+      ORDER BY m.paid_through_at DESC LIMIT 1;
+    IF manual_tier='premium' OR (manual_tier='advanced' AND paid_tier IS DISTINCT FROM 'premium') THEN
+      paid_tier:=manual_tier;
+    END IF;
+  END IF;
   tier:=coalesce(paid_tier,'free'); active_course_limit:=CASE WHEN tier IN ('advanced','premium') THEN 5 ELSE 1 END;
   SELECT count(*)::integer INTO active_course_count FROM app_private.growth_courses c
     WHERE c.account_id=owner AND c.status='active' AND (c.stage<4

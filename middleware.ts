@@ -52,6 +52,7 @@ export function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = pathname === '/admin/videos'
+  const youtubePhoneUploader = pathname === '/admin/youtube-upload'
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(pathname)
   const privateDocument = privatePath(pathname)
   const publicDocument = !privateDocument && !pathname.startsWith('/api/')
@@ -78,17 +79,29 @@ export function middleware(request: NextRequest) {
       return ' ' + value.origin
     } catch {return ''}
   })()
-  const cspClass = videoManager ? 'video-manager'
+  // Owner-only private video PUT; never widen client/guest playback CSP.
+  const externalVideoUploadOrigin = (() => {
+    if (process.env.HH_CLIENT_DELIVERY_ENABLED!=='true' ||
+      process.env.HH_CLIENT_VIDEO_EXTERNAL_ENABLED!=='true' ||
+      !deliveryPath || !pathname.startsWith('/admin/')) return ''
+    if (process.env.HH_CLIENT_VIDEO_BACKEND==='s3_ca') return ' https://s3.ca-central-1.amazonaws.com'
+    if (process.env.HH_CLIENT_VIDEO_BACKEND==='r2' &&
+      /^[a-f0-9]{32}$/i.test(process.env.HH_CLIENT_R2_ACCOUNT_ID||''))
+      return ' https://'+process.env.HH_CLIENT_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com'
+    return ''
+  })()
+  const cspClass = youtubePhoneUploader ? 'youtube-uploader'
+    : videoManager ? 'video-manager'
     : privateDocument ? 'private'
       : tantraReikiPage ? 'tantra-media'
         : publicDocument ? 'public-video'
           : 'restricted'
   const csp = [
-    "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${developmentEval}`, "style-src 'self' 'unsafe-inline'",
+    "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubePhoneUploader ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
-    publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
+    youtubePhoneUploader ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
     (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + (deliveryOrigin ? ' blob:' + deliveryOrigin : ''),
-    "font-src 'self'", "connect-src 'self'" + deliveryOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+    "font-src 'self'", "connect-src 'self'" + (youtubePhoneUploader ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + externalVideoUploadOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubePhoneUploader ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)

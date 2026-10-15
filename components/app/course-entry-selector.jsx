@@ -345,7 +345,7 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
             data-manual-plan-select={plan.id}>{locale === 'ru' ? 'Выбрать способ оплаты' : 'Choose payment method'}</button>}
         </article>)}
       </div>
-      <ManualBillingRequest planId={manualPlan} locale={locale} />
+      <ManualBillingRequest planId={manualPlan} locale={locale} accountId={accountId} />
       <p className={styles.unavailable} role="status">{t.unavailable}</p>
       <p className={styles.conditions}>{t.conditions}</p>
       <button type="button" className={styles.closeButton} onClick={() => dialogRef.current?.close()}>{t.close}</button>

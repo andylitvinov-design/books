@@ -16,7 +16,8 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
-  const route=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
+  const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
+    mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'+item.assetId
 
@@ -82,7 +83,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const resources=Array.isArray(plan.resources)?plan.resources:[]
   const media=session.media||[]
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
-    .sort((a,b)=>(a.kind==='audio'?0:1)-(b.kind==='audio'?0:1))
+    .sort((a,b)=>(a.kind==='video'?0:1)-(b.kind==='video'?0:1))
   const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
   const photos=media.filter(item=>item.kind==='image')
   const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
@@ -90,10 +91,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const hasRecommendation=Boolean(recommendation?.items?.length)
   const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
     recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
-  const pdfPath=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/pdf?locale='+locale:
+  const pdfPath=mode==='owner'?'/admin/api/documents/'+(session.report?.id||'')+'/pdf?locale='+locale:
+    mode==='saved'?'/api/app/saved-sessions/'+savedId+'/pdf?locale='+locale:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/pdf?locale='+locale:
     '/api/client/'+selector+'/documents/'+(session.report?.id||'')+'/pdf?locale='+locale
-  const assetBase=mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
+  const assetBase=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/':
+    mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
@@ -107,6 +110,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </div>
       {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
         {ru?'← Мой кабинет':'← My Cabinet'}</a>
+        :mode==='owner'?<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>
         : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
     </header>
     <section className={styles.sessionHero} aria-labelledby="session-title">
@@ -269,13 +273,14 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           'The video’s comparisons are personal impressions and do not prove that more pellets have a stronger effect. Do not change your amount based on this video; follow your individual written instructions.'}</p>
       </section>}
 
-    {mode!=='saved'&&<SaveClientSessionToAccount locale={locale} selector={selector}
+    {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount locale={locale} selector={selector}
       sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}/>}
-    {mode!=='saved'&&<ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>}
+    {mode!=='saved'&&mode!=='owner'&&<ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>}
 
 
     <footer className={styles.clientFooter}>
-      <p><LockKeyhole size={14}/>{ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':
+      <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):
+        ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':
         'This private invitation is for this session only. Please do not forward it.'}</p>
       <p className={styles.safetyLine}>{ru?
         'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
@@ -286,6 +291,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Все мои консультации':'All my sessions'}</a>}
     </footer>
   </main>
-  return mode==='saved'?content:<SessionExitSaveGuard locale={locale} selector={selector}
+  return mode==='saved'||mode==='owner'?content:<SessionExitSaveGuard locale={locale} selector={selector}
     sessionId={session.id} cabinetMode={mode==='cabinet'} appAvailable={appAvailable}>{content}</SessionExitSaveGuard>
 }

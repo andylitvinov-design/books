@@ -11,18 +11,30 @@ async function post(url,body) {
   const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),
     credentials:'same-origin',cache:'no-store'})
   const result=await response.json()
-  if(!response.ok) throw new Error(result.error==='MEDIA_STORAGE_NOT_CONFIGURED'?
-    'Private media storage needs server configuration before recording can be saved.':
-    result.error||'Unable to save this recording')
+  if(!response.ok) throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
   return result
+}
+function recordingError(error,ru) {
+  const code=error?.message||String(error)
+  const messages={
+    ADMIN_SIGN_IN_REQUIRED:ru?'Вход в кабинет специалиста истёк. Войдите снова и повторите.':'Your practitioner sign-in expired. Sign in again before recording.',
+    SESSION_UNAVAILABLE:ru?'Сервис приватных консультаций пока отключён или сессия недоступна. Запись не была загружена.':'Private consultation delivery is disabled or this session is unavailable. Nothing was uploaded.',
+    MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище для аудио и видео ещё не настроено. Файл не отправлен.':'Secure audio/video storage is not configured. Nothing was uploaded.',
+    MEDIA_STORAGE_UNAVAILABLE:ru?'Хранилище записей сейчас недоступно. Попробуйте позже или проверьте настройки сервера.':'Private recording storage is unavailable. Try again or check server settings.',
+    MEDIA_TYPE_NOT_ALLOWED:ru?'Этот формат файла не поддерживается.':'This file format is not supported.',
+    MEDIA_SIZE_NOT_ALLOWED:ru?'Запись слишком большая для безопасной загрузки.':'Recording is too large to upload.',
+  }
+  return messages[code]||code
 }
 export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved}) {
   const ru=locale==='ru'
   const mountedRef=useRef(true),busyRef=useRef(false),jobRef=useRef(null),failedRef=useRef(false)
+  const xhrRef=useRef(null)
   const recorderRef=useRef(null),streamRef=useRef(null),chunksRef=useRef([])
   const timerRef=useRef(null),startedRef=useRef(0),durationRef=useRef(0)
   const [sessionId,setSessionId]=useState(providedSessionId)
   const [stage,setStage]=useState('idle')
+  const [uploadProgress,setUploadProgress]=useState(null)
   const [seconds,setSeconds]=useState(0)
   const [scope,setScope]=useState('client')
   const [error,setError]=useState('')
@@ -35,9 +47,17 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   useEffect(()=>{mountedRef.current=true;return ()=>{mountedRef.current=false;clearInterval(timerRef.current);
     const recorder=recorderRef.current
     if(recorder){recorder.onstop=null;recorder.ondataavailable=null;recorder.onerror=null;if(recorder.state!=='inactive')recorder.stop()}
-    streamRef.current?.getTracks().forEach(track=>track.stop())}},[])
+    streamRef.current?.getTracks().forEach(track=>track.stop());xhrRef.current?.abort()}},[])
   useEffect(()=>{const warn=e=>{if(busyRef.current||jobRef.current){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
   useEffect(()=>()=>{if(playback) URL.revokeObjectURL(playback)},[playback])
+  async function checkReady() {
+    const response=await fetch('/api/admin/clients/'+clientId+'/sessions/status',{
+      method:'GET',credentials:'same-origin',cache:'no-store',
+    })
+    const data=await response.json().catch(()=>({}))
+    if(!response.ok||data.ready!==true)
+      throw new Error(data.error||'MEDIA_STORAGE_UNAVAILABLE')
+  }
   async function ensureSession() {
     if(sessionId) return sessionId
     const info=await post('/api/admin/clients/'+clientId+'/sessions',{documentId,assessmentId})
@@ -46,9 +66,32 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   }
   async function upload(job) {
     if(!mountedRef.current) return
-    setError('');setMessage('');setStage('uploading');busyRef.current=true
+    setError('');setMessage('');setStage('uploading');setUploadProgress(null);busyRef.current=true
     try {
       await saveRecording(job,{post,upload:async(intent,file,mime)=>{
+        if(intent.provider==='external'){
+          // Upload directly to the approved PRIVATE bucket. No MP4 bytes pass
+          // through a Vercel API function and no provider key reaches the browser.
+          if(!intent.uploadUrl||!intent.uploadUrl.startsWith('https://'))throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
+          await new Promise((resolve,reject)=>{
+            const xhr=new XMLHttpRequest()
+            xhrRef.current=xhr
+            xhr.open('PUT',intent.uploadUrl)
+            xhr.withCredentials=false
+            xhr.timeout=900000
+            xhr.setRequestHeader('Content-Type',mime)
+            xhr.upload.onprogress=event=>{
+              if(event.lengthComputable&&mountedRef.current)
+                setUploadProgress(Math.min(100,Math.round(100*event.loaded/event.total)))
+            }
+            xhr.onload=()=>xhr.status>=200&&xhr.status<300?resolve():reject(new Error('Private video upload failed ('+xhr.status+')'))
+            xhr.onerror=()=>reject(new Error('Video upload interrupted. Retry with this file.'))
+            xhr.ontimeout=()=>reject(new Error('Video upload timed out. Retry with this file.'))
+            xhr.onabort=()=>reject(new Error('Video upload cancelled.'))
+            xhr.send(file)
+          }).finally(()=>{xhrRef.current=null})
+          return
+        }
         const supabase=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
         const result=await supabase.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,file,{contentType:mime,upsert:false})
         if(result.error) throw new Error('Upload interrupted: '+result.error.message)
@@ -60,7 +103,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         'Material saved to this session. Your client sees it after you publish.')
       onSaved?.(job.sessionId)
     } catch(e) {
-      if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(e.message||String(e))}
+      if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(recordingError(e,ru))}
     } finally {busyRef.current=false}
   }
   async function startRecording(kind='audio') {
@@ -69,6 +112,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     failedRef.current=false
     setError('')
     setMessage('')
+    setUploadProgress(null)
     if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       setError(ru?'Браузер не поддерживает запись. Используйте загрузку файла.':'This browser cannot record audio. Upload a file instead.')
       busyRef.current=false;return
@@ -78,10 +122,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setStage('preparing')
     let sid
     try {
+      await checkReady()
+      sid=await ensureSession()
       const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},...(kind==='video'?{video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{})})
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
       streamRef.current=stream
-      sid=await ensureSession()
       if(!mountedRef.current){stream.getTracks().forEach(track=>track.stop());busyRef.current=false;return}
       const type=kind==='video'?'video/mp4':recordingTypes.find(t=>MediaRecorder.isTypeSupported(t))
       const recorder=type?new MediaRecorder(stream,{mimeType:type,...(kind==='video'?{videoBitsPerSecond:600000,audioBitsPerSecond:64000}:{audioBitsPerSecond:64000})}):new MediaRecorder(stream)
@@ -122,7 +167,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       },1000)
     } catch(e) {
       streamRef.current?.getTracks().forEach(track=>track.stop())
-      setError(e.message||String(e))
+      setError(recordingError(e,ru))
       busyRef.current=false
       if(mountedRef.current)setStage('error')
     }
@@ -144,8 +189,19 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     const file=event.target.files?.[0]
     if(!file||busyRef.current||jobRef.current)return
     busyRef.current=true;setStage('preparing')
-    try {const sid=await ensureSession();const job=recordingUpload({file,clientId,sessionId:sid,scope});jobRef.current=job;setRetryFile(file);await upload(job)}
-    catch(e) {busyRef.current=false;setStage('error');setError(e.message||String(e))}
+    try {
+      if(file.type==='video/quicktime'||file.name.toLowerCase().endsWith('.mov'))
+        throw new Error(ru?'Для просмотра на любом телефоне требуется MP4 (H.264). Запишите MP4 или преобразуйте MOV перед загрузкой.':'Use H.264 MP4 for reliable playback. Convert this MOV before uploading.')
+      await checkReady()
+      const sid=await ensureSession()
+      if(file.type.startsWith('video/')||file.type.startsWith('audio/')){
+        setPlaybackKind(file.type.startsWith('video/')?'video':'audio')
+        setPlayback(URL.createObjectURL(file))
+      }
+      const job=recordingUpload({file,clientId,sessionId:sid,scope})
+      jobRef.current=job;setRetryFile(file)
+      await upload(job)
+    } catch(e) {busyRef.current=false;setStage('error');setError(recordingError(e,ru))}
     event.target.value=''
   }
   const busy=['preparing','uploading','finalizing'].includes(stage)
@@ -174,14 +230,20 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
         <button type="button" onClick={()=>startRecording('video')} disabled={busy||Boolean(retryFile)}><Video size={20}/>{ru?'Записать видео':'Record video'}</button>
-        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Добавить аудио, видео или PDF':'Add audio, video or PDF'}
+        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить из телефона':'Choose from phone'}
           <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,application/pdf,.m4a,.mp3,.webm,.mp4,.pdf"
             onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
       </>}
     </div>
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}
-    {busy&&<p className={styles.feedback} role="status">{stage==='preparing'?(ru?'Подключаем микрофон…':'Opening microphone…'):
-      stage==='uploading'?(ru?'Защищённая загрузка…':'Uploading privately…'):(ru?'Сохраняем в сессию…':'Attaching to session…')}</p>}
+    {busy&&<div className={styles.uploadProgress} role="status">
+      <p className={styles.feedback}>{stage==='preparing'?(ru?'Подготавливаем материал…':'Preparing media…'):
+        stage==='uploading'?(ru?'Загружаем в приватное хранилище…':'Uploading to private storage…'):
+        (ru?'Сохраняем в консультацию…':'Attaching to consultation…')}
+        {uploadProgress!==null?' '+uploadProgress+'%':''}</p>
+      {uploadProgress!==null&&<progress value={uploadProgress} max="100" aria-label={ru?'Прогресс загрузки':'Upload progress'}/>}
+    </div>}
+    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}</p>
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
