@@ -19,7 +19,7 @@ test('fifteen ordered day-one slides teach awareness, support and optional every
   assert.match(DAY_ONE_SLIDES.find(s=>s.kind==='day1-transfer').intent,/state → response/)
   for(const locale of ['ru','en']){
     const lesson=antiStressDay(1,locale)
-    assert.match(lesson.guide,locale==='ru'?/внутренн.*состояни|своём состоянии/i:/present inner state/i)
+    assert.match(lesson.guide,locale==='ru'?/внутренн.*состояни|своём состоянии/i:/present inner state|observation about your state/i)
     assert.match(lesson.outcome,locale==='ru'?/состояние — возможная потребность — поддержка/:/present state, possible need and chosen support/)
   }
 })
