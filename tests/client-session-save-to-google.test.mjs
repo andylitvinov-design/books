@@ -5,12 +5,20 @@ import {canAutoContinueSave,savedResourcePath} from '../lib/app/client-handoff.j
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const sid='29e2a748-ea4c-4cb4-9561-5224482f9b44'
 
-test('individual session saving requires an explicit account-specific confirmation',()=>{
+test('individual session saving auto-continues ONLY after explicit pre-OAuth consent',()=>{
   assert.equal(savedResourcePath('ru','client_session',sid),'/ru/app/sessions/'+sid)
   assert.equal(canAutoContinueSave({automatic:true,authStatus:'',intent:{sourceKind:'client_session',
+    status:'pending',expired:false}}),true)
+  assert.equal(canAutoContinueSave({automatic:false,authStatus:'',intent:{sourceKind:'client_session',
     status:'pending',expired:false}}),false)
-  assert.match(source('components/save-client-session-to-account.jsx'),/sourceKind:'client_session'/)
-  assert.match(source('components/save-client-session-to-account.jsx'),/checked=\{consent\}/)
+  assert.equal(canAutoContinueSave({automatic:true,authStatus:'cancelled',intent:{sourceKind:'client_session',
+    status:'pending',expired:false}}),false)
+  const dialog=source('components/session-exit-save-guard.jsx')
+  assert.match(dialog,/role="dialog"/)
+  assert.match(dialog,/onClick=\{confirmAndSave\}/)
+  assert.match(dialog,/sourceKind:'client_session'/)
+  assert.match(dialog,/auto=1/)
+  assert.match(source('components/save-client-session-to-account.jsx'),/requestSave/)
   assert.match(source('components/app/app-workspace.jsx'),/Save one consultation/)
   assert.match(source('components/app/app-workspace.jsx'),/No other client records/)
 })
