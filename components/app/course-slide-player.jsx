@@ -13,6 +13,7 @@ import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-
 import AntiStressPracticeLab from './anti-stress-practice-lab'
 import CourseLessonResult from './course-lesson-result'
 import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inner-growth/anti-stress-day-one'
+import { buildCourseSlides } from '@/lib/inner-growth/course-slide-sequence'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
@@ -255,28 +256,6 @@ const INTERACTIVE_STRESS = {
     imagined:'Imagine a safe step',phrase:'Prepare a phrase',real:'Tried in ordinary life',skip:'Not planning now',
   },
 }
-function buildSlides(lesson) {
-  const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
-  // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
-  const hasArrival = guided.some(section => section.kind === 'arrive')
-  return [
-    { key: 'welcome', kind: 'welcome' },
-    { key: 'baseline', kind: 'baseline' },
-    { key: 'checkin', kind: 'checkin' },
-    ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
-    { key: 'idea', kind: 'idea' },
-    ...(!hasArrival && (lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
-    ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
-    ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
-    { key: 'ritual', kind: 'ritual' },
-    ...(lesson.workbook?.microPractice ? [{ key: 'transfer', kind: 'transfer' }] : []),
-    ...(lesson.practiceV4 ? [{ key: 'symbol', kind: 'symbol' }] : []),
-    { key: 'reflection', kind: 'reflection' },
-    { key: 'moment', kind: 'moment' },
-    { key: 'feedback', kind: 'feedback' },
-  ]
-}
-
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
   return <div>
     <div className={styles.numberGrid} role="group" aria-label={label}>
@@ -320,7 +299,7 @@ export default function CourseSlidePlayer({
   const isDayOne=Boolean(lesson.antiStress && cycle.day===1 && data.programme?.id === 'stress')
   const isExtendedStress=Boolean(lesson.antiStress && cycle.day>=2 && cycle.day<=14 &&
     data.programme?.id === 'stress')
-  const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
+  const slides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildCourseSlides(lesson),[isDayOne,lesson])
   const [index, setIndex] = useState(alreadyDone ? slides.length : 0)
   const [severity, setSeverity] = useState(today?.severity ?? null)
   const [reflection, setReflection] = useState(session?.reflection || '')
