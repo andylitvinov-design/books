@@ -69,7 +69,13 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(landing, /guest\/results/)
   assert.match(landing, /save-intents/)
   assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
-  assert.doesNotMatch(workspace, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY|sessionStorage/)
+  // An unrelated session's return *path* may be held in the same browser
+  // tab after explicit consent; guest test results are never persisted there.
+
+
+  for (const oldGuestFlow of ['guest/import','report/claim','GUEST_RESULT_STORAGE_KEY',
+    'window.sessionStorage.setItem(']) assert.equal(workspace.includes(oldGuestFlow),false)
+  assert.match(workspace, /consumeSessionSaveTarget/)
   assert.match(workspace, /SaveContinuation/)
   assert.match(workspace, /confirmed: true/)
   assert.match(guestRepo, /app_private\.guest_sessions/)
