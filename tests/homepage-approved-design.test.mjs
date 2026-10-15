@@ -106,7 +106,7 @@ test("home restores four approved image-left service cards and their titles", ()
   const css = read("components/services-solutions.module.css");
   assert.match(cards, /homeTitle: "How I can help"/);
   assert.match(cards, /homeTitle: "Чем я могу помочь"/);
-  assert.match(cards, /const visibleOffers = isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : personalOffers/);
+  assert.match(cards, /const visibleOffers = isHome \\? allOffers\\.filter\\(\\(offer\\) => offer\\.id !== "business"\\) : allOffers/);
   assert.match(cards, /visibleOffers.map/);
   assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
