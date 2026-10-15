@@ -7,31 +7,31 @@ import styles from './public-antistress-route-map.module.css'
 type Locale='ru'|'en'|'es'
 type Props={locale:Locale;selectedId:string;onSelect:(id:string)=>void;onStart?:()=>void;busy?:boolean}
 const words={
- ru:{eyebrow:'ПЕРСОНАЛЬНЫЙ МАРШРУТ',title:'Пять уровней нагрузки — пять вариантов «Антистресс»',
-  intro:'Входное тестирование помогает предложить один из пяти 14-дневных маршрутов. Это не пять последовательных этапов лечения: вы начинаете с подходящей интенсивности и сохраняете право выбора.',
-  range:'Нагрузка или напряжение по Weekly Pulse',number:'Антистресс',goal:'Внутри — 14 практических занятий',
-  how:'Как определяется маршрут',detail:'Берём более высокое из двух значений 0–10: субъективная нагрузка и напряжение за последние 7 дней. Трудности в повседневности и доступность паузы могут предложить более бережный вариант. Пороги авторские и не являются клиническими нормами.',
+ ru:{eyebrow:'ПЕРСОНАЛЬНЫЙ МАРШРУТ',title:'Шесть учебных этапов программы «Антистресс»',
+  intro:'После начальных тестов система предлагает подходящий 14-дневный курс по навыкам и вашей цели. Четвёртый курс — только с профессиональным сопровождением. Этапы не являются диагнозом.',
+  range:'Изучаемый навык',number:'Антистресс',goal:'Внутри — 14 практических занятий',
+  how:'Как определяется маршрут',detail:'Учитываем последние результаты Weekly Pulse, ответы о навыках F1–F8 и выбранную жизненную цель. Нагрузка задаёт комфортный темп, а не автоматически номер курса. Курс 4 не запускается самостоятельно.',
   preview:'Посмотреть занятия',active:'Выбран для просмотра',start:'Начать с тестирования',safety:'При тяжёлом или нарастающем состоянии не откладывайте обращение за профессиональной помощью ради курса.'},
- en:{eyebrow:'PERSONAL LEARNING ROUTE',title:'Five reported stress bands. Five Anti-Stress courses.',
-  intro:'The entry assessment suggests one of five separate 14-day learning routes. These are not stages of clinical trauma treatment. You can choose a more suitable pace.',
-  range:'Weekly Pulse load or tension',number:'Anti-Stress',goal:'14 practical lessons per route',
-  how:'How the suggestion is calculated',detail:'The higher of two past-week ratings (perceived load and inner tension) on original 0–10 scales sets a starting band. Low access to pauses or daily functioning can suggest a gentler route. These are not clinical norms.',
+ en:{eyebrow:'PERSONAL LEARNING ROUTE',title:'Six learning phases. Six 14-day Anti-Stress courses.',
+  intro:'Your baseline and learning goals inform a recommendation among six courses. Phase 4 requires qualified clinical support and cannot be started as self-help. These are not diagnosed trauma stages.',
+  range:'Learning focus',number:'Anti-Stress',goal:'14 practical lessons per route',
+  how:'How the suggestion is calculated',detail:'Weekly Pulse, F1–F8 skills and your chosen goal inform the recommendation. Stress load adjusts exercise pace rather than course number. These are non-diagnostic authorial scales.',
   preview:'Preview 14 lessons',active:'Selected for preview',start:'Start with assessment',safety:'For severe or worsening symptoms, seek qualified support rather than waiting to finish the course.'},
- es:{eyebrow:'RUTA PERSONALIZADA',title:'Cinco niveles de estrés, cinco rutas Antiestrés',
-  intro:'La evaluación inicial propone una de cinco rutas independientes de 14 lecciones. No son etapas de tratamiento del trauma.',
-  range:'Carga o tensión según Weekly Pulse',number:'Antiestrés',goal:'14 prácticas por ruta',
-  how:'Cómo se sugiere la ruta',detail:'Se utiliza la cifra más alta entre carga y tensión percibidas (0–10). La dificultad cotidiana puede sugerir un comienzo más suave. No son normas clínicas.',
+ es:{eyebrow:'RUTA PERSONALIZADA',title:'Seis etapas educativas y seis cursos de 14 días',
+  intro:'Los tests iniciales y tu objetivo orientan el curso. La cuarta etapa requiere un profesional. No son diagnósticos del trauma.',
+  range:'Habilidad del curso',number:'Antiestrés',goal:'14 prácticas por ruta',
+  how:'Cómo se sugiere la ruta',detail:'Usamos Weekly Pulse, habilidades F1–F8 y el objetivo elegido. La carga cambia el ritmo, no determina el curso.',
   preview:'Ver las 14 clases',active:'Elegida para ver',start:'Empezar con la evaluación',safety:'Si los síntomas son graves o empeoran, busca apoyo profesional.'},
 } as const
 export function PublicAntistressRouteMap({locale,selectedId,onSelect,onStart,busy=false}:Props){
  const t=words[locale],href='/'+(locale==='es'?'en':locale)+'/app/course?program=stress'
- return <section id="stress-levels" className={styles.root} aria-labelledby="opora-levels-title" data-antistress-five-routes>
+ return <section id="stress-levels" className={styles.root} aria-labelledby="opora-levels-title" data-antistress-six-routes>
   <div className={styles.heading}><p className={styles.kicker}><ClipboardList size={16} aria-hidden="true"/>{t.eyebrow}</p>
    <h2 id="opora-levels-title">{t.title}</h2><p>{t.intro}</p></div>
   <div className={styles.routes}>
    {ANTISTRESS_MODULE_GOALS.map((route,index)=><details className={styles.route} key={route.id} data-stress-route={route.id} data-selected={route.id===selectedId}>
     <summary><span className={styles.number}>{String(index+1).padStart(2,'0')}</span>
-     <span className={styles.routeCopy}><small>{t.number} {index+1} · {route.range[0]}–{route.range[1]}/10</small>
+     <span className={styles.routeCopy}><small>{t.number} {index+1} · {route.clinicalOnly?(locale==='ru'?'Только специалист':locale==='es'?'Especialista':'Clinician only'):(locale==='ru'?'14 дней':locale==='es'?'14 días':'14 days')}</small>
       <strong>{route.title[locale]}</strong></span><ChevronDown size={18} aria-hidden="true"/></summary>
     <div className={styles.routeDetail}><p>{route.short[locale]}</p><small>{t.goal}</small><a href="#daily-programme" className={styles.preview} aria-current={selectedId===route.id?'true':undefined} onClick={()=>onSelect(route.id)}>{selectedId===route.id?t.active:t.preview}<ArrowRight size={14} aria-hidden="true"/></a></div>
    </details>)}
