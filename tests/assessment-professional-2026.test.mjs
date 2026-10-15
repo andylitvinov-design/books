@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -10,13 +11,13 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries, buildStarterBattery, coverageForSelection } from '../lib/assessments/test-explorer.js'
 const values = (def, value) => Object.fromEntries(def.questions.map(q => [q.id, value]))
-const total = (def, answers) => scoreAssessment(def, answers).dimensions[0].value
+const total = (def, answers) => scoreAssessment(def, answers, syntheticTraumaContext(def)).dimensions[0].value
 
 test('four complete real measures have verifiable provenance, valid ranges and no translated clinical items', () => {
   assert.equal(PROFESSIONAL_BATTERY_2026_DEFINITIONS.length, 4)
   assert.equal(PROFESSIONAL_BATTERY_2026_CATALOG.length, 4)
   assert.equal(new Set(PROFESSIONAL_BATTERY_2026_CATALOG.map(x => x.key)).size, 4)
-  assert.equal(MONITORING_CATALOG.filter(x => x.startable).length, 135)
+  assert.equal(MONITORING_CATALOG.filter(x => x.startable).length, 137)
   for (const item of PROFESSIONAL_BATTERY_2026_CATALOG) {
     const d = getAssessmentDefinition(item.key, 'v1', 'en')
     const { contentHash, ...body } = d

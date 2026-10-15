@@ -12,7 +12,7 @@ test('pre-login recommendations are real executable, rights-cleared tests ranked
   const matches = filterExplorerEntries(entries, { availability:'available' })
   const ranked = rankPublicTestMatches(matches, { focus:[], depth:'balanced' })
   assert.ok(ranked.length >= 15, 'enough eligible recommendations for 5+5+5 inline paging')
-  assert.equal(ranked.length, matches.length)
+  assert.equal(ranked.length, matches.filter(entry=>entry.explicitOptIn !== true).length)
   assert.equal(new Set(ranked.map((entry) => entry.key)).size, ranked.length)
   for (let i = 0; i < ranked.length; i++) {
     const entry = ranked[i]

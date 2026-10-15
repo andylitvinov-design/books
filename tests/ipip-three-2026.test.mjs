@@ -90,13 +90,13 @@ for(const [index,d] of added.entries()) {
   }
  })
 }
-test('three additive versions: 135 runnable, 68 source-backed, 67 HH after exact registration; exact registration payload',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,135)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,68)
+test('three additive versions: 137 runnable, 70 source-backed, 67 HH after exact registration; exact registration payload',()=>{
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,70)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,67)
- assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:135,registered:135,uncovered:[],obsolete:[]})
+ assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:137,registered:137,uncovered:[],obsolete:[]})
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-three-registration.json',import.meta.url))),added)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>![...added,...IPIP_FIVE_DEFINITIONS].some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'7635478d0c3762d2af209716cef82788c786504fc097895d786d4115604108f1')
 })
 

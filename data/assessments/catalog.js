@@ -1,5 +1,6 @@
 import { IPIP_FIVE_CATALOG } from './ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from './ipip-three-2026.js'
+import { TRAUMA_SCREENING_CATALOG } from './trauma-screening-catalog-2026.js'
 import { ASRS6_CATALOG } from './asrs-v1-6-nyu.js'
 import { deepFreeze } from '../../lib/assessments/contracts.js'
 import { EXPANDED_CATALOG_V2 } from './catalog-v2.js'
@@ -27,6 +28,7 @@ export const MONITORING_AXES = deepFreeze([
 export const MONITORING_CATALOG = deepFreeze([
   ...IPIP_FIVE_CATALOG,
   ...IPIP_THREE_CATALOG,
+  ...TRAUMA_SCREENING_CATALOG,
   {
     key: 'hh-bach-flower-profile',
     version: 'v1',

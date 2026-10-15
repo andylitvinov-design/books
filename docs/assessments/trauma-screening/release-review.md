@@ -1,0 +1,29 @@
+# PCL-5 and adult ITQ opt-in activation candidate
+
+## Scope and status
+Candidate based on canonical e8968339771e1f3ae849dcb80703ea4a096dbcea. Both immutable new English versions passed conflict-free technical registration and exact all-field readback. This candidate adds deliberate manual catalog selection for guest and authenticated adults. Neither instrument is starter-eligible or automatically added to a battery, and neither prescribes skills or repeat screening. PC-PTSD-5 remains unavailable. Final activation review, canonical integration and hosted CI must pass before publication. No client-data reads, schema, RLS or access changes are part of this patch.
+
+## Implemented
+- Source-exact original English symptom items/response labels. PCL-5 uses the Criterion A form, including exposure mode and violent/accidental versus natural death. No PC-PTSD structural-zero rule is applied to PCL-5.
+- Front matter before questions in both runner paths; context saved separately through existing encrypted storage. Server rejects first symptom answers until complete context was previously saved. Event context is locked once any symptoms are recorded; a different event requires discarding and starting another attempt through the existing flow.
+- ITQ event time and event anchoring. Four exact section instructions are repeated beside their applicable questions in guided and quick modes so mixed timeframes are never collapsed. Both impairment sections remain required and are excluded from symptom totals.
+- Age/event-in-mind acknowledgments are clearly labeled Holistic House administration safeguards, not official test items. Personal trauma narratives remain optional; ITQ's printed description line is not made a mandatory stored disclosure. This minimizes sensitive stored disclosure; the reviewed safeguards and limitations below remain visible.
+- Dedicated neutral raw-score reports, without descriptive thirds, diagnostic labels, probability, severity categories, daily treatment tasks or personality claims. ITQ reports separate PTSD and DSO symptom sums and six two-item clusters. PCL reports total and four clusters. Offline source-algorithm tests cover PCL and ITQ symptom patterns, but these algorithm labels are intentionally not emitted in the patient report.
+- Strict full provenance/dimension validation in trauma interpretation, server submit, and guest-claim rescoring. Existing assessment definitions and report branches remain unchanged.
+
+## Registration
+registration-payload.json contains the exact two immutable registry rows. Rights, source wording, keys and scoring were independently reviewed, technical-only collision preflight passed, and all inserted fields were verified by readback. Operational database receipts are not part of this public source tree. No executable production registration SQL or runtime auto-registration is included. The isolated database test setup seeds the same two versions only under its existing CI/loopback guards, rejecting conflicting fixtures.
+
+## Clinical and operational limits
+These adult English instruments are for professionally supported screening/symptom measurement, not standalone diagnosis. Public-domain status permits considering reproduction but does not certify this site's workflow. The reviewed workflow includes an adult scope notice, optional narrative, exit controls, neutral results and professional follow-up regardless of score. Source evidence does not certify applicability to every population or this particular website; no external clinical certification is claimed. No RU item translation is supplied. No universal PCL/PC cutoff is selected and no ITQ total-score cutoff is used. Missing applicable responses never become zeros; complete-case behavior is a labeled conservative engineering choice.
+
+PCL Criterion A responses are recorded, not automatically adjudicated. A No response does not imply automatic zero symptoms, and a Yes response does not prove a qualifying event or diagnosis. ITQ does not acquire an invented DSM-5 exposure gate.
+
+## Verification and remaining gates
+The staged implementation passed source/contract, unit/app regression, lint, type and production-build checks plus independent review. The activation delta repeats regression checks and must pass final review/build before publication.
+
+Interactive WPE browser checks cover the actual authenticated and guest runner components, both quick and guided modes, for both instruments. Checks include pre-question context, encrypted save/resume, optional narrative, exact section instructions, mobile width, complete scoring, rejection of premature submit and changing the event after answers. Actual repository methods run against synthetic local SQL transport; Next navigation/link are fixture adapters. Activation checks use the actual release flag and catalog selection without fixture overrides. No production accounts, authentication middleware, RLS or live client data are exercised. The unchanged database validation trigger is independently exercised in in-memory PostgreSQL.
+
+The interactive checks found and corrected mobile fieldset/grid overflow and a persisted-result validator that previously attempted context-dependent synthetic scoring. Result validation now derives only immutable dimension metadata for these two instruments; real submit/claim scoring still requires recorded context and complete actual answers. Out-of-range, fractional, malformed, missing or mismatched dimensions and provenance remain rejected.
+
+PC-PTSD-5 additionally requires a bounded database-function proposal: latest app_private.validate_run rejects terminal partial answer maps, conflicting with official exposure=NO structural skipping. A separately reviewed validator proposal is required. Do not fill five symptom zeros, invent missing codes, or substitute an incomplete registry definition.

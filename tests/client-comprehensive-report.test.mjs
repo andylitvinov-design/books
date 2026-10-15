@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { randomUUID } from 'node:crypto'
@@ -14,7 +15,7 @@ function fakeResult(definition,date='2026-10-08T12:00:00.000Z',override={}) {
  const answers=Object.fromEntries(definition.questions.map(q=>[q.id, valueFor(q,definition)]))
  return {
   id:randomUUID(),accountId,measurementAt:date,
-  ...scoreAssessment(definition,{...answers,...override}),
+  ...scoreAssessment(definition,{...answers,...override}, syntheticTraumaContext(definition)),
  }
 }
 test('complete PDF model includes every runnable public assessment and every stored profile scale',()=>{

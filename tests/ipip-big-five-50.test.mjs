@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -41,7 +42,7 @@ test('IPIP-50 original English questions, permission and immutable version are s
   assert.equal(IPIP_BIG_FIVE_50_CATALOG.length, 1)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].startable, true)
   assert.equal(IPIP_BIG_FIVE_50_CATALOG[0].starterEligible, false)
-  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 135)
+  assert.equal(MONITORING_CATALOG.filter(item => item.startable).length, 137)
   const migration = await readFile('supabase/migrations/20261011170000_hh_ipip_big_five_50.sql', 'utf8')
   assert.ok(migration.includes(contentHash))
   assert.ok(migration.includes(definition.id))
@@ -62,10 +63,10 @@ test('each of the five 10-item traits has correct official reverse coding and ra
     Object.assign(midAnswers, Object.fromEntries(dim.items.map(id => [id, 3])))
   }
   assert.equal(Object.keys(minAnswers).length, 50)
-  assert.deepEqual(scoreAssessment(definition, minAnswers).dimensions.map(d => d.value), [10, 10, 10, 10, 10])
-  assert.deepEqual(scoreAssessment(definition, maxAnswers).dimensions.map(d => d.value), [50, 50, 50, 50, 50])
-  assert.deepEqual(scoreAssessment(definition, midAnswers).dimensions.map(d => d.value), [30, 30, 30, 30, 30])
-  assert.throws(() => scoreAssessment(definition, { ...maxAnswers, 'ipip50.01': 6 }), /INVALID_ANSWER/)
+  assert.deepEqual(scoreAssessment(definition, minAnswers, syntheticTraumaContext(definition)).dimensions.map(d => d.value), [10, 10, 10, 10, 10])
+  assert.deepEqual(scoreAssessment(definition, maxAnswers, syntheticTraumaContext(definition)).dimensions.map(d => d.value), [50, 50, 50, 50, 50])
+  assert.deepEqual(scoreAssessment(definition, midAnswers, syntheticTraumaContext(definition)).dimensions.map(d => d.value), [30, 30, 30, 30, 30])
+  assert.throws(() => scoreAssessment(definition, { ...maxAnswers, 'ipip50.01': 6 }, syntheticTraumaContext(definition)), /INVALID_ANSWER/)
 })
 
 test('IPIP-50 is available in both explorer locales, but the questions remain identified as EN', () => {
@@ -103,7 +104,7 @@ test('17 additional psychotherapy scales are searchable references, not unlicens
 
 test('IPIP-50 Insights reports five distinct non-diagnostic trait interpretations and action prompts', () => {
   const answers = Object.fromEntries(definition.questions.map(q => [q.id, 3]))
-  const scored = scoreAssessment(definition, answers)
+  const scored = scoreAssessment(definition, answers, syntheticTraumaContext(definition))
   for (const locale of ['en','ru']) {
     const report = buildAssessmentResultReport(scored, locale)
     assert.equal(report.sections.length, 5)

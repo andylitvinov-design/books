@@ -1,0 +1,8 @@
+.frontMatter{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.frontMatter :global(.hh-form){min-width:0;grid-template-columns:minmax(0,1fr)}
+.frontMatter fieldset,.frontMatter legend,.frontMatter label{min-width:0;max-width:100%;box-sizing:border-box}
+.frontMatter fieldset{min-inline-size:0}
+.frontMatter select,.frontMatter textarea{display:block;min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+.frontMatter input[type=checkbox]{width:auto;flex:none;margin-right:.5rem}
+.frontMatter :global(.hh-actions){flex-wrap:wrap}
+.frontMatter button{max-width:100%;white-space:normal}

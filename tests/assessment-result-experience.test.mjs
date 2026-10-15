@@ -1,3 +1,4 @@
+import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -16,7 +17,7 @@ const answersFor = (def, value = 'min') => Object.fromEntries(def.questions.map(
 test('every runnable, versioned assessment produces EN/RU score-tied advice without fabricated diagnostic categories', () => {
   assert.ok(tests.length >= 80, 'All current runnable definitions must be covered')
   for (const def of tests) {
-    const scored = scoreAssessment(def, answersFor(def))
+    const scored = scoreAssessment(def, answersFor(def), syntheticTraumaContext(def))
     assert.ok(scored.dimensions.length > 0, def.key)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(scored, locale)
@@ -26,14 +27,15 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
       for (const section of report.sections) {
         assert.ok(section.title.length > 2, def.key)
         assert.ok(section.meaning.length > 40, def.key)
-        assert.ok(section.steps.length >= 2, def.key)
+        assert.ok(def.administration ? section.steps.length === 0 : section.steps.length >= 2, def.key)
         assert.ok(section.steps.every(step => step.length > 40), def.key)
         assert.ok(section.followUp.length > 30, def.key)
       }
       if (def.key === 'asrs-6') {
         assert.equal(report.sections[0].bandBasis, 'screening')
         assert.match(report.note, locale === 'ru' ? /не шкала тяжести/ : /not a severity scale/)
-      } else assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
+      } else if (def.administration) assert.match(report.note, locale === 'ru' ? /не устанавливают диагноз/ : /do not establish a diagnosis/)
+      else assert.match(report.note, locale === 'ru' ? /не клинический порог/ : /not a clinical cutoff/)
     }
   }
 })
@@ -41,8 +43,8 @@ test('every runnable, versioned assessment produces EN/RU score-tied advice with
 test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 number', () => {
   const def = tests.find(item => item.key === 'cbi-personal')
   assert.ok(def)
-  const low = buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'en')
-  const high = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
+  const low = buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'en')
+  const high = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max'), syntheticTraumaContext(def)), 'en')
   assert.equal(high.sections[0].domain, 'burnout')
   assert.match(high.sections[0].title, /Exhaustion/)
   assert.match(high.sections[0].steps.join(' '), /7 days/)
@@ -51,19 +53,19 @@ test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 numb
   assert.match(low.sections[0].steps[0], /maintain your balance/)
   assert.match(high.sections[0].steps[0], /For 7 days/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
-  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
+  assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
 })
 
 test('high resource measurements receive maintenance rather than deficit advice', () => {
   const def = tests.find(item => item.key === 'hh-role-freedom')
   assert.ok(def)
-  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max')), 'en')
+  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max'), syntheticTraumaContext(def)), 'en')
   assert.ok(report.sections.some(section => /source of support or strength/.test(section.steps[0])))
 })
 
 test('neutral personality scales are not interpreted as a clinical severity or universal good/bad score', () => {
   const def = tests.find(item => item.key === 'mini-ipip-20')
-  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def)), 'en')
+  const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'en')
   assert.ok(report.sections.length >= 4)
   assert.ok(report.sections.every(item => !/upper part of this reported-difficulty scale/.test(item.meaning)))
   assert.match(report.note, /not a clinical cutoff/)

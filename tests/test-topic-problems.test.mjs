@@ -39,7 +39,7 @@ test('selected concerns actually narrow runnable tests and update deterministic 
  assert.ok(refined.some(entry=>testProblemRelevance(entry,'work-overload')>0))
  const initial=rankPublicTestMatches(base,{focus:['stress'],depth:'balanced'})
  const ranked=rankPublicTestMatches(refined,selected)
- assert.equal(ranked.length,refined.length)
+ assert.equal(ranked.length,refined.filter(entry=>entry.explicitOptIn !== true).length)
  assert.ok(ranked.every(x=>Number.isInteger(x.matchPercent)&&x.matchPercent>=0&&x.matchPercent<=99))
  assert.ok(ranked.every((x,i)=>i===0||ranked[i-1].matchPercent>=x.matchPercent))
  assert.ok(ranked.some(x=>initial.find(y=>y.key===x.key)?.matchPercent!==x.matchPercent))
