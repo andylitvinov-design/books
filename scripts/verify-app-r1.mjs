@@ -95,6 +95,13 @@ async function chooseVisibleTest(testPage,name){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
   if(await toggle.count())await toggle.click()
  }
+ // Account selection starts in the compact picker; use its real catalog transition.
+ // Public callers already enter the full catalog and retain their exact-one checks.
+ const browseFull=testPage.getByRole('button',{name:'Browse full database',exact:true})
+ if(await browseFull.isVisible().catch(()=>false)){
+  await browseFull.click()
+  await expect(testPage.getByRole('button',{name:'Back to easy selection',exact:false})).toBeVisible()
+ }
  await expect(customizer).toBeVisible({timeout:15000})
  if((await customizer.getAttribute('aria-expanded'))!=='true')await customizer.click()
  const card=()=>testPage.locator('article').filter({has:testPage.getByRole('heading',{name,exact:true})})
