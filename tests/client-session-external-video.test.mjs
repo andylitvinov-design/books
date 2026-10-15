@@ -29,7 +29,7 @@ test('only exact approved private R2 or Canada S3 endpoint may be signed',()=>{
   assert.equal(url.hostname,env.HH_CLIENT_VIDEO_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com')
   assert.equal(url.pathname,'/hh-private-video-test/'+key)
   assert.equal(url.searchParams.get('X-Amz-Expires'),'900')
-  assert.equal(url.searchParams.get('X-Amz-SignedHeaders'),'content-type;host')
+  assert.equal(url.searchParams.get('X-Amz-SignedHeaders'),'content-type;host;if-none-match')
   assert.ok(url.searchParams.get('X-Amz-Signature')?.length===64)
   assert.equal(url.href.includes(env.HH_CLIENT_VIDEO_SECRET_ACCESS_KEY),false)
   const ca={...env,HH_CLIENT_VIDEO_BACKEND:'s3_ca'}
@@ -44,9 +44,18 @@ test('SigV4 signs method, key, content type and TTL; rejects unsafe paths',()=>{
   assert.notEqual(put,get);assert.notEqual(get,head)
   assert.equal(new URL(put).searchParams.get('X-Amz-Date'),'20261015T220100Z')
   assert.equal(new URL(get).searchParams.get('X-Amz-SignedHeaders'),'host')
+  // The upload signature binds the create-only header; a server-issued PUT
+  // may not silently overwrite any ready/published recording.
+  assert.equal(new URL(put).searchParams.get('X-Amz-SignedHeaders'),'content-type;host;if-none-match')
+  assert.throws(()=>signPrivateVideoRequest('r2',key,{method:'PUT',expires:180,at,env}))
   assert.throws(()=>signPrivateVideoRequest('r2','../../private.mp4',{env}))
   assert.throws(()=>signPrivateVideoRequest('r2',key,{expires:3601,env}))
   assert.throws(()=>signPrivateVideoRequest('r2',key,{method:'PUT',mime:'application/pdf',env}))
+})
+test('iPhone external PUT sends immutable object condition',()=>{
+  const recorder=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  assert.match(recorder,/setRequestHeader\('If-None-Match','\*'\)/)
+  assert.match(recorder,/setRequestHeader\('Content-Type',mime\)/)
 })
 test('existing session readers always use server-authorized streaming; not R2 bearer URLs',()=>{
   for(const route of [
