@@ -16,7 +16,7 @@ const copy = {
     setupHelp:'В Google Cloud включите YouTube Data API v3, создайте OAuth Client (тип Web application) и добавьте разрешённый JavaScript origin: https://holistichouse.vercel.app. Укажите здесь только публичный Client ID, без секрета.',
     setupGoogle:'Открыть Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'Подтверждаю, что OAuth Web Client создан для Holistic House и разрешает этот адрес сайта.',
-    setupSave:'Подключить OAuth-клиент',setupSaving:'Сохранение…',
+    setupSave:'Подключить OAuth-клиент',setupSaving:'Сохранение…',setupChange:'Настроить / заменить Google OAuth',
 
     historyUnavailable:'Хранилище истории временно недоступно. Загрузка отключена, чтобы не потерять ссылки на готовые видео.',
     target:'Куда загрузить?', ru:'Русский YouTube', en:'English YouTube',
@@ -73,7 +73,7 @@ const copy = {
     setupHelp:'In Google Cloud enable YouTube Data API v3, create a Web application OAuth client, and authorize this JavaScript origin: https://holistichouse.vercel.app. Enter the public Client ID only, never a secret.',
     setupGoogle:'Open Google Cloud OAuth →',setupField:'Google Web OAuth Client ID',
     setupCheck:'I confirm this OAuth Web Client belongs to Holistic House and authorizes this website origin.',
-    setupSave:'Connect OAuth client',setupSaving:'Saving…',
+    setupSave:'Connect OAuth client',setupSaving:'Saving…',setupChange:'Configure / change Google OAuth',
 
     historyUnavailable:'Your saved-link archive is unavailable. Uploads are disabled to prevent lost video links.',
     target:'Upload to which channel?', ru:'Russian YouTube', en:'English YouTube',
@@ -159,7 +159,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const [historyStatus, setHistoryStatus] = useState(Boolean(historyReady))
   const [historyFilter, setHistoryFilter] = useState('all')
   const [copiedId, setCopiedId] = useState('')
-  const [setupClientId, setSetupClientId] = useState('')
+  const [setupClientId, setSetupClientId] = useState(clientId)
+  const [showSetup, setShowSetup] = useState(!enabled)
   const [setupConfirmed, setSetupConfirmed] = useState(false)
   const [setupBusy, setSetupBusy] = useState(false)
   const oauthClient = useRef(null)
@@ -455,7 +456,9 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
       </div>
       <p className={styles.warning}>{t.noClient}</p>
       {!enabled && <p className={styles.unavailable} role="status">{t.config}</p>}
-      {!enabled && setupAvailable && <div className={styles.pairing}>
+      {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
+        type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
+      {setupAvailable && showSetup && <div className={styles.pairing}>
         <h3>{t.setupTitle}</h3>
         <p>{t.setupHelp}</p>
         <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
