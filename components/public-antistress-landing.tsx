@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, BookOpenCheck, CalendarDays, Check, ChevronDown,
 import { PublicSiteHeader } from "@/components/public-site-header";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
+import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
 
@@ -801,15 +802,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.measure} aria-labelledby="antistress-measurement">
-          <div className={styles.measureSymbol} aria-hidden="true"><Waves size={54} strokeWidth={1.1} /></div>
-          <div>
-            <p className={styles.sectionEyebrow}>{t.measuresEyebrow}</p>
-            <h2 id="antistress-measurement">{t.measuresTitle}</h2>
-            <p>{t.measuresText}</p>
-            <small>{t.measuresFoot}</small>
-          </div>
-        </section>
+        <PublicAntistressEvidence locale={locale} />
 
         <section className={styles.safety} aria-labelledby="antistress-safety">
           <div className={styles.safetyHeader}>
