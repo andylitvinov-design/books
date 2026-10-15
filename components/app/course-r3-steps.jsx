@@ -22,6 +22,13 @@ const UI = {
     urgent: 'If you might be in immediate danger, contact local emergency or crisis services. This course is not monitored.',
     editAreas: 'Edit my areas', testsTitle: 'Your five best-matching tests',
     testsIntro: 'Here is your starter measurement battery. Review the tests before confirming; existing results count.',
+    stressTestsTitle:'Anti-Stress · baseline questionnaires',
+    stressTestsIntro:'Weekly Pulse (8 questions about the past 7 days) and GAD-7 (7 questions about the past 2 weeks) are suggested. You can change your selection; only tests taken before the course can be compared with the end-of-course results.',
+    stressMeasuresTitle:'Your T0 measures before lesson one',
+    stressMeasuresIntro:'The same original questionnaires will be offered again after lesson 14. Results are separate from daily skill practice and never combined into one clinical score.',
+    stressPrimaryMeasure:'MAIN · ',
+    stressWindowWeek:'Past 7 days',stressWindowFortnight:'Past 14 days',stressWindowNow:'Right now',
+    stressScalesUnit:'separate scales',
     programmeLabel: 'Your chosen course', programmeBattery: 'Weekly Pulse (8 items) and GAD-7 (7 items); Resource Pulse is optional. Russian GAD-7 is a separate, not independently validated translation.',
     relevance: 'match', relevanceHint: 'The percentage estimates relevance to your chosen topics and measured scales, not diagnostic accuracy or psychological health.',
     completed: 'Already completed', needed: 'Not taken yet', recommended: 'Recommended',
@@ -72,6 +79,13 @@ const UI = {
     urgent: 'Если вам угрожает опасность, обратитесь в экстренную или кризисную службу. Курс не отслеживается в реальном времени.',
     editAreas: 'Изменить мои темы', testsTitle: 'Пять наиболее подходящих тестов',
     testsIntro: 'Это стартовый набор измерений по теме курса. Проверьте тесты перед подтверждением; уже пройденные учитываются.',
+    stressTestsTitle:'Антистресс · исходные тесты перед первым уроком',
+    stressTestsIntro:'Предлагаем Weekly Pulse (8 вопросов за последние 7 дней) и GAD-7 (7 вопросов за последние 14 дней). Вы можете изменить выбор. Для итогового сравнения нужны исходные результаты, сохранённые до начала курса.',
+    stressMeasuresTitle:'Исходное измерение T0 · до первого занятия',
+    stressMeasuresIntro:'После 14-го занятия будут предложены те же тесты. Их показатели сравниваются отдельно от практических навыков, без искусственного общего «индекса здоровья».',
+    stressPrimaryMeasure:'ГЛАВНЫЙ · ',
+    stressWindowWeek:'Последние 7 дней',stressWindowFortnight:'Последние 14 дней',stressWindowNow:'Прямо сейчас',
+    stressScalesUnit:'отдельных шкал',
     programmeLabel: 'Ваш курс', programmeBattery: 'Weekly Pulse (8 вопросов) + GAD-7 (7 вопросов), тест опоры — по желанию. Русский перевод GAD-7 не валидирован отдельно.',
     relevance: 'соответствие', relevanceHint: 'Процент — примерная релевантность теста выбранным темам и реально измеряемым шкалам, а не точность диагноза и не уровень здоровья.',
     completed: 'Уже пройден', needed: 'Ещё не пройден', recommended: 'Рекомендуется',
@@ -319,7 +333,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   if(stage===2 && confirmed && pending.length===0 && !showCompletedOptions) {
     return <CourseCompletionReview
-      t={t} root={root} confirmedStatuses={confirmedStatuses}
+      t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
       optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
       busy={busy||localBusy}
       onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
@@ -331,10 +345,10 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
     const visible=showAll?ranked:ranked.filter((item,i)=>i<5||chosenTests.includes(item.key))
     return <section className={'hh-panel '+styles.section} data-course-tests>
       {programme && <p className={styles.programmeContext} data-course-selected-programme><strong>{t.programmeLabel}:</strong> {programme.title[ru?'ru':'en']} · {t.programmeBattery}</p>}
-      <div className={styles.sectionHeading}><h2>{t.testsTitle}</h2>
+      <div className={styles.sectionHeading}><h2>{programme?.id==='stress'?t.stressTestsTitle:t.testsTitle}</h2>
         <button type="button" className={styles.secondary} disabled={busy}
           onClick={()=>onAct('edit-intake')}>{t.editAreas}</button></div>
-      <p>{t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
+      <p>{programme?.id==='stress'?t.stressTestsIntro:t.testsIntro}</p><p className={styles.small}>{t.relevanceHint}</p>
       <div className={styles.testList} aria-label={t.testsTitle}>
         {visible.map((item,index)=><label className={styles.testRow} key={item.key} data-checked={chosenTests.includes(item.key)}>
           <input type="checkbox" checked={chosenTests.includes(item.key)} disabled={busy||localBusy||
@@ -385,7 +399,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   if(stage===3) {
     if(scaleView!=='manual') {
       return <CourseCompletionReview
-        t={t} root={root} confirmedStatuses={confirmedStatuses}
+        t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
         optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
         busy={busy||localBusy}
         onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id))}
