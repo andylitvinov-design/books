@@ -23,12 +23,12 @@ test('failed upload retains file and intent without reporting success',async()=>
  assert.equal(intents,2);assert.equal(uploads,2);assert.equal(job.uploaded,false);assert.equal(job.file.size,512)
 })
 test('unsupported, oversized and empty files do not create an intent',async()=>{
- for(const file of [{type:'video/webm',size:512},{type:'audio/mp4',size:20_000_001},{type:'video/mp4',size:45_000_001},{type:'audio/mp4',size:0}]){
+ for(const file of [{type:'video/webm',size:512},{type:'audio/mp4',size:20_000_001},{type:'video/mp4',size:200_000_001},{type:'audio/mp4',size:0}]){
  const job=make();job.file=file
  await assert.rejects(saveRecording(job,{post:()=>assert.fail('must not request upload'),upload:()=>assert.fail('must not upload')}))
  }
 })
-test('MP4 video is accepted only within existing cap',async()=>{
+test('MP4 video requests are allowed up to the optional external limit; server enforces backend cap',async()=>{
  const job=make();job.file={type:'video/mp4',size:1024};const calls=[]
  await saveRecording(job,{post:async(_,b)=>{calls.push(b);return {assetId:'video'}},upload:async()=>{}})
  assert.equal(calls[0].kind,'video');assert.equal(calls[0].mime,'video/mp4')
