@@ -1,7 +1,7 @@
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-conversion-hero.module.css";
 
 const copy = {
@@ -31,9 +31,22 @@ const copy = {
     imageLabel: "Personal work with Andrey Litvinov",
     caption: "Start with your question",
   },
+  es: {
+    eyebrow: "HOLISTIC HOUSE · ACOMPAÑAMIENTO PERSONAL",
+    heading: "Más claridad, recursos y caminos para avanzar",
+    lead: "Tres formas gratuitas de empezar: cuestionarios de autoobservación, revisión escrita de tu situación o perfil simbólico Wu Xing. Las sesiones personales son opcionales.",
+    benefits: ["3 maneras de empezar gratis", "Sesiones individuales opcionales", "Toronto y en línea"],
+    cta: "Solicitar revisión escrita gratuita",
+    secondary: "Opciones gratuitas y cursos",
+    small: "La revisión gratuita es por escrito, no una llamada gratuita.",
+    workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
+    solutions: "Explorar los servicios personales",
+    imageLabel: "Personalmente con Andrey Litvinov",
+    caption: "Empieza con tu pregunta",
+  },
 } as const;
 
-export function ServicesConversionHero({ locale }: { locale: Locale }) {
+export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   return (
     <section className={styles.hero} aria-labelledby="services-conversion-title">

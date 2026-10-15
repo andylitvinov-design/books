@@ -4,18 +4,24 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Services EN/RU: compact light-blue tests first, image-left five offers next", () => {
+test("Services EN/RU: original green photo hero, blue courses and tests, then image-left offers", () => {
   const page = read("app/[locale]/services/page.tsx");
   const banner = read("components/services-tests-intro.tsx");
   const bannerCss = read("components/services-tests-intro.module.css");
   const services = read("components/services-solutions.tsx");
   const style = read("components/services-solutions.module.css");
+  const heroPos = page.indexOf("<ServicesConversionHero locale={locale as Locale} />");
   const introPos = page.indexOf("<ServicesTestsIntro locale={locale as Locale} />");
   const cardPos = page.indexOf("<ServicesSolutions locale={locale as Locale} />");
   const cartPos = page.indexOf("<ServiceCart locale={locale as Locale} />");
-  assert.ok(introPos > 0 && cardPos > introPos && cartPos > cardPos);
-  assert.doesNotMatch(page, /<ServicesConversionHero|<FreeInsightsPaths/);
+  assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && cartPos > cardPos);
+  assert.doesNotMatch(page, /<FreeInsightsPaths/);
+  assert.match(read("components/services-conversion-hero.module.css"), /background:#243b32/);
   assert.match(banner, /data-services-tests-intro/);
+  assert.match(banner, /id="free-insights"/);
+  assert.match(banner, /<h2 id="services-tests-heading">/);
+  assert.match(banner, /data-services-course-action/);
+  assert.match(banner, /courses\/antistress/);
   assert.match(bannerCss, /#e7f3fb/);
   assert.match(banner, /href: "\/en\/client\/tests"/);
   assert.match(banner, /href: "\/ru\/client\/tests"/);
@@ -33,6 +39,8 @@ test("Services EN/RU: compact light-blue tests first, image-left five offers nex
 test("Services Spanish retains its routes with a compact photographic treatment", () => {
   const page = read("app/es/services/page.tsx");
   const css = read("components/services-es-offers.module.css");
+  assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') > 0);
+  assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') < page.indexOf('<ServicesTestsIntro locale="es" />'));
   assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') < page.indexOf('data-es-services-photo-cards'));
   assert.match(page, /id="solutions"/);
   assert.match(page, /className=\{offerStyles.photo\}/);

@@ -27,7 +27,9 @@ test("Services leads with free-test banner and five compact photo offers, withou
   assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
   assert.match(ui, /allOffers\.filter/);
   assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
-  assert.doesNotMatch(page, /<FreeInsightsPaths|<ServicesConversionHero/);
+  assert.doesNotMatch(page, /<FreeInsightsPaths/);
+  assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
+  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"));
   for(const id of ["situation","dao","alchemy","hypnotherapy"])
     assert.ok(offers.includes('id: "' + id + '"'), id);
   for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])

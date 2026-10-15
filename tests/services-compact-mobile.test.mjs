@@ -14,7 +14,10 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(ui, /allOffers\.filter/);
   assert.match(ui, /visibleOffers\.map/);
   assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
-  assert.doesNotMatch(page, /<FreeInsightsPaths|<ServicesConversionHero/);
+  assert.doesNotMatch(page, /<FreeInsightsPaths/);
+  assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
+  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"), "Green hero precedes blue tests and course");
+  assert.match(read("components/services-tests-intro.tsx"), /data-services-course-action/);
   assert.ok(page.indexOf("<ServicesTestsIntro locale={locale as Locale} />") < page.indexOf("<ServicesSolutions locale={locale as Locale} />"), "Tests banner must precede service photos");
   assert.ok(page.indexOf("<ServicesSolutions locale={locale as Locale} />") < page.indexOf("<ServiceCart locale={locale as Locale} />"), "Services photos must be ahead of booking cart");
   assert.match(ui, /: allOffers;/);

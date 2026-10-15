@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
+import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -77,6 +78,7 @@ export default async function ServicesPage({ params }: PageProps) {
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
 
+      <ServicesConversionHero locale={locale as Locale} />
       <ServicesTestsIntro locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
       <ServiceCart locale={locale as Locale} />
