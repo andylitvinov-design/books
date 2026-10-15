@@ -349,7 +349,6 @@ export function SimpleTestPicker({
                <div className={styles.testDetailsBody}>
                  <p className={styles.testPurpose}>{entry.description || entry.category}</p>
                  <div className={styles.testFacts}>
-                   <KindBadge entry={entry} locale={locale} />
                    <span><Clock3 size={14} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span><ListChecks size={14} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
                  </div>
