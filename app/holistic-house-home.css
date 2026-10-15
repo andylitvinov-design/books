@@ -791,3 +791,13 @@ a.service-home-start-card:hover {
 @media (prefers-reduced-motion: reduce) {
   .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }
+
+/* Primary conversion stays accessible without scrolling on narrow phones.
+   Keep the consultation first; simplify competing hero actions only on mobile. */
+@media (max-width: 767px) {
+  .house-home--services .service-home-actions { max-width: min(288px, 100%); margin-top: 14px; }
+  .house-home--services .service-home-button--consultation { min-height: 48px; width: 100%; font-size: 14px; font-weight: 750; }
+  .house-home--services .service-home-button--secondary { display: none; }
+  .house-home--services .service-home-hero-copy { padding-top: 24px; padding-bottom: 25px; }
+  .house-home--services .service-home-intro { font-size: 13px; line-height: 1.45; }
+}
