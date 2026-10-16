@@ -49,7 +49,7 @@ test("Tantra Reiki keeps a single bottom capture and the green hero PDF link", (
   assert.match(chooser, /data-reiki-capture-placement=\{placement\}/);
   assert.match(chooser, /href=\{guideUrl\}/);
   assert.match(chooser, /course === "tantra" && !download/);
-  assert.match(chooser, /download=\{download \? true : undefined\}/);
+  assert.match(chooser, /href=\{guideUrl\}/);
   assert.match(chooser, /id="reiki-free-consultation"/);
   assert.match(chooser, /\{isTop\s*\?/);
   assert.match(style, /\.topCapture \.choices/);

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
@@ -8,6 +8,7 @@ import { EnergyworkReikiCapture } from "@/components/energywork-reiki-capture";
 import { EnergyworkVideoArchive } from "@/components/energywork-video-archive";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./principles-of-energywork.module.css";
 
@@ -65,7 +66,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     start: "Explore the 3 systems",
     how: "How the free initiation works",
     heroFacts: ["3 distinct Reiki systems", "Free Level 1 introductions", "No email or account required"],
-    foundationsEyebrow: "02 / THE FOUNDATIONS",
+    foundationsEyebrow: "STEP 2 · THE FOUNDATIONS",
     foundationsTitle: "What are the principles of energywork?",
     foundationsLead: "In these traditions, energywork is a spiritual and contemplative practice built around attention, intention and symbolic methods. Begin with three simple foundations.",
     foundations: [
@@ -73,7 +74,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Intention", description: "Learn the role of symbols, visualization and a clear purpose in each tradition." },
       { title: "Choice & boundaries", description: "Practise at your own pace, respect consent and choose the path that resonates with you." },
     ],
-    systemsEyebrow: "03 / CHOOSE YOUR PATH",
+    systemsEyebrow: "STEP 3 · CHOOSE YOUR REIKI SYSTEM",
     systemsTitle: "Three systems. Three ways to begin.",
     systemsLead: "Each course has its own study material and pathway. Open the full description or go directly to the free introductory initiation.",
     learn: "Explore the system",
@@ -84,7 +85,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "A nine-level tradition using the language of vitality, creativity and connection. Its first step is the Spring of Life, approached through guided study and reflection.",
       "A compact three-level system described in its manuals as combining Reiki and Kundalini energy. Begin with Level 1 and the original Paul Crick study material.",
     ],
-    journeyEyebrow: "04 / THE FREE PATH",
+    journeyEyebrow: "STEP 4 · REQUEST YOUR FREE LEVEL 1",
     journeyTitle: "How to receive an introductory initiation",
     steps: [
       { title: "Choose a system", description: "Open the description, see the levels and decide which approach interests you." },
@@ -125,7 +126,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     start: "Посмотреть 3 системы",
     how: "Как получить инициацию бесплатно",
     heroFacts: ["3 разные системы Рейки", "Бесплатная вводная 1-я ступень", "Без email и регистрации"],
-    foundationsEyebrow: "02 / ОСНОВЫ",
+    foundationsEyebrow: "ШАГ 2 · ОСНОВЫ",
     foundationsTitle: "Что лежит в основе энергетической работы?",
     foundationsLead: "В этих традициях энергетическая работа — духовная и созерцательная практика внимания, намерения и символических методов. Начнём с трёх простых принципов.",
     foundations: [
@@ -133,7 +134,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Намерение", description: "Понять, какую роль в разных традициях играют символы, визуализация и ясная цель." },
       { title: "Свобода и границы", description: "Выбирать комфортный темп, уважать согласие и искать подходящую лично вам систему." },
     ],
-    systemsEyebrow: "03 / ВЫБЕРИТЕ НАПРАВЛЕНИЕ",
+    systemsEyebrow: "ШАГ 3 · ВЫБЕРИТЕ СИСТЕМУ РЕЙКИ",
     systemsTitle: "Три системы. Три точки входа.",
     systemsLead: "У каждой системы есть собственные материалы и программа. Можно прочитать полное описание или сразу перейти к бесплатной вводной инициации.",
     learn: "Описание системы",
@@ -144,7 +145,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "Девятиступенчатая система, работающая в символическом языке жизненности, творчества и отношений. Первая ступень — «Источник жизни», с материалами и вопросами для изучения.",
       "Компактная система из трёх ступеней, которая в учебной традиции сочетает Рейки и энергию Кундалини. Начните с первой ступени и оригинальной методички Пола Крика.",
     ],
-    journeyEyebrow: "04 / БЕСПЛАТНЫЙ ПУТЬ",
+    journeyEyebrow: "ШАГ 4 · ЗАПРОСИТЕ ПЕРВУЮ СТУПЕНЬ",
     journeyTitle: "Как подготовиться к инициации",
     steps: [
       { title: "Выберите систему", description: "Прочитайте описание, посмотрите ступени и решите, что вам ближе." },
@@ -185,7 +186,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     start: "Explorar los 3 sistemas",
     how: "Cómo funciona la iniciación gratis",
     heroFacts: ["3 sistemas diferentes", "Introducción gratuita al Nivel 1", "Sin correo ni registro"],
-    foundationsEyebrow: "02 / LOS FUNDAMENTOS",
+    foundationsEyebrow: "PASO 2 · FUNDAMENTOS",
     foundationsTitle: "¿Cuáles son los principios del trabajo energético?",
     foundationsLead: "En estas tradiciones, el trabajo energético es una práctica espiritual y contemplativa de atención, intención y métodos simbólicos. Empieza por tres principios sencillos.",
     foundations: [
@@ -193,7 +194,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       { title: "Intención", description: "Descubre cómo se utilizan los símbolos, la visualización y el propósito en cada tradición." },
       { title: "Elección y límites", description: "Practica a tu ritmo, respeta el consentimiento y elige la tradición que te atraiga." },
     ],
-    systemsEyebrow: "03 / ELIGE TU CAMINO",
+    systemsEyebrow: "PASO 3 · ELIGE TU SISTEMA REIKI",
     systemsTitle: "Tres sistemas. Tres formas de empezar.",
     systemsLead: "Cada curso incluye su propio material. Puedes leer la descripción o ir a la iniciación introductoria gratuita.",
     learn: "Conocer el sistema",
@@ -204,7 +205,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
       "Un camino de nueve niveles que explora la vitalidad, la creatividad y la conexión. Su primer paso, la Fuente de Vida, se estudia mediante materiales y preguntas guiadas.",
       "Un sistema de tres niveles descrito en la tradición como una combinación de Reiki y energía Kundalini. Empieza con el Nivel 1 y el manual original de Paul Crick.",
     ],
-    journeyEyebrow: "04 / EL CAMINO GRATUITO",
+    journeyEyebrow: "PASO 4 · SOLICITA TU NIVEL 1 GRATIS",
     journeyTitle: "Cómo prepararte para una iniciación",
     steps: [
       { title: "Elige un sistema", description: "Conoce la propuesta, los niveles y la tradición que más te interesa." },
@@ -239,19 +240,18 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   },
 };
 
-// The first English Flight to the Sun recording is still awaiting a verified
-// original YouTube ID (see source issue #253). Never substitute a testimonial,
-// an unrelated meditation or a stock recording for Andrey's original.
+// The two source recordings were supplied by Andrey and confirmed on YouTube
+// on 2026-10-16. All locales retain their original English audio.
 const videoCopy: Record<PublicLocale, {
   introduction: string; flightCta: string; flightTitle: string; flightLead: string; flightPending: string;
   flightVerified: string; originalEnglish: string;
   explore: string; description: string; freeStudy: string; videoTitle: string;
-  yggdrasilFirst: string; kundaliniMissing: string; kundaliniSource: string;
+  yggdrasilFirst: string; youtubeLink: string;
 }> = {
   en: {
-    introduction: "01 / WATCH FIRST", flightCta: "Start with Flight to the Sun", flightTitle: "Flight to the Sun",
+    introduction: "STEP 1 · WATCH FIRST", flightCta: "Start with Flight to the Sun", flightTitle: "Flight to the Sun",
     flightLead: "Begin with Andrey's shamanic-flight meditation: guided imagery, attention and the symbolism of the sun. This practice is separate from the three Reiki initiations.",
-    flightPending: "The exact original English video link is not yet verified. No other person's recording will be substituted.",
+    flightPending: "The original video is temporarily unavailable in this player.",
     flightVerified: "Original guided meditation · English",
     originalEnglish: "Original video · English audio · click to play",
     explore: "Explore the three Reiki systems",
@@ -259,13 +259,12 @@ const videoCopy: Record<PublicLocale, {
     freeStudy: "Level 1 study and initiation details",
     videoTitle: "Watch and choose your Reiki path",
     yggdrasilFirst: "Andrey's original Level 1 introduction · English",
-    kundaliniMissing: "The original Kundalini Reiki-specific video has not yet been verified. The three-level course and Paul Crick's original PDF are available below.",
-    kundaliniSource: "Course source image · No video substitute",
+    youtubeLink: "Watch the original on YouTube",
   },
   ru: {
-    introduction: "01 / СНАЧАЛА МЕДИТАЦИЯ", flightCta: "Начать с медитации «Полёт к Солнцу»", flightTitle: "Полёт к Солнцу",
+    introduction: "ШАГ 1 · СНАЧАЛА МЕДИТАЦИЯ", flightCta: "Начать с медитации «Полёт к Солнцу»", flightTitle: "Полёт к Солнцу",
     flightLead: "Начните с авторской медитации Андрея — шаманского путешествия к Солнцу через работу с образами и вниманием. Эта практика не заменяет инициацию Рейки.",
-    flightPending: "Подтверждённая ссылка на оригинальную английскую запись пока не найдена. Чужое видео подставлять не будем.",
+    flightPending: "Оригинальное видео временно недоступно в этом проигрывателе.",
     flightVerified: "Авторская медитация · английский язык",
     originalEnglish: "Оригинальное видео · на английском · просмотр по нажатию",
     explore: "Перейти к трём системам Рейки",
@@ -273,13 +272,12 @@ const videoCopy: Record<PublicLocale, {
     freeStudy: "Обучение и бесплатная 1-я ступень",
     videoTitle: "Смотрите видео и выбирайте систему",
     yggdrasilFirst: "Оригинальное видео Андрея о 1-й ступени · английский",
-    kundaliniMissing: "Исходное видео именно по Кундалини Рейки пока не подтверждено. Ниже доступны полный трёхступенчатый курс и оригинальная PDF-методичка Пола Крика.",
-    kundaliniSource: "Иллюстрация из исходной методички · не видео",
+    youtubeLink: "Открыть оригинал на YouTube",
   },
   es: {
-    introduction: "01 / PRIMERO UNA MEDITACIÓN", flightCta: "Empezar con Vuelo hacia el Sol", flightTitle: "Vuelo hacia el Sol",
+    introduction: "PASO 1 · EMPIEZA CON LA MEDITACIÓN", flightCta: "Empezar con Vuelo hacia el Sol", flightTitle: "Vuelo hacia el Sol",
     flightLead: "Empieza con la meditación de vuelo chamánico de Andrey: atención, imágenes guiadas y simbolismo del sol. Es distinta de las iniciaciones Reiki.",
-    flightPending: "Aún no se ha verificado el enlace exacto de la grabación original en inglés. No se mostrará otro vídeo como sustituto.",
+    flightPending: "El vídeo original no está disponible temporalmente en este reproductor.",
     flightVerified: "Meditación original · audio en inglés",
     originalEnglish: "Vídeo original · audio en inglés · pulsar para reproducir",
     explore: "Explorar los tres sistemas Reiki",
@@ -287,8 +285,7 @@ const videoCopy: Record<PublicLocale, {
     freeStudy: "Materiales e iniciación gratis del Nivel 1",
     videoTitle: "Mira los vídeos y elige tu camino Reiki",
     yggdrasilFirst: "Introducción original de Andrey al Nivel 1 · inglés",
-    kundaliniMissing: "Aún no hay un vídeo confirmado de Kundalini Reiki. Puedes consultar el curso de tres niveles y el PDF original de Paul Crick.",
-    kundaliniSource: "Ilustración del manual original · no es un vídeo",
+    youtubeLink: "Ver el original en YouTube",
   },
 };
 
@@ -329,6 +326,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
   const flight = englishGuidedMeditations.find((item) => item.key === "flight-to-sun");
   const tantraPractice = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const yggdrasilMeditation = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
+  const kundaliniMeditation = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -357,7 +355,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
 
         <section className={styles.flightSection} id="energywork-flight-to-sun" aria-labelledby="flight-to-sun-title">
           <div className={styles.sectionHeader}>
-            <p className={styles.sectionEyebrow}>{v.introduction}</p>
+            <p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{v.introduction}</p>
             <h2 id="flight-to-sun-title">{v.flightTitle}</h2>
             <p>{v.flightLead}</p>
           </div>
@@ -380,13 +378,14 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
               <h3>{v.flightTitle}</h3>
               <p>{v.flightLead}</p>
               {!flight?.youtubeId ? <p className={styles.flightNotice}>{v.flightPending}</p> : null}
+              {flight?.youtubeId ? <a className={styles.courseDetailLink} href={"https://www.youtube.com/watch?v=" + flight.youtubeId} target="_blank" rel="noopener noreferrer">{v.youtubeLink}<ArrowRight size={15} aria-hidden="true" /></a> : null}
               <a className={styles.systemPrimary} href="#energywork-systems">{v.explore}<ArrowRight size={17} aria-hidden="true" /></a>
             </div>
           </div>
         </section>
 
         <section className={styles.foundations} aria-labelledby="energywork-foundations">
-          <div className={styles.sectionHeader}><p className={styles.sectionEyebrow}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
+          <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
           <div className={styles.foundationGrid}>
             {t.foundations.map((part, index) => {
               const Icon = [Compass, Sparkles, HeartHandshake][index];
@@ -396,7 +395,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section className={styles.systemsSection} id="energywork-systems" aria-labelledby="energywork-systems-title">
-          <div className={styles.sectionHeader}><p className={styles.sectionEyebrow}>{t.systemsEyebrow}</p><h2 id="energywork-systems-title">{t.systemsTitle}</h2><p>{t.systemsLead}</p></div>
+          <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.systemsEyebrow}</p><h2 id="energywork-systems-title">{t.systemsTitle}</h2><p>{t.systemsLead}</p></div>
           <div className={styles.systemGrid}>
             {paths.map((system, index) => (
               <article className={styles.systemCard} key={system.key} data-reiki-path={system.key}>
@@ -418,19 +417,18 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
                       </div>
                     </div>
                   ) : null}
-                  {system.key === "kundalini" ? (
-                    <div className={styles.kundaliniSource} data-video-source-pending="kundalini">
-                      <Image src={system.image} alt="" fill sizes="(max-width: 760px) 100vw, 43vw" />
-                      <span>{v.kundaliniSource}</span>
+                  {system.key === "kundalini" && kundaliniMeditation?.youtubeId ? (
+                    <div className={styles.systemVideo}>
+                      <AcademyVideoPlayer youtubeId={kundaliniMeditation.youtubeId} title={kundaliniMeditation.title} />
                     </div>
                   ) : null}
-                  <small className={styles.originalLanguage}>{system.key === "kundalini" ? v.kundaliniSource : v.originalEnglish}</small>
+                  <small className={styles.originalLanguage}>{v.originalEnglish}</small>
                 </div>
                 <div className={styles.systemBody}>
-                  <p className={styles.systemLabel}>{t.systemTags[index]}</p>
+                  <p className={styles.systemLabel}>{locale === "ru" ? "Система" : locale === "es" ? "Sistema" : "System"} {system.badge} · {t.systemTags[index]}</p>
                   <h3>{system.title}</h3>
                   <p className={styles.systemDescription}>{t.systemDescriptions[index]}</p>
-                  {system.key === "kundalini" ? <p className={styles.videoCaution}>{v.kundaliniMissing}</p> : null}
+                  {system.key === "kundalini" && kundaliniMeditation?.youtubeId ? <a className={styles.courseDetailLink} href={"https://www.youtube.com/watch?v=" + kundaliniMeditation.youtubeId} target="_blank" rel="noopener noreferrer">{v.youtubeLink}<ArrowRight size={15} aria-hidden="true" /></a> : null}
                   <div className={styles.courseLinks}>
                     <Link className={styles.systemSecondary} href={academyUrl(locale, system.study)}>{v.description}<ArrowRight size={16} aria-hidden="true" /></Link>
                     <Link className={styles.courseDetailLink} href={academyUrl(locale, system.free)}>{v.freeStudy}<ArrowRight size={15} aria-hidden="true" /></Link>
@@ -444,7 +442,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section className={styles.howSection} id="energywork-how" aria-labelledby="energywork-how-title">
-          <div className={styles.sectionHeader}><p className={styles.sectionEyebrow}>{t.journeyEyebrow}</p><h2 id="energywork-how-title">{t.journeyTitle}</h2></div>
+          <div className={styles.sectionHeader}><p className={`${styles.sectionEyebrow} ${styles.sequenceStep}`}>{t.journeyEyebrow}</p><h2 id="energywork-how-title">{t.journeyTitle}</h2></div>
           <div className={styles.journeyGrid}>{t.steps.map((step, i) => <div className={styles.journeyStep} key={step.title}><strong>0{i + 1}</strong><h3>{step.title}</h3><p>{step.description}</p></div>)}</div>
         </section>
         <section className={styles.finalCta}>
@@ -500,7 +498,7 @@ export function KundaliniFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h2>{k.requestTitle}</h2>
             <p>{k.requestLead}</p>
           </div>
-          <a className={styles.requestButton} href={requestUrl} target="_blank" rel="noopener noreferrer" data-reiki-free-request="kundalini"><MessageCircle size={20} aria-hidden="true" />{k.requestButton}<ArrowRight size={18} aria-hidden="true" /></a>
+          <ContactChannelChooser locale={locale} whatsappUrl={requestUrl} className={styles.requestButton} attributes={{ "data-reiki-free-request": "kundalini" }} />
           <small>{k.note}</small>
         </section>
         <div className={styles.otherPaths}><Link href={academyUrl(locale, "principles-of-energywork")}>{k.otherPaths}<ArrowRight size={17} aria-hidden="true" /></Link></div>

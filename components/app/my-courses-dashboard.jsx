@@ -14,7 +14,7 @@ const copy={
     eyebrow:'MY COURSES',heading:'Your growth journey',more:'Build one skill at a time, or explore several paths in parallel.',
     primary:'MAIN COURSE',primaryAction:'Make main',today:'Continue course',setup:'Finish setting up',day:'Day',of:'of',lessons:'lessons complete',
     axes:'Your development focus',other:'Other courses',add:'Start another course',addNote:'Explore a new learning direction',
-    full:'Your active-course limit is reached. Pause, finish or close a course to free a place.',completed:'Completed courses',
+    full:'Your active-course limit is reached. Pause or close a course to free a place.',fullSingle:'One course at a time. Close the current course to start a new one.',completed:'Completed courses',
     archived:'Course history',viewArchive:'View completed and closed courses',hideArchive:'Hide history',closed:'Closed early',
     completedTitle:'Completed',paused:'Paused',close:'Close course',back:'Not now',
     confirm:'Close this course?',confirmText:'Its private notes and progress stay in your history. Closing frees an active place.',
@@ -26,14 +26,14 @@ const copy={
     current:'Current plan',choose:'Choose plan',monthly:'/month',notReady:'Subscription checkout is not yet available here.',
     premiumTerms:'Baseline tests stay free on every plan. Paid plans are billed monthly in EUR until cancelled. The Premium session requires separate scheduling confirmation.',
     preserved:'Your existing active courses and history are preserved after a plan change. The current limit applies to starting and resuming courses.',
-    viewHistory:'Review course', historySafe:'Pausing frees an active place and keeps your history.', closeDialog:'Dismiss', setupAxes:'Choose your focus areas during setup.', billingError:'Payment could not be opened. Please try again from subscription settings.',
+    viewHistory:'Review course', historySafe:'Pausing or closing frees an active place while preserving history.',historySafeSingle:'Closing frees the course place. Your saved tests and lessons remain.', closeDialog:'Dismiss', setupAxes:'Choose your focus areas during setup.', billingError:'Payment could not be opened. Please try again from subscription settings.',
   },
   ru:{
     eyebrow:'МОИ КУРСЫ',heading:'Ваш путь развития',more:'Развивайте один навык или работайте над несколькими темами параллельно.',
     primary:'ГЛАВНЫЙ КУРС',primaryAction:'Сделать главным',today:'Продолжить курс',setup:'Завершить настройку',
     day:'День',of:'из',lessons:'уроков пройдено',axes:'Направления развития',other:'Другие курсы',
     add:'Начать новый курс',addNote:'Выберите ещё одно направление развития',
-    full:'Достигнут лимит активных курсов. Поставьте курс на паузу, завершите или закройте его, чтобы освободить место.',
+    full:'Достигнут лимит активных курсов. Поставьте курс на паузу или закройте его.',fullSingle:'Одновременно можно проходить один курс. Закройте текущий, чтобы начать новый.',
     completed:'Завершённые курсы',archived:'История курсов',viewArchive:'Открыть историю курсов',hideArchive:'Скрыть историю',
     closed:'Закрыт досрочно',completedTitle:'Завершён',paused:'На паузе',
     close:'Закрыть курс',back:'Не сейчас',confirm:'Закрыть этот курс?',
@@ -46,7 +46,7 @@ const copy={
     current:'Ваш тариф',choose:'Выбрать тариф',monthly:'/мес.',notReady:'Оплата подписки пока недоступна.',
     premiumTerms:'Базовые тесты бесплатны на каждом тарифе. Платная подписка списывается ежемесячно в EUR до отмены. Сессия Premium требует отдельного подтверждения записи.',
     preserved:'После смены тарифа текущие активные курсы и история сохраняются. Лимит применяется к началу и возобновлению курсов.',
-    viewHistory:'Посмотреть курс', historySafe:'Пауза освобождает активное место и сохраняет историю.', closeDialog:'Закрыть окно', setupAxes:'Выберите направления во время настройки.', billingError:'Не удалось открыть оплату. Повторите попытку в настройках подписки.',
+    viewHistory:'Посмотреть курс', historySafe:'Пауза или закрытие освобождают место и сохраняют историю.',historySafeSingle:'Закрытие освобождает место. Пройденные тесты и занятия сохраняются.', closeDialog:'Закрыть окно', setupAxes:'Выберите направления во время настройки.', billingError:'Не удалось открыть оплату. Повторите попытку в настройках подписки.',
   },
 }
 function topicName(course,language){
@@ -103,7 +103,7 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
   </article>
 }
 export default function MyCoursesDashboard({
-  courses=[],membership={},locale='en',busy=false,canAddCourse=false,canManageCourses=false,overLimit=false,onOpen,onNew,onClose,onPrimary,
+  courses=[],membership={},locale='en',busy=false,canAddCourse=false,canManageCourses=false,multiCourseEnabled=true,overLimit=false,onOpen,onNew,onClose,onPrimary,
 }){
   const t=copy[locale]||copy.en
   const {status,phase,busy:billingBusy,error:billingError,startCheckout}=useSubscription()
@@ -122,6 +122,8 @@ export default function MyCoursesDashboard({
   const limit=membership.maxActiveCourses||1
   const occupied=Number.isInteger(membership.occupiedCount)?membership.occupiedCount:courses.filter(course=>course.status==='active').length
   const full=occupied>=limit
+  const fullMessage=multiCourseEnabled?t.full:t.fullSingle
+  const historyMessage=multiCourseEnabled?t.historySafe:t.historySafeSingle
   const tier=phase==='ready'?status?.entitlement?.tier:membership.tier
   const checkoutAvailable=Object.keys(COURSE_PLANS).some(id=>canStartCheckout(status,phase,id))
   function choosePlan(tier){
@@ -140,11 +142,11 @@ export default function MyCoursesDashboard({
         onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>)}</div>
     </section>}
     <button type="button" className={styles.addTile} disabled={busy||!canAddCourse} onClick={onNew}>
-      <Plus size={26}/><strong>{t.add}</strong><small>{full?t.full:t.addNote}</small>
+      <Plus size={26}/><strong>{t.add}</strong><small>{full?fullMessage:t.addNote}</small>
     </button>
     {overLimit&&<p className={styles.limitTip} role="status">{t.preserved}</p>}
-    <p className={styles.muted}>{t.historySafe}</p>
-    {full&&<p className={styles.limitTip}><LockKeyhole size={14}/>{t.full}</p>}
+    <p className={styles.muted}>{historyMessage}</p>
+    {full&&<p className={styles.limitTip}><LockKeyhole size={14}/>{fullMessage}</p>}
     {!!history.length&&<section className={styles.history}>
       <button type="button" className={styles.historyToggle} aria-expanded={openHistory} onClick={()=>setOpenHistory(!openHistory)}>
         <BookOpenCheck size={18}/>{openHistory?t.hideArchive:t.viewArchive}<ChevronDown size={16}/>

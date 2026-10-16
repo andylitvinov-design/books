@@ -1,9 +1,9 @@
 "use client";
-import { ArrowUpRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
 import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
 
@@ -125,12 +125,7 @@ export function PublicConsultationCta({ locale, id, serviceBooking = false }: { 
         <span>{text.text}</span>
       </div>
       <div className="public-consultation-cta__actions">
-        <AcquisitionEventLink prefetch={false} href={whatsappUrl} rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "whatsapp" }} event={mode === "training" ? "academy_course_enquiry_click" : "whatsapp_handoff_click"}>
-          <span data-contact-channel="whatsapp">{text.whatsapp}</span><ArrowUpRight aria-hidden="true" />
-        </AcquisitionEventLink>
-        <AcquisitionEventLink prefetch={false} href="https://t.me/AndyTherapist" rel="noopener noreferrer" target="_blank" attributes={{ "data-contact-channel": "telegram" }} event="contact_click">
-          <span data-contact-channel="telegram">{text.telegram}</span><ArrowUpRight aria-hidden="true" />
-        </AcquisitionEventLink>
+        <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} event="academy_course_enquiry_click" />
         <Link prefetch={false} href={further}>{text.free}<ArrowRight aria-hidden="true" size={17}/></Link>
       </div>
     </aside>

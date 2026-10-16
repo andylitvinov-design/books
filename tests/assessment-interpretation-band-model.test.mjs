@@ -108,8 +108,22 @@ test('unvalidated Russian GAD7 is descriptive in both report languages, never in
   }
 })
 
-test('all 210 immutable definitions retain valid source-specific interpretation in both report languages', () => {
-  assert.equal(ASSESSMENT_DEFINITIONS.length, 210)
+test('all 218 immutable definitions retain valid source-specific interpretation in both report languages', () => {
+  const splitV2Ids=new Set([
+    '52c75d85-d99e-5178-8ee4-3b7faa802601',
+    '7715324b-f54c-5d7c-8ca7-08ff17ba8c8e',
+    'f65b9e09-2818-5c01-abb7-438600530e8f',
+    '3ea615ee-b188-5c1e-8e41-2bfd221a75d7',
+    '0c27f7d6-0280-5dcd-8f10-59447585b1df',
+    '9a864e36-7362-567b-923e-ea99228f933d',
+  ])
+  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
+  const appendedV2Ids=new Set([...splitV2Ids,...bachV2Ids])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!appendedV2Ids.has(d.id)).length,210)
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!bachV2Ids.has(d.id)).length,216)
+  assert.equal(ASSESSMENT_DEFINITIONS.length,218)
   for (const definition of ASSESSMENT_DEFINITIONS) for (const position of [0,.5,1]) {
     const result = score(definition, position)
     for (const dimension of result.dimensions) for (const locale of ['en','ru']) {

@@ -19,11 +19,13 @@ test("historical Reiki Yggdrasil reviews are not called lessons or meditations",
   assert.doesNotMatch(source, /title: "About the Healing attunement"/);
 });
 
-test("new English practice listing has three distinct source-gated entries", async () => {
+test("English meditation registry preserves all four verified original recordings", async () => {
   const data = await readFile("data/academy/english-guided-meditations.ts", "utf8");
-  const ids = ["flight-to-sun", "tantra-reiki", "reiki-yggdrasil"];
+  const ids = ["flight-to-sun", "tantra-reiki", "reiki-yggdrasil", "kundalini-reiki"];
   for (const id of ids) assert.match(data, new RegExp('key: "' + id + '"'));
-  assert.equal((data.match(/youtubeId: null,/g) ?? []).length, 1, "Keep only Flight to the Sun unverified");
+  assert.equal((data.match(/youtubeId: null,/g) ?? []).length, 0, "All four original meditation links are now owner-confirmed");
+  assert.match(data, /key: "flight-to-sun"[\s\S]*?youtubeId: "HqfixazXqRY"/);
+  assert.match(data, /key: "kundalini-reiki"[\s\S]*?youtubeId: "_IOX0E8N-To"/);
   assert.match(data, /key: "reiki-yggdrasil"[\s\S]*?youtubeId: "80xZ7jN6o2Y"/);
   assert.match(data, /key: "tantra-reiki"[\s\S]*?youtubeId: "w2BN-HYmHUk"/);
   assert.match(data, /title: "Tantra Reiki Practice"/);

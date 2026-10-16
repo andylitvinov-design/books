@@ -53,8 +53,8 @@ test("Kundalini Level 1 has a genuine free request, source manual and visible co
   assert.match(sitemap, /"\/reiki\/kundalini-reiki\/free-initiation"/);
   assert.match(course, /academy\/reiki\/kundalini-reiki\/free-initiation/);
   assert.match(component, /whatsappEnquiryUrl\(\{/);
-  assert.match(component, /data-reiki-free-request="kundalini"/);
-  assert.match(component, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(component, /"data-reiki-free-request": "kundalini"/);
+  assert.match(component, /ContactChannelChooser/);
   assert.match(component, /kundalini-reiki-manual-paul-crick\.pdf/);
   assert.match(component, /Andrey confirms availability and the format personally/);
   assert.match(component, /Андрей лично подтвердит/);

@@ -142,7 +142,7 @@ test('PDF report includes personal interpretation and next steps for each indivi
   assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
-  assert.match(rendering, /section\.steps\.slice\(0,2\)/)
+  assert.match(rendering, /for \(const step of section\.steps \|\| \[\]\)/)
 })
 test('each per-test report explains purpose and has human-readable labels rather than machine keys', () => {
   const component = source('components/app/personal-result-report.jsx')

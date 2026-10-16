@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Check, Download, HeartHandshake, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { emitPublicAnalyticsEvent } from "@/lib/public-analytics";
 import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
@@ -11,15 +12,6 @@ import styles from "./reiki-choice-capture.module.css";
 type Course = "tantra" | "yggdrasil";
 type Choice = "guide" | "express" | "personal";
 const choices: Choice[] = ["guide", "express", "personal"];
-
-// A recognisable WhatsApp brand mark, rather than the generic message icon.
-function WhatsAppMark({ size = 21 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.198-.347.223-.644.075-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.76-1.653-2.057-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.496.099-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.206-.242-.579-.487-.5-.669-.51-.173-.008-.372-.01-.57-.01-.198 0-.52.074-.792.372-.273.297-1.04 1.016-1.04 2.478s1.064 2.874 1.213 3.073c.148.198 2.095 3.2 5.076 4.487.709.306 1.262.489 1.693.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.288.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.886 9.886 0 0 1-5.031-1.378l-.361-.214-3.74.981.998-3.646-.235-.374a9.866 9.866 0 0 1-1.51-5.26c.002-5.45 4.437-9.885 9.888-9.885a9.824 9.824 0 0 1 6.99 2.897 9.825 9.825 0 0 1 2.893 6.994c-.002 5.45-4.437 9.885-9.888 9.885m8.413-18.3A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.334.157 11.892a11.833 11.833 0 0 0 1.587 5.937L.057 24l6.314-1.656a11.884 11.884 0 0 0 5.674 1.446h.005c6.557 0 11.892-5.334 11.895-11.893a11.82 11.82 0 0 0-3.48-8.413Z" />
-    </svg>
-  );
-}
 
 const copy = {
   en: {
@@ -38,7 +30,7 @@ const copy = {
         personal: "Request personal Level 1 initiation",
       },
       downloadNote: "PDF: course overview, Level 1 options and available pricing information.",
-      messageNote: "WhatsApp opens with your exact selection. You choose whether to send the message.",
+      messageNote: "Choose WhatsApp or Telegram below. Review your request and press Send yourself.",
       telegram: "Or write directly on Telegram",
       consultation: "Prefer to talk first? Request a free consultation",
       reply: "Personal reply",
@@ -81,7 +73,7 @@ const copy = {
         personal: "Запросить личную инициацию",
       },
       downloadNote: "PDF: описание системы, варианты первой ступени и информация о стоимости.",
-      messageNote: "WhatsApp откроет сообщение с выбранным запросом. Отправка только после вашего нажатия.",
+      messageNote: "Выберите WhatsApp или Telegram. Заявка будет подготовлена, отправка — только после вашего подтверждения.",
       telegram: "Или напишите в Telegram",
       consultation: "Хотите сначала поговорить? Бесплатная консультация",
       reply: "Личный ответ",
@@ -124,7 +116,7 @@ const copy = {
         personal: "Solicitar iniciación personal",
       },
       downloadNote: "PDF: descripción del sistema, opciones de nivel 1 e información de precios.",
-      messageNote: "WhatsApp abrirá tu solicitud exacta. Solo se envía si pulsas Enviar.",
+      messageNote: "Elige WhatsApp o Telegram. Revisa la solicitud y pulsa Enviar tú mismo.",
       telegram: "O escríbeme por Telegram",
       consultation: "¿Prefieres hablar primero? Consulta gratuita",
       reply: "Respuesta personal",
@@ -236,22 +228,31 @@ export function ReikiChoiceCapture({ locale, course, placement = "bottom" }: { l
         ))}
       </div>
 
-      <a
-        className={styles.action}
-        data-reiki-choice-action={selected}
-        href={actionUrl}
-        download={download ? true : undefined}
-        target={download ? undefined : "_blank"}
-        rel={download ? undefined : "noopener noreferrer"}
-        aria-label={download ? t.common.action.guide : "WhatsApp — " + t.common.action[selected]}
-        onClick={() => emitPublicAnalyticsEvent(download ? "academy_study_material_request_click" : selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click")}
-      >
-        {download ? <Download size={21} aria-hidden="true" /> : <WhatsAppMark size={22} />}
-        <span>{download && course === "tantra"
-          ? (locale === "ru" ? "Скачать PDF Тантра Рейки" : locale === "es" ? "Descargar PDF Tantra Reiki" : "Download Tantra Reiki mobile PDF")
-          : t.common.action[selected]}</span>
-        <ArrowUpRight size={20} aria-hidden="true" />
-      </a>
+      {download ? (
+        <a
+          className={styles.action}
+          data-reiki-choice-action={selected}
+          href={guideUrl}
+          download
+          aria-label={t.common.action.guide}
+          onClick={() => emitPublicAnalyticsEvent("academy_study_material_request_click")}
+        >
+          <Download size={21} aria-hidden="true" />
+          <span>{course === "tantra"
+            ? (locale === "ru" ? "Скачать PDF Тантра Рейки" : locale === "es" ? "Descargar PDF Tantra Reiki" : "Download Tantra Reiki mobile PDF")
+            : t.common.action.guide}</span>
+          <ArrowUpRight size={20} aria-hidden="true" />
+        </a>
+      ) : (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={actionUrl}
+          className={styles.action}
+          event="contact_click"
+          analyticsEvent={selected === "express" ? "academy_level_one_initiation_enquiry_click" : "academy_personal_initiation_enquiry_click"}
+          attributes={{ "data-reiki-choice-action": selected }}
+        />
+      )}
       <p className={styles.note}>{download && course === "tantra"
         ? (locale === "ru" ? "PDF для телефона: крупный шрифт, девять ступеней, практики и актуальная стоимость инициации." : locale === "es" ? "PDF para móvil: letra grande, nueve etapas, prácticas y precio de iniciación." : "Phone-friendly PDF: larger type, nine levels, practice ideas and Level 1 pricing.")
         : download ? t.common.downloadNote : t.common.messageNote}</p>

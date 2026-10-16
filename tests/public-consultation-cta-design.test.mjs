@@ -10,7 +10,7 @@ test("public consultation CTA uses compact buttons and clean external-link icons
   const component = read("components", "public-consultation-cta.tsx");
   const styles = read("app", "globals.css");
 
-  assert.match(component, /ArrowUpRight/);
+  assert.match(component, /ContactChannelChooser/);
   assert.doesNotMatch(component, />↗</);
   assert.match(styles, /\.public-consultation-cta\s*\{[^}]*border-radius:\s*20px/);
   assert.match(styles, /\.public-consultation-cta__actions a\s*\{[^}]*min-height:\s*42px/);
@@ -25,7 +25,7 @@ test("public personal and reading CTAs use the compact blue topic selector, whil
   assert.match(component, /mode !== "training"/);
   assert.match(component, /<ConsultationChoiceCapture locale=\{locale\} variant=\{mode === "reading" \? "reading" : "personal"\} id=\{id\}/);
   assert.match(component, /trainingEnquiryUrl\(locale, pathname\)/);
-  assert.match(component, /AcquisitionEventLink prefetch=\{false\}/);
+  assert.match(component, /<ContactChannelChooser locale=\{locale\}/);
   assert.match(consultation, /data-consultation-cta=\{sitewide \? undefined : "true"\}/);
   assert.match(css, /background:#e66d50/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
@@ -35,7 +35,8 @@ test("dedicated Services always exposes paid and express booking choices at the 
   const home = read("components", "holistic-house-home.tsx");
   const page = read("app", "[locale]", "services", "page.tsx");
   const cta = read("components", "public-consultation-cta.tsx");
-  assert.match(home, /services#consultation/);
+  assert.match(home, /services\/free-situation-review#personal-consultation/);
+  assert.match(home, /services\/free-situation-review/);
   assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking \/>/);
   assert.match(cta, /serviceBooking = false/);
   assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} \/>/);

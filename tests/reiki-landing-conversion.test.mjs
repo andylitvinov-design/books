@@ -45,13 +45,13 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /Бесплатная экспресс-инициация 1-й ступени/);
   assert.match(capture, /Скачать учебные материалы и цены/);
   assert.match(capture, /whatsappEnquiryUrl\(\{/);
-  assert.match(capture, /WhatsAppMark/);
+  assert.match(capture, /<ContactChannelChooser/);
   assert.match(capture, /option: t\.common\.options\[selected\]/);
   assert.match(capture, /reiki-guide/);
   assert.match(capture, /formatReikiLevelPrice\(course, locale\)/);
   assert.match(capture, /data-reiki-initiation-price=\{course\}/);
   assert.match(capture, /t\.me\/AndyTherapist/);
-  assert.match(capture, /download=\{download \? true : undefined\}/);
+  assert.match(capture, /href=\{guideUrl\}/);
   for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
     assert.ok(!capture.includes(tag), "Unexpected long lead form: " + tag);
   }
@@ -113,7 +113,7 @@ test("Tantra Reiki ends with the shared selector, without a long Master applicat
   assert.match(chooser, /"tantra-master-course"/);
   assert.match(chooser, /Request free express Level 1 initiation/);
   assert.match(chooser, /Request full personal Level 1 initiation/);
-  assert.match(chooser, /WhatsApp opens with your exact selection/);
+  assert.match(chooser, /Choose WhatsApp or Telegram below/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea/);
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
 });

@@ -136,3 +136,34 @@
   .secondary { font-size: 10.5px; }
   .visual { height: 110px; min-height: 110px; }
 }
+
+/* An unmistakable direct path to the separate paid consultation on the same landing. */
+.paidLink{
+  display:inline-flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  min-height:50px;
+  padding:10px 15px;
+  color:#fff9f2;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(253,247,232,.5);
+  border-radius:999px;
+  font:700 13px/1.4 Arial,Helvetica,sans-serif;
+  text-decoration:none;
+  transition:background .15s ease
+}
+.paidLink:hover{background:rgba(255,255,255,.18)}
+.paidLink svg{flex:none;color:#f5caa8}
+.paidLink:focus-visible{outline:3px solid #ffdca9;outline-offset:3px}
+@media(max-width:760px){
+  .actions .paidLink{
+    grid-column:1/-1;
+    min-height:44px;
+    justify-content:center;
+    padding:10px 13px;
+    border-radius:13px;
+    font-size:12px
+  }
+}
+@media(prefers-reduced-motion:reduce){.paidLink{transition:none}}

@@ -1,3 +1,4 @@
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -427,9 +428,9 @@ async function verifyPublicServiceConversionJourneys(){
     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
     await capture.scrollIntoViewIfNeeded()
     await expect(capture).toBeVisible({timeout:30000})
-    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
-    await expect(cta).toBeVisible()
-    const href=await cta.getAttribute('href')
+    const chooser=await openContactChannelChooser(capture,expect)
+    const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
+    const href=whatsappUrl.href
     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
     const alternative=capture.locator('details')

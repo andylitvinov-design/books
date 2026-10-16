@@ -7,6 +7,10 @@ import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { spanishMetadata } from "@/lib/spanish-metadata";
+import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
+import { getAppConfig } from "@/lib/app/config";
+import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicService } from "@/lib/practitioners/public-types";
 
 export const metadata = spanishMetadata("/es/services", "Servicios y evaluación gratuita mediante dibujo — Holistic House", "Completa un formulario de coaching, dibuja YO, META y PROBLEMA a mano y recibe un informe escrito personal. Las consultas en directo son de pago. También ofrecemos consultoría empresarial con constelaciones y activación de metas.");
 
@@ -18,9 +22,26 @@ const approaches = [
   { id: "constellations", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Constelaciones y acompañamiento arquetípico", situation: "¿Tienes objetivos, pero no sabes cómo llegar a ellos?", detail: "Exploramos las dinámicas de tu situación mediante constelaciones sistémicas e imágenes arquetípicas para descubrir nuevas perspectivas y pasos prácticos.", action: "Ver sesiones de constelaciones", href: "/es/services/systemic-constellations" },
 ] as const;
 
-export default function SpanishServicesPage() {
+export default async function SpanishServicesPage() {
+ let published: PublicService[] = [];
+ try { published = await createPractitionerRepository(getAppConfig()).listPublicServices("es"); }
+ catch { published = []; }
+ const areas: Record<string,string> = {
+   situation:"emotional_psychological", psychohomeopathy:"homeopathy_holistic",
+   imagery:"personal_development", business:"business_money", constellations:"relationships",
+ };
+ const editorial = [
+   ...approaches.map(({id,title,situation,href})=>({id,title,promise:situation,href,areaKey:areas[id]})),
+   {id:"yggdrasil",title:"Reiki Yggdrasil — iniciación gratuita",promise:"Meditación, Reiki y materiales para comenzar.",
+     href:"/es/academy/reiki/yggdrasil/free-initiation",areaKey:"energy_spiritual"},
+   {id:"tantra",title:"Tantra Reiki — iniciación gratuita",promise:"Práctica simbólica, estudio e iniciación personal.",
+     href:"/es/academy/reiki/tantra-reiki/free-initiation",areaKey:"energy_spiritual"},
+ ];
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" showAssessmentStrip={false} />
+  <ServicesSmartDiscovery locale="es" services={published} editorialOffers={editorial}
+    aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
+      && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)} />
   <ServicesConversionHero locale="es" />
   <ServicesTestsIntro locale="es" />
   <section className={offerStyles.section} id="solutions" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>

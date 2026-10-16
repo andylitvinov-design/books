@@ -14,6 +14,7 @@ import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/de
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
 import { assessmentHistoryGroups, assessmentHistoryTitle, nextPersonalRecommendation, resultChangeSummary } from '@/lib/assessments/personal-guidance'
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
+import { profileScreeningPresentation } from '@/lib/profile/profile-scale-presentation'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import PsiMonitoring from '@/components/app/psi-monitoring'
@@ -2266,7 +2267,7 @@ function PortfolioPage({ data, locale }) {
       {allGroups.length > 0 && (
         <details className="hh-insights-advanced">
           <summary>{ru ? 'Дополнительно: общие графики и таблица измерений' : 'Advanced: combined charts and measurements'}</summary>
-          <ProfileOverview profile={profile} locale={locale} />
+          <ProfileOverview profile={profile} locale={locale} results={data.results} />
           {dimensions.length > 0 && (
             <div className="hh-insights-advanced-metrics">
               <h2>{ru ? 'Все измеренные шкалы' : 'All recorded scales'}</h2>
@@ -2292,7 +2293,7 @@ function PortfolioPage({ data, locale }) {
   )
 }
 
-function ProfileOverview({ profile, locale }) {
+function ProfileOverview({ profile, locale, results = [] }) {
   const ru = locale === 'ru'
   const axisCopy = {
     state: ru ? 'Состояние' : 'State',
@@ -2302,7 +2303,7 @@ function ProfileOverview({ profile, locale }) {
     trait: ru ? 'Личностные особенности' : 'Personality',
   }
   const axisOrder = new Map(Object.keys(axisCopy).map((key, index) => [key, index]))
-  const rows = [...profile.rows].sort(
+  const rows = profile.rows.map(row => ({ ...row, screening: profileScreeningPresentation(row, results, locale) })).sort(
     (a, b) =>
       (axisOrder.get(a.dimensionClass) ?? 99) - (axisOrder.get(b.dimensionClass) ?? 99) ||
       String(a.sourceConstruct || a.key).localeCompare(String(b.sourceConstruct || b.key)),
@@ -2352,8 +2353,8 @@ function ProfileOverview({ profile, locale }) {
                   <small>{axisCopy[row.dimensionClass] || row.dimensionClass}</small>
                   <strong>{readableScaleName(row, locale)}</strong>
                 </div>
-                {row.displayKind === 'screening-count' || row.key === 'symptoms.asrs6.shaded_count' ? (
-                  <span data-screening-count>{ru ? 'Скрининговый подсчёт 0–6; порог 4. Не шкала тяжести.' : 'Screening count 0–6; threshold 4. Not a severity scale.'}</span>
+                {row.screening ? (
+                  <span data-screening-count data-screening-verified={row.screening.verified}>{row.screening.label}</span>
                 ) : Number.isFinite(row.currentPercent) ? <div
                   className="hh-profile-chart-track"
                   role="img"
@@ -2810,13 +2811,9 @@ function ResultPage({ id, locale, data }) {
         <div>
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
-          <p className="hh-result-intro">
-            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
-          </p>
         </div>
         <div className="hh-result-meta">
           <span>{dateLabel(result.measurementAt, locale)}</span>
-          <span>{result.instrumentLocale.toUpperCase()}</span>
         </div>
       </header>
 

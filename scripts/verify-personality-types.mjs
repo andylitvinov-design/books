@@ -1,3 +1,4 @@
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -70,9 +71,11 @@ async function fill(page,d,mode,guest,locale){
  }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
+ await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
  await expect(report.locator('[data-assessment-methodology]')).toContainText(locale==='ru'?'Авторские вопросы Holistic House':'Original Holistic House self-reflection')
  const summary=report.locator('[data-personality-type-summary]')
+ if(await summary.getAttribute('open')===null)await summary.locator(':scope > summary').click()
+ await expect(summary).toHaveAttribute('open','')
  await expect(summary).toBeVisible()
  await expect(summary).toContainText(d.key==='hh-socionics-32'
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'

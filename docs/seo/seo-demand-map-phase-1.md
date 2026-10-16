@@ -1,5 +1,8 @@
 # Holistic House — SEO Demand Map (implementation phase 1)
 
+> **Historical snapshot (11 Oct 2026).** For current strategy, priorities, 15 EN/RU/ES curated URLs, the Free Tantra SEO release and verified status, use [Holistic House SEO Master Plan v3](./holistic-house-seo-master-plan.md) and [#306](https://github.com/andylitvinov-design/books/issues/306). Previous 12-URL counts and pre-release blockers below describe the original checkpoint, not today's production.
+
+
 **Status:** Implemented in a PR, not yet live. Reference: [SEO issue #306](https://github.com/andylitvinov-design/books/issues/306).  
 **Baseline source:** public `/sitemap.xml` checked 2026-10-11; marketing connections checked 2026-10-11.
 

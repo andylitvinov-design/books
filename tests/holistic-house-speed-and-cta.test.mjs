@@ -26,13 +26,13 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage keeps genuine paid consultation navigation while free services live only in its bottom capture", () => {
+test("homepage distinguishes free written review from paid sessions and retains its bottom free chooser", () => {
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Request a consultation"/);
-  assert.match(home, /heroBook: "Запросить время консультации"/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
+  assert.match(home, /heroBook: "Personal session · from €50"/);
+  assert.match(home, /heroBook: "Личная консультация · от €50"/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review#personal-consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--consultation"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
@@ -43,6 +43,12 @@ test("homepage keeps genuine paid consultation navigation while free services li
   assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href="#core-services"/);
+  assert.match(home, /className="service-home-offer-note"/);
+  assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
+  assert.match(home, /not a live call\. One-to-one sessions are separate/);
+  const landing = read("app/[locale]/services/free-situation-review/page.tsx");
+  assert.match(landing, /<section className=\{styles\.paid\} id="personal-consultation"/);
+  assert.doesNotMatch(home, /services#consultation/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const book = home.indexOf('className="service-home-button service-home-button--consultation"');

@@ -1,3 +1,4 @@
+import { HH_SPLIT_V2_KEYS } from './hh-split-reflections-v2.js'
 import { IPIP_FIVE_CATALOG } from './ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from './ipip-three-2026.js'
 import { TRAUMA_SCREENING_CATALOG } from './trauma-screening-catalog-2026.js'
@@ -33,7 +34,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...TRAUMA_SCREENING_CATALOG,
   {
     key: 'hh-bach-flower-profile',
-    version: 'v1',
+    version: 'v2',
     instrumentLocale: 'dynamic',
     axis: 'state',
     resultAxes: ['state'],
@@ -701,7 +702,12 @@ export const MONITORING_CATALOG = deepFreeze([
       "ru": "Лёгкая проверка маленьких источников удовольствия, любопытства и тепла."
     }
   },
-  ...EXPANDED_CATALOG_V2,
+  ...EXPANDED_CATALOG_V2.map(item => HH_SPLIT_V2_KEYS.includes(item.key)
+    ? { ...item, version: 'v2', resultAxes: item.key === 'hh-screen-saturation' ? ['state'] : ['state', 'resources'],
+      description: {
+        en: 'Original non-clinical reflection: difficulty and coping or context are shown separately. No validated cutoffs.',
+        ru: 'Авторская неклиническая саморефлексия: трудности и совладание или контекст показаны отдельно. Без валидированных порогов.',
+      } } : item),
   ...EXPANDED_CATALOG_V3,
   ...EXPANDED_CATALOG_V4,
   ...RELATIONSHIPS_INTIMACY_CATALOG,

@@ -1,16 +1,128 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 const read = path => readFileSync(path, 'utf8');
-test('language disclosure handles escape, outside focus and selected locale with cleanup', () => {
-  const nav = read('components/site-navigation.tsx');
-  for (const type of ['pointerdown', 'focusin', 'keydown']) {
-    assert.ok(nav.includes(`addEventListener("${type}"`));
-    assert.ok(nav.includes(`removeEventListener("${type}"`));
+// Execute the real effect callbacks, transpiling TypeScript without rewriting their logic.
+const navigationSource = read('components/site-navigation.tsx');
+const navigationAst = ts.createSourceFile('site-navigation.tsx', navigationSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const navigationEffects = [];
+function collectNavigationEffects(node) {
+  if (ts.isCallExpression(node) && node.expression.getText(navigationAst) === 'useEffect') {
+    navigationEffects.push(node);
   }
-  assert.match(nav, /event\.key !== "Escape"/);
-  assert.match(nav, /querySelector<HTMLElement>\("summary"\)\?\.focus/);
-  assert.match(nav, /if \(menuRef\.current\) menuRef\.current\.open = false/);
+  ts.forEachChild(node, collectNavigationEffects);
+}
+collectNavigationEffects(navigationAst);
+function navigationEffect(dependencies, context) {
+  const matches = navigationEffects.filter(node => {
+    const deps = node.arguments[1];
+    return deps && ts.isArrayLiteralExpression(deps)
+      && deps.elements.map(entry => entry.getText(navigationAst)).join(',') === dependencies.join(',');
+  });
+  assert.equal(matches.length, 1, `exactly one effect for [${dependencies}]`);
+  const callback = matches[0].arguments[0].getText(navigationAst);
+  const compiled = ts.transpileModule(`(${callback})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  return runInNewContext(compiled, context)();
+}
+function navigationHarness() {
+  class Node {}
+  const menus = ['language', 'site'].map(name => {
+    const inside = new Node();
+    const menu = {
+      name, inside, open: true, focusCount: 0,
+      contains: target => target === inside || target === menu,
+      querySelector: selector => {
+        assert.equal(selector, 'summary');
+        return { focus: () => { menu.focusCount += 1; } };
+      },
+    };
+    return menu;
+  });
+  const listeners = new Map();
+  const context = {
+    Node,
+    languageRef: { current: menus[0] }, siteMenuRef: { current: menus[1] },
+    document: {
+      addEventListener: (type, listener) => {
+        assert.equal(listeners.has(type), false, `no duplicate ${type} listener`);
+        listeners.set(type, listener);
+      },
+      removeEventListener: (type, listener) => {
+        assert.equal(listeners.get(type), listener, `remove the registered ${type} listener`);
+        listeners.delete(type);
+      },
+    },
+  };
+  const cleanup = navigationEffect([], context);
+  assert.deepEqual([...listeners.keys()].sort(), ['focusin', 'keydown', 'pointerdown']);
+  return { menus, context, listeners, cleanup, outside: new Node() };
+}
+test('both navigation disclosures dismiss outside pointer/focus, but retain the targeted menu', () => {
+  for (const type of ['pointerdown', 'focusin']) {
+    const { menus, listeners, outside, cleanup } = navigationHarness();
+    for (const active of menus) {
+      menus.forEach(menu => { menu.open = true; });
+      listeners.get(type)({ target: active.inside });
+      assert.equal(active.open, true, `${type} inside ${active.name} must keep it open`);
+      assert.equal(menus.find(menu => menu !== active).open, false);
+      listeners.get(type)({ target: outside });
+      assert.ok(menus.every(menu => !menu.open), `${type} outside closes both menus`);
+    }
+    menus.forEach(menu => { menu.open = true; });
+    listeners.get(type)({ target: null });
+    assert.ok(menus.every(menu => menu.open), 'non-Node event targets are ignored');
+    cleanup();
+  }
+});
+test('Escape closes either disclosure and restores its summary focus; unrelated keys do nothing', () => {
+  for (const index of [0, 1]) {
+    const { menus, listeners, cleanup } = navigationHarness();
+    menus.forEach((menu, i) => { menu.open = i === index; });
+    let prevented = 0;
+    const event = { key: 'Enter', preventDefault: () => { prevented += 1; } };
+    listeners.get('keydown')(event);
+    assert.equal(menus[index].open, true);
+    assert.equal(prevented, 0);
+    assert.ok(menus.every(menu => menu.focusCount === 0));
+    event.key = 'Escape';
+    listeners.get('keydown')(event);
+    assert.ok(menus.every(menu => !menu.open));
+    assert.equal(menus[index].focusCount, 1);
+    assert.equal(menus[1 - index].focusCount, 0);
+    assert.equal(prevented, 1);
+    listeners.get('keydown')(event);
+    assert.equal(prevented, 1, 'Escape without an open menu is not intercepted');
+    assert.equal(menus[index].focusCount, 1, 'closed menus do not steal focus');
+    cleanup();
+  }
+});
+test('Escape closes both open disclosures and unmount removes every registered listener', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  listeners.get('keydown')({ key: 'Escape', preventDefault() {} });
+  assert.ok(menus.every(menu => !menu.open));
+  assert.equal(menus.reduce((count, menu) => count + menu.focusCount, 0), 1);
+  assert.equal(typeof cleanup, 'function');
+  cleanup();
+  assert.equal(listeners.size, 0);
+});
+test('route or active-locale changes close both disclosures without stealing focus', () => {
+  const { menus, context, cleanup } = navigationHarness();
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => !menu.open));
+  assert.ok(menus.every(menu => menu.focusCount === 0));
+  context.languageRef.current = null;
+  context.siteMenuRef.current = null;
+  assert.doesNotThrow(() => navigationEffect(['pathname', 'activeLocale'], context));
+  cleanup();
+});
+test('locale selection and site-menu links close their own disclosures immediately', () => {
+  assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
+  assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 2);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');

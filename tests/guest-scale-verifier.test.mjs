@@ -33,7 +33,16 @@ const find = (tree, predicate) => elements(tree).find(predicate)
 const tagged = (tree, tag) => find(tree, node => node.type === tag)
 const marked = (tree, attr) => find(tree, node => Object.hasOwn(node.props, attr))
 const jsx = (type, props, key) => typeof type === 'function' ? type(props || {}) : ({ type, props: props || {}, key })
+// A stateful hook shim lets the tests use actual trigger handlers, rather than
+// forcing an index and accidentally accepting unreachable scale panels.
+let hookValues = [], hookCursor = 0
+const mockReact = { useState: initial => {
+  const index = hookCursor++
+  if (!(index in hookValues)) hookValues[index] = typeof initial === 'function' ? initial() : initial
+  return [hookValues[index], next => { hookValues[index] = typeof next === 'function' ? next(hookValues[index]) : next }]
+} }
 const modules = {
+  react: mockReact,
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/lib/assessments/result-report': reportModule,
   '@/lib/assessments/dashboard-gauges': gaugeModule,
@@ -65,36 +74,64 @@ function scored(definition, profile = 'min') {
     return [q.id, profile === 'max' ? max : profile === 'mixed' ? min + index % (max - min + 1) : min]
   }))), id: 'displayed-result' }
 }
+function gaugeFixture(card) {
+  const gauge = marked(card, 'data-assessment-gauge'), needle = tagged(gauge, 'line')
+  return {
+    numeric: textOf(tagged(gauge, 'strong')),
+    gaugeCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
+    gaugeScale: gauge?.props['data-gauge-scale'],
+    segmentCodes: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => node.props['data-band-code']),
+    segments: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => ({ code: node.props['data-band-code'], path: node.props.d, width: String(node.props.strokeWidth) })),
+    endpoints: textOf([].concat(gauge?.props.children).find(node => node?.type === 'div' && node.props['aria-hidden'] === 'true')),
+    intervals: elements(gauge).filter(node => node.type === 'li').map(node => ({
+      text: textOf(node).replace(/\s+/g, ' ').trim(), current: node.props['aria-current'] === 'true', markedCurrent: node.props['data-current-band'] === true,
+    })),
+    gaugeKind: gauge?.props['data-assessment-gauge'], gaugeLabel: gauge?.props['aria-label'],
+    caption: textOf(tagged(gauge, 'figcaption')), caution: textOf(tagged(gauge, 'small')),
+    svgCount: elements(card).filter(node => node.type === 'svg').length,
+    progressCount: elements(card).filter(node => node.props.role === 'progressbar').length,
+    needle: needle ? Object.fromEntries(['x1', 'y1', 'x2', 'y2'].map(key => [key, Number(needle.props[key])])) : null,
+  }
+}
 function fixture(result, locale) {
   const tree = GuestScaleInterpretation({ result, locale })
-  const scales = elements(tree).filter(node => Object.hasOwn(node.props, 'data-guest-scale')).map(card => {
-    const gauge = marked(card, 'data-assessment-gauge'), needle = tagged(gauge, 'line')
-    return {
-      key: card.props['data-guest-scale'], title: textOf(tagged(card, 'h5')), numeric: textOf(tagged(gauge, 'strong')), text: textOf(card),
-      band: textOf([].concat(card.props.children).find(node => node?.type === 'p')),
-      gaugeCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
-      gaugeScale: gauge?.props['data-gauge-scale'],
-      segmentCodes: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => node.props['data-band-code']),
-      endpoints: textOf([].concat(gauge?.props.children).find(node => node?.type === 'div' && node.props['aria-hidden'] === 'true')),
-      intervals: elements(gauge).filter(node => node.type === 'li').map(node => ({
-        text: textOf(node).replace(/\s+/g, ' ').trim(), current: node.props['aria-current'] === 'true',
-      })),
-      gaugeKind: gauge?.props['data-assessment-gauge'], gaugeLabel: gauge?.props['aria-label'],
-      caption: textOf(tagged(gauge, 'figcaption')), caution: textOf(tagged(gauge, 'small')),
-      svgCount: elements(card).filter(node => node.type === 'svg').length,
-      progressCount: elements(card).filter(node => node.props.role === 'progressbar').length,
-      needle: needle ? Object.fromEntries(['x1', 'y1', 'x2', 'y2'].map(key => [key, Number(needle.props[key])])) : null,
-    }
-  })
+  const scales = elements(tree).filter(node => Object.hasOwn(node.props, 'data-guest-scale')).map(card => ({
+    ...gaugeFixture(card), key: card.props['data-guest-scale'], title: textOf(tagged(card, 'h5')), text: textOf(card),
+    band: textOf([].concat(card.props.children).find(node => node?.type === 'p')),
+  }))
   return { scales, text: textOf(tree), scoreOnly: Object.hasOwn(tree.props, 'data-score-only'), scaleCount: tree.props['data-scale-count'],
     detailsCount: elements(tree).filter(node => node.type === 'details').length,
     source: `${result.definitionKey} · ${result.definitionVersion} · ${result.instrumentLocale.toUpperCase()}`,
     accountAnalysisCount: 0, analysisCtaCount: 1, analysisLabel: guestAnalysisLabel(locale) }
 }
-function accountFixture(result, locale) {
-  const tree = CompactAssessmentReport({ result, locale, report: buildAssessmentResultReport(result, locale) })
-  return { scales: elements(marked(tree, 'data-assessment-scales')).filter(node => node.type === 'article').map(card => ({ title: textOf(tagged(card, 'h3')), text: textOf(card) })),
-    text: textOf(tree), methodology: textOf(marked(tree, 'data-assessment-methodology')), guestCount: 0 }
+const scaleTriggers = tree => elements(tree).filter(node => Object.hasOwn(node.props, 'data-assessment-scale-trigger'))
+function accountFixture(result, locale, component = CompactAssessmentReport) {
+  const report = buildAssessmentResultReport(result, locale), scales = []
+  hookValues = []
+  const render = () => { hookCursor = 0; return component({ result, locale, report }) }
+  let tree = render()
+  const scaleKeys = scaleTriggers(tree).map(node => node.props['data-assessment-scale-trigger'])
+  assert.deepEqual(scaleKeys, report.sections.map(section => section.key), 'Every scored scale has its own ordered trigger')
+  for (const [index, section] of report.sections.entries()) {
+    const trigger = scaleTriggers(tree)[index]
+    assert.equal(trigger.type, 'button')
+    assert.ok(!trigger.props.disabled, 'Every scale trigger must be enabled')
+    assert.equal(typeof trigger.props.onClick, 'function', 'Every scale must be reachable through its trigger')
+    trigger.props.onClick()
+    tree = render()
+    const card = marked(tree, 'data-active-scale')
+    assert.ok(card, 'Scale selector must reveal a scored card for ' + section.key)
+    assert.equal(card.props['data-active-scale'], section.key, 'Clicking each trigger must select its own scale')
+    scales.push({
+      ...gaugeFixture(card), key: card.props['data-active-scale'], title: textOf(tagged(card, 'h3')), text: textOf(card),
+      activeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-active-scale')).length,
+      pressedKeys: scaleTriggers(tree).filter(node => node.props['aria-pressed'] === true).map(node => node.props['data-assessment-scale-trigger']),
+      rootGaugeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
+      sources: elements(card).filter(node => node.type === 'a' && node.props.href).map(node => node.props.href),
+    })
+  }
+  hookValues = []
+  return { scales, scaleKeys, text: textOf(tree), methodology: textOf(marked(tree, 'data-assessment-methodology')), guestCount: 0 }
 }
 
 for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: ${locale} rendered score-only scales and full account explanations`, () => {
@@ -116,6 +153,7 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].band = 'Invented clinical band' },
       s => { s.scales[0].intervals.push({ text: 'Invented 0–33 clinical category', current: true }) },
       s => { s.scales[0].segmentCodes.push('fabricated-third') },
+      s => { s.scales[0].segments.push({ code: 'fabricated-third', path: '', width: '16' }) },
       s => { s.scales[0].endpoints = '999999' },
       s => { s.scales[0].text += ' 100%' },
       s => { s.scales[0].text += ' Unexpected full analysis' },
@@ -138,6 +176,7 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       for (const mutate of [
         s => { s.scales[0].intervals.pop() },
         s => { s.scales[0].intervals[0].current = !s.scales[0].intervals[0].current },
+        s => { s.scales[0].intervals[0].markedCurrent = !s.scales[0].intervals[0].markedCurrent },
         s => { s.scales[0].intervals[0].text = 'Invented published cutoff' },
       ]) { const broken = structuredClone(snapshot); mutate(broken); assert.throws(() => assertGuestSnapshot(broken, result, locale)) }
     }
@@ -158,13 +197,71 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       assert.throws(() => assertGuestSnapshot({ ...snapshot, text: snapshot.text + ' ' + text }, result, locale))
     for (const mutate of [
       s => { s.scales.pop() },
+      s => { s.scales.push(structuredClone(s.scales[0])) },
+      s => { s.scaleKeys.pop() },
+      s => { s.scaleKeys.push(s.scaleKeys[0]) },
+      s => { s.scaleKeys[0] = 'another-scale' },
+      s => { s.scales[0].key = 'another-scale' },
+      s => { s.scales[0].activeCount = 2 },
+      s => { s.scales[0].pressedKeys = [] },
+      s => { s.scales[0].pressedKeys.push('another-scale') },
+      s => { s.scales[0].rootGaugeCount = 2 },
       s => { s.scales[0].title = 'another construct' },
+      s => { s.scales[0].numeric = '999 / 999' },
+      s => { s.scales[0].gaugeCount = 0 },
+      s => { s.scales[0].gaugeCount = 2 },
+      s => { s.scales[0].gaugeKind = 'wrong-orientation' },
+      s => { s.scales[0].gaugeScale = 'wrong-category-model' },
+      s => { s.scales[0].caption = 'Invented interpretation' },
+      s => { s.scales[0].caution = '' },
+      s => { s.scales[0].progressCount = 1 },
+      s => { s.scales[0].intervals.push({ text: 'Invented 0–33 clinical category', current: true }) },
+      s => { s.scales[0].segmentCodes.push('fabricated-third') },
+      s => { s.scales[0].segments.push({ code: 'fabricated-third', path: '', width: '16' }) },
+      s => { s.scales[0].endpoints = '999999' },
+      s => { s.scales[0].sources = ['https://example.invalid/invented-source'] },
       s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
       s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
       s => { s.guestCount = 1 },
     ]) { const broken = structuredClone(account); mutate(broken); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
+    if (account.scales.length > 1) {
+      for (const field of ['scales', 'scaleKeys']) {
+        const broken = structuredClone(account); [broken[field][0], broken[field][1]] = [broken[field][1], broken[field][0]]
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
+        const duplicated = structuredClone(account); duplicated[field][1] = structuredClone(duplicated[field][0])
+        assert.throws(() => assertAccountReportSnapshot(duplicated, result, locale))
+      }
+    }
+    if (account.scales[0].intervals.length) {
+      for (const mutate of [
+        s => { s.scales[0].intervals.pop() },
+        s => { s.scales[0].intervals[0].current = !s.scales[0].intervals[0].current },
+        s => { s.scales[0].intervals[0].markedCurrent = !s.scales[0].intervals[0].markedCurrent },
+        s => { s.scales[0].intervals[0].text = 'Invented published cutoff' },
+      ]) { const broken = structuredClone(account); mutate(broken); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
+    }
+    for (const original of [snapshot, account]) if (original.scales[0].segments.length) {
+      const verify = original === snapshot ? assertGuestSnapshot : assertAccountReportSnapshot
+      for (const mutate of [
+        s => { s.scales[0].segments[0].path = 'M 0 0 A 78 78 0 0 1 200 0' },
+        s => { s.scales[0].segments[0].width = '999' },
+      ]) { const broken = structuredClone(original); mutate(broken); assert.throws(() => verify(broken, result, locale)) }
+    }
+    const brokenAccountGauge = structuredClone(account)
+    if (result.definitionKey === 'asrs-6') brokenAccountGauge.scales[0].svgCount = 1
+    else {
+      brokenAccountGauge.scales[0].needle.x2 += 1
+      const wrongLabel = structuredClone(account); wrongLabel.scales[0].gaugeLabel = 'Wrong source range'
+      assert.throws(() => assertAccountReportSnapshot(wrongLabel, result, locale))
+    }
+    assert.throws(() => assertAccountReportSnapshot(brokenAccountGauge, result, locale))
+    for (const limitation of report.sections[0].limitations || []) {
+      const broken = structuredClone(account); broken.scales[0].text = broken.scales[0].text.replaceAll(limitation, '')
+      assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
+      assert.throws(() => assertGuestSnapshot({ ...snapshot, text: snapshot.text + ' ' + limitation }, result, locale))
+    }
     const step = report.sections[0].steps[0]
     if (step) { const broken = structuredClone(account); broken.scales[0].text = broken.scales[0].text.replace(step, ''); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
   }
@@ -173,6 +270,101 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
   assertGuestSaveIntent(payload, result)
   for (const broken of [{ ...payload, sourceId: 'another-result' }, { ...payload, sourceKind: 'guest_plan' }, { ...payload, operationId: 'not-a-uuid' }, { ...payload, resultIds: [result.id, 'another-result'] }])
     assert.throws(() => assertGuestSaveIntent(broken, result))
+})
+
+test('sector verification tolerates engine rounding but rejects malformed or shifted geometry', () => {
+  for (const key of ['phq-9', 'brcs']) for (const locale of ['en', 'ru']) {
+    const result = scored(getAssessmentDefinition(key, 'v1', 'en'), 'mixed')
+    for (const [original, verify] of [[fixture(result, locale), assertGuestSnapshot], [accountFixture(result, locale), assertAccountReportSnapshot]]) {
+      assert.ok(original.scales[0].segments.length)
+      const rounded = structuredClone(original)
+      for (const scale of rounded.scales) for (const segment of scale.segments) {
+        const tokens = segment.path.split(' ')
+        for (const index of [1, 2, 9, 10]) tokens[index] = Number(tokens[index]).toFixed(8)
+        segment.path = tokens.join(' ')
+      }
+      assert.notDeepEqual(rounded.scales[0].segments, original.scales[0].segments, 'Exercise changed coordinate serialization')
+      assert.doesNotThrow(() => verify(rounded, result, locale), 'Subpixel engine rounding must not invalidate exact source bands')
+      for (const mutate of [
+        segment => { segment.code = 'unpublished-band' },
+        segment => { segment.path = segment.path.replace(/^M /, 'm ') },
+        segment => { segment.path = segment.path.replace(' A ', ' L ') },
+        segment => { segment.path = segment.path.replace(' A 78 78 ', ' A 77 78 ') },
+        segment => { segment.path = segment.path.replace(' 0 0 1 ', ' 0 1 1 ') },
+        segment => { segment.path += ' Z' },
+        segment => { segment.path = segment.path.replace(/^M \S+/, 'M NaN') },
+        segment => { segment.path = segment.path.replace(/^M \S+/, 'M Infinity') },
+        segment => { segment.path = segment.path.replace(/^M \S+/, 'M 1e999') },
+        segment => { segment.path = segment.path.split(' ').slice(0, -1).join(' ') },
+        ...[1, 2, 9, 10].map(index => segment => {
+          const tokens = segment.path.split(' ')
+          tokens[index] = String(Number(tokens[index]) + 0.001)
+          segment.path = tokens.join(' ')
+        }),
+      ]) {
+        const broken = structuredClone(original)
+        mutate(broken.scales[0].segments[0])
+        assert.throws(() => verify(broken, result, locale), 'Malformed or materially shifted source arcs must fail')
+      }
+    }
+  }
+})
+
+test('account verifier rejects unreachable, missing, reordered and duplicate scale triggers', () => {
+  const result = scored(PERSONALITY_TYPE_DEFINITIONS[0], 'mixed')
+  assert.ok(buildAssessmentResultReport(result, 'en').sections.length > 1)
+  for (const mutate of [
+    triggers => { triggers.forEach(node => { node.props.onClick = () => {} }) },
+    triggers => { triggers[0].props.disabled = true },
+    triggers => { delete triggers[0].props.onClick },
+    triggers => { delete triggers[0].props['data-assessment-scale-trigger'] },
+    triggers => { triggers[1].props['data-assessment-scale-trigger'] = triggers[0].props['data-assessment-scale-trigger'] },
+    triggers => {
+      const first = triggers[0].props['data-assessment-scale-trigger']
+      triggers[0].props['data-assessment-scale-trigger'] = triggers[1].props['data-assessment-scale-trigger']
+      triggers[1].props['data-assessment-scale-trigger'] = first
+    },
+  ]) {
+    const broken = props => {
+      const tree = CompactAssessmentReport(props)
+      mutate(scaleTriggers(tree))
+      return tree
+    }
+    assert.throws(() => accountFixture(result, 'en', broken))
+  }
+})
+
+test('guest and selected account verifiers reject tampered or missing versioned provenance', () => {
+  const fields = ['definitionId', 'definitionKey', 'definitionVersion', 'instrumentLocale', 'translationVersion',
+    'contentHash', 'scoringKey', 'scoringVersion', 'resultVersion', 'timeframe']
+  for (const definition of definitions) for (const locale of ['en', 'ru']) {
+    const result = scored(definition, 'mixed'), guest = fixture(result, locale), account = accountFixture(result, locale)
+    for (const field of fields) for (const missing of [false, true]) {
+      const broken = structuredClone(result)
+      if (missing) delete broken[field]
+      else broken[field] = 'tampered-provenance'
+      assert.throws(() => assertGuestSnapshot(guest, broken, locale), `${definition.key}: guest must reject ${field}`)
+      assert.throws(() => assertAccountReportSnapshot(account, broken, locale), `${definition.key}: account must reject ${field}`)
+    }
+    for (const field of ['min', 'max', 'unit', 'timeframe', 'direction', 'dimensionClass', 'sourceConstruct']) {
+      const broken = structuredClone(result)
+      broken.dimensions[0][field] = typeof broken.dimensions[0][field] === 'number' ? broken.dimensions[0][field] + 1 : 'tampered-dimension'
+      assert.throws(() => assertGuestSnapshot(guest, broken, locale), `${definition.key}: guest must reject dimension ${field}`)
+      assert.throws(() => assertAccountReportSnapshot(account, broken, locale), `${definition.key}: account must reject dimension ${field}`)
+    }
+    // A tampered result must also fail closed in the actual account component,
+    // rather than rendering a plausible but unverified continuous score.
+    const broken = { ...result, contentHash: 'tampered-provenance' }
+    const rendered = accountFixture(broken, locale)
+    for (const scale of rendered.scales) {
+      assert.equal(scale.gaugeCount, 0, 'Invalid provenance must not produce a numeric gauge')
+      assert.deepEqual(scale.intervals, [], 'Invalid provenance must not inherit source intervals')
+      assert.deepEqual(scale.segmentCodes, [], 'Invalid provenance must not inherit source sectors')
+      assert.equal(scale.needle, null)
+      assert.deepEqual(scale.sources, [], 'Invalid provenance must not inherit a trusted source link')
+    }
+    assert.throws(() => assertAccountReportSnapshot(rendered, broken, locale))
+  }
 })
 
 test('actual finish controls and canonical guest/account components bind the audience contract', () => {
@@ -193,7 +385,7 @@ test('actual finish controls and canonical guest/account components bind the aud
   assert.match(cabinet, /aria-hidden="true">→<\/span>/)
   assert.match(cabinet, /guestResult\.definitionKey\} · \{guestResult\.definitionVersion\} · \{guestResult\.instrumentLocale\?\.toUpperCase\(\)\}/)
   const account = read('components/app/compact-assessment-report.jsx')
-  for (const token of ['data-personal-result-report', '{section.meaning}', '{report.methodology}', '{report.note}']) assert.ok(account.includes(token), token)
+  for (const token of ['data-personal-result-report', 'data-assessment-scale-trigger={item.key}', 'data-active-scale={section.key}', 'result={result}', 'section.limitations', '{section.meaning}', '{report.methodology}', '{report.note}']) assert.ok(account.includes(token), token)
 })
 
 test('all five audience-specific browser verifiers keep exact guest and authenticated report checks', () => {

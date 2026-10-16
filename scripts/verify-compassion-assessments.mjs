@@ -1,3 +1,4 @@
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -50,12 +51,11 @@ async function fill(page,d,mode,guest,locale){
  }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.key==='scs-sf'?1:5)
- for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)')
- await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
- if(d.key==='scs-sf')await expect(report).toContainText(locale==='ru'?'ненадёжности':'unreliable')
- else await expect(report).toContainText(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference')
+ const reportText=await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
+ assert.ok(reportText.includes(locale==='ru'?'Среднее ответов (1–5)':'Response mean (1–5)'))
+ assert.ok(reportText.includes(locale==='ru'?'английский оригинал':'English original'))
+ if(d.key==='scs-sf')assert.ok(reportText.includes(locale==='ru'?'ненадёжности':'unreliable'))
+ else assert.ok(reportText.includes(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference'))
  }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})

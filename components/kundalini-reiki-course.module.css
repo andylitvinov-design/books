@@ -431,6 +431,48 @@
   .capture h2 { font-size: 2.07rem; }
 }
 
+
+/* Owner-supplied Kundalini Reiki meditation, playable on demand. */
+.meditationFeature {
+  display: grid;
+  grid-template-columns: minmax(0,.72fr) minmax(0,1fr);
+  align-items: center;
+  gap: clamp(19px,3vw,36px);
+  margin-top: 33px;
+  padding: clamp(20px,3vw,32px);
+  border: 1px solid #ceded1;
+  border-radius: 21px;
+  background: #edf4ed;
+}
+.meditationText h2 {
+  margin: 10px 0 12px;
+  color: #22463a;
+  font: 500 clamp(1.7rem,3vw,2.35rem)/1.12 Georgia,"Times New Roman",serif;
+  letter-spacing: -.025em;
+}
+.meditationText > p:not(.eyebrow) { color: #45665a; font-size: .93rem; line-height: 1.6; margin: 0 0 14px; }
+.meditationLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #266b55;
+  font-size: .85rem;
+  line-height: 1.5;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.meditationLink:focus-visible { outline: 3px solid #b17b4d; outline-offset: 4px; }
+.meditationFrame { width: 100%; min-width: 0; aspect-ratio: 16/9; border-radius: 13px; overflow: hidden; background: #12263f; box-shadow: 0 12px 30px rgba(19,42,51,.15); }
+.meditationFrame :global(.academy-video-poster),
+.meditationFrame :global(.academy-video-frame) { width: 100%; height: 100%; }
+.meditationFrame :global(.academy-video-poster) img { width: 100%; height: 100%; object-fit: cover; }
+.meditationFrame iframe { width: 100%; height: 100%; border: 0; }
+@media (max-width:760px) {
+  .meditationFeature { grid-template-columns: 1fr; gap: 16px; margin-top: 22px; padding: 18px; border-radius: 17px; }
+  .meditationText h2 { font-size: 1.8rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .primaryAction,.secondaryAction,.capturePrimary,.captureSecondary,
   .accordion summary svg,.extraAccordion summary svg,.extensionDetails summary svg,.history summary svg { transition: none; }

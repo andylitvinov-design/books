@@ -33,7 +33,7 @@ test("Academy videos use program → module/category → lesson, not giant showc
   assert.match(css, /grid-template-columns: 72px minmax\(0,1fr\)/);
 });
 
-test("Academy catalog differentiates original audio, and pending videos stay unplayable", async () => {
+test("Academy catalog differentiates original audio and only loads source-verified videos", async () => {
   const [server, client, englishSource, curriculum, archive] = await Promise.all([
     file("components/academy-video-courses.tsx"),
     file("components/academy-video-library-client.tsx"),
@@ -49,7 +49,9 @@ test("Academy catalog differentiates original audio, and pending videos stay unp
   assert.match(client, /academy-video-ru/);
   assert.match(client, /t\.ruBoundary/);
   assert.match(client, /Flight to the Sun/);
-  assert.match(english, /youtubeId: null/);
+  assert.match(english, /youtubeId: "HqfixazXqRY"/);
+  assert.match(english, /youtubeId: "_IOX0E8N-To"/);
+  assert.doesNotMatch(english, /youtubeId: null,/);
   assert.ok(curriculum.levels.length >= 7);
   assert.equal(archive.length, 45);
   assert.ok(curriculum.levels[0].steps.every((step) => step.video?.videos?.length > 0));

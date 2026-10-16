@@ -36,7 +36,8 @@ test("course-specific WhatsApp enrolment requests are opt-in and measurable", ()
   assert.match(component, /service: course\.title/);
   assert.match(component, /pagePath: coursePath/);
   assert.match(component, /academy_course_enquiry_click/);
-  assert.match(component, /data-contact-channel/);
+  assert.match(component, /<ContactChannelChooser/);
+  assert.match(component, /data-academy-course/);
   assert.match(component, /No message is sent until you press Send/);
   assert.match(component, /запись подтверждается лично/);
 

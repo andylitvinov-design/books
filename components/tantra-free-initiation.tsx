@@ -4,6 +4,7 @@ import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Chec
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
@@ -270,10 +271,10 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
   const video = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const guideLinks = [
     "#tantra-practice-video",
-    tantraInitiationWhatsAppUrl(locale, "feedback"),
+    "#apply-feedback",
     "#course-materials",
     "#study-questions",
-    tantraInitiationWhatsAppUrl(locale, "personal"),
+    "#apply-personal",
   ];
   const links = [
     root + "#tantra-levels",
@@ -364,7 +365,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
                   <small>{t.personalDuration}</small>
                 </span>
               </div>
-              <a className={styles.buttonNavy + " " + styles.offerButton} href={tantraInitiationWhatsAppUrl(locale, "personal")} target="_blank" rel="noopener noreferrer">{t.personalButton}<ArrowRight size={17} aria-hidden="true"/></a>
+              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} className={styles.buttonNavy + " " + styles.offerButton} label={t.personalButton}/>
             </article>
             <article className={styles.choiceCombined} data-tantra-offer="session">
               <div className={styles.offerTop}>
@@ -376,7 +377,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
                 </div>
                 <span className={styles.pricePill}><strong>{t.combinedPrice}</strong><small>{t.combinedDuration}</small></span>
               </div>
-              <a className={styles.buttonCopper + " " + styles.offerButton} href={tantraInitiationWhatsAppUrl(locale, "session")} target="_blank" rel="noopener noreferrer">{t.combinedButton}<ArrowRight size={17} aria-hidden="true"/></a>
+              <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} className={styles.buttonCopper + " " + styles.offerButton} label={t.combinedButton}/>
             </article>
           </div>
           <div className={styles.choiceBenefits}>
@@ -392,7 +393,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.guideEyebrow}</p><h2 id="tantra-how-title">{t.guideTitle}</h2><p>{t.guideLead}</p></header>
           <div className={styles.howGrid}>
             {t.guideSteps.map((step, index) => (
-              <a key={step.title} className={styles.howCard} data-personal={index === 4} href={guideLinks[index]} target={index === 1 || index === 4 ? "_blank" : undefined} rel={index === 1 || index === 4 ? "noopener noreferrer" : undefined}>
+              <a key={step.title} className={styles.howCard} data-personal={index === 4} href={guideLinks[index]}>
                 <span className={styles.howNumber}>{String(index + 1).padStart(2, "0")}</span>
                 <h3>{step.title}</h3><p>{step.text}</p>
                 <ArrowRight size={18} aria-hidden="true" />
@@ -454,7 +455,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               <ol className={styles.questionGrid}>
                 {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
               </ol>
-              <div className={styles.questionFooter}><span>{t.questionNote}</span><a href={tantraInitiationWhatsAppUrl(locale, "answers")} target="_blank" rel="noopener noreferrer" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
+              <div className={styles.questionFooter}><span>{t.questionNote}</span><ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} className={styles.buttonWine} label={t.questionAction}/></div>
             </div>
           </details>
         </section>

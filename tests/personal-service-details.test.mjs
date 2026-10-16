@@ -40,12 +40,24 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(free, /FreeSituationReviewForm/);
 });
 
-test("free diagnostic explains its scope and explicitly excludes diagnoses, prescriptions and obligation", () => {
+test("free diagnostic renders scope and safety in its steps and FAQ without a duplicate scope section", () => {
   const s = read("app/[locale]/services/free-situation-review/page.tsx");
-  for (const phrase of ["scopeTitle","scopeIntro","scopeItems","scopeLimit","Что входит в бесплатную диагностику ситуации","What is included in the free situation review","¿Qué incluye la evaluación gratuita?"]) assert.ok(s.includes(phrase), phrase);
-  assert.match(s, /className={styles.scope}/);
+  assert.match(s, /t\.steps\.map/);
+  assert.match(s, /t\.faqs\.map/);
+  assert.match(s, /<p className=\{styles\.safety\}>\{t\.transparency\}<\/p>/);
+  for (const phrase of [
+    "The free offer does not include a live call.",
+    "Бесплатного созвона в этот формат не входит.",
+    "No incluye una llamada en directo.",
+    "not a medical diagnosis, psychiatric diagnosis or prescription",
+    "не медицинский или психиатрический диагноз или назначение лечения",
+    "sin diagnósticos médicos o psiquiátricos ni recetas",
+  ]) assert.ok(s.includes(phrase), phrase);
+  assert.match(s, /<p>\{t\.paidLead\}<\/p>/);
+  assert.match(s, /the free written review does not require a session/);
+  assert.doesNotMatch(s, /className=\{styles\.scope\}/);
   const css = read("app/[locale]/services/free-situation-review/review.module.css");
-  assert.match(css, /\.scope/);
+  assert.match(css, /\.steps\{grid-template-columns:1fr/);
   assert.match(css, /@media\(max-width:767px\)/);
 });
 
