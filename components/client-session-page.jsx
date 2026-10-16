@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,ChevronDown } from 'lucide-react'
+import { ArrowLeft,ChevronDown,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -68,8 +68,10 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
         onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
         <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
           onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
-    {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
-      <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
+    {item.transcript&&<div className={styles.transcriptText}>
+      <strong>{ru?'Текст записи':'Transcript'}</strong>
+      <p lang={educational?'ru':undefined}>{item.transcript}</p>
+    </div>}
     {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
   </article>
 }
@@ -99,14 +101,14 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
-  const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
-  const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
+  const hasReportAppendix=Boolean(recommendation?.includeDistanceHomeopathy||
+    recommendation?.items?.some(item=>item?.remedySlug))
+  const hasAdvice=Boolean(plan.nextStep||plan.focus||plan.additionalRecommendations||takeaways.length||practices.length||
+    recommendation?.generalInstructions||recommendation?.includeDistanceHomeopathy||recommendation?.followUpDate||
     recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
   const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
-      <div className={styles.clientBrand}>
-        <span className={styles.clientWordmark}>Holistic House</span>
+      <div className={styles.clientBrand}><span className={styles.clientWordmark}>Holistic House</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
       {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
@@ -115,101 +117,36 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
     </header>
     <section className={styles.sessionHero} aria-labelledby="session-title">
-      <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
+      <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН':'PERSONAL SESSION GUIDE'}</span>
       <h1 id="session-title">{session.title}</h1>
       <dl className={styles.sessionIdentity}>
         {clientName&&<div><dt>{ru?'Клиент':'Client'}</dt><dd>{clientName}</dd></div>}
-        <div><dt>{ru?'Дата консультации':'Consultation date'}</dt><dd><time dateTime={session.occurredOn}>{date}</time></dd></div>
+        <div><dt>{ru?'Дата консультации':'Consultation date'}</dt>
+          <dd><time dateTime={session.occurredOn}>{date}</time></dd></div>
       </dl>
-      {session.summary&&(session.summary.length>700?<details className={styles.summaryDetails}>
-        <summary>{ru?'Личное сообщение от специалиста':'Read your personal message'}</summary>
-        <p className={styles.sessionSummary}>{session.summary}</p>
-      </details>:<p className={styles.sessionSummary}>{session.summary}</p>)}
-      {(plan.nextStep||plan.focus||hasRecommendation)&&<div className={styles.nextStepCard}>
-        <span className={styles.sectionKicker}>{ru?'С ЧЕГО НАЧАТЬ':'START HERE'}</span>
-        {plan.nextStep&&<p><strong>{ru?'Ваш следующий шаг':'Your next step'}:</strong> {plan.nextStep}</p>}
-        {!plan.nextStep&&plan.focus&&<p>{plan.focus}</p>}
-        {!plan.nextStep&&!plan.focus&&hasRecommendation&&<p>{
-          ru?'Просмотрите назначения и индивидуальные инструкции ниже.':
-          'Review the assigned items and your practitioner’s individual instructions below.'
-        }</p>}
-        <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'Review recommendations ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
-      </div>}
+      {session.summary&&<details className={styles.sessionDisclosure+' '+styles.heroDisclosure}>
+        <summary className={styles.heroDisclosureTitle}>
+          <span>{ru?'Итог консультации':'Session summary'}</span>
+          <ChevronDown size={19} className={styles.disclosureChevron} aria-hidden="true"/>
+        </summary>
+        <div className={styles.disclosureBody}><p className={styles.sessionSummary}>{session.summary}</p></div>
+      </details>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
     </section>
 
-    {personalMedia.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Личное обращение':'Personal message'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Headphones size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'01 · ЛИЧНОЕ ОБРАЩЕНИЕ':'01 · PERSONAL MESSAGE'}</span>
-          <h2>{ru?'Сообщение для вас':'A message for you'}</h2></div>
-      </header>
-      <div className={styles.mediaList}>
-        {personalMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
-          session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
-      </div>
-    </section>}
-
-    {hasRecommendation&&<>
-      <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
-      <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
-    </>}
-
-    {session.report&&<section id="session-report" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><FileDown size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
-          <h2>{ru?'Скачать полный отчёт':'Keep your full report'}</h2></div>
-      </header>
-      <div className={styles.reportPanel}>
-        <p>{ru?'Все назначения и дополнительные пояснения сохранены в оригинальном PDF.':
-          'Your original PDF contains the complete recommendations and additional details.'}</p>
-        <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
-          {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
-      </div>
-      {reportContent&&<details className={styles.reportDetails}>
-        <summary><BookOpen size={18} aria-hidden="true"/><span>{ru?'Читать полный отчёт на странице':'Read the complete report here'}</span><ChevronDown size={18} className={styles.reportExpandIcon} aria-hidden="true"/></summary>
-        <div className={styles.reportContent}>{reportContent}</div>
-      </details>}
-    </section>}
-
-    {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Images size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ФОТОМАТЕРИАЛЫ':'PHOTO ATTACHMENTS'}</span>
-          <h2>{ru?'Фотографии к вашей консультации':'Photos from your consultation'}</h2></div>
-      </header>
-      <div className={styles.sessionPhotoGallery}>
-        {photos.map(item=><figure key={item.assetId} className={styles.sessionPhotoCard}>
-          <a href={assetBase+encodeURIComponent(item.assetId)} target="_blank" rel="noopener noreferrer"
-            aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={assetBase+encodeURIComponent(item.assetId)}
-              alt={item.title||(ru?'Фото консультации':'Consultation photo')} loading="lazy" decoding="async"/>
-          </a>
-          {item.title&&<figcaption>{item.title}</figcaption>}
-        </figure>)}
-      </div>
-    </section>}
-
-    {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Video size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОИНСТРУКЦИЯ':'VIDEO GUIDE'}</span>
-          <h2>{ru?'Как принимать назначенные препараты':'How to follow the recommendations'}</h2></div>
-      </header>
-      <p className={styles.sectionIntro}>{ru?'Дополнительное видео от специалиста. Индивидуальные дозировки остаются в вашем назначении выше.':
-        'Your practitioner’s guidance video. Your personal dosage details remain in the written recommendation above.'}</p>
-      <div className={styles.mediaList}>{guideMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
-        session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
-    </section>}
+    {hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>}
 
     {hasAdvice&&<section id="session-recommendations" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
+      <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><ListChecks size={20}/></span>
         <div><span className={styles.sectionKicker}>{ru?'ДАЛЬНЕЙШИЕ ШАГИ':'NEXT STEPS'}</span>
           <h2>{ru?'Дополнительные рекомендации':'Additional recommendations'}</h2></div>
-      </header>
+      <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
+      {plan.nextStep&&<div className={styles.adviceCard}><p><strong>{ru?'Следующий шаг':'Next step'}:</strong> {plan.nextStep}</p></div>}
+      {plan.focus&&plan.focus!==plan.nextStep&&<div className={styles.adviceCard}><p>{plan.focus}</p></div>}
       {plan.additionalRecommendations&&<div className={styles.adviceCard}>
         <p>{plan.additionalRecommendations}</p>
       </div>}
@@ -225,14 +162,77 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         </article>)}
       </div>}
       {hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
-    </section>}
+    </div>
+    </details>
+  </section>}
+
+    {personalMedia.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Личное обращение':'Personal message'}>
+      <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Headphones size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ЛИЧНОЕ ОБРАЩЕНИЕ':'PERSONAL MESSAGE'}</span>
+          <h2>{ru?'Сообщение для вас':'A message for you'}</h2></div>
+      <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
+      <div className={styles.mediaList}>
+        {personalMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+          session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+      </div>
+    </div>
+    </details>
+  </section>}
+
+    {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
+      <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Images size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ФОТОМАТЕРИАЛЫ':'PHOTO ATTACHMENTS'}</span>
+          <h2>{ru?'Фотографии к вашей консультации':'Photos from your consultation'}</h2></div>
+      <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
+      <div className={styles.sessionPhotoGallery}>
+        {photos.map(item=><figure key={item.assetId} className={styles.sessionPhotoCard}>
+          <a href={assetBase+encodeURIComponent(item.assetId)} target="_blank" rel="noopener noreferrer"
+            aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={assetBase+encodeURIComponent(item.assetId)}
+              alt={item.title||(ru?'Фото консультации':'Consultation photo')} loading="lazy" decoding="async"/>
+          </a>
+          {item.title&&<figcaption>{item.title}</figcaption>}
+        </figure>)}
+      </div>
+    </div>
+    </details>
+  </section>}
+
+    {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
+      <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Video size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОИНСТРУКЦИЯ':'VIDEO GUIDE'}</span>
+          <h2>{ru?'Как принимать назначенные препараты':'How to follow the recommendations'}</h2></div>
+      <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
+      <p className={styles.sectionIntro}>{ru?'Дополнительное видео от специалиста. Индивидуальные дозировки остаются в вашем назначении выше.':
+        'Your practitioner’s guidance video. Your personal dosage details remain in the written recommendation above.'}</p>
+      <div className={styles.mediaList}>{guideMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+        session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
+    </div>
+    </details>
+  </section>}
 
     {(supplementary.length>0||resources.length>0)&&<section id="session-resources" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
+      <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><FolderOpen size={20}/></span>
         <div><span className={styles.sectionKicker}>{ru?'ЛИЧНАЯ БИБЛИОТЕКА СЕССИИ':'YOUR SESSION MATERIALS'}</span>
           <h2>{ru?'Дополнительные материалы и медитации':'Additional materials & meditations'}</h2></div>
-      </header>
+      <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
       {supplementary.map(item=>item.kind==='pdf'
         ?<article className={styles.attachmentCard} key={item.assetId}>
           <FileDown size={21} aria-hidden="true"/><div><strong>{item.title||'PDF'}</strong>
@@ -248,17 +248,22 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           {item.description&&<small>{item.description}</small>}</div>
         <ExternalLink size={17} aria-hidden="true"/>
       </a>)}
-    </section>}
+    </div>
+    </details>
+  </section>}
 
     {hasHomeopathyRecommendation&&sharedGuideReady&&
       <section id="session-granules-guide" className={styles.clientSection+' '+styles.sharedEducationSection}
         aria-labelledby="session-granules-guide-title">
-        <header className={styles.sectionHeader}>
+        <details className={styles.sessionDisclosure}>
+      <summary className={styles.sectionHeader}>
           <span className={styles.sectionIcon}><Video size={21}/></span>
           <div><span className={styles.sectionKicker}>{ru?'ПОЛЕЗНО ПОСЛЕ КОНСУЛЬТАЦИИ':'AFTER YOUR CONSULTATION'}</span>
             <h2 id="session-granules-guide-title">{ru?'Видео: сколько гранул гомеопатии принимать?':
               'Video: How many homeopathic pellets?'}</h2></div>
-        </header>
+        <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+      </summary>
+      <div className={styles.disclosureBody}>
         <p className={styles.sectionIntro}>{ru?
           'Короткое общее объяснение от Андрея Литвинова. Ваша индивидуальная схема указана выше в отчёте.':
           'A short explanation from Andrey Litvinov, in Russian. Your personal instructions are in the report above.'}</p>
@@ -272,7 +277,40 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <p className={styles.sharedGuideCaution}>{ru?
           'Сравнения количества гранул в видео — личные наблюдения, а не научно подтверждённая зависимость эффекта от дозы. Не меняйте назначение по этому ролику и следуйте рекомендациям в вашем отчёте.':
           'The video’s comparisons are personal impressions and do not prove that more pellets have a stronger effect. Do not change your amount based on this video; follow your individual written instructions.'}</p>
-      </section>}
+      </div>
+    </details>
+  </section>}
+
+    {reportContent&&(!hasRecommendation||hasReportAppendix)&&<section id="session-report-content" className={styles.clientSection}>
+      <details className={styles.sessionDisclosure}>
+        <summary className={styles.sectionHeader}>
+          <span className={styles.sectionIcon}><BookOpen size={20}/></span>
+          <div>
+              <span className={styles.sectionKicker}>{hasRecommendation
+                ?(ru?'СПРАВОЧНЫЕ МАТЕРИАЛЫ':'REFERENCE MATERIALS')
+                :(ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT')}</span>
+              <h2>{hasRecommendation
+                ?(ru?'Приложения к отчёту':'Report appendices')
+                :(ru?'Полный текст консультации':'Full consultation text')}</h2>
+            </div>
+          <ChevronDown size={20} className={styles.disclosureChevron} aria-hidden="true"/>
+        </summary>
+        <div className={styles.disclosureBody+' '+styles.reportContent}>{reportContent}</div>
+      </details>
+    </section>}
+
+    {session.report&&<section id="session-report" className={styles.clientSection+' '+styles.downloadSection}>
+      <div className={styles.reportPanel}>
+        <div className={styles.downloadCopy}>
+          <FileDown size={20} aria-hidden="true"/>
+          <div><span className={styles.sectionKicker}>{ru?'ВАШ ДОКУМЕНТ':'YOUR DOCUMENT'}</span>
+            <h2>{ru?'Полный отчёт':'Full report'}</h2></div>
+        </div>
+        <a href={pdfPath} className={styles.downloadButton} download>
+          <FileDown size={20} aria-hidden="true"/>{ru?'Скачать отчёт':'Download report'}
+        </a>
+      </div>
+    </section>}
 
     {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount locale={locale} selector={selector}
       sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}/>}
