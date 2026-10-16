@@ -63,7 +63,7 @@ export function ContactChannelChooser({
   useEffect(() => {
     if (!open) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    panelRef.current?.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+    panelRef.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
   }, [open]);
   const c = copy[locale];
   const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
