@@ -46,5 +46,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: homepageLanguages[locale], changeFrequency: 'weekly', priority: locale === 'es' ? 0.8 : 1,
     alternates: { languages: homepageLanguages },
   }));
-  return [...new Map([...existing, ...entries, ...priorityEntries, ...network, ...homes].map(entry => [entry.url, entry])).values()];
+
+  // Dedupe before constructing language groups. Never submit legacy /books:
+  // that route redirects to the reader's preferred language.
+  const all = new Map([...existing, ...entries, ...priorityEntries, ...network, ...homes].map(entry => [entry.url, entry]));
+  all.delete(base + '/books');
+  const available = new Set(all.keys());
+  const releaseDate = new Date('2026-10-16T00:00:00.000Z');
+  return [...all.values()].map(entry => {
+    const pathname = new URL(entry.url).pathname;
+    const match = pathname.match(/^\\/(en|ru|es)(\\/.*)?$/);
+    const suffix = match ? (match[2] || '') : pathname === '/' ? '' : null;
+    if (suffix === null) return { ...entry, lastModified: entry.lastModified ?? releaseDate };
+    const pairs = (['en', 'ru', 'es'] as const).map(locale => {
+      const path = locale === 'en' && suffix === '' ? '/' : '/' + locale + suffix;
+      return [locale, base + path] as const;
+    }).filter(([, url]) => available.has(url));
+    const languageAlternates = pairs.length >= 2
+      ? Object.fromEntries(pairs.concat(pairs.some(([locale]) => locale === 'en') ? [['x-default', pairs.find(([locale]) => locale === 'en')![1]] as const] : []))
+      : undefined;
+    return {
+      ...entry,
+      lastModified: entry.lastModified ?? releaseDate,
+      alternates: languageAlternates ? { languages: languageAlternates } : undefined,
+    };
+  });
 }
