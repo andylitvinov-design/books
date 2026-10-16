@@ -18,6 +18,8 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { MarketplaceServiceFinder } from "@/components/master-network-explorer";
+import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
+import { coreServiceOffers } from "@/data/core-service-offers";
 
 type PageProps = { params: Promise<{ locale: string }> };
 export const dynamic = "force-dynamic";
@@ -73,10 +75,38 @@ export default async function ServicesPage({ params }: PageProps) {
   }
   const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
   const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
+  const editorialAreas: Record<string,string> = {
+    situation: "emotional_psychological", dao: "homeopathy_holistic",
+    alchemy: "relationships", hypnotherapy: "personal_development", business: "business_money",
+  };
+  const editorialOffers = [
+    ...coreServiceOffers(locale as Locale).map((offer) => ({
+      id:offer.id, title:offer.title, promise:offer.promise, benefit:offer.benefit,
+      href:offer.href, areaKey:editorialAreas[offer.id],
+    })),
+    {
+      id:"yggdrasil",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
+      promise:locale==="ru"?"Знакомство с системой Рейки, видео и материалы.":"Reiki practice, original video and study resources.",
+      href:`/${locale}/academy/reiki/yggdrasil/free-initiation`,areaKey:"energy_spiritual",
+    },
+    {
+      id:"tantra",title:locale==="ru"?"Тантра Рейки — бесплатная инициация":"Tantra Reiki — free introduction",
+      promise:locale==="ru"?"Изучите практику и варианты личной инициации.":"Explore the training and teacher-guided initiation.",
+      href:`/${locale}/academy/reiki/tantra-reiki/free-initiation`,areaKey:"energy_spiritual",
+    },
+  ];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+
+      <ServicesSmartDiscovery
+        locale={locale}
+        services={offerings}
+        editorialOffers={editorialOffers}
+        aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
+          && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)}
+      />
 
       <ServicesConversionHero locale={locale as Locale} />
       <ServicesTestsIntro locale={locale as Locale} />
