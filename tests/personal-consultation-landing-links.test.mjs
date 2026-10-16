@@ -12,6 +12,8 @@ test("free written review and optional paid consultation are distinct choices on
   assert.match(landing, /id="request-free-review"/);
   assert.match(landing, /id="personal-consultation"/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
+  assert.match(landing, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
+  assert.match(landing, /variant="all"/);
   assert.match(landing, /href="#request-free-review"/);
   assert.match(landing, /href="#personal-consultation"/);
   assert.match(landing, /<ServiceVideoShowcase topic="overview"/);
@@ -22,7 +24,7 @@ test("free written review and optional paid consultation are distinct choices on
 
 test("three languages preserve a genuinely free written report and transparent live consultation prices", () => {
   for (const phrase of [
-    "Получить бесплатный письменный разбор",
+    "Начать бесплатный разбор",
     "Get my free written review",
     "Recibir revisión escrita gratuita",
     "Личная консультация · от €50",
