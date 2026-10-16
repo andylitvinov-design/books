@@ -108,11 +108,26 @@ test('session-only CSP permits nocookie embed without widening other private pag
   assert.match(source,/const sessionEducationEmbed =/)
   assert.match(source,/sessionEducationEmbed \? "frame-src https:\/\/www\.youtube-nocookie\.com"/)
   assert.match(source,/practitionerDraftPreview \? "frame-src blob:" : "frame-src 'none'"/)
-  for(const pathname of [
-    '/en/client/session/guestSelector',
-    '/ru/client/aSelector/sessions/aSession',
-    '/en/app/sessions/savedSession',
-    '/admin/clients/owner/sessions/sid',
-    '/admin/documents/uuid/session-preview',
-  ])assert.match(source,/[\s\S]*/,pathname)
+  const start=source.indexOf('  const sessionEducationEmbed =')
+  const end=source.indexOf('  // A local MediaRecorder preview',start)
+  assert.ok(start>=0&&end>start)
+  const allowed=source.slice(start,end)
+  assert.equal((allowed.match(/\\.test\\(pathname\\)/g)||[]).length,5)
+  assert.equal(allowed.includes('api/admin'),false)
+  assert.equal(allowed.includes('youtube-upload'),false)
+})
+
+test('quick-add from existing client document uses scoped, revision-checked draft update',()=>{
+  const recorder=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
+  const quick=readFileSync(new URL('../components/session-youtube-quick-add.jsx',import.meta.url),'utf8')
+  const studio=readFileSync(new URL('../components/admin-session-studio.jsx',import.meta.url),'utf8')
+  assert.match(recorder,/SessionYouTubeQuickAdd/)
+  assert.match(recorder,/showYouTubeQuickAdd=true/)
+  assert.match(studio,/showYouTubeQuickAdd=\\{false\\}/)
+  assert.match(quick,/await ensureSession\\(\\)/)
+  assert.match(quick,/expectedRevision:session\\.draftRevision,draft/)
+  assert.match(quick,/parseSessionYouTubeUrl\\(url\\)/)
+  assert.match(quick,/resources\\.length>=8/)
+  assert.match(quick,/SESSION_CHANGED/)
+  assert.doesNotMatch(quick,/action:'publish'|youtube\\.com\\/upload|uploadToSignedUrl/)
 })
