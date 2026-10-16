@@ -472,7 +472,7 @@ async function verifyPublicServiceConversionJourneys(){
   const intake=publicPage.locator('[data-free-drawing-intake]')
   const advanced=publicPage.locator('details').filter({has:intake})
   await expect(intake).toBeHidden()
-  await advanced.locator('summary').click()
+  await advanced.locator(':scope > summary').click()
   await expect(intake).toBeVisible()
   const uniqueProblem='Synthetic public form value — '+locale
   const uniqueGoal='Synthetic public goal value — '+locale
