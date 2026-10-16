@@ -65,6 +65,7 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
           </div>
           <ConsultationDocumentActions
             recordId={document.id}
+            clientId={clientId}
             locale={locale}
             dateIssued={dateIssued}
             kind={document.kind}
