@@ -1,7 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList } from 'lucide-react'
+import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
+import CrmManager from './crm-manager'
 import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
@@ -26,14 +27,14 @@ const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,c
 const DASHBOARD_COPY = {
   "en": {
     "breadcrumb": "My Practice",
-    "subtitle": "Manage services, reports and client work.",
+    "subtitle": "Grow your practice. Support more people.",
     "privateTitle": "Practitioner tools",
     "publicTools": "Manage your practice",
     "addService": "Add service",
     "createReport": "Create report",
     "myData": "My data",
     "clients": "Clients",
-    "clientsHint": "Client database, history and documents.",
+    "clientsHint": "Contacts and client enquiries.",
     "services": "Services",
     "servicesHint": "Manage your services and offerings.",
     "reports": "Reports",
@@ -57,14 +58,14 @@ const DASHBOARD_COPY = {
   },
   "ru": {
     "breadcrumb": "Моя практика",
-    "subtitle": "Управляйте услугами, отчётами и работой с клиентами.",
+    "subtitle": "Развивайте практику и помогайте большему числу людей.",
     "privateTitle": "Инструменты мастера",
     "publicTools": "Управление практикой",
     "addService": "Добавить услугу",
     "createReport": "Создать отчёт",
     "myData": "Мои данные",
     "clients": "Клиенты",
-    "clientsHint": "База клиентов, история и документы.",
+    "clientsHint": "Контакты и обращения клиентов.",
     "services": "Услуги",
     "servicesHint": "Редактирование и публикация услуг.",
     "reports": "Отчёты",
@@ -111,8 +112,8 @@ export function PracticeEntry({data,locale}){
   </section>
 }
 
-export default function PracticeWorkspace({locale,ownerTools=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null)
+export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   useEffect(()=>{
@@ -214,15 +215,15 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
           <FileText aria-hidden="true" />{d.createReport}
         </button>:<button type="button" aria-pressed={activePanel==='requests'}
           onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
-        <button type="button" aria-pressed={activePanel==='profile'} onClick={()=>choosePanel('profile')}>
-          <IdCard aria-hidden="true" />{d.myData}
+        <button type="button" onClick={shareProfile}>
+          <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
         </button>
       </nav>
       <section aria-labelledby="hh-practice-tools-title" className="hh-practice-tools">
         <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
         <div className="hh-practice-tool-grid">
-          {isOwner&&<PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
-            onClick={()=>openOwner('clients')} />}
+          <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
+            onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
@@ -243,13 +244,13 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
         </button>
       </section>
     </>}
-    {needsOnboarding? <MasterOnboarding
+    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
-        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} />:
+        busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:d.credentials}</h2>
+          <h2>{activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
         {activePanel==='services'&&<>
@@ -286,6 +287,7 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
     </details>}
+    {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error}</p>}
   </section>
 }
