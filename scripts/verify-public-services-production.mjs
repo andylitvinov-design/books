@@ -1,6 +1,8 @@
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -119,8 +121,12 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (width === 390) {
-          const footerCta = main.locator('a[data-contact-channel="whatsapp"]').last();
-          await footerCta.scrollIntoViewIfNeeded();
+          const capture = main.locator('section:has(> details)');
+          assert.equal(await capture.count(), 1, "Exactly one core-service footer");
+          await capture.scrollIntoViewIfNeeded();
+          const chooser = await openContactChannelChooser(capture, expect);
+          const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
+          assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
           const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
           assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
           await alternative.locator("summary").click();

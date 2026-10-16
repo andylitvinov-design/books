@@ -1,3 +1,4 @@
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -318,18 +319,12 @@ async function exercise(engine, browserType, width) {
         await expect(capture).toHaveCount(1);
         await expect(capture.locator('[role="group"] button')).toHaveCount(3);
         assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No private intake fields in the enquiry selector');
-        const action = capture.locator('[data-consultation-action]');
+        let chooser = await openContactChannelChooser(capture, expect);
         const assertPaidUrl = async (choice, minutes, price) => {
-          await expect(action).toHaveAttribute('data-consultation-action', choice);
-          await expect(action).toHaveAttribute('data-contact-channel', 'whatsapp');
-          await expect(action).toHaveAttribute('target', '_blank');
-          await expect(action).toHaveAttribute('rel', /noopener/);
-          const target = new URL(await action.getAttribute('href'));
-          assert.equal(target.origin, 'https://wa.me');
-          assert.equal(target.pathname, '/14376066502');
-          assert.deepEqual([...target.searchParams.keys()], ['text']);
+          const { whatsapp, telegram, whatsappUrl: target } = await assertPreparedContactChannels(chooser, expect);
+          await expect(chooser.locator('[data-consultation-action]')).toHaveCount(2);
+          for (const action of [whatsapp, telegram]) await expect(action).toHaveAttribute('data-consultation-action', choice);
           const message = target.searchParams.get('text');
-          assert.ok(message?.trim(), 'Prepared message must not be empty');
           assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
           assert.ok(message.includes(await capture.locator('[aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
           return target;
@@ -339,15 +334,20 @@ async function exercise(engine, browserType, width) {
         const changedUrl = await assertPaidUrl('questions', '30', '€50');
         assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
         await capture.locator('[role="group"] button').nth(2).click();
+        await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
+        const action = capture.locator('[data-consultation-action]');
+        await expect(action).toHaveCount(1);
+        await expect(action).toBeVisible();
         await expect(action).toHaveAttribute('data-consultation-action', 'free');
         assert.equal(await action.getAttribute('data-contact-channel'), null);
         assert.equal(await action.getAttribute('target'), null);
         const freeUrl = new URL(await action.getAttribute('href'), origin);
         assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
         await capture.locator('[role="group"] button').nth(0).click();
+        chooser = await openContactChannelChooser(capture, expect);
         assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
-        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
-        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, freeAssessmentInternal: true, resetVerified: true };
+        await expect(capture.locator('[data-contact-channel="telegram"]:not([data-consultation-action])')).toHaveCount(1);
+        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, bothChannelsVerified: true, freeAssessmentInternal: true, resetVerified: true };
       });
     }
     if (width === 390) {
