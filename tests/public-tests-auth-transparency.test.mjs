@@ -24,7 +24,7 @@ test('homepage accurately advertises registration-free starts and free Cabinet a
   assert.match(source, /href=\{\`\/\$\{locale\}\/client\`\}/)
 })
 
-test('public selector sends startable tests to consent-first guest runner, never automatically to Google OAuth', () => {
+test('public selector sends startable tests directly to guest runner, never automatically to Google OAuth', () => {
   const source = read('components/app/public-test-explorer.jsx')
   assert.match(source, /onGuestStart\(entries\)/)
   assert.match(source, /client\?startTests=/)
@@ -44,7 +44,7 @@ test('guest results display only compact scored gauges followed immediately by G
   assert.match(cabinet, /continuePlan : resetToCatalog/)
   assert.match(cabinet, /sourceKind: 'guest_result'/)
   assert.match(cabinet, /onGuestStart=\{beginGuestBattery\}/)
-  assert.match(cabinet, /setPhase\('consent'\)/)
+  assert.doesNotMatch(cabinet, /setPhase\('consent'\)/)
   assert.match(scales, /ScoreGauge/)
   assert.match(scales, /data-score-only/)
   assert.match(scales, /section\.bandBasis === 'screening'/)
