@@ -1,5 +1,3 @@
-"use client";
-
 import { ClipboardCheck, GraduationCap } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
