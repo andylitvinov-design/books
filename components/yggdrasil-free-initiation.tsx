@@ -350,7 +350,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
             <a className={styles.primaryAction} href="#choose-initiation">{t.discover}<span aria-hidden="true"> →</span></a>
           </div>
           <div className={styles.heroVisual}>
-            <Image src="/academy/reiki-yggdrasil/source/school-introduction.jpg" alt="" fill priority sizes="(max-width: 800px) 100vw, 42vw" />
+            <Image unoptimized src="/academy/reiki-yggdrasil/source/school-introduction.jpg" alt="" fill priority sizes="(max-width: 800px) 100vw, 42vw" />
             <span className={styles.visualCaption}>REIKI · YGGDRASIL</span>
           </div>
         </section>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -106,7 +106,7 @@ export default async function AboutPage({ params }: PageProps) {
 
       <section className="about-introduction" aria-labelledby="about-title">
         <div className="about-portrait">
-          <Image alt={current.photoAlt} fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 56vw, 660px" src="/images/holistic-house/andy-about.png" />
+          <StaticPortrait alt={current.photoAlt} fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 56vw, 660px" src="/images/holistic-house/andy-about.png" />
         </div>
         <div className="about-introduction-copy">
           <p className="about-kicker">{current.eyebrow}</p>
