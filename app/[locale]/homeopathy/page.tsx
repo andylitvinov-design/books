@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.description,
     alternates: {
       canonical: `/${locale}/homeopathy`,
-      languages: { ru: "/ru/homeopathy", en: "/en/homeopathy" },
+      languages: { ru: "/ru/homeopathy", en: "/en/homeopathy", es: "/es/homeopathy", "x-default": "/en/homeopathy" },
     },
   };
 }

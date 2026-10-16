@@ -32,6 +32,7 @@ import { once } from 'node:events';
 import { mkdirSync, writeFileSync, createWriteStream, readFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
 import { getSpanishRemedySlugs } from '../data/remedies-es.js';
+import { assertUnsupportedSpanishPrivateLocale } from './helpers/es-private-denial-verifier.mjs';
 const live = process.argv.includes('--live');
 const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:3443';
 const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
@@ -213,12 +214,7 @@ try {
     const denialPage=await denialBrowser.newPage({ignoreHTTPSErrors:!live});
     const target=origin+'/es/client/not-a-real-client-id';
     const response=await denialPage.goto(target,{waitUntil:'domcontentloaded',timeout:60000});
-    assert.ok([200,404].includes(response.status()),'Unsupported private locale must not redirect or server-error');
-    await expect(denialPage).toHaveURL(target);
-    await expect(denialPage.getByRole('heading',{name:'404',exact:true})).toBeVisible({timeout:15000});
-    await expect(denialPage.getByText('This page could not be found.',{exact:true})).toBeVisible();
-    await expect.poll(()=>denialPage.locator('meta[name="robots"]').evaluateAll(elements=>elements.some(el=>(el.getAttribute('content')||'').split(/[\s,]+/).includes('noindex')))).toBe(true);
-    await expect(denialPage.locator('.client-cabinet, .prescription-access-gate, .client-entry-form')).toHaveCount(0);
+    await assertUnsupportedSpanishPrivateLocale(denialPage,response,target,expect);
     await denialPage.screenshot({path:`${evidence}/${live?'live':'local'}-es-private-locale-denied.png`});
   } finally {await denialBrowser.close();}
   console.log('PASS: unsupported Spanish private locale visibly renders 404 with noindex and no cabinet');
