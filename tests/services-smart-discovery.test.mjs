@@ -126,3 +126,24 @@ test('Explore by area is compact on mobile without removing category selection o
   assert.ok(ui.includes('onClick={()=>chooseCategory(area.key)}'))
   assert.ok(ui.includes('ref={resultsRef}'))
 })
+
+
+test('service match results use compact bilingual mobile tiles without hiding booking actions',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.ok(ui.includes('resultTitle:"Your options"'))
+  assert.ok(ui.includes('resultTitle:"Ваши варианты"'))
+  assert.ok(ui.includes('resultTitle:"Tus opciones"'))
+  assert.ok(ui.includes('className={styles.suggestionActions}'))
+  assert.ok(ui.includes('className={styles.editorialList}'))
+  assert.ok(css.includes('/* Compact matched-service catalogue'))
+  assert.ok(css.includes('.suggestionGrid,.editorialList{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'))
+  assert.ok(css.includes('.suggestionActions{flex-direction:column;align-items:stretch'))
+  assert.ok(css.includes('.suggestionSummary{font-size:10px;line-height:1.4}'))
+  assert.ok(css.includes('@media(max-width:350px){.suggestionGrid,.editorialList{grid-template-columns:1fr}}'))
+  const requestLink=ui.indexOf('<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>')
+  const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
+  assert.ok(requestLink>0 && detailLink>requestLink)
+})
