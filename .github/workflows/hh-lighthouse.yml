@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/hh-lighthouse.yml'
       - 'scripts/report-hh-lighthouse.mjs'
+      - 'app/layout.tsx'
+      - 'app/academy.css'
+      - 'app/temple-studies.css'
+      - 'app/yggdrasil-basic-description.css'
 permissions:
   contents: read
 jobs:
@@ -21,6 +25,9 @@ jobs:
           node-version: 22
       - name: Prepare report directory
         run: mkdir -p artifacts
+      - name: Give Vercel time to deploy current production commit
+        if: github.event_name == 'push'
+        run: sleep 150
       - name: Lighthouse mobile (public home only)
         run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-mobile.json
       - name: Lighthouse desktop (public home only)
