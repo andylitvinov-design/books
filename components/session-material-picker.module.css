@@ -15,6 +15,8 @@
 .item input{width:19px;height:19px;accent-color:#263f6b;cursor:pointer}
 .item strong{display:block;font-size:14px;color:#27415f;overflow-wrap:anywhere}
 .item small{display:block;font-size:12px;color:#687d90;margin-top:2px}
+.refresh{border:1px solid #bfced8;border-radius:10px;padding:9px 12px;background:#fff;color:#27415f;font-size:13px;font-weight:700;cursor:pointer;min-height:42px}
+.refresh:disabled{opacity:.55;cursor:wait}
 .empty{padding:20px 10px;color:#62788b;text-align:center;background:#f7f9fc;border-radius:12px}
 .footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}
 .save{background:#243c69;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer}
