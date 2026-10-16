@@ -93,6 +93,10 @@ export function EnergyworkVideoArchiveClient({
                 <div className={styles.videoCopy}>
                   <strong>{video.levelLabel}</strong>
                   <small lang="ru">{video.title}{video.sourceNote ? " · " + video.sourceNote : ""}</small>
+                  <div className={styles.videoActions}>
+                    <a href={"/" + locale + "/academy/reiki/yggdrasil"}>{locale === "ru" ? "Описание системы" : locale === "es" ? "Descripción del sistema" : "System description"}</a>
+                    <a href="#energywork-yggdrasil-capture">{locale === "ru" ? "Бесплатная 1-я ступень / личная инициация" : locale === "es" ? "Nivel 1 gratis / iniciación personal" : "Free Level 1 / personal initiation"}</a>
+                  </div>
                 </div>
               </article>
             ))}
