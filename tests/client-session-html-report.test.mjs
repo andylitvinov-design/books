@@ -4,12 +4,12 @@ import {readFileSync} from 'node:fs'
 
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('private consultation HTML has prescription-first course-style hierarchy',()=>{
+test('private consultation HTML has video-first layout with full prescription and resources',()=>{
  const page=src('components/client-session-page.jsx')
  const report=src('components/client-session-prescription.jsx')
  const css=src('components/client-session.module.css')
  for(const marker of ['id="session-message"','part="summary"','part="remedies"',
-   'id="session-report"','id="session-guide"','id="session-recommendations"','id="session-resources"'])
+   'id="session-video"','id="session-report"','id="session-recommendations"','id="session-resources"'])
    assert.ok(page.includes(marker),marker)
  for(const marker of ["recommendation.generalInstructions","recommendation.includeDistanceHomeopathy",
    "item.displayName","<details","remedySchedule(item,locale"])
