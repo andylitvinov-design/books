@@ -51,6 +51,9 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /@container \(max-width: 300px\)/);
+  assert.match(src, /onChannelClick\?\./);
+  assert.match(src, /scrollIntoView/);
 });
 
 test("primary capture components render channel chooser after service selection while downloads remain immediate", () => {
@@ -64,6 +67,8 @@ test("primary capture components render channel chooser after service selection 
     "components/yggdrasil-initiation-form.tsx",
     "components/tantra-initiation-form.tsx",
     "components/principles-of-energywork.tsx",
+    "components/temple-initiation-chooser.tsx",
+    "components/free-drawing-intake.tsx",
   ]) {
     const src = read(path);
     assert.match(src, /<ContactChannelChooser/, path);

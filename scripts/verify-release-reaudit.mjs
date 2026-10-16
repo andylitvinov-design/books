@@ -342,6 +342,7 @@ async function exercise(engine, browserType, width) {
         };
         const originalUrl = await assertPaidUrl('session', '60', '€100');
         await capture.locator('[role="group"] button').nth(1).click();
+        chooser = await openContactChannelChooser(capture, expect);
         const changedUrl = await assertPaidUrl('questions', '30', '€50');
         assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
         await capture.locator('[role="group"] button').nth(2).click();

@@ -47,6 +47,7 @@ const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx'
     ['services-solutions', 'ServicesSolutions'], ['homepage-topic-journeys', 'HomepageTopicJourneys'],
     ['home-free-tests-banner', 'HomeFreeTestsBanner'], ['personal-testimonials', 'PersonalTestimonials'],
     ['site-video-player', 'SiteVideoPlayer'],
+    ['sitewide-antistress-banner', 'TestSelectionCourseBanner'],
   ].map(([path, name]) => ['@/components/' + path, { [name]: () => null }])),
 });
 
@@ -62,6 +63,21 @@ test('CSP history clicks the unique body About CTA despite the real header dupli
   assert.match(release, /Home to About must retain same-policy soft navigation/);
   assert.match(release, /assert\.deepEqual\(cspErrors, \[\]/);
 });
+
+for (const [locale, label] of [['en', 'Book a consultation'], ['ru', 'Записаться на консультацию']]) {
+  test(locale + ' homepage keeps separate booking and free-review destinations in actual JSX', () => {
+    const tree = HolisticHouseHome({ locale });
+    const links = treeNodes(tree).filter(node => node.type === 'a');
+    const booking = links.filter(node => node.props.className?.includes('service-home-button--consultation'));
+    const freeReview = links.filter(node => node.props.className?.includes('service-home-button--primary'));
+    assert.equal(booking.length, 1);
+    assert.equal(freeReview.length, 1);
+    assert.equal(booking[0].props.href, '/' + locale + '/services#consultation');
+    assert.equal(booking[0].props.children[0], label);
+    assert.equal(freeReview[0].props.href, '/' + locale + '/services/free-situation-review');
+    assert.notEqual(booking[0].props.href, freeReview[0].props.href);
+  });
+}
 
 test('header matrix preserves all widths and tests direct links against the actual CSS breakpoint', () => {
   assert.match(ia, /\[320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280\]/);

@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowUpRight, Check, ClipboardCopy, FileText, PenLine, Send } from "lucide-react";
+import { ArrowUpRight, Check, ClipboardCopy, FileText, PenLine } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { emitPublicAnalyticsEvent } from "@/lib/public-analytics";
 import styles from "./free-drawing-intake.module.css";
 
 type Topic = "personal" | "goal" | "business" | "wellbeing";
 const topics: Topic[] = ["personal", "goal", "business", "wellbeing"];
-const phone = "14376066502";
 
 const copy = {
   en: {
@@ -32,13 +32,13 @@ const copy = {
     drawLabels: ["ME", "MY GOAL", "MY PROBLEM"],
     prepare: "Prepare my coaching answers",
     ready: "Your answers are ready to copy. Nothing has been sent.",
-    readyNote: "Copy the text below, then open WhatsApp.",
+    readyNote: "Choose where to send your request. Your questionnaire will be copied; paste it into the chat.",
     copyButton: "Copy answers",
-    copied: "Copied — paste them into WhatsApp",
-    copyFallback: "Select and copy the text below, then paste it into WhatsApp.",
+    copied: "Copied — paste them into your chosen chat",
+    copyFallback: "Select and copy the text below, then paste it into your chosen chat.",
     openWhatsapp: "Copy answers & open WhatsApp",
     sendNote: "Paste the copied answers and attach your drawing photo. If copying was blocked, use Copy answers here. Nothing is sent automatically.",
-    privacy: "This page does not upload or store your answers or drawing. You choose what to send in WhatsApp. The written report is a symbolic situation review, not a medical or mental-health diagnosis.",
+    privacy: "This page does not upload or store your answers or drawing. You choose what to send in your messenger. The written report is a symbolic situation review, not a medical or mental-health diagnosis.",
     questionLabel: "Coaching questionnaire — free drawing assessment",
     request: "Request: Please review my coaching answers and handwritten drawing (ME / MY GOAL / MY PROBLEM) and send me a personal written report.",
     whatsappIntro: "Hello Andrey. I am requesting the FREE drawing-based situation assessment. I will paste my coaching questionnaire and attach a photo of my handwritten drawing. Please send me the written report.",
@@ -67,13 +67,13 @@ const copy = {
     drawLabels: ["Я", "МОЯ ЦЕЛЬ", "МОЯ ПРОБЛЕМА"],
     prepare: "Подготовить ответы анкеты",
     ready: "Ответы готовы к копированию. Пока ничего не отправлено.",
-    readyNote: "Скопируйте текст ниже, затем откройте WhatsApp.",
+    readyNote: "Выберите, куда отправить заявку. Ответы скопируются — вставьте их в чат.",
     copyButton: "Скопировать ответы",
-    copied: "Скопировано — вставьте в WhatsApp",
-    copyFallback: "Выделите и скопируйте текст ниже, затем вставьте его в WhatsApp.",
+    copied: "Скопировано — вставьте в выбранный чат",
+    copyFallback: "Выделите и скопируйте текст ниже, затем вставьте его в выбранный чат.",
     openWhatsapp: "Скопировать ответы и открыть WhatsApp",
     sendNote: "Вставьте скопированные ответы и фото рисунка. Если копирование заблокировано, вернитесь к кнопке «Скопировать ответы». Автоматически ничего не отправляется.",
-    privacy: "Страница не загружает и не хранит ваши ответы и рисунок. Вы сами выбираете, что отправить через WhatsApp. Отчёт — символический разбор ситуации, а не медицинский или психиатрический диагноз.",
+    privacy: "Страница не загружает и не хранит ваши ответы и рисунок. Вы сами выбираете, что отправить через мессенджер. Отчёт — символический разбор ситуации, а не медицинский или психиатрический диагноз.",
     questionLabel: "Коучинг-форма — бесплатная диагностика по рисунку",
     request: "Запрос: прошу провести диагностику по моим ответам и рисунку (Я / МОЯ ЦЕЛЬ / МОЯ ПРОБЛЕМА) и прислать персональный письменный отчёт.",
     whatsappIntro: "Здравствуйте, Андрей! Хочу получить БЕСПЛАТНУЮ диагностику ситуации по рисунку. Отправлю ответы коучинг-формы и фотографию рисунка от руки. Прошу прислать письменный отчёт.",
@@ -102,13 +102,13 @@ const copy = {
     drawLabels: ["YO", "MI META", "MI PROBLEMA"],
     prepare: "Preparar mis respuestas",
     ready: "Tus respuestas están listas para copiar. Todavía no se ha enviado nada.",
-    readyNote: "Copia el texto siguiente y abre WhatsApp.",
+    readyNote: "Elige dónde enviar tu solicitud. Tus respuestas se copiarán; pégalas en el chat.",
     copyButton: "Copiar respuestas",
-    copied: "Copiado — pega las respuestas en WhatsApp",
-    copyFallback: "Selecciona y copia el texto siguiente y pégalo en WhatsApp.",
+    copied: "Copiado — pega las respuestas en el chat elegido",
+    copyFallback: "Selecciona y copia el texto siguiente y pégalo en el chat elegido.",
     openWhatsapp: "Copiar respuestas y abrir WhatsApp",
     sendNote: "Pega las respuestas copiadas y adjunta la foto. Si falla la copia, usa el botón Copiar respuestas. Nada se envía automáticamente.",
-    privacy: "Esta página no sube ni guarda tus respuestas ni tu dibujo. Tú decides qué enviar por WhatsApp. El informe es una reflexión simbólica sobre la situación, no un diagnóstico médico ni de salud mental.",
+    privacy: "Esta página no sube ni guarda tus respuestas ni tu dibujo. Tú decides qué enviar por el mensajero. El informe es una reflexión simbólica sobre la situación, no un diagnóstico médico ni de salud mental.",
     questionLabel: "Formulario de coaching — evaluación gratuita mediante dibujo",
     request: "Solicitud: analiza mis respuestas y mi dibujo a mano (YO / MI META / MI PROBLEMA) y envíame un informe escrito personal.",
     whatsappIntro: "Hola Andrey. Solicito la evaluación GRATUITA de mi situación mediante un dibujo. Enviaré mis respuestas del formulario de coaching y una foto del dibujo hecho a mano. Espero el informe escrito.",
@@ -149,11 +149,15 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
     t.request,
   ].join("\n");
 
-  // Only the broad topic and the generic request enter the WhatsApp URL.
-  // The user's answers stay in this browser until they explicitly copy/paste them.
-  const whatsappUrl = "https://wa.me/" + phone + "?text=" + encodeURIComponent(
-    [t.whatsappIntro, t.topicLabel + ": " + t.options[topic]].join("\n")
-  );
+  // Only the broad topic and generic enquiry enter either messenger URL.
+  // Private questionnaire answers remain on-device until intentionally copied.
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale,
+    service: t.questionLabel,
+    request: t.whatsappIntro,
+    topic: t.options[topic],
+    pagePath: "/" + locale + "/services/free-situation-review",
+  });
 
   function changeAnswer(setter: (value: string) => void, value: string) {
     if (!questionnaireStarted.current) {
@@ -225,10 +229,13 @@ export function FreeDrawingIntake({ locale }: { locale: PublicLocale }) {
         <p className={styles.readyNote}>{t.readyNote}</p>
         <textarea className={styles.preview} readOnly value={answers} rows={7} aria-label={t.ready}
           onFocus={event => event.currentTarget.select()} />
-        <AcquisitionEventLink className={styles.whatsapp} href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
-          event="whatsapp_handoff_click" onClick={() => { void copyAnswers(); }} attributes={{ "data-contact-channel": "whatsapp" }}>
-          <Send size={18} aria-hidden="true" />{t.openWhatsapp}<ArrowUpRight size={18} aria-hidden="true" />
-        </AcquisitionEventLink>
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={whatsappUrl}
+          className={styles.whatsapp}
+          event="contact_click"
+          onChannelClick={() => { void copyAnswers(); }}
+        />
         <button type="button" onClick={() => { void copyAnswers(); }} className={styles.copyButton}>
           <ClipboardCopy size={18} aria-hidden="true" />{t.copyButton}
         </button>

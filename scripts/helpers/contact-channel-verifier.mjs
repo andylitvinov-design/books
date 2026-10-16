@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 // Read and validate prepared links only: acceptance must never send an enquiry.
 export async function assertPreparedContactChannels(chooser, expect) {
   await expect(chooser).toHaveCount(1);
+  await expect(chooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'true');
   await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(2);
   const whatsapp = chooser.locator('a[data-contact-channel="whatsapp"]');
   const telegram = chooser.locator('a[data-contact-channel="telegram"]');
@@ -24,6 +25,8 @@ export async function assertPreparedContactChannels(chooser, expect) {
     urls.push(url);
   }
   assert.equal(urls[1].searchParams.get('text'), urls[0].searchParams.get('text'), 'Both channels must preserve the exact selected request');
+  // Retrying assertions observe the committed open state after React effects.
+  await expect(chooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'true');
   return { whatsapp, telegram, whatsappUrl: urls[0], telegramUrl: urls[1] };
 }
 

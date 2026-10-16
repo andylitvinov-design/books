@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/data/remedies";
@@ -135,7 +136,14 @@ export function coreOfferDetailData(locale: Locale, kind: DetailKind) {
 
 export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: DetailKind }) {
   const t = copy[locale][kind];
-  const whatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(t.actionMessage);
+  const serviceSlug = { dao: "dao-health-profile", alchemy: "alchemy-of-soul", hypnotherapy: "hypnotherapy-course" }[kind];
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale,
+    service: t.title,
+    request: t.actionMessage,
+    option: t.action,
+    pagePath: "/" + locale + "/services/" + serviceSlug,
+  });
   return (
     <main className={styles.main} lang={locale} data-core-service-detail={kind}>
       <div className={styles.breadcrumb}><Link href={"/" + locale + "/services"}><ArrowLeft size={17} aria-hidden="true"/>{locale === "ru" ? "Все услуги" : "All services"}</Link></div>

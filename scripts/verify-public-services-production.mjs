@@ -167,11 +167,14 @@ try {
     await intake.locator('form button[type="submit"]').click();
     const ready = intake.locator('[role="region"]');
     await visible(ready);
-    const href = await ready.locator('a[data-contact-channel="whatsapp"]').getAttribute("href");
-    const whatsappText = new URL(href || "").searchParams.get("text") || "";
+    const readyChooser = await openContactChannelChooser(ready, expect);
+    const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(readyChooser, expect);
+    const whatsappText = whatsappUrl.searchParams.get("text") || "";
+    const telegramText = telegramUrl.searchParams.get("text") || "";
     const decodedPageUrl = decodeURIComponent(page.url());
     for (const marker of [markerA, markerB]) {
       assert.ok(!whatsappText.includes(marker), "WhatsApp query text must not include answer marker");
+      assert.ok(!telegramText.includes(marker), "Telegram query text must not include answer marker");
       assert.ok(!decodedPageUrl.includes(marker), "Page URL must not include answer marker");
     }
     await ready.screenshot({ path: output + "/free-review-" + locale + "-ready-region-390.png" });

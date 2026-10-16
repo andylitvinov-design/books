@@ -7,6 +7,15 @@ on:
       - 'components/site-video-player.tsx'
       - 'components/services-solutions.tsx'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-intro-video-section.tsx'
+      - 'app/holistic-house-home.css'
+      - 'app/page.tsx'
+      - 'app/[locale]/page.tsx'
+      - 'app/es/page.tsx'
+      - 'app/es/services/page.tsx'
+      - 'tests/holistic-house-speed-and-cta.test.mjs'
+      - 'tests/holistic-house-home-streaming.test.mjs'
+      - 'tests/public-consultation-cta-design.test.mjs'
       - 'components/public-consultation-cta.tsx'
       - 'app/[locale]/services/page.tsx'
       - 'next.config.ts'
@@ -18,6 +27,15 @@ on:
       - 'components/site-video-player.tsx'
       - 'components/services-solutions.tsx'
       - 'components/holistic-house-home.tsx'
+      - 'components/home-intro-video-section.tsx'
+      - 'app/holistic-house-home.css'
+      - 'app/page.tsx'
+      - 'app/[locale]/page.tsx'
+      - 'app/es/page.tsx'
+      - 'app/es/services/page.tsx'
+      - 'tests/holistic-house-speed-and-cta.test.mjs'
+      - 'tests/holistic-house-home-streaming.test.mjs'
+      - 'tests/public-consultation-cta-design.test.mjs'
       - 'components/public-consultation-cta.tsx'
       - 'app/[locale]/services/page.tsx'
       - 'next.config.ts'
@@ -36,7 +54,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate targeted safety and booking contracts
-        run: node --test tests/holistic-house-speed-and-cta.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs
+        run: node --test tests/holistic-house-speed-and-cta.test.mjs tests/holistic-house-home-streaming.test.mjs tests/public-consultation-cta-design.test.mjs tests/consultation-capture-choice.test.mjs
       - name: Measure live public TTFB only (no login, no private routes)
         env:
           TTFB_SAMPLES: '7'

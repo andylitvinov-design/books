@@ -80,8 +80,10 @@ test("coaching form is real, ephemeral, mobile-friendly and does not leak respon
   assert.match(intake, /readyRef\.current\?\.focus\(\)/);
   assert.match(intake, /Nothing has been sent/);
   assert.match(intake, /aria-live="polite"/);
-  assert.match(intake, /"https:\/\/wa\.me\/" \+ phone/);
-  assert.match(intake, /encodeURIComponent\(\s*\[t\.whatsappIntro/);
+  assert.match(intake, /whatsappEnquiryUrl\(\{/);
+  assert.match(intake, /request: t\.whatsappIntro/);
+  assert.match(intake, /<ContactChannelChooser/);
+  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
   assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
   assert.match(intake, /attach a photo of my handwritten drawing/);

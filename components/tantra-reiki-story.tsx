@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
@@ -90,7 +90,7 @@ export function TantraReikiTeacher({locale}:{locale:PublicLocale}) {
   return (
     <section className="tantra-teacher" id="tantra-teacher" aria-labelledby="tantra-teacher-title">
       <div className="tantra-teacher__photo">
-        <Image
+        <StaticPortrait
           src="/images/holistic-house/andy-about.png"
           alt={locale === "ru" ? "Андрей, преподаватель Тантра Рейки" : locale === "es" ? "Andy, guía de Tantra Reiki" : about.photoAlt}
           width={700}

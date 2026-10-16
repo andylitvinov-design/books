@@ -40,11 +40,13 @@
 
 ## 3. Проверенное состояние на 16.10.2026
 
-- Production: https://holistichouse.vercel.app/ · Vercel project `codex-public-book-library`, source `codex/public-book-library`. Последний увиденный READY production SHA на дату аудита: `f3e0eac75f4ebfa2481b63b356f25b3a25a0574c`. Он может измениться — каждый новый PR обязан проверять alias и commit заново.
+**Обновление 16 октября — впервые VERIFIED Google Search Console.** Право собственности подтверждено официальным Google через уже опубликованный HTML-тег. GSC Wizard зарегистрировал https://holistichouse.vercel.app/ с правом `siteOwner`. Google принял и скачал sitemap.xml: **594 URL заявлено, 0 индексировано по моментальному отчёту карты сайта, 0 предупреждений и ошибок**. Search Analytics 28/90 дней с данными по 14.10: **0 кликов, 0 показов**, CTR и средняя позиция без показов не имеют содержательной интерпретации. [Датированный Google baseline и on-page аудит 19 публичных страниц](./gsc-baseline-2026-10-16.md).
+
+- Production: https://holistichouse.vercel.app/ · Vercel project `codex-public-book-library`, source `codex/public-book-library`. Последний увиденный READY production SHA на дату аудита: `8c6506155e094e47800a395735d3f4130cab5644`. Он может измениться — каждый новый PR обязан проверять alias и commit заново.
 - Merged [#708](https://github.com/andylitvinov-design/books/pull/708), [#709](https://github.com/andylitvinov-design/books/pull/709): EN/RU/ES Free Tantra SEO Title, descriptions, H1, FAQ, OG/Twitter, WebPage+Breadcrumb JSON-LD, sitemap priority и regression checks. Public readback английской, русской и испанской страниц был сделан. Сохранены оригинальные видео, семь вопросов в свернутом блоке, WhatsApp. Актуальные личные офферы Tantra: €50/30 мин и €100/60 мин.
 - Priority sitemap: **5 проверяемых семейств × EN/RU/ES = 15 специальных URL** (About, Free Situation Review, Yggdrasil Basic, Yggdrasil free L1, Tantra free L1). Общий динамический sitemap больше и меняется; число URL **не** равно числу проиндексированных Google страниц. `robots.txt` ссылается на `sitemap.xml`; private path не должны попадать в индекс.
-- В `app/layout.tsx` уже есть тег `google-site-verification`. В GSC Wizard на 16.10 доступны PsiTrends и Ezohata, но Holistic House **не verified для подключённого Google account**; `add_site` вернул явную ошибку отсутствия проверки. **Не просить новый токен без проверки, почему текущий не подтверждает подключённый аккаунт**.
-- Код `Ga4Analytics`/consent существует; это не доказательство реальной связки корректной GA4 property, DebugView и верифицированных лидов. Keyword Planner, Google Trends numeric, CTR/position/index count, verified conversion — **NOT AVAILABLE** до получения источника.
+- `app/layout.tsx` содержит исходный `google-site-verification` тег, и **Google подтвердил ownership подключённому аккаунту 16.10.2026**. Доступ GSC Wizard активен. Sitemap принят и скачан, 15 curated + 4 дополнительные публичные страницы проверены Google URL Inspection (5 «обнаружены, не в индексе», 14 «неизвестны Google»). **Indexing Tracker активен для 19 URL.** Повторная проверка собственности не требуется.
+- GSC предоставляет настоящий начальный baseline **0 показов/0 кликов** за 28/90 дней до 14 октября. Это не доказывает отсутствия проиндексированных URL за всё время: после регистрации карта показывает 0/594 и требуется время на обход. Отдельно GSC Wizard **не получил Google Analytics OAuth-scope** (`list_ga4_properties`: `connected=false`); код `Ga4Analytics`/consent не доказывает подключение GA4. Keyword Planner, Google Trends, реальная конверсия и meaningful CTR/позиция всё ещё **NOT AVAILABLE**.
 - Бесплатное предложение Tantra — запрос вводной инициации с преподавателем, при наличии свободного времени, а не автоматический результат от просмотра ролика.
 - Поиск/индексация: Google требует полезный авторский контент, crawlable internal links, корректный canonical/hreflang; запрещены ненадёжные медицинские обещания. [Google SEO Starter Guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide).
 
@@ -53,9 +55,10 @@
 ### Этап 0 — 16–22 октября: база и измеримость (P0)
 - [x] SEO-лендинг Free Tantra 3 локали LIVE, 15 priority URLs добавлены, sitemap и robots подготовлены.
 - [x] Verification meta есть в repository source.
-- [ ] **Подтвердить права на GSC именно для подключённого Google-аккаунта:** существующий tag или Full permission от владельца.
-- [ ] После подтверждения: GSC Wizard property, submit `https://holistichouse.vercel.app/sitemap.xml`, URL inspection всех 15 priority pages, статус indexation с реальными датами.
-- [ ] CI + authenticated/external LIVE SEO smoke 15/15 URL, hreflang reciprocal, self-canonical, noindex private, redirects, 404/soft-404, Google meta; сделать проверку с точным SHA и отчётом.
+- [x] Google подтвердил права через существующий HTML-тег; GSC Wizard получил `siteOwner` и зарегистрировал свойство.
+- [x] Google скачал `https://holistichouse.vercel.app/sitemap.xml` (594 URL, 0 ошибок); выполнена проверка 15 приоритетных + 4 дополнительных страниц и включён Indexing Tracker для 19 URL. **Само индексирование ещё ожидается**, без обещания срока.
+- [x] GSC Wizard on-page crawler: 19/19 проверенных публичных страниц indexable, 0 high/critical, 54 heuristic предупреждения. [Baseline](./gsc-baseline-2026-10-16.md).
+- [ ] Независимый LIVE SEO regression на exact release SHA, reciprocal hreflang/self-canonical/noindex private/redirects и mobile screenshots 320–430px.
 - [ ] Продемонстрировать гостевой CTA→WhatsApp *handoff*, не заявлять, что клик означает доставленный лид.
 
 ### Этап 1 — 23 октября–5 ноября: money pages (P0)
@@ -107,8 +110,10 @@
 | KPI | Статус baseline 16.10.2026 | Кто подтверждает |
 | --- | --- | --- |
 | 15 приоритетных трёхъязычных URL | введены в source / public; свежий full smoke требуется | GitHub+Vercel+live |
-| Google verified property | **BLOCKED** для connected account | Search Console |
-| Google indexed count, clicks, impressions, CTR, avg position | **NOT AVAILABLE** | GSC property+dated report |
+| Google verified property | **VERIFIED · siteOwner** (16.10.2026) | Search Console + GSC Wizard |
+| Google sitemap indexing (snapshot) | **0 / 594** after first submission; not whole-site count | Google Search Console `list_sitemaps`, 16.10 |
+| Organic clicks / impressions, 28d & 90d | **0 / 0** through 14.10; not a trend | GSC API, property verified 16.10 |
+| CTR / average position | **Not meaningful without impressions** | Wait for impressions and Google crawl |
 | Search volume / CPC / Google Trends | **NOT AVAILABLE** | Google Planner / original Trends export |
 | Qualified enquiries and paid bookings | **NOT VERIFIED** | actual consented receipt/business journal |
 | GA4 Realtime/DebugView and attribution | **NOT VERIFIED** | correct GA4 account |
@@ -119,15 +124,17 @@
 
 ## 7. Внешние блокеры и рабочий handoff
 
-- Для Search Console нужно **одно действие пользователя/владельца** в том же Google-аккаунте, который подключен к GSC Wizard: открыть [Search Console](https://search.google.com/search-console), выбрать URL-prefix `https://holistichouse.vercel.app/` и попробовать уже установленный HTML-тег, либо дать связанному аккаунту права Settings → Users and permissions → Full. Если другой Google identity требует новый token, сначала получить его и добавить проверенным способом, не удаляя имеющийся verification тег.
+- **Google Search Console теперь подключён**: URL-prefix подтверждён, тег не менять, владелец больше не должен подтверждать сайт. [Google baseline](./gsc-baseline-2026-10-16.md). Отслеживать Indexing Tracker и корректно реагировать на настоящие покрытия/ошибки после обхода Googlebot.
 - Попытка открыть Search Console через авторизованный браузерный коннектор 16.10 остановилась **до запуска** из-за недостаточного баланса стороннего wallet; никаких денег автоматически не тратить.
-- После подтверждения: GSC Wizard `add_site` → submit sitemap → inspect 15 pages → source-backed 28/90 day report. Codex не может «выдать» Google ownership только изменением кода.
-- GA4 code есть, но нет подтверждения connected Google Analytics property. Ads, billing и compliance — отдельные разрешения; согласно [Google people-first](https://developers.google.com/search/docs/fundamentals/creating-helpful-content) нужны реальные авторские объяснения, а не SEO-спам.
+- Сделано: GSC Wizard `add_site` → sitemap accepted/fetched → URL Inspection 19 pages → baseline 28/90 days → 19 URL tracked + Free Tantra content group/search cluster. Будущая работа: добиваться полезного контента/доступности для обхода и **ждать фактической индексации**, не делать повторные отправки sitemap каждый день.
+- **GA4 scope в GSC Wizard не подключён** (`connected=false`); если нужны отчёты GA4, владелец должен отдельно разрешить Google Analytics доступ в tool.gscwizard.com. Код GA4 на сайте не является верификацией account-level аналитики. Ads, billing и compliance — отдельные разрешения; согласно [Google people-first](https://developers.google.com/search/docs/fundamentals/creating-helpful-content) нужны реальные авторские объяснения, а не SEO-спам.
 
 ## 8. Процесс ведения документа и ссылки
 
 Каждую пятницу: добавить dated STATUS к #306 + execution manifest (DONE/IN REVIEW/BLOCKED/NEXT), проверить последние live source SHA и 15 URLs. В конце месяца: scorecard из **реального источника** и 3–5 следующих задач с owner/DoD. Списки задач держать в issue + manifest, не плодить новые стратегии. При смене политики менять здесь и фиксировать дату.
 
 **Источники:** [SEO #306](https://github.com/andylitvinov-design/books/issues/306); [Growth #223](https://github.com/andylitvinov-design/books/issues/223); [Ads #323](https://github.com/andylitvinov-design/books/issues/323); [Google Search Central](https://developers.google.com/search/docs/fundamentals/seo-starter-guide).
+
+**Changelog 2026-10-16 · afternoon:** Google ownership/siteOwner verified, sitemap 594/0 Google snapshot, all 19 URL inspected and tracked, 19/19 on-page indexable; source-backed first 28/90d zeros saved. See GSC baseline. Safe Organization logo and Yggdrasil metadata improvements in next SEO PR.
 
 **Changelog 2026-10-16:** v3 consolidates Free Tantra L1 SEO release, 15 priority locale URLs, real GSC access blocker, R07 seed, updated paid/free offers, goals, roadmap, Codex specs, KPI and privacy policies.

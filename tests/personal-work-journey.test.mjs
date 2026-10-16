@@ -9,8 +9,9 @@ const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 test("home presents four photo-left offer cards before videos", () => {
   const home = source("components", "holistic-house-home.tsx");
   const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const video = home.indexOf("{introVideo ? (");
+  const video = home.indexOf("{introVideoContent}");
   assert.ok(cards > 0 && video > cards);
+  assert.match(source("components", "home-intro-video-section.tsx"), /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
@@ -36,7 +37,11 @@ test("Services leads with free-test banner and five compact photo offers, with a
     assert.ok(offers.includes('route: "' + route + '"'), route);
   assert.match(hero, /Get a free written review/);
   assert.doesNotMatch(hero, /Draw by hand on paper|€100/);
-  assert.doesNotMatch(page, /€50|€100/);
+  const editorialStart = page.indexOf("const editorialOffers =");
+  const renderStart = page.indexOf("  return (");
+  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
+  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -72,7 +77,10 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   assert.match(intake, /new URLSearchParams\(window\.location\.search\)\.get\("topic"\)/);
   assert.match(intake, /setTopic\(requested as Topic\)/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /wa\.me/);
+  assert.match(intake, /const whatsappUrl = whatsappEnquiryUrl\(\{/);
+  assert.match(intake, /request: t\.whatsappIntro/);
+  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
+  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /Nothing is sent automatically/);
   assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
 });

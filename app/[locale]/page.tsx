@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { HomeIntroVideoSection } from "@/components/home-intro-video-section";
 import { HolisticHouseHome } from "@/components/holistic-house-home";
 import { homeMetadataFor } from "@/lib/home-seo";
-import { videoKey } from "@/lib/site-videos/model";
-import { getPublishedSiteVideos } from "@/lib/site-videos/public";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -17,11 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RussianHomePage({ params }: Props) {
   if ((await params).locale !== "ru") notFound();
-  const published = await getPublishedSiteVideos();
   return (
     <HolisticHouseHome
       locale="ru"
-      introVideos={{ ru: published[videoKey("home-intro", "ru")] }}
+      introVideoContent={<Suspense fallback={null}><HomeIntroVideoSection locale="ru" /></Suspense>}
     />
   );
 }

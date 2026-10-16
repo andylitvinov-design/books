@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
@@ -310,7 +310,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.orbitOuter} aria-hidden="true" />
             <div className={styles.orbitInner} aria-hidden="true" />
             <div className={styles.portraitFrame}>
-              <Image src="/images/holistic-house/andy-about.png" alt={locale === "ru" ? "Андрей, преподаватель Тантра Рейки" : locale === "es" ? "Andrey, profesor de Tantra Reiki" : "Andrey, Tantra Reiki teacher"} fill sizes="(max-width: 760px) 74vw, 36vw" priority className={styles.portrait} />
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={locale === "ru" ? "Андрей, преподаватель Тантра Рейки" : locale === "es" ? "Andrey, profesor de Tantra Reiki" : "Andrey, Tantra Reiki teacher"} fill sizes="(max-width: 760px) 74vw, 36vw" priority className={styles.portrait} />
             </div>
             <div className={styles.artStamp}><Sun size={20} aria-hidden="true"/><span>{t.visualLabel}</span></div>
             <div className={styles.artLabel}>{t.visualCaption}<span aria-hidden="true">✦</span></div>

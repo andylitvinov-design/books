@@ -79,19 +79,56 @@ export default async function ServicesPage({ params }: PageProps) {
     situation: "emotional_psychological", dao: "homeopathy_holistic",
     alchemy: "relationships", hypnotherapy: "personal_development", business: "business_money",
   };
+  // These are established Holistic House services, not anonymous directory
+  // links. Their inline request actions use the existing channel handoff.
   const editorialOffers = [
     ...coreServiceOffers(locale as Locale).map((offer) => ({
       id:offer.id, title:offer.title, promise:offer.promise, benefit:offer.benefit,
+      details: offer.id === "situation"
+        ? (locale === "ru"
+          ? "Заполните коучинг-анкету и нарисуйте схему «Я — цель — проблема». Бесплатный результат — личный письменный разбор, а не живая консультация."
+          : "Complete the coaching questionnaire and draw the I — goal — problem scheme. The free offer is a personal written review, not a live call.")
+        : offer.id === "dao"
+          ? (locale === "ru"
+            ? "Знакомство с ресурсами в авторской символической модели пяти элементов У-Син. Это самоисследование, не медицинская диагностика."
+            : "Explore personal resources with the author-led symbolic Wu Xing five-element model. This is reflective self-exploration, not a medical diagnosis.")
+          : offer.benefit,
+      label:offer.label,
+      price: offer.id === "situation" || offer.id === "dao"
+        ? (locale === "ru" ? "Бесплатно" : "Free")
+        : offer.id === "alchemy" || offer.id === "business"
+          ? "€50 / 30 min · €100 / 60 min"
+          : undefined,
+      free:offer.id === "situation" || offer.id === "dao",
       href:offer.href, areaKey:editorialAreas[offer.id],
     })),
     {
+      id:"constellations",
+      title:locale==="ru"?"Системные расстановки и архетипическая поддержка":"Systemic constellations & archetypal support",
+      promise:locale==="ru"?"Исследуем отношения, семейные и личные сценарии через символическую расстановку.":"Explore relationship, family and life patterns through a personal symbolic constellation.",
+      details:locale==="ru"?"Проясним запрос, рассмотрим роли и динамику ситуации, затем отделим впечатления от фактов и определим возможные шаги.":"Clarify your question, map the roles and dynamics symbolically, then distinguish impressions from facts and consider practical next steps.",
+      benefit:locale==="ru"?"Индивидуальная сессия с Андреем":"Personal session with Andrey",
+      label:locale==="ru"?"Личная сессия":"Personal session",
+      price:"€50 / 30 min · €100 / 60 min",
+      free:false,
+      href:`/${locale}/services/systemic-constellations`,areaKey:"relationships",
+    },
+    {
       id:"yggdrasil",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
       promise:locale==="ru"?"Знакомство с системой Рейки, видео и материалы.":"Reiki practice, original video and study resources.",
+      details:locale==="ru"?"Посмотрите вводное видео и учебные материалы, затем выберите бесплатную вводную ступень или индивидуальную инициацию.":"Watch the introductory video and study materials, then choose the free introductory level or a personal initiation.",
+      label:locale==="ru"?"Рейки · Первая ступень":"Reiki · Level 1",
+      price:locale==="ru"?"Бесплатно":"Free",
+      free:true,
       href:`/${locale}/academy/reiki/yggdrasil/free-initiation`,areaKey:"energy_spiritual",
     },
     {
       id:"tantra",title:locale==="ru"?"Тантра Рейки — бесплатная инициация":"Tantra Reiki — free introduction",
       promise:locale==="ru"?"Изучите практику и варианты личной инициации.":"Explore the training and teacher-guided initiation.",
+      details:locale==="ru"?"На странице курса есть вводные материалы, бесплатный запрос первой ступени и вариант индивидуальной инициации.":"The course page provides introductory materials, a free Level 1 request and the option of a personal initiation.",
+      label:locale==="ru"?"Тантра Рейки · Первая ступень":"Tantra Reiki · Level 1",
+      price:locale==="ru"?"Бесплатно":"Free",
+      free:true,
       href:`/${locale}/academy/reiki/tantra-reiki/free-initiation`,areaKey:"energy_spiritual",
     },
   ];

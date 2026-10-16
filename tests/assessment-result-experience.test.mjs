@@ -139,7 +139,8 @@ test('full report appears before the optional raw score panel; no overall unrela
 test('PDF report includes personal interpretation and next steps for each individual assessment', () => {
   const building = source('lib/profile/client-report.js')
   const rendering = source('lib/profile/client-report-pdf.js')
-  assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /const interpretation = buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /conclusion:[^\n]+,\s*interpretation,/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
   assert.match(rendering, /for \(const step of section\.steps \|\| \[\]\)/)

@@ -35,9 +35,11 @@ test("dedicated Services always exposes paid and express booking choices at the 
   const home = read("components", "holistic-house-home.tsx");
   const page = read("app", "[locale]", "services", "page.tsx");
   const cta = read("components", "public-consultation-cta.tsx");
-  assert.match(home, /services\/free-situation-review#personal-consultation/);
+  assert.match(home, /\/services#consultation/);
   assert.match(home, /services\/free-situation-review/);
   assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking \/>/);
+  assert.match(read("app", "es", "page.tsx"), /href="\/es\/services#consultation"/);
+  assert.match(read("app", "es", "services", "page.tsx"), /<PublicConsultationCta locale="es" id="consultation" serviceBooking \/>/);
   assert.match(cta, /serviceBooking = false/);
   assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} \/>/);
   assert.match(read("components", "consultation-choice-capture.tsx"), /serviceChoices: ServiceChoice\[\] = \["session", "questions", "free"\]/);

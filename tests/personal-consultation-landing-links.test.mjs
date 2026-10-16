@@ -35,15 +35,36 @@ test("three languages preserve a genuinely free written report and transparent l
 });
 
 test("home and services offer direct and clear free and paid landing actions", () => {
-  for (const source of [homepage, services]) {
-    assert.match(source, /services\/free-situation-review/);
-    assert.match(source, /services\/free-situation-review#personal-consultation/);
-  }
+  for (const source of [homepage, services]) assert.match(source, /services\/free-situation-review/);
+  assert.match(homepage, /className="service-home-button service-home-button--consultation"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
+  assert.match(homepage, /\{text\.heroBook\}/);
+  assert.match(services, /services\/free-situation-review#personal-consultation/);
   assert.match(homepage, /service-home-button--primary/);
   assert.match(services, /paidCta:/);
   assert.match(styles, /\.heroActions\{/);
   assert.match(styles, /\.paidOptions a/);
   assert.match(styles, /@media\(max-width:767px\)/);
+});
+
+function assertBookingAnchor(page, cta, capture) {
+  const targets = [...page.matchAll(/<PublicConsultationCta\b[^>]*\/>/g)].map(match => match[0]);
+  assert.equal(targets.length, 1, "One consultation target per Services page");
+  assert.match(targets[0], /id="consultation"/);
+  assert.match(targets[0], /\bserviceBooking\s*\/>/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} \/>/);
+  assert.match(capture, /<section\s+id=\{id\}/);
+}
+
+test("booking links resolve to the service selector anchor in every Services locale", () => {
+  const cta = read("components/public-consultation-cta.tsx");
+  const capture = read("components/consultation-choice-capture.tsx");
+  for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
+    const page = read(path);
+    assertBookingAnchor(page, cta, capture);
+    assert.throws(() => assertBookingAnchor(page.replace('id="consultation"', 'id="missing-consultation"'), cta, capture));
+    assert.throws(() => assertBookingAnchor(page.replace('serviceBooking />', '/>'), cta, capture));
+  }
+  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('variant="service" id={id}', 'variant="personal" id={id}'), capture));
 });
 
 test("existing personal form remains a browser-local questionnaire with an explicit WhatsApp handoff", () => {

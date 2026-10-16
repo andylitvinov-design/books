@@ -1,8 +1,8 @@
-.wrapper { width:100%; min-width:0; box-sizing:border-box; }
+.wrapper { width:100%; min-width:0; box-sizing:border-box; container-type:inline-size; }
 .trigger {
   box-sizing:border-box; appearance:none; border:0; cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:12px;
-  width:100%; min-height:56px; padding:12px 20px;
+  width:100%; min-width:min(100%, 180px); min-height:56px; padding:12px 20px;
   border-radius:14px; background:#762e4c; color:#fff;
   text-align:center; font:800 16px/1.35 Arial,Helvetica,sans-serif;
   box-shadow:0 8px 20px rgba(74,33,58,.16);
@@ -37,3 +37,14 @@
   .choices a { min-height:48px; padding:10px 7px; font-size:13px; gap:6px; }
 }
 @media(prefers-reduced-motion:reduce) { .trigger .chevron { transition:none; } }
+
+/* Use container width, not device width: offer cards can be much narrower
+   than the viewport. Never squeeze messaging buttons below a tap-safe width. */
+@container (max-width: 300px) {
+  .choices { grid-template-columns: minmax(0, 1fr); }
+  .choices a { min-height: 48px; }
+}
+
+/* The Holistic House mobile tab bar overlays the visual viewport. Aligning the
+   opened panel with this safety margin keeps both messenger buttons tappable. */
+.panel { scroll-margin-block: 100px 118px; }
