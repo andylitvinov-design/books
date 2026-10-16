@@ -72,9 +72,18 @@ async function verify(browserType,engine,width,height){
   // Previously this route's CSP class was incorrectly classified as 'private'
   // by client navigation while middleware sent 'youtube-uploader'. That caused
   // recursive location.replace() and an unscrollable, jittering iPhone sheet.
-  await wait(650)
-  assert.equal(uploaderNavigations,1,engine+' '+width+' uploader is reloading itself after hydration')
-  console.log('Mobile QA: stable admin page in '+engine+' '+width+'px')
+  // A legitimate first cross-policy navigation may replace one document
+  // (login -> admin -> OAuth-scoped route). What must never happen is a cycle.
+  await wait(850)
+  const settledNavigationCount = uploaderNavigations
+  await wait(850)
+  assert.ok(settledNavigationCount >= 1 && settledNavigationCount <= 2,
+    engine+' '+width+' unexpected uploader navigation sequence: '+settledNavigationCount)
+  assert.equal(uploaderNavigations,settledNavigationCount,
+    engine+' '+width+' uploader keeps replacing itself after hydration')
+  assert.equal(await page.evaluate(() => document.body.dataset.cspClass),'youtube-uploader',
+    engine+' '+width+' document CSP class mismatch')
+  console.log('Mobile QA: stable admin page in '+engine+' '+width+'px, navigation count '+uploaderNavigations)
   await expect(page.getByRole('heading',{name:'Phone → YouTube'})).toBeVisible()
   await expect(page.locator('input[type="file"]')).toHaveCount(1)
 
