@@ -143,6 +143,8 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
       await visible(page.locator("[data-free-quick-request]").first());
+      assert.equal(await page.locator("[data-free-quick-request]").count(), 2, "The same compact consultation selector appears at the top and bottom");
+      await expect(page.locator("[data-free-quick-request]").first().locator('input[type="radio"]')).toHaveCount(3);
       const detailIntake = page.locator("[data-free-drawing-intake]");
       await detailIntake.waitFor({ state: "hidden" });
       const advanced = page.locator("details").filter({ has: detailIntake });
@@ -160,7 +162,26 @@ try {
     const quick = page.locator("[data-free-quick-request]").first();
     await visible(quick);
     const quickChooser = await openContactChannelChooser(quick, expect);
-    await assertPreparedContactChannels(quickChooser, expect);
+    const freeDraft = await assertPreparedContactChannels(quickChooser, expect);
+    const freeMessage = freeDraft.whatsappUrl.searchParams.get("text") || "";
+    assert.ok(freeMessage.includes(locale === "ru" ? "Бесплатная консультация" : "Free consultation"), "Free request includes its explicit selected format");
+    assert.ok(!freeMessage.includes("€50") && !freeMessage.includes("€100"), "Free enquiry must not accidentally quote a paid price");
+    for (const [format, price, minutes] of [["mini", "€50", "30"], ["full", "€100", "60"]]) {
+      await quick.locator('input[type="radio"][value="' + format + '"]').check();
+      await expect(quick.locator('input[type="radio"][value="' + format + '"]')).toBeChecked();
+      await expect(quickChooser.locator('button[data-contact-order]')).toHaveAttribute('aria-expanded', 'false');
+      const selectedChooser = await openContactChannelChooser(quick, expect);
+      const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(selectedChooser, expect);
+      const text = whatsappUrl.searchParams.get("text") || "";
+      assert.ok(text.includes(price) && text.includes(minutes), "Messenger draft retains exact paid amount and duration: " + format);
+      assert.equal(telegramUrl.searchParams.get("text"), text, "Telegram and WhatsApp preserve paid selection");
+    }
+    const bottom = page.locator("[data-free-quick-request]").last();
+    await visible(bottom);
+    await bottom.locator('input[type="radio"][value="full"]').check();
+    const bottomChooser = await openContactChannelChooser(bottom, expect);
+    const bottomDraft = await assertPreparedContactChannels(bottomChooser, expect);
+    assert.ok((bottomDraft.whatsappUrl.searchParams.get("text") || "").includes("€100"), "Bottom capture must also respect chosen full session");
     const intake = page.locator("[data-free-drawing-intake]");
     const advanced = page.locator("details").filter({ has: intake });
     await intake.waitFor({ state: "hidden" });
