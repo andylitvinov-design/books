@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { createPrescription, updatePrescription } from '@/lib/prescriptions/service'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { autoPublishSavedClientReport } from '@/lib/clients/report-auto-publish'
 
 function formInput(formData) {
   let items
@@ -25,8 +26,9 @@ async function save(existing, formData) {
   const store = getPrescriptionStore()
   if (!store) throw new Error('Prescription storage is not configured')
   const record = existing ? updatePrescription(existing, formInput(formData)) : createPrescription(formInput(formData))
-  await store.save(record, existing)
-  redirect(`/admin/prescriptions/${record.id}`)
+  await store.save(record,existing)
+  const publication=await autoPublishSavedClientReport(record,store)
+  redirect(`/admin/prescriptions/${record.id}?publication=${publication.status}`)
 }
 
 export async function createPrescriptionAction(formData) { return save(undefined, formData) }
