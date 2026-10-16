@@ -4,7 +4,7 @@ import { academySeoRouteKeys, seoMetaForAcademyRoute } from "../data/academy/seo
 import { readFileSync } from "node:fs";
 
 test("Reiki and Temple Studies have distinct, genuine EN/RU/ES search metadata", () => {
-  assert.deepEqual(academySeoRouteKeys, ["reiki", "reiki/yggdrasil", "reiki/tantra-reiki", "reiki/kundalini-reiki", "temple-studies"]);
+  assert.deepEqual(academySeoRouteKeys, ["reiki", "reiki/yggdrasil", "reiki/tantra-reiki/free-initiation", "reiki/tantra-reiki", "reiki/kundalini-reiki", "temple-studies"]);
   for (const locale of ["en", "ru", "es"]) {
     const titles = new Set();
     for (const routeKey of academySeoRouteKeys) {
