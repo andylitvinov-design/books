@@ -36,3 +36,34 @@
 .typeSummary h3{margin:8px 0;color:#304832}
 .typeSummary p,.typeSummary small{line-height:1.55}
 .contextNote{margin:0;color:#675e55;font-size:.85rem;line-height:1.55;padding:12px;border:1px solid #e2ddd4;border-radius:12px;background:#faf8f3}
+
+
+/* My Tests R5: one calm result overview. These are raw instrument points,
+   never clinical percentiles or a pooled mental-health score. */
+.overview{padding:clamp(16px,3vw,24px);margin:0 0 14px;background:linear-gradient(120deg,#f3f7fe,#fbfcff);border:1px solid #cbd8ec;border-radius:20px;box-shadow:0 5px 18px #192d500d;min-width:0}
+.overviewHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}
+.overviewEyebrow{margin:0 0 5px!important;font-size:.75rem!important;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#465f85}
+.overviewHead h3{font:500 clamp(1.28rem,3vw,1.75rem)/1.2 Georgia,serif!important;color:#223b61!important;margin:0 0 9px!important}
+.overviewDate{font:650 .8rem/1.35 system-ui,sans-serif;color:#4e6180;white-space:nowrap;padding:6px 10px;background:#fff;border:1px solid #d9e1ed;border-radius:999px}
+.overviewPurpose{font-size:.99rem!important;line-height:1.52!important;color:#334761;margin:0 0 14px!important;max-width:78ch}
+.overviewGrid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:9px}
+.overviewChip{min-width:0;margin:0!important;display:flex;flex-direction:column;gap:4px;padding:11px 12px;border:1px solid #dce4f0;border-radius:13px;background:#fff}
+.overviewChip strong{font-size:.91rem;line-height:1.35;color:#233e65;overflow-wrap:anywhere}
+.overviewChip span{font-size:.79rem;line-height:1.35;color:#4c6380}
+.overviewChip small{font-size:.77rem;line-height:1.35;color:#68778a}
+.moreCount{font-size:.81rem!important;line-height:1.45!important;margin:10px 0 0!important;color:#536681}
+.reviewNotice{border-inline-start:3px solid #86627c;border-radius:5px;background:#fcf5f8;color:#603f57;margin:12px 0 0!important;padding:11px 13px;font-size:.88rem!important;line-height:1.5!important}
+.overviewLimit{margin:12px 0 0!important;font-size:.81rem!important;line-height:1.4!important;color:#5c6570}
+.overviewActions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:14px}
+.overviewLink,.overviewNext{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 14px;border-radius:11px;font-size:.88rem;font-weight:750;line-height:1.35;text-align:center;text-decoration:none}
+.overviewLink{background:#253d65;border:1px solid #253d65;color:#fff}
+.overviewNext{background:#fff;border:1px solid #9cadc8;color:#253d65}
+.overviewLink:hover{background:#182e51;color:#fff}
+.overviewNext:hover{background:#edf3fd;color:#1d3255}
+.overviewLink:focus-visible,.overviewNext:focus-visible{outline:3px solid #6784aa;outline-offset:3px}
+.methodDisclosure{margin:0 0 12px;padding:9px 13px;border:1px solid #dce3ec;border-radius:12px;color:#57677a;background:#fafbfd}
+.methodDisclosure summary{cursor:pointer;min-height:32px;font-size:.86rem;font-weight:700;color:#344e76}
+.methodDisclosure p{font-size:.86rem!important;line-height:1.5!important;margin:8px 0 0!important}
+.cards[id]{scroll-margin-top:80px}
+#hh-assessment-next-step{scroll-margin-top:80px}
+@media(max-width:570px){.overview{padding:15px 12px;border-radius:16px}.overviewHead{flex-direction:column;gap:3px}.overviewDate{margin-bottom:8px}.overviewGrid{grid-template-columns:minmax(0,1fr)}.overviewActions{flex-direction:column;align-items:stretch}.overviewLink,.overviewNext{width:100%}}
