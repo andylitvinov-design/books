@@ -22,7 +22,7 @@ const AREAS={
   personal_development:['Personal development','Личностное развитие'],
 }
 const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
-const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:''}
+const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},displayLocales:['en','ru'],areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],contacts:{whatsapp:'',telegram:''}}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
   "en": {
@@ -90,6 +90,29 @@ const DASHBOARD_COPY = {
 }
 const arr=value=>Array.isArray(value)?value.join(', '):''
 const list=value=>String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
+const LISTING_LANGS={en:'English',ru:'Русский',es:'Español'}
+const LISTING_CURRENCIES=['CAD','USD','EUR','GBP','MXN','UAH','PLN','CHF','AUD']
+async function preparePublicListingPhoto(file){
+  if(!file||file.size>25_000_000||file.size<128)throw new Error('PHOTO_TOO_LARGE')
+  const url=URL.createObjectURL(file)
+  try{
+    const image=new Image()
+    image.decoding='async'
+    await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url})
+    if(!image.naturalWidth||!image.naturalHeight)throw new Error('INVALID_IMAGE')
+    const scale=Math.min(1,1400/Math.max(image.naturalWidth,image.naturalHeight))
+    const canvas=document.createElement('canvas')
+    canvas.width=Math.max(1,Math.round(image.naturalWidth*scale))
+    canvas.height=Math.max(1,Math.round(image.naturalHeight*scale))
+    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height)
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.78))
+    if(!blob||blob.size<128||blob.size>3_000_000)throw new Error('PHOTO_TOO_LARGE')
+    return blob
+  }catch(error){
+    if(error.message==='PHOTO_TOO_LARGE')throw error
+    throw new Error('PHOTO_FORMAT_NOT_SUPPORTED')
+  }finally{URL.revokeObjectURL(url)}
+}
 
 function PracticeTile({Icon,title,description,onClick,active=false}) {
   return <button type="button" className="hh-practice-tool-card" onClick={onClick} aria-pressed={active}>
@@ -304,7 +327,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           </details>
           <Services items={services} t={t} locale={locale} busy={busy} createRequest={newServiceRequest}
             onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
-            onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+            onPublish={(id,draft,expectedRevision)=>act(async()=>{
+              const saved=await practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision})
+              await practiceFetch('/services/'+saved.id,{action:'submit',expectedRevision:saved.revision})
+            })}
             onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
         </>}
         {activePanel==='clients'&&(isOwner&&accountId
@@ -432,7 +458,7 @@ function Credentials({items,t,busy,onCreate,onDelete}){
   <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onCreate({...v,expiresOn:v.expiresOn||null});setV({title:'',issuer:'',jurisdiction:'',reference:'',public:true,expiresOn:''})}}><h3>{t.add}</h3>
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
-function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause}){
+function Services({items,t,locale,busy,createRequest=0,onSave,onPublish,onPause}){
   const ru=locale==='ru'
   const [creating,setCreating]=useState(items.length===0)
   const [status,setStatus]=useState('all')
@@ -467,11 +493,11 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
     </div>
     <p className="hh-practice-services-count" role="status">{ru?'Показано':'Showing'} {visible.length} / {items.length}</p>
     {creating&&<ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
-      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />}
+      onSave={onSave} onPublish={onPublish} onPause={onPause} />}
     {visible.map(item=><details key={item.id+':'+item.revision} className="hh-practice-service-row">
       <summary>
         <span className="hh-practice-service-row-main">
-          <span className="hh-practice-service-symbol" aria-hidden="true"><Leaf /></span>
+          <span className="hh-practice-service-symbol" aria-hidden="true">{item.photos?.[0]?<img src={item.photos[0]} alt="" loading="lazy"/>:<Leaf />}</span>
           <span className="hh-practice-service-row-description">
             <strong>{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
             <small>{item.deliveryFormat==='in_person'?(ru?'Лично':'In person'):item.deliveryFormat==='hybrid'?(ru?'Онлайн или лично':'Online or in person'):(ru?'Онлайн':'Online')}{item.durationMinutes?' · '+item.durationMinutes+' min':''}</small>
@@ -481,7 +507,7 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
         <span className="hh-practice-service-row-meta" data-status={item.status}>{statusLabel(item.status)}</span>
         <ChevronRight className="hh-practice-service-chevron" aria-hidden="true"/>
       </summary>
-      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
+      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onPublish={onPublish} onPause={onPause}/>
     </details>)}
     {items.length===0&&!creating&&<div className="hh-practice-empty-state">
       <p>{ru?'Пока нет услуг. Создайте своё первое предложение.':'No services yet. Add your first offer.'}</p>
