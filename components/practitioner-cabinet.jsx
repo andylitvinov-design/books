@@ -42,12 +42,12 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   const actions=[
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
+    {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/prescriptions/new',icon:FileText,title:text.prescription,body:text.prescriptionText},
     {href:'/admin/payments/new',icon:ReceiptText,title:text.invoice,body:text.invoiceText},
     {href:'/admin/manual-billing',icon:ReceiptText,title:text.manualBilling,body:text.manualBillingText},
     ...(appRequestsEnabled?[{href:'/admin/app-requests',icon:Inbox,title:text.appRequests,body:text.appRequestsText},{href:'/admin/practitioners',icon:BadgeCheck,title:text.network,body:text.networkText}]:[]),
     {href:'/admin/clients/legacy',icon:Archive,title:text.legacy,body:text.legacyText},
-    {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/videos',icon:Film,title:text.videos,body:text.videosText},
   ]
   return (
