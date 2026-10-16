@@ -20,6 +20,7 @@ on:
       - 'docs/billing/proposed-concurrent-course-schema.sql'
       - 'tests/course-dashboard-integration.test.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
+      - 'tests/course-free-slot-restart.test.mjs'
       - 'package.json'
   workflow_dispatch:
 
@@ -40,7 +41,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Test exact five-test fixed curricula, old R3 and multicourse
-        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs
+        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs
       - name: Lint course code
         run: npx eslint components/app/course-preset-catalog.jsx components/app/my-course.jsx components/app/course-r3-steps.jsx components/app/my-courses-dashboard.jsx lib/inner-growth/course-presets.js lib/app/growth-course.js
       - name: Next production compile

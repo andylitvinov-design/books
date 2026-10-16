@@ -205,7 +205,7 @@ export function MyCourse({ data, locale = 'en' }) {
       if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
       selectedCourse.current = response.course?.id || null
       setSnapshot({ accountId, value: response })
-      if (openPrimaryToday && !courseId && response.course?.stage === 4 && response.course.status !== 'archived') {
+      if (openPrimaryToday && !courseId && response.course?.stage === 4 && ['active','paused'].includes(response.course.status)) {
         setView('detail');replaceCourseUrl(selectedCourse.current)
       } else if (updateUrl) replaceCourseUrl(selectedCourse.current)
       return response
@@ -333,7 +333,8 @@ export function MyCourse({ data, locale = 'en' }) {
       const restartingClosed = state?.course?.status === 'closed' && access?.multiCourseEnabled !== true
       const requestedCourseId=restartingClosed ? state.course.id : newCourseId.current
       const started = await request(accountId, { action: 'start', consent: true, courseId: requestedCourseId,
-        newCourse: !restartingClosed, ...(restartingClosed ? { expectedRevision: state.course.revision } : {}), ...(values.presetId ? { presetId: values.presetId } : {}),
+        // Legacy free accounts have one reusable course row, not parallel course slots.
+        newCourse: access?.multiCourseEnabled === true, ...(restartingClosed ? { expectedRevision: state.course.revision } : {}), ...(values.presetId ? { presetId: values.presetId } : {}),
       })
       if (!isSelected(targetCourseId,epoch)) return
       if (started.course?.id !== requestedCourseId) throw new Error('COURSE_SELECTION_CHANGED')
@@ -456,7 +457,11 @@ export function MyCourse({ data, locale = 'en' }) {
   const courses = Array.isArray(state?.courses) ? state.courses : state?.course ? [state.course] : []
   const access = state?.access
   const atLimit = Boolean(access && access.activeCourseCount >= access.activeCourseLimit)
-  const canAddCourse = Boolean(access?.multiCourseEnabled && !atLimit)
+  // On the legacy one-course schema, closing frees the existing owner row for
+  // the next course. Sequential free courses must not require multi-course billing.
+  const legacyFreeSlot = access?.multiCourseEnabled === false &&
+    (courses.length === 0 || (courses.length === 1 && courses[0].status === 'closed'))
+  const canAddCourse = Boolean(access && !atLimit && (access.multiCourseEnabled || legacyFreeSlot))
   const showDashboard = courses.length > 0 && view === 'list'
   const isHistory = ['completed', 'archived'].includes(state?.course?.status)
   const stage = view === 'new' || view === 'switch' || state?.course?.status === 'closed' ? 0 : state?.course?.stage || 0
@@ -511,7 +516,7 @@ export function MyCourse({ data, locale = 'en' }) {
   return <div className={styles.root} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
-      locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access?.multiCourseEnabled)} overLimit={access?.overLimit}
+      locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} overLimit={access?.overLimit}
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
