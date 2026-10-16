@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return [locale, base + path] as const;
     }).filter(([, url]) => available.has(url));
     const languageAlternates = pairs.length >= 2
-      ? Object.fromEntries(pairs.concat(pairs.some(([locale]) => locale === 'en') ? [['x-default', pairs.find(([locale]) => locale === 'en')![1]] as const] : []))
+      ? Object.fromEntries([...pairs, ...(pairs.some(([locale]) => locale === 'en') ? [['x-default', pairs.find(([locale]) => locale === 'en')![1]]] : [])])
       : undefined;
     return {
       ...entry,
