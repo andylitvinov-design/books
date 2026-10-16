@@ -99,6 +99,12 @@ IMAGE OF TRANSFORMATION
 
 - A grapevine stops choking everything around, sprouts soft leaves, grows upwards to the sun freely, without a tight grip.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The fear of letting go of control makes the will rigid: it seems that everything will fall apart without constant pressure.
+
+After (desired state): Mature strength remains confident while becoming gentler: it is possible to trust, listen to others and act without exerting pressure.
+
 ## RITUAL
 
 - take 2-5 drops of VINE under the tongue

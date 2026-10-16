@@ -188,3 +188,11 @@ Slowly untie the cloth.
 Look into the glass — and tell yourself: "I was a prisoner. Now I am free."
 
 Open the jar. Put your hands in the water and say: "I feel. I am returning. I am — breath, voice, light."
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: As though watching life from behind glass: it is hard to make out your feelings, desires and sense of self.
+
+After (desired state): Being present in your own life: you can notice your feelings, make choices and connect with the world at your own pace.

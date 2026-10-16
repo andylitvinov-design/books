@@ -107,6 +107,12 @@ open your heart, allow yourself to be loved, receive love;
 This is a great Path,
 big tasks.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The need for love from others and fear of loneliness lead you to doubt yourself and accommodate others.
+
+After (desired state): Warmth toward yourself and acceptance of your individuality, with the ability to receive care without losing your inner support.
+
 PULSATILLA
 
 gently warms your heart from the inside, provides gentle sensitive support from nature.

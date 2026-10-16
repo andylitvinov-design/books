@@ -53,3 +53,11 @@ I was struck by the vivid effect of this remedy, so I decided to describe it.
 It is like the sun dispersing clouds of fear, or wind clearing a fog of worries so that more light can enter your days.
 
 In my observations, it can resonate with states of withdrawal or emotional stupor, when a person isolates and does not allow new possibilities or contacts into life.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Fears and worries leave you feeling stuck and isolated, making it hard to welcome new connections and opportunities.
+
+After (desired state): An inner glimmer of light and a readiness to notice new possibilities and take a step toward connecting with the world.

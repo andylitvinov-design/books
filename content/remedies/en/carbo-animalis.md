@@ -149,3 +149,9 @@ inner light.
 ✨ Carbo Animalis is a reminder that even from the deepest losses, new life can be born.
 
 🔥 You have not extinguished – you are transforming into a new source of strength and light.
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Emptiness and a feeling of being unwanted, as though the inner spark has gone out.
+
+After (desired state): A sense of connection with your roots, with people and with new meaning in life.

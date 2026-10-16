@@ -45,6 +45,14 @@ It helps with stress, palpitations, and feelings of vulnerability.
 
 It helps develop a sense of safety, self-confidence, and the state of the Fearless Guardian.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Fright and a sense of vulnerability: in the face of danger, it feels as though there is neither strength nor support.
+
+After (desired state): Quiet courage and self-confidence: the inner guardian feels supported and ready to face a difficulty.
+
 ## Additional materials and observations
 
 - message23 — case.

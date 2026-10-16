@@ -69,3 +69,11 @@ In homeopathy, information about this remedy is used to relieve burning of the m
 From the point of view of psychotherapy, it is good for eliminating "internal itching," nervousness, and impatience.
 
 It adds inner calm and dignity.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Impatience, nervousness and a sense of an inner “itch”.
+
+After (desired state): Quiet dignity and the freedom not to keep pushing yourself.

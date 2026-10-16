@@ -132,6 +132,12 @@ And the wind no longer breaks it —
 it simply passes through the crown.
 Strength becomes calm.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Tasks and responsibilities have become so numerous that familiar confidence gives way to the thought “I can’t cope”.
+
+After (desired state): Quiet trust in your abilities: you can make sense of the workload and organize it without losing confidence in yourself.
+
 ## RITUAL
 
 • take 2–5 drops of ELM under your tongue

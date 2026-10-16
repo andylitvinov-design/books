@@ -72,6 +72,14 @@ The remedy removes unnecessary impurities, programs, blocks, allowing perception
 
 And interaction more confident.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Fear, shame and embarrassment constrain perception and make it harder to interact confidently with others.
+
+After (desired state): A more balanced outlook and quiet confidence in interactions, with less inhibition from shame.
+
 __
 
 But strong facets of personality can be well strengthened through crystals: quartz, etc.

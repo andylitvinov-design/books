@@ -62,6 +62,14 @@ Physical inflammations: effectively eliminates symptoms, soothes burning and pai
 
 Effect: With the use of the remedy, burning impulses and emotional “sparks” are softened. Inflammations of body and soul subside, and in their place arises a gentle, warming fire of life.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Violations of personal boundaries cause irritation: you want to “sting” others or turn the pain inward.
+
+After (desired state): A clear sense of your boundaries and a gentler way to express disagreement without losing the ability to protect yourself.
+
 __
 
 PS. I carry out the effects of all remedies remotely.

@@ -180,6 +180,12 @@ the petals fall to the ground and turn into soil.
 From this soil, new flowers are born.
 Life accepts everything and turns it into growth.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Shame and a focus on flaws sustain the feeling “there is something wrong with me” and the urge to keep fixing yourself.
+
+After (desired state): Self-acceptance and respect for your natural self: you can be alive and imperfect without reducing yourself to your flaws.
+
 ## RITUAL
 
 take 2–5 drops of CRAB APPLE under the tongue

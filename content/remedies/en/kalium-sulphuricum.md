@@ -134,6 +134,14 @@ KALIUM SULPHURICUM
 
 warmth, move forward, cleansing body and soul. He teaches to get rid of the unnecessary, to find light even in the darkest corners, and to find strength for new growth.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Feeling stuck in old relationships and lingering emotions, longing for warmth while fearing change.
+
+After (desired state): Readiness to bring a previous stage to a close and make room for new connections, warmth and movement.
+
 ## Additional materials and observations
 
 ### message218 (12/11/2024 18:16:01 UTC-05:00)
