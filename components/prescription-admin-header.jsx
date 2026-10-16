@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import { logout } from '@/app/admin/logout/actions'
 import { readUiLocale, saveUiLocale } from '@/lib/ui-locale'
 
-export function PrescriptionAdminHeader({ title, description }) {
-  const [locale, setLocale] = useState('en')
+export function PrescriptionAdminHeader({ title, description, initialLocale = 'en' }) {
+  const [locale, setLocale] = useState(initialLocale === 'ru' ? 'ru' : 'en')
   const labels = locale === 'ru'
     ? { cabinet: 'Кабинет', newConsultation: 'Новая консультация', clients: 'Клиенты', legacy: 'Архив', materials: 'Материалы', videos: 'Видео сайта', youtubeUploader: 'Загрузка в YouTube', logout: 'Выйти', language: 'Язык интерфейса' }
     : { cabinet: 'Cabinet', newConsultation: 'New consultation', clients: 'Clients', legacy: 'Legacy', materials: 'Materials', videos: 'Website videos', youtubeUploader: 'YouTube upload', logout: 'Logout', language: 'Interface language' }

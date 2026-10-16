@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {cookies} from 'next/headers'
 import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -6,6 +7,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
+import styles from '@/components/youtube-phone-uploader.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata = {
@@ -42,11 +44,15 @@ export default async function YoutubeUploadPage() {
   }
   const enabled = historyReady && !explicitlyDisabled && Boolean(normalizeGoogleOauthClientId(clientId))
   const setupAvailable = historyReady && !environmentClientId && !explicitlyDisabled
-  return <main className="prescription-admin-shell">
-    <PrescriptionAdminHeader
-      title={{en:'Upload videos from phone',ru:'Загрузка видео с телефона'}}
-      description={{en:'Select your YouTube channel and keep a private history of video links.',ru:'Выберите YouTube-канал. Ссылки на загруженные видео сохраняются в кабинете.'}}
+  return <main className={'prescription-admin-shell ' + styles.page} data-youtube-upload-page>
+    <PrescriptionAdminHeader initialLocale={locale}
+      title={{en:'YouTube upload',ru:'Загрузка в YouTube'}}
+      description={{en:'Upload from your phone to the right channel.',ru:'Загрузка с телефона на выбранный канал.'}}
     />
+    <nav className={styles.mobileLinks} aria-label={locale === 'ru' ? 'Разделы кабинета' : 'Cabinet links'}>
+      <Link prefetch={false} href="/admin">{locale === 'ru' ? '← Кабинет' : '← Cabinet'}</Link>
+      <Link prefetch={false} href="/admin/videos">{locale === 'ru' ? 'Видео сайта' : 'Website videos'}</Link>
+    </nav>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={clientId} setupAvailable={setupAvailable}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}/>
   </main>
