@@ -3,6 +3,7 @@ import { useEffect,useRef,useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Mic,Video,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
 import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
+import { canProxyOwnerAudio } from '../lib/clients/owner-audio-upload'
 import { getRecorderReadiness } from '../lib/clients/recording-readiness'
 import { SessionPhotoUploader } from './session-photo-uploader'
 import styles from './client-session.module.css'
@@ -25,7 +26,9 @@ function recordingError(error,ru) {
     NotAllowedError:ru?'Safari не разрешил использовать микрофон или камеру. Проверьте разрешение для сайта в настройках Safari.':'Safari blocked microphone or camera access. Check the site permission in Safari settings.',
     NotFoundError:ru?'Микрофон или камера не найдены на устройстве.':'No microphone or camera was found on this device.',
     NotReadableError:ru?'Микрофон или камера заняты другим приложением.':'Microphone or camera is being used by another app.',
-    MEDIA_STORAGE_UNAVAILABLE:ru?'Хранилище записей сейчас недоступно. Попробуйте позже или проверьте настройки сервера.':'Private recording storage is unavailable. Try again or check server settings.',
+    MEDIA_STORAGE_UNAVAILABLE:ru?'Хранилище записей сейчас недоступно. Запись осталась на телефоне в этой вкладке.':'Private recording storage is unavailable. The unsaved file remains on this page.',
+    AUDIO_STORAGE_CONNECTION_FAILED:ru?'Нет соединения с хранилищем. Сохраните копию записи на телефон или повторите загрузку.':'Unable to reach private storage. Save a backup on your phone or retry.',
+    ORIGIN_DENIED:ru?'Safari не смог подтвердить безопасное соединение. Обновите вход в кабинет и повторите.':'Safari could not verify the secure request. Sign in again and retry.',
     MEDIA_TYPE_NOT_ALLOWED:ru?'Этот формат файла не поддерживается.':'This file format is not supported.',
     MEDIA_SIZE_NOT_ALLOWED:ru?'Запись слишком большая для безопасной загрузки.':'Recording is too large to upload.',
   }
@@ -119,6 +122,27 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     setError('');setMessage('');setStage('uploading');setUploadProgress(null);busyRef.current=true
     try {
       await saveRecording(job,{post,upload:async(intent,file,mime)=>{
+        // Short voice notes use an authenticated same-origin binary endpoint.
+        // Safari no longer needs to connect directly to Supabase Storage.
+        // Large files are never sent through Vercel's 4.5 MB body limit.
+        if(intent.provider!=='external'&&canProxyOwnerAudio(file)){
+          let response
+          try {
+            response=await fetch('/api/admin/clients/'+encodeURIComponent(job.clientId)+
+              '/sessions/'+encodeURIComponent(job.sessionId)+'/media/'+
+              encodeURIComponent(intent.assetId)+'/upload',{
+                method:'POST',headers:{'content-type':mime},body:file,
+                credentials:'same-origin',cache:'no-store',
+              })
+          } catch {
+            throw new Error('AUDIO_STORAGE_CONNECTION_FAILED')
+          }
+          const result=await response.json().catch(()=>({}))
+          if(response.status===401)throw new Error('ADMIN_SIGN_IN_REQUIRED')
+          if(!response.ok||result.uploaded!==true)
+            throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
+          return
+        }
         if(intent.provider==='external'){
           // Upload directly to the approved PRIVATE bucket. No MP4 bytes pass
           // through a Vercel API function and no provider key reaches the browser.
@@ -147,7 +171,11 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         }
         const supabase=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
         const result=await supabase.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,file,{contentType:mime,upsert:false})
-        if(result.error) throw new Error('Upload interrupted: '+result.error.message)
+        if(result.error) {
+          const detail=result.error.message||''
+          if(/load failed|failed to fetch|network/i.test(detail))throw new Error('AUDIO_STORAGE_CONNECTION_FAILED')
+          throw new Error('Upload interrupted: '+detail)
+        }
       }})
       jobRef.current=null
       if(!mountedRef.current)return
@@ -328,6 +356,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
       <button type="button" disabled={busy} onClick={()=>jobRef.current&&upload(jobRef.current)}><RotateCcw size={16}/>{ru?'Повторить загрузку':'Retry upload'}</button>}</div>}
+    {retryFile&&stage==='error'&&playback&&<a className={styles.inlineLink} href={playback} download={retryFile.name||'voice-message.m4a'}>{ru?'Скачать резервную копию несохранённой записи ↓':'Save a backup of the unsaved recording ↓'}</a>}
     {retryFile&&stage==='error'&&<><p>{ru?'Держите страницу открытой: запись хранится в памяти до успешной загрузки.':'Keep this page open: the recording stays in memory until upload succeeds.'}</p><button type="button" onClick={()=>{if(window.confirm(ru?'Удалить несохранённую запись с этого устройства?':'Discard this unsaved recording from this device?')){jobRef.current=null;setRetryFile(null);setPlayback('');setError('');setStage('idle')}}}>{ru?'Удалить несохранённую запись':'Discard unsaved recording'}</button></>}
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
