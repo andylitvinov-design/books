@@ -1,4 +1,4 @@
-.wrapper { width:100%; min-width:0; box-sizing:border-box; }
+.wrapper { width:100%; min-width:0; box-sizing:border-box; container-type:inline-size; }
 .trigger {
   box-sizing:border-box; appearance:none; border:0; cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:12px;
@@ -37,3 +37,10 @@
   .choices a { min-height:48px; padding:10px 7px; font-size:13px; gap:6px; }
 }
 @media(prefers-reduced-motion:reduce) { .trigger .chevron { transition:none; } }
+
+/* Use container width, not device width: offer cards can be much narrower
+   than the viewport. Never squeeze messaging buttons below a tap-safe width. */
+@container (max-width: 300px) {
+  .choices { grid-template-columns: minmax(0, 1fr); }
+  .choices a { min-height: 48px; }
+}
