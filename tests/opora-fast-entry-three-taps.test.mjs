@@ -4,10 +4,15 @@ import {readFileSync} from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('sitewide Stress Relief banner enters the course directly, without another catalogue', () => {
+test('global review banner is separate from the quick-entry OPORA course banner below tests', () => {
   const banner = read('components/sitewide-antistress-banner.tsx')
+  const globalRibbon = banner.slice(0, banner.indexOf('export function TestSelectionCourseBanner'))
+  const lowerRibbon = banner.slice(banner.indexOf('export function TestSelectionCourseBanner'))
   const entry = read('components/app/my-course.jsx')
-  assert.match(banner, /app\/course\?program=stress&entry=quick/)
+  assert.ok(globalRibbon.includes('services/free-situation-review'))
+  assert.ok(!globalRibbon.includes('app/course?program=stress'))
+  assert.ok(lowerRibbon.includes('data-tests-course-banner'))
+  assert.ok(lowerRibbon.includes('app/course?program=stress&entry=quick'))
   const app = read('components/app/app-workspace.jsx')
   assert.match(app, /quickAuthAttempted = useRef\(false\)/)
   assert.match(app, /state === 'signed-out' && stressSignup/)

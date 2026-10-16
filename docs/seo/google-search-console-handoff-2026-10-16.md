@@ -1,34 +1,35 @@
-# Holistic House: Google Search Console ownership + indexing handoff
+# Google Search Console — Holistic House ownership handoff COMPLETE
 
-**Recorded:** 2026-10-16. **Status:** owner verification of CONNECTED account blocked; DO NOT claim the page indexed or sitemap submitted.
-**Property:** `https://holistichouse.vercel.app/` (URL-prefix, exact https host).
-**Existing public source:** `app/layout.tsx` already emits `google-site-verification` through Next.js Metadata. Preserve the existing HTML verification tag — it may belong to another owner. Do not paste its value into PRs/issues or rotate/remove it without comparing which Google identity owns it.
+**Updated:** 2026-10-16. This file replaces the initial unverified-access blocker from earlier that day.
 
-## Evidence
+**Property:** https://holistichouse.vercel.app/ (exact HTTPS URL-prefix).
+**Official Google status:** property ownership successfully verified using the existing `google-site-verification` HTML meta tag; keep this tag in `app/layout.tsx`, do not rotate/remove it.
+**GSC Wizard:** `add_site` succeeded, site `active: true`, permission `siteOwner`.
 
-- GSC Wizard lists `https://psitrends.com/` and `https://ezohata.com/` and an unverified test domain, not a readable Holistic House property.
-- GSC Wizard `add_site({siteUrl:"https://holistichouse.vercel.app/"})` explicitly answered that the property **exists in Search Console but is NOT verified for a connected Google account**. That is NOT evidence of failed indexing, zero clicks, or missing metadata.
-- Browser access for the signed-in Google profile was unavailable on 2026-10-16 because its separate TinyFish wallet had insufficient funds; run did not start. No Google UI work was executed.
-- This does not require a paid Google Ads plan, and paid advertising is completely separate from SEO.
+## Completed actions
 
-## Owner action (cannot be done with repository write alone)
+1. Google Search Console ownership verified via HTML tag.
+2. GSC Wizard registered the production property (2026-10-16T17:06:27.641Z).
+3. Sitemap https://holistichouse.vercel.app/sitemap.xml submitted and accepted at 2026-10-16T17:06:54.788Z; downloaded by Google at 17:06:56.139Z. Sitemap report: **594 URL submitted, 0 indexed, 0 warnings/errors** at the time of first fetch; this is not a claim of zero indexed pages across the entire site.
+4. Google URL Inspection called on all 15 curated EN/RU/ES priority URLs plus four additional major public entry points. **19 successful, 0 indexed; 5 discovered/not indexed, 14 unknown to Google.** No last crawl time or Google-selected canonical was returned for these nonindexed pages.
+5. Created GSC Wizard **active Indexing Tracker for 19 public pages**, a 10-keyword **Free Tantra Reiki Initiation · EN/RU/ES** topic cluster, a matching content group, branded keyword metadata and a 2026-10-16 SEO launch annotation.
+6. Read genuine last-28-/90-day Search Console performance through 2026-10-14: **0 clicks / 0 impressions**. CTR/position cannot be meaningfully calculated without impressions.
+7. Independent live crawler audited 19/19 selected pages as indexable, with no high/critical warnings; see [dated source-backed baseline](./gsc-baseline-2026-10-16.md).
 
-1. Open [Google Search Console](https://search.google.com/search-console) using the **same Google account linked to GSC Wizard**. Select URL-prefix `https://holistichouse.vercel.app/`.
-2. In Settings → Ownership verification, try the existing HTML-tag method and click **Verify**. If the existing tag belongs to another Google account, the verified owner can add the connected user under Settings → Users and permissions with **Full** access, or owner-authorized new verification can be generated for the connected identity.
-3. If Google supplies a **different** token/HTML filename for the connected identity, deliver its exact method through a safe authorized workflow to the developer. Add it to metadata or `public/` without removing other owners; deploy exact SHA, verify response on the actual canonical hostname, and click Verify in Google.
-4. Do not create duplicate wrong-prefix properties, switch to PsiTrends account by assumption, buy anything, or claim success before the Google status says verified.
+## What is *not* completed
 
-## After the property is readable in GSC Wizard
+- Google has not yet confirmed indexing of these pages. Sitemap submission and URL Inspection are not indexing requests and offer no timeframe guarantee.
+- GSC Wizard Google Analytics (GA4) scope is NOT connected: `list_ga4_properties` returns `connected=false`. Correct GA4 ownership, DebugView, consented tags, real inquiries and conversions remain unverified.
+- Full site-wide independent crawling and end-to-end guest contact/mobile QA remain ongoing, separate from GSC's newly verified property.
+- None of these actions authorize Google Ads campaign spend, changes in service pricing, new video generation or use of private client data.
 
-1. Re-run list_sites and add_site on the exact verified property.
-2. Submit `https://holistichouse.vercel.app/sitemap.xml` once; record provider acknowledgement and date, not invented indexed-count.
-3. Inspect one of each five page families, then the other EN/RU/ES counterparts:
-   - `/{locale}/about`
-   - `/{locale}/services/free-situation-review`
-   - `/{locale}/academy/reiki/yggdrasil/basic-course`
-   - `/{locale}/academy/reiki/yggdrasil/free-initiation`
-   - `/{locale}/academy/reiki/tantra-reiki/free-initiation`
-4. Export actual 28-/90-day Search Analytics by query/page/device/country with **property**, **window**, **settled date**, **source**. New pages may have no impressions yet; annotate correctly.
-5. Update [SEO #306](https://github.com/andylitvinov-design/books/issues/306), [master plan](./holistic-house-seo-master-plan.md) and [manifest](./seo-306-execution-manifest.md).
+## Next autonomous work
 
-**Privacy:** No personal tests, client cabinet, diagnoses, report data, notes, drawings, private URLs or patient content in GSC submissions, GA4 events or public GitHub documentation.
+- Keep the 19-page Indexing Tracker active; review crawl/index alerts and sitemap count periodically, not excessively.
+- After new Google index data appear, compare EN/RU/ES search queries, page impressions/CTR and adjust targeted content accordingly.
+- Address only real technical SEO issues. The 19-page audit identified a recurring Organization `logo` warning and a few long descriptions; add the real existing HH-branded `/holistic-house-app.svg`, and shorten Yggdrasil Basic Course metadata if regression tests pass. Do **not** keyword-stuff decorative alt text.
+- Document verified outcome and exact Vercel SHA in [SEO #306](https://github.com/andylitvinov-design/books/issues/306) and [master plan](./holistic-house-seo-master-plan.md).
+
+**No further Google ownership action is needed from the user.** Connecting GA4 to GSC Wizard requires its own official Google Analytics OAuth consent if that account data is requested.
+
+**Privacy:** Never send private test answers, client cabinet pages, drawings, reports, credentials or health-sensitive analytics data to sitemap, Indexing Tracker, GA4 or public repositories.

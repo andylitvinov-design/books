@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
+import { TestSelectionCourseBanner } from '@/components/sitewide-antistress-banner'
 import { isSupportedLocale } from '@/data/remedies'
 import { getTopicJourney, journeyFocusForTopics, journeyProblemsForTopics, normalizeJourneyFocus, normalizeJourneyTopicIds } from '@/lib/assessments/topic-journeys'
 import type { Locale } from '@/data/remedies'
@@ -25,5 +26,6 @@ export default async function PublicTestExplorerPage({ params, searchParams }: {
   return <main lang={locale} style={{maxWidth:'100%',minWidth:0,overflowX:'clip'}}>
     <PublicSiteHeader locale={locale as Locale} />
     <PublicTestExplorer locale={locale} embedded initialPreferences={initialPreferences} initialMode={query.mode === 'course' ? 'course' : 'tests'} initialBrowseFull={query.catalog === 'full'} />
+    <TestSelectionCourseBanner locale={locale as Locale} />
   </main>
 }

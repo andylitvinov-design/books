@@ -26,13 +26,13 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage distinguishes free written review from paid sessions and retains its bottom free chooser", () => {
+test("homepage differentiates paid booking from free written review and bottom chooser", () => {
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Personal session · from €50"/);
-  assert.match(home, /heroBook: "Личная консультация · от €50"/);
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review#personal-consultation\x60\}/);
+  assert.match(home, /heroBook: "Book a consultation"/);
+  assert.match(home, /heroBook: "Записаться на консультацию"/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(home, /className="service-home-button service-home-button--consultation"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
@@ -48,12 +48,12 @@ test("homepage distinguishes free written review from paid sessions and retains 
   assert.match(home, /not a live call\. One-to-one sessions are separate/);
   const landing = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(landing, /<section className=\{styles\.paid\} id="personal-consultation"/);
-  assert.doesNotMatch(home, /services#consultation/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const book = home.indexOf('className="service-home-button service-home-button--consultation"');
+  const free = home.indexOf('className="service-home-button service-home-button--primary"');
   const belowFold = home.indexOf("<ServicesSolutions");
-  assert.ok(firstScreen < book && book < belowFold, "Paid CTA must stay inside the hero");
+  assert.ok(firstScreen < book && book < free && free < belowFold, "Paid booking must be the first hero action");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 
@@ -64,7 +64,7 @@ test("bypass transformations only for owned WebP images and the exact approved l
   assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
   assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
-  // The verified portrait uses its static component; third-party YouTube stills keep optimization.
+  // Verified portrait and YouTube stills bypass unneeded runtime transforms.
   assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
   assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
@@ -88,6 +88,8 @@ test("only immutable-by-name public poster folders have a bounded CDN policy", (
   assert.match(config, /\/images\/holistic-house\/testimonial-posters\/\:path\*/);
   assert.match(config, /public, max-age=3600, s-maxage=86400/);
   assert.doesNotMatch(config, /source: "\/(?:api|admin|client|app)\//);
+  assert.match(config, /\/images\/holistic-house\/portrait-static\/\:path\*/);
+  assert.match(config, /public, max-age=31536000, immutable/);
   const privateMiddleware = read("middleware.ts");
   assert.match(privateMiddleware, /private, no-store, max-age=0, must-revalidate/);
 });

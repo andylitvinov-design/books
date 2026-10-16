@@ -24,7 +24,9 @@ test("approved 2026-10-09 home design keeps all three service directions and ori
   assert.match(journey, /<article className=\{styles\.service\} key=\{service\.slug\}>/);
   assert.match(journey, /"\/" \+ locale \+ "\/services\/" \+ \(!compact && service\.freeSlug \? service\.freeSlug : service\.slug\)/);
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  assert.match(home, /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
+  const streamedVideo = read("components/home-intro-video-section.tsx");
+  assert.match(home, /\{introVideoContent\}/);
+  assert.match(streamedVideo, /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
   assert.match(home, /className="service-home-hero"/);
   assert.match(home, /event="self_check_start"/);
   assert.match(home, /event="service_view"/);

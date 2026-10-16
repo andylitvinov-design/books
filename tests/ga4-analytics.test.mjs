@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { getRobotsPolicy } from "../data/seo.js";
+import { ACQUISITION_EVENTS } from "../data/local-acquisition.js";
 
 const analyticsModule = new URL("../components/ga4-analytics.tsx", import.meta.url);
 const consentModule = new URL("../components/analytics-consent.tsx", import.meta.url);
@@ -15,13 +16,54 @@ test("public conversion steps use separate allowlisted events without form paylo
   const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
   const course = readFileSync(new URL("../components/reiki-choice-capture.tsx", import.meta.url), "utf8");
 
-  for (const event of ["free_questionnaire_started", "free_questionnaire_prepared", "whatsapp_handoff_click"]) {
+  for (const event of ["free_questionnaire_started", "free_questionnaire_prepared"]) {
     assert.match(intake, new RegExp(event));
   }
+  const chooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  assertContactAnalyticsContract(intake, chooser);
   for (const event of ["academy_level_one_initiation_enquiry_click", "academy_personal_initiation_enquiry_click", "academy_study_material_request_click"]) {
     assert.match(course, new RegExp(event));
   }
   assert.doesNotMatch(intake, /emitPublicAnalyticsEvent\([^)]*(?:problem|goal|obstacle|tried|answers)/);
+});
+
+function assertContactAnalyticsContract(intake, chooser) {
+  assert.ok(ACQUISITION_EVENTS.includes("contact_click"), "The shared acquisition allowlist owns contact_click");
+  const intakeChooser = intake.match(/<ContactChannelChooser\b[\s\S]*?\/>/)?.[0];
+  assert.ok(intakeChooser, "Free review uses the shared chooser");
+  assert.match(intakeChooser, /event="contact_click"/);
+  assert.doesNotMatch(intakeChooser, /analyticsEvent=|attributes=|(?:problem|goal|obstacle|tried|answers)/);
+  const channels = [...chooser.matchAll(/<AcquisitionEventLink\b[\s\S]*?<\/AcquisitionEventLink>/g)].map(match => match[0]);
+  assert.equal(channels.length, 2);
+  for (const channel of ["whatsapp", "telegram"]) {
+    const link = channels.filter(value => value.includes('"data-contact-channel": "' + channel + '"'));
+    assert.equal(link.length, 1);
+    assert.match(link[0], /event=\{event\}/, channel + " must use the caller-supplied event");
+  }
+  const trigger = chooser.match(/<button\b[\s\S]*?<\/button>/)?.[0];
+  assert.ok(trigger, "Order is a button");
+  assert.match(trigger, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
+  assert.doesNotMatch(trigger, /emit|analytics|dispatchEvent|onChannelClick|event=/);
+  assert.doesNotMatch(chooser, /emitPublicAnalyticsEvent|dispatchEvent|sendBeacon|fetch\(/);
+}
+
+test("handoff analytics rejects caller drift and records channel selection only", () => {
+  const intake = readFileSync(new URL("../components/free-drawing-intake.tsx", import.meta.url), "utf8");
+  const chooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
+  assertContactAnalyticsContract(intake, chooser);
+  assert.throws(() => assertContactAnalyticsContract(intake.replace('event="contact_click"', 'event="unknown_event"'), chooser));
+  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('event={event}', 'event="contact_click"')));
+  assert.throws(() => assertContactAnalyticsContract(intake, chooser.replace('onClick={() => setOpen((value) => !value)}', 'onClick={() => { emit(event); setOpen((value) => !value); }}')));
+  const links = readFileSync(new URL("../components/acquisition-event-link.tsx", import.meta.url), "utf8");
+  assert.match(links, /if \(analyticsConsent !== "granted"\) return/);
+  assert.match(links, /detail: \{ event \}/);
+  assert.match(links, /onClick=\{\(\) => \{ onClick\?\.\(\); emit\(event\)/);
+  assert.doesNotMatch(links, /FormData|problem|goal|obstacle|tried|answers/);
+  const analytics = readFileSync(analyticsModule, "utf8");
+  const publicAnalytics = readFileSync(new URL("../lib/public-analytics.ts", import.meta.url), "utf8");
+  assert.match(publicAnalytics, /PUBLIC_ANALYTICS_AVAILABLE = false/);
+  assert.match(publicAnalytics, /if \(!PUBLIC_ANALYTICS_AVAILABLE\) return/);
+  assert.match(analytics, /if \(!PUBLIC_ANALYTICS_AVAILABLE \|\|/);
 });
 
 test("robots policy excludes private cabinet, report and administration routes", () => {

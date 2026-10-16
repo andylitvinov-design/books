@@ -1,1 +1,50 @@
 .panel{padding:1.25rem;border:1px solid #cbdde4;border-radius:1.2rem;background:#f4fafc;color:#203d49;min-width:0}.panel h2,.panel h3{margin-top:0.75rem}.panel p{line-height:1.55}.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1rem;margin:1.2rem 0}.form label{display:flex;flex-direction:column;gap:.4rem}.panel input,.panel select{border:1px solid #9dbac7;border-radius:.65rem;padding:.75rem;min-width:0;width:100%;font:inherit;background:white}.panel button{border:0;border-radius:.75rem;background:#225d72;color:white;padding:.8rem 1rem;font:inherit;cursor:pointer;min-height:44px}.panel button:disabled{opacity:.55;cursor:not-allowed}.panel :focus-visible{outline:3px solid #185ac9;outline-offset:3px}.list{padding:0;list-style:none;display:grid;gap:.65rem}.list li{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;padding:.8rem;background:white;border-radius:.7rem;overflow-wrap:anywhere}.list small{margin-left:auto}
+
+
+/* Approved My Practice / Clients view 2026-10-16. */
+.panel{padding:0;border:0;background:transparent;color:#382d25}
+.head h2{font:400 clamp(25px,4vw,34px)/1.18 Georgia,serif;color:#392b22;margin:0 0 6px}
+.head p{font:400 12px/1.5 system-ui,sans-serif;margin:0 0 14px;color:#796b5e}
+.privacy{padding:11px 13px;border:1px solid #d7e6ef;border-radius:13px;background:#f2f9fd;color:#2c5166;margin:0 0 12px}
+.privacy strong{font:700 12px/1.35 system-ui,sans-serif}
+.privacy p{font:400 11px/1.5 system-ui,sans-serif;margin:4px 0 0;color:#486575}
+.unavailable{padding:17px;border:1px dashed #dac9b9;border-radius:13px;background:#fff8f2}
+.unavailable p{font:500 12px/1.55 system-ui,sans-serif;color:#764f43;margin:0 0 8px}
+.unavailable button{background:#7c2b47}
+.formCard{padding:14px;background:#fffdf9;border:1px solid #eadbca;border-radius:16px;box-shadow:0 1px 3px #40301f0a}
+.formCard h3{margin:0 0 11px;font:700 15px/1.3 system-ui,sans-serif;color:#332b26}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}
+.form label{display:flex;flex-direction:column;gap:5px;font:650 12px/1.4 system-ui,sans-serif;color:#42352e}
+.form label:nth-child(3){grid-column:1/-1}
+.form input,.form select{border:1px solid #decfc0;border-radius:10px;padding:10px 11px;background:#fff;color:#362d27;font:500 13px/1.4 system-ui,sans-serif;min-height:43px}
+.form input::placeholder{color:#9d958c}
+.form button{grid-column:1/-1;min-height:44px;border-radius:12px;background:#812c49;color:#fff;font-size:13px;font-weight:750}
+.form button:disabled{opacity:.6}
+.fine{font:400 11px/1.5 system-ui,sans-serif;color:#7b6f66;margin:10px 0 0}
+.notice{padding:9px 11px;background:#e9f4e9;color:#326745;border-radius:10px;font-size:12px}
+.contactsHead{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin:18px 0 8px}
+.contactsHead h3{margin:0;color:#3c3028;font:700 14px/1.3 system-ui,sans-serif}
+.contactsHead input{width:min(100%,240px);border:1px solid #e0d1c1;border-radius:10px;min-height:39px;padding:8px 10px;background:#fff;color:#3e332c;font:500 12px/1.4 system-ui,sans-serif}
+.list{list-style:none;display:grid;gap:7px;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:9px;flex-wrap:nowrap;background:#fffcf8;border:1px solid #ebdfd2;border-radius:12px;padding:10px;min-width:0}
+.avatar{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#eee3d7;color:#71513d;font:700 13px/1.2 system-ui,sans-serif}
+.contactInfo{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px;overflow-wrap:anywhere}
+.contactInfo strong{font:700 12px/1.35 system-ui,sans-serif;color:#372c26}
+.contactInfo small{font:400 11px/1.4 system-ui,sans-serif;color:#7c7066}
+.tag{margin-left:auto;flex:none;border-radius:999px;background:#e7ebf2;color:#455976;padding:5px 8px;font:650 10px/1.2 system-ui,sans-serif}
+.empty{color:#837468;font-size:12px;justify-content:center;min-height:53px}
+.advanced{padding:13px;margin-top:17px;background:#fff8f2;border:1px solid #e5d5c6;border-radius:13px}
+.advanced>summary{cursor:pointer;color:#644333;font:700 12px/1.5 system-ui,sans-serif;min-height:29px}
+.advanced h3{font:700 14px/1.4 system-ui,sans-serif;margin:12px 0 6px}
+.advanced p{font:400 12px/1.55 system-ui,sans-serif;color:#74675d}
+.advanced select{max-width:100%;background:#fff}
+.advanced button{font-size:12px;min-height:39px;background:#812c49}
+.panel :focus-visible{outline:3px solid #93476a;outline-offset:3px}
+@media(max-width:600px){
+  .panel{padding:0}
+  .form{grid-template-columns:1fr}
+  .form label:nth-child(3){grid-column:auto}
+  .form button{grid-column:auto}
+  .contactsHead input{width:100%;max-width:none}
+  .tag{font-size:9px;max-width:90px;overflow-wrap:anywhere;text-align:center}
+}

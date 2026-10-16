@@ -16,11 +16,12 @@
 5. Отдельно проверь публичный Masters marketplace/test catalogue: индексируются лишь полноценные опубликованные публичные страницы; фильтры/личные результаты/кабинет не плодят URL. Предложи атомарный PR только после проверки фактического кода.
 6. Обнови `docs/seo/holistic-house-seo-master-plan.md`, execution manifest и #306 с результатами и ссылками. Каждый PR должен включать список файлов, тесты, browser QA, security/privacy, rollback и evidence для exact SHA.
 
-**External Google gate — НЕ имитировать:**
-- В `app/layout.tsx` уже есть тег `google-site-verification`; GSC Wizard сообщает, что `https://holistichouse.vercel.app/` не verified именно для connected Google account. НЕЛЬЗЯ произвести OAuth/Google ownership лишь кодом. Если у тебя есть авторизованная сессия реального владельца, проверь Google Search Console и официальный статус; запроси/используй новый token только если Google потребует его для этого аккаунта, сохрани старый; не публикуй токен в issue.
-- Только после Google says Verified: GSC Wizard add_site → submit `https://holistichouse.vercel.app/sitemap.xml` → inspect 15 pages → реальные 28/90-day reports с датой/свойством/geo.
-- Если доступа нет, зафиксируй один конкретный owner action: Search Console → нужный Google identity → verify existing tag OR verified owner grants Full access. Не объявляй sitemap submitted, indexed pages, clicks=0, conversions=0.
-- GA4 Tag/consent code не равен verified GA4 account/DebugView. Настрой только при доступной правильной property, не отправляй пациентские/тестовые данные.
-- Никакого Google Ads запуска, оплаты услуг, HeyGen generation, публикации личных данных/видео или изменения прав без отдельного разрешения.
+**Google Search Console теперь VERIFIED; продолжай на основе фактов:**
+- GSC Wizard зарегистрировал URL-prefix `https://holistichouse.vercel.app/` как `siteOwner`. Google **принял и скачал sitemap.xml** (594 submitted, 0 indexed в начальном снимке, 0 errors/warnings); выполнен URL Inspection 15+4 публичных страниц: 5 discovered/not indexed, 14 unknown, 0 indexed. Google Search Analytics за 28/90 дней по 2026-10-14: 0 impressions и clicks; позиции/CTR пока неинформативны.
+- 19 страниц добавлены в активный Indexing Tracker. Не повторяй проверку ownership и не запрашивай новый meta token. Не делай спам-повторных submit sitemap или неиспользуемых Indexing API calls. Результаты и источники: `docs/seo/gsc-baseline-2026-10-16.md`.
+- Технический on-page live-аудит GSC Wizard: все 19 URL indexable, 0 critical/high, 54 heuristic замечания (19 sitewide Organization logo, 35 low по длине meta и alt). Сначала проверить официальный брендовй logo asset; decorative images не должны получать SEO-спам alt.
+- Впервые появившееся индексирование и crawl coverage проверяй по tracker после реального времени обхода; никакой гарантии числа дней/позиций не давай. Все источники и даты сохраняй в #306.
+- Отдельно `list_ga4_properties` вернул `connected=false`: нужно самостоятельное Google Analytics OAuth согласие владельца через `tool.gscwizard.com` перед account-level GA4 reports; код Ga4Analytics не доказывает подключение.
+- Никакого запуска Google Ads/покупок/генерации HeyGen/публикации личных данных, отправки медицинских профилей в аналитику без отдельного разрешения.
 
 **Готовый результат:** небольшие безопасные PR → QA/tests → merge в verified production source при соблюдении release gate → Vercel production READY exact SHA → live audit. В #306 отдельно перечислить Done / Not Verified / Blocked / Next. Не обещай будущих действий как выполненных.

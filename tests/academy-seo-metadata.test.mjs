@@ -4,7 +4,7 @@ import { academySeoRouteKeys, seoMetaForAcademyRoute } from "../data/academy/seo
 import { readFileSync } from "node:fs";
 
 test("Reiki and Temple Studies have distinct, genuine EN/RU/ES search metadata", () => {
-  assert.deepEqual(academySeoRouteKeys, ["reiki", "reiki/yggdrasil", "reiki/tantra-reiki/free-initiation", "reiki/tantra-reiki", "reiki/kundalini-reiki", "temple-studies"]);
+  assert.deepEqual(academySeoRouteKeys, ["reiki", "reiki/yggdrasil", "reiki/yggdrasil/basic-course", "reiki/tantra-reiki/free-initiation", "reiki/tantra-reiki", "reiki/kundalini-reiki", "temple-studies"]);
   for (const locale of ["en", "ru", "es"]) {
     const titles = new Set();
     for (const routeKey of academySeoRouteKeys) {
@@ -19,6 +19,7 @@ test("Reiki and Temple Studies have distinct, genuine EN/RU/ES search metadata",
   }
   assert.match(seoMetaForAcademyRoute("en", "reiki/tantra-reiki").title, /9-Level/);
   assert.match(seoMetaForAcademyRoute("en", "reiki/yggdrasil").title, /7 Modules/);
+  for (const locale of ["en", "ru", "es"]) assert.ok(seoMetaForAcademyRoute(locale, "reiki/yggdrasil/basic-course").description.length <= 160, locale);
   assert.match(seoMetaForAcademyRoute("en", "reiki/kundalini-reiki").title, /3-Level/);
   assert.equal(seoMetaForAcademyRoute("en", "mysteries/egypt"), null);
   assert.equal(seoMetaForAcademyRoute("xx", "temple-studies"), null);

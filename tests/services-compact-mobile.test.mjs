@@ -59,7 +59,7 @@ test("homepage restores photo-left four services while keeping tests and Academy
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
-test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and have specific safe WhatsApp requests", () => {
+test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and have specific safe two-channel requests", () => {
   const detail = read("components/core-service-detail.tsx");
   const css = read("components/core-service-detail.module.css");
   for(const [slug,kind] of [["dao-health-profile","dao"],["alchemy-of-soul","alchemy"],["hypnotherapy-course","hypnotherapy"]]) {
@@ -73,25 +73,34 @@ test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and hav
   }
   for (const method of ["Situation analysis","Systemic constellations","homeopathic selection","Анализ ситуации","Системная расстановка","гомеопатический подбор"])
     assert.ok(detail.toLowerCase().includes(method.toLowerCase()), method);
-  assert.match(detail, /encodeURIComponent\(t\.actionMessage\)/);
-  assert.match(detail, /https:\/\/wa\.me\/14376066502/);
+  assert.match(detail, /const whatsappUrl = whatsappEnquiryUrl\(\{/);
+  assert.match(detail, /service: t\.title/);
+  assert.match(detail, /request: t\.actionMessage/);
+  assert.match(detail, /option: t\.action/);
+  assert.match(detail, /pagePath: "\/" \+ locale \+ "\/services\/" \+ serviceSlug/);
+  assert.equal((detail.match(/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/g) || []).length, 2);
   assert.match(detail, /reliable evidence/);
   assert.match(detail, /не медицинское обследование/);
   assert.match(css, /@media\(max-width:760px\)/);
 });
 
-test("free diagnostic retains private-data-safe explicit WhatsApp send, with fewer taps and illustrative preview", () => {
+test("free diagnostic retains private-data-safe channel choice, explicit copying and illustrative preview", () => {
   const intake = read("components/free-drawing-intake.tsx");
   const tracking = read("components/acquisition-event-link.tsx");
   const freePage = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(intake, /Copy answers & open WhatsApp/);
+  assert.match(intake, /copyButton: "Copy answers"/);
+  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
+  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /onClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
   assert.match(intake, /readyRef\.current\?\.focus\(\)/);
   assert.match(intake, /Nothing has been sent/);
-  assert.match(intake, /Only the broad topic and the generic request enter the WhatsApp URL/);
+  const draft = intake.slice(intake.indexOf("const whatsappUrl ="), intake.indexOf("function changeAnswer"));
+  assert.match(draft, /request: t\.whatsappIntro/);
+  assert.match(draft, /topic: t\.options\[topic\]/);
+  assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
   assert.match(tracking, /onClick\?\.\(\); emit\(event\)/);
   assert.match(freePage, /sampleCopy/);
   assert.match(freePage, /not a real client's drawing or results/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon/);
+  assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
 });

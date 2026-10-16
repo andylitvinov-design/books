@@ -69,7 +69,7 @@ export default async function SpanishServicesPage() {
     </div>
   </section>
   <ServicesAboutEntry locale="es" />
-  <PublicConsultationCta locale="es" />
+  <PublicConsultationCta locale="es" id="consultation" serviceBooking />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
  </main>;
 }
