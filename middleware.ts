@@ -111,6 +111,7 @@ export function middleware(request: NextRequest) {
   // Client reports, other private pages and arbitrary external images stay denied.
   const listingImagePage = /^\/(en|ru|es)\/(services|masters)(?:\/|$)/.test(pathname)
     || /^\/(en|ru)\/app\/practice(?:\/|$)/.test(pathname)
+    || /^\/admin\/practitioners(?:\/|$)/.test(pathname)
   const listingImageOrigin = (() => {
     if(!listingImagePage)return ''
     try{
