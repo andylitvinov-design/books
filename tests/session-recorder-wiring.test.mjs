@@ -2,14 +2,24 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
-test('saved report and assessment editors retain owner gate and explicit recorder source',()=>{
- for(const [path,source] of [
- ['app/admin/consultations/[id]/edit/page.js','documentId={consultation.id}'],
- ['app/admin/documents/[id]/page.js','documentId={record.id}'],
- ['app/admin/prescriptions/[id]/page.js','documentId={prescription.id}'],
- ['app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js','assessmentId={assessmentId}']]){
- const text=read(path);assert.ok(text.includes('requireAdminRequest()'));assert.ok(text.includes('deliveryEnabled()'));assert.ok(text.includes(source))
- }
+test('client report editors select shared resources while personal uploads use their dedicated screen',()=>{
+  for(const [path,source] of [
+    ['app/admin/consultations/[id]/edit/page.js','documentId={consultation.id}'],
+    ['app/admin/prescriptions/[id]/page.js','documentId={prescription.id}'],
+    ['app/admin/clients/[id]/assessments/[assessmentId]/edit/page.js','assessmentId={assessmentId}']]){
+    const page=read(path)
+    assert.ok(page.includes('requireAdminRequest()'))
+    assert.ok(page.includes('deliveryEnabled()'))
+    assert.ok(page.includes(source))
+  }
+  const preview=read('app/admin/documents/[id]/page.js')
+  assert.match(preview,/requireAdminRequest/)
+  assert.doesNotMatch(preview,/SessionAudioRecorder/)
+  const recordings=read('app/admin/clients/[id]/sessions/[sessionId]/recordings/page.js')
+  assert.match(recordings,/requireAdminRequest/)
+  assert.match(recordings,/getOwnerSession/)
+  assert.match(recordings,/SessionAudioRecorder/)
+  assert.match(recordings,/showYouTubeQuickAdd/)
 })
 test('Storage CSP expansion stays confined to explicit session/editor routes',()=>{
  const source=read('middleware.ts');const expression=source.split('const deliveryPath =')[1].split('const deliveryOrigin')[0].trim()
