@@ -225,17 +225,22 @@ test('every recommended test visibly explains its kind without hiding the label 
   assert.match(explorer, /testKindCardLabel\(entry, locale\)/)
 })
 
-test('optional test filters use an unclipped responsive grid with a compact 2+1 mobile layout', () => {
-  const scope = css.slice(css.indexOf('My Tests optional filters: responsive navy-and-wine editorial refresh'))
-  assert.ok(scope.length > 1000)
-  assert.match(picker, /data-mobile-depth-layout="grid"/)
-  assert.match(scope, /\.shell \.depthOptions\{\s*display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\);/)
-  assert.match(scope, /gap:9px;overflow:visible;padding:0;min-width:0/)
-  assert.match(scope, /@media\(max-width:620px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:8px\}/)
-  assert.match(scope, /\.shell \.depthOption:last-child\{\s*grid-column:1\/-1/)
-  assert.match(scope, /@media\(max-width:350px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:minmax\(0,1fr\)\}/)
-  assert.doesNotMatch(picker, /className=\{styles\.extraRow\}/)
+test('priority choice is a compact three-way row on desktop and iPhone, never a fake package', () => {
+  const scope = css.slice(css.indexOf('My Tests priority ordering clarity — compact, explicit, mobile-first'))
+  assert.ok(scope.length > 500)
+  assert.match(picker, /data-test-priority-selector/)
+  assert.match(scope, /\.shell \.depthOptions\{\s*display:grid;\s*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(scope, /@media\(max-width:620px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(scope, /@media\(max-width:350px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(picker, /<small>\{desc\}<\/small>/)
+  assert.match(picker, /title=\{desc\} aria-label=\{name \+ '\. ' \+ desc\}/)
+  assert.match(picker, /depth:'Which tests would you like to see first\?'/)
+  assert.match(picker, /depth:'Какие тесты показывать первыми\?'/)
+  assert.match(picker, /depth:'¿Qué pruebas quieres ver primero\?'/)
+  assert.doesNotMatch(picker, /depth:'How deep do you want to go\?'/)
+  assert.doesNotMatch(picker, /deep:'In-depth battery'/)
 })
+
 
 test('optional filters retain all three functional facets and reset only when needed', () => {
   assert.match(picker, /const appliedFilterCount = Number\(maxMinutes > 0\) \+ Number\(depth !== 'balanced'\) \+ testKinds\.length/)
@@ -260,3 +265,13 @@ test('detailed test selections use navy, preserve burgundy test starts and have 
   assert.match(picker, /activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas'/)
   assert.match(picker, /<KindBadge entry=\{entry\} locale=\{locale\} \/>/)
 })
+
+test('recommendation priority never becomes a strict time filter, and test type badges remain', () => {
+  assert.match(picker, /Adjusts the order and estimated match of recommendations, without hiding tests/)
+  assert.match(picker, /Влияет на порядок и условный % соответствия/)
+  assert.match(picker, /Ajusta el orden y la coincidencia estimada sin ocultar pruebas/)
+  assert.match(picker, /aria-pressed=\{depth === key\} onClick=\{\(\) => onDepth\(key\)\}/)
+  assert.match(picker, /aria-pressed=\{maxMinutes===minutes\} onClick=\{\(\) => onMaxMinutes\(minutes\)\}/)
+  assert.match(picker, /<KindBadge entry=\{entry\} locale=\{locale\} \/>/)
+})
+
