@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
@@ -54,6 +54,15 @@ export function ContactChannelChooser({
 }: Props) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  // A new selected service should never inherit the previous open handoff.
+  useEffect(() => setOpen(false), [whatsappUrl]);
+  // Show the newly revealed mini-form even if the order button sits at the bottom of a phone viewport.
+  useEffect(() => {
+    if (!open) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    panelRef.current?.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "instant" : "smooth" });
+  }, [open]);
   const c = copy[locale];
   const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
   return (
@@ -71,7 +80,7 @@ export function ContactChannelChooser({
         <span>{label || c.order}</span>
         <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
       </button>
-      <div className={styles.panel} id={panelId} hidden={!open}>
+      <div ref={panelRef} className={styles.panel} id={panelId} hidden={!open}>
         <p className={styles.question}>{c.question}</p>
         <div className={styles.choices} role="group" aria-label={c.question}>
           <AcquisitionEventLink
