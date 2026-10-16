@@ -17,12 +17,14 @@ type AIResult = { serviceIds: string[]; mode: "ai" | "local" };
 const COPY = {
   en: {
     kicker:"FIND YOUR WAY · HOLISTIC HOUSE",
-    title:"What would you like help with?",
-    description:"Tell us, in your own words, what you want to explore. We'll suggest relevant published services and practitioners — without a questionnaire or registration.",
-    placeholder:"For example: I'd like to feel more confident, explore repeating patterns in relationships, or try Reiki...",
+    title:"Find the right support",
+    description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
+    placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
     examples:"You could try",
     exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
+    quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
+    mobilePrivacy:"✓ Free matching · No sign-up · Private by default. Please avoid sharing personal medical details.",
     privacy:"Private by default: this text is matched locally in your browser and isn't saved.",
     caution:"Please don't include names or sensitive medical details. This is service discovery, not a diagnosis or medical recommendation.",
     categories:"Explore by area",
@@ -57,12 +59,14 @@ const COPY = {
   },
   ru: {
     kicker:"НАЙДИТЕ СВОЙ ПУТЬ · HOLISTIC HOUSE",
-    title:"Что вы хотите изменить или исследовать?",
-    description:"Напишите своими словами, какая помощь или практика вам нужна. Мы предложим подходящие опубликованные услуги и мастеров — без анкеты и обязательной регистрации.",
-    placeholder:"Например: хочу обрести внутреннюю опору, разобраться с повторяющимися сценариями в отношениях или попробовать Рейки…",
+    title:"Подберите помощь под свой запрос",
+    description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
+    placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
     examples:"Например",
     exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
+    quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
+    mobilePrivacy:"✓ Бесплатно · Без регистрации · Приватно по умолчанию. Не вводите личные медицинские данные.",
     privacy:"По умолчанию приватно: подбор выполняется в браузере, текст не сохраняется.",
     caution:"Не указывайте имена и чувствительные медицинские данные. Это поиск услуг, а не диагноз или медицинская рекомендация.",
     categories:"Выберите направление",
@@ -97,12 +101,14 @@ const COPY = {
   },
   es: {
     kicker:"ENCUENTRA TU CAMINO · HOLISTIC HOUSE",
-    title:"¿Qué te gustaría explorar o cambiar?",
-    description:"Describe con tus propias palabras qué ayuda buscas. Te mostraremos servicios publicados y profesionales relacionados, sin registro.",
-    placeholder:"Por ejemplo: quiero tener más confianza, explorar patrones familiares o conocer Reiki…",
+    title:"Encuentra el apoyo que buscas",
+    description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
+    placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
     examples:"Por ejemplo",
     exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
+    quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
+    mobilePrivacy:"✓ Gratis · Sin registro · Privado por defecto. Evita compartir datos médicos personales.",
     privacy:"Privado por defecto: la búsqueda se realiza en tu navegador y no se guarda.",
     caution:"No incluyas nombres ni datos médicos sensibles. No es un diagnóstico ni una recomendación médica.",
     categories:"Explorar categorías",
@@ -268,13 +274,19 @@ export function ServicesSmartDiscovery({
         </form>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
-          {t.exampleList.map(text=><button type="button" key={text} onClick={()=>runExample(text)}>{text}</button>)}
+          {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
+            <span className={styles.exampleLong}>{text}</span>
+            <span className={styles.exampleShort} aria-hidden="true">{t.quickExamples[index]}</span>
+          </button>)}
         </div>
         {aiAvailable&&<label className={styles.aiOption}>
           <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
           <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
         </label>}
-        <p className={styles.privacy}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</p>
+        <p className={styles.privacy}>
+          <span className={styles.privacyFull}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</span>
+          <span className={styles.privacyCompact}>{t.mobilePrivacy}</span>
+        </p>
       </div>
 
       <div className={styles.categorySection} id="browse-service-categories">
