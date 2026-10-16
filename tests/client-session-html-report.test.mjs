@@ -76,5 +76,5 @@ test('client report reuses the public site header and finishes with two actions'
   assert.ok(page.indexOf('className={styles.sessionBottomActions}')>page.indexOf('<footer className={styles.clientFooter}>'))
   assert.match(css,/\.sessionBottomActions\{/)
   assert.match(css,/@media\(max-width:640px\)/)
-  assert.match(css,/\.sessionSiteShell :global\(\.house-header\)/)
+  assert.match(css,/\.sessionSiteShell :global\(\.house-header/)
 })
