@@ -15,6 +15,7 @@ import { loadReaderDocument } from "@/data/reader-content";
 import { getBook02Remedies, getRemedyDirectory } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { bookSeoDescription } from "@/lib/public-seo-description";
 
 type PageProps = {
   params: Promise<{ bookId: string }>;
@@ -121,6 +122,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   if (!book) return { title: labels.missing };
 
   const display = localizedBookText(book, locale);
+  const description = bookSeoDescription(display.description, locale);
   const metadataBase = metadataBaseFor();
   const canonicalUrl = new URL("/books/" + book.id + (locale === "en" ? "?lang=en" : ""), metadataBase);
   const coverUrl = new URL("/media/" + book.mediaSeries + "/" + book.cover, metadataBase);
@@ -128,14 +130,15 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   return {
     metadataBase,
     title: display.title,
-    description: display.description,
+    description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: display.title,
-      description: display.description,
+      description,
       images: [{ url: coverUrl, alt: labels.cover + ": " + display.title }],
       type: "article",
     },
+    twitter: { card: "summary_large_image", title: display.title, description, images: [coverUrl.toString()] },
   };
 }
 
