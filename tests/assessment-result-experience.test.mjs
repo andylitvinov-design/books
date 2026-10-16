@@ -94,7 +94,7 @@ test('account runner keeps two actions, guest runner shows scales first with no 
   assert.match(account, /advanced\.definitionIds\?\.\[advanced\.currentIndex\]/)
   assert.match(account, /await appFetch\('runs', \{/)
   assert.match(guest, /setPhase\('result'\)/)
-  assert.match(guest, /await startRun\(nextDefinition\)/)
+  assert.match(guest, /await startRun\(nextDefinition, advanced\.id\)/)
   assert.match(guest, /setPhase\('summary'\)/)
   assert.match(guest, /saving a result permanently/i.test(controls) ? /temporary/ : /setGuestResult\(result\)/)
 })

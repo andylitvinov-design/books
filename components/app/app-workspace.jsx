@@ -693,13 +693,11 @@ function SaveContinuation({ data, locale, reload }) {
           : intent?.source?.documentKind === 'invoice'
             ? ru ? 'Счёт' : 'Invoice'
             : ru ? 'Рекомендация' : 'Recommendation'
-      : intent?.source?.definitionKey === 'hh-current-state'
-        ? ru
-          ? 'Моё состояние сейчас'
-          : 'How I feel now'
-        : ru
-          ? 'Личностные особенности'
-          : 'Personality tendencies'
+      : intent?.sourceKind === 'guest_result'
+        ? (monitoringCatalogItem(intent?.source?.definitionKey)?.title?.[locale] ||
+            monitoringCatalogItem(intent?.source?.definitionKey)?.title?.en ||
+            (ru ? 'Результат теста' : 'Test result'))
+        : (ru ? 'Документ' : 'Document')
   return (
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
@@ -737,11 +735,11 @@ function SaveContinuation({ data, locale, reload }) {
               href={savedResourcePath(locale, intent.sourceKind, intent.resourceId)}
               prefetch={false}
             >
-              {ru ? 'Открыть сохранённый материал' : 'Open saved item'}
+              {intent.sourceKind === 'guest_result' ? (ru ? 'Открыть бесплатный анализ' : 'Open my free analysis') : (ru ? 'Открыть сохранённый материал' : 'Open saved item')}
             </Link>
           ) : (
             <button className="hh-primary" type="button" disabled={busy} onClick={commit}>
-              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Сохранить' : 'Save')}
+              {busy ? (ru ? 'Сохраняем…' : 'Saving…') : intent.sourceKind === 'guest_result' ? (ru ? 'Сохранить результат и открыть бесплатный анализ' : 'Save my result and open free analysis') : (ru ? 'Сохранить' : 'Save')}
             </button>
           )}
         </>
