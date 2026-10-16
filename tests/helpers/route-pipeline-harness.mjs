@@ -37,7 +37,7 @@ export const clone = value => structuredClone(value)
 const date = value => new Date(value).toISOString().slice(0, 10)
 const DAY = 86400000
 
-export function repositoryHarness({ presetId, storedCycle } = {}) {
+export function repositoryHarness({ presetId, storedCycle, freshPhase = false } = {}) {
   const now = Date.now(), clock = { now: now - 13 * DAY }
   class FixtureDate extends Date {
     constructor(...args) { super(...(args.length ? args : [clock.now])) }
@@ -139,8 +139,8 @@ export function repositoryHarness({ presetId, storedCycle } = {}) {
       // tested separately; historical cycles must never be silently rewritten.
       const id = await runtime.exports.createNewCycle(db, { id: OWNER }, course, config,
         { problemLabel: 'Synthetic ordinary workload', intention: 'Synthetic manageable step', timeZone: 'UTC',
-          moduleId: moduleId==='AS4'?'AS2':moduleId })
-      if (!presetId) {
+          moduleId: !freshPhase&&moduleId==='AS4'?'AS2':moduleId })
+      if (!presetId && !freshPhase) {
         cycle.preferences = {length:'standard',imagery:'optional',checkinFrequency:'daily',
           oporaModuleId:moduleId,oporaModuleRouter:router.ANTISTRESS_PREVIOUS_ROUTER_VERSION}
         cycle.content_version = moduleId==='AS2'
@@ -172,7 +172,7 @@ const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileMod
 }).outputText]))
 const pureUI = Object.fromEntries(await Promise.all(['anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
-  'course-slide-sequence', 'course-membership', 'opora-state-journey'].map(async name =>
+  'course-slide-sequence', 'course-membership', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )
 
 // Executes real JSX component functions with isolated state/effect slots.

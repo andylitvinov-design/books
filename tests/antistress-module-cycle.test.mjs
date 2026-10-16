@@ -15,6 +15,7 @@ const root = process.env.GROWTH_COURSE_ROOT
 const appRoot = resolve(root, 'lib/app')
 const ts = createRequire(resolve(root, 'package.json'))('typescript')
 const pureImports = [
+  '../inner-growth/trauma-phase-catalog.js','../inner-growth/trauma-phase-outcomes.js',
   '../inner-growth/course-presets.js', './course-access.js', '../assessments/contracts.js', './crypto.js',
   '../inner-growth/course-model.js', '../inner-growth/course-programs.js', '../../data/assessments/catalog.js',
   '../inner-growth/course-final-retest.js', '../inner-growth/anti-stress-weekly-checkpoint.js',

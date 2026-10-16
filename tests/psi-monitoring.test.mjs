@@ -48,6 +48,8 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
   const active = MONITORING_CATALOG.filter((item) => item.startable&&!['pcl-5','itq-adult'].includes(item.key)&&!newViaKeys.has(item.key)).map((item) => item.key).sort()
   assert.deepEqual(active, [
     'asrs-6',
+    'ipip-via-r-strengths-96',
+    'cfpb-financial-wellbeing-5',
     'mhc-sf',
     'scs-sf',
     'compassion-scale',

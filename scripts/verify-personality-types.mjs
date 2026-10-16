@@ -1,7 +1,9 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { createGuestVerifierPacer } from './helpers/guest-verifier-pacing.mjs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
 import { PERSONALITY_TYPE_DEFINITIONS, PERSONALITY_TYPE_CATALOG } from '../data/assessments/personality-types-original-2026.js'
@@ -14,6 +16,8 @@ const engine=process.env.HH_TEST_BROWSER==='webkit'?webkit:chromium
 const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{executablePath:process.env.HH_TEST_BROWSER_EXECUTABLE}:{})
 const output='artifacts/app-r1/typology-'+engine.name()
 await mkdir(output,{recursive:true})
+const guestPacer=createGuestVerifierPacer()
+let pacedGuestContext=null
 const checks=[], errors=[]
 const passed=name=>{checks.push(name);console.log('PASS '+name)}
 function observePage(page,label){
@@ -39,6 +43,7 @@ async function navigate(page,url){
  await page.waitForLoadState('networkidle')
 }
 async function api(context,path,body){
+ if(context===pacedGuestContext)guestPacer.record('/api/app/'+path,body?'POST':'GET')
  const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
  const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
 }
@@ -56,9 +61,12 @@ async function fill(page,d,mode,guest,locale){
   assert.ok((await saved).ok())
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
  await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
@@ -69,6 +77,7 @@ async function fill(page,d,mode,guest,locale){
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'
    : locale==='ru'?'Несколько равных ведущих паттернов':'Several equally prominent patterns')
  await summary.scrollIntoViewIfNeeded()
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
 }
@@ -149,10 +158,22 @@ try{
  // One consented guest completes four instruments, retaining the same private
  // cookie while changing UI language and runner mode. Creating a new guest for
  // every instrument exhausts the unchanged 12/IP/hour limit after earlier suites.
- const guest=await browser.newContext({viewport:{width:390,height:844}})
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+ pacedGuestContext=guest
+ guest.on('request',request=>{
+  const url=new URL(request.url())
+  if(url.origin===origin&&url.pathname.startsWith('/api/app/guest/'))guestPacer.record(url.pathname,request.method())
+ })
+ guest.on('response',response=>{
+  const url=new URL(response.url())
+  if(url.origin===origin&&url.pathname.startsWith('/api/app/guest/')&&response.status()===429)
+   console.log('TYPOLOGY_GUEST_RATE_LIMIT',JSON.stringify({endpoint:url.pathname.replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}(?=\/|$)/gi,'/:id'),status:response.status()}))
+ })
  for(const [i,base] of defs.entries()){
   const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale)
+  // Same guest, unchanged quotas: let the prior request window expire naturally.
+  await guestPacer.beforeScenario(d.key)
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
@@ -162,9 +183,11 @@ try{
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(d.scoring.dimensions.length).fill(d.key==='hh-disc-style-20'?15:12))
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await page.waitForLoadState('networkidle')
   await page.close()
+  guestPacer.settled()
  }
  const guestResults=(await api(guest,'guest/bootstrap')).results
  assert.deepEqual(guestResults.map(result=>result.definitionKey).sort(),defs.map(d=>d.key).sort())

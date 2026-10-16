@@ -71,6 +71,16 @@ export default function CourseLessonResult(props){
         <strong>{r.adaptation}</strong>
       </span></div>}
     </div>
+    {!!props.phaseChecks?.length&&<section data-phase-checkpoint-receipt>
+      <h4>{ru?'Учебные пробы':'Educational checks'}</h4>
+      {props.phaseChecks.map(check=>{
+        const evidence=props.phaseCheckpoints?.[check.id]
+        return <p key={check.id}>{check.prompt}<br/>
+          {evidence?({independent:ru?'Самостоятельно (ваш отчёт)':'Independent (your report)',guided:ru?'С подсказкой':'With guidance',not_tried:ru?'Не пробовали':'Not tried',not_suitable:ru?'Не подошло':'Not suitable'}[evidence.state]):ru?'Нет сохранённого ответа':'No saved evidence'}
+          {evidence?.choice&&<> · {check.options.find(option=>option.value===evidence.choice)?.label}</>}
+        </p>
+      })}
+    </section>}
     <p className={styles.disclaimer}>{ru
       ?'Это личная учебная заметка, а не медицинский результат. Можно не замечать изменений — урок всё равно засчитывается.'
       :'This is a personal learning record, not a medical outcome. No change is also a valid experience.'}</p>

@@ -1,3 +1,14 @@
+// The reviewed public home contract is English at / and Russian at /ru.
+async function assertSpanishHomeAlternates(page) {
+  for (const [language, href] of [
+    ['en', 'https://holistichouse.vercel.app'],
+    ['ru', 'https://holistichouse.vercel.app/ru'],
+  ]) {
+    const alternate = page.locator(`link[rel="alternate"][hreflang="${language}"]`);
+    await expect(alternate).toHaveCount(1);
+    await expect(alternate).toHaveAttribute('href', href);
+  }
+}
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
  const copy=locale==='ru'
@@ -93,7 +104,7 @@ try {
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
           if(path==='/es') {
-            for(const language of ['en','ru'])await expect(page.locator(`link[rel="alternate"][hreflang="${language}"]`)).toHaveAttribute('href',new RegExp('\\?lang='+language+'$'));
+            await assertSpanishHomeAlternates(page);
             if(width===390)await expect(page.locator('.service-home-card-grid')).toHaveCSS('grid-template-columns',/^\d+(?:\.\d+)?px$/);
           }
           if(path==='/es/client') {
@@ -165,9 +176,11 @@ try {
         await chooseLanguage('es');
         await expect(page).toHaveURL(/\/es\/homeopathy\/remedies\/aconitum$/);
         await expect.poll(async()=> (await context.cookies(origin)).find(cookie=>cookie.name==='holistic_house_public_locale')?.value).toBe('es');
-        await navigate('/'); await expect(page).toHaveURL(origin+'/es');
+        await navigate('/'); await expect(page).toHaveURL(origin+'/');
+        await expect(page.locator('html')).toHaveAttribute('lang','en');
+        await chooseLanguage('es'); await expect(page).toHaveURL(origin+'/es');
         await chooseLanguage('en');
-        await expect(page).toHaveURL(/\/\?lang=en$/);
+        await expect(page).toHaveURL(origin+'/');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
         await chooseLanguage('es'); await expect(page).toHaveURL(origin+'/es');
         if(!live){
@@ -177,7 +190,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + remembered home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'distinct EN/RU query URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

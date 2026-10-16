@@ -37,9 +37,11 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
-  const [home, page] = await Promise.all([
+  const [home, page, russianPage, metadata] = await Promise.all([
     readFile('components/holistic-house-home.tsx', 'utf8'),
     readFile('app/page.tsx', 'utf8'),
+    readFile('app/[locale]/page.tsx', 'utf8'),
+    readFile('lib/home-seo.ts', 'utf8'),
   ])
 
   assert.match(home, /восстановление · практика · поддержка/)
@@ -48,9 +50,13 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(home, /Explore at your own pace/)
   assert.match(home, /Курсы и библиотека/)
   assert.match(home, /Courses & Library/)
-  assert.match(page, /uiLocale/)
-  assert.match(page, /cookieStore\.get\(uiLocaleCookie\)\?\.value === "ru" \? "ru" : "en"/)
-  assert.match(page, /Holistic House — inner development, practice and personal work/)
+  assert.match(page, /locale="en"/)
+  assert.match(page, /requested === "ru" \|\| requested === "es"/)
+  assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
+  assert.match(russianPage, /locale="ru"/)
+  assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
+  assert.match(metadata, /Holistic House — free self-checks and personal guidance in Toronto/)
+  assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 
 test('mobile navigation keeps six usable shared destinations and reserves space for forms', async () => {
@@ -84,7 +90,7 @@ test('no-cookie public and practitioner entry points consistently prefer English
   ])
 
   assert.match(books, /preference === "ru" \? "ru" : "en"/)
-  assert.match(adminHeader, /useState\('en'\)/)
+  assertAdminHeaderInitialLocale(adminHeader)
   assert.match(practitioner, /useState\('en'\)/)
   assert.match(consultation, /useState\('en'\)/)
 })
@@ -248,4 +254,27 @@ test('top site header keeps a visible direct link to the private personal app on
   assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
   assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
+})
+
+function assertAdminHeaderInitialLocale(source) {
+  const defaultLocale = source.match(/export function PrescriptionAdminHeader\(\{[^}]*initialLocale = ('[^']+')/)
+  const initializer = source.match(/const \[locale, setLocale\] = useState\(([^\n]+)\)/)
+  assert.ok(defaultLocale, 'Header must retain its explicit initial-locale default')
+  assert.ok(initializer, 'Header locale must have a single inspected initializer')
+  const initial = new Function('provided', `const { initialLocale = ${defaultLocale[1]} } = provided; return (${initializer[1]});`)
+  assert.equal(initial({}), 'en', 'No supplied preference defaults to English')
+  assert.equal(initial({ initialLocale: 'ru' }), 'ru', 'Explicit Russian is retained')
+  for (const initialLocale of ['en', 'es', '', null]) assert.equal(initial({ initialLocale }), 'en')
+}
+
+test('practitioner locale initializer rejects wrong default and ignored explicit preference', async () => {
+  const source = await readFile('components/prescription-admin-header.jsx', 'utf8')
+  for (const changed of [
+    source.replace("initialLocale = 'en'", "initialLocale = 'ru'"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('en')"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('ru')"),
+  ]) {
+    assert.notEqual(changed, source)
+    assert.throws(() => assertAdminHeaderInitialLocale(changed))
+  }
 })

@@ -80,7 +80,7 @@
 .homeFreeOptionText{min-width:0;display:block;padding-right:10px}
 .homeFreeOptionText strong{display:block;font:800 13px/1.26 Arial,Helvetica,sans-serif}
 .homeFreeCheck{position:absolute;right:9px;top:8px;width:14px;height:14px}
-.homeCapture .action{min-height:48px;margin-top:11px;padding:10px 13px;border-radius:12px;background:#762e4c;color:white;box-shadow:none;font-size:13px}
+.homeCapture .action{min-height:48px;margin-top:11px;padding:10px 13px;border-radius:12px;background:#762e4c;color:white;box-shadow:none;font-size:14px}
 .homeCapture .action:hover{background:#602039}
 .homeCapture .action svg{width:17px;height:17px}
 .homeCapture .note{font-size:11px;margin-top:7px;line-height:1.4;color:#637889}
@@ -100,7 +100,7 @@
   .homeFreeOptionText{padding-right:8px}
   .homeFreeOptionText strong{font-size:12px;line-height:1.23}
   .homeFreeCheck{width:13px;height:13px;top:7px;right:6px}
-  .homeCapture .action{min-height:46px;padding:10px;font-size:12px}
+  .homeCapture .action{min-height:46px;padding:10px;font-size:14px}
   .homeCapture .assurances,.homeCapture .secondary{gap:5px 11px}
   .homeCapture .footer{margin-top:9px}
 }

@@ -17,7 +17,7 @@ export async function POST(request,{params}) {
   const {id,sessionId}=await params
   return ownerDelivery(request,async({config,store,data})=>{
     switch(data.action) {
-      case 'publish':return privateJson(await publishClientSession(config,store,id,sessionId))
+      case 'publish':return privateJson(await publishClientSession(config,store,id,sessionId,data))
       case 'archive':return privateJson(await archiveClientSession(config,store,id,sessionId))
       case 'copy':case 'rotate':case 'revoke':case 'extend':
         return privateJson(await changeSessionGrant(config,store,id,sessionId,data.action,{days:data.days||30}))

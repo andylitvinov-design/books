@@ -28,7 +28,12 @@ try{
   const documents=[]
   page.on('response',response=>{
    const request=response.request()
-   if(request.isNavigationRequest()&&request.frame()===page.mainFrame())documents.push(response)
+   if(request.isNavigationRequest()&&request.frame()===page.mainFrame()){
+    // Start reading while WebKit still owns this navigation's inspector body.
+    // Retain failures on their record; the selected document must still fail.
+    const body=response.text().then(html=>({html}),error=>({error}))
+    documents.push({response,body})
+   }
   })
   page.on('pageerror',error=>{errors.push({path,message:error.message});console.error('COURSE_V6_BROWSER_EXCEPTION',path,error.message)})
   page.on('console',message=>{
@@ -40,7 +45,7 @@ try{
   await page.waitForLoadState('networkidle')
   // Cold Next dev compilation can reload the document. Compare the live DOM
   // with its own navigation response, never the previous document's nonce.
-  const response=documents.at(-1)
+  const document=documents.at(-1),response=document?.response
   assert.ok(response?.ok())
   assert.equal(response.url(),page.url())
   const policy=response.headers()['content-security-policy']
@@ -50,18 +55,23 @@ try{
   nonces.add(nonce)
   assert.ok(policy.includes("'strict-dynamic'"))
   assert.ok(!policy.split(';').find(d=>d.trim().startsWith('script-src')).includes("'unsafe-inline'"))
-  const html=await response.text(),serialized=html.match(/<script\b[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/s)
+  const captured=await document.body
+  if(captured.error)throw captured.error
+  const serialized=captured.html.match(/<script\b[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/s)
   assert.ok(serialized,'server must include JSON-LD')
   assert.ok(serialized[0].includes('nonce="'+nonce+'"'))
   const rendered=await page.locator('head script[type="application/ld+json"]').evaluate(script=>({nonce:script.nonce,attribute:script.getAttribute('nonce'),schema:JSON.parse(script.textContent)}))
   assert.equal(rendered.nonce,nonce,'hydration must retain the CSP nonce property')
   assert.equal(rendered.attribute,'','browser must keep the nonce content attribute hidden')
   assert.deepEqual(rendered.schema,JSON.parse(serialized[1]),'hydration must retain the complete server JSON-LD')
-  assert.equal(rendered.schema['@type'],'WebSite')
-  assert.equal(rendered.schema.name,'Holistic House')
-  assert.deepEqual(rendered.schema.inLanguage,['en','ru','es'])
+  assert.equal(rendered.schema['@context'],'https://schema.org')
+  const schemaNodes=Array.isArray(rendered.schema['@graph'])?rendered.schema['@graph']:[rendered.schema]
+  const websites=schemaNodes.filter(node=>node&&node['@type']==='WebSite')
+  assert.equal(websites.length,1,'exactly one WebSite must remain in the complete schema')
+  assert.equal(websites[0].name,'Holistic House')
+  assert.deepEqual(websites[0].inLanguage,['en','ru','es'])
   assert.equal(await page.locator('html').getAttribute('lang'),locale)
-  assert.equal(documents.at(-1),response,'document must remain stable during its assertions')
+  assert.equal(documents.at(-1),document,'document must remain stable during its assertions')
   console.log('DOCUMENT_HYDRATION_NAVIGATIONS',path,documents.length)
   await page.close()
   assert.deepEqual(errors,[])

@@ -190,6 +190,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
  const [focusOpen,setFocusOpen]=useState(true)
  const [retestBusyKey,setRetestBusyKey]=useState(''),[retestError,setRetestError]=useState('')
  const [moduleFollowUpAnswers,setModuleFollowUpAnswers]=useState({})
+ const [modulePrimarySkipped,setModulePrimarySkipped]=useState(false)
  const retestLock=useRef(false)
  useEffect(()=>{if(questOpen)return promotion.dismiss},[questOpen,promotion.dismiss])
  const [view,setView]=useState('today')
@@ -215,6 +216,8 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     setInterference(response?.currentCheckin?.interference??null)
     setResource(response?.currentCheckin?.resource??null)
     setDailyNote(response?.currentCheckin?.note||'')
+    setModuleFollowUpAnswers({})
+    setModulePrimarySkipped(false)
     setReviewNote('')
     setReviewDecision('continue')
     setStage(0)
@@ -471,24 +474,36 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
   </section>}
   <CourseFinalRetest locale={locale} plan={data.finalRetest}
     onStart={openFinalRetest} busyKey={retestBusyKey} error={retestError}/>
+  {!!data.phaseEvidence?.length&&<section className={styles.weeklyCheckpoint} data-phase-educational-evidence>
+    <div><strong>{ru?'Сохранённые учебные пробы':'Saved educational checks'}</strong>
+      <p>{ru?'Выбор ответа и ваш отчёт о попытке отображаются отдельно от самооценок. Это не клиническая оценка навыка.':'Your selected answer and reported attempt are separate from self-ratings. This is not a clinical skill assessment.'}</p>
+      {data.phaseEvidence.map(check=><p key={check.id}>{check.prompt}<br/>
+        {check.evidence?({independent:ru?'Самостоятельная попытка (ваш отчёт)':'Independent attempt (your report)',guided:ru?'С подсказкой':'With guidance',not_tried:ru?'Не пробовали':'Not tried',not_suitable:ru?'Не подошло':'Not suitable'}[check.evidence.state]):ru?'Нет сохранённого ответа':'No saved evidence'}
+        {check.evidence?.choice&&<> · {check.options.find(option=>option.value===check.evidence.choice)?.label}</>}
+      </p>)}
+    </div>
+  </section>}
   {data.moduleMeasurements&&<section className={styles.weeklyCheckpoint}
     data-opora-module-measurements aria-label={ru?'Мои измерения навыков курса':'My course skill assessments'}>
     <div>
       <strong>{ru?'Мои сохранённые показатели курса':'My saved course measures'}</strong>
-      <p>{ru?'Основной показатель этого этапа':'Primary learning outcome'}: <code>{data.moduleMeasurements.primaryMetric||'clinician-led'}</code></p>
+      <p>{ru?'Основной показатель этого этапа':'Primary self-rating measure'}: <code>{data.moduleMeasurements.primaryMetric||'clinician-led'}</code></p>
       <small>{ru?'Измерение F1–F8 относится к последним 7 дням; это авторские самооценки, не диагноз.':'F1–F8 refer to the last seven days; these are non-diagnostic self-ratings.'}</small>
+      {data.moduleMeasurements.baseline?.measuredAt&&<p><small>{ru?'Исходный вводный опрос сохранён':'Original intake recorded'}: {data.moduleMeasurements.baseline.measuredAt.slice(0,10)} · {data.moduleMeasurements.baseline.locale}</small></p>}
+      {data.moduleMeasurements.followUp?.measuredAt&&<p><small>{ru?'Повтор сохранён':'Follow-up recorded'}: {data.moduleMeasurements.followUp.measuredAt.slice(0,10)}</small></p>}
       {!!data.moduleMeasurements.relevantItems?.length&&<div data-opora-module-history>
         {data.moduleMeasurements.relevantItems.map(key=>{
           const before=data.moduleMeasurements.baseline?.answers?.[key]
           const after=data.moduleMeasurements.followUp?.answers?.[key]
           return <p key={key}><b>{key}:</b> {ru?'до':'before'} {Number.isInteger(before)?before+'/10':'—'} →
             {ru?' после ':' after '}{Number.isInteger(after)?after+'/10':'—'}
-            {Number.isInteger(before)&&Number.isInteger(after)&&<span> ({after-before>0?'+':''}{after-before})</span>}
+            {data.moduleMeasurements.primaryComparison?.comparable&&Number.isInteger(before)&&Number.isInteger(after)&&<span> ({after-before>0?'+':''}{after-before})</span>}
           </p>
         })}
       </div>}
       {data.moduleMeasurements.retestDueAt&&!data.moduleMeasurements.retestAvailable&&!data.moduleMeasurements.followUp&&
         <small>{ru?'Самооценка после курса будет доступна по завершении 14-го дня и по правилам интервала':'The follow-up opens after day 14 and the required recall interval'}: {data.moduleMeasurements.retestDueAt.slice(0,10)}</small>}
+      {data.moduleMeasurements.primaryComparison&&!data.moduleMeasurements.primaryComparison.comparable&&<p>{ru?'Основной показатель пока несопоставим: нет совместимой пары ответов или показатель явно пропущен.':'The primary measure is not comparable: a compatible pair is missing or the primary answer was explicitly skipped.'}</p>}
       {data.moduleMeasurements.followUp&&<p>{ru?'Итоговые ответы сохранены приватно в вашем курсе.':'Follow-up answers are saved privately in your course.'}</p>}
       {data.moduleMeasurements.retestAvailable&&<details data-opora-module-finder-follow-up>
         <summary>{ru?'Повторить 8 вопросов о навыках':'Repeat eight skill questions'}</summary>
@@ -505,9 +520,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
             </button>
           </div>
         </label>)}
-        <button type="button" className={'hh-primary '+styles.weeklyStart} disabled={busy||!
-          Object.values(moduleFollowUpAnswers).some(Number.isInteger)}
-          onClick={()=>void submit('module-retest',{moduleAnswers:Object.fromEntries(
+        <label style={{display:'block',margin:'16px 0'}}><input type="checkbox" checked={modulePrimarySkipped} disabled={busy}
+          onChange={event=>setModulePrimarySkipped(event.target.checked)}/>
+          {ru?'Я явно пропускаю основной показатель. Сравнение по нему будет недоступно.':'I explicitly skip the primary measure. Its before/after comparison will be unavailable.'}</label>
+        <button type="button" className={'hh-primary '+styles.weeklyStart} disabled={busy||(!modulePrimarySkipped&&!
+          Number.isInteger(moduleFollowUpAnswers[data.moduleMeasurements.primaryMetric?.split('::').pop()]))}
+          onClick={()=>void submit('module-retest',{primarySkipped:modulePrimarySkipped,moduleAnswers:Object.fromEntries(
             ANTISTRESS_MODULE_FINDER_ITEMS.map(item=>[item.id,moduleFollowUpAnswers[item.id]??null]))})}>
           {busy?(ru?'Сохраняем…':'Saving…'):ru?'Сохранить итоговые оценки':'Save follow-up scores'}
         </button>
@@ -828,7 +846,9 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     <label className={styles.field}>{t.newGoal}<select value={nextGoal} onChange={e=>setNewGoal(e.target.value)}>
       {continuationGoals.map(id=><option key={id} value={id}>{GROWTH_GOALS[id].title[locale]}</option>)}
     </select></label>
-    <button type="button" className="hh-primary" disabled={busy||!nextGoal||targetLabel.trim().length<3}
+    {cycle.moduleRouter==='opora-trauma-1.3-20261015'&&['AS1','AS3','AS5'].includes(cycle.moduleId)&&<p role="status">
+      {ru?'Для нового курса нужен новый вводный опрос с вашим согласием. Сохранённые ответы остаются историческими; начните новый подбор курса в кабинете.':'A new course needs a fresh intake with your consent. Saved answers remain historical; start a new course selection from your cabinet.'}<br/><Link href={root+'/course?add=1&entry=personal'} prefetch={false}>{ru?'Пройти новый вводный опрос':'Start a fresh intake'}</Link></p>}
+    <button type="button" className="hh-primary" disabled={busy||!nextGoal||targetLabel.trim().length<3||(cycle.moduleRouter==='opora-trauma-1.3-20261015'&&['AS1','AS3','AS5'].includes(cycle.moduleId))}
       onClick={()=>submit('new-cycle',{problemLabel:targetLabel,intention,timeZone:timezone(),goal:nextGoal},
         ()=>{setExpanded('checkin');setStage(0);setReflection('');setNewGoal('')})}>{t.nextCycle}<ArrowRight size={16}/></button>
    </section>}

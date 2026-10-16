@@ -51,3 +51,11 @@ BACH WILLOW has a gentle but deep effect.
 In my observations, it is relevant when a person has lived through unfairness, hurt or disappointment and begins to close inwardly, becoming bitter, critical or distant.
 
 It is associated with releasing the weight of resentment and the feeling that “life treated me unfairly.”
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Experienced injustice and hurt leave bitterness, a critical outlook and the urge to close yourself off.
+
+After (desired state): The hurt carries less weight, leaving room for a more open attitude toward life.

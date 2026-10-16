@@ -19,7 +19,7 @@ test("home and services render the same first-party testimonial component", () =
   assert.match(services, /id="method-videos"/);
 });
 
-test("home shows one approved written story plus six sourced video stories per language", () => {
+test("published compact home shows two sourced videos while preserving all six originals per language", () => {
   const component = read("components", "personal-testimonials.tsx");
   const ru = component.match(/  ru: \[([\s\S]*?)\],\n  en: \[/)?.[1] ?? "";
   const en = component.match(/  en: \[([\s\S]*?)\],\n\} as const;/)?.[1] ?? "";
@@ -29,7 +29,22 @@ test("home shows one approved written story plus six sourced video stories per l
   assert.equal(enIds.length, 6);
   assert.equal(new Set(ruIds).size, 6);
   assert.equal(new Set(enIds).size, 6);
-  assert.match(component, /isHome \? testimonialVideos\[locale\] : testimonialVideos\[locale\]\.slice\(0, 3\)/);
+  // PR637 changed the published home from six visible videos to two; keep every source.
+  assert.deepEqual(ruIds, ["MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E", "m9RfDgK76PU", "5oj0BIbLT4w"]);
+  assert.deepEqual(enIds, ["Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk", "4NrryHcEF1A", "hYwRNMxIMjc"]);
+  const expression=component.match(/const videos = (.*);/)[1];
+  const choose=new Function("isHome","testimonialVideos","locale","return "+expression);
+  const sources={ru:ruIds.map(id=>({id})),en:enIds.map(id=>({id}))};
+  for(const locale of ["ru","en"]){
+    const home=choose(true,sources,locale),services=choose(false,sources,locale);
+    assert.equal(home.length,2);
+    assert.equal(new Set(home.map(item=>item.id)).size,2);
+    assert.deepEqual(home,sources[locale].slice(0,2));
+    assert.equal(services.length,3);
+    assert.deepEqual(services,sources[locale].slice(0,3));
+  }
+  assert.match(component,/storyQuote/);
+  assert.match(component,/current\.storyQuote/);
   assert.match(component, /video=\{\{ youtubeId: item\.id, language: item\.language, title: item\.title \}\}/);
 });
 

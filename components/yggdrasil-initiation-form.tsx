@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { WHATSAPP_NUMBER } from "@/lib/whatsapp-enquiry";
 import styles from "./yggdrasil-free-initiation.module.css";
@@ -117,25 +117,28 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
   const [draft, setDraft] = useState("");
   const pdfUrl = "/api/academy/reiki-guide?course=yggdrasil&locale=" + locale;
 
+  const switchMode = useCallback((selected: Intent) => {
+    setMode(selected);
+    // Leaving Answers removes its native file picker. Clear the matching state
+    // too, so returning cannot share a file that is no longer visibly selected.
+    if (selected !== "answers") setAttachment(null);
+    setError("");
+    setNotice("");
+    setDraft("");
+  }, []);
+
   useEffect(() => {
     const synchronize = () => {
       const hash = window.location.hash;
-      if (hash === "#apply-personal") setMode("personal");
-      if (hash === "#apply-free" || hash === "#request-free-initiation") setMode("free");
-      if (hash === "#apply-pdf") setMode("pdf");
-      if (hash === "#apply-answers") setMode("answers");
+      if (hash === "#apply-personal") switchMode("personal");
+      if (hash === "#apply-free" || hash === "#request-free-initiation") switchMode("free");
+      if (hash === "#apply-pdf") switchMode("pdf");
+      if (hash === "#apply-answers") switchMode("answers");
     };
     synchronize();
     window.addEventListener("hashchange", synchronize);
     return () => window.removeEventListener("hashchange", synchronize);
-  }, []);
-
-  const switchMode = (selected: Intent) => {
-    setMode(selected);
-    setError("");
-    setNotice("");
-    setDraft("");
-  };
+  }, [switchMode]);
 
   function buildMessage() {
     const topic = mode === "personal" ? t.senderPersonal : mode === "answers" ? t.senderAnswers : t.senderFree;

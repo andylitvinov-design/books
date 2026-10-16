@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ArrowDown, ArrowUpRight, Check, Download, FileText, Heart, MessageCircle, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { WHATSAPP_NUMBER } from "@/lib/whatsapp-enquiry";
@@ -120,28 +120,29 @@ export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
   const [notice, setNotice] = useState("");
   const [draft, setDraft] = useState("");
 
+  const choose = useCallback((value: Intent) => {
+    setIntent(value);
+    if (value !== "answers") setFile(null);
+    setError("");
+    setNotice("");
+    setDraft("");
+  }, []);
+
   useEffect(() => {
     const sync = () => {
       const hash = window.location.hash;
-      if (hash === "#apply-free") setIntent("free");
-      else if (hash === "#apply-personal") setIntent("personal");
-      else if (hash === "#apply-pdf") setIntent("pdf");
-      else if (hash === "#apply-answers") setIntent("answers");
+      if (hash === "#apply-free") choose("free");
+      else if (hash === "#apply-personal") choose("personal");
+      else if (hash === "#apply-pdf") choose("pdf");
+      else if (hash === "#apply-answers") choose("answers");
     };
     sync();
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
-  }, []);
+  }, [choose]);
 
   const isAnswers = intent === "answers";
   const isPdf = intent === "pdf";
-
-  const choose = (value: Intent) => {
-    setIntent(value);
-    setError("");
-    setNotice("");
-    setDraft("");
-  };
 
   function buildMessage() {
     const index = intents.indexOf(intent);

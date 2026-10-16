@@ -51,3 +51,11 @@ primary_image_alt:
 I am beginning to work with a new homeopathic remedy. It is based on graphite.
 
 When does it resonate? In my observations, GRAPHITES is especially relevant to a state of “freezing” — when feelings and emotions seem stuck, impulses are suppressed, and life feels as if nothing is changing.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Feelings seem frozen, impulses are suppressed, and it seems that nothing changes.
+
+After (desired state): More room for your own feelings and impulses, and a readiness for small changes.

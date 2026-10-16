@@ -53,3 +53,11 @@ An interesting and powerful remedy in my experience, associated with periods of 
 It can bring a sense of support and “light in the night.”
 
 In my observations, it is associated with easing excessive mental and physical tension and restoring a sense of inner center amid many demands.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Inner tension and a loss of grounding amid a crisis and a multitude of tasks.
+
+After (desired state): A sense of your own center: a guiding light and an inner axis amid the chaos.

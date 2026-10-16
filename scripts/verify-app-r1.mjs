@@ -5,6 +5,7 @@ import {createHmac} from 'node:crypto'
 import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
 import {installTestPlanNavigationDiagnostics} from './test-plan-navigation-diagnostics.mjs'
 import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
+import {testKindCardLabel} from '../lib/assessments/test-kinds.js'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -101,7 +102,7 @@ function unsavedPublicTest(savedPlan){
  return entry
 }
 async function chooseVisibleTest(testPage,name){
- const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
+ const customizer=testPage.locator('button[aria-controls="hh-test-customizer"]')
  if(!(await customizer.count())){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
   if(await toggle.count())await toggle.click()
@@ -113,22 +114,31 @@ async function chooseVisibleTest(testPage,name){
   await browseFull.click()
   await expect(testPage.getByRole('button',{name:'Back to easy selection',exact:false})).toBeVisible()
  }
+ await expect(customizer).toHaveCount(1)
  await expect(customizer).toBeVisible({timeout:15000})
  if((await customizer.getAttribute('aria-expanded'))!=='true')await customizer.click()
- const card=()=>testPage.locator('article').filter({has:testPage.getByRole('heading',{name,exact:true})})
-  .filter({has:testPage.getByRole('checkbox',{name,exact:true})}).first()
+ await expect(customizer).toHaveAttribute('aria-expanded','true')
+ // filter(has) evaluates from each article; do not embed an outer Locator root.
+ const pageRoot=typeof testPage.page==='function'?testPage.page():testPage
+ const card=()=>testPage.locator('article').filter({has:pageRoot.getByRole('heading',{name,exact:true})})
+  .filter({has:pageRoot.getByRole('checkbox',{name,exact:true})})
  if(!(await card().isVisible().catch(()=>false))){
-  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
-  if(await more.count())await more.click()
+  const more=testPage.getByRole('button',{name:/^Show all matching tests \(\d+\)$/})
+  if(await more.count()){await expect(more).toHaveCount(1);await more.click()}
  }
  if(!(await card().isVisible().catch(()=>false))){
   const all=testPage.getByRole('button',{name:'Full database',exact:true})
   if(await all.count())await all.click()
-  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
-  if(await more.count())await more.click()
+  const more=testPage.getByRole('button',{name:/^Show all matching tests \(\d+\)$/})
+  if(await more.count()){await expect(more).toHaveCount(1);await more.click()}
  }
+ await expect(card()).toHaveCount(1)
+ await expect(card().getByRole('heading',{name,exact:true})).toHaveCount(1)
  await expect(card()).toBeVisible({timeout:15000})
- await card().getByRole('checkbox',{name,exact:true}).check()
+ const choice=card().getByRole('checkbox',{name,exact:true})
+ await expect(choice).toHaveCount(1)
+ await choice.check()
+ await expect(choice).toBeChecked()
 }
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
@@ -153,13 +163,104 @@ async function chooseSinglePublicTest(target,name){
  const checked=target.locator('article input[type="checkbox"]:checked')
  const suggestedNames=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
  for(const [index,selectedName] of suggestedNames.entries()){
-  await target.getByRole('checkbox',{name:selectedName,exact:true}).click()
-  await expect(checked).toHaveCount(suggestedNames.length-index-1)
+  const selected=target.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(suggestedNames.slice(index+1).sort())
  }
  await expect(checked).toHaveCount(0)
  await chooseVisibleTest(target,name)
  await expect(checked).toHaveCount(1)
  await expect(checked).toHaveAttribute('aria-label',name)
+}
+async function chooseSinglePublicTestAfterCatalog(target,name){
+ const checked=target.locator('article input[type="checkbox"]:checked')
+ const names=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
+ for(const [index,selectedName] of names.entries()){
+  const selected=target.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  // Deselection may remove this card from the shortened public ranked list.
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(names.slice(index+1).sort())
+ }
+ await expect(checked).toHaveCount(0)
+ await chooseVisibleTest(target,name)
+ await expect(checked).toHaveCount(1)
+ await expect(checked).toHaveAttribute('aria-label',name)
+}
+// Account writes must originate in the actual authenticated My Tests picker.
+async function chooseSingleAccountTest(target,name,{beforeSelection=null}={}){
+ await target.goto(origin+'/en/app/tests')
+ await expect(target).toHaveURL(origin+'/en/app/tests')
+ await expect(target.locator('[data-my-tests-dashboard]')).toBeVisible()
+ const explorer=target.locator('#my-test-explorer')
+ if(!(await explorer.isVisible().catch(()=>false))){
+  const open=target.getByRole('button',{name:/^(Open test filters|Review test filters)/})
+  await expect(open).toHaveCount(1)
+  await open.click()
+ }
+ await expect(explorer).toBeVisible()
+ const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
+ await expect(browse).toHaveCount(1)
+ await browse.click()
+ await expect(explorer.getByRole('button',{name:'Back to easy selection',exact:false})).toBeVisible()
+ const checked=explorer.locator('article input[type="checkbox"]:checked')
+ const names=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
+ for(const [index,selectedName] of names.entries()){
+  const selected=explorer.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  // Deselection can move this card outside the shortened ranked list.
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(names.slice(index+1).sort())
+ }
+ await expect(checked).toHaveCount(0)
+ if(beforeSelection)await beforeSelection(explorer)
+ await chooseVisibleTest(explorer,name)
+ await expect(checked).toHaveCount(1)
+ await expect(checked).toHaveAttribute('aria-label',name)
+ return explorer
+}
+// A public launch, including one with Google cookies, must stay guest-only.
+// Observe requests as well as durable state so even a rejected account write fails.
+async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinition,{embedded=false}={}){
+ const before=await api('bootstrap',null,ctx)
+ const accountWrites=[]
+ const observe=request=>{
+  const path=new URL(request.url()).pathname
+  if(path.startsWith('/api/app/')&&!path.startsWith('/api/app/guest/')&&request.method()!=='GET')accountWrites.push(path)
+ }
+ target.on('request',observe)
+ try{
+  await target.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+  await expect(target).toHaveURL(url=>url.pathname==='/en/client'&&(embedded?url.search==='':url.searchParams.get('startTests')===expectedDefinition.key))
+  const guest=target.locator('#cabinet-tests')
+  await expect(guest).toBeVisible()
+  const consent=guest.getByRole('heading',{name:'Before you start',exact:true})
+  const mode=guest.locator('.hh-test-mode-picker')
+  await expect(consent.or(mode)).toBeVisible()
+  if(await consent.isVisible()){
+   await guest.getByLabel('I am 18 or older.',{exact:true}).check()
+   await guest.getByLabel('I agree to temporary private processing of my answers and result for this self-observation test.',{exact:true}).check()
+   await guest.getByRole('button',{name:'Continue',exact:true}).click()
+  }
+  await expect(mode).toBeVisible()
+  const guestState=await api('guest/bootstrap',null,ctx)
+  assert.equal(guestState.status,200)
+  assert.ok(guestState.data.runs.some(run=>run.definitionId===expectedDefinition.id),'the exact selected definition starts as a guest run')
+  const after=await api('bootstrap',null,ctx)
+  assert.equal(after.status,before.status,'public Start does not authenticate the account')
+  if(before.status===200){
+   assert.equal(after.data.account.id,before.data.account.id)
+   for(const key of ['activeTestPlan','latestTestPlan','runs','results'])assert.deepEqual(after.data[key],before.data[key],'guest launch must leave account '+key+' untouched')
+  }else assert.equal(before.status,401)
+  assert.deepEqual(accountWrites,[],'public Start must not attempt any account mutation or Google sign-in')
+ }finally{target.off('request',observe)}
 }
 async function enterTest(name='Current State Check',mode='Guided'){
  testPlanDiagnostics.marker('enter-test-begin')
@@ -426,7 +527,22 @@ try {
  await expect(typeChoices).toHaveCount(3)
  await expect(typeChoices.locator('xpath=..').first()).toBeVisible()
  assert.deepEqual(await typeChoices.evaluateAll(nodes=>nodes.map(node=>node.value)),['professional','monitoring','hobby'])
- assert.equal(await picker.locator('[data-test-kind-badge]').count(),5,'Every displayed test needs a visible category icon and label')
+ // Bind visible type labels to registered entries, never infer source status from the DOM.
+ const registeredPickerEntries=new Map(buildExplorerEntries({locale:'en',audience:'public'}).map(entry=>[entry.key,entry]))
+ for(const card of await rankedCards.all()){
+  const entry=registeredPickerEntries.get(await card.getAttribute('data-test-match'))
+  assert.ok(entry,'Every displayed card must resolve to a registered explorer entry')
+  const kindLabel=testKindCardLabel(entry,'en')
+  assert.ok(kindLabel,'Every displayed card must have a source-faithful type label')
+  const category=card.locator('label [data-test-kind-badge]')
+  await expect(category).toHaveCount(1)
+  await expect(category).toBeVisible()
+  await expect(category.locator('svg')).toBeVisible()
+  await expect(category.locator('span')).toBeVisible()
+  await expect(category).toHaveAttribute('data-test-kind-badge',entry.testKind)
+  await expect(category.locator('span')).toHaveText(`Type: ${kindLabel}`)
+  await expect(category).toHaveAttribute('aria-label',`Type: ${kindLabel}`)
+ }
  const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
  await expect(selectedSummary).toHaveCount(3)
  const defaultKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
@@ -462,7 +578,10 @@ try {
  await picker.getByRole('button',{name:'Use suggested set'}).click()
  await expect(rankedCards.locator('input[type="checkbox"]:checked')).toHaveCount(3)
  assert.equal(await optional.evaluate(el=>el.open),false,'Depth selection must be folded after changing test kinds')
- const stress=picker.getByRole('button',{name:'Stress',exact:true})
+ const concernTopics=picker.getByRole('group',{name:'What would you like to explore?',exact:true})
+ await expect(concernTopics).toHaveCount(1)
+ const stress=concernTopics.getByRole('button',{name:'Stress',exact:true})
+ await expect(stress).toHaveCount(1)
  await stress.click()
  await expect(stress).toHaveAttribute('aria-pressed','true')
  const workConcern=conditionalProblems.getByRole('button',{name:'Workload feels overwhelming'})
@@ -482,8 +601,12 @@ try {
  await expect(rankedCards.locator('input[type="checkbox"]:checked')).toHaveCount(3)
  await expect(picker.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  await optional.locator('summary').click()
- await picker.getByRole('button',{name:/Quick check-in/}).click()
- await expect(picker.getByRole('button',{name:/Quick check-in/})).toHaveAttribute('aria-pressed','true')
+ const recommendationPriority=picker.getByRole('group',{name:'Which tests would you like to see first?',exact:true})
+ await expect(recommendationPriority).toHaveCount(1)
+ const shorterPriority=recommendationPriority.getByRole('button',{name:'Shorter tests. Prioritize shorter questionnaires',exact:true})
+ await expect(shorterPriority).toHaveCount(1)
+ await shorterPriority.click()
+ await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
  await optional.locator('summary').click()
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
  await picker.getByRole('button',{name:'Browse full database'}).click()
@@ -515,7 +638,12 @@ try {
     'RU client selector must fit '+width+'px without horizontal document scrolling')
  }
  await guestPickerPage.setViewportSize({width:390,height:844})
- await ruPicker.getByRole('button',{name:'Стресс',exact:true}).click()
+ const ruConcernTopics=ruPicker.getByRole('group',{name:'Что вы хотите исследовать?',exact:true})
+ await expect(ruConcernTopics).toHaveCount(1)
+ const ruStress=ruConcernTopics.getByRole('button',{name:'Стресс',exact:true})
+ await expect(ruStress).toHaveCount(1)
+ await ruStress.click()
+ await expect(ruStress).toHaveAttribute('aria-pressed','true')
  await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'})).toBeVisible()
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
@@ -918,7 +1046,7 @@ try {
  assert.equal((await api('results/'+first.id,null,other)).status,404)
  assert.equal(otherBootstrap.data.results.length,0)
  passed('browser A/B cross-user result denial after committed consent')
- // The public Start free monitoring button must transfer the exact selection into an existing Google account.
+ // Public Start remains a guest journey even with an authenticated Google cookie.
  // Open a fresh tab in the same authenticated cookie context: the onboarding page
  // can still have a queued router.replace('/en/app') after its nav becomes visible.
  // Reusing it races Playwright's navigation against that pending redirect in WebKit.
@@ -927,40 +1055,81 @@ try {
  selectionPage.on('response',response=>{ if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST') selectionWrites.push(response.status()) })
  await selectionPage.goto(origin+'/en/client/tests')
  await chooseSinglePublicTest(selectionPage,'Personality Baseline')
- const selectionGuided=selectionPage.locator('#hh-test-customizer')
- if(!(await selectionGuided.isVisible()))await selectionPage.getByRole('button',{name:/Choose my own tests and filters/}).click()
+ const personalityDefinition=buildExplorerEntries({locale:'en',audience:'guest'}).find(entry=>entry.key==='mini-ipip-20').definition
+ await launchPublicGuestWithoutAccountWrite(selectionPage,other,personalityDefinition)
+ passed('authenticated public launch starts the exact guest test without writing the account')
+ const accountExplorer=await chooseSingleAccountTest(selectionPage,'Personality Baseline')
+ const selectionGuided=accountExplorer.locator('#hh-test-customizer')
+ if(!(await selectionGuided.isVisible()))await accountExplorer.getByRole('button',{name:/Choose my own tests and filters/}).click()
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
  await selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true}).click()
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
- await selectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ await accountExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
  await expect(selectionPage.getByRole('heading',{name:'Personality Baseline',exact:true})).toBeVisible()
  const selectedPlan=(await api('bootstrap',null,other)).data.activeTestPlan
- assert.equal(selectedPlan.definitionIds.length,1)
+ assert.deepEqual(selectedPlan.definitionIds,[personalityDefinition.id],'account picker saves exactly the selected definition in order')
  assert.deepEqual(selectedPlan.selectionPreferences.focus,['anxiety'])
  await selectionPage.getByText('My interests & additional recommendations',{exact:true}).click()
  await expect(selectionPage.getByRole('region',{name:'My saved test priorities'})).toContainText('Anxiety & worry')
  assert.equal(new URL(selectionPage.url()).searchParams.get('plan'),selectedPlan.id)
  assert.deepEqual(selectionWrites,[201],'single selected battery creates exactly one plan, even with React StrictMode')
  await selectionPage.close()
- passed('public Start free monitoring preserves the selected test in authenticated personal Cabinet')
+ passed('My Tests picker preserves exact selection and priorities with one account write')
  // Re-selecting the same assessment should reuse the existing battery, not
  // leave the OAuth handoff query pending or create a second plan.
  const repeatSelectionPage=await other.newPage()
- await repeatSelectionPage.goto(origin+'/en/client/tests')
- await chooseSinglePublicTest(repeatSelectionPage,'Personality Baseline')
- await repeatSelectionPage.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
+ const reuseWrites=[]
+ repeatSelectionPage.on('response',response=>{if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST')reuseWrites.push(response.status())})
+ // Reuse restores the saved Anxiety priority, which excludes this unselected test.
+ // Temporarily change that visible filter, then restore it before the only write.
+ let repeatAnxiety
+ const repeatExplorer=await chooseSingleAccountTest(repeatSelectionPage,'Personality Baseline',{
+  beforeSelection:async explorer=>{
+   const toggle=explorer.locator('button[aria-controls="hh-test-customizer"]')
+   await expect(toggle).toHaveCount(1)
+   if((await toggle.getAttribute('aria-expanded'))!=='true')await toggle.click()
+   await expect(toggle).toHaveAttribute('aria-expanded','true')
+   const guided=explorer.locator('#hh-test-customizer')
+   const topics=guided.getByRole('button',{name:/^Topics that matter/})
+   await expect(topics).toHaveCount(1)
+   await topics.click()
+   const group=guided.getByRole('group',{name:'Filter tests by your concerns',exact:true})
+   await expect(group).toHaveCount(1)
+   repeatAnxiety=group.getByRole('button',{name:'Anxiety & worry',exact:true})
+   await expect(repeatAnxiety).toHaveCount(1)
+   await expect(repeatAnxiety).toHaveAttribute('aria-pressed','true')
+   await repeatAnxiety.click()
+   await expect(repeatAnxiety).toHaveAttribute('aria-pressed','false')
+  },
+ })
+ await repeatAnxiety.click()
+ await expect(repeatAnxiety).toHaveAttribute('aria-pressed','true')
+ await expect(repeatExplorer.getByRole('checkbox',{name:'Personality Baseline',exact:true,checked:true})).toHaveCount(1)
+ assert.deepEqual(reuseWrites,[],'filter changes and exact selection do not write the account')
+ const [reuseResponse]=await Promise.all([
+  repeatSelectionPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST'),
+  repeatExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click(),
+ ])
+ assert.equal(reuseResponse.status(),201)
  await expect(repeatSelectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  assert.equal(new URL(repeatSelectionPage.url()).searchParams.get('plan'),selectedPlan.id)
- assert.equal((await api('bootstrap',null,other)).data.activeTestPlan.id,selectedPlan.id)
+ const reusedPlan=(await api('bootstrap',null,other)).data.activeTestPlan
+ assert.equal(reusedPlan.id,selectedPlan.id)
+ assert.deepEqual(reusedPlan.definitionIds,selectedPlan.definitionIds)
+ assert.deepEqual(reusedPlan.completedRunIds,selectedPlan.completedRunIds)
+ assert.deepEqual(reusedPlan.selectionPreferences,selectedPlan.selectionPreferences,
+  'explicit repeat selection restores every saved preference before the idempotent write')
+ assert.deepEqual(reuseWrites,[201],'reselecting the same set performs exactly one idempotent account save')
+ await expect(repeatSelectionPage.locator('[data-pending-selection]')).toHaveCount(0)
  await repeatSelectionPage.close()
  passed('choosing a matching existing set reuses the same saved plan and clears pending handoff')
  const blocked=await context.request.post(origin+'/api/app/requests',{headers:{Origin:'https://other.invalid'},data:{}});assert.equal(blocked.status(),403);passed('cross-origin mutations rejected')
  const storage=await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),caches:await Promise.all((await caches.keys()).map(async k=>(await(await caches.open(k)).keys()).map(r=>new URL(r.url).pathname)))}));assert.ok(!JSON.stringify(storage).match(/hh-app-auth|profile:first|\/api\/app|\/en\/app|\/ru\/app/));passed('no private browser storage or service-worker response cache')
  const exported=await api('export');assert.equal(exported.status,200);assert.ok(exported.data.runs.every(r=>r.accountId===first.accountId));assert.equal(exported.data.results.length,3);passed('own complete data export')
  // Remember the active owner selection before the separate Google sign-in flow.
- // It must still be present after the public selector adds another test.
+ // It must still be present after a guest launch and an explicit My Tests append.
  const savedBeforeSignout=(await api('bootstrap')).data.activeTestPlan
  assert.ok(savedBeforeSignout?.definitionIds?.length>0,'synthetic owner has a saved battery')
  const newPublicTest=unsavedPublicTest(savedBeforeSignout)
@@ -1043,16 +1212,21 @@ try {
  assert.equal(await page.locator('.cabinet-legacy-entry').getAttribute('open'),null)
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
- await chooseVisibleTest(page,newPublicTest.title)
- await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
- // The public selector must ADD selected tests to the existing Google account,
- // never discard earlier tests or display a replacement confirmation.
+ await chooseSinglePublicTestAfterCatalog(page,newPublicTest.title)
+ await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition,{embedded:true})
+ // Sign in explicitly, then append through the actual account picker.
+ await page.goto(origin+'/en/app')
+ await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ assert.deepEqual((await api('bootstrap')).data.activeTestPlan,savedBeforeSignout,'guest selection and Google sign-in leave the saved battery unchanged')
+ const appendExplorer=await chooseSingleAccountTest(page,newPublicTest.title)
+ await appendExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:30000})
  const reopenedPlan=(await api('bootstrap')).data.activeTestPlan
  assert.equal(reopenedPlan.id,savedBeforeSignout.id,'same original plan remains active')
  assert.equal(new URL(page.url()).searchParams.get('plan'),reopenedPlan.id,'saved plan URL identifies the original account plan')
- assert.ok(savedBeforeSignout.definitionIds.every(id=>reopenedPlan.definitionIds.includes(id)),
-   'every earlier saved test remains in the account')
+ assert.deepEqual(reopenedPlan.definitionIds,[...savedBeforeSignout.definitionIds,newPublicTest.definition.id],
+   'My Tests appends the exact selected definition after every earlier test in its saved order')
  assert.ok(reopenedPlan.definitionIds.includes(newPublicTest.definition.id),'the exact newly selected public definition is saved')
  assert.ok(reopenedPlan.definitionIds.length>savedBeforeSignout.definitionIds.length,
    'the newly selected public test is added to My Tests')
@@ -1061,19 +1235,24 @@ try {
  await expect(page.locator('[data-pending-selection]')).toHaveCount(0)
  await expect(page.locator('#my-tests-list')).toBeVisible()
  await expect(page.getByRole('heading',{name:newPublicTest.title,exact:true})).toBeVisible()
- passed('public test selection adds new tests without replacing the previous account battery')
+ passed('explicit My Tests selection appends the exact test without replacing account history')
  // The account shows the entire saved selection immediately, with a direct
  // remove control per row. Removing does not remove previous saved results.
  const beforeRemove=(await api('bootstrap')).data
  const activeBeforeRemove=beforeRemove.activeTestPlan
  assert.ok(activeBeforeRemove?.definitionIds.length>0)
- const removeButton=page.locator('[data-remove-selected-test]').first()
+ const removeButton=page.locator('[data-remove-selected-test="'+newPublicTest.key+'"]')
+ await expect(removeButton).toHaveCount(1)
  await expect(removeButton).toBeVisible()
  await expect(page.locator('#my-tests-list')).toBeVisible()
  await removeButton.click()
  await expect.poll(async()=>((await api('bootstrap')).data.activeTestPlan?.definitionIds.length || 0),{timeout:15000})
   .toBe(activeBeforeRemove.definitionIds.length-1)
  const afterRemove=(await api('bootstrap')).data
+ assert.deepEqual(afterRemove.activeTestPlan.definitionIds,savedBeforeSignout.definitionIds,'removing the appended test restores the exact original ordered selection')
+ assert.deepEqual(afterRemove.activeTestPlan.completedRunIds,activeBeforeRemove.completedRunIds,'removal preserves completed progress')
+ assert.deepEqual(afterRemove.results,beforeRemove.results,'removal preserves exact saved results')
+ assert.deepEqual(afterRemove.runs,beforeRemove.runs,'removal preserves exact saved runs and drafts')
  assert.equal(afterRemove.results.length,beforeRemove.results.length,'removing a test must not delete results')
  assert.equal(afterRemove.runs.length,beforeRemove.runs.length,'removing a test must not delete drafts')
  await expect(page.getByText('Removed from selection.',{exact:false})).toBeVisible({timeout:15000})

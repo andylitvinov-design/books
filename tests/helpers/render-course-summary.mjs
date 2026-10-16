@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
+import * as phaseOutcomes from '../../lib/inner-growth/trauma-phase-outcomes.js'
 import * as antistressMeasurement from '../../lib/inner-growth/anti-stress-measurement-contract.js'
 
 const require = createRequire(import.meta.url)
@@ -16,6 +17,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
 const compiledModule = { exports: {} }
 const testRequire = name => {
   if (name.endsWith('.module.css')) return new Proxy({}, { get: (_, key) => key === '__esModule' ? false : String(key) })
+  if (name === '@/lib/inner-growth/trauma-phase-outcomes') return phaseOutcomes
   if (name === '@/lib/inner-growth/anti-stress-measurement-contract') return antistressMeasurement
   if (name === 'next/link') return function LinkFixture({ children, ...props }) {
     delete props.prefetch

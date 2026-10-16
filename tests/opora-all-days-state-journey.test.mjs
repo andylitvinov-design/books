@@ -86,7 +86,7 @@ test('state reflection never invents symptom improvement or counts plans as atte
   assert.equal(receipt.attempt,'Не отмечено','A chosen support must not prove an attempted exercise')
 })
 
-test('all route screens share one visible state card, compact optional feedback and a safe stop',()=>{
+test('all route screens share one visible state card, compact optional feedback and safe skip/exit',()=>{
   const player=read('components/app/course-slide-player.jsx')
   const result=read('components/app/course-lesson-result.jsx')
   const journey=read('components/app/opora-state-journey.jsx')
@@ -96,7 +96,9 @@ test('all route screens share one visible state card, compact optional feedback 
   assert.match(player,/part="plan"/)
   assert.match(player,/part="preview"/)
   assert.match(player,/part="experience"/)
-  assert.match(player,/data-opora-safe-stop/)
+  assert.doesNotMatch(player,/data-opora-safe-stop/)
+  assert.match(player,/className=\{styles\.skip\}/)
+  assert.match(player,/onClose/)
   assert.match(player,/className=\{styles\.oporaExtraDetails\}/)
   assert.match(player,/stateJourney:validateOporaStateJourney\(stateJourney\)/)
   assert.match(server,/validateOporaStateJourney\(input\.stateJourney\)/)

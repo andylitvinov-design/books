@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
+import {prepareReportSession} from '@/lib/consultations/owner-report-sharing'
 import {BookOpen,FolderOpen,RefreshCw,ShieldCheck} from 'lucide-react'
 import {SessionMaterialPicker} from './session-material-picker'
 import styles from './client-session.module.css'
@@ -140,6 +141,12 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
         'After selecting resources, open the full session editor to review and publish.'}</span>
       <a href={editorUrl}>{ru?'Проверить отчёт →':'Review report →'}</a>
     </p>}
+    {!editorUrl&&<button type="button" disabled={busy||loading} onClick={async()=>{
+      if(busy)return
+      setBusy(true);setError('')
+      try{window.location.assign(await prepareReportSession(clientId,documentId))}
+      catch{setError(ru?'Не удалось открыть редактор сессии. Повторите после входа в кабинет.':'Unable to open the session editor. Sign in and retry.');setBusy(false)}
+    }}>{ru?'Проверить и опубликовать отчёт →':'Review and publish report →'}</button>}
     <div className={styles.ownerMaterialsToolbar}>
       <button type="button" disabled={busy||loading} onClick={()=>void refresh()}>
         <RefreshCw size={17} aria-hidden="true"/>{ru?'Обновить выбор':'Refresh selection'}

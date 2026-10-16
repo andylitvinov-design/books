@@ -405,7 +405,7 @@ test('My Profile v3 is action-first, prioritizes one next step, and keeps dense 
   assert.ok(workspace.includes('hh-profile-summary'))
   assert.ok(workspace.includes('hh-profile-next'))
   assert.ok(workspace.includes('<ProfileOverview profile={profile} locale={locale} />'))
-  assert.ok(workspace.includes('<MetricCard key={d.key} dimension={d} locale={locale} onSelect={setSelected} />'))
+  assert.ok(workspace.includes('<MetricCard key={`${d.sourceDefinitionId}::${d.key}`} dimension={d} locale={locale} onSelect={setSelected} />'))
   assert.ok(workspace.includes('if (!reports.length) return null'))
   assert.ok(workspace.includes("definitionKey: def.key"))
   assert.ok(workspace.includes("window.location.assign('/' + locale + '/app/runs/' + run.id)"))

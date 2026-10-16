@@ -142,6 +142,12 @@ And they take a step —
 
 no longer doubting.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Your own decision is drowned out by other people’s advice: even when you know the answer, you want to seek their reassurance again.
+
+After (desired state): Being able to hear your own opinion, trust your choice and take a step while staying grounded in yourself.
+
 ## RITUAL
 
 • take 2–5 drops of CERATO under the tongue

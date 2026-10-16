@@ -13,7 +13,8 @@ import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, sug
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import AntiStressModuleFinder from './antistress-module-finder'
-import { ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
+import {phaseOutcomeContext} from '@/lib/inner-growth/trauma-phase-outcomes'
+import { ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_ROUTER_VERSION, ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
@@ -295,7 +296,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
 
   function reviewModuleScales(selection) {
     if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
-    if (!selection || !ANTISTRESS_MODULE_GOALS.some(item=>item.id===selection.moduleId) ||
+    if (!selection || !ANTISTRESS_MODULE_GOALS.some(item=>item.id===selection.moduleId&&!item.clinicalOnly) ||
       !selection.answers || typeof selection.answers !== 'object') {
       onError('COURSE_MODULE_FINDER_INVALID')
       return
@@ -668,6 +669,12 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         nextIsScaleReview onStart={reviewModuleScales}/>
     }
     const chosenModule=ANTISTRESS_MODULE_GOALS.find(item=>item.id===moduleSelection.moduleId)
+    const phase=phaseOutcomeContext(moduleSelection.moduleId,ANTISTRESS_ROUTER_VERSION)
+    const primaryLabel=phase?.primaryTestKey==='hh-module-finder'
+      ?ANTISTRESS_MODULE_FINDER_ITEMS.find(item=>item.id===phase.primaryScaleKey)?.text[ru?'ru':'en']
+      :profile.scales.find(item=>item.id===phase?.primaryMetric)?.label||phase?.primaryScaleKey
+    const focusWords={...t,mainSkillTitle:ru?'Приоритет среди дополнительных фокусов':'Priority among supporting focus areas',mainSkillHelp:ru?'Этот порядок задаёт фокус практики и не меняет основной показатель курса.':'This order sets your practice focus and does not change the course primary measure.'}
+
     return <div className={styles.scaleConfirmationJourney} data-course-scale-confirmation>
       <section className={'hh-panel '+styles.selectedModuleBar} data-course-module-draft>
         <div>
@@ -675,13 +682,14 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           <h2>{t.scaleGateTitle}</h2>
           <p>{t.scaleGateHelp}</p>
           {chosenModule&&<strong>{chosenModule.title[ru?'ru':'en']}</strong>}
+          <p data-course-module-primary>{ru?'Основной показатель самооценки курса':'Course primary self-rating measure'}: {primaryLabel}</p>
         </div>
         <button type="button" className={styles.whiteSecondary} disabled={busy||localBusy}
           data-course-change-module onClick={()=>{setModuleSelection(null);setScaleView('recommended')}}>{t.changeModule}</button>
       </section>
       {scaleView==='manual'
         ? <CourseFocusPicker
-          t={t} locale={locale} profile={profile} suggested={suggestedScales}
+          t={focusWords} locale={locale} profile={profile} suggested={suggestedScales}
           chosenScales={chosenScales} chosenGoals={fallbackGoals}
           onToggleScale={toggleScale}
           onSetPrimaryScale={key=>setChosenScales(previous=>previous.includes(key)?[key,...previous.filter(item=>item!==key)]:previous)}
@@ -692,7 +700,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           onContinue={()=>submitFocusSelection(chosenScales,profile.eligible.length>0,moduleSelection)}
           onBack={()=>setScaleView('recommended')}/>
         : <CourseCompletionReview
-          t={t} root={root} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
+          t={focusWords} root={root} moduleId={moduleSelection.moduleId} routerVersion={ANTISTRESS_ROUTER_VERSION} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
           optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
           busy={busy||localBusy} compactResults
           onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id),true,moduleSelection)}

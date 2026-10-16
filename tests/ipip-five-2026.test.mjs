@@ -89,13 +89,13 @@ for(const [index,d] of added.entries()) {
   }
  })
 }
-test('five additive versions: 137 runnable, 70 source-backed, 67 HH after exact registration; exact registration payload',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,137)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,70)
+test('five additive versions: 139 runnable, 72 source-backed, 67 HH after exact registration; exact registration payload',()=>{
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,139)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,67)
- assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:137,registered:137,uncovered:[],obsolete:[]})
+ assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:139,registered:139,uncovered:[],obsolete:[]})
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-five-registration.json',import.meta.url))),added)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'fd0dc830f8414ae6ab5358a6623ff7584d2465a9e2b0eeb2d527ad5c6f8a2625')
 })
 

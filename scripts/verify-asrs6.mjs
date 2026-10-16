@@ -1,3 +1,4 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
 // Requires the approved isolated database, app and provider protocol double.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -22,13 +23,15 @@ const mixed = [2, 2, 2, 3, 0, 0] // Classic count 4; continuous sum 9 is not use
 const passed = label => { checks.push(label); console.log('PASS ' + label) }
 let page
 
-async function isolatedContext(fixtureIp = '192.0.2.61') {
+async function isolatedContext(fixtureIp = '192.0.2.61', guestProbe = false) {
   // RFC 5737 TEST-NET-1 fixtures, sent only to the asserted loopback app.
   // Keep this suite independent from the other suites' 12/IP/hour budget.
   // The application limiter and its headers contract remain unchanged.
   assert.ok(['192.0.2.61', '192.0.2.62', '192.0.2.63'].includes(fixtureIp))
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 }, timezoneId: 'UTC',
+    // Only the guest result probe deliberately intercepts its save-intent POST.
+    serviceWorkers: guestProbe ? 'block' : 'allow',
     extraHTTPHeaders: { 'X-Forwarded-For': fixtureIp },
   })
   // Keep all browser traffic on loopback, including the synthetic auth provider.
@@ -163,7 +166,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     const saved = target.waitForResponse(response => response.url().includes('/runs/') && response.url().endsWith('/save') && response.request().method() === 'POST')
     await buttons.nth(values[index]).click()
     assert.ok((await saved).ok())
-    if (index < 5) await expect(target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
+    if (index < 5) await expect(target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
     // A saved zero must remain distinct from an unanswered question after reload.
     if (mode === 'quick' && index === 2) {
       await target.waitForLoadState('networkidle')
@@ -176,7 +179,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     }
     if (mode === 'guided' && index < 5) await target.getByRole('button', { name: locale === 'ru' ? 'Далее' : 'Next', exact: true }).click()
   }
-  const finish = target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
+  const finish = target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
   await expect(finish).toBeEnabled()
   await finish.click()
 }
@@ -246,7 +249,7 @@ try {
   await account.close()
 
   // One consented guest session for four journeys, within the unchanged IP/session limits.
-  const guest = await isolatedContext(), resultIds = new Set()
+  const guest = await isolatedContext(undefined, true), resultIds = new Set()
   await api(guest, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
@@ -255,11 +258,12 @@ try {
     await navigate(page, origin + '/' + locale + '/client?plan=' + plan.id)
     await selectMode(page, mode)
     await fill(page, definition, mode, true, locale, values)
-    await assertReport(page, definition, locale, expected)
+    await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({ timeout: 20000 })
     const stored = (await api(guest, 'guest/bootstrap')).results.find(result => result.definitionId === definition.id && !resultIds.has(result.id))
     assertStored(stored, definition, expected); resultIds.add(stored.id)
+    await assertGuestScaleResult(page, expect, stored, locale)
     await page.screenshot({ path: output + '/guest-' + locale + '-' + mode + '.png', fullPage: true })
-    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count and report')
+    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count, exact scales and item-scoped optional analysis')
     await page.close()
   }
   assert.equal(resultIds.size, 4)

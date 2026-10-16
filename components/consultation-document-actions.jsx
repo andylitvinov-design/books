@@ -117,7 +117,7 @@ export function ConsultationDocumentActions({
        status==='failed'?(ru?'Не удалось получить ссылку. Попробуйте ещё раз.':'Could not retrieve the link. Try again.'):
        copiedLocale===locale?labels.copiedFeedback:!active?labels.disabled:''}
     </p>
-    {needsPublication&&kind!=='payment'&&active&&clientId&&
+    {kind!=='payment'&&active&&clientId&&
       <button className="consultation-prepare-session" type="button" disabled={preparing} onClick={prepare}>
         {preparing?(ru?'Открываем редактор…':'Opening editor…'):
           (ru?'Проверить и опубликовать страницу клиента →':'Review and publish client page →')}

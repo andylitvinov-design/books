@@ -20,6 +20,7 @@ import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-mo
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { withFinalFreeOffer } from '@/lib/inner-growth/course-slide-sequence'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
+import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
 
 const WORDS = {
@@ -354,6 +355,9 @@ export default function CourseSlidePlayer({
     lesson.antiStress ||
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015'].includes(lesson.oporaModule?.version)
   ))
+  const phaseChecks=cycle.day===14&&cycle.moduleRouter==='opora-trauma-1.3-20261015'
+    ?traumaPhaseCheckpoints(cycle.moduleId,locale):[]
+  const [phaseCheckpoints,setPhaseCheckpoints]=useState(session?.signals?.phaseCheckpoints||{})
   const [earned, setEarned] = useState(false)
   const baseSlides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const slides=useMemo(()=>withFinalFreeOffer(baseSlides,{
@@ -417,6 +421,7 @@ export default function CourseSlidePlayer({
   const [phraseResponse,setPhraseResponse] = useState(session?.signals?.phraseResponse || '')
   function recordRouteHint(){
     setDailyMethodHintUsed(true)
+    setPhaseCheckpoints(value=>Object.fromEntries(Object.entries(value).map(([id,evidence])=>[id,evidence.state==='independent'?{...evidence,state:'guided'}:evidence])))
     if(routePlan&&practiceLab.reflect?.endsWith('_independent'))updatePracticeLab('reflect','')
   }
   const [recallAttempt,setRecallAttempt] = useState('')
@@ -557,6 +562,7 @@ export default function CourseSlidePlayer({
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
           : {}),
         ...(isExtendedStress ? {practiceLab} : {}),
+        ...(phaseChecks.length?{phaseCheckpoints:Object.fromEntries(Object.entries(phaseCheckpoints).map(([id,evidence])=>[id,dailyMethodHintUsed&&evidence.state==='independent'?{...evidence,state:'guided'}:evidence]))}:{}),
         visitedSlideKeys:baseSlides.map(item=>item.key),
       })
       if (response) { sessionOp.current = null; setEarned(true); setIndex(slides.length) }
@@ -590,7 +596,7 @@ export default function CourseSlidePlayer({
   const lessonsSaved = Number(data.progress?.practiceCount) || 0
   const practiceStreak = Number(data.progress?.practiceStreak) || 0
   const paired = compareLessonMoments(alreadyDone ? session?.beforeNow : beforeNow, alreadyDone ? session?.afterNow : afterNow)
-  const lessonOutcomeProps={locale,lesson,day:cycle.day,beforeNow:alreadyDone?session?.beforeNow:beforeNow,
+  const lessonOutcomeProps={locale,lesson,phaseChecks,phaseCheckpoints:alreadyDone?session?.signals?.phaseCheckpoints||{}:phaseCheckpoints,day:cycle.day,beforeNow:alreadyDone?session?.beforeNow:beforeNow,
     afterNow:alreadyDone?session?.afterNow:afterNow,
     comfort:alreadyDone?session?.signals?.comfort:comfort,usefulness:alreadyDone?session?.signals?.usefulness:usefulness,
     flexibility:alreadyDone?session?.signals?.flexibility:flexibility,
@@ -1055,6 +1061,30 @@ export default function CourseSlidePlayer({
                 onChange={event => setReflection(event.target.value)} disabled={locked}/>
             </label>
             <p className={styles.helper}><LockKeyhole size={15}/>{words.reflectionHint}</p>
+            {phaseChecks.length>0&&<section data-phase-checkpoints className={styles.phaseCheckpoints}>
+              <h3>{locale==='ru'?'Три необязательные учебные пробы':'Three optional learning checks'}</h3>
+              <p className={styles.helper}>{locale==='ru'?'Это учебные ответы и ваш отчёт о попытке, не проверка клинического улучшения. Можно не пробовать или отметить, что задание не подходит.':'These record educational choices and your report of an attempt, not clinical improvement. You may leave them untried or mark them unsuitable.'}</p>
+              {phaseChecks.map(check=>{
+                const evidence=phaseCheckpoints[check.id]||{state:'not_tried',choice:null}
+                const update=patch=>setPhaseCheckpoints(value=>({...value,[check.id]:{...evidence,...patch}}))
+                return <fieldset key={check.id} disabled={locked} className={styles.noteField}>
+                  <legend>{check.prompt}</legend>
+                  {check.scene&&<p className={styles.helper}>{check.scene}</p>}
+                  <select aria-label={check.prompt} value={evidence.choice||''} onChange={event=>update({choice:event.target.value||null,state:'not_tried'})}>
+                    <option value="">{locale==='ru'?'Не выбрано':'No choice recorded'}</option>
+                    {check.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  {evidence.choice&&<p data-phase-selected-answer className={styles.helper}>{check.options.find(option=>option.value===evidence.choice)?.label}</p>}
+                  <select aria-label={locale==='ru'?'Как я пробовал(а)':'How I tried'} value={evidence.state} onChange={event=>update({state:event.target.value})}>
+                    <option value="not_tried">{locale==='ru'?'Не пробовал(а)':'Not tried'}</option>
+                    <option value="not_suitable">{locale==='ru'?'Мне не подходит':'Not suitable'}</option>
+                    <option value="guided" disabled={!evidence.choice}>{locale==='ru'?'С подсказкой':'With guidance'}</option>
+                    <option value="independent" disabled={!evidence.choice||dailyMethodHintUsed}>{locale==='ru'?'Самостоятельная попытка (мой отчёт)':'Independent attempt (my report)'}</option>
+                  </select>
+                </fieldset>
+              })}
+            </section>}
+
           </>}
 
           {slide.kind === 'moment' && <>
@@ -1141,11 +1171,6 @@ export default function CourseSlidePlayer({
       </main>
       <footer className={styles.footer}>
         {!finished && !discomfortOpen && <div className={styles.subactions}>
-          {isOporaStateJourney&&<button type="button" data-opora-safe-stop
-            className={styles.oporaSafeStop} disabled={locked}
-            onClick={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}>
-            <ShieldCheck size={16}/>{locale==='ru'?'Мне некомфортно':'I feel uncomfortable'}
-          </button>}
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
           {(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)

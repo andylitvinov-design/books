@@ -21,6 +21,7 @@ function uploadFile(intent,file,mime,onProgress){
     const xhr=new XMLHttpRequest()
     xhr.open('PUT',intent.uploadUrl)
     xhr.setRequestHeader('Content-Type',mime)
+    xhr.setRequestHeader('If-None-Match','*')
     xhr.timeout=850000
     xhr.upload.onprogress=event=>{
       if(event.lengthComputable)onProgress?.(Math.round(event.loaded/event.total*100))

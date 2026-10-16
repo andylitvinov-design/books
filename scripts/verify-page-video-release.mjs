@@ -37,6 +37,17 @@ if (!live) {
   }
 }
 
+async function chooseRussianHome(page) {
+  const menu = page.locator('.site-language-menu');
+  await expect(menu).toHaveCount(1);
+  await menu.locator('.site-language-menu-trigger').click();
+  const russianLink = menu.locator('a[lang="ru"]');
+  await expect(russianLink).toHaveCount(1);
+  await expect(russianLink).toHaveAttribute('href', '/ru');
+  await russianLink.click();
+  await expect(page).toHaveURL(origin + '/ru');
+}
+
 async function exercise(engine, browserType) {
   const browser = await browserType.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -153,8 +164,7 @@ async function exercise(engine, browserType) {
     await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-video-slot="home-intro"] .site-video-play').click();
     await expect(page.locator('[data-video-slot="home-intro"] iframe')).toHaveCount(1);
-    await page.locator('.site-language-menu-trigger').click();
-    await page.locator('.site-language-switch button[lang="ru"]').click();
+    await chooseRussianHome(page);
     const russian = page.locator('[data-video-slot="home-intro"][data-video-locale="ru"]');
     await expect(russian).toHaveCount(1);
     await expect(russian.locator('iframe')).toHaveCount(0);

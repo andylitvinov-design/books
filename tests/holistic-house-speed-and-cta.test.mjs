@@ -37,6 +37,10 @@ test("homepage keeps genuine paid consultation navigation while free services li
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
+  assert.match(freeCapture, /selected === "situation" \? `\/\$\{locale\}\/services\/free-situation-review`/);
+  assert.match(freeCapture, /selected === "wu" \? `\/\$\{locale\}\/services\/dao-health-profile`/);
+  assert.match(freeCapture, /`\/\$\{locale\}\/client#cabinet-tests`/);
+  assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href="#core-services"/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);

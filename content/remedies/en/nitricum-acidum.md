@@ -79,3 +79,11 @@ APPLICATION EXPERIENCE
 In my experience working with clients, the remedy gathers a person together. It brings them out of suffering, out of feelings of loss, returning them to the here and now.
 
 It makes a person more clear, structured, adequate, rational, which is valuable in situations when emotional pain and suffering are eating away at the soul.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The bitterness of injustice and resentment keeps your attention fixed on past losses.
+
+After (desired state): Greater clarity in the present and the ability to choose your actions without giving all your attention to an old hurt.

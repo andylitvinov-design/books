@@ -15,6 +15,7 @@ import {
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
 import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus } from '../lib/inner-growth/course-strategy.js'
+import { getAssessmentDefinition, provenance } from '../lib/assessments/definitions.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -28,8 +29,7 @@ test('My Course describes exactly six EN/RU sequential steps and six optional go
 function weeklyResult(values = {}) {
   return {
     id: '36c5b778-74ba-4487-bfb9-5ed44ed95710',
-    definitionKey: 'hh-weekly-pulse', definitionVersion: 'v1',
-    scoringKey: 'raw-dimensions', scoringVersion: 'v1',
+    ...provenance(getAssessmentDefinition('hh-weekly-pulse', 'v1', 'en')),
     measurementAt: new Date().toISOString(),
     dimensions: Object.entries(values).map(([key, value]) => ({
       key, value, min: 0, max: 10,

@@ -87,7 +87,7 @@ test("every site lead surface uses structured service/request WhatsApp links, ne
     ["components/consultation-choice-capture.tsx",/whatsappEnquiryUrl\(\{/],
     ["components/reiki-choice-capture.tsx",/whatsappEnquiryUrl\(\{/],
     ["components/reiki-landing-forms.tsx",/whatsappEnquiryUrl\(\{/],
-    ["components/yggdrasil-free-initiation.tsx",/whatsappEnquiryUrl\(\{/],
+    ["components/yggdrasil-initiation-form.tsx",/window\.open\(whatsapp\(message\)/],
     ["components/client-cabinet.jsx",/whatsappEnquiryUrl\(\{/],
     ["app/[locale]/homeopathy/page.tsx",/whatsappEnquiryUrl\(\{/],
     ["lib/public-lead-capture.js",/whatsappEnquiryUrl\(\{/],
@@ -113,4 +113,24 @@ test("consultation choices do not duplicate the Request label in prepared WhatsA
   const capture = read("components/consultation-choice-capture.tsx");
   assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Request: I would like to book/);
   assert.doesNotMatch(capture, /serviceMessages:[\s\S]*?Запрос: хочу записаться/);
+});
+
+test('initiation form encodes the complete chosen message for the configured teacher only',()=>{
+ const source=read('components/yggdrasil-initiation-form.tsx');
+ const match=source.match(/function whatsapp\(message: string\) \{([\s\S]*?)\n\}/);
+ assert.ok(match);
+ const build=new Function('WHATSAPP_NUMBER','message',match[1]);
+ const message='Synthetic selected topic\nSeven answers: & ? #\nhttps://holistichouse.vercel.app/ru/academy/reiki/yggdrasil/free-initiation';
+ const value=build(WHATSAPP_NUMBER,message);
+ assert.equal(decode(value),message);
+ assert.notEqual(value,build('000',message));
+ const formContract=src=>{
+  assert.match(src,/mode === "personal" \? t\.senderPersonal : mode === "answers" \? t\.senderAnswers : t\.senderFree/);
+  assert.match(src,/name\.trim\(\) \? t\.name \+ ": " \+ name\.trim\(\)/);
+  assert.match(src,/mode === "answers" && answers\.trim\(\)/);
+  assert.match(src,/      t\.page,/);
+  assert.match(src,/href="https:\/\/t\.me\/AndyTherapist"/);
+ };
+ formContract(source);
+ for(const mutation of [source.replace('t.senderAnswers : t.senderFree','t.senderFree : t.senderFree'),source.replace('      t.page,',''),source.replace('https://t.me/AndyTherapist','https://example.invalid')])assert.throws(()=>formContract(mutation));
 });

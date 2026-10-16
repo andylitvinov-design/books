@@ -95,7 +95,11 @@ test('homepage language remains on chosen first-party route after Google save',(
   assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),'/?lang=ru')
   assert.equal(consumeSessionSaveTarget(id,'ru',origin,store),null)
   const config=read('next.config.ts')
-  assert.ok(config.includes('{ source: "/ru", destination: "/?lang=ru", permanent: true }'))
+  assert.equal(config.includes('{ source: "/ru", destination: "/?lang=ru", permanent: true }'),false)
+  assert.match(read('app/page.tsx'), /requested === "ru" \|\| requested === "es"/)
+  assert.match(read('app/page.tsx'), /redirect\(`\/\$\{requested\}`\)/)
+  assert.match(read('app/[locale]/page.tsx'), /locale="ru"/)
+  assert.equal(safeSessionExitTarget('/ru',origin,current),'/ru')
 })
 
 

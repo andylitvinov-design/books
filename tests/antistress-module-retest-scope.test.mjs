@@ -101,3 +101,38 @@ test('legacy versions, clinical AS4, unfinished cycles and early retests stay bl
     const h = harness(options); await assert.rejects(h.command(), { code }); assert.equal(h.writes.length, 0)
   }
 })
+
+test('F-primary exit requires that answer or an explicit skip, never another item',async()=>{
+  for(const [moduleId,primary] of [['AS1','F2'],['AS3','F4'],['AS5','F7']]){
+    const h=harness({moduleId})
+    const missing={...answers,[primary]:null}
+    await assert.rejects(()=>h.command({moduleAnswers:missing}),/COURSE_MODULE_PRIMARY_OR_SKIP_REQUIRED/)
+    assert.equal(h.writes.length,0)
+    const saved=await h.command({moduleAnswers:missing,primarySkipped:true})
+    assert.equal(saved.moduleMeasurements.followUp.primarySkipped,true)
+    assert.equal(saved.moduleMeasurements.followUp.answers[primary],null)
+    assert.equal(saved.moduleMeasurements.primaryComparison.comparable,false)
+    assert.equal(saved.moduleMeasurements.primaryComparison.reason,'explicit_skip')
+    assert.equal(h.writes.length,1)
+  }
+})
+test('all F questions may be explicitly skipped without an imputed primary',async()=>{
+  const h=harness()
+  const saved=await h.command({moduleAnswers:Object.fromEntries(Object.keys(answers).map(key=>[key,null])),primarySkipped:true})
+  assert.ok(Object.values(saved.moduleMeasurements.followUp.answers).every(value=>value===null))
+  assert.equal(saved.moduleMeasurements.primaryComparison.comparable,false)
+})
+test('a real zero primary score is an answer, with compatible immutable baseline',async()=>{
+  const h=harness()
+  const saved=await h.command({moduleAnswers:{...answers,F2:0}})
+  assert.equal(saved.moduleMeasurements.primaryComparison.comparable,true)
+  assert.equal(saved.moduleMeasurements.primaryComparison.after,0)
+  assert.equal(saved.moduleMeasurements.primaryComparison.before,5)
+})
+test('explicit primary skip clears a stale numeric draft rather than saving a comparison',async()=>{
+  const h=harness()
+  const saved=await h.command({moduleAnswers:{...answers,F2:7},primarySkipped:true})
+  assert.equal(saved.moduleMeasurements.followUp.answers.F2,null)
+  assert.equal(saved.moduleMeasurements.followUp.primarySkipped,true)
+  assert.equal(saved.moduleMeasurements.primaryComparison.reason,'explicit_skip')
+})

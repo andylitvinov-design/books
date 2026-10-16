@@ -112,6 +112,12 @@ LESSON / STRESS
 
 3. Open up to receive care and support from others.
 
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: The wounded warrior hides pain behind a tough exterior, refuses help and remains alone.
+
+After (desired state): Resilience goes hand in hand with acknowledging vulnerability: it is possible to open up to care and accept support from others.
+
 ## ALCHEMY
 
 Rubedo (red stage): the process of healing and rebirth after destruction.

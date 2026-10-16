@@ -136,7 +136,7 @@ test('guest entry uses existing server-backed consent, item-scoped save and prot
   assert.match(cabinet, /guestFetch\('guest\/session'/)
   assert.match(cabinet, /guestFetch\('guest\/test-plans'/)
   assert.match(cabinet, /sourceKind: 'guest_result'/)
-  assert.match(cabinet, /await startRun\(definition, owningPlanId\)/)
+  assert.match(cabinet, /await startRun\(nextDefinition, owningPlanId\)/)
   assert.match(publicFlow, /entry\?\.rightsStatus === 'cleared'/)
   assert.match(publicFlow, /entry\?\.guestEligible === true/)
   assert.match(picker, /data-via-family/)

@@ -47,7 +47,8 @@ test('posters keep the video title visible over the shared warm treatment', () =
 });
 test('page-video browser verification opens the compact language menu before selecting Russian', () => {
   assert.match(pageVideoVerifier, /site-language-menu-trigger/);
-  assert.match(pageVideoVerifier, /site-language-switch button\[lang="ru"\]/);
+  assert.match(pageVideoVerifier, /await chooseRussianHome\(page\)/);
+  assert.match(pageVideoVerifier, /menu\.locator\('a\[lang="ru"\]'\)/);
 });
 test('compact defaults are limited to these eight published renders, not About or editor replacements', () => {
   const block = player.split('const minimalPageVideoIds = new Set([')[1].split(']);')[0];

@@ -67,11 +67,14 @@ test("free Level 1 is first-party and keeps seven questions, video and teacher c
   for (const [i, block] of blocks.entries()) {
     assert.equal(block[1].split("\n").filter((line) => /^\s*"/.test(line)).length, 7, "locale " + i);
   }
-  assert.match(free, /AcademyVideoPlayer youtubeId="DYo-fG-SyKw"/);
+  assert.match(free, /const originalLevelOneVideoId = "DYo-fG-SyKw"/);
+  assert.match(free, /AcademyVideoPlayer youtubeId=\{originalLevelOneVideoId\}/);
   assert.match(free, /id="learning-faq"/);
   assert.match(free, /root \+ "\/basic-course\/description"/);
-  assert.match(free, /whatsappEnquiryUrl\(\{/);
-  assert.match(free, /https:\/\/t\.me\/AndyTherapist/);
+  assert.match(free, /<YggdrasilInitiationForm locale=\{locale\} \/>/);
+  const form = read("components/yggdrasil-initiation-form.tsx");
+  assert.match(form, /window\.open\(whatsapp\(message\)/);
+  assert.match(form, /https:\/\/t\.me\/AndyTherapist/);
 });
 
 test("responsive, accessible lesson disclosure has safe outcomes and concise mobile spacing", () => {

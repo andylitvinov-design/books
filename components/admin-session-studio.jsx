@@ -51,21 +51,40 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
   async function load() {
     const result=await api(base)
-    setSession(result.session)
-    setDraft(result.session.draft)
-    return result.session
+    const next=result.session
+    // Background refreshes must not approve a newer version of the same report.
+    // Reload/review the editor to accept a changed source fingerprint.
+    if(next.draft.reportDocumentId===session.publicationSource?.reportDocumentId)
+      next.publicationSource=session.publicationSource
+    setSession(next)
+    setDraft(next.draft)
+    return next
   }
   async function save() {
     const result=await api(base,'PATCH',{expectedRevision:session.draftRevision,draft})
-    const updated=await load()
+    await load()
     setMessage(ru?'Черновик сохранён':'Draft saved')
-    return updated
+    // A concurrent editor may advance the GET result after our PATCH. Only the
+    // revision written by this request is eligible for the pending publication.
+    return result
   }
   async function act(action,days) {
     setBusy(action);setError('');setMessage('')
     try {
-      if(action==='publish'&&changed) await save()
-      const result=await api(base,'POST',{action,days})
+      let publication
+      if(action==='publish') {
+        const source=session.publicationSource
+        if(!source||source.reportDocumentId!==draft.reportDocumentId)
+          throw new Error('PUBLICATION_REVIEW_REQUIRED')
+        publication={expectedRevision:session.draftRevision,
+          expectedReportDocumentId:source.reportDocumentId,
+          expectedReportFingerprint:source.reportFingerprint}
+        if(changed) {
+          const saved=await save()
+          publication.expectedRevision=saved.draftRevision
+        }
+      }
+      const result=await api(base,'POST',{action,days,...publication})
       if(['copy','rotate'].includes(action)&&result.secret) {
         const url=window.location.origin+'/'+locale+'/client/session/'+result.selector+'#'+result.secret
         setLink(url)
@@ -80,7 +99,10 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       }
       if(['revoke','rotate','archive'].includes(action)) setLink('')
       await load()
-    } catch(e) {setError(e.message||String(e))}
+    } catch(e) {setError(['SESSION_CHANGED','REPORT_VERSION_CHANGED','REPORT_SESSION_MISMATCH','PUBLICATION_REVIEW_REQUIRED'].includes(e.message)?
+      (ru?'Черновик или исходный отчёт изменился. Сохраните выбранный отчёт, затем обновите страницу и проверьте его перед публикацией.':
+        'The draft or source report changed. Save the selected report, then reload and review it before publishing.'):
+      e.message||String(e))}
     finally {setBusy('')}
   }
   async function play(assetId) {

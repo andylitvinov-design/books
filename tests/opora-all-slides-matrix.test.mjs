@@ -1,3 +1,4 @@
+import {traumaPhaseLesson} from '../lib/inner-growth/trauma-phase-catalog.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -70,8 +71,8 @@ test('all 56 phase-specific days align the title, main exercise, arrival, quote,
         assert.ok(plan.sections[0].text.includes(meta.title),'arrival day '+day)
         assert.ok(plan.sections[1].text.includes(meta.title),'learning day '+day)
         assert.ok(plan.aphorism.includes(meta.title),'idea day '+day)
-        assert.ok(plan.reflection.includes(meta.title),'reflection day '+day)
-        assert.ok(plan.workbook.microPractice.includes(meta.title),'transfer day '+day)
+        assert.equal(plan.reflection,traumaPhaseLesson(id,day,locale).reflection,'source-mapped reflection day '+day)
+        assert.equal(plan.workbook.microPractice,traumaPhaseLesson(id,day,locale).transfer,'source-mapped transfer day '+day)
         assert.ok(plan.workbook.workingPosition.includes(meta.title),'phrase day '+day)
         assert.ok(plan.journey.purpose===meta.exercise)
         assert.ok(plan.accessibility?.stopAnytime)

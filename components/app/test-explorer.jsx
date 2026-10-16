@@ -308,8 +308,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
-      const baseline = simpleMode && !simpleSelectionChanged && !current.length
-        ? simpleAuto.map((entry) => entry.key) : current
+      // Full-catalog checkboxes display explicit selection, never implicit starters.
+      const baseline = current
       return baseline.includes(key)
         ? baseline.filter((item) => item !== key)
         : baseline.length < 12 ? [...baseline, key] : baseline

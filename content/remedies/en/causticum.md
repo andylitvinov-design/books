@@ -165,3 +165,11 @@ Feel the stiffness of feelings, like Prometheus.
 "I have the right
 
 to speak. I am freeing myself.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: You have to be an unbending hero: your own feelings are forbidden, and your voice is held back.
+
+After (desired state): A dignity that makes room for vulnerability, self-care and your own voice.

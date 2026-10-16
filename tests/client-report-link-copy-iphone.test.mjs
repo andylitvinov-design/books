@@ -90,7 +90,7 @@ test('Documents Ready and saved Document editor both expose manual copy and draf
   assert.match(action,/status==='not-published'/)
   assert.match(action,/status==='expired'/)
   assert.match(action,/status==='unavailable'/)
-  assert.match(action,/needsPublication&&kind!=='payment'&&active&&clientId/)
+  assert.match(action,/\{kind!=='payment'&&active&&clientId&&\s*<button[^>]*className="consultation-prepare-session"/)
   assert.match(css,/\.consultation-share-link-controls input/)
   assert.match(css,/font-size:16px/)
   assert.match(css,/min-height:46px/)

@@ -1,3 +1,6 @@
+import * as phaseOutcomes from '../../lib/inner-growth/trauma-phase-outcomes.js'
+import * as measureContract from '../../lib/inner-growth/anti-stress-measurement-contract.js'
+import * as phaseCatalog from '../../lib/inner-growth/trauma-phase-catalog.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
@@ -20,7 +23,7 @@ import * as courseSequence from '../../lib/inner-growth/course-slide-sequence.js
 import * as moduleLessons from '../../lib/inner-growth/antistress-module-lessons.js'
 import * as oporaStateJourney from '../../lib/inner-growth/opora-state-journey.js'
 
-const sources = Object.fromEntries(['course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
+const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
@@ -58,7 +61,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     'next/link': moduleFor('Link'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
-    '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
+    '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
     '@/lib/inner-growth/course-membership': courseMembership, '@/lib/inner-growth/course-start-recovery': courseRecovery, '@/lib/inner-growth/course-slide-sequence': courseSequence,
     '@/lib/inner-growth/course-programs': coursePrograms, '@/lib/inner-growth/opora-state-journey': oporaStateJourney, '@/lib/inner-growth/course-presets': presets, '@/lib/inner-growth/course-plans': coursePlans, '@/lib/billing/public-plan': billingPlan,
     '@/lib/inner-growth/course-entry-intent': courseEntryIntent, '@/lib/inner-growth/course-entry-client': courseEntryClient,

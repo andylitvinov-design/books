@@ -164,3 +164,16 @@ test('signed-in and full database test selector use the same monitoring CTA as t
   }
   assert.doesNotMatch(full, /Start free testing|Пройти тестирование бесплатно|Comenzar pruebas gratuitas/)
 })
+
+ test('VIA family collapse preserves explicit selections and search, with independent expansion',()=>{
+ const explorer=read('components/app/test-explorer.jsx')
+ const expression=explorer.match(/const visibleCatalog = visible\.filter\(\(entry\) =>\s*([^\n]+)\)/)[1]
+ const filter=new Function('visible','showStandaloneVia','query','selectedKeys','isStandaloneVia',`return visible.filter(entry=>${expression})`)
+ const rows=[{key:'ipip-via-r-curiosity-4'},{key:'ipip-via-r-strengths-96'},{key:'gad-7'}]
+ const standalone=key=>/^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(key)
+ assert.deepEqual(filter(rows,false,'',[],standalone),rows.slice(1))
+ assert.deepEqual(filter(rows,false,'',['ipip-via-r-curiosity-4'],standalone),rows)
+ assert.deepEqual(filter(rows,false,'curiosity',[],standalone),rows)
+ assert.deepEqual(filter(rows,true,'',[],standalone),rows)
+ assert.match(explorer,/aria-expanded=\{showStandaloneVia\} onClick=\{\(\) => setShowStandaloneVia\(\(value\) => !value\)\}/)
+})

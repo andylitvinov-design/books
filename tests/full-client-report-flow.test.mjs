@@ -3,6 +3,22 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
+function assertUploadPreflight(recorder) {
+  const start=recorder.indexOf('async function chooseFile(event) {')
+  const end=recorder.indexOf('  const busy=',start)
+  assert.ok(start>=0&&end>start,'upload function must be bounded')
+  const upload=recorder.slice(start,end)
+  const preflight=upload.indexOf('const availability=await checkReady()')
+  const ready=upload.indexOf("if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')")
+  const size=upload.indexOf('if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))')
+  const sizeThrow=upload.indexOf('throw new Error(',size)
+  const session=upload.indexOf('const sid=await ensureSession()')
+  const send=upload.indexOf('await upload(job)')
+  assert.ok(preflight>=0&&preflight<ready&&ready<size&&size<sizeThrow&&sizeThrow<session&&session<send,
+    'await storage readiness and both rejecting video guards before creating a session or uploading')
+}
+
+
 test('preview / open is owner-only complete consultation HTML, PDF is a distinct action',()=>{
   const owner=src('app/admin/documents/[id]/session-preview/page.js')
   const page=src('components/client-session-page.jsx')
@@ -73,6 +89,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
   assert.match(recorder,/const availability=await checkReady\(\)/)
   assert.match(recorder,/if\(video&&availability\.videoReady===false\)throw new Error\('VIDEO_STORAGE_NOT_CONFIGURED'\)/)
   assert.ok(recorder.indexOf('const availability=await checkReady()',recorder.indexOf('async function chooseFile'))<recorder.indexOf('const sid=await ensureSession()',recorder.indexOf('async function chooseFile')))
+  assertUploadPreflight(recorder)
   const readiness=src('lib/clients/recording-readiness.js')
   assert.match(readiness,/\/api\/admin\/clients\//)
   assert.match(readiness,/\/admin\/api\/recorder-auth/)

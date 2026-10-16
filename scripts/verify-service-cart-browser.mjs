@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { installCheckoutResponseProbe } from './service-cart-response-probe.mjs'
+import { buildServiceCartFixture, fixtureBundlePath, fixtureDocument, fixturePath, fixturePrefix } from './service-cart-browser-fixture.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
@@ -31,6 +32,8 @@ async function captureFailure(h, error) {
   await h.page.screenshot({ path: `${output}/failure.png`, fullPage: true, timeout: 5000 }).catch(() => {})
 }
 await mkdir(output, { recursive: true })
+const fixture = await buildServiceCartFixture()
+await writeFile(`${output}/fixture-source-proof.json`, JSON.stringify(fixture.sourceProof, null, 2) + '\n')
 const browser = await chromium.launch()
 
 async function harness(locale = 'en', width = 360) {
@@ -41,6 +44,7 @@ async function harness(locale = 'en', width = 360) {
   context.setDefaultNavigationTimeout(30000)
   const state = { accountId: accountA, checkouts: [], identities: [], reads: [], orders: new Map(),
     checkout: async () => ({ status: 503, body: { error: 'SERVICE_CHECKOUT_UNAVAILABLE' } }) }
+  let fixtureHtml
   await context.route('**/*', async (route) => {
     const request = route.request(), url = new URL(request.url())
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(body) })
@@ -82,12 +86,34 @@ async function harness(locale = 'en', width = 360) {
     // fixture's backing services. Static pages/assets are the only passthrough.
     if (path.startsWith('/api/')) return json({ error: 'SYNTHETIC_SIGNED_OUT' }, 401)
     if (!['GET', 'HEAD'].includes(request.method())) return json({ error: 'SYNTHETIC_MUTATION_BLOCKED' }, 405)
+    // The fixture exists only inside this routed context, never on the server.
+    // API/auth/payment handlers above remain authoritative and unchanged.
+    if (path === fixtureBundlePath) return route.fulfill({ contentType: 'text/javascript', body: fixture.bundle })
+    if (path === fixturePath(locale)) {
+      assert.ok(fixtureHtml, 'Visit and inspect the real public Services page before mounting the fixture')
+      return route.fulfill({ contentType: 'text/html', headers: { 'Cache-Control': 'no-store' }, body: fixtureHtml })
+    }
+    if (path.startsWith(fixturePrefix)) return route.fulfill({ status: 404, body: 'Unknown synthetic fixture' })
     return route.continue()
   })
   const page = await context.newPage()
   page.on('pageerror', (error) => errors.push(error.message))
-  const path = `/${locale}/services`
-  mark(`${locale}/${width}: initial navigation`)
+  mark(`${locale}/${width}: real public Services has no cart`)
+  await page.goto(`${origin}/${locale}/services`, { waitUntil: 'networkidle' })
+  await page.locator('main').first().waitFor({ state: 'visible' })
+  assert.equal(await page.locator('[data-service-cart], #service-cart').count(), 0, 'ServiceCart must remain absent from real public Services')
+  const presentation = await page.evaluate(() => ({
+    stylesheets: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map((link) => {
+      const url = new URL(link.href)
+      if (url.origin !== location.origin) throw new Error('Public stylesheet must be same-origin')
+      return url.pathname + url.search
+    }),
+    htmlClass: document.documentElement.className,
+    bodyClass: document.body.className,
+  }))
+  fixtureHtml = fixtureDocument(locale, presentation)
+  const path = fixturePath(locale)
+  mark(`${locale}/${width}: isolated component navigation`)
   await page.goto(origin + path)
   const cart = page.locator('[data-service-cart]'), cards = cart.locator('[data-service-product]')
   await cart.waitFor({ state: 'visible' })
@@ -280,9 +306,13 @@ try {
       const requested = h.page.waitForRequest((request) => request.url().endsWith('/commerce/checkout'))
       await h.pay.click(); await requested
       mark('delayed checkout: SPA unmount')
+      const documentToken = await h.page.evaluate(() => window.__serviceCartFixtureDocumentToken)
+      assert.match(documentToken, uuid)
       await h.cart.locator('a[href="/en/services/free-situation-review"]').click()
       await h.page.waitForURL(origin + '/en/services/free-situation-review')
       await h.cart.waitFor({ state: 'detached' })
+      await h.page.locator('[data-service-cart-fixture-destination]').waitFor({ state: 'visible' })
+      assert.equal(await h.page.evaluate(() => window.__serviceCartFixtureDocumentToken), documentToken, 'SPA unmount must preserve the document and pending fetch probe')
       const identitiesBefore = h.state.identities.length, readsBefore = h.state.reads.length
       delayed.resolve({ body: { order: order(existingOrder, 'open'), redirectUrl: 'https://checkout.stripe.com/c/pay/synthetic-unmounted' } })
       mark('delayed checkout: response after SPA unmount')
@@ -298,5 +328,5 @@ try {
   assert.deepEqual(unexpectedCommerce, [], 'Every commerce request must have an explicit synthetic handler')
   assert.deepEqual(externalNavigations, [], 'A stale or unmounted response attempted external navigation')
   assert.deepEqual(errors, [])
-  console.log('Service cart: RU/EN/ES at 360/1024px, selection/persistence, failure recovery, durable repeat barrier/explicit confirmation, owner binding, delayed account switch/unmount, and server-paid clearing passed. All API/payment traffic was synthetic; service workers and external navigation were blocked.')
+  console.log('Service cart: absent from real public Services; unchanged component isolated at RU/EN/ES 360/1024px, selection/persistence, failure recovery, durable repeat barrier/explicit confirmation, owner binding, delayed account switch/unmount, and server-paid clearing passed. All API/payment traffic was synthetic; service workers and external navigation were blocked.')
 } finally { await browser.close() }

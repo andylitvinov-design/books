@@ -1,3 +1,4 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -40,9 +41,12 @@ async function fill(page,d,mode,guest,locale){
   assert.ok((await saved).ok())
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
  await expect(report.locator('article')).toHaveCount(d.key==='scs-sf'?1:5)
@@ -51,6 +55,7 @@ async function fill(page,d,mode,guest,locale){
  await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
  if(d.key==='scs-sf')await expect(report).toContainText(locale==='ru'?'ненадёжности':'unreliable')
  else await expect(report).toContainText(locale==='ru'?'МЕНЬШЕ безразличия':'LESS indifference')
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})
 }
@@ -106,7 +111,7 @@ try{
   passed(locale+' PDF download includes persisted compassion assessment report model')
  }
  for(const [i,d] of defs.entries()){
-  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844}})
+  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))
@@ -117,7 +122,8 @@ try{
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(i?5:1).fill(3))
   assert.equal(result.instrumentLocale,'en');assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await guest.close()
  }
  assert.deepEqual(errors,[])

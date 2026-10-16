@@ -556,7 +556,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <div className="consultation-studio-submit">
       <div className="consultation-studio-submit-copy">
         <strong>{includeRecommendation
-          ? (uiLocale==='ru'?'Сохранение отчёта = публикация для клиента':'Save report = publish privately to client')
+          ? (uiLocale==='ru'?'Сохранение не публикует изменения для клиента':'Saving does not publish changes to the client')
           : (consultation ? labels.saveHeading : labels.createHeading)}</strong>
         <span>{includeRecommendation
           ? includeInvoice
@@ -570,9 +570,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
       <div className="consultation-studio-submit-buttons">
         <ConsultationDraftPreview locale={reportLocale} includeRecommendation={includeRecommendation} includeInvoice={includeInvoice} disabled={pending} />
         <button className="prescription-save consultation-primary-action" type="submit" disabled={pending}>
-          {pending?labels.saving:includeRecommendation?
-            (uiLocale==='ru'?'Сохранить и опубликовать':'Save & publish privately'):
-            consultation?labels.save:labels.create}
+          {pending ? labels.saving : consultation ? labels.save : labels.create}
         </button>
       </div>
     </div>

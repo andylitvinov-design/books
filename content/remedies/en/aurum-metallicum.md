@@ -92,6 +92,14 @@ A small difference, but it exists!
 
 This is how, by working through remedies, one can prescribe the desired personality traits.
 
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Doubt about your own worth: a sense of inner dignity and calm self-reliance is missing.
+
+After (desired state): The feeling “I have worth in my own right”: dignity, confidence and quiet inner strength.
+
 ## Additional materials and observations
 
 ### message1071 (02.10.2026 21:52 Telegram public view)

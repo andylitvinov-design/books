@@ -24,6 +24,13 @@ const [contracts, model, guidance, programs, catalog, definitions, strategy, rou
   'lib/app/crypto.js',
 ].map(load).concat([import('node:crypto'), load('lib/assessments/scale-guides.js')]))
 
+const dailySource=readFileSync(resolve(root,'lib/app/growth-daily.js'),'utf8')
+const dailyDependencies=Object.fromEntries(await Promise.all([...dailySource.matchAll(/^import\s+.*?\s+from\s+['"]([^'"]+)['"]/gm)].map(match=>match[1]).filter(name=>name!=='./database.js').map(async name=>[name,await import(name.startsWith('node:')?name:pathToFileURL(resolve(root,'lib/app',name)).href)])))
+dailyDependencies['server-only']={}
+dailyDependencies['./database.js']={transaction(){assert.fail('Live database forbidden')}}
+const dailyRuntime={exports:{},Date,Buffer,require:name=>{assert.ok(Object.hasOwn(dailyDependencies,name));return dailyDependencies[name]}}
+vm.runInNewContext(ts.transpileModule(dailySource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,dailyRuntime)
+
 const OWNER = '00000000-0000-4000-8000-000000000001'
 const OTHER_OWNER = '00000000-0000-4000-8000-000000000002'
 const COURSE = '00000000-0000-4000-8000-000000000003'
@@ -65,16 +72,16 @@ function commandBody(row, results, overrides = {}) {
 }
 
 function harness({ row = courseRow(), results = [resultFor()], otherRows = [],
-  beforeCycle, accountActive = true } = {}) {
+  beforeCycle, actualFactory = false, accountActive = true } = {}) {
   let rows = [clone(row), ...clone(otherRows)]
-  const queries = [], cycles = [], transactions = [], seals = []
+  const queries = [], cycles = [], transactions = [], seals = [], insertedCycles=[]
   let ownerId
   const db = { async query(sql, parameters = []) {
     assert.equal(typeof sql, 'string')
     const q = sql.replace(/\s+/g, ' ').trim()
     const args = clone(parameters)
     queries.push({ sql: q, args })
-    if (q.startsWith('select status,onboarding_state from app.accounts')) {
+    if (q.startsWith('select status,onboarding_state from app.accounts')||q.startsWith('select status,onboarding_state,timezone from app.accounts')) {
       assert.match(q, /where id=\$1/); assert.equal(args[0], ownerId)
       return { rows: accountActive ? [{ status: 'active', onboarding_state: 'active' }] : [] }
     }
@@ -114,6 +121,12 @@ function harness({ row = courseRow(), results = [resultFor()], otherRows = [],
       if (q.includes('concerns_ciphertext=$5')) current.concerns_ciphertext = args[4]
       return { rows: [clone(current)] }
     }
+    if(actualFactory){
+      if(q.startsWith('select id from app_private.growth_cycles')||q.startsWith('select status from app_private.growth_cycles'))return {rows:[]}
+      if(q.startsWith('select coalesce(max(cycle_number),0)'))return {rows:[{max:0}]}
+      if(q.startsWith('insert into app_private.growth_cycles')){insertedCycles.push({id:args[0],modulePreferences:JSON.parse(args[8]),contentVersion:args[5]});return {rows:[]}}
+      if(q.startsWith('insert into app_private.growth_targets'))return {rows:[]}
+    }
     assert.fail('Unexpected SQL; this harness has no live database fallback: ' + q)
   } }
   const runTransaction = async (receivedConfig, receivedActor, fn) => {
@@ -142,7 +155,7 @@ function harness({ row = courseRow(), results = [resultFor()], otherRows = [],
       assert.equal(receivedRow.stage, 4)
       beforeCycle?.(receivedRow, payload)
       cycles.push({ actorId: receivedActor.id, row: clone(receivedRow), payload: clone(payload) })
-      return { id: 'synthetic-cycle' }
+      return actualFactory?dailyRuntime.exports.createNewCycle(receivedDB,receivedActor,receivedRow,receivedConfig,payload):{ id: 'synthetic-cycle' }
     } },
   }
   const path = resolve(root, 'lib/app/growth-course.js')
@@ -157,7 +170,7 @@ function harness({ row = courseRow(), results = [resultFor()], otherRows = [],
   } }
   vm.runInNewContext(compiled, runtime, { filename: path })
   const repo = runtime.exports.createGrowthCourseRepository(config, { runTransaction })
-  return { repo, queries, cycles, seals, transactions, body: commandBody(row, results),
+  return { repo, queries, cycles, seals, transactions, insertedCycles, body: commandBody(row, results),
     get rows() { return clone(rows) } }
 }
 
@@ -296,3 +309,19 @@ for (const preset of presets.COURSE_PRESETS) {
     assert.equal(h.cycles.length, 0); assert.equal(h.queries.some(q => q.sql.startsWith('update ')), false)
   })
 }
+
+for(const moduleId of ['AS1','AS2','AS3','AS5','AS6'])test(`actual intake → sealed module context → actual fresh ${moduleId} factory`,async()=>{
+  const h=harness({actualFactory:true})
+  const response=await h.repo.command(actor,{...h.body,problemLabel:'Synthetic ordinary workload',moduleAnswers:finderAnswers,moduleGoal:moduleId,moduleId,moduleLocale:'en'})
+  assert.equal(response.course.stage,4)
+  assert.equal(h.insertedCycles.length,1)
+  const cycle=h.insertedCycles[0],prefs=cycle.modulePreferences
+  assert.equal(prefs.oporaModuleId,moduleId)
+  assert.equal(prefs.oporaModuleRouter,router.ANTISTRESS_ROUTER_VERSION)
+  const selected=router.unpackCourseModuleContext(crypto.openSealed(h.rows[0].concerns_ciphertext,context(),config)).moduleChoice
+  const baseline=JSON.parse(crypto.openSealed(prefs.oporaModuleBaselineCiphertext,{accountId:OWNER,recordId:cycle.id,field:'course.opora.baseline'},config))
+  assert.deepEqual(baseline.answers,finderAnswers)
+  assert.equal(baseline.measuredAt,selected.selectedAt)
+  assert.equal(baseline.locale,'en')
+  assert.equal(baseline.recallDays,7)
+})

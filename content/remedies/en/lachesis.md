@@ -89,3 +89,11 @@ Inner calm and depth are strengthened;
 Silence.
 
 The world around becomes clearer and more pure.
+
+## TRANSFORMATION
+
+An image for self-reflection, not a promise of a treatment effect from the remedy.
+
+Before: Jealousy, rivalry and fear of restrictions turn communication into an emotional storm.
+
+After (desired state): Clarity and inner quiet that make room for listening to others and expressing yourself freely.
