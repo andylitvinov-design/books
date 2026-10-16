@@ -1121,3 +1121,23 @@
   .sessionSiteShell :global(.house-header),.sessionBottomActions{display:none!important}
   .sessionSiteShell{background:#fff}
 }
+/* Videos lead the client consultation, immediately below the private header.
+   The full signed HTML report still follows in its original editorial layout. */
+.cabinetSessionPage .videoFirstSection{
+  margin-top:clamp(10px,2vw,16px);
+  margin-bottom:clamp(18px,3vw,26px);
+  padding:clamp(13px,2.8vw,22px);
+  border:1px solid #ccdee9;
+  border-radius:19px;
+  background:linear-gradient(170deg,#f6fafc,#ffffff 70%);
+}
+.cabinetSessionPage .videoFirstSection .sectionHeader{margin-bottom:12px}
+.cabinetSessionPage .videoFirstSection .mediaList{margin-bottom:12px}
+.cabinetSessionPage .videoFirstSection .youtubeLessonList{max-width:100%}
+@media(max-width:700px){
+  .cabinetSessionPage .videoFirstSection{
+    margin-top:7px;
+    padding:12px;
+    border-radius:15px;
+  }
+}

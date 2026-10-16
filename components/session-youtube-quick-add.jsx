@@ -71,7 +71,7 @@ export function SessionYouTubeQuickAdd({clientId,ensureSession,locale='en',onSav
   }
   return <details className={styles.youtubeQuickAdd}>
     <summary><Video size={20} aria-hidden="true"/>
-      {ru?'Добавить видео с YouTube':'Add a YouTube video'}
+      {ru?'Добавить YouTube-видео по ссылке':'Add a YouTube video by link'}
     </summary>
     <div className={styles.youtubeQuickAddBody}>
       <p className={styles.youtubeEditorNote}>{ru?

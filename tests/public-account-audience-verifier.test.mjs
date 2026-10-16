@@ -38,11 +38,17 @@ test('embedded public guest launch stays on the exact client route',()=>guestSce
 test('public guest launch remains unauthenticated without Google cookies',()=>guestScenario({authenticated:false}))
 for(const option of ['write','changed','wrongGuest','wrongURL'])test('public audience proof rejects '+option,async()=>{await assert.rejects(guestScenario({[option]:true}))})
 
-async function accountScenario({openCount=1,wrongRoute=false}={}){
- let opened=false,browsed=false,selected=['Suggestion'],picked=false
+async function accountScenario({openCount=1,wrongRoute=false,blocked=false,unchanged=false,wrongRemoval=false,duplicates=false}={}){
+ let opened=false,browsed=false,selected=['Suggestion','Second'],picked=false
  const checked={evaluateAll:async()=>[...selected]}
- const explorer={isVisible:async()=>opened,locator:selector=>{assert.equal(selector,'article input[type="checkbox"]:checked');return checked},getByRole(role,{name}){
-  if(role==='checkbox')return {uncheck:async()=>{selected=selected.filter(x=>x!==name)}}
+ const explorer={isVisible:async()=>opened,locator:selector=>{assert.equal(selector,'article input[type="checkbox"]:checked');return checked},getByRole(role,{name,exact,checked:onlyChecked}){
+  if(role==='checkbox'){
+   assert.equal(exact,true);assert.equal(onlyChecked,true)
+   return {get count(){return selected.includes(name)?(duplicates?2:1):0},click:async()=>{
+    if(blocked)throw new Error('blocked click')
+    if(!unchanged)selected=selected.filter(x=>x!==(wrongRemoval?'Second':name))
+   }}
+  }
   if(name==='Browse full database')return {count:1,click:async()=>{browsed=true}}
   assert.equal(name,'Back to easy selection');return {visible:true}
  }}
@@ -50,12 +56,15 @@ async function accountScenario({openCount=1,wrongRoute=false}={}){
   assert.equal(role,'button');assert.equal(String(name),'/^(Open test filters|Review test filters)/');return {count:openCount,click:async()=>{opened=true}}
  }}
  const expect=target=>({toHaveURL:async url=>{assert.equal(url,origin+'/en/app/tests');assert.equal(wrongRoute,false)},toBeVisible:async()=>assert.equal(target===explorer?opened:target.visible,true),toHaveCount:async n=>assert.equal(target===checked?selected.length:target.count,n),toHaveAttribute:async(key,value)=>{assert.equal(key,'aria-label');assert.deepEqual(selected,[value])}})
+ expect.poll=fn=>({toEqual:async expected=>assert.deepEqual(await fn(),expected)})
  const choose=async(target,name)=>{assert.equal(target,explorer);assert.equal(opened&&browsed,true);assert.deepEqual(selected,[]);selected=[name];picked=true}
  const result=await new Function('expect','origin','chooseVisibleTest',accountHelper+';return chooseSingleAccountTest')(expect,origin,choose)(page,'Personality Baseline')
  assert.equal(result,explorer);assert.equal(picked,true)
 }
 test('account selection navigates to My Tests, opens unique real controls and clears suggestions',()=>accountScenario())
 test('account selection rejects public navigation and ambiguous opening controls',async()=>{for(const options of [{wrongRoute:true},{openCount:0},{openCount:2}])await assert.rejects(accountScenario(options))})
+
+test('account deselection rejects blocked, unchanged, wrong-item and ambiguous clicks',async()=>{for(const option of ['blocked','unchanged','wrongRemoval','duplicates'])await assert.rejects(accountScenario({[option]:true}))})
 
 test('Russian Stress uses the unique accessible concern group, never positional selection',async()=>{
  const start=source.indexOf(' const ruConcernTopics=');const end=source.indexOf(" await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'}))",start)

@@ -188,7 +188,15 @@ async function chooseSingleAccountTest(target,name){
  await expect(explorer.getByRole('button',{name:'Back to easy selection',exact:false})).toBeVisible()
  const checked=explorer.locator('article input[type="checkbox"]:checked')
  const names=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
- for(const selectedName of names)await explorer.getByRole('checkbox',{name:selectedName,exact:true}).uncheck()
+ for(const [index,selectedName] of names.entries()){
+  const selected=explorer.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  // Deselection can move this card outside the shortened ranked list.
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(names.slice(index+1).sort())
+ }
  await expect(checked).toHaveCount(0)
  await chooseVisibleTest(explorer,name)
  await expect(checked).toHaveCount(1)

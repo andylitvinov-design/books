@@ -337,6 +337,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
+    {showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId}
+      ensureSession={ensureSession} locale={locale} onSaved={onSaved}/>}
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}
     {busy&&<div className={styles.uploadProgress} role="status">
       <p className={styles.feedback}>{stage==='preparing'?(ru?'Подготавливаем материал…':'Preparing media…'):
@@ -365,8 +367,6 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
-  {showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId} ensureSession={ensureSession}
-    locale={locale} onSaved={onSaved}/>}
   <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
   </>

@@ -102,7 +102,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
 })
 
 
-test('real report is a visible canonical document followed by private attachments and one PDF action',()=>{
+test('videos lead the complete canonical HTML report, with audio, attachments and one PDF action',()=>{
   const page=src('components/client-session-page.jsx')
   const css=src('components/client-session.module.css')
   const owner=src('app/admin/documents/[id]/session-preview/page.js')
@@ -110,12 +110,15 @@ test('real report is a visible canonical document followed by private attachment
   assert.match(page,/const hasFullReport=Boolean\(reportContent\)/)
   assert.match(page,/\{hasFullReport&&<section id="session-report"/)
   assert.match(page,/className=\{styles\.fullReportContent\}>\{reportContent\}/)
+  assert.ok(page.indexOf('id="session-video"') <
+    page.indexOf('className={styles.fullReportContent}>{reportContent}'),
+    'video appears first, before the canonical full report')
   assert.ok(page.indexOf('className={styles.fullReportContent}>{reportContent}') <
-    page.indexOf('id="session-message"'),'complete report comes before media blocks')
+    page.indexOf('id="session-message"'),'the original report remains before audio')
   assert.match(page,/!hasFullReport&&hasRecommendation/,'do not duplicate visible recommendation cards')
   assert.match(page,/!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview/)
   assert.match(page,/id="session-photos"/)
-  assert.match(page,/id="session-guide"/)
+  assert.match(page,/id="session-video"/)
   assert.match(page,/function PrivatePlayer/)
   assert.match(page,/SaveClientSessionToAccount/)
   assert.match(page,/SessionExitSaveGuard/)
