@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -224,7 +225,7 @@ const landing = {
     freeAction: "Apply for the free initiation", personalTag: "PERSONAL · ONE-TO-ONE",
     personalTitle: "Personal Level 1 initiation", personalText: "An individual 60-minute session with Andrey, with time for questions and personal guidance. Availability is confirmed before booking.",
     personalAction: "Request a personal session", confirmation: "Initiations are teacher-led, subject to confirmation; reading alone does not grant an attunement.",
-    questionNumber: "05 / 06 · SEVEN QUESTIONS", questionsIntro: "Read the seven questions and prepare your own answers to request the free introduction. This is a preparation exercise, not a clinical test.",
+    questionNumber: "05 / 06 · SEVEN QUESTIONS", showQuestions: "Show 7 questions", hideQuestions: "Hide questions", questionsIntro: "Read the seven questions and prepare your own answers to request the free introduction. This is a preparation exercise, not a clinical test.",
     answersAction: "Request free Level 1", videoNumber: "04 / 06 · WATCH",
     videoHeading: "Two videos about Reiki Yggdrasil", videoText: "Watch the original Level 1 introduction and my Reiki Yggdrasil meditation. Continue with the two course links before answering.",
     videoLanguage: "Original video · English", materialsNumber: "05 / 06 · EXPLORE",
@@ -265,7 +266,7 @@ const landing = {
     freeAction: "Подать заявку бесплатно", personalTag: "ЛИЧНО · ИНДИВИДУАЛЬНО",
     personalTitle: "Личная инициация 1-й ступени", personalText: "60 минут с Андреем, ответы на вопросы и индивидуальное сопровождение. Дату и доступность нужно согласовать заранее.",
     personalAction: "Записаться на личную инициацию", confirmation: "Настройка передаётся преподавателем после подтверждения даты; одно чтение материалов не является инициацией.",
-    questionNumber: "05 / 06 · СЕМЬ ВОПРОСОВ", questionsIntro: "Подготовьте ответы на семь вопросов своими словами, чтобы запросить бесплатный вводный формат. Это учебная подготовка, а не медицинский тест.",
+    questionNumber: "05 / 06 · СЕМЬ ВОПРОСОВ", showQuestions: "Показать 7 вопросов", hideQuestions: "Свернуть вопросы", questionsIntro: "Подготовьте ответы на семь вопросов своими словами, чтобы запросить бесплатный вводный формат. Это учебная подготовка, а не медицинский тест.",
     answersAction: "Запросить 1-ю ступень бесплатно", videoNumber: "04 / 06 · ВИДЕО",
     videoHeading: "Два моих видео по Рейки Иггдрасиль", videoText: "Посмотрите прежнее вводное видео по первой ступени и мою медитацию с основного лендинга. Затем откройте Базовый курс и книгу.",
     videoLanguage: "Оригинальное видео · английский", materialsNumber: "05 / 06 · МАТЕРИАЛЫ",
@@ -304,7 +305,7 @@ const landing = {
     freeAction: "Solicitar iniciación gratuita", personalTag: "PERSONAL · INDIVIDUAL",
     personalTitle: "Iniciación personal de Nivel 1", personalText: "Sesión individual de 60 minutos con Andrey, preguntas y orientación personal. La disponibilidad se confirma antes de reservar.",
     personalAction: "Solicitar sesión personal", confirmation: "La iniciación requiere confirmación y acompañamiento del profesor; la lectura por sí sola no supone una iniciación.",
-    questionNumber: "05 / 06 · SIETE PREGUNTAS", questionsIntro: "Prepara tus propias respuestas a las siete preguntas para solicitar la introducción gratuita. No es una evaluación médica.",
+    questionNumber: "05 / 06 · SIETE PREGUNTAS", showQuestions: "Ver las 7 preguntas", hideQuestions: "Ocultar preguntas", questionsIntro: "Prepara tus propias respuestas a las siete preguntas para solicitar la introducción gratuita. No es una evaluación médica.",
     answersAction: "Solicitar Nivel 1 gratis", videoNumber: "04 / 06 · VÍDEO",
     videoHeading: "Dos vídeos sobre Reiki Yggdrasil", videoText: "Mira la introducción original al Nivel 1 y mi meditación Reiki Yggdrasil. Después explora el curso y el libro.",
     videoLanguage: "Vídeo original · inglés", materialsNumber: "05 / 06 · MATERIALES",
@@ -442,15 +443,28 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section className={styles.questionsSlide} id="checklist" aria-labelledby="yggdrasil-free-checklist">
-          <p className={styles.kicker}>{t.questionNumber}</p>
-          <h2 id="yggdrasil-free-checklist">{c.checklistTitle}</h2>
-          <p className={styles.sectionLead}>{t.questionsIntro}</p>
-          <ol className={styles.questions}>{c.questions.map((question) => <li key={question}>{question}</li>)}</ol>
-          <a className={styles.questionsAction} href="#apply-free">{t.answersAction}<span aria-hidden="true"> →</span></a>
-          <details className={styles.faqDisclosure} id="learning-faq">
-            <summary>{t.faqLabel} <span aria-hidden="true">＋</span></summary>
-            <div className={styles.faqAnswers}>
-              {learningFaqs[locale].map((item) => <div key={item.q}><strong>{item.q}</strong><p>{item.a}</p></div>)}
+          <details className={styles.questionsDisclosure}>
+            <summary className={styles.questionsSummary}>
+              <span className={styles.questionsSummaryCopy}>
+                <span className={styles.questionsSummaryEyebrow}>{t.questionNumber}</span>
+                <span className={styles.questionsSummaryHeading} role="heading" aria-level={2} id="yggdrasil-free-checklist">{c.checklistTitle}</span>
+              </span>
+              <span className={styles.questionsSummaryToggle}>
+                <span className={styles.questionsShowLabel}>{t.showQuestions}</span>
+                <span className={styles.questionsHideLabel}>{t.hideQuestions}</span>
+                <ChevronDown size={22} aria-hidden="true" />
+              </span>
+            </summary>
+            <div className={styles.questionsContent}>
+              <p className={styles.sectionLead}>{t.questionsIntro}</p>
+              <ol className={styles.questions}>{c.questions.map((question) => <li key={question}>{question}</li>)}</ol>
+              <a className={styles.questionsAction} href="#apply-free">{t.answersAction}<span aria-hidden="true"> →</span></a>
+              <details className={styles.faqDisclosure} id="learning-faq">
+                <summary>{t.faqLabel} <span aria-hidden="true">＋</span></summary>
+                <div className={styles.faqAnswers}>
+                  {learningFaqs[locale].map((item) => <div key={item.q}><strong>{item.q}</strong><p>{item.a}</p></div>)}
+                </div>
+              </details>
             </div>
           </details>
         </section>
