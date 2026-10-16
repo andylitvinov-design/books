@@ -1,3 +1,4 @@
+import "@/app/site-video-admin.css";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

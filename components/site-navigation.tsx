@@ -18,9 +18,9 @@ const cabinetEntryCopy = {
 } as const;
 
 const siteMenuCopy = {
-  en: { open: 'Open site menu', heading: 'Explore Holistic House' },
-  ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House' },
-  es: { open: 'Abrir menú del sitio', heading: 'Explorar Holistic House' },
+  en: { open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu', start: 'Start free' },
+  ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню', start: 'Бесплатно' },
+  es: { open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú', start: 'Empezar gratis' },
 } as const;
 
 export function SiteNavigation({ locale, onLocaleChange }: Props) {
@@ -36,6 +36,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
   const languages: PublicLocale[] = available ? ['ru', 'en', 'es'] : ['ru', 'en'];
+  const freeStartHref = `${activeLocale === 'en' ? '/' : `/${activeLocale}`}#free-start`;
 
   useEffect(() => {
     if (!locale) return;
@@ -92,9 +93,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   }
 
   return <nav aria-label={text.navigation} className="site-navigation">
-    {getSiteNavigation(activeLocale).filter(item => item.id !== 'cabinet').map(item => item.external
+    <Link className="site-nav-free-entry" href={freeStartHref} prefetch={false}>{siteMenu.start}</Link>
+    {getSiteNavigation(activeLocale).filter(item => item.id === 'services').map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
+    <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <Link
       className="site-cabinet-entry"
       href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
@@ -115,10 +118,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     </details></span>
     <details className="site-main-menu" ref={siteMenuRef}>
       <summary className="site-main-menu-trigger" aria-label={siteMenu.open} title={siteMenu.open}>
-        <Menu aria-hidden="true" />
+        <Menu aria-hidden="true" /><span className="site-main-menu-trigger__label">{siteMenu.label}</span>
       </summary>
       <div className="site-main-menu-panel">
         <p className="site-main-menu-heading">{siteMenu.heading}</p>
+        <Link href={freeStartHref} prefetch={false} onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>{siteMenu.start}</Link>
         {getSiteNavigation(activeLocale).map(item => (
           <Link
             key={item.id}

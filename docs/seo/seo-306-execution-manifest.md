@@ -38,3 +38,12 @@
 Revert only the respective isolated commit/PR if it regresses routing, index safety, website, tests or CTA. Do not use stale bootstrap branch, disable existing private routes, force push concurrent work or roll back recently approved €100/60 pricing.
 
 All tracking/keyword figures remain source-bounded and health/client-data safe.
+
+### 16.10.2026 — live SEO acceptance, updated canonical sitemap
+
+- Production commit `d46b97755a890b77590f5cb504a7f82bf2632e2e` verified READY with `holistichouse.vercel.app` alias. Source PRs: [#741](https://github.com/andylitvinov-design/books/pull/741), [#743](https://github.com/andylitvinov-design/books/pull/743), [#745](https://github.com/andylitvinov-design/books/pull/745).
+- First exhaustive GitHub Actions audit checked 604 indexed sitemap URLs: 599 returned 200, 5 redirects, 0 404/5xx, 0 network failures. The 5 redirects were two obsolete Relationships paths and three `master-shamanic-healing` Academy aliases. The code now indexes canonical pages only; live map has **601 distinct URLs** (five removed, two canonical Explore pages added).
+- Google Search Console downloaded the final 601-URL sitemap on **2026-10-16 19:55:59 UTC**. Warnings=0, errors=0, indexed=0 in current crawl snapshot. Do not equate accepted URLs with indexed URLs. Earlier 594/604 snapshots are historical.
+- Confirmed 404 pages for EN/RU/ES return HTTP 404, one H1, correct locale, consistent title and `noindex`. EN/RU/ES book and library descriptions plus ES Services description were corrected to 120–160 characters. Canonicals/OG/Twitter are checked on selected pages by the automated auditor.
+- A GitHub Actions workflow now checks *every* current sitemap URL and publishes a JSON artifact, with a production-deploy grace period on push to avoid checking the previous Vercel commit. An independent Lighthouse workflow records public Home mobile/desktop LCP/CLS/TBT/score and lab SEO once executed.
+- CrUX real-user history is **not configured** in connected GSC Wizard, and Lighthouse score ≥90 or INP are not yet confirmed. The broad pre-existing suite has unrelated legacy UI-contract failures; the dedicated live SEO audit is not to be bypassed.

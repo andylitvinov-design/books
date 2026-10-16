@@ -36,7 +36,7 @@ test("three languages preserve a genuinely free written report and transparent l
 
 test("home and services offer direct and clear free and paid landing actions", () => {
   for (const source of [homepage, services]) assert.match(source, /services\/free-situation-review/);
-  assert.match(homepage, /className="service-home-button service-home-button--consultation"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
+  assert.match(homepage, /className="service-home-paid-link"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
   assert.match(homepage, /\{text\.heroBook\}/);
   assert.match(services, /services\/free-situation-review#personal-consultation/);
   assert.match(homepage, /service-home-button--primary/);

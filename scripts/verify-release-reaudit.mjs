@@ -1,3 +1,4 @@
+import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -415,7 +416,10 @@ async function exercise(engine, browserType, width) {
           document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
           window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
         });
+        await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
         const cspPage = await cspContext.newPage();
+        const requestTelemetry = [];
+        attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
         const navigationTrace = [];
         const waitForDocument = async () => {
           if (readiness !== 'loaded-history') return;
@@ -519,6 +523,18 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           await waitForDocument();
+          // This marker observes existing URL/CSP assertions, without waiting.
+          await cspPage.evaluate(() => {
+            const allowed = ['/', '/en/about', '/en/services', '/en/services/free-situation-review', '/en/academy/reiki/tantra-reiki'];
+            if (!['127.0.0.1', 'localhost'].includes(location.hostname) || !allowed.includes(location.pathname) || location.search || location.hash) return;
+            const key = '__cspRequestTelemetry';
+            try {
+              const entries = JSON.parse(sessionStorage.getItem(key) || '[]');
+              if (entries.length >= 512) return;
+              entries.push({ type: 'target-ready', path: location.pathname, rsc: false, documentProbe: window.__cspInitDocumentProbe, time: performance.timeOrigin + performance.now() });
+              sessionStorage.setItem(key, JSON.stringify(entries));
+            } catch { /* Diagnostic storage must not affect navigation. */ }
+          });
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
           const unexpectedErrors = cspErrors.filter(error => {
@@ -535,7 +551,8 @@ async function exercise(engine, browserType, width) {
         } finally {
           // Keep full structured diagnostics even when check() bounds its message.
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });

@@ -35,7 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       languages: {
         en: "/en/courses/antistress",
         ru: "/ru/courses/antistress",
-        es: "/es/courses/antistress"
+        es: "/es/courses/antistress",
+        "x-default": "/en/courses/antistress",
       }
     },
     openGraph: {
