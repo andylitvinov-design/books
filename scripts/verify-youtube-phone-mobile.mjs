@@ -54,7 +54,7 @@ async function verify(browserType,engine,width,height){
   const errors=[]
   let uploaderNavigations = 0
   page.on('framenavigated',frame => {
-    if (frame === page.mainFrame() && /^\\/admin\\/youtube-upload\\/?$/.test(new URL(frame.url()).pathname)) {
+    if (frame === page.mainFrame() && /^\/admin\/youtube-upload\/?$/.test(new URL(frame.url()).pathname)) {
       uploaderNavigations += 1
     }
   })
