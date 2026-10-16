@@ -37,7 +37,7 @@ function recordingError(error,ru) {
   }
   return messages[code]||code
 }
-export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,showYouTubeQuickAdd=true}) {
+export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,showYouTubeQuickAdd=false}) {
   const ru=locale==='ru'
   const mountedRef=useRef(true),busyRef=useRef(false),jobRef=useRef(null),failedRef=useRef(false)
   const xhrRef=useRef(null)
