@@ -63,3 +63,23 @@ test('out-of-order Quick answers are durable, resumable, revisable and score ide
   assert.equal(Object.keys(run.answers).length, def.questions.length)
   assert.equal(submitRun(run, { expectedRevision: run.revision, now }).status, 'submitted')
 })
+
+test('test starts and resumptions go straight to questions without a separate mode picker', () => {
+  const account = read('components/app/app-workspace.jsx')
+  const guest = read('components/app/cabinet-landing.jsx')
+
+  // Explicit Guided URLs are still respected; every other account run starts in Quick.
+  assert.match(account, /useState\(initialMode === 'guided' \? 'guided' : 'quick'\)/)
+  assert.doesNotMatch(account, /hh-runner-mode-picker|if \(!mode && !isContext\)/)
+
+  // New, existing, and resumed guest runs all enter the questionnaire immediately.
+  assert.match(guest, /const \[mode, setMode\] = useState\('quick'\)/)
+  assert.ok((guest.match(/setPhase\('questions'\)/g) || []).length >= 4)
+  assert.doesNotMatch(guest, /setPhase\('mode'\)|phase === 'mode'|hh-test-mode-picker/)
+
+  // Keep mode switching accessible inside the actual questionnaire.
+  for (const source of [account, guest]) {
+    assert.match(source, /aria-pressed=\{mode === 'quick'\}/)
+    assert.match(source, /aria-pressed=\{mode === 'guided'\}/)
+  }
+})

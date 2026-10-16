@@ -1225,7 +1225,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(initialMode === 'guided' && courseMode ? 'guided' : initialMode === 'quick' ? 'quick' : null),
+    [mode, setMode] = useState(initialMode === 'guided' ? 'guided' : 'quick'),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false),
@@ -1450,45 +1450,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       return names[section] || ''
     }
 
-  if (!mode && !isContext)
-    return (
-      <section className="hh-runner hh-panel hh-runner-mode-picker">
-        <div className="hh-test-mode-intro">
-          <p className="hh-kicker">
-            {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title}
-          </p>
-          <h1>{modeCopy.title}</h1>
-          <p>{modeCopy.intro}</p>
-        </div>
-        <div className="hh-test-mode-grid">
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('quick')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
-            <span>
-              <small>{modeCopy.quick} · ~{quickMinutes} {timeUnit}</small>
-              <strong>{modeCopy.quickTitle}</strong>
-              <em>{modeCopy.quickText}</em>
-            </span>
-          </button>
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('guided')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
-            <span>
-              <small>{modeCopy.guided} · ~{guidedMinutes} {timeUnit}</small>
-              <strong>{modeCopy.guidedTitle}</strong>
-              <em>{modeCopy.guidedText}</em>
-            </span>
-          </button>
-        </div>
-        <p className="hh-fine hh-test-mode-same">{modeCopy.same}</p>
-        <div className="hh-actions hh-test-mode-exit">
-          <button disabled={busy || Boolean(operation.current) || Boolean(completion.current)} onClick={exit}>
-            {c.saveExit}
-          </button>
-        </div>
-      </section>
-    )
-
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
+    <section className={`hh-runner hh-panel hh-runner--${mode} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">
