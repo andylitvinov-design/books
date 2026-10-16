@@ -7,7 +7,7 @@ const origin = "https://holistichouse.vercel.app";
 const entries = getPrioritySitemapEntries(origin);
 
 test("curated SEO pages are real, localized, canonical HTTPS routes with reciprocal sitemap hreflang", () => {
-  assert.equal(SEO_PRIORITY_PAGE_FAMILIES.length, 4);
+  assert.equal(SEO_PRIORITY_PAGE_FAMILIES.length, 5);
   assert.equal(entries.length, SEO_PRIORITY_PAGE_FAMILIES.length * SEO_PRIORITY_LOCALES.length);
   assert.equal(new Set(entries.map((item) => item.url)).size, entries.length);
   for (const item of entries) {
