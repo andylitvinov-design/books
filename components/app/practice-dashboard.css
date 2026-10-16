@@ -206,3 +206,87 @@
   .hh-app .hh-practice-tool-card { padding:10px; }
   .hh-app .hh-practice-tool-title { font-size:16px; }
 }
+
+
+/* Master Network v3 — compact actionable dashboard and safe fee explanation. */
+.hh-app .hh-practice-overview {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px; margin:13px 0 12px;
+}
+.hh-app .hh-practice-overview > div {
+  display:grid; gap:4px; align-content:center;
+  padding:12px 14px; border:1px solid #d7dfe9;
+  border-radius:14px; background:#f4f6fa; min-width:0;
+}
+.hh-app .hh-practice-overview strong {
+  font:400 28px/1.05 Georgia,serif; color:#1e3554;
+}
+.hh-app .hh-practice-overview span {
+  font:650 11px/1.35 system-ui,sans-serif; color:#4c5e77;
+}
+.hh-app .hh-practice-public-link { margin:0 0 12px; }
+.hh-app .hh-practice-public-link a {
+  display:inline-flex; align-items:center; min-height:40px;
+  gap:7px; color:#742e49; text-decoration:underline; text-underline-offset:4px;
+  font:700 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-fee-notice {
+  padding:12px 15px; margin:4px 0 16px; border-left:4px solid #842f49;
+  border-radius:0 12px 12px 0; background:#f5f1f5; color:#243650;
+}
+.hh-app .hh-practice-fee-notice strong { display:block; font:750 13px/1.4 system-ui,sans-serif; }
+.hh-app .hh-practice-fee-notice p { margin:5px 0 0; color:#495976; font:400 12px/1.6 system-ui,sans-serif; }
+.hh-app .hh-practice-service-toolbar {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:10px; margin:6px 0 14px;
+}
+.hh-app .hh-practice-service-toolbar h3,
+.hh-app .hh-practice-service-toolbar h2 {
+  margin:0; font:400 25px/1.2 Georgia,serif; color:#1c304a;
+}
+.hh-app .hh-practice-service-toolbar small { color:#65758c; font:600 13px system-ui,sans-serif; }
+.hh-app .hh-practice-new-service {
+  border:0; min-height:42px; border-radius:999px; padding:10px 15px;
+  background:#802c47; color:#fff; font:700 12px/1.4 system-ui,sans-serif;
+  cursor:pointer;
+}
+.hh-app .hh-practice-new-service:hover { background:#682139; }
+.hh-app .hh-practice-service-filter {
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  margin:7px 0 13px; font:700 12px/1.4 system-ui,sans-serif; color:#324660;
+}
+.hh-app .hh-practice-service-filter select,
+.hh-app .hh-practice-requests-filter select {
+  min-height:42px; padding:9px 11px; border-radius:10px;
+  border:1px solid #bdc8d8; background:#fff; color:#213a59;
+  font:550 12px/1.35 system-ui,sans-serif;
+}
+.hh-app .hh-practice-service-filter > span { color:#5b6b80; }
+.hh-app .hh-practice-service-row {
+  margin:9px 0; padding:0; border:1px solid #d7dce4;
+  border-radius:13px; overflow:hidden; background:#fffdf9;
+}
+.hh-app .hh-practice-service-row > summary {
+  display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; align-items:center;
+  cursor:pointer; padding:13px 16px; min-height:52px; color:#263f5e;
+  background:#f7f8fa; list-style:inside; font:650 13px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-service-row[open] > summary { background:#eceff5; }
+.hh-app .hh-practice-service-row-title { flex:1; overflow-wrap:anywhere; }
+.hh-app .hh-practice-service-row-meta { font:550 11px/1.4 system-ui,sans-serif; color:#79566c; }
+.hh-app .hh-practice-service-row > .hh-form { border:none; border-radius:0; box-shadow:none; }
+.hh-app .hh-practice-requests-filter {
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+  color:#3d5068; font:700 12px/1.4 system-ui,sans-serif;
+}
+.hh-app .hh-practice-dashboard :is(.hh-practice-new-service,.hh-practice-public-link a,.hh-practice-service-row summary,.hh-practice-service-filter select,.hh-practice-requests-filter select):focus-visible {
+  outline:3px solid #b24867; outline-offset:3px;
+}
+@media(max-width:600px) {
+  .hh-app .hh-practice-overview { gap:6px; }
+  .hh-app .hh-practice-overview > div { padding:9px; border-radius:10px; }
+  .hh-app .hh-practice-overview strong { font-size:23px; }
+  .hh-app .hh-practice-overview span { font-size:10px; }
+  .hh-app .hh-practice-service-toolbar h3,.hh-app .hh-practice-service-toolbar h2 { font-size:21px; }
+  .hh-app .hh-practice-service-row > summary { padding:12px; }
+}
