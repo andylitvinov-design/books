@@ -217,6 +217,7 @@ export function ServicesSmartDiscovery({
   const requestNumber = useRef(0);
   const searchInputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const orderPanelRef = useRef<HTMLDivElement>(null);
   const [scrollRequest, setScrollRequest] = useState(0);
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
@@ -252,6 +253,18 @@ export function ServicesSmartDiscovery({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [hasSelection, scrollRequest]);
+
+  // Keep the revealed messenger choices visible above the fixed phone tab bar.
+  useEffect(() => {
+    if (!orderingCard) return;
+    const frame = window.requestAnimationFrame(() => {
+      orderPanelRef.current?.scrollIntoView({
+        block:"nearest",
+        behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [orderingCard]);
 
   function chooseCategory(key: string) {
     requestNumber.current += 1;
@@ -434,7 +447,7 @@ export function ServicesSmartDiscovery({
                   ? <p className={styles.editorialBenefit}>{item.benefit}</p>:null}
                 <Link href={item.href}>{t.fullPage}<ArrowRight size={16} aria-hidden="true"/></Link>
               </div>
-              <div id={"hh-order-"+item.id} className={styles.editorialOrderPanel} hidden={!ordering}>
+              <div id={"hh-order-"+item.id} ref={ordering?orderPanelRef:undefined} className={styles.editorialOrderPanel} hidden={!ordering}>
                 <strong>{t.chooseChannel}</strong>
                 {item.free?<Link className={styles.editorialFreeStart} href={item.href}>
                   {t.freeStart}<ArrowRight size={17} aria-hidden="true"/>
