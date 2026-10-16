@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHomeRouteSupervisor } from './home-route-supervisor.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -9,6 +10,7 @@ const evidence = 'tmp/home-locale-switch';
 await mkdir(evidence, { recursive: true });
 const results = [];
 let app;
+const serverLifecycle = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const navigationTraceKey = 'hh-home-entry-navigation-trace';
 
@@ -203,24 +205,32 @@ async function exercise(engine, browserType, width) {
   const navigationRequests = await installEntryDiagnostics(context, page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  let phase = 'setup';
+  const transport = createHomeRouteSupervisor({origin, engine, width, stage:() => phase, pageUrl:() => page.url()});
+  const cleanupErrors = [];
+  let caseFailure;
   let delayedLocale = null;
   let heldRequests = 0;
   let delayedRscGate = Promise.resolve();
   let releaseHeldRsc = () => {};
   // Hold the real RSC response. This makes the old double-switch race deterministic.
   await page.route('**/*', async route => {
+    await transport.handle(route, async perform => {
     const request = route.request();
     if (shouldHoldHomeRsc(request, delayedLocale)) {
       const gate = delayedRscGate;
       heldRequests++;
-      const response = await route.fetch();
-      await pause(2000);
-      await gate;
-      await route.fulfill({ response });
-    } else await route.continue();
+      const response = await perform('fetch', () => route.fetch());
+      await perform('delay', () => pause(2000));
+      await perform('gate', () => gate);
+      await perform('fulfill', () => route.fulfill({ response }));
+    } else await perform('continue', () => route.continue());
+    });
   });
   try {
     for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
+      phase = `${from}-to-${to}`;
+      transport.assertHealthy();
       // A fresh source document keeps the target out of the client router cache:
       // both directions must prove an actual held RSC request, not a cached return.
       await page.goto(origin + homePath(from), { waitUntil: 'domcontentloaded' });
@@ -234,6 +244,7 @@ async function exercise(engine, browserType, width) {
       delayedLocale = to;
       await chooseHomeLocale(page, to);
       await expect.poll(() => heldRequests, { timeout: 15000 }).toBeGreaterThan(countBefore);
+      transport.assertHealthy();
       // Before the navigation commits, the new language must not become a clickable
       // optimistic player that will be discarded when the RSC response arrives.
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
@@ -241,6 +252,7 @@ async function exercise(engine, browserType, width) {
       await expect(next).toHaveCount(0);
       releaseHeldRsc();
       await expect(next).toHaveCount(1, { timeout: 20000 });
+      transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
       await next.locator('.site-video-play').click();
       const expectedId = to === 'en' ? 'ed202847a43a96b918308aa972177b34' : '388a04b39ebf215ae656bcd22d0d0847';
@@ -251,9 +263,13 @@ async function exercise(engine, browserType, width) {
       await expect(page).toHaveURL(origin + homePath(to));
       delayedLocale = null;
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
+      phase = 'free-offers';
       await verifyFreeOffers(page, to, engine, width);
+      transport.assertHealthy();
     }
+    transport.assertHealthy();
     assert.deepEqual(errors, []);
+    phase = 'visual';
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const offers = page.locator('[data-core-service-offers="home"]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
@@ -319,32 +335,54 @@ async function exercise(engine, browserType, width) {
     await expect(firstReview.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
     await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0);
 
+    phase = 'journeys';
     await exerciseFreeJourneys(page, engine, width);
+    transport.assertHealthy();
     assert.deepEqual(errors, []);
 
   } catch (error) {
-    results.push({ engine, width, failure: error.message, pageErrors: errors });
+    caseFailure = transport.failure ?? error;
+    results.push({ engine, width, failure: caseFailure.message, pageErrors: errors });
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
-    throw error;
   } finally {
     delayedLocale = null;
     releaseHeldRsc();
+    phase = 'cleanup';
+    try { await transport.drain(); } catch { cleanupErrors.push('initial-drain-failed'); }
     const lifecycle = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || '[]'), navigationTraceKey).catch(() => []);
-    await writeFile(`${evidence}/${live ? 'live' : 'local'}-${engine}-${width}-navigation-diagnostics.json`, JSON.stringify({ engine, width, lifecycle, requests: navigationRequests, errors }, null, 2));
-    await context.close();
-    await browser.close();
+    try { await context.close(); } catch { cleanupErrors.push('context-close-failed'); }
+    try { await browser.close(); } catch { cleanupErrors.push('browser-close-failed'); }
+    try { await transport.drain(1000); } catch { cleanupErrors.push('final-drain-failed'); }
+    caseFailure = transport.failure ?? caseFailure;
+    if (!caseFailure && cleanupErrors.length) caseFailure = new Error('Locale verifier cleanup failed');
+    try {
+      await writeFile(`${evidence}/${live ? 'live' : 'local'}-${engine}-${width}-navigation-diagnostics.json`, JSON.stringify({ engine, width, lifecycle, requests: navigationRequests, errors, transport:transport.events, homeRscTransport:transport.homeRscEvents, transportFailures:transport.failures, transportDropped:transport.dropped, cleanupErrors, serverLifecycle, failure:caseFailure ? (transport.failure ? 'route-transport-failed' : 'acceptance-or-cleanup-failed') : null }, null, 2));
+    } catch (error) { caseFailure ??= error; }
+
   }
+  if (caseFailure) throw caseFailure;
 }
 
 try {
   if (!live) {
     app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3129'], { stdio: 'ignore', env: { ...process.env, NODE_ENV: 'production' } });
+    const serverEvent = (kind, code, signal) => {
+      if(serverLifecycle.length >= 16) return;
+      const event = {kind,time:Date.now()};
+      if(Number.isInteger(code)) event.exitCode = code;
+      if(['SIGTERM','SIGKILL','SIGINT','SIGABRT'].includes(signal)) event.signal = signal;
+      serverLifecycle.push(event);
+    };
+    serverEvent('spawn');
+    app.on('exit', (code,signal) => serverEvent('exit',code,signal));
+    app.on('error', () => serverEvent('error'));
     let ready = false;
     for (let i = 0; i < 60; i++) {
       try { if ((await fetch(origin, { signal: AbortSignal.timeout(2000) })).ok) { ready = true; break; } } catch {}
       await pause(1000);
     }
     assert.ok(ready, 'Local production server did not start');
+    serverEvent('ready');
   }
   const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');

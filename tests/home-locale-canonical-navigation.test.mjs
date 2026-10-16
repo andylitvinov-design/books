@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createHomeRouteSupervisor } from '../scripts/home-route-supervisor.mjs';
 import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -75,7 +76,7 @@ test('the actual RSC handler fetches the real response and cannot fulfill before
   const events = [];
   const realResponse = { upstream: true };
   const page = { async route(pattern, callback) { assert.equal(pattern, '**/*'); handler = callback; } };
-  const readCount = await new AsyncFunction('page', 'shouldHoldHomeRsc', 'pause', 'delayedLocale', 'delayedRscGate', 'heldRequests', `${routeSource}; return () => heldRequests;`)(page, shouldHoldHomeRsc, async ms => { assert.equal(ms, 2000); events.push('delay'); }, 'ru', gate, 0);
+  const readCount = await new AsyncFunction('page', 'shouldHoldHomeRsc', 'pause', 'delayedLocale', 'delayedRscGate', 'heldRequests', 'transport', `${routeSource}; return () => heldRequests;`)(page, shouldHoldHomeRsc, async ms => { assert.equal(ms, 2000); events.push('delay'); }, 'ru', gate, 0, createHomeRouteSupervisor({origin,engine:'test',width:390}));
   const pending = handler({ request: () => request('/ru?_rsc=x'), async fetch() { events.push('fetch'); return realResponse; }, async fulfill({ response }) { assert.equal(response, realResponse); events.push('fulfill'); }, async continue() { throw new Error('must hold RSC'); } });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(readCount(), 1);
@@ -87,7 +88,7 @@ test('the actual RSC handler fetches the real response and cannot fulfill before
 for (const locale of [null, 'en', 'ru']) test(`unrelated RSC requests continue without fetching while active locale is ${locale}`, async () => {
   let handler;
   const page = { async route(_, callback) { handler = callback; } };
-  const readCount = await new AsyncFunction('page', 'shouldHoldHomeRsc', 'pause', 'delayedLocale', 'delayedRscGate', 'heldRequests', `${routeSource}; return () => heldRequests;`)(page, shouldHoldHomeRsc, () => { throw new Error('unexpected delay'); }, locale, Promise.resolve(), 0);
+  const readCount = await new AsyncFunction('page', 'shouldHoldHomeRsc', 'pause', 'delayedLocale', 'delayedRscGate', 'heldRequests', 'transport', `${routeSource}; return () => heldRequests;`)(page, shouldHoldHomeRsc, () => { throw new Error('unexpected delay'); }, locale, Promise.resolve(), 0, createHomeRouteSupervisor({origin,engine:'test',width:390}));
   for (const path of locale === null ? ['/', '/ru'] : ['/api/app/bootstrap', '/en/client', '/?lang=ru']) {
     let continued = false;
     await handler({ request: () => request(path), async fetch() { throw new Error('unexpected fetch'); }, async continue() { continued = true; } });
@@ -120,8 +121,8 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
     async toHaveURL(expected) { assert.equal(target, page); assert.equal(state.url, expected); },
   });
   expect.poll = callback => ({ async toBeGreaterThan(expected) { assert.ok(await callback() > expected); } });
-  const run = new AsyncFunction('assert', 'expect', 'page', 'homePath', 'origin', 'from', 'to', 'state', 'noRsc', 'wrongDestination', `
-    let heldRequests = 0, delayedLocale = null, delayedRscGate, releaseHeldRsc;
+  const run = new AsyncFunction('assert', 'expect', 'page', 'homePath', 'origin', 'from', 'to', 'state', 'noRsc', 'wrongDestination', 'transport', `
+    let heldRequests = 0, delayedLocale = null, delayedRscGate, releaseHeldRsc, phase;
     const results = [], engine = 'test', width = 390;
     const pause = async ms => assert.equal(ms, 2200);
     async function chooseHomeLocale(_, locale) {
@@ -135,7 +136,7 @@ async function switchScenario(from, to, { noRsc = false, optimistic = false, dis
     assert.equal(results[0].heldRsc, true);
     assert.equal(results[0].firstClickRetained, true);
   `);
-  await run(assert, expect, page, homePath, origin, from, to, state, noRsc, wrongDestination);
+  await run(assert, expect, page, homePath, origin, from, to, state, noRsc, wrongDestination, createHomeRouteSupervisor({origin,engine:'test',width:390}));
 }
 for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
   test(`${from} to ${to} proves held old locale, first-click identity and retained iframe`, () => switchScenario(from, to));
