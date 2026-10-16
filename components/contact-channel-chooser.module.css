@@ -44,3 +44,7 @@
   .choices { grid-template-columns: minmax(0, 1fr); }
   .choices a { min-height: 48px; }
 }
+
+/* The Holistic House mobile tab bar overlays the visual viewport. Aligning the
+   opened panel with this safety margin keeps both messenger buttons tappable. */
+.panel { scroll-margin-block: 100px 118px; }
