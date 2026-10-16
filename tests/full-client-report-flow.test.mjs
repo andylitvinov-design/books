@@ -14,7 +14,7 @@ test('preview / open is owner-only complete consultation HTML, PDF is a distinct
   assert.match(owner,/scope==='client'/)
   assert.match(owner,/ClientSessionPage mode="owner"/)
   assert.match(owner,/PrescriptionDocument document=\{document\}/)
-  assert.match(owner,/\/admin\/api\/documents\//)
+  assert.match(page,/\/admin\/api\/documents\//)\n  assert.doesNotMatch(owner,/href=\{pdf\}|pdf\+'&preview=1'/)
   assert.match(route,/session-preview/)
   assert.match(actions,/href=\{urls\.open\}/)
   assert.match(actions,/href=\{urls\.previewPdf\}/)
@@ -23,7 +23,7 @@ test('preview / open is owner-only complete consultation HTML, PDF is a distinct
   assert.match(page,/mode!=='saved'&&mode!=='owner'/)
 })
 
-test('client and Google-saved session readers include full HTML report and authorized attachments',()=>{
+test('client and Google-saved session readers show source-only appendices without repeated prescription',()=>{
   const page=src('components/client-session-page.jsx')
   for(const path of [
     'app/[locale]/client/session/[shareSelector]/page.js',
@@ -32,13 +32,13 @@ test('client and Google-saved session readers include full HTML report and autho
   ]) {
     const text=src(path)
     assert.match(text,/PrescriptionDocument/)
-    assert.match(text,/embedded\/>/)
+    assert.match(text,/embedded appendixOnly\/>/)
   }
   assert.match(page,/session\.media/)
   assert.match(page,/id="session-photos"/)
   assert.match(page,/id="session-report"/)
   assert.match(page,/id="session-message"/)
-  assert.match(page,/Read the full HTML document/)
+  assert.match(page,/hasReportAppendix/)\n  const prescription=src('components/prescription-document.jsx')\n  assert.match(prescription,/if \(appendixOnly\) return appendix/)\n  assert.equal((prescription.match(/<RemedyContent locale=/g)||[]).length,1)\n  assert.equal((prescription.match(/<DistanceHomeopathyGuide locale=/g)||[]).length,1)
 })
 
 test('sharing the full page requires a published, unchanged single-session grant',()=>{
