@@ -45,6 +45,7 @@ test('category selector cannot manufacture masters, offers or prices, and respec
   const r=rankDiscoveryServices('энергия',published,{category:'energy_spiritual',limit:4})
   assert.deepEqual(r.map(x=>x.service.id),['reiki'])
   assert.equal(rankDiscoveryServices('Рейки',[],{limit:3}).length,0)
+  assert.deepEqual(rankDiscoveryServices('совершенно незнакомое слово',published,{limit:3}),[])
   assert.equal(rankDiscoveryServices('business',published,{category:'relationships',limit:5}).length,1)
   assert.ok(DISCOVERY_AREAS.some(a=>a.key==='energy_spiritual'))
   assert.ok(DISCOVERY_AREAS.some(a=>a.key==='personal_development'))
