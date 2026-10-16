@@ -156,7 +156,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                   <span>{locale === "ru" ? "Мандалы и ритуалы" : locale === "es" ? "Mandalas y rituales" : "Mandalas & rituals"}</span>
                 </div>
                 <div className="tantra-course-hero__actions">
-                  <a className="tantra-course-hero__cta" href="#tantra-master-course">{locale === "ru" ? "Узнать о ближайшем обучении ↗" : locale === "es" ? "Consultar la próxima formación ↗" : "Enquire about training ↗"}</a>
+                  <Link className="tantra-course-hero__cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{locale === "ru" ? "Получить 1-ю ступень бесплатно ↗" : locale === "es" ? "Solicitar Nivel 1 gratis ↗" : "Get free Level 1 initiation ↗"}</Link>
+                  <a href="#tantra-master-course">{locale === "ru" ? "Узнать о ближайшем обучении ↗" : locale === "es" ? "Consultar la próxima formación ↗" : "Enquire about training ↗"}</a>
                   <a href="#tantra-levels">{locale === "ru" ? "Посмотреть 9 ступеней ↓" : locale === "es" ? "Explorar las 9 etapas ↓" : "Explore the 9 levels ↓"}</a>
                   <a className="tantra-course-hero__guide" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать PDF для телефона ↓" : locale === "es" ? "Descargar guía móvil ↓" : "Get the mobile PDF ↓"}</a>
                 </div>
