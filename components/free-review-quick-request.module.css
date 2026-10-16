@@ -1,0 +1,14 @@
+.card{box-sizing:border-box;max-width:100%;padding:clamp(21px,3vw,32px);border:1px solid #d9ece5;border-radius:19px;background:linear-gradient(145deg,#f7fffb,#eaf5f1 74%,#fbf7ee);color:#20423e;box-shadow:0 10px 32px rgba(0,23,32,.12)}
+.card *{box-sizing:border-box}
+.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 10px;color:#2f7269;font:750 11px/1.5 Arial,sans-serif;letter-spacing:.08em}
+.card h2{margin:0 0 9px;color:#1e3b4b;font:400 clamp(26px,2.6vw,33px)/1.16 Georgia,serif;letter-spacing:-.025em}
+.lead{color:#52685f;margin:0 0 18px;font:14px/1.55 Arial,sans-serif}
+.fields{display:grid;gap:11px;margin-bottom:15px}
+.fields label{display:grid;gap:6px;font:700 12px/1.4 Arial,sans-serif;color:#35574e}
+.fields input,.fields textarea{display:block;width:100%;border-radius:11px;border:1px solid #b8d1c8;background:#fffdfa;color:#173e3d;min-height:44px;padding:11px 12px;font:14px/1.45 Arial,sans-serif;resize:vertical}
+.fields textarea{min-height:65px}
+.fields input:focus-visible,.fields textarea:focus-visible{outline:3px solid #91c7b4;outline-offset:2px}
+.action{width:100%;min-height:53px;background:#963d57!important;color:#fff!important;border-radius:12px!important;font-weight:750!important}
+.note{margin:13px 0 0;color:#55706b;font:11px/1.55 Arial,sans-serif}
+@media(max-width:767px){.card{padding:19px 16px;border-radius:15px;box-shadow:none}.card h2{font-size:27px}.lead{font-size:13px}.note{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.card *{scroll-behavior:auto}}
