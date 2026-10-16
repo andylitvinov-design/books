@@ -62,7 +62,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   const boxes = await Promise.all([wa.boundingBox(),tg.boundingBox()]);
   const viewportWidth = page.viewportSize().width;
   for (const b of boxes) {
-    assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target");
+    assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
