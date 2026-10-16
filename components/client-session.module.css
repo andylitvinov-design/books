@@ -1141,3 +1141,33 @@
     border-radius:15px;
   }
 }
+
+/* Final report video & study materials: only owner-selected content is shown. */
+.reportMaterialsSection{
+  padding:clamp(17px,3vw,26px);
+  border:1px solid #d5e4e6;border-radius:19px;
+  background:linear-gradient(130deg,#f7fbfc 0%,#fffdf8 75%);
+  box-shadow:0 8px 22px rgba(23,57,87,.05);
+}
+.reportMaterialsSection .sectionHeader{align-items:flex-start;margin-bottom:16px}
+.reportMaterialsSection .sectionHeader h2{font-size:clamp(23px,3vw,29px);color:#173957}
+.reportMaterialsIntro{margin:6px 0 0;color:#526f7b;font-size:14px;line-height:1.55}
+.reportMaterialsSection .youtubeLessonList{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;
+  margin:12px 0 18px;
+}
+.reportMaterialsSection .mediaList{display:grid;gap:10px;margin:12px 0}
+.reportMaterialsSection .clientMediaCard{margin:0}
+.reportMaterialsSection .attachmentCard{margin-top:11px}
+.reportMaterialsEmpty{
+  padding:16px;margin:0;border:1px dashed #c8dadd;border-radius:12px;
+  background:#fff;color:#647d87;font-size:14px
+}
+@media(max-width:580px){
+  .reportMaterialsSection{padding:14px;border-radius:14px}
+  .reportMaterialsSection .youtubeLessonList{grid-template-columns:minmax(0,1fr)}
+}
+@media print{
+  .reportMaterialsSection .youtubeLessonFrame,
+  .reportMaterialsSection .video,.reportMaterialsSection .audio{display:none!important}
+}

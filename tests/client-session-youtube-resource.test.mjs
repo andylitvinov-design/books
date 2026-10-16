@@ -178,3 +178,37 @@ test('session video ordering shares client/guest/Google saved/owner render contr
   assert.match(view,/supplementary=media\.filter\(item=>item\.kind!=='image'&&item\.kind!=='video'/)
   assert.match(view,/hasHomeopathyRecommendation&&sharedGuideReady/)
 })
+
+test('owner selects which YouTube lessons go at report end; older links stay above report',()=>{
+  const top={kind:'youtube',title:'Existing lesson',url:canonical,description:''}
+  const bottom={...top,title:'Materials lesson',placement:'materials'}
+  const normalized=normalizeClientPlan({resources:[top,bottom]})
+  assert.equal(normalized.resources[0].placement,undefined)
+  assert.equal(normalized.resources[1].placement,'materials')
+  assert.throws(()=>normalizeClientPlan({resources:[{...top,placement:'private'}]}))
+  assert.throws(()=>normalizeClientPlan({resources:[{title:'Other link',url:'https://example.com',placement:'materials'}]}))
+})
+
+test('private videos explicitly hidden by the practitioner cannot enter published or guest payloads',()=>{
+  const assetId='31af1bc5-2342-4858-8a5e-09c3ffaf0033'
+  const draft=normalizeDraft({...emptySessionDraft(),media:[
+    {assetId,scope:'client',title:'Private source video',transcript:'',role:'hidden'},
+  ]})
+  assert.equal(draft.media[0].role,'hidden')
+  assert.equal(clientPayload(draft).media.length,0)
+  assert.equal(guestSessionProjection({...draft,id:'s',occurredOn:'2026-10-15',media:[{...draft.media[0],kind:'video'}]}).media.length,0)
+  assert.equal(clientPayload(normalizeDraft({...draft,media:[{...draft.media[0],role:'additional'}]})).media.length,1)
+})
+
+test('final Materials section contains only chosen videos and sits after shared guide',()=>{
+  const view=readFileSync(new URL('../components/client-session-page.jsx',import.meta.url),'utf8')
+  assert.match(view,/materialsVideos=media\.filter/)
+  assert.match(view,/materialsYoutubeResources=/
+  assert.match(view,/topYoutubeResources=/
+  assert.match(view,/id="session-resources"/)
+  assert.match(view,/id="session-materials-title"/)
+  assert.ok(view.indexOf('id="session-resources"')>view.indexOf('id="session-granules-guide"'))
+  assert.ok(view.indexOf('id="session-resources"')<view.indexOf('<footer className={styles.clientFooter}>'))
+  assert.match(view,/materialsYoutubeResources\.map/)
+  assert.match(view,/materialsVideos\.map/)
+})
