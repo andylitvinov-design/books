@@ -267,7 +267,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <div className="hh-practice-tool-heading"><h2 id="hh-practice-tools-title">{isOwner?d.privateTitle:d.publicTools}</h2></div>
         <div className="hh-practice-tool-grid">
           <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
-            onClick={()=>choosePanel('clients')} active={activePanel==='clients'} />
+            onClick={()=>isOwner?openOwner('clients'):choosePanel('clients')} active={!isOwner&&activePanel==='clients'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
@@ -333,6 +333,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {ownerTools && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
+      <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button></div>
     </details>}
     {shareNotice&&<p role="status" className="hh-practice-share-notice">{shareNotice}</p>}
     {error&&<p role="alert" className="hh-practice-error">{error}</p>}

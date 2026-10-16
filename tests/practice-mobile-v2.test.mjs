@@ -32,6 +32,8 @@ test('practitioner leads stay item-scoped; owner CRM mounts only on demand', asy
     read('components/app/crm-manager.jsx'),
     read('app/api/app/crm/route.js'),
   ])
+  assert.match(view, /isOwner\?openOwner\('clients'\):choosePanel\('clients'\)/)
+  assert.match(view, /Business contacts & subscribers/)
   assert.match(view, /function ClientLeads/)
   assert.match(view, /safeLeadContact/)
   assert.match(view, /Private tests and health records are not shared/)
