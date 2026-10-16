@@ -31,6 +31,15 @@ async function save(existing, formData) {
   redirect(`/admin/prescriptions/${record.id}?publication=${publication.status}`)
 }
 
+export async function retryPrescriptionPublicationAction(id) {
+  if(!await requireAdminRequest()) redirect('/admin/login')
+  const store=getPrescriptionStore()
+  const record=store?await store.findById(id):null
+  if(!record||record.kind==='payment'||record.kind==='report') redirect('/admin')
+  const publication=await autoPublishSavedClientReport(record,store)
+  redirect(`/admin/prescriptions/${id}?publication=${publication.status}`)
+}
+
 export async function createPrescriptionAction(formData) { return save(undefined, formData) }
 export async function updatePrescriptionAction(id, formData) {
   if (!await requireAdminRequest()) throw new Error('Unauthorized')
