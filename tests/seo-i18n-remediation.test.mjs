@@ -24,7 +24,7 @@ test("Spanish homepage preserves one H1, free tools, testimonials and consistent
 
 test("every sitemap entry is given stable lastModified and only existing peers become alternates", () => {
   const sitemap = read("app/sitemap.ts");
-  assert.match(sitemap, /lastModified: entry.lastModified \?\? releaseDate/);
+  assert.match(sitemap, /lastModified: lastModified \?\? releaseDate/);
   assert.match(sitemap, /available\.has\(url\)/);
   assert.match(sitemap, /all\.delete\(base \+ '\/books'\)/);
   assert.match(sitemap, /'\/en\/books', '\/ru\/books'/);
