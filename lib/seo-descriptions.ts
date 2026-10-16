@@ -27,9 +27,9 @@ function finish(value: string) {
 }
 
 const remedyFallback: Record<SeoLanguage, (name: string) => string> = {
-  en: name => `${name}: an educational reference from the Holistic House author's remedy archive, with original context and related reading. Explore the complete entry.`,
-  ru: name => `${name}: справочная статья из авторской библиотеки Holistic House с описанием подхода, исходным контекстом и дополнительными материалами. Откройте карточку.`,
-  es: name => `${name}: ficha educativa de la biblioteca del autor de Holistic House, con contexto original y materiales relacionados. Consulta la entrada completa.`,
+  en: name => `${name}: educational remedy notes by the Holistic House author, with source context and related materials. Open the full library entry.`,
+  ru: name => `${name}: образовательная карточка в Holistic House с текстом автора и контекстом источника. Подробнее в справочнике препаратов.`,
+  es: name => `${name}: ficha educativa del autor en Holistic House, con el contexto de origen y referencias relacionadas. Consulta el texto completo.`,
 };
 
 const bookFallback: Record<SeoLanguage, (name: string) => string> = {
@@ -41,7 +41,22 @@ const bookFallback: Record<SeoLanguage, (name: string) => string> = {
 export function remedySeoDescription(name: string, body: string, locale: SeoLanguage) {
   const opening = completeSentence(body, 150 - name.length - 2);
   const proposed = opening ? `${name}: ${opening}` : "";
-  return proposed.length >= 120 && proposed.length <= 160 ? proposed : finish(remedyFallback[locale](name)).slice(0, 160);
+  if (proposed.length >= 120 && proposed.length <= 160) return proposed;
+  const fallback = finish(remedyFallback[locale](name));
+  if (fallback.length <= 160 && fallback.length >= 120) return fallback;
+  // Long compound Latin names cannot make a safe 160-character description
+  // using the usual template; use a shorter complete sentence instead.
+  const compact: Record<SeoLanguage, string> = {
+    en: `${name}: explore its original author notes and references in the Holistic House educational remedy library.`,
+    ru: `${name}: авторский образовательный материал в библиотеке препаратов Holistic House. Откройте текст и источники.`,
+    es: `${name}: consulta las notas originales y referencias del autor en el catálogo educativo de Holistic House.`,
+  };
+  const shorter = finish(compact[locale]);
+  return shorter.length <= 160 ? shorter : finish({
+    en: "Educational remedy reference from the Holistic House author archive. Explore the complete entry, original context and related source materials.",
+    ru: "Образовательный справочник препаратов Holistic House. Ознакомьтесь с текстом автора, источниками и дополнительными материалами.",
+    es: "Biblioteca educativa de remedios Holistic House. Consulta el texto completo, el contexto original y las referencias relacionadas.",
+  }[locale]);
 }
 
 export function bookSeoDescription(name: string, body: string, locale: SeoLanguage) {
@@ -53,5 +68,22 @@ export function bookSeoDescription(name: string, body: string, locale: SeoLangua
     : "Read the full edition in the Holistic House library.";
   const combined = finish(cleaned) + " " + next;
   if (combined.length >= 120 && combined.length <= 160) return combined;
-  return finish(bookFallback[locale](name)).slice(0, 160);
+  const fallback = finish(bookFallback[locale](name));
+  if (fallback.length >= 120 && fallback.length <= 160) return fallback;
+  const compact: Record<SeoLanguage, string> = {
+    en: `${name}. Explore the author's book and its complete reading edition in the Holistic House library.`,
+    ru: `${name}. Изучите книгу и полное авторское издание в библиотеке Holistic House.`,
+    es: `${name}. Consulta la edición y los materiales de este libro en Holistic House.`,
+  };
+  const shorter = finish(compact[locale]);
+  if (shorter.length >= 120 && shorter.length <= 160) return shorter;
+  const suffix = locale === 'ru' ? ' Материал опубликован в авторском образовательном архиве.'
+    : locale === 'es' ? ' Incluye el material educativo original del autor.'
+    : ' Includes the original educational material by the author.';
+  if (shorter.length < 120 && (shorter + suffix).length <= 160) return shorter + suffix;
+  return finish({
+    en: "Discover published books and educational materials by the Holistic House author, with a library overview and links to available full-text editions.",
+    ru: "Книги и учебные материалы автора Holistic House: описания тем, структура разделов и доступные полные издания в библиотеке проекта.",
+    es: "Explora los libros y materiales educativos del autor de Holistic House, con información de los temas y enlaces a las ediciones completas.",
+  }[locale]);
 }
