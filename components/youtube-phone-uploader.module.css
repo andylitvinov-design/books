@@ -82,3 +82,198 @@
 .historyDetails strong{font-size:.97rem;line-height:1.4;overflow-wrap:anywhere;color:#173456}
 .historyDetails small{font-size:.8rem;color:#647891;line-height:1.45}
 @media(max-width:540px){.targets{gap:.45rem}.target,.targetSelected{min-height:100px;padding:.72rem}.historyEntry .linkRow{width:100%;justify-content:space-between}}
+
+/* Isolated iPhone fix: let the DOCUMENT own vertical scrolling.
+   Do not create a nested overflow-y scrollport or tie layout to a changing
+   visualViewport height (the iOS in-app browser toolbar can resize it). */
+.page {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 100svh;
+  height: auto !important;
+  overflow: visible !important;
+}
+.mobileLinks { display: none; }
+.leadCopy { min-width: 0; }
+.mobileIntro { display: none; }
+
+/* Native details do not unmount upload state and do not need scroll listeners. */
+.advanced, .history, .safetyDisclosure, .helpDisclosure {
+  display: block;
+  min-width: 0;
+  border: 1px solid #d7e0ee;
+  border-radius: 12px;
+  background: #f9fbfe;
+}
+.advanced { margin-top: .45rem; }
+.advanced > summary, .history > summary, .safetyDisclosure > summary,
+.helpDisclosure > summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  list-style: none;
+  padding: .7rem .9rem;
+  color: #173558;
+  font-size: .92rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.advanced > summary::-webkit-details-marker,
+.history > summary::-webkit-details-marker,
+.safetyDisclosure > summary::-webkit-details-marker,
+.helpDisclosure > summary::-webkit-details-marker { display: none; }
+.advanced > summary::after, .history > summary::after,
+.safetyDisclosure > summary::after, .helpDisclosure > summary::after {
+  content: '⌄';
+  flex: 0 0 auto;
+  color: #647c9a;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.advanced[open] > summary::after, .history[open] > summary::after,
+.safetyDisclosure[open] > summary::after, .helpDisclosure[open] > summary::after {
+  transform: rotate(180deg);
+}
+.advanced > summary small { font-size: .77rem; color: #627991; font-weight: 500; }
+.advancedBody, .historyBody {
+  display: grid;
+  gap: .8rem;
+  padding: .3rem .9rem .9rem;
+}
+.advancedBody .field { margin: 0; }
+.advancedBody .visibility { padding: .6rem .75rem; font-size: .84rem; }
+.advancedBody .check { font-size: .86rem; }
+.history { margin-top: 1rem; padding: 0; border-top: 1px solid #d7e0ee; }
+.history > summary { font-size: .95rem; }
+.history > summary span {
+  margin-left: auto;
+  border-radius: 99px;
+  background: #e4edf8;
+  padding: .1rem .5rem;
+  color: #173558;
+  font-size: .79rem;
+  font-weight: 700;
+}
+.historyBody { gap: .85rem; }
+.historyHeading p { margin: 0; color: #657c95; font-size: .84rem; }
+.safetyDisclosure { margin-top: .7rem; border-color: #ead6dd; background: #fffafb; }
+.safetyDisclosure > summary { color: #843d57; font-size: .86rem; }
+.safetyDisclosure .warning { margin: 0 .9rem .9rem; font-size: .82rem; }
+.setupIntro { color: #48617e; font-size: .9rem; line-height: 1.4; }
+.helpDisclosure { background: #fff; }
+.helpDisclosure p { padding: 0 .9rem .7rem; color: #526784; font-size: .85rem; line-height: 1.55; }
+.helpDisclosure > a { margin: 0 .9rem .9rem; }
+.advanced > summary:focus-visible, .history > summary:focus-visible,
+.safetyDisclosure > summary:focus-visible, .helpDisclosure > summary:focus-visible {
+  outline: 3px solid #779fd3;
+  outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+  /* The general practitioner cabinet uses a 42px hero and 7 wrapped links.
+     Scope these overrides ONLY to the YouTube upload route. */
+  .page {
+    padding: 12px 15px calc(124px + env(safe-area-inset-bottom)) !important;
+    width: 100%;
+    max-width: 100%;
+    min-height: 100svh;
+    overflow: visible !important; /* overrides globals.css overflow-x: clip */
+  }
+  .page :global(.prescription-admin-topbar) {
+    align-items: center;
+    padding-bottom: 10px;
+    gap: 10px;
+  }
+  .page :global(.prescription-admin-wordmark strong) { font-size: 21px !important; }
+  .page :global(.prescription-admin-titleblock) { padding: 13px 0 5px !important; }
+  .page :global(.prescription-admin-titleblock h1) {
+    margin: 0 !important;
+    max-width: none;
+    font-size: clamp(23px, 6.3vw, 29px) !important;
+    line-height: 1.13 !important;
+    letter-spacing: -.025em;
+  }
+  .page :global(.prescription-admin-description) { display: none !important; }
+  .page :global(.prescription-admin-navigation--tabs) { display: none !important; }
+  .mobileLinks {
+    display: flex;
+    gap: .55rem;
+    flex-wrap: wrap;
+    margin: .35rem 0 .75rem;
+  }
+  .mobileLinks a {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    border: 1px solid #d5c4b5;
+    border-radius: 999px;
+    padding: 5px 12px;
+    background: #fffaf3;
+    color: #634532;
+    font-size: 12px;
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .uploader {
+    width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+    padding: 4px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .lead { align-items: center; gap: .65rem; padding-bottom: .7rem; }
+  .icon { flex: 0 0 42px; width: 42px; height: 42px; border-radius: 11px; font-size: 19px; }
+  .lead h2 { margin: 0 0 3px; font-size: 20px; letter-spacing: -.025em; line-height: 1.15; }
+  .desktopIntro { display: none; }
+  .mobileIntro { display: block; font-size: 12px !important; line-height: 1.35 !important; }
+  .targetSelector { margin: .65rem 0 .7rem; }
+  .targetSelector legend { margin-bottom: .5rem; font-size: .86rem; }
+  .targets { gap: .5rem; }
+  .target, .targetSelected {
+    min-height: 63px;
+    border-radius: 11px;
+    padding: .55rem .7rem;
+    gap: .22rem;
+  }
+  .target strong, .targetSelected strong { font-size: .83rem; line-height: 1.2; }
+  .target small, .targetSelected small {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .74rem;
+  }
+  .connect { display: grid; margin: .65rem 0; gap: .45rem; }
+  .connect .secondary { width: 100%; }
+  .form { gap: .7rem; }
+  .picker { min-height: 65px; border-radius: 12px; font-size: .94rem; }
+  .files { gap: .6rem; }
+  .files h3 { margin: .25rem 0 0; font-size: .93rem; }
+  .file { padding: .75rem; }
+  .field { font-size: .88rem; }
+  .field input, .field select, .field textarea { font-size: 16px; }
+  .actions { display: grid; gap: .6rem; margin: .3rem 0; }
+  .actions > * { width: 100%; }
+  .primary, .secondary, .siteLink { min-height: 47px; padding: .65rem .85rem; border-radius: 10px; font-size: .91rem; }
+  .pairing { gap: .6rem; padding: .8rem; margin-bottom: .55rem; border-radius: 12px; }
+  .pairing h3 { font-size: 1rem; }
+  .pairing > p { font-size: .86rem; }
+  .history { margin-top: .75rem; }
+  .historyEntry { display: grid; padding: .8rem; }
+  .historyEntry .linkRow { gap: .35rem; }
+  .historyDetails { width: 100%; }
+  .unavailable, .error { margin: .5rem 0; padding: .7rem .85rem; font-size: .85rem; }
+  .muted { font-size: .79rem; line-height: 1.45; }
+}
+
+/* No hover animation or moving sticky headers on touch-only browsers. */
+@media (hover: none) {
+  .uploader :is(button, a, summary) { -webkit-tap-highlight-color: transparent; }
+}

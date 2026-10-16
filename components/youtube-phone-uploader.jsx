@@ -10,6 +10,11 @@ import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutub
 const copy = {
   ru: {
     intro:'Выберите русский или английский канал, затем добавьте видео с iPhone. Файлы передаются прямо в YouTube — без хранения MP4 на сервере.',
+    introShort:'RU / EN · Unlisted · прямо в YouTube',
+    settingsTitle:'Параметры видео', historyHelp:'Сохранённые ссылки по языкам',
+    safetyTitle:'Конфиденциальность и правила загрузки',
+    setupGuideTitle:'Инструкция Google Cloud', setupIntro:'Для начала нужен публичный Google OAuth Client ID.',
+
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
     config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
     setupTitle:'Первое подключение Google YouTube',
@@ -68,6 +73,11 @@ const copy = {
   },
   en: {
     intro:'Choose the Russian or English YouTube channel, then select videos from your phone. Files go straight to YouTube without Holistic House MP4 storage.',
+    introShort:'RU / EN · Unlisted · direct to YouTube',
+    settingsTitle:'Video settings', historyHelp:'Saved links grouped by language',
+    safetyTitle:'Privacy and upload guidelines',
+    setupGuideTitle:'Google Cloud setup instructions', setupIntro:'Connect your public Google OAuth Client ID to get started.',
+
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
     config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
     setupTitle:'Connect Google YouTube once',
@@ -461,16 +471,23 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     <section className={styles.uploader} aria-label="Holistic House YouTube uploader">
       <div className={styles.lead}>
         <div className={styles.icon} aria-hidden="true">▶</div>
-        <div><h2>Phone → YouTube</h2><p>{t.intro}</p></div>
+        <div className={styles.leadCopy}>
+          <h2>Phone → YouTube</h2>
+          <p className={styles.desktopIntro}>{t.intro}</p>
+          <p className={styles.mobileIntro}>{t.introShort}</p>
+        </div>
       </div>
-      <p className={styles.warning}>{t.noClient}</p>
-      {!enabled && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {!enabled && !setupAvailable && <p className={styles.unavailable} role="status">{t.config}</p>}
       {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
         type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
       {setupAvailable && showSetup && <div className={styles.pairing}>
         <h3>{t.setupTitle}</h3>
-        <p>{t.setupHelp}</p>
-        <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
+        <p className={styles.setupIntro}>{t.setupIntro}</p>
+        <details className={styles.helpDisclosure}>
+          <summary>{t.setupGuideTitle}</summary>
+          <p>{t.setupHelp}</p>
+          <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
+        </details>
         <label className={styles.field}><span>{t.setupField}</span><input type="text"
           value={setupClientId} onChange={event => setSetupClientId(event.target.value)}
           placeholder="123456789012-example.apps.googleusercontent.com" spellCheck={false}
@@ -520,9 +537,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly}
             onChange={addFiles}/>
         </label>
-        <div className={styles.files}>
+        {entries.length > 0 && <div className={styles.files}>
           <h3>{t.selected} ({entries.filter(item => item.state !== 'done').length})</h3>
-          {!entries.length && <p className={styles.muted}>{t.empty}</p>}
           {entries.map(item => (
             <div className={styles.file} key={item.id}>
               <div className={styles.filehead}>
@@ -554,16 +570,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
               </div>}
             </div>
           ))}
-        </div>
-        <label className={styles.field}><span>{t.description}</span>
-          <textarea rows={2} value={description} maxLength={5000} disabled={busy}
-            onChange={event => setDescription(event.target.value)}/>
-        </label>
-        <div className={styles.visibility}><strong>{t.unlisted}</strong></div>
-        <label className={styles.check}><input type="checkbox" checked={synthetic}
-          disabled={busy} onChange={event => setSynthetic(event.target.checked)}/>{t.ai}</label>
-        <label className={styles.check}><input type="checkbox" checked={madeForKids}
-          disabled={busy} onChange={event => setMadeForKids(event.target.checked)}/>{t.kids}</label>
+        </div>}
         {error && <p className={styles.error} role="alert">{error}</p>}
         {message && <p className={styles.success} role="status">{message}</p>}
         <div className={styles.actions}>
@@ -574,13 +581,29 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             onClick={() => abortRef.current?.abort()}>{t.pause}</button>}
           <Link href="/admin/videos" className={styles.siteLink}>{t.back} ↗</Link>
         </div>
+        <details className={styles.advanced}>
+          <summary>{t.settingsTitle} <small>{t.unlisted}</small></summary>
+          <div className={styles.advancedBody}>
+        <label className={styles.field}><span>{t.description}</span>
+          <textarea rows={2} value={description} maxLength={5000} disabled={busy}
+            onChange={event => setDescription(event.target.value)}/>
+        </label>
+        <div className={styles.visibility}><strong>{t.unlisted}</strong></div>
+        <label className={styles.check}><input type="checkbox" checked={synthetic}
+          disabled={busy} onChange={event => setSynthetic(event.target.checked)}/>{t.ai}</label>
+        <label className={styles.check}><input type="checkbox" checked={madeForKids}
+          disabled={busy} onChange={event => setMadeForKids(event.target.checked)}/>{t.kids}</label>
+          </div>
+        </details>
         <p className={styles.muted}>{t.stay}</p>
       </div>
-      <section className={styles.history} aria-label={t.history}>
-        <div className={styles.historyHeading}>
-          <h3>{t.history} ({history.length})</h3>
-          <button type="button" className={styles.refresh} onClick={refreshHistory}>{t.refresh}</button>
-        </div>
+      <details className={styles.history} aria-label={t.history}>
+        <summary className={styles.historySummary}>{t.history} <span>{history.length}</span></summary>
+        <div className={styles.historyBody}>
+          <div className={styles.historyHeading}>
+            <p>{t.historyHelp}</p>
+            <button type="button" className={styles.refresh} onClick={refreshHistory}>{t.refresh}</button>
+          </div>
         <div className={styles.historyFilters} role="group" aria-label={t.target}>
           {(['all','ru','en']).map(option =>
             <button type="button" key={option} aria-pressed={historyFilter === option}
@@ -601,7 +624,12 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             </div>
           </div>
         ))}
-      </section>
+        </div>
+      </details>
+      <details className={styles.safetyDisclosure}>
+        <summary>{t.safetyTitle}</summary>
+        <p className={styles.warning}>{t.noClient}</p>
+      </details>
     </section>
   )
 }

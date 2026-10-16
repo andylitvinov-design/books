@@ -21,7 +21,7 @@ const copy = {
       "Download the Tantra Reiki guide immediately — no signup needed.",
       "Type your seven answers below or select a document to share with Andrey.",
     ],
-    name: "Your name", contact: "Email or preferred contact",
+    name: "Your name (optional)", contact: "Preferred contact (optional)",
     nameHint: "How may Andrey address you?", contactHint: "Email / Telegram / WhatsApp",
     answerLabel: "Your seven answers", answerHint: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "Or attach your answers", fileHelp: "PDF, DOC, DOCX, TXT, RTF or images · up to 8 MB",
@@ -51,7 +51,7 @@ const copy = {
       "Скачать методичку Тантра Рейки сразу, без регистрации.",
       "Напишите семь ответов или прикрепите файл с телефона для отправки Андрею.",
     ],
-    name: "Ваше имя", contact: "Контакт для ответа",
+    name: "Ваше имя (необязательно)", contact: "Контакт для ответа (необязательно)",
     nameHint: "Как к вам обращаться?", contactHint: "Email / Telegram / WhatsApp",
     answerLabel: "Ваши семь ответов", answerHint: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "Или прикрепите файл с ответами", fileHelp: "PDF, DOC, DOCX, TXT, RTF или фото · до 8 МБ",
@@ -81,7 +81,7 @@ const copy = {
       "Descargar la guía de Tantra Reiki inmediatamente, sin registrarte.",
       "Escribe las siete respuestas o selecciona un documento para compartir con Andrey.",
     ],
-    name: "Tu nombre", contact: "Correo o contacto",
+    name: "Tu nombre (opcional)", contact: "Contacto (opcional)",
     nameHint: "¿Cómo te llamas?", contactHint: "Email / Telegram / WhatsApp",
     answerLabel: "Tus siete respuestas", answerHint: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "O adjunta tus respuestas", fileHelp: "PDF, DOC, DOCX, TXT, RTF o imágenes · hasta 8 MB",
@@ -227,8 +227,8 @@ export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
       </div>
       <p className={styles.formHelp}>{t.helps[intents.indexOf(intent)]}</p>
       {!isPdf ? <div className={styles.formFields}>
-        <label>{t.name}<input required type="text" autoComplete="name" maxLength={90} placeholder={t.nameHint} value={name} onChange={(e) => setName(e.target.value)}/></label>
-        <label>{t.contact}<input required type="text" maxLength={150} placeholder={t.contactHint} value={contact} onChange={(e) => setContact(e.target.value)}/></label>
+        <label>{t.name}<input type="text" autoComplete="name" maxLength={90} placeholder={t.nameHint} value={name} onChange={(e) => setName(e.target.value)}/></label>
+        <label>{t.contact}<input type="text" maxLength={150} placeholder={t.contactHint} value={contact} onChange={(e) => setContact(e.target.value)}/></label>
         {isAnswers ? <>
           <label className={styles.formFull}>{t.answerLabel}<textarea maxLength={10000} rows={7} placeholder={t.answerHint} value={answers} onChange={(e) => setAnswers(e.target.value)}/></label>
           <label className={styles.formFull}>{t.file}<input type="file" accept=".pdf,.doc,.docx,.txt,.rtf,.jpg,.jpeg,.png" onChange={(e) => {

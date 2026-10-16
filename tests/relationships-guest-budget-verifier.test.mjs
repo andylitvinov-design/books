@@ -23,8 +23,11 @@ function quota(limit,windowMs){
 
 test('workflow session accounting includes the separate signed-in public Relationships guest',()=>{
  const workflow=read('.github/workflows/hh-app-browser.yml')
- const sequence=[...workflow.matchAll(/! node scripts\/(verify-[\w-]+\.mjs)/g)].map(match=>match[1])
- assert.deepEqual(sequence,['verify-document-hydration.mjs','verify-app-r1.mjs','verify-compassion-assessments.mjs','verify-relationships-assessments.mjs','verify-mhc-sf.mjs','verify-asrs6.mjs','verify-asrs6-pdf.mjs','verify-personality-types.mjs','verify-account-status-filters.mjs'])
+ const suites=Object.fromEntries([...workflow.matchAll(/(core|extended)\) scripts="([^"]+)"/g)].map(match=>[match[1],match[2].split(' ')]))
+ assert.deepEqual(suites,{
+  core:['verify-document-hydration','verify-app-r1','verify-compassion-assessments','verify-relationships-assessments'],
+  extended:['verify-document-hydration','verify-mhc-sf','verify-asrs6','verify-asrs6-pdf','verify-personality-types','verify-account-status-filters'],
+ })
  const primary=read('scripts/verify-app-r1.mjs')
  assert.equal([...primary.matchAll(/await launchPublicGuestWithoutAccountWrite\(/g)].length,2)
  assert.equal(COMPASSION_DEFINITIONS.length,2)
@@ -33,6 +36,8 @@ test('workflow session accounting includes the separate signed-in public Relatio
  const before=[2,2,1,8,1,1],after=[2,2,1,1,1,1]
  assert.equal(before.reduce((a,b)=>a+b),15)
  assert.equal(after.reduce((a,b)=>a+b),8)
+ assert.equal(after.slice(0,4).reduce((a,b)=>a+b),6,'Core job session count')
+ assert.equal(after.slice(4).reduce((a,b)=>a+b),2,'Extended job session count')
  const oldBudget=quota(12,3_600_000)
  for(let i=0;i<5+7;i++)assert.equal(oldBudget(0),true)
  assert.equal(oldBudget(0),false,'The eighth Relationships result guest is same-IP request 13')

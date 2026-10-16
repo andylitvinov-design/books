@@ -90,7 +90,7 @@ test('no-cookie public and practitioner entry points consistently prefer English
   ])
 
   assert.match(books, /preference === "ru" \? "ru" : "en"/)
-  assert.match(adminHeader, /useState\('en'\)/)
+  assertAdminHeaderInitialLocale(adminHeader)
   assert.match(practitioner, /useState\('en'\)/)
   assert.match(consultation, /useState\('en'\)/)
 })
@@ -254,4 +254,27 @@ test('top site header keeps a visible direct link to the private personal app on
   assert.match(styles, /\.house-header--services \.site-navigation > a \{ display: none; \}/)
   assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
+})
+
+function assertAdminHeaderInitialLocale(source) {
+  const defaultLocale = source.match(/export function PrescriptionAdminHeader\(\{[^}]*initialLocale = ('[^']+')/)
+  const initializer = source.match(/const \[locale, setLocale\] = useState\(([^\n]+)\)/)
+  assert.ok(defaultLocale, 'Header must retain its explicit initial-locale default')
+  assert.ok(initializer, 'Header locale must have a single inspected initializer')
+  const initial = new Function('provided', `const { initialLocale = ${defaultLocale[1]} } = provided; return (${initializer[1]});`)
+  assert.equal(initial({}), 'en', 'No supplied preference defaults to English')
+  assert.equal(initial({ initialLocale: 'ru' }), 'ru', 'Explicit Russian is retained')
+  for (const initialLocale of ['en', 'es', '', null]) assert.equal(initial({ initialLocale }), 'en')
+}
+
+test('practitioner locale initializer rejects wrong default and ignored explicit preference', async () => {
+  const source = await readFile('components/prescription-admin-header.jsx', 'utf8')
+  for (const changed of [
+    source.replace("initialLocale = 'en'", "initialLocale = 'ru'"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('en')"),
+    source.replace("useState(initialLocale === 'ru' ? 'ru' : 'en')", "useState('ru')"),
+  ]) {
+    assert.notEqual(changed, source)
+    assert.throws(() => assertAdminHeaderInitialLocale(changed))
+  }
 })

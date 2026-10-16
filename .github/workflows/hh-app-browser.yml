@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        suite: [core, extended]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -29,6 +30,7 @@ jobs:
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       HH_TEST_BROWSER: ${{ matrix.browser }}
+      HH_TEST_SUITE: ${{ matrix.suite }}
       CI: 'true'
       NODE_ENV: development
       NEXT_TELEMETRY_DISABLED: '1'
@@ -69,13 +71,39 @@ jobs:
             if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
             sleep 2
           done
-          if ! node scripts/verify-document-hydration.mjs || ! node scripts/verify-app-r1.mjs || ! node scripts/verify-compassion-assessments.mjs || ! node scripts/verify-relationships-assessments.mjs || ! node scripts/verify-mhc-sf.mjs || ! node scripts/verify-asrs6.mjs || ! node scripts/verify-asrs6-pdf.mjs || ! node scripts/verify-personality-types.mjs || ! node scripts/verify-account-status-filters.mjs; then
-            grep 'HH_APP_TEST_ERROR' /tmp/hh-app-next.log | tail -10 || true
-            exit 1
-          fi
+          # Each suite has its own database, app, provider and unchanged quota windows.
+          # Hydration also warms shared API routes; repeat it for each fresh app.
+          case "$HH_TEST_SUITE" in
+            core) scripts="verify-document-hydration verify-app-r1 verify-compassion-assessments verify-relationships-assessments" ;;
+            extended) scripts="verify-document-hydration verify-mhc-sf verify-asrs6 verify-asrs6-pdf verify-personality-types verify-account-status-filters" ;;
+            *) echo "Unknown browser journey suite: $HH_TEST_SUITE" >&2; exit 1 ;;
+          esac
+          for script in $scripts; do
+            echo "BROWSER_JOURNEY_START $HH_TEST_SUITE $script"
+            if ! node "scripts/$script.mjs"; then
+              grep 'HH_APP_TEST_ERROR' /tmp/hh-app-next.log | tail -10 || true
+              exit 1
+            fi
+            echo "BROWSER_JOURNEY_PASS $HH_TEST_SUITE $script"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: app-r1-browser-synthetic-evidence-${{ matrix.browser }}
+          name: app-r1-browser-synthetic-evidence-${{ matrix.browser }}-${{ matrix.suite }}
           path: artifacts/app-r1/
           retention-days: 7
+  browser-journey-complete:
+    name: browser (${{ matrix.browser }})
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    needs: browser
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every browser and suite
+        env:
+          MATRIX_RESULT: ${{ needs.browser.result }}
+        run: test "$MATRIX_RESULT" = success

@@ -145,6 +145,19 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const action = academyActionCopy[locale];
   const items: CatalogShowcaseItem[] = [
         {
+          id: "academy-featured-principles-energywork",
+          title: locale === "ru" ? "Принципы энергетической работы" : locale === "es" ? "Principios del trabajo energético" : "Principles of Energywork",
+          subtitle: locale === "ru" ? "БЕСПЛАТНО · 3 СИСТЕМЫ РЕЙКИ" : locale === "es" ? "GRATIS · 3 SISTEMAS DE REIKI" : "FREE · 3 REIKI SYSTEMS",
+          description: locale === "ru"
+            ? "Вводный курс и бесплатная инициация первой ступени в Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки — изучите и выберите свою систему."
+            : locale === "es"
+              ? "Introducción al trabajo energético y acceso gratuito al Nivel 1 de Reiki Yggdrasil, Tantra Reiki y Kundalini Reiki."
+              : "Meet the principles of energywork and begin a free first-level introduction to Reiki Yggdrasil, Tantra Reiki or Kundalini Reiki.",
+          href: "/" + locale + "/academy/principles-of-energywork",
+          image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
+          actionLabel: locale === "ru" ? "Начать бесплатный курс" : locale === "es" ? "Empezar gratis" : "Start the free course",
+        },
+        {
           id: "academy-featured-yggdrasil",
           title: locale === "ru" ? "Дао Рейки Иггдрасиль" : "DAO Reiki Yggdrasil",
           subtitle: action.featured,
@@ -238,13 +251,22 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
       const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : id === "reiki/kundalini-reiki" ? 2 : 3;
       return rank(a.logicalId) - rank(b.logicalId);
     });
-  const items = records.map((record, index) => ({
+  const items: AcademyItem[] = records.map((record, index) => ({
     key: record.logicalId,
     title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
     image: recordImage(record, index),
     meta: statusLabel(record, locale),
   }));
+  if (direction === "reiki") {
+    items.unshift({
+      key: "principles-of-energywork",
+      title: locale === "ru" ? "Принципы энергетической работы · 3 системы Рейки" : locale === "es" ? "Principios del trabajo energético · 3 Reiki" : "Principles of Energywork · 3 Reiki Systems",
+      href: "/" + locale + "/academy/principles-of-energywork",
+      image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
+      meta: locale === "ru" ? "Бесплатный вводный курс" : locale === "es" ? "Curso introductorio gratis" : "Free introductory course",
+    });
+  }
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} /><AcademyBackLink locale={locale} />
