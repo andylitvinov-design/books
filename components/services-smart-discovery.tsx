@@ -34,13 +34,13 @@ const COPY = {
     noLive:"More services will appear here as practitioners are approved.",
     resultTitle:"Your options",
     resultFor:"Your request",
-    matchIntro:"Real published services. Check practitioner details before requesting.",
-    noDirect:"There isn't a precise match in the currently published listings. Here are real pages you can explore.",
+    matchIntro:"Choose a service, view its details, or send a request.",
+    noDirect:"No services found for this topic yet. Try another area or a broader question.",
     online:"Online",
     free:"Free",
     contact:"Price on request",
     service:"Service",
-    curated:"More from Holistic House",
+    curated:"Services you can request",
     practitioner:"Practitioner",
     details:"Details",
     request:"Request",
@@ -85,13 +85,13 @@ const COPY = {
     noLive:"Новые услуги появятся здесь после модерации мастеров.",
     resultTitle:"Ваши варианты",
     resultFor:"Ваш запрос",
-    matchIntro:"Реальные опубликованные услуги. Проверьте мастера и условия перед заявкой.",
-    noDirect:"Среди опубликованных услуг нет точного совпадения. Вот существующие страницы, которые можно изучить.",
+    matchIntro:"Выберите услугу, раскройте подробности или отправьте заявку.",
+    noDirect:"Пока нет услуг по этому запросу. Попробуйте другое направление или более общий вопрос.",
     online:"Онлайн",
     free:"Бесплатно",
     contact:"Стоимость по запросу",
     service:"Услуга",
-    curated:"Ещё от Holistic House",
+    curated:"Услуги, которые можно заказать",
     practitioner:"Мастер",
     details:"Подробнее",
     request:"Оставить заявку",
@@ -136,13 +136,13 @@ const COPY = {
     noLive:"Aparecerán más servicios cuando se aprueben nuevos profesionales.",
     resultTitle:"Tus opciones",
     resultFor:"Tu búsqueda",
-    matchIntro:"Servicios publicados. Consulta los detalles antes de solicitar.",
-    noDirect:"Todavía no hay una coincidencia precisa. Estas páginas de servicios ya existen.",
+    matchIntro:"Elige un servicio, abre los detalles o envía una solicitud.",
+    noDirect:"Aún no hay servicios para este tema. Prueba otra categoría o una pregunta más amplia.",
     online:"En línea",
     free:"Gratis",
     contact:"Precio a consultar",
     service:"Servicio",
-    curated:"Más de Holistic House",
+    curated:"Servicios disponibles para solicitar",
     practitioner:"Profesional",
     details:"Ver detalles",
     request:"Solicitar",
@@ -410,7 +410,7 @@ export function ServicesSmartDiscovery({
               </div>
             </article>;
           })}
-        </div>:<p className={styles.message}>{t.noDirect}</p>}
+        </div>:editorial.length===0?<p className={styles.message}>{t.noDirect}</p>:null}
         {editorial.length>0&&<div className={styles.editorial}>
           <h3>{t.curated}</h3>
           <div className={styles.editorialList}>{editorial.map(item=>{
