@@ -9,6 +9,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
+import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
 import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
@@ -151,6 +152,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeFreeTestsBanner locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
       <HomepageTopicJourneys locale={locale} />
+      <TestSelectionCourseBanner locale={locale} />
 
       <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
         <header className="service-home-start__heading">
