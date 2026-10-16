@@ -323,7 +323,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [answers, setAnswers] = useState({})
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState('catalog')
-  const [mode, setMode] = useState(null)
+  const [mode, setMode] = useState('quick')
   const [context, setContext] = useState({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
   const [guestResult, setGuestResult] = useState(null)
   const [activePlan, setActivePlan] = useState(null)
@@ -395,7 +395,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setActive(null)
     setRun(null)
     setAnswers({})
-    setMode(null)
+    setMode('quick')
     setGuestResult(null)
     setActivePlan(null)
     setPlanResults([])
@@ -457,8 +457,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           setAnswers(existing.answers || {})
           setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
           setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, definition.questions.length - 1)))
-          setMode(null)
-          setPhase('mode')
+          setMode('quick')
+          setPhase('questions')
           return
         }
 
@@ -476,7 +476,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           setAnswers(existing.answers || {})
           setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
           setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, nextDefinition.questions.length - 1)))
-          setPhase('mode')
+          setPhase('questions')
         } else {
           await startRun(nextDefinition, plan.id)
         }
@@ -580,8 +580,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       Math.max(0, def.questions.length - 1),
     )
     setIndex(nextIndex)
-    setMode(null)
-    setPhase('mode')
+    setMode('quick')
+    setPhase('questions')
     setBusy(false)
     replaceGuestRoute({ planId: owningPlanId, runId: created.id })
   }
@@ -623,8 +623,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             Math.max(0, def.questions.length - 1),
           ),
         )
-        setMode(null)
-        setPhase('mode')
+        setMode('quick')
+        setPhase('questions')
         replaceGuestRoute({planId: currentPlan?.id, runId: existing.id})
       } else {
         await startRun(def, currentPlan?.id)
@@ -669,7 +669,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setRun(null)
     setActivePlan(null)
     setAnswers({})
-    setMode(null)
+    setMode('quick')
     setPendingGuestDefinitions(definitions)
     setActive(definitions[0].key)
     setGuestResult(null)
@@ -885,7 +885,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       } else {
         setActive(null)
         setRun(null)
-        setMode(null)
+        setMode('quick')
         setPhase('catalog')
       }
     } else {
@@ -1054,7 +1054,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setRun(null)
     setAnswers({})
     setIndex(0)
-    setMode(null)
+    setMode('quick')
     setPhase('catalog')
     setContext({ current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
     setGuestResult(null)
@@ -1147,37 +1147,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           <button type="button" disabled={busy} onClick={resetToCatalog}>{c.back}</button>
         </div>}
 
-        {['mode', 'questions'].includes(phase) && definition && run && hasTraumaAdministration(definition) && !traumaContextReady(definition, run.context || {}) && (
+        {phase === 'questions' && definition && run && hasTraumaAdministration(definition) && !traumaContextReady(definition, run.context || {}) && (
           <TraumaFrontMatter definition={definition} context={context} onChange={setContext}
             onContinue={saveTraumaContext} onExit={resetToCatalog} busy={busy || recoveryPending} error={error} />
         )}
 
-        {phase === 'mode' && definition && run && traumaContextReady(definition, run.context || {}) && (
-          <div className="cabinet-guest-runner hh-test-mode-picker">
-            <div className="hh-test-mode-intro">
-              <p className="cabinet-test-progress">{definitionTitle(definition, locale)}</p>
-              <h3>{c.modeTitle}</h3>
-              <p>{c.modeText}</p>
-            </div>
-            <div className="hh-test-mode-grid">
-              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('quick'); setPhase('questions') }}>
-                <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
-                <span><small>{c.quick} · ~{quickMinutes} {timeUnit}</small><strong>{c.quickTitle}</strong><em>{c.quickText}</em></span>
-              </button>
-              <button className="hh-test-mode-card" type="button" onClick={() => { setMode('guided'); setPhase('questions') }}>
-                <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
-                <span><small>{c.guided} · ~{guidedMinutes} {timeUnit}</small><strong>{c.guidedTitle}</strong><em>{c.guidedText}</em></span>
-              </button>
-            </div>
-            <p className="cabinet-test-note hh-test-mode-same">{c.sameModeResult}</p>
-            <div className="cabinet-test-actions">
-              <button type="button" onClick={resetToCatalog}>{c.back}</button>
-            </div>
-          </div>
-        )}
-
         {phase === 'questions' && definition && question && run && traumaContextReady(definition, run.context || {}) && (
-          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode || 'guided'}`}>
+          <div className={`cabinet-guest-runner cabinet-guest-runner--${mode}`}>
             <div className="hh-runner-topline">
               <p className="cabinet-test-progress">
                 {mode === 'quick'

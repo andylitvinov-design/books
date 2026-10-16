@@ -149,7 +149,7 @@ const advancedLevelPhotos: Record<number, string> = {
   7: "/academy/reiki-yggdrasil/source/slavic-tradition.png",
 };
 
-const basicLevelIntroductions: Record<PublicLocale, Record<number, string>> = {
+export const basicLevelIntroductions: Record<PublicLocale, Record<number, string>> = {
   en: {
     1: "Begin with four foundation attunements: healing practices, intuition, protection and working with a personal situation.",
     2: "Explore cleansing practices, charging objects, releasing unwanted connections and symbolic work with the money stream.",
@@ -395,7 +395,7 @@ function StepDetail({ locale, level, step }: { locale: PublicLocale; level: Curr
   );
 }
 
-export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { locale: PublicLocale; levelId?: number; showSupport?: boolean }) {
+export function YggdrasilCurriculum({ locale, levelId, showSupport = true, visualTheme }: { locale: PublicLocale; levelId?: number; showSupport?: boolean; visualTheme?: "navy" }) {
   const text = copy[locale];
   const allLevels = curriculum.levels as CurriculumLevel[];
   const levels = levelId ? allLevels.filter((level) => level.id === levelId) : allLevels;
@@ -409,7 +409,7 @@ export function YggdrasilCurriculum({ locale, levelId, showSupport = true }: { l
   const englishVideosCount = levels.reduce((sum, level) => sum + level.steps.reduce((inner, step) => inner + (yggdrasilEnglishStepVideos[step.id]?.length ?? 0), 0), 0);
 
   return (
-    <section className={visualStyles.curriculum} aria-labelledby="yggdrasil-curriculum-title">
+    <section className={visualStyles.curriculum} data-visual-theme={visualTheme} aria-labelledby="yggdrasil-curriculum-title">
       <div className={visualStyles.curriculumIntro}>
         <p className="homeopathy-kicker">{selected ? (locale === "ru" ? "Курс без лишних кликов" : locale === "es" ? "Curso sin clics innecesarios" : "Course without extra clicks") : text.eyebrow}</p>
         <h2 id="yggdrasil-curriculum-title">{selected ? (locale === "ru" ? "Что входит в курс" : locale === "es" ? "Qué incluye el curso" : "What the course includes") : text.title}</h2>

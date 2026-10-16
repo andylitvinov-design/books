@@ -37,16 +37,18 @@ const copy = {
     freeFlag: "FREE INTRODUCTORY OFFER", freeTitle: "Your first step, free",
     freeText: "Read the materials, prepare short answers to the seven questions and ask about a teacher-guided introductory Level 1 initiation.",
     freePrice: "€0", freeButton: "How to start for free",
-    personalFlag: "ONE-TO-ONE WITH ANDREY", personalTitle: "Personal initiation",
-    personalText: "A dedicated individual session to learn the first-level themes, discuss your questions and arrange the initiation directly with Andrey.",
+    personalFlag: "ONE-TO-ONE ONLINE", personalTitle: "Personal distance initiation",
+    personalText: "A personal online session with Andrey to discuss Level 1 and arrange your individual initiation.",
     personalButton: "Enquire in WhatsApp",
     availability: "Sessions and free introductory availability are confirmed personally. Reading or submitting answers does not itself grant an initiation.",
     guideEyebrow: "03 / YOUR PATH", guideTitle: "How to receive Level 1 for free",
-    guideLead: "Three simple steps. Explore the practice, read the course and send your answers before agreeing a session with Andrey.",
+    guideLead: "Five steps: watch the practice, share your impressions, study the materials and answer the questions. A personal distance initiation is optional.",
     guideSteps: [
-      { title: "Watch the video", text: "Get to know the original Tantra Reiki practice with Andrey." },
-      { title: "Read the materials", text: "Explore the first level and the complete nine-level path." },
-      { title: "Answer seven questions", text: "Share short answers and arrange your teacher-guided initiation." },
+      { title: "Watch the video", text: "Explore the original Tantra Reiki practice with Andrey." },
+      { title: "Write a short review", text: "Share whether you could tune in to the flow and what you experienced." },
+      { title: "Read the materials", text: "Learn about Level 1 and all nine stages." },
+      { title: "Answer 7 questions", text: "Prepare seven short answers to the course questions." },
+      { title: "Book a personal distance initiation", text: "Optional online one-to-one initiation with Andrey · €50 / 30 min." },
     ],
     questionsEyebrow: "06 / YOUR QUESTIONS", questionsTitle: "Seven questions before your initiation",
     questionsLead: "Read Andrey's original Tantra Reiki materials and answer in your own words. One to three sentences per question is enough.",
@@ -97,16 +99,18 @@ const copy = {
     freeFlag: "БЕСПЛАТНОЕ ЗНАКОМСТВО", freeTitle: "Первая ступень в подарок",
     freeText: "Изучите материалы, подготовьте ответы на семь вопросов и запросите бесплатную вводную инициацию с преподавателем.",
     freePrice: "0 €", freeButton: "Как получить бесплатно",
-    personalFlag: "ЛИЧНО С АНДРЕЕМ", personalTitle: "Личная инициация",
-    personalText: "Индивидуальное занятие, чтобы познакомиться с темами первой ступени, задать вопросы и пройти инициацию с Андреем.",
+    personalFlag: "ИНДИВИДУАЛЬНО ОНЛАЙН", personalTitle: "Личная дистанционная инициация",
+    personalText: "Личная онлайн-встреча с Андреем, чтобы обсудить первую ступень и пройти индивидуальную инициацию.",
     personalButton: "Записаться через WhatsApp",
     availability: "Возможность бесплатной встречи, даты и формат подтверждает Андрей. Чтение материалов и ответы на вопросы сами по себе не являются инициацией.",
     guideEyebrow: "03 / КАК ПОЛУЧИТЬ", guideTitle: "Как получить Тантра Рейки бесплатно",
-    guideLead: "Всего три шага: познакомьтесь с практикой, прочитайте материалы и отправьте ответы, чтобы согласовать инициацию с Андреем.",
+    guideLead: "Пять шагов: посмотрите видео, поделитесь ощущениями, изучите материалы и ответьте на вопросы. Личная дистанционная инициация — по желанию.",
     guideSteps: [
       { title: "Посмотрите видео", text: "Познакомьтесь с оригинальной практикой Тантра Рейки от Андрея." },
+      { title: "Напишите отзыв", text: "Расскажите, удалось ли настроиться на поток и что вы ощутили." },
       { title: "Прочитайте материалы", text: "Изучите первую ступень и структуру всех девяти ступеней." },
-      { title: "Ответьте на 7 вопросов", text: "Отправьте короткие ответы и согласуйте инициацию." },
+      { title: "Ответьте на 7 вопросов", text: "Подготовьте короткие ответы по материалам системы." },
+      { title: "Запишитесь на личную дистанционную инициацию", text: "По желанию: индивидуальная онлайн-инициация с Андреем · €50 / 30 мин." },
     ],
     questionsEyebrow: "06 / ВОПРОСЫ", questionsTitle: "7 вопросов перед инициацией",
     questionsLead: "Прочитайте авторские материалы о Тантра Рейки и ответьте своими словами. Достаточно 1–3 предложений на каждый вопрос.",
@@ -157,16 +161,18 @@ const copy = {
     freeFlag: "INTRODUCCIÓN GRATUITA", freeTitle: "Tu primer nivel, gratis",
     freeText: "Lee los materiales, prepara respuestas breves a siete preguntas y solicita una iniciación introductoria guiada.",
     freePrice: "0 €", freeButton: "Cómo empezar gratis",
-    personalFlag: "EN PERSONA CON ANDREY", personalTitle: "Iniciación personal",
-    personalText: "Una sesión individual para conocer los temas del primer nivel, resolver dudas y acordar la iniciación con Andrey.",
+    personalFlag: "INDIVIDUAL ONLINE", personalTitle: "Iniciación personal a distancia",
+    personalText: "Una sesión individual online para conversar sobre el primer nivel y acordar la iniciación con Andrey.",
     personalButton: "Pedir por WhatsApp",
     availability: "La disponibilidad y la fecha se confirman personalmente. Leer o enviar respuestas no constituye una iniciación.",
     guideEyebrow: "03 / CÓMO EMPEZAR", guideTitle: "Cómo recibir Tantra Reiki gratis",
-    guideLead: "Solo tres pasos: mira el vídeo, lee los materiales y comparte las siete respuestas para acordar una sesión con Andrey.",
+    guideLead: "Cinco pasos: mira la práctica, comparte tus impresiones, lee los materiales y responde las preguntas. La iniciación personal a distancia es opcional.",
     guideSteps: [
       { title: "Mira el vídeo", text: "Conoce la práctica original de Tantra Reiki con Andrey." },
-      { title: "Lee los materiales", text: "Explora el primer nivel y el camino de los nueve niveles." },
-      { title: "Responde 7 preguntas", text: "Comparte respuestas breves y acuerda tu iniciación." },
+      { title: "Escribe una reseña", text: "Cuenta si pudiste conectar con el flujo y qué experimentaste." },
+      { title: "Lee los materiales", text: "Explora el primer nivel y las nueve etapas." },
+      { title: "Responde 7 preguntas", text: "Prepara respuestas breves sobre los materiales." },
+      { title: "Reserva una iniciación personal a distancia", text: "Opcional: iniciación individual online con Andrey · €50 / 30 min." },
     ],
     questionsEyebrow: "06 / PREGUNTAS", questionsTitle: "7 preguntas antes de tu iniciación",
     questionsLead: "Lee los materiales originales de Andrey. Responde con tus palabras; bastan de 1 a 3 frases por pregunta.",
@@ -204,6 +210,13 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const root = "/" + locale + "/academy/reiki/tantra-reiki";
   const video = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
+  const guideLinks = [
+    "#tantra-practice-video",
+    tantraInitiationWhatsAppUrl(locale, "feedback"),
+    "#course-materials",
+    "#study-questions",
+    tantraInitiationWhatsAppUrl(locale, "personal"),
+  ];
   const links = [
     root + "#tantra-levels",
     root + "#tantra-original-author-research",
@@ -275,7 +288,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.guideEyebrow}</p><h2 id="tantra-how-title">{t.guideTitle}</h2><p>{t.guideLead}</p></header>
           <div className={styles.howGrid}>
             {t.guideSteps.map((step, index) => (
-              <a key={step.title} className={styles.howCard} href={["#tantra-practice-video", "#course-materials", "#study-questions"][index]}>
+              <a key={step.title} className={styles.howCard} data-personal={index === 4} href={guideLinks[index]} target={index === 1 || index === 4 ? "_blank" : undefined} rel={index === 1 || index === 4 ? "noopener noreferrer" : undefined}>
                 <span className={styles.howNumber}>{String(index + 1).padStart(2, "0")}</span>
                 <h3>{step.title}</h3><p>{step.text}</p>
                 <ArrowRight size={18} aria-hidden="true" />

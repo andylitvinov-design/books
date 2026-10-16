@@ -225,14 +225,14 @@ const landing = {
     personalTitle: "Personal Level 1 initiation", personalText: "An individual 60-minute session with Andrey, with time for questions and personal guidance. Availability is confirmed before booking.",
     personalAction: "Request a personal session", confirmation: "Initiations are teacher-led, subject to confirmation; reading alone does not grant an attunement.",
     questionNumber: "05 / 06 · SEVEN QUESTIONS", questionsIntro: "Read the seven questions and prepare your own answers to request the free introduction. This is a preparation exercise, not a clinical test.",
-    answersAction: "Send my answers", videoNumber: "04 / 06 · WATCH",
+    answersAction: "Request free Level 1", videoNumber: "04 / 06 · WATCH",
     videoHeading: "Two videos about Reiki Yggdrasil", videoText: "Watch the original Level 1 introduction and my Reiki Yggdrasil meditation. Continue with the two course links before answering.",
     videoLanguage: "Original video · English", materialsNumber: "05 / 06 · EXPLORE",
     materialsTitle: "Books, lessons & course levels", materialsLead: "Everything is available inside Holistic House. Explore the foundations now, or continue into the complete course.",
     materialNames: ["Basic Course book", "Level 1 lessons & practices", "All five basic levels", "Explore all 7 modules"],
     materialDetails: ["Read the full introduction", "Start with the first four attunements", "Study the foundation at your pace", "See the full pathway"],
     faqLabel: "Frequently asked questions", finalNumber: "06 / 06 · REGISTER",
-    finalTitle: "Choose your next step", finalLead: "One simple form for the free introductory initiation, personal training, the PDF guide or sharing your seven answers.",
+    finalTitle: "Choose your next step", finalLead: "Choose a free introductory initiation, a personal session or the course PDF. No name, email or uploaded answers are required.",
     back: "Back to Reiki Yggdrasil",
   },
   ru: {
@@ -266,14 +266,14 @@ const landing = {
     personalTitle: "Личная инициация 1-й ступени", personalText: "60 минут с Андреем, ответы на вопросы и индивидуальное сопровождение. Дату и доступность нужно согласовать заранее.",
     personalAction: "Записаться на личную инициацию", confirmation: "Настройка передаётся преподавателем после подтверждения даты; одно чтение материалов не является инициацией.",
     questionNumber: "05 / 06 · СЕМЬ ВОПРОСОВ", questionsIntro: "Подготовьте ответы на семь вопросов своими словами, чтобы запросить бесплатный вводный формат. Это учебная подготовка, а не медицинский тест.",
-    answersAction: "Отправить ответы", videoNumber: "04 / 06 · ВИДЕО",
+    answersAction: "Запросить 1-ю ступень бесплатно", videoNumber: "04 / 06 · ВИДЕО",
     videoHeading: "Два моих видео по Рейки Иггдрасиль", videoText: "Посмотрите прежнее вводное видео по первой ступени и мою медитацию с основного лендинга. Затем откройте Базовый курс и книгу.",
     videoLanguage: "Оригинальное видео · английский", materialsNumber: "05 / 06 · МАТЕРИАЛЫ",
     materialsTitle: "Книги, уроки и ступени", materialsLead: "Учебные материалы находятся на Holistic House. Можно читать первый уровень или изучать всю программу.",
     materialNames: ["Книга Базового курса", "Уроки и практики 1-й ступени", "Все пять базовых ступеней", "Все 7 модулей системы"],
     materialDetails: ["Подробное описание системы", "Четыре начальные настройки", "Полная основа обучения", "Продолжение пути"],
     faqLabel: "Частые вопросы", finalNumber: "06 / 06 · РЕГИСТРАЦИЯ",
-    finalTitle: "Как вы хотите начать?", finalLead: "Одна форма: бесплатная инициация, личная сессия, PDF-описание или отправка ответов на семь вопросов.",
+    finalTitle: "Как вы хотите начать?", finalLead: "Выберите бесплатную вводную инициацию, личную сессию или PDF. Не нужно указывать имя, email или загружать ответы.",
     back: "К программе Рейки Иггдрасиль",
   },
   es: {
@@ -305,14 +305,14 @@ const landing = {
     personalTitle: "Iniciación personal de Nivel 1", personalText: "Sesión individual de 60 minutos con Andrey, preguntas y orientación personal. La disponibilidad se confirma antes de reservar.",
     personalAction: "Solicitar sesión personal", confirmation: "La iniciación requiere confirmación y acompañamiento del profesor; la lectura por sí sola no supone una iniciación.",
     questionNumber: "05 / 06 · SIETE PREGUNTAS", questionsIntro: "Prepara tus propias respuestas a las siete preguntas para solicitar la introducción gratuita. No es una evaluación médica.",
-    answersAction: "Enviar mis respuestas", videoNumber: "04 / 06 · VÍDEO",
+    answersAction: "Solicitar Nivel 1 gratis", videoNumber: "04 / 06 · VÍDEO",
     videoHeading: "Dos vídeos sobre Reiki Yggdrasil", videoText: "Mira la introducción original al Nivel 1 y mi meditación Reiki Yggdrasil. Después explora el curso y el libro.",
     videoLanguage: "Vídeo original · inglés", materialsNumber: "05 / 06 · MATERIALES",
     materialsTitle: "Libros, lecciones y niveles", materialsLead: "Materiales disponibles en Holistic House. Empieza por las bases o explora el curso completo.",
     materialNames: ["Libro del Curso Básico", "Lecciones y prácticas del Nivel 1", "Los cinco niveles básicos", "Los 7 módulos"],
     materialDetails: ["Lee la introducción completa", "Cuatro sintonizaciones iniciales", "Explora la base del sistema", "Conoce el recorrido completo"],
     faqLabel: "Preguntas frecuentes", finalNumber: "06 / 06 · INSCRIPCIÓN",
-    finalTitle: "Elige tu próximo paso", finalLead: "Un solo formulario para la introducción gratuita, sesión personal, descarga del PDF o envío de las siete respuestas.",
+    finalTitle: "Elige tu próximo paso", finalLead: "Elige la introducción gratis, una sesión personal o el PDF. Sin nombre, correo ni carga de respuestas.",
     back: "Volver a Reiki Yggdrasil",
   },
 } as const;
@@ -446,7 +446,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
           <h2 id="yggdrasil-free-checklist">{c.checklistTitle}</h2>
           <p className={styles.sectionLead}>{t.questionsIntro}</p>
           <ol className={styles.questions}>{c.questions.map((question) => <li key={question}>{question}</li>)}</ol>
-          <a className={styles.questionsAction} href="#apply-answers">{t.answersAction}<span aria-hidden="true"> →</span></a>
+          <a className={styles.questionsAction} href="#apply-free">{t.answersAction}<span aria-hidden="true"> →</span></a>
           <details className={styles.faqDisclosure} id="learning-faq">
             <summary>{t.faqLabel} <span aria-hidden="true">＋</span></summary>
             <div className={styles.faqAnswers}>

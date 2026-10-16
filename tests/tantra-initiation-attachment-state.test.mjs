@@ -118,3 +118,26 @@ test("the site only prepares WhatsApp drafts; it never sends messages automatica
   assert.ok(!draft.includes("Ваше имя:"));
   assert.ok(!draft.includes("Email:"));
 });
+
+test("review-after-video is a distinct localized WhatsApp draft and does not send automatically", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const url = new URL(tantraInitiationWhatsAppUrl(locale, "feedback"));
+    assert.equal(url.origin, "https://wa.me");
+    assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
+    const message = url.searchParams.get("text");
+    assert.ok(message.includes("Tantra Reiki") || message.includes("Тантра Рейки"));
+    assert.match(message, /review|impressions|practice|отзыв|impresiones|práctica/);
+    assert.match(message, /flow|поток|flujo/);
+    assert.ok(message.includes("/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
+    assert.notEqual(url.href, render(locale).links[2].props.href);
+  }
+});
+
+test("the fifth step's personal distance initiation is optional and has its own enquiry", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const message = new URL(tantraInitiationWhatsAppUrl(locale, "personal")).searchParams.get("text");
+    assert.match(message, /online|дистанционную|distancia/);
+    assert.ok(message.includes("€50 / 30"));
+    assert.notEqual(message, new URL(tantraInitiationWhatsAppUrl(locale, "free")).searchParams.get("text"));
+  }
+});
