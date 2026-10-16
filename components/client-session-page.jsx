@@ -17,7 +17,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
-  const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
+  const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education',library=item.role==='library'
   const isMov=isVideo&&item.mime==='video/quicktime'
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
@@ -64,7 +64,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
       <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-        <small>{educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+        <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
           isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     </div>
     {!source?(isVideo?
@@ -96,6 +96,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
   const practices=Array.isArray(plan.practices)?plan.practices:[]
   const resources=Array.isArray(plan.resources)?plan.resources:[]
+  const libraryMaterials=Array.isArray(plan.materials)?plan.materials:[]
   const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
   const topYoutubeResources=youtubeResources.filter(resource=>resource.placement!=='materials')
   const materialsYoutubeResources=youtubeResources.filter(resource=>resource.placement==='materials')
@@ -335,6 +336,37 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </a>)}
       {!hasMaterials&&<p className={styles.reportMaterialsEmpty}>
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
+    </section>}
+
+    {libraryMaterials.length>0&&<section id="session-library-materials" className={styles.clientSection}
+      aria-label={ru?'Материалы к вашей консультации':'Materials for your consultation'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FolderOpen size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ПОДОБРАНО ДЛЯ ВАС':'SELECTED FOR YOU'}</span>
+          <h2>{ru?'Материалы к отчёту':'Materials for your report'}</h2></div>
+      </header>
+      <p className={styles.sectionIntro}>{ru?
+        'Дополнительные фото и видео, которые специалист выбрал специально к этому отчёту.':
+        'Additional photos and videos your practitioner selected for this report.'}</p>
+      <div className={styles.reportLibraryList}>
+        {libraryMaterials.map(item=>item.kind==='youtube'
+          ?<SessionYouTubePlayer key={item.id} title={item.title} description={item.description}
+            url={item.url} locale={locale}/>
+          :item.kind==='image'
+            ?<figure className={styles.sessionPhotoCard} key={item.id}>
+              <a href={assetBase+encodeURIComponent(item.id)} target="_blank"
+                rel="noopener noreferrer" aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={assetBase+encodeURIComponent(item.id)} alt={item.title}
+                  loading="lazy" decoding="async"/>
+              </a>
+              <figcaption>{item.title}</figcaption>
+              {item.description&&<p>{item.description}</p>}
+            </figure>
+            :<PrivatePlayer key={item.id}
+              item={{assetId:item.id,kind:'video',mime:item.mime,title:item.title,role:'library',transcript:''}}
+              session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+      </div>
     </section>}
 
     <footer className={styles.clientFooter}>
