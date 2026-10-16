@@ -55,7 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const releaseDate = new Date('2026-10-16T00:00:00.000Z');
   return [...all.values()].map(entry => {
     const pathname = new URL(entry.url).pathname;
-    const match = pathname.match(/^\\/(en|ru|es)(\\/.*)?$/);
+    const match = pathname.match(/^\/(en|ru|es)(\/.*)?$/);
     const suffix = match ? (match[2] || '') : pathname === '/' ? '' : null;
     if (suffix === null) return { ...entry, lastModified: entry.lastModified ?? releaseDate };
     const pairs = (['en', 'ru', 'es'] as const).map(locale => {
