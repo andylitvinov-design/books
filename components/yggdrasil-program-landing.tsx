@@ -275,8 +275,6 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
 
       <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
 
-      {/* Final call-to-action follows reviews and the optional Russian video archive. */}
-      <YggdrasilLeadForms locale={locale} placement="bottom" />
 
 
     </div>
