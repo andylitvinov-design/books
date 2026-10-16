@@ -64,11 +64,23 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   for (const b of boxes) {
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
-    const hittable = await page.evaluate(({x,y,width,height}) => {
-      const point = document.elementFromPoint(x + width / 2, y + height - 6);
-      return Boolean(point?.closest('a[data-contact-channel]'));
-    }, {x:b.x,y:b.y,width:b.width,height:b.height});
-    assert.ok(hittable, "Messenger button must not be obstructed by the mobile tab bar: " + name);
+    // Scroll after React's effect and CSS visibility update settle. A link can be
+    // temporarily below the fold during opening even though scrolling succeeds.
+    await page.waitForFunction(({channel,name}) => {
+      const anchor = document.querySelector('[data-contact-channel-chooser] a[data-contact-channel="' + channel + '"]');
+      if (!anchor) return false;
+      const r = anchor.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > innerHeight) return false;
+      const target = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
+      return Boolean(target?.closest('a[data-contact-channel="' + channel + '"]'));
+    }, {channel: b === boxes[0] ? "whatsapp" : "telegram",name}, {timeout: 5000}).catch(async error => {
+      const diagnostic = await page.evaluate(() => ({
+        nav: document.querySelector('.mobile-bottom-navigation')?.getBoundingClientRect().toJSON(),
+        open: document.querySelector('[data-contact-order][aria-expanded="true"]')?.outerHTML.slice(0,250),
+        viewport: {height:innerHeight,width:innerWidth,scrollY},
+      }));
+      throw new Error("Messenger channel obstructed: " + name + " " + JSON.stringify(diagnostic) + ": " + error.message);
+    });
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));
