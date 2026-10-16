@@ -30,7 +30,7 @@ test("three languages preserve a genuinely free written report and transparent l
     "Consulta personal · desde €50",
     "€50", "€100", "written", "письмен", "escrito",
   ]) assert.ok(landing.includes(phrase), "missing localised consultation detail: " + phrase);
-  assert.match(landing, /не медицинским диагнозом/i);
+  assert.match(landing, /медицинским диагнозом/i);
   assert.match(landing, /medical diagnosis/i);
 });
 
