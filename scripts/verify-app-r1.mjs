@@ -6,7 +6,7 @@ import {createHmac} from 'node:crypto'
 import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
 import {installTestPlanNavigationDiagnostics} from './test-plan-navigation-diagnostics.mjs'
 import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
-import {testKindCardLabel} from '../lib/assessments/test-kinds.js'
+import {testKindCardLabel,testKindShortLabel} from '../lib/assessments/test-kinds.js'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -548,8 +548,9 @@ try {
  for(const card of await rankedCards.all()){
   const entry=registeredPickerEntries.get(await card.getAttribute('data-test-match'))
   assert.ok(entry,'Every displayed card must resolve to a registered explorer entry')
-  const kindLabel=testKindCardLabel(entry,'en')
-  assert.ok(kindLabel,'Every displayed card must have a source-faithful type label')
+  const kindLabel=testKindShortLabel(entry,'en')
+  const evidenceLabel=testKindCardLabel(entry,'en')
+  assert.ok(kindLabel&&evidenceLabel,'Every displayed card must have a type and a source-faithful description')
   const category=card.locator('label [data-test-kind-badge]')
   await expect(category).toHaveCount(1)
   await expect(category).toBeVisible()
@@ -557,7 +558,7 @@ try {
   await expect(category.locator('span')).toBeVisible()
   await expect(category).toHaveAttribute('data-test-kind-badge',entry.testKind)
   await expect(category.locator('span')).toHaveText(`Type: ${kindLabel}`)
-  await expect(category).toHaveAttribute('aria-label',`Type: ${kindLabel}`)
+  await expect(category).toHaveAttribute('aria-label',`Type: ${kindLabel}. ${evidenceLabel}`)
  }
  const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
  await expect(selectedSummary).toHaveCount(3)
