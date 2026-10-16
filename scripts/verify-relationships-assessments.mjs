@@ -1,3 +1,4 @@
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
  await expect(action).toHaveCount(1)
@@ -343,7 +344,7 @@ async function fill(page,d,mode,guest,locale){
  }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
+ await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
  const context=report.locator('[data-assessment-context]')
  await expect(context).toBeVisible()
  await expect(context).toContainText(locale==='ru'?'Экспериментальные авторские анкеты':'Original experimental Holistic House')
