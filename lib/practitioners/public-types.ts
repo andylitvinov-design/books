@@ -48,6 +48,9 @@ export type PublicService = {
   currency: string
   durationMinutes: number | null
   imagePath: string
+  photos: string[]
+  contacts: {whatsapp?:string;telegram?:string}
+  displayLocales: string[]
   copy: {
     title: string
     shortDescription: string

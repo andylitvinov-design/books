@@ -22,7 +22,7 @@ const AREAS={
   personal_development:['Personal development','Личностное развитие'],
 }
 const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
-const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:''}
+const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},displayLocales:['en','ru'],areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],contacts:{whatsapp:'',telegram:''}}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
   "en": {
@@ -90,6 +90,29 @@ const DASHBOARD_COPY = {
 }
 const arr=value=>Array.isArray(value)?value.join(', '):''
 const list=value=>String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
+const LISTING_LANGS={en:'English',ru:'Русский',es:'Español'}
+const LISTING_CURRENCIES=['CAD','USD','EUR','GBP','MXN','UAH','PLN','CHF','AUD']
+async function preparePublicListingPhoto(file){
+  if(!file||file.size>25_000_000||file.size<128)throw new Error('PHOTO_TOO_LARGE')
+  const url=URL.createObjectURL(file)
+  try{
+    const image=new Image()
+    image.decoding='async'
+    await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url})
+    if(!image.naturalWidth||!image.naturalHeight)throw new Error('INVALID_IMAGE')
+    const scale=Math.min(1,1400/Math.max(image.naturalWidth,image.naturalHeight))
+    const canvas=document.createElement('canvas')
+    canvas.width=Math.max(1,Math.round(image.naturalWidth*scale))
+    canvas.height=Math.max(1,Math.round(image.naturalHeight*scale))
+    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height)
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.78))
+    if(!blob||blob.size<128||blob.size>3_000_000)throw new Error('PHOTO_TOO_LARGE')
+    return blob
+  }catch(error){
+    if(error.message==='PHOTO_TOO_LARGE')throw error
+    throw new Error('PHOTO_FORMAT_NOT_SUPPORTED')
+  }finally{URL.revokeObjectURL(url)}
+}
 
 function PracticeTile({Icon,title,description,onClick,active=false}) {
   return <button type="button" className="hh-practice-tool-card" onClick={onClick} aria-pressed={active}>
@@ -304,7 +327,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           </details>
           <Services items={services} t={t} locale={locale} busy={busy} createRequest={newServiceRequest}
             onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
-            onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+            onPublish={(id,draft,expectedRevision)=>act(async()=>{
+              const saved=await practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision})
+              await practiceFetch('/services/'+saved.id,{action:'submit',expectedRevision:saved.revision})
+            })}
             onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
         </>}
         {activePanel==='clients'&&(isOwner&&accountId
@@ -341,13 +367,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 }
 
 function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
+  const ru=locale==='ru'
   const [step,setStep]=useState(practitioner?.reviewNote?1:practitioner?2:1)
   const [includeService,setIncludeService]=useState(Boolean(service)||!practitioner)
   const [profile,setProfile]=useState({...emptyProfile,...(data.suggestedProfile||{}),...(practitioner?.draftProfile||{})})
   const serviceBase=service?.draftCopy&&Object.keys(service.draftCopy).length
     ? {...emptyFreeService,...service.draftCopy,pricingMode:'free',confirmedPrice:null,currency:''}
     : service
-      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??''}
+      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})},es:{...emptyFreeService.copy.es,...(service.localizedCopy?.es||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??''}
       : emptyFreeService
   const [offer,setOffer]=useState(serviceBase)
   const setProfileValue=(k,x)=>setProfile(s=>({...s,[k]:x}))
@@ -388,18 +415,27 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
         <div><span className="hh-badge">{t.freePricing}</span><h2>{t.freeTitle}</h2><p>{t.freeLead}</p></div>
         <label className="hh-check"><input type="checkbox" checked={includeService} onChange={e=>setIncludeService(e.target.checked)}/>{t.includeFree}</label>
         {includeService&&<>
-          <label>{t.serviceTitleEn}<input required value={offer.copy.en.title} onChange={e=>setOfferCopy('en','title',e.target.value)}/></label>
-          <label>{t.serviceTitleRu}<input required value={offer.copy.ru.title} onChange={e=>setOfferCopy('ru','title',e.target.value)}/></label>
-          <label>{t.shortEn}<textarea required value={offer.copy.en.shortDescription||''} onChange={e=>setOfferCopy('en','shortDescription',e.target.value)}/></label>
-          <label>{t.shortRu}<textarea required value={offer.copy.ru.shortDescription||''} onChange={e=>setOfferCopy('ru','shortDescription',e.target.value)}/></label>
-          <label>{t.descEn}<textarea value={offer.copy.en.description||''} onChange={e=>setOfferCopy('en','description',e.target.value)}/></label>
-          <label>{t.descRu}<textarea value={offer.copy.ru.description||''} onChange={e=>setOfferCopy('ru','description',e.target.value)}/></label>
-          <label>{t.area}<select value={offer.areaKey} onChange={e=>setOfferValue('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
-          <label>{t.offeringType}<select value={offer.offeringType} onChange={e=>setOfferValue('offeringType',e.target.value)}><option value="session">Session</option><option value="assessment">Assessment</option></select></label>
-          <label>{t.delivery}<select value={offer.deliveryFormat} onChange={e=>setOfferValue('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
-          <label>{t.location}<input value={offer.locationLabel||''} onChange={e=>setOfferValue('locationLabel',e.target.value)}/></label>
-          <label>{t.languages}<input value={arr(offer.languages)} onChange={e=>setOfferValue('languages',list(e.target.value))}/></label>
-          <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={e=>setOfferValue('durationMinutes',e.target.value)}/></label>
+          <fieldset className="hh-listing-languages"><legend>{ru?'На каких языках показать':'Listing display languages'}</legend>
+            <div className="hh-listing-lang-options">{Object.entries(LISTING_LANGS).map(([lang,name])=><label className="hh-check" key={lang}>
+              <input type="checkbox" checked={(offer.displayLocales||['en','ru']).includes(lang)} onChange={event=>{
+                const existing=offer.displayLocales||['en','ru']
+                const next=event.target.checked?[...new Set([...existing,lang])]:existing.filter(code=>code!==lang)
+                if(next.length)setOfferValue('displayLocales',next)
+              }}/>{name}
+            </label>)}</div>
+          </fieldset>
+          {(offer.displayLocales||['en','ru']).map(lang=><section key={lang} className="hh-listing-onboarding-language">
+            <h4>{LISTING_LANGS[lang]}</h4>
+            <label>{ru?'Название':'Title'} {lang.toUpperCase()}<input required maxLength="160" value={offer.copy[lang]?.title||''} onChange={event=>setOfferCopy(lang,'title',event.target.value)}/></label>
+            <label>{ru?'Краткая польза':'Short benefit'} {lang.toUpperCase()}<textarea required maxLength="500" value={offer.copy[lang]?.shortDescription||''} onChange={event=>setOfferCopy(lang,'shortDescription',event.target.value)}/></label>
+            <label>{ru?'Подробности':'Details'} {lang.toUpperCase()}<textarea maxLength="4000" value={offer.copy[lang]?.description||''} onChange={event=>setOfferCopy(lang,'description',event.target.value)}/></label>
+          </section>)}
+          <label>{t.area}<select value={offer.areaKey} onChange={event=>setOfferValue('areaKey',event.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
+          <label>{t.offeringType}<select value={offer.offeringType} onChange={event=>setOfferValue('offeringType',event.target.value)}><option value="session">Session</option><option value="assessment">Assessment</option></select></label>
+          <label>{t.delivery}<select value={offer.deliveryFormat} onChange={event=>setOfferValue('deliveryFormat',event.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
+          <label>{t.location}<input value={offer.locationLabel||''} onChange={event=>setOfferValue('locationLabel',event.target.value)}/></label>
+          <label>{t.languages}<input value={Array.isArray(offer.languages)?arr(offer.languages):offer.languages||''} onChange={event=>setOfferValue('languages',event.target.value)}/></label>
+          <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={event=>setOfferValue('durationMinutes',event.target.value)}/></label>
         </>}
         {!includeService&&<p className="hh-notice">{t.skipFree}</p>}
         <div className="hh-actions"><button type="button" disabled={busy} onClick={()=>setStep(1)}>{t.back}</button><button type="button" disabled={busy} onClick={saveDraft}>{t.saveDraft}</button><button className="hh-primary" disabled={busy}>{includeService?t.submitTogether:t.submitProfile}</button></div>
@@ -432,7 +468,7 @@ function Credentials({items,t,busy,onCreate,onDelete}){
   <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onCreate({...v,expiresOn:v.expiresOn||null});setV({title:'',issuer:'',jurisdiction:'',reference:'',public:true,expiresOn:''})}}><h3>{t.add}</h3>
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
-function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause}){
+function Services({items,t,locale,busy,createRequest=0,onSave,onPublish,onPause}){
   const ru=locale==='ru'
   const [creating,setCreating]=useState(items.length===0)
   const [status,setStatus]=useState('all')
@@ -467,13 +503,13 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
     </div>
     <p className="hh-practice-services-count" role="status">{ru?'Показано':'Showing'} {visible.length} / {items.length}</p>
     {creating&&<ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
-      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />}
+      onSave={onSave} onPublish={onPublish} onPause={onPause} />}
     {visible.map(item=><details key={item.id+':'+item.revision} className="hh-practice-service-row">
       <summary>
         <span className="hh-practice-service-row-main">
-          <span className="hh-practice-service-symbol" aria-hidden="true"><Leaf /></span>
+          <span className="hh-practice-service-symbol" aria-hidden="true">{item.photos?.[0]?<img src={item.photos[0]} alt="" loading="lazy"/>:<Leaf />}</span>
           <span className="hh-practice-service-row-description">
-            <strong>{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
+            <strong>{item.localizedCopy?.[locale]?.title||item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
             <small>{item.deliveryFormat==='in_person'?(ru?'Лично':'In person'):item.deliveryFormat==='hybrid'?(ru?'Онлайн или лично':'Online or in person'):(ru?'Онлайн':'Online')}{item.durationMinutes?' · '+item.durationMinutes+' min':''}</small>
             <small className="hh-practice-service-price">{priceLabel(item)}</small>
           </span>
@@ -481,7 +517,7 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
         <span className="hh-practice-service-row-meta" data-status={item.status}>{statusLabel(item.status)}</span>
         <ChevronRight className="hh-practice-service-chevron" aria-hidden="true"/>
       </summary>
-      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
+      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onPublish={onPublish} onPause={onPause}/>
     </details>)}
     {items.length===0&&!creating&&<div className="hh-practice-empty-state">
       <p>{ru?'Пока нет услуг. Создайте своё первое предложение.':'No services yet. Add your first offer.'}</p>
@@ -490,42 +526,189 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
     {items.length>0&&!visible.length&&<p role="status" className="hh-fine">{ru?'Услуг с таким статусом нет.':'No services with this status.'}</p>}
   </section>
 }
-function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
-  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})}},areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||''}:emptyService
-  const [v,setV]=useState(base),set=(k,x)=>setV(s=>({...s,[k]:x})),setCopy=(lang,k,x)=>setV(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
-  return <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onSave(item?.id||null,{...v,languages:Array.isArray(v.languages)?v.languages:list(v.languages),confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),currency:['free','contact'].includes(v.pricingMode)?'':v.currency,durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)},item?.revision)}}><div className="hh-actions"><h3>{item?(item.copy?.title||t.services):t.add}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>{item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
-    <label>{t.serviceTitleEn}<input required value={v.copy.en.title} onChange={e=>setCopy('en','title',e.target.value)}/></label><label>{t.serviceTitleRu}<input required value={v.copy.ru.title} onChange={e=>setCopy('ru','title',e.target.value)}/></label>
-    <label>{t.shortEn}<textarea required value={v.copy.en.shortDescription||v.copy.en.description} onChange={e=>setCopy('en','shortDescription',e.target.value)}/></label><label>{t.shortRu}<textarea required value={v.copy.ru.shortDescription||v.copy.ru.description} onChange={e=>setCopy('ru','shortDescription',e.target.value)}/></label>
-    <details className="hh-practice-advanced-copy">
-      <summary>{locale==='ru'?'Подробные описания · необязательно':'Full descriptions · optional'}</summary>
-      <label>{t.descEn}<textarea value={v.copy.en.description} onChange={e=>setCopy('en','description',e.target.value)}/></label>
-      <label>{t.descRu}<textarea value={v.copy.ru.description} onChange={e=>setCopy('ru','description',e.target.value)}/></label>
-    </details>
-    <label>{t.area}<select value={v.areaKey} onChange={e=>set('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
-    <label>{t.offeringType}<select value={v.offeringType||'session'} onChange={e=>set('offeringType',e.target.value)}>
-      {[
-        ['session',locale==='ru'?'Личная консультация':'Personal session'],
-        ['intro',locale==='ru'?'Знакомство / вводная встреча':'Intro session'],
-        ['assessment',locale==='ru'?'Обзор / диагностика ресурсов':'Assessment / review'],
-        ['group',locale==='ru'?'Групповая сессия':'Group session'],
-        ['workshop',locale==='ru'?'Практикум / мастер-класс':'Workshop'],
-        ['course',locale==='ru'?'Курс':'Course'],
-        ['package',locale==='ru'?'Пакет консультаций':'Session package'],
-        ['event',locale==='ru'?'Мероприятие':'Event'],
-      ].map(([key,label])=><option key={key} value={key}>{label}</option>)}
-    </select></label>
-    <label>{t.delivery}<select value={v.deliveryFormat} onChange={e=>set('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
-    <label>{t.location}<input value={v.locationLabel||''} onChange={e=>set('locationLabel',e.target.value)}/></label><label>{t.languages}<input value={arr(v.languages)} onChange={e=>set('languages',list(e.target.value))}/></label><label>{t.duration}<input type="number" min="5" max="1440" value={v.durationMinutes??''} onChange={e=>set('durationMinutes',e.target.value)}/></label>
-    <label>{t.pricing}<select value={v.pricingMode} onChange={e=>set('pricingMode',e.target.value)}><option value="free">{t.freePricing}</option><option value="contact">{locale==='ru'?'Стоимость по запросу':'Price on request'}</option><option value="fixed">{locale==='ru'?'Точная стоимость':'Fixed price'}</option><option value="from">{locale==='ru'?'Цена от':'Starting from'}</option></select></label>
-    {!['free','contact'].includes(v.pricingMode)&&<>
-      <label>{locale==='ru'?'Стоимость услуги':'Service price'}
-        <input type="number" min="0" step="0.01" required value={v.confirmedPrice??''} onChange={e=>set('confirmedPrice',e.target.value)}/>
+function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
+  const ru=locale==='ru'
+  const published=item?{
+    copy:item.localizedCopy||{},displayLocales:item.displayLocales||['en','ru'],
+    areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,
+    locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,
+    confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',
+    durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||'',
+    photos:item.photos||[],contacts:item.contacts||{}
+  }:{}
+  const draft=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:published
+  const initial={...emptyService,...draft,
+    copy:Object.fromEntries(Object.keys(LISTING_LANGS).map(lang=>[lang,{...emptyService.copy[lang],...(draft.copy?.[lang]||{})}])),
+    displayLocales:draft.displayLocales||['en','ru'],photos:draft.photos||[],
+    contacts:{...emptyService.contacts,...(draft.contacts||{})}}
+  const [v,setV]=useState(initial)
+  const [editingLocale,setEditingLocale]=useState(v.displayLocales[0]||'en')
+  const [sourceLocale,setSourceLocale]=useState(v.displayLocales[0]||'en')
+  const [photoBusy,setPhotoBusy]=useState(false)
+  const [translationBusy,setTranslationBusy]=useState(false)
+  const [formError,setFormError]=useState('')
+  const [info,setInfo]=useState('')
+  const set=(key,value)=>setV(previous=>({...previous,[key]:value}))
+  const setCopy=(lang,key,value)=>setV(previous=>({...previous,copy:{...previous.copy,[lang]:{...previous.copy[lang],[key]:value}}}))
+  const normalized=()=>({...v,
+    languages:Array.isArray(v.languages)?v.languages:list(v.languages),
+    confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),
+    currency:['free','contact'].includes(v.pricingMode)?'':v.currency,
+    durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)
+  })
+  function toggleLanguage(lang,enabled){
+    const next=enabled?[...new Set([...(v.displayLocales||[]),lang])]:v.displayLocales.filter(code=>code!==lang)
+    if(!next.length)return
+    set('displayLocales',next)
+    if(!next.includes(editingLocale))setEditingLocale(next[0])
+  }
+  async function uploadPhoto(event){
+    const file=event.target.files?.[0]
+    event.target.value=''
+    if(!file||(v.photos||[]).length>=5)return
+    setPhotoBusy(true);setFormError('');setInfo('')
+    try{
+      const blob=await preparePublicListingPhoto(file)
+      const data=new FormData()
+      data.append('photo',blob,'listing.jpg')
+      const response=await fetch('/api/app/practice/photos',{method:'POST',credentials:'same-origin',body:data})
+      const json=await response.json().catch(()=>({}))
+      if(!response.ok||!json.url)throw new Error(json.error||'PHOTO_UPLOAD_UNAVAILABLE')
+      setV(previous=>({...previous,photos:[...(previous.photos||[]),json.url].slice(0,5)}))
+      setInfo(ru?'Фото добавлено. Сохраните услугу.':'Photo added. Save the service.')
+    }catch(error){setFormError(error.message||'PHOTO_UPLOAD_UNAVAILABLE')}
+    finally{setPhotoBusy(false)}
+  }
+  async function translate(target){
+    if(sourceLocale===target)return
+    setTranslationBusy(true);setFormError('');setInfo('')
+    try{
+      const response=await fetch('/api/app/practice/translate',{
+        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({source:sourceLocale,target,copy:v.copy[sourceLocale]})
+      })
+      const json=await response.json().catch(()=>({}))
+      if(!response.ok||!json.copy)throw new Error(json.error||'TRANSLATION_UNAVAILABLE')
+      setV(previous=>({...previous,copy:{...previous.copy,[target]:json.copy}}))
+      setInfo(ru?'Перевод добавлен. Проверьте его перед публикацией.':'Translation added. Review it before publication.')
+    }catch(error){setFormError(error.message==='TRANSLATION_NOT_ENABLED'?(ru?'Автоперевод пока не подключён. Заполните перевод вручную.':'Automatic translation is not configured yet. You can write the translation manually.'):(error.message||'TRANSLATION_UNAVAILABLE'))}
+    finally{setTranslationBusy(false)}
+  }
+  function publish(){
+    setFormError('')
+    if(!v.displayLocales.length||v.displayLocales.some(lang=>!v.copy[lang]?.title?.trim()||!v.copy[lang]?.shortDescription?.trim())){
+      setFormError(ru?'Заполните название и краткое описание для каждого выбранного языка.':'Add a title and summary for every display language.')
+      return
+    }
+    if(!v.languages.length||(v.deliveryFormat!=='online'&&!v.locationLabel.trim())){
+      setFormError(ru?'Добавьте языки консультации и место очной встречи.':'Add spoken languages and an in-person location when applicable.')
+      return
+    }
+    onPublish(item?.id||null,normalized(),item?.revision)
+  }
+  const copy=v.copy[editingLocale]||emptyService.copy.en
+  return <form className="hh-form hh-panel hh-listing-editor" onSubmit={event=>{event.preventDefault();onSave(item?.id||null,normalized(),item?.revision)}}>
+    <div className="hh-actions"><h3>{item?(item.copy?.title||t.services):ru?'Новая услуга':'New service'}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>
+    {item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
+    <fieldset className="hh-listing-languages"><legend>{ru?'Где показывать услугу':'Display listing on site languages'}</legend>
+      <div className="hh-listing-lang-options">{Object.entries(LISTING_LANGS).map(([lang,name])=><label key={lang} className="hh-check">
+        <input type="checkbox" checked={v.displayLocales.includes(lang)} onChange={event=>toggleLanguage(lang,event.target.checked)}/>{name}
+      </label>)}</div>
+      <p className="hh-fine">{ru?'Язык показа сайта и язык консультации задаются отдельно. После проверки услуга появится только на выбранных версиях сайта.':'Site display languages and spoken languages are separate. Once approved, this service appears only on selected site versions.'}</p>
+    </fieldset>
+    <section className="hh-listing-text-section" aria-label={ru?'Тексты услуги':'Service text'}>
+      <div className="hh-listing-lang-tabs" role="tablist" aria-label={ru?'Язык текста':'Text language'}>
+        {v.displayLocales.map(lang=><button key={lang} type="button" role="tab" aria-selected={editingLocale===lang} className={editingLocale===lang?'is-active':''} onClick={()=>setEditingLocale(lang)}>{lang.toUpperCase()}</button>)}
+      </div>
+      <label>{ru?'Название услуги':'Service title'} · {editingLocale.toUpperCase()}
+        <input maxLength="160" value={copy.title||''} onChange={event=>setCopy(editingLocale,'title',event.target.value)}/>
       </label>
-      <label>{t.currency}<select value={v.currency||'CAD'} onChange={e=>set('currency',e.target.value)}>
-        <option value="CAD">CAD</option><option value="EUR">EUR</option><option value="USD">USD</option>
+      <label>{ru?'Что получит клиент — 1–2 предложения':'What the client gets — 1–2 sentences'} · {editingLocale.toUpperCase()}
+        <textarea maxLength="500" rows={3} value={copy.shortDescription||''} onChange={event=>setCopy(editingLocale,'shortDescription',event.target.value)}/>
+      </label>
+      <label>{ru?'Как проходит услуга, что включено':'How it works and what is included'}
+        <textarea maxLength="4000" rows={5} value={copy.description||''} onChange={event=>setCopy(editingLocale,'description',event.target.value)}/>
+      </label>
+      {v.displayLocales.length>1&&<div className="hh-listing-translate">
+        <span>{ru?'Помощь с переводом (при подключённом ИИ)':'Translation assistance (when AI is connected)'}</span>
+        <div className="hh-listing-translate-controls"><select aria-label={ru?'Исходный язык':'Source language'} value={sourceLocale} onChange={event=>setSourceLocale(event.target.value)}>
+          {Object.entries(LISTING_LANGS).filter(([lang])=>v.displayLocales.includes(lang)).map(([lang,name])=><option key={lang} value={lang}>{name}</option>)}
+        </select>
+        <button type="button" disabled={busy||translationBusy||sourceLocale===editingLocale} onClick={()=>translate(editingLocale)}>
+          {translationBusy?(ru?'Перевод…':'Translating…'):(ru?'Перевести в ':'Translate into ')+editingLocale.toUpperCase()}
+        </button></div>
+        <small>{ru?'По нажатию только текст услуги передаётся ИИ. Проверьте перевод.':'Only listing text is sent to AI on click. Review its output.'}</small>
+      </div>}
+    </section>
+    <section className="hh-listing-photo-section"><h4>{ru?'Фотографии услуги':'Service photos'} <small>{v.photos.length}/5</small></h4>
+      <p className="hh-fine">{ru?'Загружайте только разрешённые для публичного показа фото. Геоданные удаляются.':'Only use photos you may publish. Location metadata is removed.'}</p>
+      <div className="hh-listing-photo-grid">{v.photos.map((url,index)=><div key={url} className="hh-listing-photo-card">
+        <img src={url} alt={(ru?'Фото услуги ':'Service photo ')+(index+1)} loading="lazy"/>
+        <button type="button" onClick={()=>set('photos',v.photos.filter(photo=>photo!==url))} aria-label={(ru?'Удалить фото ':'Remove photo ')+(index+1)}>×</button>
+        {index===0&&<span>{ru?'Обложка':'Cover'}</span>}
+      </div>)}
+        {v.photos.length<5&&<label className="hh-listing-photo-add">
+          <span>{photoBusy?(ru?'Загрузка…':'Uploading…'):'+ '+(ru?'Добавить фото':'Add photo')}</span>
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={busy||photoBusy} onChange={uploadPhoto}/>
+        </label>}
+      </div>
+    </section>
+    <div className="hh-listing-field-grid">
+      <label>{t.pricing}<select value={v.pricingMode} onChange={event=>setV(previous=>({
+        ...previous,pricingMode:event.target.value,
+        currency:['fixed','from'].includes(event.target.value)?(previous.currency||'CAD'):previous.currency
+      }))}>
+        <option value="free">{t.freePricing}</option><option value="contact">{ru?'Цена по запросу':'Price on request'}</option>
+        <option value="fixed">{ru?'Фиксированная цена':'Fixed price'}</option><option value="from">{ru?'Цена от':'Starting from'}</option>
       </select></label>
-    </>}
-    <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.save}</button>{item&&<button type="button" disabled={busy} onClick={()=>onSubmit(item)}>{t.submit}</button>}{item&&['published','submitted','changes_requested'].includes(item.status)&&<button type="button" disabled={busy} onClick={()=>onPause(item)}>{t.pause}</button>}</div><p className="hh-fine">{t.moderation}</p>
+      {!['free','contact'].includes(v.pricingMode)&&<>
+        <label>{ru?'Стоимость':'Price'}<input type="number" min="0" max="100000" step="0.01" value={v.confirmedPrice??''} onChange={event=>set('confirmedPrice',event.target.value)}/></label>
+        <label>{t.currency}<select value={v.currency||'CAD'} onChange={event=>set('currency',event.target.value)}>
+          {LISTING_CURRENCIES.map(code=><option key={code} value={code}>{code}</option>)}
+        </select></label>
+      </>}
+    </div>
+    <fieldset className="hh-listing-contacts"><legend>{ru?'Куда клиенту написать':'Where clients can message you'}</legend>
+      <p className="hh-fine">{ru?'Контакты будут публичными после модерации. Внутренняя заявка Holistic House сохраняется.':'Contacts become public after approval. Holistic House enquiries remain available.'}</p>
+      <div className="hh-listing-field-grid">
+        <label>WhatsApp · {ru?'международный номер':'international number'}
+          <input type="tel" inputMode="tel" autoComplete="tel" placeholder="+1 416 555 1234" value={v.contacts?.whatsapp||''} onChange={event=>set('contacts',{...v.contacts,whatsapp:event.target.value})}/>
+        </label>
+        <label>Telegram · {ru?'имя пользователя':'username'}
+          <input type="text" autoCapitalize="none" spellCheck="false" placeholder="@username" value={v.contacts?.telegram||''} onChange={event=>set('contacts',{...v.contacts,telegram:event.target.value})}/>
+        </label>
+      </div>
+    </fieldset>
+    <details className="hh-listing-advanced"><summary>{ru?'Дополнительные параметры':'More service details'}</summary>
+      <div className="hh-listing-field-grid">
+        <label>{t.area}<select value={v.areaKey} onChange={event=>set('areaKey',event.target.value)}>{Object.entries(AREAS).map(([key,label])=><option key={key} value={key}>{label[ru?1:0]}</option>)}</select></label>
+        <label>{t.offeringType}<select value={v.offeringType||'session'} onChange={event=>set('offeringType',event.target.value)}>
+          {[
+            ['session',ru?'Личная консультация':'Personal session'],['intro',ru?'Вводная встреча':'Intro session'],
+            ['assessment',ru?'Обзор / диагностика ресурсов':'Assessment'],['group',ru?'Групповая сессия':'Group session'],
+            ['workshop',ru?'Мастер-класс':'Workshop'],['course',ru?'Курс':'Course'],
+            ['package',ru?'Пакет консультаций':'Package'],['event',ru?'Мероприятие':'Event']
+          ].map(([value,label])=><option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <label>{t.delivery}<select value={v.deliveryFormat} onChange={event=>set('deliveryFormat',event.target.value)}>
+          <option value="online">{ru?'Онлайн':'Online'}</option><option value="in_person">{ru?'Лично':'In person'}</option><option value="hybrid">{ru?'Онлайн и лично':'Online / in person'}</option>
+        </select></label>
+        <label>{t.location}<input maxLength="200" value={v.locationLabel||''} onChange={event=>set('locationLabel',event.target.value)}/></label>
+        <label>{ru?'Языки консультации (например: en, ru)':'Spoken languages (e.g. en, ru)'}
+          <input value={Array.isArray(v.languages)?arr(v.languages):v.languages||''} onChange={event=>set('languages',event.target.value)}/></label>
+        <label>{t.duration}<input type="number" min="5" max="1440" value={v.durationMinutes??''} onChange={event=>set('durationMinutes',event.target.value)}/></label>
+      </div>
+    </details>
+    {formError&&<p className="hh-practice-error" role="alert">{formError}</p>}
+    {info&&<p className="hh-notice" role="status">{info}</p>}
+    <div className="hh-actions hh-listing-actions">
+      <button type="submit" disabled={busy||photoBusy||translationBusy}>{ru?'Сохранить черновик':'Save draft'}</button>
+      <button type="button" className="hh-primary" disabled={busy||photoBusy||translationBusy} onClick={publish}>
+        {ru?'Отправить на публикацию':'Submit for publication'}
+      </button>
+      {item&&['published','submitted','changes_requested'].includes(item.status)&&<button type="button" disabled={busy} onClick={()=>onPause(item)}>{t.pause}</button>}
+    </div>
+    <p className="hh-fine">{t.moderation}</p>
   </form>
 }
 function Requests({items,t,busy,onStatus}){
