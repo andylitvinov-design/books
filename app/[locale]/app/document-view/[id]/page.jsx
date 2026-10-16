@@ -9,6 +9,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { PrescriptionDocument } from '@/components/prescription-document'
 import { PaymentDocument } from '@/components/payment-document'
 import { SavedDocumentManagement } from '@/components/app/saved-document-management'
+import { ReportFinalActions } from '@/components/report-final-actions'
 import '../../[[...path]]/workspace.css'
 import '@/components/app/saved-document-reader.css'
 
@@ -72,6 +73,7 @@ export default async function AuthenticatedSavedDocument({ params }) {
         {payment
           ? <PaymentDocument document={saved.document} locale={locale} embedded />
           : <PrescriptionDocument document={saved.document} locale={locale} embedded />}
+        {!payment&&<ReportFinalActions locale={locale} mode="saved"/>}
         <details className="hh-saved-document-reader__management">
           <summary>{ru ? 'Управление сохранением' : 'Manage saved copy'}</summary>
           <p>
