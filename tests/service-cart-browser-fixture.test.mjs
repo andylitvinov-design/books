@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { buildServiceCartFixture, fixtureBundlePath, fixtureDocument, fixturePath } from '../scripts/service-cart-browser-fixture.mjs'
+import { assertFixtureCompilation, buildServiceCartFixture, fixtureBundlePath, fixtureDocument, fixturePath, fixturePerformanceBudget } from '../scripts/service-cart-browser-fixture.mjs'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const browser = read('scripts/verify-service-cart-browser.mjs')
@@ -130,4 +131,74 @@ test('all API, privacy, owner binding, repeat order and delayed response defense
   ]) assert.ok(browser.includes(guard), guard)
   assert.match(browser, /documentToken = await h\.page\.evaluate\(\(\) => window\.__serviceCartFixtureDocumentToken\)/)
   assert.match(browser, /documentToken, 'SPA unmount must preserve the document and pending fetch probe'/)
+})
+
+
+async function compileSyntheticBudget({ bytes, warning = false, error = false }) {
+  const projectRequire = createRequire(import.meta.url)
+  const bundled = projectRequire('next/dist/compiled/webpack/webpack')
+  bundled.init()
+  const directory = await mkdtemp(join(tmpdir(), 'hh-cart-budget-test-'))
+  let compiler
+  try {
+    const entry = join(directory, 'synthetic.js')
+    await writeFile(entry, `globalThis.__syntheticCartBudget = ${JSON.stringify('x'.repeat(bytes))};`)
+    compiler = bundled.webpack({
+      mode: 'production', target: 'web', context: directory, entry,
+      output: { path: join(directory, 'output'), filename: 'fixture.js' },
+      devtool: false, cache: false, optimization: { minimize: false },
+      performance: fixturePerformanceBudget,
+      plugins: [{ apply(build) {
+        build.hooks.afterCompile.tap('SyntheticBudgetDiagnostic', (compilation) => {
+          if (warning) compilation.warnings.push(new Error('SYNTHETIC_UNRELATED_WARNING'))
+          if (error) compilation.errors.push(new Error('SYNTHETIC_COMPILATION_ERROR'))
+        })
+      } }],
+    })
+    return await new Promise((resolveBuild, reject) => compiler.run((failure, stats) => failure ? reject(failure) : resolveBuild(stats)))
+  } finally {
+    if (compiler) await new Promise((resolveClose, reject) => compiler.close((failure) => failure ? reject(failure) : resolveClose()))
+    await rm(directory, { recursive: true, force: true })
+  }
+}
+
+test('fixture-only performance budget explicitly caps both assets and entrypoints at 750 KiB', () => {
+  assert.deepEqual(fixturePerformanceBudget, { hints: 'warning', maxAssetSize: 768000, maxEntrypointSize: 768000 })
+  assert.match(builder, /performance: fixturePerformanceBudget/)
+  assert.match(builder, /assertFixtureCompilation\(stats\)/)
+  assert.doesNotMatch(builder, /ignoreWarnings|hints: false|performance: false/)
+})
+
+test('real webpack compilation accepts the 620 KiB unminified synthetic fixture', async (context) => {
+  const stats = await compileSyntheticBudget({ bytes: 620 * 1024 })
+  const asset = stats.toJson({ all: false, assets: true }).assets.find((item) => item.name === 'fixture.js')
+  assert.ok(asset.size >= 620 * 1024 && asset.size < fixturePerformanceBudget.maxAssetSize)
+  assert.doesNotThrow(() => assertFixtureCompilation(stats))
+  context.diagnostic(`Synthetic fixture: ${asset.size} bytes; zero compilation warnings/errors`)
+})
+
+test('real webpack compilation above 750 KiB fails both asset and entrypoint budgets', async (context) => {
+  const stats = await compileSyntheticBudget({ bytes: 751 * 1024 })
+  const report = stats.toJson({ all: false, assets: true, warnings: true })
+  const asset = report.assets.find((item) => item.name === 'fixture.js')
+  assert.ok(asset.size > fixturePerformanceBudget.maxAssetSize)
+  assert.equal(stats.hasErrors(), false, 'The rejection must be a genuine budget warning')
+  assert.equal(stats.hasWarnings(), true)
+  assert.ok(report.warnings.some((item) => /asset size limit/.test(item.message)))
+  assert.ok(report.warnings.some((item) => /entrypoint size limit/.test(item.message)))
+  assert.throws(() => assertFixtureCompilation(stats), /asset size limit[\s\S]*entrypoint size limit/)
+  context.diagnostic(`Rejected synthetic fixture: ${asset.size} bytes; asset and entrypoint limits remain enforced`)
+})
+
+test('unrelated webpack warnings remain fatal below the fixture budget', async () => {
+  const stats = await compileSyntheticBudget({ bytes: 16, warning: true })
+  assert.equal(stats.hasErrors(), false)
+  assert.equal(stats.hasWarnings(), true)
+  assert.throws(() => assertFixtureCompilation(stats), /SYNTHETIC_UNRELATED_WARNING/)
+})
+
+test('webpack errors remain fatal below the fixture budget', async () => {
+  const stats = await compileSyntheticBudget({ bytes: 16, error: true })
+  assert.equal(stats.hasErrors(), true)
+  assert.throws(() => assertFixtureCompilation(stats), /SYNTHETIC_COMPILATION_ERROR/)
 })

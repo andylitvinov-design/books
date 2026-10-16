@@ -8,6 +8,17 @@ import { fileURLToPath } from 'node:url'
 
 export const fixturePrefix = '/__hh-test__/service-cart/'
 export const fixtureBundlePath = `${fixturePrefix}fixture.js`
+// This unminified, test-only React bundle is not a public application asset.
+// Keep an explicit bounded budget and reject every emitted warning/error.
+export const fixturePerformanceBudget = Object.freeze({
+  hints: 'warning',
+  maxAssetSize: 750 * 1024,
+  maxEntrypointSize: 750 * 1024,
+})
+
+export function assertFixtureCompilation(stats) {
+  if (stats.hasErrors() || stats.hasWarnings()) throw new Error(stats.toString({ all: false, errors: true, warnings: true }))
+}
 const fixtureDirectory = fileURLToPath(new URL('./fixtures/', import.meta.url))
 const projectDirectory = fileURLToPath(new URL('../', import.meta.url))
 const productionInputs = [
@@ -69,6 +80,7 @@ export async function buildServiceCartFixture({ projectRoot = projectDirectory }
       devtool: false,
       cache: false,
       optimization: { minimize: false },
+      performance: fixturePerformanceBudget,
       resolve: {
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
         modules: [join(root, 'node_modules'), 'node_modules'],
@@ -95,7 +107,7 @@ export async function buildServiceCartFixture({ projectRoot = projectDirectory }
       } }],
     })
     const stats = await new Promise((resolveBuild, reject) => compiler.run((error, result) => error ? reject(error) : resolveBuild(result)))
-    if (stats.hasErrors() || stats.hasWarnings()) throw new Error(stats.toString({ all: false, errors: true, warnings: true }))
+    assertFixtureCompilation(stats)
     const bundledFiles = new Set([...stats.compilation.fileDependencies].map((path) => relative(root, path).split('\\').join('/')))
     const sourceProof = []
     for (const path of productionInputs) {
