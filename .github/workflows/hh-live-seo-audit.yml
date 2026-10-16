@@ -1,0 +1,60 @@
+name: Holistic House complete live SEO audit
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-live-seo-audit.yml'
+      - 'scripts/verify-live-sitemap.mjs'
+      - 'app/sitemap.ts'
+      - 'app/not-found.tsx'
+      - 'lib/seo-descriptions.ts'
+  pull_request:
+    paths:
+      - '.github/workflows/hh-live-seo-audit.yml'
+      - 'scripts/verify-live-sitemap.mjs'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run comprehensive public-only SEO audit against production
+        run: node scripts/verify-live-sitemap.mjs
+      - name: Add report to GitHub Actions summary
+        if: always()
+        run: |
+          if [ -f artifacts/seo-live-audit.json ]; then
+            node --input-type=module -e '
+              import {readFileSync,appendFileSync} from "node:fs";
+              const d=JSON.parse(readFileSync("artifacts/seo-live-audit.json"));
+              const report=[
+                "## Holistic House production SEO",
+                "Total sitemap URLs: **"+d.sitemapEntries+"**",
+                "HTTP HEAD checked: **"+d.urlsChecked+"**",
+                "HTTP 200: **"+d.statuses.ok+"**",
+                "Redirects: **"+d.statuses.redirect+"**",
+                "Non-200: **"+d.statuses.invalid+"**",
+                "Network failures: **"+d.statuses.network+"**",
+                "Metadata spotlight pages: **"+d.spotlight.length+"**",
+                "Errors: **"+d.errors.length+"**",
+                "",
+                ...d.errors.slice(0,30).map(x=>"- "+x)
+              ].join("\n");
+              appendFileSync(process.env.GITHUB_STEP_SUMMARY,report+"\n");
+            '
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seo-complete-live-\${{ github.run_id }}
+          path: artifacts/seo-live-audit.json
+          if-no-files-found: ignore
+          retention-days: 14
