@@ -24,14 +24,14 @@ const COPY = {
   },
 }
 
-export function FreeCourseBanner({ locale = 'en' }) {
+export function FreeCourseBanner({ locale = 'en', compact = false }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
 
-  return <aside className={styles.banner} aria-label={t.optional} data-free-course-banner>
+  return <aside className={styles.banner + (compact ? ' ' + styles.compact : '')} aria-label={t.optional} data-free-course-banner>
     <p className={styles.eyebrow}>{t.optional}</p>
     <h3 className={styles.title}>{t.title}</h3>
-    <p className={styles.intro}>{t.intro}</p>
+    {!compact && <p className={styles.intro}>{t.intro}</p>}
     <div className={styles.actions}>
       <Link className={styles.start} href={'/' + language + '/app/course?program=stress'} prefetch={false}>{t.start}</Link>
       <details className={styles.more}>

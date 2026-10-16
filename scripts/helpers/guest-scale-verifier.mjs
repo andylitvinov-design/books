@@ -74,7 +74,8 @@ export function assertGuestSnapshot(snapshot, result, locale) {
   assert.ok(normalized(snapshot.source).includes(`${result.definitionKey} · ${result.definitionVersion} · ${result.instrumentLocale.toUpperCase()}`), 'Exact versioned instrument source')
 }
 
-// Preserve the former exact interpretation checks on their authenticated surface.
+// Authenticated reports display one selected scale at a time; verify that every
+// original versioned scale stays reachable and its source-bound copy intact.
 export function assertAccountReportSnapshot(snapshot, result, locale) {
   const report = buildAssessmentResultReport(result, locale), ru = locale === 'ru'
   assert.ok(report.sections.length)
@@ -82,10 +83,16 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
   assert.equal(snapshot.scales.length, report.sections.length)
   for (const [index, section] of report.sections.entries()) {
     const actual = snapshot.scales[index]
+    assert.equal(actual.key, section.key, 'Selected instrument scale key stays exact')
     assert.equal(normalized(actual.title), normalized(section.construct || section.title))
-    assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
-    for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || [])].filter(Boolean))
-      assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)
+    if (section.bandBasis !== 'unavailable') {
+      const number = value => new Intl.NumberFormat(ru ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
+      const expectedScore = number(section.value) + ' / ' + number(section.max)
+      assert.ok(normalized(actual.text).includes(normalized(expectedScore)),
+        'Exact scale instrument score (no pooled health percentage): ' + section.key)
+    }
+    for (const value of [section.band, section.meaning, section.followUp, ...(section.steps || [])].filter(Boolean))
+      assert.ok(normalized(actual.text).includes(normalized(value)), 'Exact account explanation/advice: ' + section.key)
   }
   if (report.methodology) assert.ok(normalized(snapshot.methodology).includes(normalized(report.methodology)), 'Exact authenticated methodology')
   if (report.note) assert.ok(normalized(snapshot.text).includes(normalized(report.note)), 'Exact authenticated source limitations')
@@ -94,14 +101,36 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
   const root = page.locator('[data-personal-result-report]')
   await expect(root).toBeVisible({ timeout: 20000 })
   await expect(root).toHaveCount(1)
-  for (const detail of await root.locator('details').all()) if ((await detail.getAttribute('open')) === null) await detail.locator(':scope > summary').click()
-  const snapshot = await root.evaluate(root => ({
-    scales: [...root.querySelectorAll('[data-assessment-scales] > article')].map(card => ({ title: card.querySelector('h3')?.textContent, text: card.textContent })),
-    text: root.textContent,
-    methodology: root.querySelector('[data-assessment-methodology]')?.textContent,
+  const report = buildAssessmentResultReport(result, locale)
+  const selector = root.locator('[data-assessment-scale-picker]')
+  await expect(selector).toBeVisible()
+  const tabs = selector.locator('[data-assessment-scale-trigger]')
+  await expect(tabs).toHaveCount(report.sections.length)
+  const scales = []
+  for (const [index, section] of report.sections.entries()) {
+    await tabs.nth(index).click()
+    await expect(tabs.nth(index)).toHaveAttribute('aria-pressed', 'true')
+    const card = root.locator('[data-active-scale]')
+    await expect(card).toHaveCount(1)
+    await expect(card).toHaveAttribute('data-active-scale', section.key)
+    const details = card.locator(':scope > details')
+    if (await details.count() && await details.getAttribute('open') === null)
+      await details.locator(':scope > summary').click()
+    scales.push(await card.evaluate(element => ({
+      key: element.getAttribute('data-active-scale'),
+      title: element.querySelector('h3')?.textContent,
+      text: element.textContent,
+    })))
+  }
+  const methodology = root.locator('[data-assessment-methodology]')
+  if (await methodology.count() && await methodology.getAttribute('open') === null)
+    await methodology.locator(':scope > summary').click()
+  const snapshot = await root.evaluate(element => ({
+    text: element.textContent,
+    methodology: element.querySelector('[data-assessment-methodology]')?.textContent,
     guestCount: document.querySelectorAll('[data-guest-scale-interpretation]').length,
   }))
-  assertAccountReportSnapshot(snapshot, result, locale)
+  assertAccountReportSnapshot({ ...snapshot, scales }, result, locale)
 }
 
 // Deliberate routing probes require a SW-blocked fixture context in WebKit.

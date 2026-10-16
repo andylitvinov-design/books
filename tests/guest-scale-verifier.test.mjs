@@ -30,7 +30,11 @@ const find = (tree, predicate) => elements(tree).find(predicate)
 const tagged = (tree, tag) => find(tree, node => node.type === tag)
 const marked = (tree, attr) => find(tree, node => Object.hasOwn(node.props, attr))
 const jsx = (type, props, key) => typeof type === 'function' ? type(props || {}) : ({ type, props: props || {}, key })
+let selectedScaleIndex = null
+const mockReact = { useState: initial => [selectedScaleIndex === null
+  ? (typeof initial === 'function' ? initial() : initial) : selectedScaleIndex, () => {}] }
 const modules = {
+  react: mockReact,
   'react/jsx-runtime': { jsx, jsxs: jsx },
   '@/lib/assessments/result-report': reportModule,
   '@/lib/assessments/dashboard-gauges': gaugeModule,
@@ -83,9 +87,18 @@ function fixture(result, locale) {
     accountAnalysisCount: 0, analysisCtaCount: 1, analysisLabel: guestAnalysisLabel(locale) }
 }
 function accountFixture(result, locale) {
-  const tree = CompactAssessmentReport({ result, locale, report: buildAssessmentResultReport(result, locale) })
-  return { scales: elements(marked(tree, 'data-assessment-scales')).filter(node => node.type === 'article').map(card => ({ title: textOf(tagged(card, 'h3')), text: textOf(card) })),
-    text: textOf(tree), methodology: textOf(marked(tree, 'data-assessment-methodology')), guestCount: 0 }
+  const report = buildAssessmentResultReport(result, locale), scales = []
+  let tree
+  for (const [index, section] of report.sections.entries()) {
+    selectedScaleIndex = index
+    tree = CompactAssessmentReport({ result, locale, report })
+    const card = marked(tree, 'data-active-scale')
+    assert.ok(card, 'Scale selector must reveal a scored card for ' + section.key)
+    assert.equal(card.props['data-active-scale'], section.key)
+    scales.push({ key: section.key, title: textOf(tagged(card, 'h3')), text: textOf(card) })
+  }
+  selectedScaleIndex = null
+  return { scales, text: textOf(tree), methodology: textOf(marked(tree, 'data-assessment-methodology')), guestCount: 0 }
 }
 
 for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: ${locale} rendered score-only scales and full account explanations`, () => {
@@ -138,7 +151,7 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales.pop() },
       s => { s.scales[0].title = 'another construct' },
       s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
-      s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
+      s => { s.scales[0].text = s.scales[0].text.replace(/\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?/, '999 / 999') },
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
       s => { s.guestCount = 1 },

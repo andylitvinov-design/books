@@ -28,6 +28,7 @@ runInNewContext(compiled, {
       : require(name),
 })
 const { FreeCourseBanner } = loaded.exports
+const isolatedReactState = { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] }
 const walk = node => node == null || typeof node === 'boolean' ? []
   : Array.isArray(node) ? node.flatMap(walk)
     : typeof node === 'object' ? [node, ...walk(node.props?.children)] : [node]
@@ -80,7 +81,7 @@ test('More is independent of course loading or stage and never writes or navigat
 
 test('all compact reports show exactly one optional banner after unchanged report content', () => {
   const report = read('components/app/compact-assessment-report.jsx')
-  assert.equal((report.match(/<FreeCourseBanner locale=\{locale\}\/>/g) || []).length, 1)
+  assert.equal((report.match(/<FreeCourseBanner locale=\{locale\} compact\/>/g) || []).length, 2)
   assert.ok(report.indexOf('<FreeCourseBanner') > report.indexOf('{report.rulesVersion}'))
   assert.doesNotMatch(report, /hasSkills|skillAxes/)
   assert.match(report, /getTestScaleGuide\(result\.definitionKey, locale\)/)
@@ -97,7 +98,8 @@ test('the actual report renders the optional banner without skill mappings or co
   const reportModule = { exports: {} }
   runInNewContext(reportCode, {
     exports: reportModule.exports,
-    require: name => name === './free-course-banner' ? { FreeCourseBanner }
+    require: name => name === 'react' ? isolatedReactState
+      : name === './free-course-banner' ? { FreeCourseBanner }
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
@@ -148,6 +150,7 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
     '@/lib/assessments/dashboard-gauges': { gaugeChange, gaugeModel },
   })
   const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
+    'react': isolatedReactState,
     './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },

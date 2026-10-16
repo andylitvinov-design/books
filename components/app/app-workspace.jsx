@@ -2810,13 +2810,9 @@ function ResultPage({ id, locale, data }) {
         <div>
           <p className="hh-kicker">{c.result}</p>
           <h1>{title}</h1>
-          <p className="hh-result-intro">
-            {locale === 'ru' ? 'Ваш результат и два практических шага на неделю.' : 'Your score and two practical next steps for this week.'}
-          </p>
         </div>
         <div className="hh-result-meta">
           <span>{dateLabel(result.measurementAt, locale)}</span>
-          <span>{result.instrumentLocale.toUpperCase()}</span>
         </div>
       </header>
 
