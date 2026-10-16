@@ -52,6 +52,12 @@ async function verify(browserType,engine,width,height){
   })
   const page=await context.newPage()
   const errors=[]
+  let uploaderNavigations = 0
+  page.on('framenavigated',frame => {
+    if (frame === page.mainFrame() && /^\\/admin\\/youtube-upload\\/?$/.test(new URL(frame.url()).pathname)) {
+      uploaderNavigations += 1
+    }
+  })
   page.on('pageerror',err=>errors.push(err.message))
   await page.goto(origin+'/admin/login',{waitUntil:'domcontentloaded'})
   await page.locator('input[name="accessCode"]').fill(PIN)
@@ -63,7 +69,12 @@ async function verify(browserType,engine,width,height){
   assert.equal(response.status(),200)
   const root=page.locator('[data-youtube-upload-page]')
   await expect(root).toBeVisible({timeout:15000})
-  console.log('Mobile QA: admin page ready in '+engine+' '+width+'px')
+  // Previously this route's CSP class was incorrectly classified as 'private'
+  // by client navigation while middleware sent 'youtube-uploader'. That caused
+  // recursive location.replace() and an unscrollable, jittering iPhone sheet.
+  await wait(650)
+  assert.equal(uploaderNavigations,1,engine+' '+width+' uploader is reloading itself after hydration')
+  console.log('Mobile QA: stable admin page in '+engine+' '+width+'px')
   await expect(page.getByRole('heading',{name:'Phone → YouTube'})).toBeVisible()
   await expect(page.locator('input[type="file"]')).toHaveCount(1)
 
