@@ -119,6 +119,17 @@ async function runEngine(name, engine) {
               await button.click();
             }
           }
+          if (name === "chromium" && width === 390 && locale === "en") {
+            await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
+            const temple = page.locator("[data-temple-initiation-chooser]");
+            await temple.locator('[data-temple-step="tradition"] button').first().click();
+            await temple.locator('[data-temple-step="deity"] button').first().click();
+            await temple.locator('[data-temple-step="initiation"] button').first().click();
+            const templeChooser = temple.locator("[data-contact-channel-chooser]");
+            await templeChooser.waitFor({state:"visible"});
+            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true);
+            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+          }
         } finally {
           await page.close();
           await context.close();
