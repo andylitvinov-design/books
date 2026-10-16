@@ -23,6 +23,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [displayName, setName] = useState('')
   const [email, setEmail] = useState('')
   const [templateId, setTemplate] = useState('course_update')
+  const [search, setSearch] = useState('')
+  const [lifecycle, setLifecycle] = useState('lead')
   async function load(session) {
     const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
     if (!response.ok) throw new Error('unavailable')
@@ -48,30 +50,86 @@ export default function CrmManager({ locale = 'en', accountId }) {
       if (!response.ok) throw new Error('unavailable')
       if (sessionRef.current !== session) return
       setNotice(c.saved)
-      if (action === 'create_contact') { setName(''); setEmail('') }
+      if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
       await load(session).catch(() => {})
     } catch { if (sessionRef.current === session) setNotice(c.error) } finally { if (sessionRef.current === session) setBusy(false) }
   }
   if (!accountId) return null
+  const contacts=(data?.contacts||[]).filter(contact=>{
+    const text=[contact.displayName,contact.email].join(' ').toLowerCase()
+    return text.includes(search.trim().toLowerCase())
+  })
+  const retry=()=>{
+    const session=sessionRef.current
+    if(!session)return
+    setNotice('')
+    load(session).catch(()=>{if(sessionRef.current===session)setNotice(c.error)})
+  }
   return <section className={styles.panel} aria-labelledby="crm-title">
-    <h2 id="crm-title">{c.title}</h2><p>{c.privacy}</p><p>{c.noConsent}</p>
-    <p role="status" aria-live="polite">{notice || (!data ? c.loading : '')}</p>
-    <form className={styles.form} onSubmit={(event) => { event.preventDefault(); save('create_contact', { displayName, email, locale: language, lifecycle: 'lead' }) }}>
-      <label>{c.name}<input value={displayName} onChange={(event) => setName(event.target.value)} maxLength={120} autoComplete="off" required /></label>
-      <label>{c.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} autoComplete="off" required /></label>
-      <button disabled={busy || !data} type="submit">{c.add}</button>
-    </form>
-    <ul className={styles.list}>{data?.contacts?.length ? data.contacts.map((contact) => <li key={contact.id}><strong>{contact.displayName}</strong><span>{contact.email}</span><small>{contact.suppressed ? c.suppressed : c.unverified}</small></li>) : <li>{c.noContacts}</li>}</ul>
-    <h3>{billing.title}</h3><p>{data?.subscriberRegistryEnabled ? billing.note : billing.off}</p>
-    {data?.subscriberRegistryEnabled && <ul className={styles.list}>{data.subscribers?.map((subscriber) => <li key={`${subscriber.accountId}-${subscriber.provider}-${subscriber.environment}`}>
-      <strong>{subscriber.accountId?.slice(0, 8)}</strong><span>{subscriber.status}</span><span>{subscriber.provider} · {subscriber.environment}</span>
-      {subscriber.paidThrough && <span>{billing.until}: {new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(new Date(subscriber.paidThrough))}</span>}
-      {subscriber.cancelAtPeriodEnd && <small>{billing.cancel}</small>}
-    </li>)}</ul>}
-    <h3>{c.draft}</h3><p>{c.off}</p>
-    <select aria-label={c.draft} value={templateId} onChange={(event) => setTemplate(event.target.value)}>{Object.entries(CRM_TEMPLATES).map(([id, text]) => <option key={id} value={id}>{text[language].subject}</option>)}</select>
-    <p>{CRM_TEMPLATES[templateId][language].body}</p>
-    <button disabled={busy || !data} type="button" onClick={() => save('create_draft', { templateId, locale: language, channel: 'email', segment: 'all_opted_in' })}>{c.saveDraft}</button>
-    <h3>{c.drafts}</h3><ul>{data?.drafts?.map((draft) => <li key={draft.id}>{CRM_TEMPLATES[draft.definition?.templateId]?.[draft.definition?.locale]?.subject || draft.status}</li>)}</ul>
+    <header className={styles.head}>
+      <div><h2 id="crm-title">{c.title}</h2>
+        <p>{language==='ru'?'Все деловые контакты в одном месте.':'Keep your business contacts in one place.'}</p>
+      </div>
+    </header>
+    <div className={styles.privacy}>
+      <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
+      <p>{c.privacy} {c.noConsent}</p>
+    </div>
+    {!data&&<div className={styles.unavailable} role={notice?'alert':'status'}>
+      <p>{notice||c.loading}</p>
+      {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
+    </div>}
+    {data&&<>
+      <div className={styles.formCard}>
+        <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
+        <form className={styles.form} onSubmit={(event) => {
+          event.preventDefault()
+          save('create_contact', { displayName, email, locale: language, lifecycle })
+        }}>
+          <label>{c.name} *<input value={displayName} onChange={(event)=>setName(event.target.value)}
+            placeholder={language==='ru'?'Имя клиента':'e.g. Jane Smith'} maxLength={120} autoComplete="off" required /></label>
+          <label>{c.email} *<input type="email" value={email} onChange={(event)=>setEmail(event.target.value)}
+            placeholder="name@example.com" maxLength={254} autoComplete="off" required /></label>
+          <label>{language==='ru'?'Тип контакта':'Contact type'}
+            <select value={lifecycle} onChange={(event)=>setLifecycle(event.target.value)}>
+              <option value="lead">{language==='ru'?'Интересуется':'Interested'}</option>
+              <option value="client">{language==='ru'?'Клиент':'Client'}</option>
+            </select>
+          </label>
+          <button disabled={busy} type="submit">{busy?c.loading:c.add}</button>
+        </form>
+        <p className={styles.fine}>{language==='ru'?'Добавляйте только контакты, с которыми есть допустимое основание для деловой связи. Это не подписка на рассылку.':'Add only business contacts you are permitted to keep. This does not enroll them in marketing messages.'}</p>
+        {notice&&<p role="status" className={styles.notice}>{notice}</p>}
+      </div>
+      <div className={styles.contactsHead}>
+        <h3>{language==='ru'?'Ваши контакты':'Your contacts'} ({data.contacts?.length||0})</h3>
+        <input aria-label={language==='ru'?'Поиск контактов':'Search contacts'} type="search"
+          placeholder={language==='ru'?'Поиск…':'Search contacts…'} value={search} onChange={(event)=>setSearch(event.target.value)} />
+      </div>
+      <ul className={styles.list}>
+        {contacts.length?contacts.map(contact=><li key={contact.id}>
+          <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
+          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
+          <small className={styles.tag}>{contact.suppressed?c.suppressed:contact.lifecycle==='client'?(language==='ru'?'Клиент':'Client'):(language==='ru'?'Интересуется':'Interested')}</small>
+        </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
+      </ul>
+      <details className={styles.advanced}>
+        <summary>{language==='ru'?'Подписки и подготовка писем':'Subscriptions & prepared updates'}</summary>
+        <h3>{billing.title}</h3><p>{data.subscriberRegistryEnabled?billing.note:billing.off}</p>
+        {data.subscriberRegistryEnabled&&<ul className={styles.list}>{data.subscribers?.map(subscriber=><li key={[subscriber.accountId,subscriber.provider,subscriber.environment].join('-')}>
+          <strong>{subscriber.accountId?.slice(0,8)}</strong><span>{subscriber.status}</span>
+          <span>{subscriber.provider} · {subscriber.environment}</span>
+          {subscriber.paidThrough&&<span>{billing.until}: {new Intl.DateTimeFormat(language,{dateStyle:'medium'}).format(new Date(subscriber.paidThrough))}</span>}
+          {subscriber.cancelAtPeriodEnd&&<small>{billing.cancel}</small>}
+        </li>)}</ul>}
+        <h3>{c.draft}</h3><p>{c.off}</p>
+        <select aria-label={c.draft} value={templateId} onChange={(event)=>setTemplate(event.target.value)}>
+          {Object.entries(CRM_TEMPLATES).map(([id,text])=><option key={id} value={id}>{text[language].subject}</option>)}
+        </select>
+        <p>{CRM_TEMPLATES[templateId][language].body}</p>
+        <button disabled={busy} type="button" onClick={()=>save('create_draft',{templateId,locale:language,channel:'email',segment:'all_opted_in'})}>{c.saveDraft}</button>
+        <h3>{c.drafts}</h3><ul>{data.drafts?.map(draft=><li key={draft.id}>{CRM_TEMPLATES[draft.definition?.templateId]?.[draft.definition?.locale]?.subject||draft.status}</li>)}</ul>
+      </details>
+    </>}
   </section>
 }
