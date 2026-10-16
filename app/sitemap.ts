@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     alternates: { languages: homepageLanguages },
   }));
   // /books is a preference-sensitive redirect and must never be indexed.
-  const unique = [...new Map(
+  const unique: MetadataRoute.Sitemap = [...new Map(
     [...existing, ...entries, ...priorityEntries, ...network, ...homes]
       .filter(entry => new URL(entry.url).pathname !== '/books')
       .map(entry => [entry.url, entry]),
