@@ -318,10 +318,6 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         </div>
         <div className={styles.capturePanel} id="request-free-review">
           <FreeReviewQuickRequest locale={locale} />
-          <details className={styles.advancedIntake}>
-            <summary>{outcome.advanced}</summary>
-            <FreeSituationReviewForm locale={locale} />
-          </details>
         </div>
       </section>
 
@@ -417,6 +413,10 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             </li>
           ))}
         </ol>
+        <details className={styles.advancedIntake}>
+          <summary>{outcome.advanced}</summary>
+          <FreeSituationReviewForm locale={locale} />
+        </details>
       </section>
 
       <section className={styles.finalCapture} aria-labelledby="review-final-title">
