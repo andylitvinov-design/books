@@ -10,6 +10,7 @@
 .band{font-size:1.05rem!important;font-weight:800;line-height:1.35!important;color:#326b59;margin:0 0 5px!important}
 .scale{font-size:.91rem!important;line-height:1.4!important;color:#645d55;margin:0 0 5px!important}
 .direction{font-size:.82rem!important;line-height:1.35!important;color:#666f66;margin:0 0 9px!important}
+.explanation{margin:11px 0 0!important;color:#48554c;font-size:.95rem!important;line-height:1.55!important}
 .recommendations{margin:14px 0 0;padding:13px 16px;border-radius:13px;background:#f1f7f1}
 .recommendations h4{font:800 1rem/1.35 system-ui,sans-serif!important;color:#335e4c;margin:0 0 8px!important}
 .recommendations ol{margin:0;padding:0 0 0 23px}

@@ -698,6 +698,43 @@ function SaveContinuation({ data, locale, reload }) {
             monitoringCatalogItem(intent?.source?.definitionKey)?.title?.en ||
             (ru ? 'Результат теста' : 'Test result'))
         : (ru ? 'Документ' : 'Document')
+  // After the guest explicitly clicked Get free analysis, the item-scoped
+  // HttpOnly intent is sufficient consent to save that one result. Keep the
+  // OAuth handoff visually transitional, never expose a second Save form.
+  if (autoSave && !authFailure && !error &&
+      (!intent || canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent }))) {
+    return (
+      <section className="hh-panel hh-entry" aria-busy="true">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Открываем ваш результат' : 'Opening your result'}</h1>
+        <p role="status">{ru
+          ? 'Сохраняем выбранный тест в кабинете и открываем пояснения шкал и рекомендации…'
+          : 'Saving your selected test and opening your scale explanations and recommendations…'}</p>
+      </section>
+    )
+  }
+  if (autoSave && intent?.sourceKind === 'guest_result') {
+    // A failed OAuth or import does not require asking for Save consent again.
+    // Keep the selected result in guest storage and offer safe recovery.
+    return (
+      <section className="hh-panel hh-entry">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Не удалось открыть анализ' : 'Could not open your analysis'}</h1>
+        <p role="alert">{error || (ru
+          ? 'Вернитесь к результату теста и повторите вход через Google.'
+          : 'Return to your test result and try Google sign-in again.')}</p>
+        {!authFailure && !intent.expired && intent.status === 'pending' && (
+          <button type="button" className="hh-primary" disabled={busy} onClick={commit}>
+            {busy ? (ru ? 'Повторяем…' : 'Retrying…')
+              : (ru ? 'Повторить открытие анализа' : 'Retry opening analysis')}
+          </button>
+        )}
+        <Link href={`/${locale}/client?result=${encodeURIComponent(intent.sourceId)}`} prefetch={false}>
+          {ru ? 'Вернуться к результату теста' : 'Back to my test result'}
+        </Link>
+      </section>
+    )
+  }
   return (
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
