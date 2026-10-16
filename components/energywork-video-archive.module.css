@@ -56,3 +56,13 @@
   .content { padding:13px; }
   .videoGrid { grid-template-columns:1fr; }
 }
+.videoActions { display:flex;flex-wrap:wrap;gap:6px 11px;margin-top:8px; }
+.videoActions a {
+  text-decoration:none;
+  font-size:11px;
+  line-height:1.45;
+  font-weight:750;
+  color:#7b3650;
+}
+.videoActions a:hover { text-decoration:underline; }
+.videoActions a:focus-visible { outline:3px solid #daba6f;outline-offset:2px; }
