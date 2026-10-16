@@ -487,3 +487,9 @@
 @media (prefers-reduced-motion: reduce) {
   .questionsSummaryToggle svg { transition: none; }
 }
+
+/* The contact chooser is now the grid item, not a direct anchor. */
+.whatsappCombinedSlot { grid-column:1/-1; min-width:0; }
+.whatsappAnswersSlot { margin-top:12px; }
+.whatsappCombinedSlot button, .whatsappAnswersSlot button { width:100%; }
+@media(max-width:590px) { .whatsappCombinedSlot { grid-column:auto; } }
