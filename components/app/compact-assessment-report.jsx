@@ -75,9 +75,11 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </div>
       {sections.length > 6 && <label className={styles.jump}>
         {ru ? 'Быстрый выбор шкалы' : 'Jump to a scale'}
-        <select value={selectedIndex} onChange={event => setActiveIndex(Number(event.target.value))}>
-          {sections.map((item, index) => <option key={item.key + ':' + index} value={index}>{item.construct || item.title}</option>)}
-        </select>
+        <span className={styles.jumpControl} data-assessment-scale-select-control>
+          <select value={selectedIndex} onChange={event => setActiveIndex(Number(event.target.value))}>
+            {sections.map((item, index) => <option key={item.key + ':' + index} value={index}>{item.construct || item.title}</option>)}
+          </select>
+        </span>
       </label>}
     </section>
 

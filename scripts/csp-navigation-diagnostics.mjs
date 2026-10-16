@@ -25,6 +25,13 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && source.url === new URL('/en/client', origin).href
       && navigation.documentClass === 'private' && navigation.navigationType === 'traverse'
       && navigation.destination === new URL('/en/about', origin).href;
+    // The exact free-review prefetch was also observed during the public
+    // home's hard Forward to About and Back to private, before that home hid.
+    const homeReviewPrefetch = prefetch && url.pathname === '/en/services/free-situation-review'
+      && source.url === new URL('/', origin).href
+      && navigation.documentClass === 'public-video' && navigation.navigationType === 'traverse'
+      && ((error.phase === 'forward-to-public' && navigation.destination === new URL('/en/about', origin).href)
+        || (error.phase === 'back-to-private' && navigation.destination === new URL('/en/client', origin).href));
     // Observed after Back from About to the public home: its interrupted
     // router is replaced while an About-page client-link prefetch is pending.
     // Require that exact same-document traversal followed by hard replacement;
@@ -36,7 +43,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.documentClass === 'public-video'
         && event.destination === navigation.destination))) continue;
-    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch) continue;
+    if (sourcePath !== (bootstrap ? '/en/client' : '/en/about') && !clientHomePrefetch && !homeReviewPrefetch) continue;
     const nextDocument = lifecycle.find(event => event.type === 'init' && event.time > navigation.time && event.documentProbe !== navigation.documentProbe);
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.
