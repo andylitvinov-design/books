@@ -9,7 +9,7 @@ const source = readFileSync(new URL('../.github/workflows/hh-app-browser.yml', i
 const block = source.match(/          case "\$HH_TEST_SUITE" in[\s\S]*?          done/)[0].replace(/^          /gm, '')
 const expected = {
   core: ['verify-document-hydration', 'verify-app-r1', 'verify-compassion-assessments', 'verify-relationships-assessments'],
-  extended: ['verify-document-hydration', 'verify-mhc-sf', 'verify-asrs6', 'verify-asrs6-pdf', 'verify-personality-types', 'verify-account-status-filters'],
+  extended: ['verify-document-hydration', 'verify-mhc-sf', 'verify-asrs6', 'verify-asrs6-pdf', 'verify-personality-types', 'verify-account-status-filters', 'verify-bach-personal-report-browser'],
 }
 function run(suite, fail = '') {
   const dir = mkdtempSync(join(tmpdir(), 'hh-journey-'))
@@ -30,9 +30,9 @@ test('both engines execute all original journeys once plus hydration for each fr
     assert.equal((result.stdout.match(/BROWSER_JOURNEY_PASS/g) || []).length, scripts.length)
     all.push(...actual)
   }
-  assert.equal(all.length, 10)
+  assert.equal(all.length, 11)
   assert.equal(all.filter(script => script === 'verify-document-hydration').length, 2)
-  assert.equal(new Set(all).size, 9)
+  assert.equal(new Set(all).size, 10)
 })
 for (const [suite, scripts] of Object.entries(expected)) for (const script of scripts) {
   test(`${suite}: ${script} failure cannot pass or continue`, () => {
