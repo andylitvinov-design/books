@@ -108,6 +108,30 @@ test("first contact stays compact, with messenger handoff and no drawing require
   assert.ok(landing.includes('className={styles.finalCapture}'));
 });
 
+test("both capture placements offer all three localized consultation formats with an exact message handoff", () => {
+  for (const marker of ['type ConsultationFormat = "free" | "mini" | "full"', 'const formats: ConsultationFormat[] = ["free", "mini", "full"]',
+    'type="radio"', 'checked={format === value}', 'onChange={() => setFormat(value)}',
+    'option: [selected.label, selected.detail, selected.price].join(" · ")',
+    'request: selected.request', 'data-consultation-option={value}', '"data-consultation-format": format']) {
+    assert.ok(quickRequest.includes(marker), "Missing price/selection/handoff contract: " + marker);
+  }
+  for (const label of ["Бесплатная консультация", "Мини-сессия", "Полноценная сессия",
+    "Free consultation", "Mini session", "Full session",
+    "Consulta gratuita", "Mini sesión", "Sesión completa"]) {
+    assert.ok(quickRequest.includes(label), "Missing localized option: " + label);
+  }
+  for (const price of ["€50", "€100", "Бесплатно", "Free", "Gratis"]) {
+    assert.ok(quickRequest.includes(price), "Missing exact price: " + price);
+  }
+  assert.match(quickRequest, /no live call/i);
+  assert.match(quickRequest, /без созвона/i);
+  assert.match(quickRequest, /sin llamada/i);
+  assert.match(quickRequest, /No booking or payment is made automatically/);
+  assert.doesNotMatch(quickRequest, /localStorage|sessionStorage|fetch\(|sendBeacon|checkout\/api/);
+  assert.equal((landing.match(/<FreeReviewQuickRequest locale=\{locale\} \/>/g) ?? []).length, 2,
+    "Both top and bottom capture forms must share the same three consultation choices");
+});
+
 test("mobile design keeps a clear first-step form and separates paid plans", () => {
   for (const value of [".contentGrid", ".capturePanel", ".steps", ".paid", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(value));
   assert.ok(css.includes("@media(max-width:767px)"));
