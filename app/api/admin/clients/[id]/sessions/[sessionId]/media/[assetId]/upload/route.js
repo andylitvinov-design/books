@@ -18,7 +18,7 @@ export async function POST(request,{params}) {
     if(!OWNER_AUDIO_MIME_TYPES.includes(mime))
       throw new AppError('MEDIA_TYPE_NOT_ALLOWED',415)
     const declared=request.headers.get('content-length')
-    if(declared!==null&&(!/^\\d+$/.test(declared)||Number(declared)>OWNER_AUDIO_PROXY_MAX_BYTES||
+    if(declared!==null&&(!/^[0-9]+$/.test(declared)||Number(declared)>OWNER_AUDIO_PROXY_MAX_BYTES||
       Number(declared)<128))
       throw new AppError('MEDIA_SIZE_NOT_ALLOWED',413)
     if(!request.body)throw new AppError('MEDIA_SIZE_NOT_ALLOWED',413)
