@@ -136,7 +136,7 @@ test('Edit consultation shows the YouTube link control immediately below the mob
   const edit=readFileSync(new URL('../app/admin/consultations/[id]/edit/page.js',import.meta.url),'utf8')
   const recorder=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
   const quick=readFileSync(new URL('../components/session-youtube-quick-add.jsx',import.meta.url),'utf8')
-  assert.match(edit,/SessionAudioRecorder clientId=\\{consultation\\.clientId\\} documentId=\\{consultation\\.id\\}/)
+  assert.ok(edit.includes('<SessionAudioRecorder clientId={consultation.clientId} documentId={consultation.id}'))
   const choose=recorder.indexOf("ru?'Загрузить из телефона'")
   const add=recorder.indexOf('showYouTubeQuickAdd&&<SessionYouTubeQuickAdd',choose)
   const photos=recorder.indexOf('<SessionPhotoUploader',add)
