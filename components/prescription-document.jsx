@@ -10,7 +10,7 @@ import { extractReportProgress } from '@/lib/documents/report-progress'
 import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, appendixOnly = false }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
@@ -31,6 +31,31 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         { type: 'bach', title: locale === 'ru' ? 'ЭССЕНЦИИ БАХА' : 'BACH ESSENCES', items: document.items.filter((item) => recommendationItemType(item, document.recommendationType) === 'bach') },
       ].filter((group) => group.items.length)
     : [{ type: document.recommendationType, items: document.items }]
+
+  // Keep the full source-only appendices available in the single-level session
+  // reader without repeating prescription headings, items or advice.
+  const appendix = (selectedProfiles.length || document.includeDistanceHomeopathy) ? <>
+      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
+        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
+        <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
+        {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
+          <h3>{remedy.canonical_latin_name}</h3>
+          {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
+            {/* The published original image is retained rather than substituted or generated. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
+          </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
+          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary fullSource />
+          {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
+            {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
+          </Link></p>}
+        </section>)}
+      </section>}
+
+      {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+
+  </> : null
+  if (appendixOnly) return appendix
 
   let itemNumber = 0
 
@@ -138,24 +163,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 
-      {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
-        <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
-        <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
-        {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
-          <h3>{remedy.canonical_latin_name}</h3>
-          {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
-            {/* The published original image is retained rather than substituted or generated. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={remedy.primary_image} alt={remedy.primary_image_alt || remedy.canonical_latin_name} loading="lazy" decoding="async" />
-          </figure> : <p className="canonical-remedy-photo-unavailable">{locale === 'ru' ? 'Исходная фотография отсутствует в базе.' : 'No source photograph is available in the library.'}</p>}
-          <RemedyContent locale={locale} remedy={remedy} sourceUrl={remedy.primary_source_url} variant="book" showEssence={false} expandSupplementary fullSource />
-          {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
-            {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
-          </Link></p>}
-        </section>)}
-      </section>}
-
-      {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
+      {appendix}
     </article>
   </Root>
 }
