@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import {BookOpen,CheckCircle2,FolderOpen,RefreshCw,ShieldCheck,Video} from 'lucide-react'
 import {parseSessionYouTubeUrl} from '@/lib/clients/youtube-resource'
 import {SessionAudioRecorder} from './session-audio-recorder'
+import {SessionMaterialPicker} from './session-material-picker'
 import styles from './client-session.module.css'
 
 // Uses existing practitioner-scoped session APIs, not a new media store.
@@ -35,7 +36,8 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     return row.scope==='client'&&asset?.scope==='client'&&asset?.kind==='video'&&asset?.status==='ready'
   })
   const selected=videoRows.filter(row=>['additional','meditation'].includes(row.role)).length+
-    youtube.filter(item=>item.placement==='materials').length
+    youtube.filter(item=>item.placement==='materials').length+
+    (session?.draft?.plan?.materialIds||session?.draft?.plan?.materials||[]).length
   const editorUrl=sessionId?'/admin/clients/'+encodeURIComponent(clientId)+
     '/sessions/'+encodeURIComponent(sessionId):''
 
@@ -184,6 +186,10 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
       {ru?'Приватные записи показываются только через защищённую сессию. Для YouTube подходят только общие обучающие видео: Unlisted не является приватным.':
         'Private uploads stay in the protected session. YouTube links are for general education only: Unlisted videos are not private.'}
     </div>
+    <SessionMaterialPicker locale={locale}
+      selectedIds={session?.draft?.plan?.materialIds||session?.draft?.plan?.materials?.map(item=>item.id)||[]}
+      disabled={busy||loading}
+      onChange={ids=>{void mutate(owner=>({...owner.draft,plan:{...owner.draft.plan,materialIds:ids}}))}}/>
     {loading?<p role="status">{ru?'Загружаем материалы…':'Loading report materials…'}</p>:
     <>
       <div className={styles.ownerMaterialsGroup}>

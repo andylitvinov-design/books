@@ -11,7 +11,7 @@ export function SaveClientSessionToAccount({locale='en',appAvailable=true,compac
     disabled={!appAvailable||!navigation} onClick={()=>navigation?.requestSave()}>
     <BookmarkCheck size={20} aria-hidden="true"/>
     {navigation?.savedSessionId?(ru?'Открыть сохранённый отчёт':'Open saved report'):
-      ru?'Войти в свой кабинет и сохранить отчёт':'Sign in to your Cabinet and save report'}
+      ru?'Войти в мой кабинет и сохранить отчёт':'Sign in to my Cabinet and save report'}
   </button>
   return <section className={styles.saveSessionBox} aria-label={ru?'Сохранить консультацию':'Save consultation'}>
     <div className={styles.saveSessionHeading}>

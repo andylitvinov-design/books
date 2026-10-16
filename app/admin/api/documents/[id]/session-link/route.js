@@ -19,14 +19,19 @@ export async function POST(request,{params}) {
     const sources=new Set([record.id,record.consultationId].filter(Boolean))
     const candidates=(await listClientSessions(config,store,record.clientId,{publishedOnly:true}))
       .filter(row=>sources.has(row.sourceConsultationId))
+    let reportChanged=false
     for(const row of candidates) {
       const published=await getPublishedClientSession(config,store,record.clientId,row.id)
         .catch(()=>null)
+      // An approved session may remain published after a report edit, but its
+      // fingerprint-verified report projection is intentionally withheld.
+      // Do not issue a stale client invitation: require owner republishing.
+      if(published && !published.report) reportChanged=true
       if(published?.report?.id!==record.id)continue
       const grant=await changeSessionGrant(config,store,record.clientId,row.id,'copy')
       if(!grant.secret)return privateJson({error:'SESSION_LINK_EXPIRED'},409)
       return privateJson({selector:grant.selector,secret:grant.secret})
     }
-    return privateJson({error:'SESSION_NOT_PUBLISHED'},409)
+    return privateJson({error:reportChanged?'SESSION_REPORT_CHANGED':'SESSION_NOT_PUBLISHED'},409)
   },{body:true})
 }

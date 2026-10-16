@@ -9,6 +9,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { documentPreviewEditHref } from '@/lib/consultations/document-preview-navigation'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
+import { ReportFinalActions } from '@/components/report-final-actions'
 import styles from './viewer.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -66,6 +67,7 @@ export default async function AdminFullReportView({ params, searchParams }) {
       {payment
         ? <PaymentDocument document={doc} locale={locale} admin embedded autoPrint={query.print === '1'} />
         : <PrescriptionDocument document={doc} locale={locale} admin embedded autoPrint={query.print === '1'} />}
+      {!payment&&query.print!=='1'&&<ReportFinalActions locale={locale} mode="preview"/>}
     </main>
   )
 }
