@@ -292,7 +292,7 @@
   border:0;border-radius:0;background:transparent;color:#81314b;
   font:750 12px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;
 }
-.editorialOrderPanel{border-color:#d7e0e9;background:#f4f8fb}
+.editorialOrderPanel{border-color:#d7e0e9;background:#f4f8fb;scroll-margin-block:104px 125px}
 .editorialOrderPanel>strong{display:block;font:750 13px/1.4 system-ui,sans-serif;margin-bottom:9px}
 .editorialOrderPanel>small{display:block;margin-top:9px;font:11px/1.4 system-ui,sans-serif;color:#667589}
 .editorialList .editorialFreeStart{
