@@ -51,18 +51,18 @@ test("seven-section learning path uses owner video before original questions, wi
 });
 
 test("Tantra Reiki price and source PDF remain available without a bottom PDF form", () => {
-  assert.match(pricing, /tantra: Object\\.freeze\\(\\{ amountEur: 50, durationMinutes: 30 \\}\\)/);
-  assert.match(landing, /formatReikiLevelPrice\\("tantra", locale\\)/);
-  assert.match(landing, /reiki-guide\\?course=tantra&locale=/);
-  assert.doesNotMatch(form, /reiki-guide\\?course=yggdrasil|Download PDF guide|Скачать PDF/);
+  assert.match(pricing, /tantra: Object\.freeze\(\{ amountEur: 50, durationMinutes: 30 \}\)/);
+  assert.match(landing, /formatReikiLevelPrice\("tantra", locale\)/);
+  assert.match(landing, /reiki-guide\?course=tantra&locale=/);
+  assert.doesNotMatch(form, /reiki-guide\?course=yggdrasil|Download PDF guide|Скачать PDF/);
 });
 
 test("bottom lead capture is three direct WhatsApp actions, no web form", () => {
-  assert.match(form, /type Intent = "free" \\| "personal" \\| "answers"/);
-  assert.match(form, /import \\{ whatsappEnquiryUrl \\} from "@\\/lib\\/whatsapp-enquiry"/);
-  assert.match(form, /return whatsappEnquiryUrl\\(\\{/);
-  assert.match(form, /request: t\\.requests\\[intent\\]/);
-  assert.match(form, /pagePath: "\\/" \\+ locale \\+ "\\/academy\\/reiki\\/tantra-reiki\\/free-initiation"/);
+  assert.match(form, /type Intent = "free" \| "personal" \| "answers"/);
+  assert.match(form, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
+  assert.match(form, /return whatsappEnquiryUrl\(\{/);
+  assert.match(form, /request: t\.requests\[intent\]/);
+  assert.match(form, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/);
   for (const intent of ["free", "personal", "answers"]) {
     assert.ok(form.includes('id="apply-' + intent + '"'), intent);
     assert.ok(form.includes('href={tantraInitiationWhatsAppUrl(locale, "' + intent + '")}'), intent);
@@ -70,10 +70,10 @@ test("bottom lead capture is three direct WhatsApp actions, no web form", () => 
   assert.equal((form.match(/target="_blank"/g) || []).length, 3);
   assert.match(form, /data-tantra-whatsapp-capture/);
   assert.match(form, /Я напишу или вставлю ответы на вопросы 1–7 непосредственно в WhatsApp/);
-  assert.match(landing, /href=\\{tantraInitiationWhatsAppUrl\\(locale, "answers"\\)\\}/);
-  assert.match(landing, /href=\\{tantraInitiationWhatsAppUrl\\(locale, "personal"\\)\\}/);
-  assert.doesNotMatch(form, /<form\\b|<input\\b|<textarea\\b|<select\\b|<button\\b|<label\\b/);
-  assert.doesNotMatch(form, /navigator\\.|window\\.|fetch\\(|localStorage|FormData|onSubmit/);
+  assert.match(landing, /href=\{tantraInitiationWhatsAppUrl\(locale, "answers"\)\}/);
+  assert.match(landing, /href=\{tantraInitiationWhatsAppUrl\(locale, "personal"\)\}/);
+  assert.doesNotMatch(form, /<form\b|<input\b|<textarea\b|<select\b|<button\b|<label\b/);
+  assert.doesNotMatch(form, /navigator\.|window\.|fetch\(|localStorage|FormData|onSubmit/);
 });
 
 test("new visual system stays isolated to its page and works on mobile", () => {
@@ -97,13 +97,13 @@ test("learn first: simple three steps precede video, study materials and the que
 });
 
 test("WhatsApp capture is compact, responsive and requests no name or email", () => {
-  assert.match(style, /\\.whatsappActions \\{ display: grid; grid-template-columns: repeat\\(2/);
-  assert.match(style, /\\.whatsappCapture \\{/);
-  assert.match(style, /\\.hero \\{[\\s\\S]*?min-height: 440px/);
-  assert.match(style, /\\.choiceFree, \\.choicePersonal \\{[\\s\\S]*?min-height: 232px/);
-  assert.match(style, /\\.howCard \\{[\\s\\S]*?min-height: 159px/);
-  assert.match(style, /\\.questionGrid li \\{[\\s\\S]*?min-height: 76px/);
-  assert.match(style, /@media \\(max-width: 760px\\)[\\s\\S]*?\\.whatsappActions \\{ grid-template-columns: 1fr/);
+  assert.match(style, /\.whatsappActions \{ display: grid; grid-template-columns: repeat\(2/);
+  assert.match(style, /\.whatsappCapture \{/);
+  assert.match(style, /\.hero \{[\s\S]*?min-height: 440px/);
+  assert.match(style, /\.choiceFree, \.choicePersonal \{[\s\S]*?min-height: 232px/);
+  assert.match(style, /\.howCard \{[\s\S]*?min-height: 159px/);
+  assert.match(style, /\.questionGrid li \{[\s\S]*?min-height: 76px/);
+  assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.whatsappActions \{ grid-template-columns: 1fr/);
   assert.match(form, /Никаких анкет, имени, email или регистрации/);
   assert.doesNotMatch(form, /<input[^>]*required|autoComplete=|type="email"|type="text"/);
 });
