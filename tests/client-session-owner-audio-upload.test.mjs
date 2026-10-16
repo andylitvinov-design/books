@@ -18,7 +18,7 @@ const createUploader=({row,upload=async()=>({error:null}),info=async()=>({error:
     '\nreturn uploadPrivateOwnerAudio')
   const run=factory(
     ()=>({storage:{from}}),
-    async(_cfg,_actor,cb)=>cb({query:async()=>({rows:row?[row]:[]})}),
+    async(_cfg,_actor,cb)=>cb({query:async(_sql,[assetId,sessionId,clientId])=>({rows:row&&row.id===assetId&&row.session_id===sessionId&&row.legacy_client_id===clientId?[row]:[]})}),
     async()=>session,()=>true,'hh-client-private-media',
     ['audio/mp4','audio/x-m4a','audio/webm','audio/mpeg'],
     OWNER_AUDIO_PROXY_MAX_BYTES,AppError,Buffer,Blob)
@@ -54,7 +54,7 @@ test('authorized, pinned pending audio is uploaded only once without upsert or e
 
 test('owner proxy rejects an unrelated asset, forged MIME or byte size before any upload',async()=>{
   for(const bad of [
-    {...record,legacy_client_id:'other-client',status:'removed'},
+    {...record,legacy_client_id:'other-client'},
     {...record,asset_kind:'video'},
     {...record,storage_provider:'r2'},
     {...record,mime:'application/pdf'},
