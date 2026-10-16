@@ -41,7 +41,7 @@ test('guest Cabinet flow restores the same result, with an explicit opt-in save 
   assert.match(landing,/requestedGuestResult = searchParams\.get\('result'\)/)
   assert.match(landing,/bootstrap\.results\.find\(\(item\) => item\.id === requestedGuestResult\)/)
   assert.match(landing,/setGuestResult\(result\)/)
-  assert.match(landing,/replaceGuestRoute\(\{ planId:.*resultId: result\.id \}\)/)
+  assert.match(landing,/replaceGuestRoute\(\{\s*planId:[^\n]*resultId:\s*result\.id\s*\}\)/)
   assert.match(landing,/onClick=\{saveToCabinet\}/)
   assert.match(landing,/sourceKind: 'guest_result'/)
   assert.match(landing,/GuestScaleInterpretation result=\{guestResult\}/)
