@@ -1,4 +1,5 @@
-import { ArrowUpRight, Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle } from "lucide-react";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./tantra-free-initiation.module.css";
@@ -17,15 +18,15 @@ const copy = {
       answers: "I have studied Tantra Reiki and would like to send my seven answers for the free Level 1 initiation.",
       feedback: "I watched the Tantra Reiki practice video and would like to share whether I was able to tune in to the flow and what I experienced.",
     },
-    answerContext: "I will write or paste the answers to questions 1–7 directly into our WhatsApp chat.",
-    feedbackContext: "My impressions after the practice (I will add them in this WhatsApp chat):",
+    answerContext: "I will write or paste the answers to questions 1–7 directly into our selected chat.",
+    feedbackContext: "My impressions after the practice (I will add them in the selected chat):",
     heading: "Write directly to Andrey",
-    lead: "No form, name, email or account required. Choose an option and continue in WhatsApp.",
+    lead: "No form, name, email or account required. Choose an option, then decide between WhatsApp and Telegram.",
     free: "Request free initiation",
     personal: "Personal online initiation · €50 / 30 min",
     session: "Personal session + initiation · €100 / 60 min",
-    answers: "Already answered the 7 questions? Send them in WhatsApp",
-    note: "WhatsApp opens with a prepared message. Review it and tap Send yourself — nothing is sent by the website.",
+    answers: "Already answered the 7 questions? Send your answers",
+    note: "Choose WhatsApp or Telegram. Review the prepared message and tap Send yourself — nothing is sent by the website.",
     tagline: "Direct conversation · no registration",
   },
   ru: {
@@ -37,15 +38,15 @@ const copy = {
       answers: "Я изучил(а) материалы Тантра Рейки и хочу отправить 7 ответов для бесплатной инициации 1-й ступени.",
       feedback: "Я посмотрел(а) видео с практикой Тантра Рейки и хочу написать отзыв: удалось ли мне настроиться на поток и что я ощутил(а).",
     },
-    answerContext: "Я напишу или вставлю ответы на вопросы 1–7 непосредственно в WhatsApp перед отправкой.",
-    feedbackContext: "Мой отзыв после практики (допишу в WhatsApp):",
+    answerContext: "Я напишу или вставлю ответы на вопросы 1–7 в выбранном мессенджере перед отправкой.",
+    feedbackContext: "Мой отзыв после практики (допишу в выбранном мессенджере):",
     heading: "Напишите Андрею напрямую",
-    lead: "Никаких анкет, имени, email или регистрации. Выберите действие и перейдите в WhatsApp.",
+    lead: "Никаких анкет, имени, email или регистрации. Выберите действие, затем удобный мессенджер.",
     free: "Запросить инициацию бесплатно",
     personal: "Личная онлайн-инициация · €50 / 30 мин",
     session: "Сессия + инициация · 100 € / 60 мин",
-    answers: "Уже ответили на 7 вопросов? Отправить в WhatsApp",
-    note: "Откроется WhatsApp с готовым текстом. Проверьте его и нажмите «Отправить» — сайт ничего не отправляет автоматически.",
+    answers: "Уже ответили на 7 вопросов? Отправить ответы",
+    note: "Выберите WhatsApp или Telegram, проверьте подготовленный текст и нажмите «Отправить» — сайт ничего не отправляет автоматически.",
     tagline: "Личное общение · без регистрации",
   },
   es: {
@@ -57,15 +58,15 @@ const copy = {
       answers: "He estudiado Tantra Reiki y quiero enviar mis siete respuestas para la iniciación gratuita de Nivel 1.",
       feedback: "He visto el vídeo de práctica de Tantra Reiki y quiero contar si pude conectar con el flujo y qué sentí durante la práctica.",
     },
-    answerContext: "Escribiré o pegaré las respuestas a las preguntas 1–7 directamente en WhatsApp antes de enviar.",
-    feedbackContext: "Mis impresiones de la práctica (las escribiré en WhatsApp):",
+    answerContext: "Escribiré o pegaré las respuestas a las preguntas 1–7 en el chat elegido antes de enviar.",
+    feedbackContext: "Mis impresiones de la práctica (las escribiré en el chat elegido):",
     heading: "Escribe directamente a Andrey",
-    lead: "Sin formulario, nombre, correo electrónico ni registro. Elige una opción para abrir WhatsApp.",
+    lead: "Sin formulario, nombre, correo electrónico ni registro. Elige una opción y luego WhatsApp o Telegram.",
     free: "Solicitar iniciación gratis",
     personal: "Iniciación personal online · €50 / 30 min",
     session: "Sesión personal + iniciación · 100 € / 60 min",
-    answers: "¿Ya respondiste a las 7 preguntas? Envíalas por WhatsApp",
-    note: "WhatsApp abre un mensaje preparado. Revísalo y pulsa Enviar; el sitio no envía nada automáticamente.",
+    answers: "¿Ya respondiste a las 7 preguntas? Envíalas",
+    note: "Elige WhatsApp o Telegram, revisa el mensaje y pulsa Enviar; el sitio no envía nada automáticamente.",
     tagline: "Contacto directo · sin registro",
   },
 } as const;
@@ -94,47 +95,15 @@ export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
         </div>
       </div>
       <div className={styles.whatsappActions}>
-        <a
-          id="apply-free"
-          href={tantraInitiationWhatsAppUrl(locale, "free")}
-          className={styles.whatsappPrimary}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <MessageCircle size={18} aria-hidden="true" />
-          {t.free}
-          <ArrowUpRight size={18} aria-hidden="true" />
-        </a>
-        <a
-          id="apply-personal"
-          href={tantraInitiationWhatsAppUrl(locale, "personal")}
-          className={styles.whatsappSecondary}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {t.personal}
-          <ArrowUpRight size={16} aria-hidden="true" />
-        </a>
-        <a
-          id="apply-session"
-          href={tantraInitiationWhatsAppUrl(locale, "session")}
-          className={styles.whatsappCombined}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {t.session}
-          <ArrowUpRight size={16} aria-hidden="true" />
-        </a>
+        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "free")} label={t.free} className={styles.whatsappPrimary} id="apply-free" />
+        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} label={t.personal} className={styles.whatsappSecondary} id="apply-personal" />
+        <div className={styles.whatsappCombinedSlot}>
+          <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} label={t.session} className={styles.whatsappCombined} id="apply-session" />
+        </div>
       </div>
-      <a
-        id="apply-answers"
-        href={tantraInitiationWhatsAppUrl(locale, "answers")}
-        className={styles.whatsappAnswers}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {t.answers} <ArrowUpRight size={15} aria-hidden="true" />
-      </a>
+      <div className={styles.whatsappAnswersSlot}>
+        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} label={t.answers} id="apply-answers" />
+      </div>
       <p className={styles.whatsappNote}>{t.note}</p>
     </div>
   );
