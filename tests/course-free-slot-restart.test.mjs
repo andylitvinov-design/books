@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { account, course, courseView, findButton, findPart, mount, nodes } from './helpers/course-ui-harness.mjs'
+import { account, course, courseView, findButton, findPart, mount, nodes, textOf } from './helpers/course-ui-harness.mjs'
 
 const free = {
   tier: 'free',
@@ -42,6 +42,7 @@ test('closing the only free course frees its slot and starts another without par
   const dashboard = findPart(h.tree, 'MyCoursesDashboard')
   assert.ok(dashboard, 'closed course stays in the learner history')
   assert.equal(dashboard.props.canAddCourse, true, '0/1 must enable Start another course')
+  assert.equal(dashboard.props.multiCourseEnabled, false, 'free accounts do not need parallel-course entitlement')
   dashboard.props.onNew()
   await h.settle()
   await approveStart(h)
@@ -89,4 +90,22 @@ test('a free account can start its first course, but cannot start a parallel sec
   await full.settle()
   assert.equal(full.calls.filter(call => call.body).length, 0, 'full capacity cannot be bypassed')
   full.unmount()
+})
+
+test('free dashboard explains closing (not pausing) as the step that enables the next course', async () => {
+  const h = mount('my-courses-dashboard', {
+    props: {
+      courses: [course('active', 4)],
+      membership: { tier: 'free', occupiedCount: 1, maxActiveCourses: 1 },
+      multiCourseEnabled: false,
+      canAddCourse: false,
+      onNew() {},
+    },
+  })
+  await h.settle()
+  const rendered = textOf(h.tree)
+  assert.match(rendered, /One course at a time\. Close the current course/)
+  assert.match(rendered, /Closing frees the course place/)
+  assert.equal(findButton(h.tree, 'Start another course').props.disabled, true)
+  h.unmount()
 })
