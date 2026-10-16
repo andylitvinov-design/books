@@ -29,7 +29,7 @@ test('topics immediately update the existing catalog while detailed selection st
   const picker = read('components/app/simple-test-picker.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const css = read('components/app/simple-test-picker.module.css')
-  assert.match(picker, /<details className=\{styles\.advanced\}>/)
+  assert.match(picker, /<details className=\{styles\.advanced\} id="hh-more-test-filters">/)
   assert.doesNotMatch(picker, /open=\{true\}|open=\{advanced/)
   assert.match(picker, /focus\.includes\(key\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
