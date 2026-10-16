@@ -57,10 +57,13 @@ async function verify(browserType,engine,width,height){
   await page.locator('input[name="accessCode"]').fill(PIN)
   await page.getByRole('button',{name:/continue|продолжить/i}).click()
   await expect(page).toHaveURL(/\/admin(?:\/)?$/,{timeout:15000})
-  const response=await page.goto(origin+'/admin/youtube-upload',{waitUntil:'networkidle',timeout:50000})
+  // Next.js/admin shell can keep passive connections open. DOM readiness plus
+  // explicit visible landmarks is the reliable mobile/WebKit acceptance gate.
+  const response=await page.goto(origin+'/admin/youtube-upload',{waitUntil:'domcontentloaded',timeout:30000})
   assert.equal(response.status(),200)
   const root=page.locator('[data-youtube-upload-page]')
-  await expect(root).toBeVisible()
+  await expect(root).toBeVisible({timeout:15000})
+  console.log('Mobile QA: admin page ready in '+engine+' '+width+'px')
   await expect(page.getByRole('heading',{name:'Phone → YouTube'})).toBeVisible()
   await expect(page.locator('input[type="file"]')).toHaveCount(1)
 
