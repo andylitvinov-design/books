@@ -46,8 +46,8 @@ export function PrescriptionAdminHeader({ title, description }) {
         <Link href="/admin">{labels.cabinet}</Link>
         <Link href="/admin/consultations/new">{labels.newConsultation}</Link>
         <Link href="/admin/clients">{labels.clients}</Link>
-        <Link href="/admin/clients/legacy">{labels.legacy}</Link>
         <Link href="/admin/materials">{labels.materials}</Link>
+        <Link href="/admin/clients/legacy">{labels.legacy}</Link>
         <Link href="/admin/videos">{labels.videos}</Link>
         <Link href="/admin/youtube-upload">{labels.youtubeUploader}</Link>
       </nav>
