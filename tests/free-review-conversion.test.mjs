@@ -8,6 +8,7 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 const landing = read("app/[locale]/services/free-situation-review/page.tsx");
 const css = read("app/[locale]/services/free-situation-review/review.module.css");
 const form = read("components/free-situation-review-form.tsx");
+const quickRequest = read("components/free-review-quick-request.tsx");
 const intake = read("components/free-drawing-intake.tsx");
 const intakeCss = read("components/free-drawing-intake.module.css");
 
@@ -92,6 +93,21 @@ test("coaching form is real, ephemeral, mobile-friendly and does not leak respon
   assert.match(intakeCss, /focus-visible/);
 });
 
+test("first contact stays compact, with messenger handoff and no drawing requirement", () => {
+  assert.match(quickRequest, /<ContactChannelChooser/);
+  assert.match(quickRequest, /namePlaceholder/);
+  assert.match(quickRequest, /questionPlaceholder/);
+  assert.match(quickRequest, /whatsappEnquiryUrl\(\{/);
+  assert.match(quickRequest, /service_request_start/);
+  assert.doesNotMatch(quickRequest, /<FreeDrawingIntake|fetch\(|localStorage|sessionStorage/);
+  const hero = landing.slice(landing.indexOf('className={styles.capturePanel}'), landing.indexOf('</section>', landing.indexOf('className={styles.capturePanel}')));
+  assert.ok(hero.includes('<FreeReviewQuickRequest'));
+  assert.ok(!hero.includes('<FreeSituationReviewForm'), "Detailed questionnaire must not be in the first capture");
+  assert.ok(landing.includes('variant="all"'), "Full archived testimonials must appear on this landing");
+  assert.ok(landing.indexOf('variant="all"') < landing.lastIndexOf('className={styles.details}'));
+  assert.ok(landing.includes('className={styles.finalCapture}'));
+});
+
 test("mobile design keeps a clear first-step form and separates paid plans", () => {
   for (const value of [".contentGrid", ".capturePanel", ".steps", ".paid", ".directions", ".about", ".faq", ".closing"]) assert.ok(css.includes(value));
   assert.ok(css.includes("@media(max-width:767px)"));
@@ -141,7 +157,14 @@ function assertLandingContract(tree, locale) {
   assert.equal(byClass("heroPrimary")?.props.href, "#request-free-review");
   assert.equal(byClass("heroSecondary")?.props.href, "#personal-consultation");
   assert.equal(byClass("capturePanel")?.props.id, "request-free-review");
-  assert.ok(nodes(byClass("capturePanel")).some(node => node.type === "FreeSituationReviewForm" && node.props.locale === locale));
+  assert.ok(nodes(byClass("capturePanel")).some(node => node.type === "FreeReviewQuickRequest" && node.props.locale === locale), "First enquiry must be compact");
+  assert.ok(!nodes(byClass("capturePanel")).some(node => node.type === "FreeSituationReviewForm"), "Do not force questionnaire in first capture");
+  assert.ok(all.some(node => node.type === "FreeSituationReviewForm" && node.props.locale === locale), "Keep detailed form only after process");
+  const finalCapture = byClass("finalCapture");
+  assert.ok(finalCapture && nodes(finalCapture).some(node => node.type === "FreeReviewQuickRequest"), "Repeat compact capture at the end");
+  assert.ok(all.indexOf(byClass("outcomes")) < all.indexOf(byClass("paid")), "Client outcomes must come before the offer");
+  assert.ok(all.indexOf(byClass("faq")) < all.indexOf(byClass("details")), "Explain the process near the bottom");
+  assert.ok(all.indexOf(byClass("details")) < all.indexOf(finalCapture), "Repeat enquiry after process");
   const paid = byClass("paid");
   assert.equal(paid?.props.id, "personal-consultation");
   const videoIndex = all.findIndex(node => node.type === "ServiceVideoShowcase");

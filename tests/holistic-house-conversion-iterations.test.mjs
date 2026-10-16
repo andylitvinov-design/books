@@ -35,6 +35,8 @@ test("iteration 3: grounded personal introduction and contextual testimonial CTA
   assert.match(home, /I have been facilitating personal and group development since 2002/);
   assert.match(home, /Я работаю с индивидуальными и групповыми практиками с 2002 года/);
   assert.match(home, /<p>{text\.aboutIntro}<\/p>/);
-  assert.match(testimonials, /href={"\/" \+ locale \+ "\/services\/free-situation-review"}/);
+  assert.match(testimonials, /variant === "all" \? "#request-free-review" : "\/" \+ locale \+ "\/services\/free-situation-review"/);
+  assert.match(testimonials, /variant === "all"/);
+  assert.match(testimonials, /presentedVideos\.map/);
   assert.doesNotMatch(testimonials, /isHome \? "\/" \+ locale \+ "\/services#consultation"/);
 });
