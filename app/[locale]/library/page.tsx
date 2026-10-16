@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: libraryCopy[locale].lead,
     alternates: {
       canonical: `/${locale}/library`,
-      languages: { en: "/en/library", ru: "/ru/library", es: "/es/library" },
+      languages: { en: "/en/library", ru: "/ru/library", es: "/es/library", "x-default": "/en/library" },
     },
   };
 }
