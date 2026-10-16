@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2 } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2, ChevronDown } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
@@ -55,7 +55,7 @@ const copy = {
       { title: "Answer 7 questions", text: "Prepare seven short answers to the course questions." },
       { title: "Book a personal distance initiation", text: "Optional online one-to-one initiation with Andrey · €50 / 30 min." },
     ],
-    questionsEyebrow: "06 / YOUR QUESTIONS", questionsTitle: "Seven questions before your initiation",
+    questionsEyebrow: "06 / YOUR QUESTIONS", questionsTitle: "Seven questions before your initiation", questionsShow: "Show 7 questions", questionsHide: "Hide questions",
     questionsLead: "Read Andrey's original Tantra Reiki materials and answer in your own words. One to three sentences per question is enough.",
     questions: [
       "Who created the Tantra Reiki system, and what is the source of its energy?",
@@ -122,7 +122,7 @@ const copy = {
       { title: "Ответьте на 7 вопросов", text: "Подготовьте короткие ответы по материалам системы." },
       { title: "Запишитесь на личную дистанционную инициацию", text: "По желанию: индивидуальная онлайн-инициация с Андреем · €50 / 30 мин." },
     ],
-    questionsEyebrow: "06 / ВОПРОСЫ", questionsTitle: "7 вопросов перед инициацией",
+    questionsEyebrow: "06 / ВОПРОСЫ", questionsTitle: "7 вопросов перед инициацией", questionsShow: "Показать 7 вопросов", questionsHide: "Свернуть вопросы",
     questionsLead: "Прочитайте авторские материалы о Тантра Рейки и ответьте своими словами. Достаточно 1–3 предложений на каждый вопрос.",
     questions: [
       "Кто является создателем системы Тантра Рейки и каков источник её энергии?",
@@ -189,7 +189,7 @@ const copy = {
       { title: "Responde 7 preguntas", text: "Prepara respuestas breves sobre los materiales." },
       { title: "Reserva una iniciación personal a distancia", text: "Opcional: iniciación individual online con Andrey · €50 / 30 min." },
     ],
-    questionsEyebrow: "06 / PREGUNTAS", questionsTitle: "7 preguntas antes de tu iniciación",
+    questionsEyebrow: "06 / PREGUNTAS", questionsTitle: "7 preguntas antes de tu iniciación", questionsShow: "Ver las 7 preguntas", questionsHide: "Ocultar preguntas",
     questionsLead: "Lee los materiales originales de Andrey. Responde con tus palabras; bastan de 1 a 3 frases por pregunta.",
     questions: [
       "¿Quién creó el sistema Tantra Reiki y cuál es el origen de su energía?",
@@ -381,11 +381,26 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section id="study-questions" className={styles.questionsSection} aria-labelledby="tantra-questions-title">
-          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.questionsEyebrow}</p><h2 id="tantra-questions-title">{t.questionsTitle}</h2><p>{t.questionsLead}</p></header>
-          <ol className={styles.questionGrid}>
-            {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
-          </ol>
-          <div className={styles.questionFooter}><span>{t.questionNote}</span><a href={tantraInitiationWhatsAppUrl(locale, "answers")} target="_blank" rel="noopener noreferrer" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
+          <details className={styles.questionsDisclosure}>
+            <summary className={styles.questionsSummary}>
+              <span className={styles.questionsSummaryCopy}>
+                <span className={styles.questionsSummaryEyebrow}>{t.questionsEyebrow}</span>
+                <span className={styles.questionsSummaryTitle} role="heading" aria-level={2} id="tantra-questions-title">{t.questionsTitle}</span>
+              </span>
+              <span className={styles.questionsSummaryToggle}>
+                <span className={styles.questionsShowLabel}>{t.questionsShow}</span>
+                <span className={styles.questionsHideLabel}>{t.questionsHide}</span>
+                <ChevronDown size={22} aria-hidden="true"/>
+              </span>
+            </summary>
+            <div className={styles.questionsContent}>
+              <p className={styles.questionsLead}>{t.questionsLead}</p>
+              <ol className={styles.questionGrid}>
+                {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
+              </ol>
+              <div className={styles.questionFooter}><span>{t.questionNote}</span><a href={tantraInitiationWhatsAppUrl(locale, "answers")} target="_blank" rel="noopener noreferrer" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
+            </div>
+          </details>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">
