@@ -52,6 +52,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       {
         "@type": "Organization", "@id": publicOrigin + "/#organization",
         name: "Holistic House", url: publicOrigin + "/",
+        logo: publicOrigin + "/holistic-house-app.svg",
         areaServed: { "@type": "City", name: "Toronto" },
       },
       {
