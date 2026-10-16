@@ -3,6 +3,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
+import { PrinciplesOfEnergywork, KundaliniFreeInitiation } from "@/components/principles-of-energywork";
 import { TempleStudies } from "@/components/temple-studies";
 import { templeLegacyAnchors } from "@/data/academy/temple-studies-curriculum";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
@@ -45,6 +46,8 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  if (routeKey(slug) === "principles-of-energywork") return locale === "ru" ? "Принципы энергетической работы — 3 системы Рейки бесплатно" : locale === "es" ? "Principios del trabajo energético — 3 Reiki gratis" : "Principles of Energywork — FREE Initiations into 3 Reiki Systems";
+  if (routeKey(slug) === "reiki/kundalini-reiki/free-initiation") return locale === "ru" ? "Кундалини Рейки — бесплатная инициация 1-й ступени" : locale === "es" ? "Kundalini Reiki — iniciación gratis Nivel 1" : "Kundalini Reiki — Free Level 1 Initiation";
   if (routeKey(slug) === "temple-studies") return locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies";
   if (routeKey(slug) === "reiki/kundalini-reiki") return locale === "ru" ? "Кундалини Рейки — 3 ступени" : locale === "es" ? "Kundalini Reiki — 3 niveles" : "Kundalini Reiki — 3 levels";
   const child = yggdrasilChild(slug);
@@ -75,7 +78,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "reiki/tantra-reiki/free-initiation"
+  const description = routeKey(slug) === "principles-of-energywork"
+    ? locale === "ru" ? "Бесплатный вводный курс: основы энергетической работы, отличия Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки, ссылки на программы и инициации первой ступени." : locale === "es" ? "Curso introductorio gratis: principios del trabajo energético, tres sistemas Reiki, materiales y enlaces a las iniciaciones de Nivel 1." : "Principles of Energywork: free introductory course comparing Reiki Yggdrasil, Tantra Reiki and Kundalini Reiki, with original study materials and teacher-guided Level 1 offers."
+    : routeKey(slug) === "reiki/kundalini-reiki/free-initiation"
+    ? locale === "ru" ? "Бесплатная вводная первая ступень Кундалини Рейки: обучение по исходной методичке Пола Крика и заявка Андрею без email и регистрации." : locale === "es" ? "Kundalini Reiki Nivel 1: materiales originales, manual de Paul Crick y solicitud gratuita de iniciación introductoria con Andrey." : "Kundalini Reiki free Level 1 introduction: study the original Paul Crick manual and ask Andrey for a teacher-guided initiation; no signup required."
+    : routeKey(slug) === "reiki/tantra-reiki/free-initiation"
     ? locale === "ru" ? "Тантра Рейки: бесплатная или личная инициация первой ступени, 7 вопросов, оригинальная практика Андрея, 9 ступеней и PDF." : locale === "es" ? "Tantra Reiki: iniciación gratis o personal, siete preguntas, vídeo original de Andrey, nueve niveles y PDF." : "Tantra Reiki Level 1: free or personal initiation, seven study questions, Andrey’s original video, nine levels and PDF."
     : routeKey(slug) === "reiki/kundalini-reiki"
     ? locale === "ru" ? "Кундалини Рейки — базовый курс 1–3 ступени. Исходная методичка Kundalini Reiki Manual, Paul Crick, 24 страницы, PDF." : locale === "es" ? "Kundalini Reiki 1–3. Kundalini Reiki Manual de Paul Crick, PDF original de 24 páginas." : "Kundalini Reiki 1–3. Original Kundalini Reiki Manual by Paul Crick, 24-page PDF, extra attunements and Boosters."
@@ -113,6 +120,8 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
+  if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
   if (key === "temple-studies") return <TempleStudies locale={locale} />;
   if (key === "reiki/kundalini-reiki") return <KundaliniReikiCourse locale={locale} />;
   if (key === "reiki/tantra-reiki/free-initiation") return <TantraFreeInitiation locale={locale} />;

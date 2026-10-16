@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, MessageCircle } from "lucide-react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
@@ -61,6 +62,9 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
               <span>{t.manualCount}</span>
             </div>
             <div className={styles.heroActions}>
+              <Link className={styles.primaryAction} href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"}>
+                {locale === "ru" ? "Получить 1-ю ступень бесплатно" : locale === "es" ? "Nivel 1 gratis" : "Free Level 1 initiation"}<ArrowRight size={17} aria-hidden="true" />
+              </Link>
               <a className={styles.primaryAction} href="#kundalini-levels">
                 {t.start}<ArrowDown size={17} aria-hidden="true" />
               </a>
@@ -256,6 +260,9 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
             <p className={styles.studySource}><BookOpen size={16} aria-hidden="true" />{t.howToLearnTitle}: {t.howToLearnQuote} · PsiTrends</p>
           </div>
           <div className={styles.captureActions}>
+            <Link href={"/" + locale + "/academy/reiki/kundalini-reiki/free-initiation"} className={styles.captureSecondary}>
+              {locale === "ru" ? "Бесплатная вводная 1-я ступень" : locale === "es" ? "Iniciación introductoria gratis" : "Free introductory Level 1"}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
             <a href={enquiryUrl(locale, "initiation")} target="_blank" rel="noopener noreferrer" className={styles.capturePrimary}>
               <MessageCircle size={19} aria-hidden="true" />{t.personal}<ArrowRight size={16} aria-hidden="true" />
             </a>
