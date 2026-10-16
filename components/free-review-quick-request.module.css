@@ -12,3 +12,27 @@
 .note{margin:13px 0 0;color:#55706b;font:11px/1.55 Arial,sans-serif}
 @media(max-width:767px){.card{padding:19px 16px;border-radius:15px;box-shadow:none}.card h2{font-size:27px}.lead{font-size:13px}.note{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.card *{scroll-behavior:auto}}
+
+
+/* Native radio inputs stay keyboard accessible and make the selected price unmistakable. */
+.formatChoices{margin:0 0 16px;padding:0;border:0;min-width:0}
+.formatChoices legend{padding:0;margin:0 0 9px;color:#35574e;font:750 13px/1.45 Arial,sans-serif}
+.optionList{display:grid;gap:8px}
+.option{display:grid;grid-template-columns:19px minmax(0,1fr) auto;align-items:center;gap:11px;min-height:59px;padding:11px 12px;background:#fffefa;border:1px solid #c5d6cd;border-radius:12px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.option[data-selected="true"]{background:#eaf6f0;border-color:#318075;box-shadow:0 0 0 1px #318075}
+.option:focus-within{outline:3px solid #98cdbd;outline-offset:2px}
+.option input{width:17px;height:17px;margin:0;accent-color:#236b5c;cursor:pointer}
+.optionText{display:grid;min-width:0;gap:3px;color:#254a42}
+.optionText strong{font:750 13px/1.36 Arial,sans-serif}
+.optionText small{font:11px/1.45 Arial,sans-serif;color:#5c746c}
+.optionPrice{justify-self:end;white-space:nowrap;color:#85445a;font:800 15px/1.2 Arial,sans-serif}
+.option[data-selected="true"] .optionPrice{color:#176350}
+@media(max-width:767px){
+  .formatChoices{margin-bottom:12px}
+  .optionList{gap:7px}
+  .option{padding:10px;min-height:56px;grid-template-columns:17px minmax(0,1fr) auto;gap:8px}
+  .optionText strong{font-size:12.5px}
+  .optionText small{font-size:10.5px}
+  .optionPrice{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.option{transition:none}}
