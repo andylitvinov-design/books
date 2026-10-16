@@ -88,11 +88,13 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
   const linkedResources=resources.filter(resource=>resource.kind!=='youtube')
   const media=session.media||[]
-  const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
-    .sort((a,b)=>(a.kind==='video'?0:1)-(b.kind==='video'?0:1))
-  const guideMedia=media.filter(item=>item.kind==='video'&&item.role==='instruction')
+  // Private and approved YouTube videos go together above the report body.
+  // Audio, PDF and photos remain in their own sections, without duplicates.
+  const videoMedia=media.filter(item=>item.kind==='video')
+  const personalAudio=media.filter(item=>item.kind==='audio'&&(!item.role||item.role==='personal'))
   const photos=media.filter(item=>item.kind==='image')
-  const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
+  const supplementary=media.filter(item=>item.kind!=='image'&&item.kind!=='video'&&
+    (item.kind==='pdf'||['meditation','additional'].includes(item.role)||
     (item.role==='instruction'&&item.kind==='audio')))
   const hasFullReport=Boolean(reportContent)
   const hasRecommendation=Boolean(recommendation?.items?.length)
@@ -106,8 +108,9 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/':
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
-  const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':youtubeResources.length?'#session-youtube':(supplementary.length||linkedResources.length)?'#session-resources':'#session-title'
+  const nextAnchor=hasRecommendation?'#session-prescription':personalAudio.length?'#session-message':
+    session.report?'#session-report':photos.length?'#session-photos':
+      (supplementary.length||linkedResources.length)?'#session-resources':'#session-title'
   // The approved HTML document is the only source of report narrative and prescriptions.
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
@@ -129,6 +132,24 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         :mode==='owner'?<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>
         : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
     </header>
+    {(videoMedia.length>0||youtubeResources.length>0)&&
+      <section id="session-video" className={styles.clientSection+' '+styles.videoFirstSection}
+        aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionIcon}><Video size={21}/></span>
+          <div><span className={styles.sectionKicker}>{ru?'ВИДЕО К КОНСУЛЬТАЦИИ':'CONSULTATION VIDEOS'}</span>
+            <h2>{ru?'Видео для вас':'Videos for you'}</h2></div>
+        </header>
+        {videoMedia.length>0&&<div className={styles.mediaList}>
+          {videoMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+            session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
+        </div>}
+        {youtubeResources.length>0&&<div className={styles.youtubeLessonList}>
+          {youtubeResources.map((item,index)=><SessionYouTubePlayer
+            key={item.url+'-'+index} title={item.title} url={item.url}
+            description={item.description} locale={locale}/>)}
+        </div>}
+      </section>}
     {!hasFullReport&&<section className={styles.sessionHero} aria-labelledby="session-title">
       <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
       <h1 id="session-title">{session.title}</h1>
@@ -158,14 +179,14 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <div className={styles.fullReportContent}>{reportContent}</div>
     </section>}
 
-    {personalMedia.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Личное обращение':'Personal message'}>
+    {personalAudio.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Голосовое обращение':'Voice message'}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><Headphones size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'01 · ЛИЧНОЕ ОБРАЩЕНИЕ':'01 · PERSONAL MESSAGE'}</span>
-          <h2>{ru?'Сообщение для вас':'A message for you'}</h2></div>
+        <div><span className={styles.sectionKicker}>{ru?'ГОЛОСОВОЕ ОБРАЩЕНИЕ':'VOICE MESSAGE'}</span>
+          <h2>{ru?'Аудиосообщение для вас':'An audio message for you'}</h2></div>
       </header>
       <div className={styles.mediaList}>
-        {personalMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
+        {personalAudio.map(item=><PrivatePlayer key={item.assetId} item={item}
           session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
       </div>
     </section>}
@@ -205,32 +226,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           </a>
           {item.title&&<figcaption>{item.title}</figcaption>}
         </figure>)}
-      </div>
-    </section>}
-
-    {guideMedia.length>0&&<section id="session-guide" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Video size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОИНСТРУКЦИЯ':'VIDEO GUIDE'}</span>
-          <h2>{ru?'Как принимать назначенные препараты':'How to follow the recommendations'}</h2></div>
-      </header>
-      <p className={styles.sectionIntro}>{ru?'Дополнительное видео от специалиста. Индивидуальные дозировки остаются в вашем назначении выше.':
-        'Your practitioner’s guidance video. Your personal dosage details remain in the written recommendation above.'}</p>
-      <div className={styles.mediaList}>{guideMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
-        session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
-    </section>}
-
-    {youtubeResources.length>0&&<section id="session-youtube" className={styles.clientSection}
-      aria-label={ru?'Обучающие видео с YouTube':'Educational YouTube videos'}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><Video size={21}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОМАТЕРИАЛЫ':'VIDEO MATERIALS'}</span>
-          <h2>{ru?'Видео к вашей консультации':'Videos for your consultation'}</h2></div>
-      </header>
-      <div className={styles.youtubeLessonList}>
-        {youtubeResources.map((item,index)=><SessionYouTubePlayer
-          key={item.url+'-'+index} title={item.title} url={item.url}
-          description={item.description} locale={locale}/>)}
       </div>
     </section>}
 
