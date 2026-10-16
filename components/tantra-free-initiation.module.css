@@ -126,10 +126,10 @@
   border: 1px solid #eadedc;
   background: #fff;
 }
-.howGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.howGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .howCard {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; min-width: 0;
-  min-height: 159px; padding: 16px 17px; border: 1px solid #e7dadd;
+  min-height: 138px; padding: 15px 17px; border: 1px solid #e7dadd;
   border-radius: 14px; background: linear-gradient(153deg, #fcf7f4, #fdfcfa);
   color: var(--tn-ink); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
@@ -138,6 +138,23 @@
 .howCard h3 { margin: 11px 0 6px; font: 400 clamp(19px,2vw,24px)/1.18 var(--font-serif),Georgia,serif; color: #33384d; }
 .howCard p { margin: 0 0 9px; color: #716d76; font-size: 12px; line-height: 1.5; }
 .howCard > svg { margin: auto 0 0; color: var(--tn-wine); }
+/* Fifth step is an optional personal online session, not a prerequisite for the free offer. */
+.howCard[data-personal="true"] {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 45px minmax(0, 1fr) 20px;
+  grid-template-rows: auto auto;
+  column-gap: 13px;
+  align-items: center;
+  min-height: 91px;
+  padding: 14px 19px;
+  border-color: #dcbfca;
+  background: linear-gradient(111deg, #f7e9ee 0%, #fff8f5 100%);
+}
+.howCard[data-personal="true"] .howNumber { grid-column: 1; grid-row: 1 / span 2; }
+.howCard[data-personal="true"] h3 { grid-column: 2; grid-row: 1; margin: 0 0 5px; }
+.howCard[data-personal="true"] p { grid-column: 2; grid-row: 2; margin: 0; }
+.howCard[data-personal="true"] > svg { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
 
 .questionsSection { margin-top: 8px; padding: clamp(21px,3.2vw,37px); border: 1px solid #eadfd4; border-radius: 23px; background: linear-gradient(155deg, #faf4eb, #fffaf4 48%, #f7f2ef); }
 .questionGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin: 0; padding: 0; list-style: none; }
@@ -286,6 +303,13 @@
 @media (max-width: 760px) {
   .howSection { padding: 20px 15px; }
   .howGrid { grid-template-columns: 1fr; }
+  .howCard[data-personal="true"] {
+    grid-column: 1 / -1;
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+    column-gap: 11px;
+    min-height: 0;
+    padding: 13px 14px;
+  }
   .howCard {
     display: grid;
     grid-template-columns: 32px minmax(0, 1fr) 18px;
