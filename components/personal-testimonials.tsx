@@ -76,11 +76,15 @@ export function PersonalTestimonials({
   variant = "home",
 }: {
   locale: Locale;
-  variant?: "home" | "services";
+  variant?: "home" | "services" | "all";
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
   const videos = isHome ? testimonialVideos[locale].slice(0, 2) : testimonialVideos[locale].slice(0, 3);
+  // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
+  const presentedVideos = variant === "all"
+    ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
+    : videos;
   const titleId = isHome ? "home-testimonials-title" : "services-testimonials-title";
 
   return (
@@ -93,8 +97,8 @@ export function PersonalTestimonials({
     >
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
-        <h2 id={titleId}>{isHome ? current.title : current.serviceTitle}</h2>
-        <p>{isHome ? current.lead : current.serviceLead}</p>
+        <h2 id={titleId}>{isHome || variant === "all" ? current.title : current.serviceTitle}</h2>
+        <p>{isHome || variant === "all" ? current.lead : current.serviceLead}</p>
       </header>
 
       <figure className={styles.quoteCard}>
@@ -108,11 +112,12 @@ export function PersonalTestimonials({
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{current.videoLanguage}</span>
+        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
       <div className={styles.videoGrid}>
-        {videos.map((item) => (
+        {presentedVideos.map((item) => (
           <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
+            {variant === "all" ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
             <SiteVideoPlayer
               video={{ youtubeId: item.id, language: item.language, title: item.title }}
               locale={locale}
@@ -128,7 +133,7 @@ export function PersonalTestimonials({
         <Link className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
           {current.moreLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
-        <Link className={styles.contact} href={"/" + locale + "/services/free-situation-review"}>
+        <Link className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
           {current.ctaLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
       </div>
