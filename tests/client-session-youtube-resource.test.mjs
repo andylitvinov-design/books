@@ -94,7 +94,8 @@ test('YouTube iframe is click-only and restricted to privacy-enhanced origin',()
 test('the same report embeds videos in the guest, cabinet, saved and owner session page',()=>{
   const view=readFileSync(new URL('../components/client-session-page.jsx',import.meta.url),'utf8')
   const editor=readFileSync(new URL('../components/admin-session-studio.jsx',import.meta.url),'utf8')
-  assert.match(view,/youtubeResources\.map/)
+  assert.match(view,/topYoutubeResources\.map/)
+  assert.match(view,/materialsYoutubeResources\.map/)
   assert.match(view,/SessionYouTubePlayer/)
   assert.match(view,/hasFullReport&&<section id="session-report"/)
   assert.match(view,/linkedResources\.map/)
@@ -132,7 +133,7 @@ test('quick-add from existing client document uses scoped, revision-checked draf
   assert.doesNotMatch(quick,/action:'publish'|youtube\.com\/upload|uploadToSignedUrl/)
 })
 
-test('Edit consultation shows the YouTube link control immediately below the mobile upload button',()=>{
+test('Report editor provides an owner-only video selector and reuses phone upload',()=>{
   const edit=readFileSync(new URL('../app/admin/consultations/[id]/edit/page.js',import.meta.url),'utf8')
   const recorder=readFileSync(new URL('../components/session-audio-recorder.jsx',import.meta.url),'utf8')
   const quick=readFileSync(new URL('../components/session-youtube-quick-add.jsx',import.meta.url),'utf8')
@@ -229,7 +230,7 @@ test('both report editors expose video placement, private upload and deliberate 
   for(const text of [full,standalone])assert.match(text,/ReportVideoMaterialsEditor/)
   for(const part of ['clientId','documentId','sourceConsultationId'])assert.ok(full.includes(part))
   assert.match(materials,/clientId=\{clientId\} documentId=\{documentId\}/)
-  assert.match(materials,/role==='additional'/)
+  assert.match(materials,/\['additional','meditation'\]\.includes\(row\.role\)/)
   assert.match(materials,/action:'publish'|Review and publish session/)
   assert.doesNotMatch(materials,/await ownerApi\([^]*?,\s*'POST',\s*\{action:'publish'/)
 })
