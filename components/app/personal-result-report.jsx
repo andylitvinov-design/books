@@ -8,20 +8,21 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return null
   const ru = locale === 'ru'
-  const bach = result?.definitionKey === 'hh-bach-flower-profile'
+  const bach = report.reportKind === 'bach'
+  const verified = report.verified !== false
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
   if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)
-  const featured = bach ? report.sections.slice(0, report.highlightedCount) : report.sections
-  const extra = bach ? report.sections.slice(report.highlightedCount) : []
+  const featured = bach && verified ? report.sections.slice(0, report.highlightedCount) : report.sections
+  const extra = bach && verified ? report.sections.slice(report.highlightedCount) : []
   const renderCard = (section, index) => (
     <article key={section.key + ':' + index} className={styles.card}>
       <div className={styles.cardHead}>
         <span className={styles.number}>{String(index + 1).padStart(2, '0')}</span>
         <div>
-          {bach && section.group !== 'not-marked' && (
+          {bach && verified && section.group !== 'not-marked' && (
             <p className={styles.groupLabel}>
               {section.group === 'main'
                 ? (ru ? 'Основное совпадение' : 'Primary match')
@@ -33,7 +34,10 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
           <h3>{section.title}</h3>
           <p className={styles.construct}>{section.construct}</p>
           <p className={styles.score}>{bach
-            ? (ru ? 'Вес совпадений' : 'Weighted match') + ': ' + section.value
+            ? (verified ? (ru ? 'Вес совпадений' : 'Weighted match') : (ru ? 'Сохранённое значение' : 'Saved value')) + ': ' +
+              (section.value ?? (ru ? 'недоступно' : 'unavailable')) + ' (' +
+              (verified ? (ru ? 'диапазон' : 'range') : (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range')) + ' ' +
+              (section.min ?? '?') + '–' + (section.max ?? '?') + ')'
             : (ru ? 'Результат' : 'Your score') + ': ' + section.value + ' (' + (ru ? 'диапазон' : 'range') + ' ' + section.min + '–' + section.max + ')'}</p>
         </div>
       </div>
@@ -43,12 +47,15 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         {!!byScale.get(section.key).skill && <p><strong>{ru?'Навык по желанию':'Optional skill'}:</strong> {byScale.get(section.key).skill}</p>}
       </div>}
       {!bach && section.bandBasis && <p className={styles.band}>{section.bandBasis === 'screening' ? (ru ? 'Опубликованный скрининговый диапазон' : 'Published screening band') : section.bandBasis === 'published-reference' ? (ru ? 'Справочный диапазон инструмента' : 'Instrument reference band') : (ru ? 'Описательный показатель' : 'Descriptive measure')}</p>}
-      <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
-      <ol className={styles.steps}>
-        {section.steps.map((step) => <li key={step}>{step}</li>)}
-      </ol>
+      {section.steps.length > 0 && <>
+        <h4>{ru ? 'Что попробовать за неделю' : 'Try this over the next week'}</h4>
+        <ol className={styles.steps}>
+          {section.steps.map((step) => <li key={step}>{step}</li>)}
+        </ol>
+      </>}
+      {section.limitations?.map(limitation => <p key={limitation} className={styles.followUp}>{limitation}</p>)}
       <p className={styles.followUp}>{section.followUp}</p>
-      {!bach && section.source && <a className={styles.source} href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник интерпретации' : 'Interpretation source'}</a>}
+      {section.source && <a className={styles.source} href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник интерпретации' : 'Interpretation source'}</a>}
     </article>
   )
   return (
@@ -60,10 +67,12 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
         <div className={styles.purpose}>
           <strong>{ru ? 'Что измеряет тест' : 'What this test measures'}</strong>
           <p>{report.purpose}</p>
+          {report.scaleNote && <p>{report.scaleNote}</p>}
+          {report.source && <a className={styles.source} href={report.source} target="_blank" rel="noopener noreferrer">{ru ? 'Источник опросника' : 'Questionnaire source'}</a>}
           {report.methodology && <p className={styles.methodology}><strong>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}:</strong> {report.methodology}</p>}
         </div>
       </header>
-      {bach && featured.length > 0 && (
+      {bach && verified && featured.length > 0 && (
         <p className={styles.profileLead}>
           {ru
             ? 'Сначала три основных совпадения, затем до четырёх дополнительных. Все 38 тем доступны ниже для просмотра.'

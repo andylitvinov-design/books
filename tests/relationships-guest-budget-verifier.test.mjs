@@ -26,7 +26,7 @@ test('workflow session accounting includes the separate signed-in public Relatio
  const suites=Object.fromEntries([...workflow.matchAll(/(core|extended)\) scripts="([^"]+)"/g)].map(match=>[match[1],match[2].split(' ')]))
  assert.deepEqual(suites,{
   core:['verify-document-hydration','verify-app-r1','verify-compassion-assessments','verify-relationships-assessments'],
-  extended:['verify-document-hydration','verify-mhc-sf','verify-asrs6','verify-asrs6-pdf','verify-personality-types','verify-account-status-filters'],
+  extended:['verify-document-hydration','verify-mhc-sf','verify-asrs6','verify-asrs6-pdf','verify-personality-types','verify-account-status-filters','verify-bach-personal-report-browser'],
  })
  const primary=read('scripts/verify-app-r1.mjs')
  assert.equal([...primary.matchAll(/await launchPublicGuestWithoutAccountWrite\(/g)].length,2)
@@ -44,7 +44,7 @@ test('workflow session accounting includes the separate signed-in public Relatio
  const fixedBudget=quota(12,3_600_000)
  for(const sessions of after)for(let i=0;i<sessions;i++)assert.equal(fixedBudget(0),true)
  for(const path of ['scripts/verify-mhc-sf.mjs','scripts/verify-personality-types.mjs'])assert.equal([...read(path).matchAll(/await api\(guest,'guest\/session'/g)].length,1)
- for(const path of ['scripts/verify-document-hydration.mjs','scripts/verify-asrs6-pdf.mjs','scripts/verify-account-status-filters.mjs'])assert.doesNotMatch(read(path),/guest\/session/)
+ for(const path of ['scripts/verify-document-hydration.mjs','scripts/verify-asrs6-pdf.mjs','scripts/verify-account-status-filters.mjs','scripts/verify-bach-personal-report-browser.mjs'])assert.doesNotMatch(read(path),/guest\/session/)
  // ASRS already has three fixed, explicit TEST-NET fixtures. Do not rotate or
  // extend them to repair this failure: 12 + one expected rejection; 1; 1.
  const asrs=read('scripts/verify-asrs6.mjs')

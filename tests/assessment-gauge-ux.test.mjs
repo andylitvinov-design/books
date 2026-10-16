@@ -53,5 +53,7 @@ test('non-normative traits are not color coded as healthy or unhealthy', () => {
   const dial = source('components/app/assessment-gauge.jsx')
   assert.match(helper, /dimension.dimensionClass === 'trait'/)
   assert.match(helper, /orientation:.*neutral|orientation = trait/)
-  assert.match(dial, /model.orientation === 'neutral' \? neutral : favorable/)
+  assert.match(dial, /model.orientation === 'neutral' \|\| model.orientation === 'screening'\) return continuousColor/)
+  assert.match(dial, /stroke=\{model.continuous \? continuousColor : '#e7e3dc'\}/)
+  assert.doesNotMatch(dial, /const neutral = \[|const favorable = \[|length: 24/)
 })

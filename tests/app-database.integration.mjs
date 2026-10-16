@@ -1,3 +1,5 @@
+import { BACH_V2_DEFINITIONS } from '../data/assessments/bach-flower-v2.js'
+import { HH_SPLIT_V2_DEFINITIONS } from '../data/assessments/hh-split-reflections-v2.js'
 import test, { before, after } from 'node:test'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import assert from 'node:assert/strict'
@@ -1992,4 +1994,172 @@ test('saved session table is account-scoped and the raw recipient cannot write',
   assert.ok(Array.isArray(rows.rows))
   await assert.rejects(rawAs(b,'authenticated',db=>db.query('insert into app.saved_sessions(account_id,source_session_id,legacy_client_id,source_revision,source_hash,occurred_on) values($1,$2,$3,1,$4,current_date)',
     [B,randomUUID(),randomUUID(),'sha256:'+'a'.repeat(64)])),e=>e.code==='42501')
+})
+
+// Six immutable EN/RU split editions: synthetic loopback DB only.
+test('split and Bach v2 fixtures retain exact technical fields and all eight historical v1 definitions', async () => {
+  const db = await adminClient()
+  try {
+    for (const definition of [...HH_SPLIT_V2_DEFINITIONS, ...BACH_V2_DEFINITIONS]) {
+      for (const def of [definition, getAssessmentDefinition(definition.key, 'v1', definition.instrumentLocale)]) {
+        const row = (await db.query('select * from app.assessment_versions where id=$1', [def.id])).rows[0]
+        assert.ok(row)
+        assert.deepEqual(row.definition, def)
+        assert.deepEqual(row.questions, def.questions)
+        assert.equal(row.definition_key, def.key)
+        assert.equal(row.definition_version, def.version)
+        assert.equal(row.instrument_locale, def.instrumentLocale)
+        assert.equal(row.translation_version, def.translationVersion)
+        assert.equal(row.scoring_key, def.scoringKey)
+        assert.equal(row.scoring_version, def.scoringVersion)
+        assert.deepEqual(row.result_schema, { version: def.resultVersion })
+        assert.equal(row.timeframe, def.timeframe)
+        assert.deepEqual(row.source_metadata, def.source)
+        assert.equal(row.content_hash, def.contentHash)
+        assert.equal(row.status, 'published')
+        if (def.version === 'v2') assert.deepEqual(row.answer_schema, { type: 'integer', minimum: 0, maximum: def.key === 'hh-bach-flower-profile' ? 5 : 4 })
+      }
+    }
+  } finally { await db.end() }
+})
+
+test('account split v2 EN/RU start-save-submit-readback preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Split', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 2)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 1)
+    assert.equal(before.dimensions[0].value, 2)
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    const responses = Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 2 : 4]))
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.equal(run.definitionVersion, 'v2')
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [2, 4])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest split v2 EN/RU start-save-submit-readback retains two dimensions and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of HH_SPLIT_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    const count = def.key === 'hh-money-pressure' ? 3 : 5
+    run = await guestRepo.saveRun(owner, run.id, { answers: Object.fromEntries(def.questions.map((q, i) => [q.id, i < count ? 4 : 0])), context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: 6, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assert.deepEqual(result.dimensions.map(d => d.value), [4, 0])
+    assert.equal(result.dimensions.length, 2)
+    assert.deepEqual(result.dimensions.map(d => d.key), def.scoring.dimensions.map(d => d.key))
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
+})
+
+const bachV2SyntheticAnswers = def => Object.fromEntries(def.questions.map(q =>
+  [q.id, q.id === 'bach.situation.36' ? 5 : q.id === 'bach.control.03' ? 4 : 0]))
+function assertBachV2SyntheticDimensions(result) {
+  assert.equal(result.dimensions.length, 38)
+  // Independent legacy arithmetic: situation 5 + peak bonus 2 = 7;
+  // control 4 × 1.5 + peak bonus 1 + control-presence bonus 1.5 = 8.5.
+  assert.equal(result.dimensions.find(d => d.key === 'bach.beech').value, 7)
+  assert.equal(result.dimensions.find(d => d.key === 'bach.agrimony').value, 8.5)
+  assert.ok(result.dimensions.filter(d => !['bach.beech', 'bach.agrimony'].includes(d.key)).every(d => d.value === 0))
+  assert.ok(result.dimensions.every(d => d.direction === 'non-normative'))
+}
+
+test('account Bach v2 EN/RU lifecycle preserves v1 history and owner isolation', async () => {
+  const owner = actor(randomUUID(), randomUUID()), outsider = actor(randomUUID(), randomUUID())
+  const db = await adminClient()
+  try {
+    for (const who of [owner, outsider]) {
+      await db.query('insert into auth.users(id,email) values($1,$2)', [who.id, who.id+'@example.invalid'])
+      await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [who.claims.session_id, who.id])
+    }
+  } finally { await db.end() }
+  for (const who of [owner, outsider]) {
+    await repo.ensureAccount(who)
+    await repo.onboarding(who, { adult: true, necessary: true, marketing: false, displayName: 'Synthetic Bach', uiLocale: 'en', timezone: 'UTC', goal: 'explore' })
+  }
+  for (const def of BACH_V2_DEFINITIONS) {
+    const old = getAssessmentDefinition(def.key, 'v1', def.instrumentLocale)
+    let legacyRun = await start(owner, old)
+    legacyRun = await save(legacyRun, owner, 0)
+    const legacy = await repo.submitRun(owner, legacyRun.id, { expectedRevision: legacyRun.revision })
+    const before = await repo.getResult(owner, legacy.id)
+    assert.equal(before.dimensions.length, 38)
+    assert.ok(before.dimensions.every(d => d.value === 0))
+    let run = await start(owner, def)
+    await assert.rejects(() => repo.getRun(outsider, run.id), /NOT_FOUND/)
+    const responses = bachV2SyntheticAnswers(def)
+    run = await repo.saveRun(owner, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    assert.deepEqual((await repo.getRun(owner, run.id)).answers, responses)
+    await assert.rejects(() => repo.saveRun(outsider, run.id, { answers: responses, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => repo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await repo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await repo.getResult(owner, result.id)).dimensions, result.dimensions)
+    assert.deepEqual(await repo.getResult(owner, legacy.id), before)
+    await assert.rejects(() => repo.getResult(outsider, result.id), /NOT_FOUND/)
+    await assert.rejects(() => repo.getResult(outsider, legacy.id), /NOT_FOUND/)
+  }
+})
+
+test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolation', async () => {
+  const guestRepo = createGuestRepository(config)
+  const owner = createGuestCredential(), outsider = createGuestCredential()
+  for (const credential of [owner, outsider]) await guestRepo.createSession(credential, { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
+  for (const def of BACH_V2_DEFINITIONS) {
+    let run = await guestRepo.startRun(owner, { definitionKey: def.key, definitionVersion: def.version, instrumentLocale: def.instrumentLocale, operationId: randomUUID() })
+    run = await guestRepo.saveRun(owner, run.id, { answers: bachV2SyntheticAnswers(def), context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() })
+    await assert.rejects(() => guestRepo.saveRun(outsider, run.id, { answers: {}, context: {}, progress: def.questions.length, expectedRevision: run.revision, operationId: randomUUID() }), /NOT_FOUND/)
+    await assert.rejects(() => guestRepo.submitRun(outsider, run.id, { expectedRevision: run.revision }), /NOT_FOUND/)
+    const result = await guestRepo.submitRun(owner, run.id, { expectedRevision: run.revision })
+    assert.equal(result.definitionId, def.id)
+    assert.equal(result.contentHash, def.contentHash)
+    assert.equal(result.instrumentLocale, def.instrumentLocale)
+    assert.equal(result.definitionVersion, 'v2')
+    assertBachV2SyntheticDimensions(result)
+    assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
+    await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
+  }
 })

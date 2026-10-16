@@ -1,3 +1,4 @@
+import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
@@ -22,8 +23,8 @@ const routes = [
 ];
 const volumes = ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries'];
 async function check(name, detail, fn) {
-  try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); }
-  catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); }
+  try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); return true; }
+  catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); return false; }
 }
 async function assertCspPublicHome(page) {
   await expect(page).toHaveURL(origin + '/');
@@ -152,8 +153,9 @@ async function exercise(engine, browserType, width) {
     addEventListener('unhandledrejection', event => record('unhandled-rejection', { message: String(event.reason?.message || event.reason) }), true);
     window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
   });
+  const createPublicPage = async () => {
+  const errors = [];
   const page = await context.newPage();
-  let errors = [];
   page.on('pageerror', error => {
     errors.push(String(error.message).slice(0, 300));
     publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
@@ -183,21 +185,26 @@ async function exercise(engine, browserType, width) {
     publicDiagnostics.failedRequests.push({ ...requestDetails(request), error: request.failure()?.errorText });
     finishPublicRequest(request);
   });
+    return { page, errors, pendingPublicRequests, get lastPublicRequestActivity() { return lastPublicRequestActivity; } };
+  };
+  let publicPageState = await createPublicPage();
+  let page = publicPageState.page;
+  let errors = publicPageState.errors;
   const settlePublicDocument = async stage => {
     // A previously reached Playwright networkidle state can precede hydration's
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    await expect.poll(() => pendingPublicRequests.size === 0 && Date.now() - lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
-    publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: pendingPublicRequests.size, lastRequestActivity: lastPublicRequestActivity });
+    await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
+    publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };
   try {
     for (const [path, locale] of routes) {
-      await check('public-page', { engine, width, path }, async () => {
+      const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
-        errors = [];
+        errors.length = 0;
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
@@ -216,24 +223,15 @@ async function exercise(engine, browserType, width) {
         publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
-        // React may swap a max-resolution YouTube poster for its HQ fallback
-        // while WebKit scrolls or decodes. Re-query the current image and retry
-        // only these transient source/DOM-change errors, never a genuinely broken image.
+        // Snapshot the expected elements so index shifts or removed posters
+        // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
-        for (let i = 0; i < await posters.count(); i++) {
-          for (let attempt = 0; attempt < 4; attempt++) {
-            if (i >= await posters.count()) break;
-            try {
-              await posters.nth(i).scrollIntoViewIfNeeded({ timeout: 7000 });
-              await posters.nth(i).evaluate(el => el.decode(), { timeout: 7000 });
-              break;
-            } catch (error) {
-              const message = String(error?.message || error);
-              if (!/Aborted by source change|Element is not attached to the DOM|not attached to the DOM/.test(message) || attempt === 3) throw error;
-              await page.waitForTimeout(250);
-            }
-          }
+        const posterImages = await posters.elementHandles();
+        for (const image of posterImages) {
+          await expect(posters).toHaveCount(posterImages.length);
+          await decodeReadyPoster(image, expect);
         }
+        await expect(posters).toHaveCount(posterImages.length);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
           await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
@@ -244,6 +242,17 @@ async function exercise(engine, browserType, width) {
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors before leaving the public document');
         return state;
       });
+      if (!routePassed) {
+        // Retain the fatal route result and its evidence, then isolate later
+        // routes from requests belonging to the failed, departed document.
+        const lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => []);
+        publicDiagnostics.retiredDocuments ??= [];
+        publicDiagnostics.retiredDocuments.push({ path, lifecycle, pendingRequests: publicPageState.pendingPublicRequests.size });
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
     }
     await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
     const menu = page.locator('.site-language-menu');

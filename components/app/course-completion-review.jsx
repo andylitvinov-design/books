@@ -64,6 +64,8 @@ export default function CourseCompletionReview({
                 : <meter min={scale.min} max={scale.max} value={scale.score}
                     aria-label={scale.label+': '+scale.score+' ('+scale.min+'–'+scale.max+')'}/>}
               <strong>{scale.score}<small> / {scale.min}–{scale.max}</small></strong>
+              {scale.ineligibilityReason && <small data-course-ineligibility={scale.ineligibilityCode}
+                style={{ gridColumn: '1 / -1' }}>{scale.ineligibilityReason}</small>}
             </li>)}
           </ul> : <p className={styles.small}>{t.noMeasuredScales}</p>}
         </article>

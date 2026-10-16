@@ -13,3 +13,12 @@
 .worsened{color:#a0443d;background:#fbe8e4}
 .changed,.baseline,.unchanged{color:#5c6863;background:#eff1ef}
 @media(max-width:500px){.gauge{width:138px}.compact{width:113px}.value{font-size:1.35rem}.compact .value{font-size:1.12rem}.gauge figcaption{font-size:.68rem}.compact figcaption{font-size:.61rem}.trend{font-size:.74rem;padding:4px 8px}}
+
+.endpoints{display:flex;justify-content:space-between;width:100%;padding:0 8px;margin-top:3px;box-sizing:border-box;font:600 .72rem/1.3 system-ui,-apple-system,sans-serif;color:#625f59;font-variant-numeric:tabular-nums}
+.scaleNote{display:block;margin-top:5px;font:.72rem/1.35 system-ui,-apple-system,sans-serif;color:#625f59;overflow-wrap:anywhere;max-width:100%}
+.legend{list-style:none;margin:9px 0 0;padding:0;width:100%;text-align:left;font:13px/1.5 system-ui,-apple-system,sans-serif;color:#4b5751}
+.legend li{display:flex;align-items:flex-start;gap:6px;padding:4px;border:1px solid transparent;border-radius:5px;overflow-wrap:anywhere}
+.legend li[data-current-band]{border-color:#788e83;background:#edf3ee}
+.legend strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.swatch{width:9px;height:9px;border-radius:2px;flex:none;margin-top:4px}
+.current{font-weight:750}

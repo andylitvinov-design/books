@@ -121,14 +121,23 @@ async function assertReport(target, definition, locale, expected) {
   await expect(report.locator('article')).toHaveCount(1)
   const count = report.locator('[data-assessment-gauge="screening-count"]')
   await expect(count).toHaveCount(1)
-  await expect(count.locator('strong')).toHaveText(expected + ' / 6')
+  await expect(count.locator(':scope > strong')).toHaveText(expected + ' / 6')
   await expect(count.locator('svg')).toHaveCount(0)
   await expect(report.locator('[role="progressbar"]')).toHaveCount(0)
   await expect(report.locator('[data-assessment-gauge="difficulty"], [data-assessment-gauge="resource"]')).toHaveCount(0)
   assert.doesNotMatch(await count.innerText(), /%/)
-  await expect(count).toContainText(locale === 'ru'
+  await expect(count.locator(':scope > figcaption')).toHaveText((locale === 'ru'
     ? expected >= 4 ? 'На уровне или выше скринингового порога' : 'Ниже скринингового порога'
-    : expected >= 4 ? 'At or above screening threshold' : 'Below screening threshold')
+    : expected >= 4 ? 'At or above screening threshold' : 'Below screening threshold') + ' (4)')
+  const labels = locale === 'ru'
+    ? ['Ниже скринингового порога', 'На уровне или выше скринингового порога']
+    : ['Below the screening threshold', 'At or above the screening threshold']
+  await expect(count.locator(':scope > ol > li')).toHaveText(['0–3', '4–6'].map((range, index) =>
+    range + ' ' + labels[index] + (index === Number(expected >= 4) ? locale === 'ru' ? ' · Ваш диапазон' : ' · Your range' : '')))
+  const currentBand = count.locator(':scope > ol > li[data-current-band]')
+  await expect(currentBand).toHaveCount(1)
+  await expect(currentBand).toHaveAttribute('aria-current', 'true')
+  await expect(currentBand.locator('strong')).toHaveText(expected >= 4 ? '4–6' : '0–3')
   for (const detail of await report.locator('details').all()) {
     if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
   }
