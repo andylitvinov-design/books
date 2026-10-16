@@ -51,6 +51,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     links[index]={...links[index],...patch}
     updatePlan({resources:links})
   }
+  const hasExtraText=Boolean(
+    plan.focus?.trim()||plan.nextStep?.trim()||plan.additionalRecommendations?.trim()||
+    (plan.takeaways||[]).some(point=>point?.trim())||
+    (plan.practices||[]).some(item=>item.title?.trim()||item.instructions?.trim())
+  )
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
   async function load() {
     const result=await api(base)
@@ -125,12 +130,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <span className={styles.status}>{session.status==='published'?(ru?'Опубликовано':'Published'):
         session.status==='archived'?(ru?'Архив':'Archived'):(ru?'Черновик':'Draft')}</span>
     </header>
-    <section className={styles.editorCard}>
-      <h2>{ru?'Обращение к клиенту':'Introduction to client'}</h2>
-      <label className={styles.field}>{ru?'Название сессии':'Session title'}
-        <input value={draft.title} maxLength={160} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
-      <label className={styles.field}>{ru?'Короткое пояснение и рекомендации':'Short explanation & key next steps'}
-        <textarea rows={4} maxLength={6000} value={draft.summary} onChange={e=>setDraft({...draft,summary:e.target.value})}/></label>
+    <section className={styles.editorCard+' '+styles.reportReadyCard} id="session-attached-report">
+      <h2>{ru?'Готовый отчёт клиента':'Saved client report'}</h2>
+      <p>{ru?
+        'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.':
+        'Your original report already contains the analysis and recommendations. No additional questionnaire is required to publish it.'}</p>
       <label className={styles.field}><FileText size={18}/>{ru?'Привязанный отчёт (настоящий PDF)':'Attached report (real PDF)'}
         <select value={draft.reportDocumentId||''}
           onChange={e=>setDraft({...draft,reportDocumentId:e.target.value||null})}>
@@ -138,15 +142,37 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           {documents.map(doc=><option key={doc.id} value={doc.id}>{doc.dateIssued} · {doc.kind}</option>)}
         </select>
       </label>
-      <div className={styles.actions}><button className={styles.secondaryButton} disabled={block||!changed}
-        onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
-          <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
-        {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
+      <div className={styles.actions}>
+        <a href="#session-publication" className={styles.jumpToPublication}>
+          {ru?'Перейти к публикации ↓':'Go to publication ↓'}
+        </a>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed}
+          onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
+          <Save size={17}/>{ru?'Сохранить черновик':'Save draft'}
+        </button>
+        {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}
+      </div>
     </section>
-    <section className={styles.editorCard} aria-label={ru?'Персональный план клиента':'Client session plan'}>
-      <h2>{ru?'План после консультации':'Plan after this consultation'}</h2>
-      <p>{ru?'Только ваш утверждённый текст. Клиент увидит его после публикации, а не во время редактирования.':
-        'Only your practitioner-approved text. The client sees this after publication, not while you edit.'}</p>
+    <details className={styles.optionalTextEditor}>
+      <summary>{ru?'Личное сопроводительное сообщение (необязательно)':'Personal cover message (optional)'}
+        {Boolean(draft.summary?.trim())&&<span className={styles.optionalFilled}>{ru?'Есть текст':'Has text'}</span>}
+      </summary>
+      <div className={styles.optionalTextBody}>
+        <p>{ru?'Не нужно повторять текст готового отчёта. Можно добавить только отдельное приветствие.':
+          'Do not repeat the report. Add a separate welcome message only if you want one.'}</p>
+      <label className={styles.field}>{ru?'Название сессии':'Session title'}
+        <input value={draft.title} maxLength={160} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
+      <label className={styles.field}>{ru?'Короткое пояснение и рекомендации':'Short explanation & key next steps'}
+        <textarea rows={4} maxLength={6000} value={draft.summary} onChange={e=>setDraft({...draft,summary:e.target.value})}/></label>
+      </div>
+    </details>
+    <details className={styles.optionalTextEditor}>
+      <summary>{ru?'Дополнительные заметки и упражнения (необязательно)':'Additional notes and practices (optional)'}
+        {hasExtraText&&<span className={styles.optionalFilled}>{ru?'Есть записи':'Has content'}</span>}
+      </summary>
+      <div className={styles.optionalTextBody}>
+        <p>{ru?'Эти поля нужны только для дополнительных указаний сверх уже составленного отчёта. Для обычной публикации оставьте их пустыми.':
+          'Use these only for genuinely additional notes beyond your existing report. Leave them blank for normal publication.'}</p>
       <label className={styles.field}>{ru?'Главный фокус встречи':'Main focus of this session'}
         <textarea rows={2} maxLength={300} value={plan.focus||''}
           placeholder={ru?'На что мы обратили внимание…':'What we focused on…'}
@@ -194,6 +220,12 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             'Any additional practitioner-approved guidance or observations…'}
           onChange={event=>updatePlan({additionalRecommendations:event.target.value})}/>
       </label>
+      </div>
+    </details>
+    <section className={styles.editorCard} aria-label={ru?'Дополнительные материалы к отчёту':'Additional report materials'}>
+      <h2>{ru?'Аудио, видео и материалы (необязательно)':'Audio, video and materials (optional)'}</h2>
+      <p>{ru?'Можно опубликовать только готовый отчёт либо добавить обучающие ссылки и материалы из библиотеки.':
+        'Publish the report as it is, or add educational links and selected library materials.'}</p>
       <div className={styles.planEditorSection}>
         <h3>{ru?'Материалы, медитации и видео YouTube':'Materials, meditations & YouTube videos'} <small>{(plan.resources||[]).length}/8</small></h3>
         <p>{ru?'Добавляйте здесь только проверенные общедоступные HTTPS-материалы. Приватные аудио, видео и PDF загружайте отдельным полем ниже.':
@@ -301,7 +333,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         </div>
       })}
     </section>
-    <section className={styles.editorCard}>
+    <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
       {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
         href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+locale}
