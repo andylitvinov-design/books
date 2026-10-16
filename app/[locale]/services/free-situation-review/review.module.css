@@ -95,3 +95,138 @@
 .sampleReport ol{margin:0;padding-left:22px;display:grid;gap:9px;color:#656357;font:13px/1.5 Arial,Helvetica,sans-serif}
 .sample>p{margin:0 0 16px;color:#79766c;font:11px/1.5 Arial,Helvetica,sans-serif}
 @media(max-width:767px){.sample{width:calc(100% - 28px);padding:0 15px;margin-top:16px}.sampleGrid{grid-template-columns:1fr}.sampleSketch,.sampleReport{padding:15px}.sampleSketch>div{min-height:80px}.sampleSketch span{min-width:57px;min-height:57px;font-size:11px}}
+
+/* Consultation landing refresh: a focused, responsive free-to-optional-personal journey. */
+.page{background:linear-gradient(180deg,#f7f8f5 0%,#f8f4ee 58%,#f5f7f4 100%);color:#23323e}
+.contentGrid{
+  width:min(1210px,calc(100% - 40px));
+  margin:22px auto 0;
+  padding:clamp(20px,3.5vw,44px);
+  grid-template-columns:minmax(0,1.02fr) minmax(335px,.98fr);
+  gap:clamp(20px,3.5vw,48px);
+  border:1px solid rgba(189,219,219,.32);
+  border-radius:28px;
+  color:#fff;
+  background:radial-gradient(circle at 7% 94%,rgba(50,113,122,.4),transparent 52%),linear-gradient(125deg,#172f49 0%,#1b4051 57%,#22534e 100%);
+  box-shadow:0 20px 55px rgba(28,52,59,.14)
+}
+.heroCopy{padding:clamp(5px,1vw,16px) 0 4px;align-self:center}
+.eyebrow{color:#8e584a}
+.heroCopy .eyebrow{color:#bce0dc;letter-spacing:.12em;margin-bottom:16px}
+.heroCopy h1{max-width:630px;color:#fff;font-size:clamp(39px,4vw,58px);letter-spacing:-.035em;line-height:1.075}
+.heroCopy .lead{max-width:565px;color:#e2eded;font-size:clamp(15px,1.3vw,17px);line-height:1.62;margin-bottom:18px}
+.heroCopy .benefits{gap:9px;margin-bottom:15px}
+.heroCopy .benefits li{color:#eef6f3;font-size:14px;line-height:1.45;font-weight:500}
+.heroCopy .benefits svg{color:#95dfc9;width:18px;height:18px}
+.heroCopy .freeLine{color:#c5e9dc;font-size:12px;margin:0 0 19px;letter-spacing:.01em}
+.heroActions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:20px}
+.heroActions a{display:inline-flex;justify-content:center;align-items:center;gap:10px;min-height:49px;padding:12px 16px;border-radius:12px;font:750 13px/1.34 Arial,Helvetica,sans-serif;text-decoration:none;text-align:center;transition:background .16s ease,transform .16s ease}
+.heroActions a:hover{transform:translateY(-2px)}
+.heroPrimary{background:#983d55;color:#fff;box-shadow:0 8px 22px rgba(13,22,32,.2)}
+.heroPrimary:hover{background:#b04a62}
+.heroSecondary{border:1px solid rgba(218,243,237,.58);background:rgba(240,255,252,.1);color:#eefdf9}
+.heroSecondary:hover{background:rgba(240,255,252,.2)}
+.introContact{max-width:530px;padding:13px 0;border-color:rgba(224,245,240,.25);gap:12px}
+.introContact strong{color:#fff;font-size:17px}
+.introContact span{color:#c9e0da;font-size:12px}
+.photo{width:57px;height:57px;border:2px solid rgba(233,247,240,.7)}
+.heroCopy .safety{max-width:530px;color:#b4cece;font-size:11px;line-height:1.55;margin-top:11px}
+.capturePanel{align-self:start;scroll-margin-top:78px}
+.capturePanel :global([data-free-drawing-intake]){background:linear-gradient(145deg,#f4fffa,#e8f5f1 70%,#f9f4e8);border:1px solid #d9ece5;box-shadow:0 12px 35px rgba(0,23,32,.2);border-radius:20px}
+.capturePanel :global([data-free-drawing-intake] h2){color:#1d3d4c}
+.capturePanel :global([data-free-drawing-intake] button[type="submit"]){background:#953951}
+.capturePanel :global([data-free-drawing-intake] button[type="submit"]:hover){background:#7d2f46}
+.details{margin-top:clamp(35px,5vw,63px)}
+.sectionIntro h2,.faq h2,.about h2,.closing h2{color:#23364c}
+.steps{margin-top:24px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;border:0}
+.steps li{display:flex;flex-direction:column;gap:10px;min-width:0;padding:22px;border:1px solid #dce7e2;border-radius:16px;background:#fff;box-shadow:0 8px 20px rgba(28,52,59,.035)}
+.stepNumber{font:700 14px/1 Arial,Helvetica,sans-serif;color:#ae4b62;letter-spacing:.08em}
+.steps h3{font-size:clamp(20px,2vw,25px);color:#263950}
+.steps p{font-size:13px;line-height:1.55;color:#52636a}
+.paid{
+  scroll-margin-top:88px;
+  width:min(1140px,calc(100% - 40px));
+  margin:clamp(30px,4vw,52px) auto 0;
+  grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+  padding:clamp(22px,3.7vw,40px);
+  background:#fff;
+  border:1px solid #d9e4e1;
+  border-radius:23px;
+  box-shadow:0 10px 35px rgba(27,52,59,.065)
+}
+.paid .eyebrow{color:#8e344a}
+.paid h2{font-size:clamp(29px,3.2vw,41px);color:#1b344b;letter-spacing:-.02em}
+.paid > div > p:not(.eyebrow){font-size:14px;line-height:1.68;color:#5b6869}
+.paidOptions{gap:10px}
+.paidOptions a{min-height:74px;border:1px solid #d5e0e2;border-radius:15px;background:#f0f7f6;color:#1e3d4a;padding:14px 17px;font-size:14px;transition:background .16s ease,border-color .16s ease}
+.paidOptions a:nth-child(2){border-color:#e8d5d9;background:#f9f2f3}
+.paidOptions a:hover{background:#e4f2ef;border-color:#8ab9b0}
+.paidOptions a strong{font-size:23px;color:#8c334b}
+.paidOptions a svg{color:#8c334b}
+.paidOptions p{font-size:12px;color:#657075}
+.directions{margin-top:clamp(24px,4vw,40px);padding:22px 30px;background:#eaf2ef;border:1px solid #d3e1dc;border-radius:19px}
+.directionsSummary{display:flex;justify-content:space-between;gap:16px;align-items:center;cursor:pointer;list-style:none;color:#1f3d4c;font:600 clamp(20px,2.4vw,29px)/1.3 Georgia,serif}
+.directionsSummary::-webkit-details-marker{display:none}
+.directionsSummary::after{content:"+";color:#933d54;font:400 30px/1 Arial,Helvetica,sans-serif}
+.directions[open] .directionsSummary::after{content:"−"}
+.directionsLead{margin:14px 0 0;font:14px/1.65 Arial,Helvetica,sans-serif;color:#546668}
+.directionList{margin-top:14px}
+.directionList article{border-color:#cbdcd5;grid-template-columns:34px minmax(0,1fr) 44px;padding:14px 0}
+.directionList article:last-child{border-color:#cbdcd5}
+.directionList h3{font-size:22px;color:#294450}
+.directionList p{font-size:13px}
+.directionList a{border-color:#aecac2;color:#234b5a}
+.about{margin-top:clamp(45px,6vw,75px)}
+.aboutPhoto{aspect-ratio:4/3.4;max-height:355px}
+.about a{color:#763447}
+.faq{margin-top:clamp(42px,6vw,75px)}
+.faq details{border-color:#d9e4df}
+.faq summary{color:#233c4d;min-height:57px}
+.closing{background:linear-gradient(120deg,#19344d,#27534d);margin-top:clamp(42px,6vw,75px)}
+.closing h2{color:#fff}
+.closing a:not(.back){background:#a64159;color:white}
+.closing a:not(.back):hover{background:#bd4e68}
+@media(max-width:950px){
+  .contentGrid{grid-template-columns:minmax(0,1fr) minmax(320px,.95fr);gap:18px;padding:24px}
+  .heroCopy h1{font-size:clamp(32px,4vw,46px)}
+  .heroActions{display:grid}
+  .heroActions a{width:100%}
+}
+@media(max-width:767px){
+  .contentGrid{width:calc(100% - 20px);margin-top:10px;padding:22px 14px 15px;grid-template-columns:minmax(0,1fr);gap:15px;border-radius:19px}
+  .heroCopy{padding:0 4px}
+  .heroCopy .eyebrow{font-size:9px;margin-bottom:11px}
+  .heroCopy h1{font-size:clamp(31px,8.3vw,43px);margin-bottom:11px;letter-spacing:-.03em}
+  .heroCopy .lead{font-size:14px;line-height:1.51;margin-bottom:13px}
+  .heroCopy .benefits{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:10px}
+  .heroCopy .benefits li{font-size:12px}
+  .heroCopy .freeLine{margin-bottom:13px;font-size:11px}
+  .heroActions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:0 0 13px}
+  .heroActions a{min-height:48px;font-size:13px}
+  .introContact{padding:10px 0}
+  .introContact strong{font-size:15px}
+  .introContact span{font-size:11px}
+  .photo{height:47px;width:47px}
+  .heroCopy .safety{font-size:10px;margin:8px 0 0}
+  .capturePanel :global([data-free-drawing-intake]){box-shadow:none;border-radius:16px}
+  .details,.faq,.about,.closing,.directions,.paid{width:calc(100% - 24px)}
+  .details{margin-top:37px}
+  .steps{grid-template-columns:1fr;gap:9px}
+  .steps li{padding:16px 17px;gap:6px}
+  .steps h3{font-size:21px}
+  .steps p{font-size:13px}
+  .paid{grid-template-columns:minmax(0,1fr);padding:19px;gap:16px;margin-top:28px}
+  .paid h2{font-size:29px}
+  .paidOptions a{min-height:64px;font-size:12px;padding:11px 12px;gap:9px}
+  .paidOptions a strong{font-size:20px}
+  .directions{margin-top:24px;padding:18px}
+  .directionsSummary{font-size:22px}
+  .directionList article{grid-template-columns:23px minmax(0,1fr) 35px}
+  .directionList h3{font-size:20px}
+  .directionList a{width:35px;height:35px}
+  .about{margin-top:46px}
+  .aboutPhoto{max-height:280px;aspect-ratio:16/10}
+  .faq{margin-top:47px}
+  .closing{margin-top:49px}
+}
+@media(prefers-reduced-motion:reduce){.heroActions a,.paidOptions a{transition:none}.heroActions a:hover{transform:none}}
