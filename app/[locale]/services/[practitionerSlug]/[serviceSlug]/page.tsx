@@ -24,7 +24,7 @@ export async function generateMetadata({params}:PageProps):Promise<Metadata>{
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)return{title:"Not found",robots:{index:false,follow:false}};
   const title=value.service.copy.title+" — "+value.service.practitionerName+" | Holistic House";
-  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`,languages:{en:`/en/services/${practitionerSlug}/${serviceSlug}`,ru:`/ru/services/${practitionerSlug}/${serviceSlug}`,es:`/es/services/${practitionerSlug}/${serviceSlug}`}},robots:{index:true,follow:true}};
+  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`,languages:Object.fromEntries((value.service.displayLocales||['en','ru']).map(lang=>[lang,`/${lang}/services/${practitionerSlug}/${serviceSlug}`]))},robots:{index:true,follow:true}};
 }
 export default async function ServiceDetail({params}:PageProps){
   const {locale,practitionerSlug,serviceSlug}=await params;
@@ -52,7 +52,10 @@ export default async function ServiceDetail({params}:PageProps){
     </section>
     <section className="services-studio-approach">
       <div><p className="homeopathy-kicker">{ru?"Практик":es?"Profesional":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":es?"Credenciales verificadas":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">{es?"Colaborador de Holistic House":"Holistic House Partner"}</p>}</div>
-      <div><p>{service.copy.description||service.copy.shortDescription}</p>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
+      <div><p>{service.copy.description||service.copy.shortDescription}</p>
+      {(service.benefits||[]).length>0&&<section><h3>{ru?'Что может дать работа':es?'Posibles beneficios':'Potential benefits'}</h3><ul>{service.benefits?.map((benefit,i)=><li key={i}>{benefit}</li>)}</ul></section>}
+      {(service.faq||[]).length>0&&<details><summary>FAQ</summary><ul>{service.faq?.map((question,i)=><li key={i}>{question}</li>)}</ul></details>}
+      <div className="hh-actions">{service.whatsapp&&<a href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{service.telegram&&<a href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</a>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
     <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":es?"La información ayuda a elegir una modalidad de acompañamiento; no constituye diagnóstico médico ni garantía de resultados.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
     {practitioner.slug === "andy-litvinov" ? <PublicConsultationCta locale={locale as PublicLocale}/> : null}

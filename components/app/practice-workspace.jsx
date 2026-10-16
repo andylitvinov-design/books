@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
 import CrmManager from './crm-manager'
+import PractitionerArticles from './practitioner-articles'
 import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
@@ -22,7 +23,7 @@ const AREAS={
   personal_development:['Personal development','Личностное развитие'],
 }
 const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
-const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:''}
+const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:''}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
   "en": {
@@ -268,6 +269,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <div className="hh-practice-tool-grid">
           <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
             onClick={()=>isOwner?openOwner('clients'):choosePanel('clients')} active={!isOwner&&activePanel==='clients'} />
+          <PracticeTile Icon={FileText} title={ru?'Статьи':'Articles'} description={ru?'Пишите полезные статьи и публикуйте после проверки.':'Publish helpful articles after editorial review.'}
+            onClick={()=>choosePanel('articles')} active={activePanel==='articles'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
@@ -294,9 +297,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='articles'?(ru?'Мои статьи':'My articles'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
+        {activePanel==='articles'&&<PractitionerArticles locale={locale} services={services} />}
         {activePanel==='services'&&<>
           <details className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
             <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
@@ -491,11 +495,26 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause})
   </section>
 }
 function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
-  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})}},areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||''}:emptyService
-  const [v,setV]=useState(base),set=(k,x)=>setV(s=>({...s,[k]:x})),setCopy=(lang,k,x)=>setV(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
+  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})},es:{...emptyService.copy.es,...(item.localizedCopy?.es||{})}},goals:item.goals||[],methods:item.methods||[],benefits:item.benefits||[],faq:item.faq||[],displayLocales:item.displayLocales||['en','ru'],whatsapp:item.whatsapp||'',telegram:item.telegram||'',areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||''}:emptyService
+  const [v,setV]=useState({...emptyService,...base,copy:{...emptyService.copy,...base.copy}}),set=(k,x)=>setV(s=>({...s,[k]:x})),setCopy=(lang,k,x)=>setV(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
   return <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onSave(item?.id||null,{...v,languages:Array.isArray(v.languages)?v.languages:list(v.languages),confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),currency:['free','contact'].includes(v.pricingMode)?'':v.currency,durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)},item?.revision)}}><div className="hh-actions"><h3>{item?(item.copy?.title||t.services):t.add}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>{item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
     <label>{t.serviceTitleEn}<input required value={v.copy.en.title} onChange={e=>setCopy('en','title',e.target.value)}/></label><label>{t.serviceTitleRu}<input required value={v.copy.ru.title} onChange={e=>setCopy('ru','title',e.target.value)}/></label>
     <label>{t.shortEn}<textarea required value={v.copy.en.shortDescription||v.copy.en.description} onChange={e=>setCopy('en','shortDescription',e.target.value)}/></label><label>{t.shortRu}<textarea required value={v.copy.ru.shortDescription||v.copy.ru.description} onChange={e=>setCopy('ru','shortDescription',e.target.value)}/></label>
+    <details className="hh-practice-advanced-copy" open><summary>{locale==='ru'?'Цели, методы, польза и контакты':'Goals, methods, benefits & contact'}</summary>
+      <label>{locale==='ru'?'Цели клиента':'Client goals'}<select multiple size="5" value={v.goals||[]} onChange={e=>set('goals',[...e.target.selectedOptions].map(o=>o.value))}>
+        {[['confidence','Confidence','Уверенность'],['relationships','Relationships','Отношения'],['relaxation','Relaxation','Расслабление'],['learning','Learning','Обучение'],['clarity','Clarity','Ясность'],['purpose','Purpose','Предназначение'],['energy','Energy','Энергия'],['self_awareness','Self-awareness','Самопознание']].map(([id,en,ru])=><option key={id} value={id}>{locale==='ru'?ru:en}</option>)}
+      </select></label>
+      <label>{locale==='ru'?'Методы через запятую':'Methods, comma separated'}<input value={arr(v.methods)} onChange={e=>set('methods',list(e.target.value))}/></label>
+      <label>{locale==='ru'?'Возможные результаты, по строкам':'Potential benefits, one per line'}<textarea value={(v.benefits||[]).join('\n')} onChange={e=>set('benefits',e.target.value.split('\n').filter(Boolean).slice(0,5))}/></label>
+      <label>FAQ<textarea value={(v.faq||[]).join('\n')} onChange={e=>set('faq',e.target.value.split('\n').filter(Boolean).slice(0,6))}/></label>
+      <label>WhatsApp (+country code)<input value={v.whatsapp||''} onChange={e=>set('whatsapp',e.target.value)}/></label>
+      <label>Telegram (@username)<input value={v.telegram||''} onChange={e=>set('telegram',e.target.value)}/></label>
+    </details>
+    <details className="hh-practice-advanced-copy"><summary>{locale==='ru'?'Испанский перевод':'Spanish translation'}</summary>
+      <label>Title ES<input value={v.copy.es?.title||''} onChange={e=>setCopy('es','title',e.target.value)}/></label>
+      <label>Description ES<textarea value={v.copy.es?.shortDescription||''} onChange={e=>setCopy('es','shortDescription',e.target.value)}/></label>
+      <label><input type="checkbox" checked={(v.displayLocales||[]).includes('es')} onChange={e=>set('displayLocales',e.target.checked?['en','ru','es']:['en','ru'])}/> {locale==='ru'?'Публиковать испанскую версию после проверки':'Publish ES only after review'}</label>
+    </details>
     <details className="hh-practice-advanced-copy">
       <summary>{locale==='ru'?'Подробные описания · необязательно':'Full descriptions · optional'}</summary>
       <label>{t.descEn}<textarea value={v.copy.en.description} onChange={e=>setCopy('en','description',e.target.value)}/></label>

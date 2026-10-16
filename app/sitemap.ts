@@ -7,6 +7,7 @@ import { metadataBaseFor } from '@/data/site-metadata';
 import { getSpanishRemedySlugs } from '@/data/remedies-es';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
+import { createArticleRepository } from '@/lib/practitioners/article-repository';
 const academyDirectoryPaths = ["", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -38,6 +39,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         for (const service of practitioner.services || [])
           network.push({ url: base + '/' + locale + '/services/' + practitioner.slug + '/' + service.slug, changeFrequency: 'monthly', priority: 0.7 });
       }
+    }
+    // Only real published articles are indexed; never include drafts or other languages.
+    for (const locale of ['en','ru','es']) {
+      const articles=await createArticleRepository(getAppConfig()).publicList(locale);
+      network.push({url:base+'/'+locale+'/articles',changeFrequency:'weekly',priority:0.5});
+      for(const article of articles) network.push({url:base+'/'+locale+'/articles/'+article.slug,changeFrequency:'monthly',priority:0.6});
     }
   } catch {
     // Keep the static sitemap healthy during a temporary app-database outage.
