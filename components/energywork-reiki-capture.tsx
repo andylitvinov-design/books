@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, Check, MessageCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./energywork-reiki-capture.module.css";
 
@@ -34,7 +35,7 @@ const copy: Record<PublicLocale, {
       "A dedicated one-to-one session, confirmed with Andrey.",
       "Download the study guide now. No registration.",
     ],
-    note: "No name, email or file uploads. WhatsApp opens a prepared message you send yourself. An initiation is not booked automatically.",
+    note: "No name, email or file uploads. Choose WhatsApp or Telegram to review and send the prepared message. An initiation is not booked automatically.",
     label: "Start Reiki training",
   },
   ru: {
@@ -50,7 +51,7 @@ const copy: Record<PublicLocale, {
       "Индивидуальное обучение по согласованию с Андреем.",
       "Скачайте учебные материалы без регистрации.",
     ],
-    note: "Без имени, email и файлов. WhatsApp открывает готовое сообщение — отправляете его сами. Запись и инициация не происходят автоматически.",
+    note: "Без имени, email и файлов. Выберите WhatsApp или Telegram — отправьте подготовленное сообщение сами. Запись и инициация не происходят автоматически.",
     label: "Начать обучение Рейки",
   },
   es: {
@@ -66,7 +67,7 @@ const copy: Record<PublicLocale, {
       "Una sesión individual con Andrey.",
       "Descarga el material de estudio sin registrarte.",
     ],
-    note: "Sin nombre, correo ni archivos. WhatsApp abre un mensaje que tú envías. La iniciación no se reserva automáticamente.",
+    note: "Sin nombre, correo ni archivos. Elige WhatsApp o Telegram y envía tú mismo la solicitud. La iniciación no se reserva automáticamente.",
     label: "Comenzar formación Reiki",
   },
 };
@@ -108,18 +109,20 @@ export function EnergyworkReikiCapture({ locale, course }: { locale: PublicLocal
         ))}
       </div>
       <p className={styles.help}>{c.hints[choices.indexOf(choice)]}</p>
-      <a
-        className={styles.action}
-        data-energywork-action={choice}
-        href={isPdf ? fileHref : enquiryHref}
-        download={isPdf ? true : undefined}
-        target={isPdf ? undefined : "_blank"}
-        rel={isPdf ? undefined : "noopener noreferrer"}
-      >
-        {isPdf ? <ArrowDown size={18} aria-hidden="true" /> : <MessageCircle size={18} aria-hidden="true" />}
-        <span>{action}</span>
-        <ArrowRight size={17} aria-hidden="true" />
-      </a>
+      {isPdf ? (
+        <a className={styles.action} data-energywork-action={choice} href={fileHref} download>
+          <ArrowDown size={18} aria-hidden="true" />
+          <span>{action}</span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </a>
+      ) : (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={enquiryHref}
+          className={styles.action}
+          attributes={{ "data-energywork-action": choice }}
+        />
+      )}
       <small className={styles.note}>{c.note}</small>
     </div>
   );

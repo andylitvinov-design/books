@@ -17,6 +17,9 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
+import { MarketplaceServiceFinder } from "@/components/master-network-explorer";
+import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
+import { coreServiceOffers } from "@/data/core-service-offers";
 
 type PageProps = { params: Promise<{ locale: string }> };
 export const dynamic = "force-dynamic";
@@ -72,10 +75,38 @@ export default async function ServicesPage({ params }: PageProps) {
   }
   const featuredService = offerings.find((service) => service.slug === "free-wu-xing-diagnostic");
   const marketplaceOfferings = offerings.filter((service) => service.id !== featuredService?.id);
+  const editorialAreas: Record<string,string> = {
+    situation: "emotional_psychological", dao: "homeopathy_holistic",
+    alchemy: "relationships", hypnotherapy: "personal_development", business: "business_money",
+  };
+  const editorialOffers = [
+    ...coreServiceOffers(locale as Locale).map((offer) => ({
+      id:offer.id, title:offer.title, promise:offer.promise, benefit:offer.benefit,
+      href:offer.href, areaKey:editorialAreas[offer.id],
+    })),
+    {
+      id:"yggdrasil",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
+      promise:locale==="ru"?"Знакомство с системой Рейки, видео и материалы.":"Reiki practice, original video and study resources.",
+      href:`/${locale}/academy/reiki/yggdrasil/free-initiation`,areaKey:"energy_spiritual",
+    },
+    {
+      id:"tantra",title:locale==="ru"?"Тантра Рейки — бесплатная инициация":"Tantra Reiki — free introduction",
+      promise:locale==="ru"?"Изучите практику и варианты личной инициации.":"Explore the training and teacher-guided initiation.",
+      href:`/${locale}/academy/reiki/tantra-reiki/free-initiation`,areaKey:"energy_spiritual",
+    },
+  ];
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+
+      <ServicesSmartDiscovery
+        locale={locale}
+        services={offerings}
+        editorialOffers={editorialOffers}
+        aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
+          && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)}
+      />
 
       <ServicesConversionHero locale={locale as Locale} />
       <ServicesTestsIntro locale={locale as Locale} />
@@ -185,68 +216,7 @@ export default async function ServicesPage({ params }: PageProps) {
         ) : null}
 
         {marketplaceOfferings.length ? (
-          <div className="services-marketplace-grid">
-            {marketplaceOfferings.map((service) => {
-              const format =
-                service.deliveryFormat === "in_person"
-                  ? (locale === "ru" ? "Очно" : "In person")
-                  : service.deliveryFormat === "hybrid"
-                    ? (locale === "ru" ? "Онлайн / очно" : "Online / in person")
-                    : "Online";
-              const isFree = service.pricingMode === "free" || (service.pricingMode !== "contact" && service.confirmedPrice === 0);
-              const price =
-                isFree
-                  ? (locale === "ru" ? "Бесплатно" : "Free")
-                  : service.pricingMode !== "contact" && service.confirmedPrice != null
-                    ? `${service.pricingMode === "from" ? (locale === "ru" ? "от " : "from ") : ""}${service.currency || ""} ${service.confirmedPrice}`
-                    : (locale === "ru" ? "По запросу" : "On request");
-              return (
-                <article className="services-marketplace-card" key={service.id}>
-                  <div className="services-marketplace-card-top">
-                    <Link
-                      className="services-marketplace-provider"
-                      href={`/${locale}/masters/${service.practitionerSlug}`}
-                    >
-                      <span className="services-marketplace-avatar" aria-hidden="true">
-                        {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
-                      </span>
-                      <span>
-                        <small>{locale === "ru" ? "Мастер" : "Practitioner"}</small>
-                        <strong>{service.practitionerName}</strong>
-                      </span>
-                    </Link>
-                    <span className={`services-marketplace-price${isFree ? " services-marketplace-price--free" : ""}`}>
-                      {price}
-                    </span>
-                  </div>
-                  <h3>{service.copy.title}</h3>
-                  {service.professionalTitle ? (
-                    <p className="services-marketplace-role">{service.professionalTitle}</p>
-                  ) : null}
-                  <p className="services-marketplace-description">{service.copy.shortDescription}</p>
-                  <div className="services-marketplace-meta">
-                    <span>{format}</span>
-                    {service.locationLabel && service.locationLabel !== "Online" ? <span>{service.locationLabel}</span> : null}
-                    {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
-                  </div>
-                  <div className="services-marketplace-actions">
-                    <Link
-                      className="services-marketplace-request"
-                      href={`/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}
-                    >
-                      {isFree ? (locale === "ru" ? "Запросить бесплатно" : "Request free service") : (locale === "ru" ? "Заказать" : "Request")}<span aria-hidden="true">→</span>
-                    </Link>
-                    <Link
-                      className="services-marketplace-details"
-                      href={`/${locale}/services/${service.practitionerSlug}/${service.slug}`}
-                    >
-                      {locale === "ru" ? "Подробнее" : "Details"}
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <MarketplaceServiceFinder services={marketplaceOfferings} locale={locale} />
         ) : !featuredService ? (
           <p className="services-marketplace-empty">
             {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}

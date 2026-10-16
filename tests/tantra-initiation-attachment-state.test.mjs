@@ -21,6 +21,7 @@ const dependencies = (name) => {
   if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
   if (name === "lucide-react") return new Proxy({}, { get: (_, key) => key });
   if (name === "@/lib/whatsapp-enquiry") return { whatsappEnquiryUrl };
+  if (name === "@/components/contact-channel-chooser") return { ContactChannelChooser: "contact-channel-chooser" };
   if (name.endsWith(".module.css")) {
     return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) };
   }
@@ -45,11 +46,11 @@ function render(locale) {
   const nodes = flatten(TantraInitiationForm({ locale }));
   return {
     nodes,
-    links: nodes.filter((node) => node.type === "a"),
+    links: nodes.filter((node) => node.type === "contact-channel-chooser"),
   };
 }
 
-test("EN/RU/ES capture renders four WhatsApp actions including the personal session", () => {
+test("EN/RU/ES capture renders five messenger choices including feedback", () => {
   for (const locale of ["en", "ru", "es"]) {
     const { links } = render(locale);
     assert.deepEqual(links.map((link) => link.props.id), [
@@ -57,14 +58,14 @@ test("EN/RU/ES capture renders four WhatsApp actions including the personal sess
       "apply-personal",
       "apply-session",
       "apply-answers",
+      "apply-feedback",
     ]);
-    assert.equal(links.length, 4);
+    assert.equal(links.length, 5);
     for (const link of links) {
-      const url = new URL(link.props.href);
+      const url = new URL(link.props.whatsappUrl);
       assert.equal(url.origin, "https://wa.me");
       assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
-      assert.equal(link.props.target, "_blank");
-      assert.equal(link.props.rel, "noopener noreferrer");
+      assert.equal(link.type, "contact-channel-chooser");
       assert.ok(url.searchParams.get("text"));
     }
   }
@@ -73,8 +74,8 @@ test("EN/RU/ES capture renders four WhatsApp actions including the personal sess
 test("free, initiation, personal session and answers WhatsApp links keep distinct localized requests", () => {
   for (const locale of ["en", "ru", "es"]) {
     const { links } = render(locale);
-    const messages = links.map((link) => new URL(link.props.href).searchParams.get("text"));
-    assert.equal(new Set(messages).size, 4);
+    const messages = links.map((link) => new URL(link.props.whatsappUrl).searchParams.get("text"));
+    assert.equal(new Set(messages).size, 5);
     const service = locale === "ru" ? "Тантра Рейки" : "Tantra Reiki";
     for (const message of messages) {
       assert.ok(message.includes(service), message);
@@ -91,10 +92,10 @@ test("free, initiation, personal session and answers WhatsApp links keep distinc
 test("answers go into the user's WhatsApp draft, not a hidden uploaded document", () => {
   for (const locale of ["en", "ru", "es"]) {
     const direct = tantraInitiationWhatsAppUrl(locale, "answers");
-    const fromCard = render(locale).links[3].props.href;
+    const fromCard = render(locale).links[3].props.whatsappUrl;
     assert.equal(fromCard, direct);
     const draft = new URL(direct).searchParams.get("text");
-    assert.ok(draft.includes("WhatsApp"));
+    assert.match(draft, /1–7|seven|siete|выбранном мессенджере/);
     assert.ok(!draft.includes("filename="));
     assert.ok(!draft.includes("base64"));
   }
@@ -112,7 +113,7 @@ test("capture has no form, inputs, file upload, internal state or hidden submiss
 
 test("the site only prepares WhatsApp drafts; it never sends messages automatically", () => {
   const ru = render("ru");
-  const t = ru.links[0].props.href;
+  const t = ru.links[0].props.whatsappUrl;
   assert.match(t, /^https:\/\/wa\.me\/\d+\?text=/);
   const draft = new URL(t).searchParams.get("text");
   assert.ok(draft.includes("Запрос:"));
@@ -132,7 +133,7 @@ test("review-after-video is a distinct localized WhatsApp draft and does not sen
     assert.match(message, /review|impressions|practice|отзыв|impresiones|práctica/);
     assert.match(message, /flow|поток|flujo/);
     assert.ok(message.includes("/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
-    assert.notEqual(url.href, render(locale).links[3].props.href);
+    assert.notEqual(url.href, render(locale).links[3].props.whatsappUrl);
   }
 });
 

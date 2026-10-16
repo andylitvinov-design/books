@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, MessageCircle } from "lucide-react";
@@ -266,7 +266,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           </div>
           <div className={styles.introContact}>
             <div className={styles.photo}>
-              <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
             </div>
             <div><strong>{t.practitioner}</strong><span>{t.experience}</span></div>
           </div>
@@ -343,7 +343,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
       </details>
 
       <section className={styles.about} aria-labelledby="review-about-title">
-        <div className={styles.aboutPhoto}><Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="(max-width: 767px) 100vw, 380px" /></div>
+        <div className={styles.aboutPhoto}><StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="(max-width: 767px) 100vw, 380px" /></div>
         <div>
           <p className={styles.eyebrow}>{t.practitioner}</p>
           <h2 id="review-about-title">{t.aboutHeading}</h2>

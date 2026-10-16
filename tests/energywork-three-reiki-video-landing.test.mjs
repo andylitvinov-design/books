@@ -64,7 +64,7 @@ test("Three downloadable PDF course options point to the real production guide e
     assert.match(form,new RegExp(key));
     assert.match(route,new RegExp(key));
   }
-  assert.match(form, /download=\{isPdf \? true : undefined\}/);
+  assert.match(form, /href=\{fileHref\} download/);
   assert.match(route, /if \(course === "kundalini"\)/);
   assert.match(route, /Kundalini_Reiki_Manual_Paul_Crick\.pdf/);
 });

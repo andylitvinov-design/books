@@ -2,8 +2,9 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, FileText, HeartHandshake, MessageCircle, Send, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Check, FileText, HeartHandshake, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./consultation-choice-capture.module.css";
@@ -58,7 +59,7 @@ const copy = {
     intentField: "What interests me",
     freeRequest: "I would like the free coaching-form and handwritten-drawing assessment with a written report.",
     serviceRequest: "Hello Andrey!",
-    messageNote: "WhatsApp opens a prepared paid-session request. Nothing is sent until you press Send.",
+    messageNote: "Choose WhatsApp or Telegram for your paid-session request. Nothing is sent until you press Send.",
     freeNote: "Next: fill out the coaching form, draw on paper and send both via WhatsApp. This is not a free call.",
     writtenReport: "Personal written report",
     paidHint: "Paid sessions: €50 / 30 min · €100 / 60 min",
@@ -110,7 +111,7 @@ const copy = {
     intentField: "Что меня интересует",
     freeRequest: "Хочу бесплатную диагностику по коучинг-форме и рисунку с письменным отчётом.",
     serviceRequest: "Здравствуйте, Андрей!",
-    messageNote: "WhatsApp откроет запрос на платную сессию. Он отправится только после вашего подтверждения.",
+    messageNote: "Выберите WhatsApp или Telegram для платной сессии. Сообщение отправится только после вашего подтверждения.",
     freeNote: "Далее: заполните коучинг-форму, нарисуйте на бумаге и отправьте материалы через WhatsApp. Это не бесплатный созвон.",
     writtenReport: "Персональный письменный отчёт",
     paidHint: "Платные сессии: €50 / 30 мин · €100 / 60 мин",
@@ -162,7 +163,7 @@ const copy = {
     intentField: "Qué me interesa",
     freeRequest: "Solicito evaluación gratuita del formulario de coaching y dibujo a mano con informe escrito.",
     serviceRequest: "Hola Andrey.",
-    messageNote: "WhatsApp prepara el mensaje de reserva de pago. Solo se envía cuando confirmas Enviar.",
+    messageNote: "Elige WhatsApp o Telegram para la consulta de pago. Solo se envía cuando confirmas Enviar.",
     freeNote: "Siguiente: rellena el formulario de coaching, dibuja en papel y envía ambos por WhatsApp. No es una llamada gratuita.",
     writtenReport: "Informe escrito personal",
     paidHint: "Sesiones de pago: €50 / 30 min · €100 / 60 min",
@@ -263,20 +264,28 @@ export function ConsultationChoiceCapture({
             </button>
           ))}
       </div>
-      <AcquisitionEventLink
-        prefetch={false}
-        className={styles.action}
-        href={ctaHref}
-        target={isPaidRequest ? "_blank" : undefined}
-        rel={isPaidRequest ? "noopener noreferrer" : undefined}
-        event="service_request_start"
-        analyticsEvent={isPaidRequest ? "whatsapp_handoff_click" : "free_situation_assessment_click"}
-        attributes={{ ...(isPaidRequest ? { "data-contact-channel": "whatsapp" } : {}), "data-consultation-action": isService ? serviceChoice : topic }}
-      >
-        {isPaidRequest ? <MessageCircle size={19} aria-hidden="true" /> : <FileText size={19} aria-hidden="true" />}
-        <span>{cta}</span>
-        <ArrowUpRight size={20} aria-hidden="true" />
-      </AcquisitionEventLink>
+      {isPaidRequest ? (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={whatsappUrl}
+          className={styles.action}
+          event="service_request_start"
+          attributes={{ "data-consultation-action": serviceChoice }}
+        />
+      ) : (
+        <AcquisitionEventLink
+          prefetch={false}
+          className={styles.action}
+          href={ctaHref}
+          event="service_request_start"
+          analyticsEvent="free_situation_assessment_click"
+          attributes={{ "data-consultation-action": isService ? serviceChoice : topic }}
+        >
+          <FileText size={19} aria-hidden="true" />
+          <span>{cta}</span>
+          <ArrowUpRight size={20} aria-hidden="true" />
+        </AcquisitionEventLink>
+      )}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDown, ArrowRight, Check, MessageCircle, Send } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, Send } from "lucide-react";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./yggdrasil-free-initiation.module.css";
 
@@ -31,8 +32,8 @@ const copy: Record<PublicLocale, {
       "Hello Andrey! I would like to request the FREE introductory Level 1 Reiki Yggdrasil initiation. I have reviewed the materials and seven preparation questions. Please tell me about available dates and the teacher-led format.",
       "Hello Andrey! I would like to book a PERSONAL Reiki Yggdrasil Level 1 initiation (€100 / 60 minutes). Please tell me the availability and how to prepare.",
     ],
-    actions: ["Request free Level 1 in WhatsApp", "Ask about personal initiation", "Download PDF guide"],
-    note: "No name, email, registration or uploads. WhatsApp opens a ready-to-send message; you send it yourself. This does not automatically book or grant an initiation.",
+    actions: ["Request free Level 1", "Ask about personal initiation", "Download PDF guide"],
+    note: "No name, email, registration or uploads. Choose WhatsApp or Telegram; the prepared request is sent only by you. This does not automatically book or grant an initiation.",
     telegram: "Or write to Andrey on Telegram",
     assurance: "A personal reply · No obligation",
   },
@@ -48,8 +49,8 @@ const copy: Record<PublicLocale, {
       "Здравствуйте, Андрей! Хочу запросить БЕСПЛАТНУЮ вводную инициацию 1-й ступени Рейки Иггдрасиль. Я ознакомился(-ась) с материалами и семью вопросами. Подскажите доступное время и формат.",
       "Здравствуйте, Андрей! Хочу записаться на ЛИЧНУЮ инициацию 1-й ступени Рейки Иггдрасиль (€100 / 60 минут). Подскажите дату, формат и подготовку.",
     ],
-    actions: ["Запросить 1-ю ступень в WhatsApp", "Узнать о личной инициации", "Скачать PDF-методичку"],
-    note: "Без имени, email, регистрации и загрузки файлов. WhatsApp открывает готовое сообщение — отправляете его только вы. Запись и инициация не происходят автоматически.",
+    actions: ["Запросить 1-ю ступень", "Узнать о личной инициации", "Скачать PDF-методичку"],
+    note: "Без имени, email, регистрации и загрузки файлов. Выберите WhatsApp или Telegram и отправьте готовую заявку сами. Запись и инициация не происходят автоматически.",
     telegram: "Или написать Андрею в Telegram",
     assurance: "Личный ответ · Без обязательств",
   },
@@ -66,7 +67,7 @@ const copy: Record<PublicLocale, {
       "Hola Andrey. Quiero solicitar una iniciación PERSONAL al Nivel 1 de Reiki Yggdrasil (€100 / 60 minutos). ¿Puedes confirmar disponibilidad y preparación?",
     ],
     actions: ["Solicitar Nivel 1 gratis", "Consultar iniciación personal", "Descargar guía PDF"],
-    note: "Sin nombre, correo, registro ni archivos. WhatsApp abre un mensaje que tú decides enviar. La solicitud no reserva ni concede automáticamente una iniciación.",
+    note: "Sin nombre, correo, registro ni archivos. Elige WhatsApp o Telegram; tú decides cuándo enviar la solicitud. La solicitud no reserva ni concede automáticamente una iniciación.",
     telegram: "O escribir a Andrey en Telegram",
     assurance: "Respuesta personal · Sin compromiso",
   },
@@ -130,9 +131,12 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
           <ArrowDown size={19} aria-hidden="true" />{t.actions[2]}<ArrowRight size={18} aria-hidden="true" />
         </a>
       ) : (
-        <a className={styles.formSubmit} href={enquiryUrl} target="_blank" rel="noopener noreferrer" data-reiki-initiation-handoff={mode}>
-          <MessageCircle size={20} aria-hidden="true" />{t.actions[index]}<ArrowRight size={18} aria-hidden="true" />
-        </a>
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={enquiryUrl}
+          className={styles.formSubmit}
+          attributes={{ "data-reiki-initiation-handoff": mode }}
+        />
       )}
       <div className={styles.formFooter}>
         <p className={styles.formAssurance}><Check size={15} aria-hidden="true" />{t.assurance}</p>

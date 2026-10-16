@@ -2,6 +2,7 @@
 
 import { ChevronDown, ExternalLink, Film, Play } from "lucide-react";
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import { useEffect, useId, useRef, useState } from "react";
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import styles from "./site-video-minimal.module.css";
@@ -111,7 +112,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const [interactive, setInteractive] = useState(false);
   useEffect(() => { setInteractive(true); }, []);
   // Compact testimonial cards reliably use the standard HQ still; maxres is often unavailable.
-  // Optimized posters load from our own origin to avoid mobile third-party image blocking.
+  // Prefer verified local posters; any YouTube fallback is delivered directly from YouTube, never through Vercel image transformations.
   const [poster, setPoster] = useState<"maxres" | "hq" | "direct" | null>(compact ? "hq" : "maxres");
   const [localPosterFailed, setLocalPosterFailed] = useState(false);
   const playerRef = useRef<HTMLIFrameElement>(null);
@@ -150,11 +151,15 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
             {approvedPoster && poster ? (
-              <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
+              approvedPoster === "/images/holistic-house/andy-about.png" ? (
+                <StaticPortrait className="site-video-poster" src="/images/holistic-house/andy-about.png" alt="" fill priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
+              ) : (
+                <Image className="site-video-poster" src={approvedPoster} alt="" fill unoptimized={approvedPoster.endsWith(".webp")} priority={posterPriority} loading={posterPriority ? undefined : "lazy"} sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={() => setPoster(null)} />
+              )
             ) : isHeygen ? (
               <Film aria-hidden="true" className="site-video-generic-poster" strokeWidth={0.8} style={{ position: "absolute", width: "50%", height: "70%", opacity: 0.12 }} />
             ) : poster && (!fallbackPoster || localPosterFailed) ? (
-              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized={poster === "direct"} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
+              <Image key={poster} className="site-video-poster" src={`https://i.ytimg.com/vi/${video.youtubeId}/${poster === "maxres" ? "maxresdefault" : "hqdefault"}.jpg`} alt="" fill unoptimized loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} onError={showFallbackPoster} onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120) showFallbackPoster(); }} />
             ) : null}
             <span className="site-video-shade" aria-hidden="true" />
                 <span className="site-video-poster-title" aria-hidden="true" data-title={video.title} />
