@@ -124,7 +124,7 @@ test("initiation capture uses a single safe service-based WhatsApp handoff for a
   assert.match(source, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/yggdrasil\/free-initiation"/);
   assert.match(source, /whatsappUrl=\{enquiryUrl\}/);
   assert.match(source, /<ContactChannelChooser/);
-  assert.match(source, /data-reiki-initiation-handoff=\{mode\}/);
+  assert.match(source, /"data-reiki-initiation-handoff": mode/);
   assert.match(source, /https:\/\/t\.me\/AndyTherapist/);
   assert.doesNotMatch(source, /<input|<textarea|type="file"|setName|setAttachment|setAnswers/);
   for (const locale of ["en", "ru", "es"]) {
