@@ -195,7 +195,7 @@
   .videoLayout { grid-template-columns: minmax(0,1.25fr) minmax(175px,.5fr); }
 }
 @media (max-width: 760px) {
-  .page { width: min(100% - 24px, 640px); padding-top: 10px; }
+  .page { width: min(calc(100% - 24px), 640px); padding-top: 10px; }
   .subnav { gap: 6px; }
   .progress a { width: 29px; height: 29px; font-size: 10px; }
   .back { max-width: 200px; font-size: 12px; }
