@@ -89,7 +89,7 @@ export function EnergyworkReikiCapture({ locale, course }: { locale: PublicLocal
   });
 
   return (
-    <div className={styles.capture} data-energywork-capture={course} aria-label={c.label}>
+    <div className={styles.capture} data-energywork-capture={course} id={"energywork-" + course + "-capture"} aria-label={c.label}>
       <p className={styles.prompt}>{c.prompt}</p>
       <div className={styles.choices} role="group" aria-label={c.prompt}>
         {choices.map((option,i) => (
