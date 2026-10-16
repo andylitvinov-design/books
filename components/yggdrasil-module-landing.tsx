@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, PlayCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -141,6 +141,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                   <a key={step.id} href={"#" + step.id.toLowerCase()} className={styles.roadmapCard}>
                     <span className={styles.roadmapNumber}>{String(step.number).padStart(2,"0")}</span>
                     <strong>{step.title[locale]}</strong>
+                    <p className={styles.roadmapSynopsis}>{basicLevelIntroductions[locale][step.number]}</p>
                     <small>{step.settings.length} {copy.attunements}</small>
                     <ArrowRight size={17} aria-hidden="true" />
                   </a>
