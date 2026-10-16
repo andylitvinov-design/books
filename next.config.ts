@@ -77,6 +77,16 @@ const nextConfig: NextConfig = {
     return [
       // English has one canonical root. Russian is served at its own /ru URL.
       { source: "/en", destination: "/", permanent: true },
+      // Preserve deep links from earlier public navigation and campaigns.
+      ...(["en", "ru", "es"] as const).flatMap(locale => [
+        { source: `/${locale}/tests`, destination: `/${locale}/client/tests`, permanent: true },
+        { source: `/${locale}/cabinet`, destination: `/${locale}/client`, permanent: true },
+        { source: `/${locale}/review`, destination: `/${locale}/services/free-situation-review`, permanent: true },
+      ]),
+      // ES personal-work details currently live within the Spanish services index.
+      ...(["psychohomeopathy", "imagery-therapy", "systemic-constellations"] as const).map(slug => ({
+        source: `/es/services/${slug}`, destination: `/es/services#${slug === "imagery-therapy" ? "imagery" : slug === "systemic-constellations" ? "constellations" : slug}`, permanent: true,
+      })),
       { source: "/book", destination: "/books", permanent: true },
       { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
       { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },
