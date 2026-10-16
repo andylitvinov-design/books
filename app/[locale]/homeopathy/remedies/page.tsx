@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params;
   if (!isSupportedLocale(locale)) return { title: "Not found" };
   const current = copy[locale];
-  return { metadataBase: metadataBaseFor(), title: current.title, description: current.description, alternates: { canonical: `/${locale}/homeopathy/remedies`, languages: { ru: "/ru/homeopathy/remedies", en: "/en/homeopathy/remedies" } } };
+  return { metadataBase: metadataBaseFor(), title: current.title, description: current.description, alternates: { canonical: `/${locale}/homeopathy/remedies`, languages: { ru: "/ru/homeopathy/remedies", en: "/en/homeopathy/remedies", es: "/es/homeopathy/remedies", "x-default": "/en/homeopathy/remedies" } }, openGraph: { type: "website", title: current.title, description: current.description, url: `/${locale}/homeopathy/remedies`, images: ["/images/holistic-house/andy-about.png"] }, twitter: { card: "summary_large_image", title: current.title, description: current.description, images: ["/images/holistic-house/andy-about.png"] } };
 }
 
 export default async function RemediesPage({ params }: PageProps) {
