@@ -23,8 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: libraryCopy[locale].lead,
     alternates: {
       canonical: `/${locale}/library`,
-      languages: { en: "/en/library", ru: "/ru/library", es: "/es/library" },
+      languages: { en: "/en/library", ru: "/ru/library", es: "/es/library", "x-default": "/en/library" },
     },
+    openGraph: { type: "website", title: `${libraryCopy[locale].title} — Holistic House`, description: libraryCopy[locale].lead, url: `/${locale}/library`, images: ["/images/holistic-house/books-library.webp"] },
+    twitter: { card: "summary_large_image", title: `${libraryCopy[locale].title} — Holistic House`, description: libraryCopy[locale].lead, images: ["/images/holistic-house/books-library.webp"] },
   };
 }
 
