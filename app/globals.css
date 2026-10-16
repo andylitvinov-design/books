@@ -5826,3 +5826,30 @@
     padding-right: max(12px, env(safe-area-inset-right));
   }
 }
+
+
+/* Saved standalone reports share the same verified private publication status. */
+.report-save-publication-state{
+  display:grid;
+  gap:8px;
+  margin:15px auto;
+  padding:15px 19px;
+  border:1px solid #dccdb6;
+  border-left:4px solid #986e50;
+  border-radius:13px;
+  background:#fffaf3;
+  max-width:950px;
+}
+.report-save-publication-state--success{
+  background:#f1f8f3;
+  border-color:#c5ddcb;
+  border-left-color:#377d66;
+}
+.report-save-publication-state strong{font-size:17px;color:#304b40}
+.report-save-publication-state p{margin:0;color:#5a6c64;line-height:1.5;font-size:14px}
+.report-save-publication-state button{
+  min-height:44px;padding:10px 15px;
+  border:1px solid #63354c;border-radius:10px;
+  background:#63354c;color:#fff;font-weight:700;cursor:pointer;
+}
+@media(max-width:600px){.report-save-publication-state button{width:100%}}
