@@ -28,21 +28,24 @@ test('top ribbon is a personal written review; a separate course ribbon follows 
   const picker = read('app/[locale]/client/tests/page.tsx')
   const top = bar.slice(0, bar.indexOf('export function TestSelectionCourseBanner'))
   const course = bar.slice(bar.indexOf('export function TestSelectionCourseBanner'))
-  assert.match(layout, /<SitewideAntistressBanner initialLocale=\\{lang\\} \\/>/)
-  assert.match(top, /data-sitewide-personal-review-banner/)
-  assert.match(top, /services\\/free-situation-review/)
-  assert.doesNotMatch(top, /app\\/course\\?program=stress/)
-  assert.match(course, /data-tests-course-banner/)
-  assert.match(course, /app\\/course\\?program=stress/)
-  assert.match(course, /locale === "es" \\? "en" : locale/)
-  assert.match(home, /<HomepageTopicJourneys locale=\\{locale\\} \\/>\\s*<TestSelectionCourseBanner locale=\\{locale\\} \\/>/)
-  assert.match(picker, /<PublicTestExplorer[\\s\\S]*<TestSelectionCourseBanner locale=\\{locale as Locale\\} \\/>/)
+  assert.ok(layout.includes('<SitewideAntistressBanner initialLocale={lang} />'))
+  assert.ok(top.includes('data-sitewide-personal-review-banner'))
+  assert.ok(top.includes('services/free-situation-review'))
+  assert.ok(!top.includes('app/course?program=stress'))
+  assert.ok(course.includes('data-tests-course-banner'))
+  assert.ok(course.includes('app/course?program=stress'))
+  assert.ok(course.includes('locale === "es" ? "en" : locale'))
+  assert.ok(home.includes('<HomepageTopicJourneys locale={locale} />\n      <TestSelectionCourseBanner locale={locale} />'))
+  assert.ok(picker.includes('<TestSelectionCourseBanner locale={locale as Locale} />'))
+  assert.ok(picker.indexOf('<PublicTestExplorer') < picker.indexOf('<TestSelectionCourseBanner'))
   for (const route of ['admin', 'course', 'runs', 'results', 'report', 'settings']) {
     assert.ok(bar.includes(route), route + ' excludes a sensitive route')
   }
-  assert.match(style, /@media print/)
-  assert.match(style, /max-width:680px/)
-  assert.doesNotMatch(bar, /localStorage|sessionStorage|fetch\\(/)
+  assert.ok(style.includes('@media print'))
+  assert.ok(style.includes('max-width:680px'))
+  for (const unwanted of ['localStorage', 'sessionStorage', 'fetch(']) {
+    assert.ok(!bar.includes(unwanted))
+  }
 })
 
 test('all public course banners and landing pages lead to the Anti-Stress option', () => {
