@@ -22,15 +22,15 @@ test('recommendation cards stay compact with separate selection, disclosure and 
   assert.match(picker, /loading="lazy" decoding="async"/)
 })
 
-test('each Take Test button submits only that test via the existing account or Google workflow', () => {
+test('each Take Test button starts only that eligible test through the guest runner', () => {
   assert.match(explorer, /const startSingle = async \(entry\)/)
   assert.match(explorer, /await onStart\(activeBattery, \{/)
   assert.match(explorer, /await onStart\(\[entry\], \{/)
   assert.match(explorer, /onStartSingle=\{startSingle\}/)
   assert.match(explorer, /onStart=\{start\}/)
-  assert.match(publicFlow, /makeTestSelectionIntent\(entries\.map\(\(entry\) => entry\.key\)/)
-  assert.match(publicFlow, /request\('test-plans'/)
-  assert.match(publicFlow, /request\('auth\/start'/)
+  assert.match(publicFlow, /guestStartable\(entries\)/)
+  assert.match(publicFlow, /onGuestStart\(entries\)/)
+  assert.doesNotMatch(publicFlow, /auth\/start/)
   assert.match(picker, /data-test-course-switch/)
   assert.match(picker, /onClick=\{journeyMode === 'course' \? onStartCourse : onStart\}/)
 })
@@ -65,12 +65,12 @@ test('compact navy/wine test details show type, time and measured scales before 
   assert.match(css, /\.researchDetails\{/)
 });
 
-test('softer palette does not remove the original single-test action or its authenticated flow', () => {
+test('softer palette keeps the single-test action without mandatory sign-in', () => {
   assert.match(css, /Soft navy & burgundy My Tests/)
   assert.match(css, /--ink:#172f4b/)
   assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
   assert.match(explorer, /await onStart\(\[entry\], \{/)
-  assert.match(publicFlow, /request\('auth\/start'/)
+  assert.match(publicFlow, /client\?startTests=/)
 });
 
 
@@ -199,7 +199,7 @@ test('recommendation tabs filter only the displayed entries and keep server test
   assert.match(picker, /Math\.min\(browseRecommendations\.length, current \+ 5\)/)
   assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
   assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
-  assert.match(publicFlow, /request\('auth\/start'/)
+  assert.match(publicFlow, /client\?startTests=/)
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
   assert.ok(picker.indexOf('id="hh-public-recommended-tests"') < picker.indexOf('data-via-family'), 'optional VIA family follows main tests')
 })
