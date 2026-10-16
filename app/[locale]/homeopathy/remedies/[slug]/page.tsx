@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { RemedyPage } from "@/components/remedy-page";
 import { getRemedy, getRemedyRouteParams, isSupportedLocale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { getSpanishRemedy } from "@/data/remedies-es";
+import { remedySeoDescription } from "@/lib/seo-descriptions";
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
@@ -17,8 +19,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     metadataBase: metadataBaseFor(),
     title: locale === "ru" ? `${remedy.canonical_latin_name} — Препараты` : `${remedy.canonical_latin_name} — Remedies`,
-    description: remedy.description.slice(0, 155),
-    alternates: { canonical: `/${locale}/homeopathy/remedies/${slug}`, languages: { ru: `/ru/homeopathy/remedies/${slug}`, en: `/en/homeopathy/remedies/${slug}` } },
+    description: remedySeoDescription(remedy.canonical_latin_name, remedy.description, locale),
+    alternates: { canonical: `/${locale}/homeopathy/remedies/${slug}`, languages: { ru: `/ru/homeopathy/remedies/${slug}`, en: `/en/homeopathy/remedies/${slug}`, ...(getSpanishRemedy(slug) ? { es: `/es/homeopathy/remedies/${slug}` } : {}), "x-default": `/en/homeopathy/remedies/${slug}` } },
   };
 }
 
