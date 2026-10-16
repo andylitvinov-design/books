@@ -10,6 +10,11 @@ import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutub
 const copy = {
   ru: {
     intro:'Выберите русский или английский канал, затем добавьте видео с iPhone. Файлы передаются прямо в YouTube — без хранения MP4 на сервере.',
+    introShort:'RU / EN · Unlisted · прямо в YouTube',
+    settingsTitle:'Параметры видео', historyHelp:'Сохранённые ссылки по языкам',
+    safetyTitle:'Конфиденциальность и правила загрузки',
+    setupGuideTitle:'Инструкция Google Cloud', setupIntro:'Для начала нужен публичный Google OAuth Client ID.',
+
     noClient:'Не используйте YouTube для частных клиентских консультаций или видео с персональными медицинскими данными. Unlisted доступен каждому, у кого есть ссылка.',
     config:'Для загрузки требуется одноразовое подключение Google OAuth. Сначала настройте Google Cloud ниже.',
     setupTitle:'Первое подключение Google YouTube',
@@ -68,6 +73,11 @@ const copy = {
   },
   en: {
     intro:'Choose the Russian or English YouTube channel, then select videos from your phone. Files go straight to YouTube without Holistic House MP4 storage.',
+    introShort:'RU / EN · Unlisted · direct to YouTube',
+    settingsTitle:'Video settings', historyHelp:'Saved links grouped by language',
+    safetyTitle:'Privacy and upload guidelines',
+    setupGuideTitle:'Google Cloud setup instructions', setupIntro:'Connect your public Google OAuth Client ID to get started.',
+
     noClient:'Do not upload private client consultations or personal health information. Anyone with the link can view an Unlisted video.',
     config:'YouTube OAuth needs a one-time Google Cloud setup before uploading. Configure it below.',
     setupTitle:'Connect Google YouTube once',
@@ -461,16 +471,23 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     <section className={styles.uploader} aria-label="Holistic House YouTube uploader">
       <div className={styles.lead}>
         <div className={styles.icon} aria-hidden="true">▶</div>
-        <div><h2>Phone → YouTube</h2><p>{t.intro}</p></div>
+        <div className={styles.leadCopy}>
+          <h2>Phone → YouTube</h2>
+          <p className={styles.desktopIntro}>{t.intro}</p>
+          <p className={styles.mobileIntro}>{t.introShort}</p>
+        </div>
       </div>
-      <p className={styles.warning}>{t.noClient}</p>
-      {!enabled && <p className={styles.unavailable} role="status">{t.config}</p>}
+      {!enabled && !setupAvailable && <p className={styles.unavailable} role="status">{t.config}</p>}
       {enabled && setupAvailable && !showSetup && <button className={styles.siteLink}
         type="button" disabled={busy} onClick={() => setShowSetup(true)}>{t.setupChange}</button>}
       {setupAvailable && showSetup && <div className={styles.pairing}>
         <h3>{t.setupTitle}</h3>
-        <p>{t.setupHelp}</p>
-        <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
+        <p className={styles.setupIntro}>{t.setupIntro}</p>
+        <details className={styles.helpDisclosure}>
+          <summary>{t.setupGuideTitle}</summary>
+          <p>{t.setupHelp}</p>
+          <a className={styles.siteLink} target="_blank" rel="noreferrer" href="https://console.cloud.google.com/apis/credentials">{t.setupGoogle}</a>
+        </details>
         <label className={styles.field}><span>{t.setupField}</span><input type="text"
           value={setupClientId} onChange={event => setSetupClientId(event.target.value)}
           placeholder="123456789012-example.apps.googleusercontent.com" spellCheck={false}
