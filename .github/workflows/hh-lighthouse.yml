@@ -1,0 +1,36 @@
+name: Holistic House Lighthouse mobile and desktop
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-lighthouse.yml'
+      - 'scripts/report-hh-lighthouse.mjs'
+permissions:
+  contents: read
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prepare report directory
+        run: mkdir -p artifacts
+      - name: Lighthouse mobile (public home only)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-mobile.json
+      - name: Lighthouse desktop (public home only)
+        run: npx --yes lighthouse@12.6.0 https://holistichouse.vercel.app/ --quiet --preset=desktop --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=artifacts/lighthouse-desktop.json
+      - name: Publish measured metrics and findings
+        run: node scripts/report-hh-lighthouse.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-lighthouse-${{ github.run_id }}
+          path: artifacts/lighthouse-*.json
+          if-no-files-found: ignore
+          retention-days: 14
