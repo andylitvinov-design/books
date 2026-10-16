@@ -23,11 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
-      - name: Install Chromium for isolated public acceptance
+      - name: Install Chromium and WebKit for isolated public acceptance
         run: |
           mkdir -p /tmp/hh-public-services-tools
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium
+          /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Production build and public browser acceptance
         run: |
           mkdir -p artifacts/public-services-production
@@ -40,6 +40,7 @@ jobs:
           done
           status=0
           node scripts/verify-public-services-production.mjs || status=$?
+          node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
           {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
@@ -52,6 +53,7 @@ jobs:
           name: public-services-production-acceptance
           path: |
             artifacts/public-services-production/
+            artifacts/contact-channel-browser/
             artifacts/service-cart/
           retention-days: 7
           if-no-files-found: warn
