@@ -1,3 +1,4 @@
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -73,13 +74,12 @@ async function fill(page,d,mode,guest,locale,responseValues){
  }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(4)
- for(const detail of await report.locator('details').all())await detail.locator('summary').click()
- await expect(report).toContainText(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)')
- await expect(report).toContainText(locale==='ru'?'английский оригинал':'English original')
- await expect(report).toContainText(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness')
- await expect(report).toContainText('Corey L. M. Keyes')
- await expect(report).toContainText('PHAC (2017)')
+ const reportText=await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
+ assert.ok(reportText.includes(locale==='ru'?'Сумма ответов (0–70)':'Response sum (0–70)'))
+ assert.ok(reportText.includes(locale==='ru'?'английский оригинал':'English original'))
+ assert.ok(reportText.includes(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness'))
+ assert.ok(reportText.includes('Corey L. M. Keyes'))
+ assert.ok(reportText.includes('PHAC (2017)'))
  }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})

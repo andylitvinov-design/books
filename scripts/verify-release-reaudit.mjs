@@ -1,3 +1,5 @@
+import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -23,6 +25,17 @@ async function check(name, detail, fn) {
   try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); }
   catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); }
 }
+async function assertCspPublicHome(page) {
+  await expect(page).toHaveURL(origin + '/');
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+  // A history traversal can update the URL while the previous public document
+  // remains visible and its replacement is pending. Require the destination DOM,
+  // not load/hydration readiness: the server-rendered home is sufficient here.
+  const home = page.locator('main[data-home-design="approved-v2"]');
+  await expect(home).toHaveCount(1);
+  await expect(home).toBeVisible();
+}
+
 async function verifyCspBfcache() {
   // Playwright Page lifecycle/locators explicitly do not support BFCache.
   // Use its browser launcher only; every observation/navigation below is CDP.
@@ -318,36 +331,36 @@ async function exercise(engine, browserType, width) {
         await expect(capture).toHaveCount(1);
         await expect(capture.locator('[role="group"] button')).toHaveCount(3);
         assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No private intake fields in the enquiry selector');
-        const action = capture.locator('[data-consultation-action]');
+        let chooser = await openContactChannelChooser(capture, expect);
         const assertPaidUrl = async (choice, minutes, price) => {
-          await expect(action).toHaveAttribute('data-consultation-action', choice);
-          await expect(action).toHaveAttribute('data-contact-channel', 'whatsapp');
-          await expect(action).toHaveAttribute('target', '_blank');
-          await expect(action).toHaveAttribute('rel', /noopener/);
-          const target = new URL(await action.getAttribute('href'));
-          assert.equal(target.origin, 'https://wa.me');
-          assert.equal(target.pathname, '/14376066502');
-          assert.deepEqual([...target.searchParams.keys()], ['text']);
+          const { whatsapp, telegram, whatsappUrl: target } = await assertPreparedContactChannels(chooser, expect);
+          await expect(chooser.locator('[data-consultation-action]')).toHaveCount(2);
+          for (const action of [whatsapp, telegram]) await expect(action).toHaveAttribute('data-consultation-action', choice);
           const message = target.searchParams.get('text');
-          assert.ok(message?.trim(), 'Prepared message must not be empty');
           assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
           assert.ok(message.includes(await capture.locator('[aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
           return target;
         };
         const originalUrl = await assertPaidUrl('session', '60', '€100');
         await capture.locator('[role="group"] button').nth(1).click();
+        chooser = await openContactChannelChooser(capture, expect);
         const changedUrl = await assertPaidUrl('questions', '30', '€50');
         assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
         await capture.locator('[role="group"] button').nth(2).click();
+        await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
+        const action = capture.locator('[data-consultation-action]');
+        await expect(action).toHaveCount(1);
+        await expect(action).toBeVisible();
         await expect(action).toHaveAttribute('data-consultation-action', 'free');
         assert.equal(await action.getAttribute('data-contact-channel'), null);
         assert.equal(await action.getAttribute('target'), null);
         const freeUrl = new URL(await action.getAttribute('href'), origin);
         assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
         await capture.locator('[role="group"] button').nth(0).click();
+        chooser = await openContactChannelChooser(capture, expect);
         assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
-        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
-        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, freeAssessmentInternal: true, resetVerified: true };
+        await expect(capture.locator('[data-contact-channel="telegram"]:not([data-consultation-action])')).toHaveCount(1);
+        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, bothChannelsVerified: true, freeAssessmentInternal: true, resetVerified: true };
       });
     }
     if (width === 390) {
@@ -403,7 +416,10 @@ async function exercise(engine, browserType, width) {
           document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
           window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
         });
+        await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
         const cspPage = await cspContext.newPage();
+        const requestTelemetry = [];
+        attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
         const navigationTrace = [];
         const waitForDocument = async () => {
           if (readiness !== 'loaded-history') return;
@@ -454,12 +470,12 @@ async function exercise(engine, browserType, width) {
           await expect(privateWordmark).toBeVisible();
           await expect(privateWordmark).toHaveAttribute('href', '/');
           await privateWordmark.click();
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          const publicAbout = cspPage.locator('a[href="/en/about"]');
+          const publicAbout = cspPage.locator('.service-home-about a[href="/en/about"]');
+          await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
           await publicAbout.click();
           await expect(cspPage).toHaveURL(origin + '/en/about');
@@ -485,8 +501,7 @@ async function exercise(engine, browserType, width) {
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
           historyPhase = 'back-to-public-home';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
@@ -496,8 +511,7 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
@@ -509,6 +523,18 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           await waitForDocument();
+          // This marker observes existing URL/CSP assertions, without waiting.
+          await cspPage.evaluate(() => {
+            const allowed = ['/', '/en/about', '/en/services', '/en/services/free-situation-review', '/en/academy/reiki/tantra-reiki'];
+            if (!['127.0.0.1', 'localhost'].includes(location.hostname) || !allowed.includes(location.pathname) || location.search || location.hash) return;
+            const key = '__cspRequestTelemetry';
+            try {
+              const entries = JSON.parse(sessionStorage.getItem(key) || '[]');
+              if (entries.length >= 512) return;
+              entries.push({ type: 'target-ready', path: location.pathname, rsc: false, documentProbe: window.__cspInitDocumentProbe, time: performance.timeOrigin + performance.now() });
+              sessionStorage.setItem(key, JSON.stringify(entries));
+            } catch { /* Diagnostic storage must not affect navigation. */ }
+          });
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
           const unexpectedErrors = cspErrors.filter(error => {
@@ -525,7 +551,8 @@ async function exercise(engine, browserType, width) {
         } finally {
           // Keep full structured diagnostics even when check() bounds its message.
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });

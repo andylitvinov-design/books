@@ -92,3 +92,37 @@ test('About client-link prefetch teardown requires the observed Back-to-home rep
   for (const type of ['window-error','unhandled-rejection']) assert.equal(classifyCspNavigationCancellation(error,{...info,lifecycle:[...homeLife,{type,time:125}]}),null);
   for (const override of [{engine:'chromium'},{readiness:'loaded-history'}]) assert.equal(classifyCspNavigationCancellation(error,{...info,...override}),null);
 });
+
+for (const [phase, destination, otherPhase] of [
+  ['forward-to-public', '/en/about', 'back-to-private'],
+  ['back-to-private', '/en/client', 'forward-to-public'],
+]) test(`home free-review prefetch teardown requires exact ${phase} boundary`, () => {
+  const homeLife = [
+    { type: 'init', time: 1, documentProbe: 'home', url: origin + '/' },
+    { type: 'navigate', time: 100, documentProbe: 'home', documentClass: 'public-video', sameDocument: false, navigationType: 'traverse', destination: origin + destination },
+    { type: 'pagehide', time: 140, documentProbe: 'home' },
+    { type: 'init', time: 150, documentProbe: 'destination', url: origin + destination },
+  ];
+  const info = { ...detail, lifecycle: homeLife };
+  const error = { ...diagnostic(origin + '/en/services/free-situation-review?_rsc=probe'), phase };
+  assert.equal(classifyCspNavigationCancellation(error, info)?.kind, 'webkit-hard-navigation-fetch-cancellation');
+  for (const wrongPhase of [undefined, 'initial', 'back-to-public-home', 'forward-to-public-home', otherPhase]) assert.equal(classifyCspNavigationCancellation({ ...error, phase: wrongPhase }, info), null);
+  for (const [index, change] of [
+    [0, { url: origin + '/?unexpected=1' }], [0, { url: origin + '/en/services' }],
+    [0, { url: 'https://elsewhere.test/' }], [0, { documentProbe: 'unrelated' }],
+    [1, { sameDocument: true }], [1, { documentClass: 'private' }],
+    [1, { navigationType: 'replace' }], [1, { navigationType: 'push' }],
+    [1, { destination: origin + '/en/services' }], [1, { destination: origin + '/en/about?other=1' }],
+    [2, { documentProbe: 'unrelated' }], [2, { time: 99 }], [2, { time: 151 }],
+    [3, { documentProbe: 'home' }], [3, { url: origin + '/' }], [3, { time: 99 }],
+  ]) assert.equal(classifyCspNavigationCancellation(error, { ...info, lifecycle: homeLife.map((event, i) => i === index ? { ...event, ...change } : event) }), null);
+  for (const index of [0, 1, 2, 3]) assert.equal(classifyCspNavigationCancellation(error, { ...info, lifecycle: homeLife.filter((_, i) => i !== index) }), null);
+  for (const path of ['/?_rsc=x', '/en/client?_rsc=x', '/api/app/guest/bootstrap', '/en/services/free-situation-review', '/en/services/free-situation-review?_rsc=', '/en/services/free-situation-review?_rsc=x&other=y', '/en/services/free-situation-review?_rsc=x&_rsc=y', '/ru/services/free-situation-review?_rsc=x']) {
+    assert.equal(classifyCspNavigationCancellation({ ...diagnostic(origin + path), phase: error.phase }, info), null);
+  }
+  assert.equal(classifyCspNavigationCancellation({ ...diagnostic('https://elsewhere.test/en/services/free-situation-review?_rsc=x'), phase: error.phase }, info), null);
+  for (const time of [99, 141, 150, 151]) assert.equal(classifyCspNavigationCancellation({ ...error, time }, info), null);
+  for (const type of ['window-error', 'unhandled-rejection']) assert.equal(classifyCspNavigationCancellation(error, { ...info, lifecycle: [...homeLife, { type, time: 125 }] }), null);
+  for (const override of [{ engine: 'chromium' }, { readiness: 'loaded-history' }]) assert.equal(classifyCspNavigationCancellation(error, { ...info, ...override }), null);
+  for (const stack of ['Error: ordinary failure', 'Refused to connect because it violates Content Security Policy']) assert.equal(classifyCspNavigationCancellation({ ...error, stack }, info), null);
+});

@@ -67,6 +67,6 @@ test("Services Spanish retains its routes with a compact photographic treatment"
     assert.ok(page.includes("/es/services/" + route), route);
   }
   assert.doesNotMatch(page, /ServiceCart|service-cart/);
-  assert.match(page, /<PublicConsultationCta locale="es" \/>/);
+  assert.match(page, /<PublicConsultationCta locale="es" id="consultation" serviceBooking \/>/);
   assert.doesNotMatch(page, /services-studio-hero|services-studio-grid/);
 });

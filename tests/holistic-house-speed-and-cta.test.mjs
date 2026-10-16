@@ -43,6 +43,11 @@ test("homepage prioritizes free written review and tests while preserving access
   assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
+  assert.match(home, /className="service-home-offer-note"/);
+  assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
+  assert.match(home, /not a live call\. One-to-one sessions are separate/);
+  const landing = read("app/[locale]/services/free-situation-review/page.tsx");
+  assert.match(landing, /<section className=\{styles\.paid\} id="personal-consultation"/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const free = home.indexOf('className="service-home-button service-home-button--primary"');

@@ -1,3 +1,8 @@
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { assertAccountScaleJumpLayout } from './helpers/scale-jump-layout-verifier.mjs'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { collectReportOverflowDiagnostics } from './helpers/report-overflow-diagnostics.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -70,17 +75,34 @@ async function fill(page,d,mode,guest,locale){
  }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
- await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
+ await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
  await expect(report.locator('[data-assessment-methodology]')).toContainText(locale==='ru'?'Авторские вопросы Holistic House':'Original Holistic House self-reflection')
  const summary=report.locator('[data-personality-type-summary]')
+ if(await summary.getAttribute('open')===null)await summary.locator(':scope > summary').click()
+ await expect(summary).toHaveAttribute('open','')
  await expect(summary).toBeVisible()
  await expect(summary).toContainText(d.key==='hh-socionics-32'
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'
    : locale==='ru'?'Несколько равных ведущих паттернов':'Several equally prominent patterns')
  await summary.scrollIntoViewIfNeeded()
  }
+ // Passive evidence for the hosted WebKit RU Enneagram overflow. Capture before
+ // the unchanged assertion; do not resize, scroll, hide content or retry it.
+ if(!guest&&locale==='ru'&&d.key==='hh-enneagram-36'){
+  try{
+   const layout=await page.evaluate(collectReportOverflowDiagnostics)
+   await writeFile(output+'/layout-account-hh-enneagram-36-ru.json',JSON.stringify({commit:process.env.GITHUB_SHA,scenario:{definitionKey:d.key,locale,mode,guest},...layout},null,2))
+   console.log('TYPOLOGY_LAYOUT',JSON.stringify({viewport:layout.viewport,document:layout.document,body:layout.body,counts:layout.counts,escapingWithoutClippingAncestor:layout.escapingWithoutClippingAncestor.slice(0,6)}))
+  }catch(error){console.log('TYPOLOGY_LAYOUT_DIAGNOSTIC_ERROR',error.message)}
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
+ if(!guest&&d.scoring.dimensions.length>6){
+  const expected=buildAssessmentResultReport(scoreAssessment(d,Object.fromEntries(d.questions.map(question=>[question.id,3]))),locale)
+  const layouts=await assertAccountScaleJumpLayout(page,expect,expected.sections,{screenshotPrefix:output+'/picker-'+d.key+'-'+locale})
+  await writeFile(output+'/picker-layout-'+d.key+'-'+locale+'.json',JSON.stringify({commit:process.env.GITHUB_SHA,definitionKey:d.key,locale,layouts},null,2))
+  console.log('TYPOLOGY_PICKER_LAYOUT',JSON.stringify({definitionKey:d.key,locale,layouts}))
+ }
 }
 let page
 try{

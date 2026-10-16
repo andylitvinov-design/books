@@ -1,6 +1,8 @@
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { expect } = require((process.env.HH_PLAYWRIGHT_PACKAGE || "playwright") + "/test");
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -119,14 +121,12 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (width === 390) {
-          const footerChooser = main.locator('[data-contact-channel-chooser]').last();
-          const footerCta = footerChooser.locator('button[data-contact-order]');
-          await footerCta.scrollIntoViewIfNeeded();
-          assert.equal(await footerCta.getAttribute("aria-expanded"), "false", "footer messenger choice starts collapsed");
-          await footerCta.click();
-          await visible(footerChooser.locator('a[data-contact-channel="whatsapp"]'));
-          await visible(footerChooser.locator('a[data-contact-channel="telegram"]'));
-          assert.equal(await footerCta.getAttribute("aria-expanded"), "true", "order button reveals two channels without redirect");
+          const capture = main.locator('section:has(> details)');
+          assert.equal(await capture.count(), 1, "Exactly one core-service footer");
+          await capture.scrollIntoViewIfNeeded();
+          const chooser = await openContactChannelChooser(capture, expect);
+          const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
+          assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
           const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
           assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
           await alternative.locator("summary").click();
@@ -167,19 +167,14 @@ try {
     await intake.locator('form button[type="submit"]').click();
     const ready = intake.locator('[role="region"]');
     await visible(ready);
-    const readyChooser = ready.locator("[data-contact-channel-chooser]");
-    const readyButton = readyChooser.locator("button[data-contact-order]");
-    assert.equal(await readyButton.getAttribute("aria-expanded"), "false", "free review must not auto-open messaging");
-    await readyButton.click();
-    await visible(readyChooser.locator('a[data-contact-channel="whatsapp"]'));
-    await visible(readyChooser.locator('a[data-contact-channel="telegram"]'));
-    const href = await readyChooser.locator('a[data-contact-channel="whatsapp"]').getAttribute("href");
-    const whatsappText = new URL(href || "").searchParams.get("text") || "";
-    const telegramHref = await readyChooser.locator('a[data-contact-channel="telegram"]').getAttribute("href");
-    assert.equal(new URL(telegramHref || "").searchParams.get("text"), whatsappText, "free review draft is identical across channels");
+    const readyChooser = await openContactChannelChooser(ready, expect);
+    const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(readyChooser, expect);
+    const whatsappText = whatsappUrl.searchParams.get("text") || "";
+    const telegramText = telegramUrl.searchParams.get("text") || "";
     const decodedPageUrl = decodeURIComponent(page.url());
     for (const marker of [markerA, markerB]) {
       assert.ok(!whatsappText.includes(marker), "WhatsApp query text must not include answer marker");
+      assert.ok(!telegramText.includes(marker), "Telegram query text must not include answer marker");
       assert.ok(!decodedPageUrl.includes(marker), "Page URL must not include answer marker");
     }
     await ready.screenshot({ path: output + "/free-review-" + locale + "-ready-region-390.png" });

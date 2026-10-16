@@ -1,3 +1,4 @@
+import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -427,9 +428,9 @@ async function verifyPublicServiceConversionJourneys(){
     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
     await capture.scrollIntoViewIfNeeded()
     await expect(capture).toBeVisible({timeout:30000})
-    const cta=capture.locator('a[data-contact-channel="whatsapp"]')
-    await expect(cta).toBeVisible()
-    const href=await cta.getAttribute('href')
+    const chooser=await openContactChannelChooser(capture,expect)
+    const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
+    const href=whatsappUrl.href
     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
     const alternative=capture.locator('details')
@@ -444,8 +445,8 @@ async function verifyPublicServiceConversionJourneys(){
   const publicPage=await publicContext.newPage()
   publicPage.on('pageerror',error=>publicErrors.push(error.message))
   const copy=locale==='ru'
-   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
-   : {ready:'Your answers are ready to copy. Nothing has been sent.',copied:'Copied',fallback:'Select and copy the text below'}
+   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copyButton:'Скопировать ответы',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
+   : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
    await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
@@ -474,21 +475,23 @@ async function verifyPublicServiceConversionJourneys(){
   assert.equal(await ready.getAttribute('aria-live'),'polite')
   await expect(ready).toBeFocused({timeout:15000})
   await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
-  const whatsapp=ready.locator('a[data-contact-channel="whatsapp"]')
-  const whatsappHref=await whatsapp.getAttribute('href')
-  const whatsappText=new URL(whatsappHref||'').searchParams.get('text')||''
+  const readyChooser=await openContactChannelChooser(ready,expect)
+  const {whatsappUrl,telegramUrl}=await assertPreparedContactChannels(readyChooser,expect)
+  const whatsappText=whatsappUrl.searchParams.get('text')||''
+  const telegramText=telegramUrl.searchParams.get('text')||''
   const decodedPageUrl=decodeURIComponent(publicPage.url())
   for(const marker of [uniqueProblem,uniqueGoal]){
    assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
+   assert.ok(!telegramText.includes(marker),'Answers never enter decoded Telegram text')
    assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
   }
-  await ready.getByRole('button').click()
+  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
   await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
-  await ready.getByRole('button').click()
+  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
   await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
-  await ready.getByRole('button').click()
+  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
   await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
   const events=await publicPage.evaluate(()=>window.__publicAcquisition)
   // The temporary SDK safety hold also suppresses the public event emitter,

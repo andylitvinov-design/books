@@ -9,14 +9,15 @@ const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 test("home presents four photo-left offer cards before videos", () => {
   const home = source("components", "holistic-house-home.tsx");
   const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const video = home.indexOf("{introVideo ? (");
+  const video = home.indexOf("{introVideoContent}");
   assert.ok(cards > 0 && video > cards);
+  assert.match(source("components", "home-intro-video-section.tsx"), /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with free-test banner and five compact photo offers, without prices in the overview", () => {
+test("Services leads with free-test banner and five compact photo offers, with a separately priced optional consultation action", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -34,9 +35,13 @@ test("Services leads with free-test banner and five compact photo offers, withou
     assert.ok(offers.includes('id: "' + id + '"'), id);
   for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(hero, /Get a free situation review/);
-  assert.doesNotMatch(hero, /Draw by hand on paper|€50|€100/);
-  assert.doesNotMatch(page, /€50|€100/);
+  assert.match(hero, /Get a free written review/);
+  assert.doesNotMatch(hero, /Draw by hand on paper|€100/);
+  const editorialStart = page.indexOf("const editorialOffers =");
+  const renderStart = page.indexOf("  return (");
+  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
+  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -61,7 +66,7 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   const form = source("components", "free-situation-review-form.tsx");
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & drawing assessment",
+  for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
     "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "paidOptions"]) {
     assert.ok(free.includes(phrase), phrase);
   }
@@ -72,7 +77,10 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   assert.match(intake, /new URLSearchParams\(window\.location\.search\)\.get\("topic"\)/);
   assert.match(intake, /setTopic\(requested as Topic\)/);
   assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /wa\.me/);
+  assert.match(intake, /const whatsappUrl = whatsappEnquiryUrl\(\{/);
+  assert.match(intake, /request: t\.whatsappIntro/);
+  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
+  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
   assert.match(intake, /Nothing is sent automatically/);
   assert.doesNotMatch(form + intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
@@ -96,7 +104,14 @@ test("Services hero sells the options and points to free review without diagnost
   assert.match(hero, /free-situation-review/);
   assert.match(hero, /See all three free options/);
   assert.match(hero, /href="#free-insights"/);
-  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper|€50/);
+  for (const label of ["Personal consultation · from €50", "Личная консультация · от €50", "Consulta personal · desde €50"]) assert.ok(hero.includes(label), label);
+  assert.match(hero, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review#personal-consultation"\}/);
+  assert.match(hero, /A live one-to-one session is separate and optional/);
+  assert.match(hero, /Личная встреча — отдельно и по желанию/);
+  assert.match(hero, /La sesión en directo es opcional y de pago/);
+  assert.match(css, /\.paidLink:focus-visible/);
+  assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
+  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:60px/);
 });
