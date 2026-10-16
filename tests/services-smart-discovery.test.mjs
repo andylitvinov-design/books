@@ -96,3 +96,86 @@ test('Services: booking-style search and category selector appear above untouche
   assert.doesNotMatch(api,/console\.log|analytics|saveGuestResult|logVisitorText/)
   assert.doesNotMatch(main,/<ServiceCart/)
 })
+
+test('Service discovery scrolls to submitted and category results on mobile and desktop',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.match(ui,/searchInputRef\.current\?\.blur\(\)/)
+  assert.match(ui,/useEffect\(\(\) => \{[\s\S]*?target\.scrollIntoView\(/)
+  assert.match(ui,/prefers-reduced-motion/)
+  assert.match(ui,/window\.requestAnimationFrame/)
+  assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
+  assert.match(ui,/aria-labelledby="hh-service-discovery-results-title"/)
+  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,2)
+  assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
+  assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
+})
+
+test('Explore by area is compact on mobile without removing category selection or result scrolling',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.ok(css.includes('.category,.categoryActive{display:flex;'))
+  assert.ok(css.includes('.category,.categoryActive{min-height:56px;padding:8px;gap:7px}'))
+  assert.ok(css.includes('.categoryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}'))
+  assert.ok(ui.includes('className={styles.categoryCount}'))
+  assert.ok(!ui.includes('className={styles.categoryDescription}'))
+  assert.ok(ui.includes('onClick={()=>chooseCategory(area.key)}'))
+  assert.ok(ui.includes('ref={resultsRef}'))
+})
+
+
+test('service match results show full-width horizontal service and editorial rows, with accessible mobile actions',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.ok(ui.includes('resultTitle:"Your options"'))
+  assert.ok(ui.includes('resultTitle:"Ваши варианты"'))
+  assert.ok(ui.includes('resultTitle:"Tus opciones"'))
+  assert.ok(ui.includes('className={styles.suggestionActions}'))
+  assert.ok(ui.includes('className={styles.editorialList}'))
+  assert.ok(css.includes('/* Results: one full-width horizontal service row'))
+  assert.ok(css.includes('.suggestionGrid,.editorialList{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}'))
+  assert.match(css,/\.suggestion\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) auto;/)
+  assert.ok(css.includes('.suggestionTop{grid-column:1/-1;grid-row:1;'))
+  assert.ok(css.includes('.suggestionActions{grid-column:2;grid-row:2/5;'))
+  assert.ok(css.includes('.editorialList a{box-sizing:border-box;display:flex;'))
+  assert.ok(css.includes('.results:focus-visible{outline:2px solid'))
+  const mobile=css.slice(css.lastIndexOf('@media(max-width:620px){'))
+  assert.ok(mobile.includes('.suggestionGrid,.editorialList{grid-template-columns:minmax(0,1fr);gap:8px}'))
+  assert.ok(mobile.includes('.suggestion{grid-template-columns:minmax(0,1fr) 100px;'))
+  assert.ok(mobile.includes('.suggestionActions a{width:100%;min-height:44px;'))
+  assert.ok(css.includes('@media(max-width:350px){'))
+  assert.ok(css.includes('.suggestionActions{grid-column:1;grid-row:5;'))
+  assert.doesNotMatch(css,/\.suggestionGrid,\.editorialList\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  const requestLink=ui.indexOf('<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>')
+  const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
+  assert.ok(requestLink>0 && detailLink>requestLink)
+})
+
+
+test('Services first fold on mobile uses concise search copy, four action chips and safe 16px input',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  for(const marker of ['Find the right support','Подберите помощь под свой запрос','Encuentra el apoyo que buscas']) assert.ok(ui.includes(marker))
+  assert.equal((ui.match(/quickExamples:\[/g)||[]).length,3)
+  assert.equal((ui.match(/mobilePrivacy:/g)||[]).length,3)
+  assert.match(ui,/className=\{styles\.exampleShort\}/)
+  assert.match(ui,/className=\{styles\.privacyCompact\}/)
+  assert.match(ui,/aria-label=\{text\}/)
+  assert.match(ui,/onClick=\{\(\)=>runExample\(text\)\}/)
+  assert.match(ui,/maxLength=\{350\}/)
+  assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
+  const mobile=css.slice(css.indexOf('/* Services first screen:'))
+  assert.ok(mobile.includes('@media(max-width:620px)'))
+  assert.match(mobile,/\.textarea\{[^}]*font-size:16px/)
+  assert.match(mobile,/\.examples\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(mobile,/\.submit\{[^}]*min-height:44px/)
+  assert.ok(mobile.includes('.exampleLong,.privacyFull{display:none}'))
+})

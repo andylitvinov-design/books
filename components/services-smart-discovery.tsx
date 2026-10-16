@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
@@ -17,31 +17,33 @@ type AIResult = { serviceIds: string[]; mode: "ai" | "local" };
 const COPY = {
   en: {
     kicker:"FIND YOUR WAY · HOLISTIC HOUSE",
-    title:"What would you like help with?",
-    description:"Tell us, in your own words, what you want to explore. We'll suggest relevant published services and practitioners — without a questionnaire or registration.",
-    placeholder:"For example: I'd like to feel more confident, explore repeating patterns in relationships, or try Reiki...",
+    title:"Find the right support",
+    description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
+    placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
     examples:"You could try",
     exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
+    quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
+    mobilePrivacy:"✓ Free matching · No sign-up · Private by default. Please avoid sharing personal medical details.",
     privacy:"Private by default: this text is matched locally in your browser and isn't saved.",
     caution:"Please don't include names or sensitive medical details. This is service discovery, not a diagnosis or medical recommendation.",
     categories:"Explore by area",
     categoriesIntro:"Choose a direction if you'd rather browse than describe your situation.",
     noLive:"More services will appear here as practitioners are approved.",
-    resultTitle:"Some options worth exploring",
+    resultTitle:"Your options",
     resultFor:"Your request",
-    matchIntro:"Suggestions from real available offers. Check each practitioner's methods, credentials and terms before booking.",
+    matchIntro:"Real published services. Check practitioner details before requesting.",
     noDirect:"There isn't a precise match in the currently published listings. Here are real pages you can explore.",
     online:"Online",
     free:"Free",
     contact:"Price on request",
     service:"Service",
-    curated:"Holistic House service",
+    curated:"More from Holistic House",
     practitioner:"Practitioner",
-    details:"Explore service",
-    request:"Request service",
-    browse:"See all practitioners",
-    clear:"Clear selection",
+    details:"Details",
+    request:"Request",
+    browse:"All practitioners",
+    clear:"Reset",
     personal:"Prefer personal guidance?",
     personalAction:"Explore Andrey's personal services below",
     categoryCount:"offers",
@@ -57,30 +59,32 @@ const COPY = {
   },
   ru: {
     kicker:"НАЙДИТЕ СВОЙ ПУТЬ · HOLISTIC HOUSE",
-    title:"Что вы хотите изменить или исследовать?",
-    description:"Напишите своими словами, какая помощь или практика вам нужна. Мы предложим подходящие опубликованные услуги и мастеров — без анкеты и обязательной регистрации.",
-    placeholder:"Например: хочу обрести внутреннюю опору, разобраться с повторяющимися сценариями в отношениях или попробовать Рейки…",
+    title:"Подберите помощь под свой запрос",
+    description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
+    placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
     examples:"Например",
     exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
+    quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
+    mobilePrivacy:"✓ Бесплатно · Без регистрации · Приватно по умолчанию. Не вводите личные медицинские данные.",
     privacy:"По умолчанию приватно: подбор выполняется в браузере, текст не сохраняется.",
     caution:"Не указывайте имена и чувствительные медицинские данные. Это поиск услуг, а не диагноз или медицинская рекомендация.",
     categories:"Выберите направление",
     categoriesIntro:"Можно просто выбрать сферу интереса без описания личной ситуации.",
     noLive:"Новые услуги появятся здесь после модерации мастеров.",
-    resultTitle:"Что может вам подойти",
+    resultTitle:"Ваши варианты",
     resultFor:"Ваш запрос",
-    matchIntro:"Подбор только из реальных опубликованных предложений. Перед записью ознакомьтесь с методами, квалификацией и условиями.",
+    matchIntro:"Реальные опубликованные услуги. Проверьте мастера и условия перед заявкой.",
     noDirect:"Среди опубликованных услуг нет точного совпадения. Вот существующие страницы, которые можно изучить.",
     online:"Онлайн",
     free:"Бесплатно",
     contact:"Стоимость по запросу",
     service:"Услуга",
-    curated:"Услуга Holistic House",
+    curated:"Ещё от Holistic House",
     practitioner:"Мастер",
     details:"Подробнее",
-    request:"Отправить запрос",
-    browse:"Посмотреть всех мастеров",
+    request:"Оставить заявку",
+    browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
     personalAction:"Ниже — личные услуги Андрея",
@@ -97,30 +101,32 @@ const COPY = {
   },
   es: {
     kicker:"ENCUENTRA TU CAMINO · HOLISTIC HOUSE",
-    title:"¿Qué te gustaría explorar o cambiar?",
-    description:"Describe con tus propias palabras qué ayuda buscas. Te mostraremos servicios publicados y profesionales relacionados, sin registro.",
-    placeholder:"Por ejemplo: quiero tener más confianza, explorar patrones familiares o conocer Reiki…",
+    title:"Encuentra el apoyo que buscas",
+    description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
+    placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
     examples:"Por ejemplo",
     exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
+    quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
+    mobilePrivacy:"✓ Gratis · Sin registro · Privado por defecto. Evita compartir datos médicos personales.",
     privacy:"Privado por defecto: la búsqueda se realiza en tu navegador y no se guarda.",
     caution:"No incluyas nombres ni datos médicos sensibles. No es un diagnóstico ni una recomendación médica.",
     categories:"Explorar categorías",
     categoriesIntro:"También puedes seleccionar un área sin describir tu situación.",
     noLive:"Aparecerán más servicios cuando se aprueben nuevos profesionales.",
-    resultTitle:"Opciones para explorar",
+    resultTitle:"Tus opciones",
     resultFor:"Tu búsqueda",
-    matchIntro:"Opciones reales publicadas. Comprueba las credenciales y condiciones antes de reservar.",
+    matchIntro:"Servicios publicados. Consulta los detalles antes de solicitar.",
     noDirect:"Todavía no hay una coincidencia precisa. Estas páginas de servicios ya existen.",
     online:"En línea",
     free:"Gratis",
     contact:"Precio a consultar",
     service:"Servicio",
-    curated:"Servicio Holistic House",
+    curated:"Más de Holistic House",
     practitioner:"Profesional",
     details:"Ver detalles",
-    request:"Solicitar servicio",
-    browse:"Ver profesionales",
+    request:"Solicitar",
+    browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
     personalAction:"Más abajo: servicios personales de Andrey",
@@ -165,6 +171,9 @@ export function ServicesSmartDiscovery({
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
   const [aiStatus,setAiStatus] = useState<"local"|"ai"|"unavailable"|"loading">("local");
   const requestNumber = useRef(0);
+  const searchInputRef = useRef<HTMLTextAreaElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const [scrollRequest, setScrollRequest] = useState(0);
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
   const suggestions = useMemo(() => {
@@ -184,12 +193,29 @@ export function ServicesSmartDiscovery({
     [submitted,editorialOffers,activeCategory,suggestions.length]
   );
 
+  // Scroll only after a new selection has rendered. AI updates should not
+  // unexpectedly pull the visitor back to the results while they read.
+  useEffect(() => {
+    if (!hasSelection || scrollRequest === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = resultsRef.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hasSelection, scrollRequest]);
 
   function chooseCategory(key: string) {
     requestNumber.current += 1;
-    setActiveCategory(key === activeCategory ? "" : key);
+    const selecting = key !== activeCategory;
+    setActiveCategory(selecting ? key : "");
     setSubmitted("");
-    setHasSelection(key !== activeCategory);
+    setHasSelection(selecting);
+    if (selecting) setScrollRequest((count) => count + 1);
     setAiOrder(null);
     setAiStatus("local");
   }
@@ -198,6 +224,8 @@ export function ServicesSmartDiscovery({
     const nonce = ++requestNumber.current;
     const text = queryText.trim().slice(0,350);
     if (!text) return;
+    searchInputRef.current?.blur(); // Dismiss the mobile keyboard before navigating.
+    setScrollRequest((count) => count + 1);
     setActiveCategory("");
     setSubmitted(text);
     setHasSelection(true);
@@ -237,7 +265,7 @@ export function ServicesSmartDiscovery({
         </div>
         <form className={styles.form} role="search" onSubmit={event=>{event.preventDefault();void find(query)}}>
           <label htmlFor="hh-service-free-text" className={styles.srOnly}>{t.title}</label>
-          <textarea id="hh-service-free-text" value={query} maxLength={350} rows={2}
+          <textarea ref={searchInputRef} id="hh-service-free-text" value={query} maxLength={350} rows={2}
             placeholder={t.placeholder} onChange={event=>setQuery(event.target.value)}
             autoComplete="off" className={styles.textarea}/>
           <button type="submit" className={styles.submit} disabled={!query.trim() || aiStatus==="loading"}>
@@ -246,19 +274,24 @@ export function ServicesSmartDiscovery({
         </form>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
-          {t.exampleList.map(text=><button type="button" key={text} onClick={()=>runExample(text)}>{text}</button>)}
+          {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
+            <span className={styles.exampleLong}>{text}</span>
+            <span className={styles.exampleShort} aria-hidden="true">{t.quickExamples[index]}</span>
+          </button>)}
         </div>
         {aiAvailable&&<label className={styles.aiOption}>
           <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
           <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
         </label>}
-        <p className={styles.privacy}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</p>
+        <p className={styles.privacy}>
+          <span className={styles.privacyFull}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</span>
+          <span className={styles.privacyCompact}>{t.mobilePrivacy}</span>
+        </p>
       </div>
 
       <div className={styles.categorySection} id="browse-service-categories">
         <div className={styles.categoryHead}>
-          <div><p className={styles.eyebrow}>{locale==="ru"?"НАПРАВЛЕНИЯ":locale==="es"?"ÁREAS":"AREAS"}</p>
-            <h2>{t.categories}</h2><p>{t.categoriesIntro}</p></div>
+          <div><h2>{t.categories}</h2></div>
           <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
         </div>
         <div className={styles.categoryGrid}>
@@ -271,18 +304,19 @@ export function ServicesSmartDiscovery({
               aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
               <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
               <span className={styles.categoryName}>{area.label[locale]}</span>
-              <span className={styles.categoryDescription}>{area.short[locale]}</span>
-              {count>0?<small>{count} {t.categoryCount}</small>:<small aria-hidden="true">↗</small>}
+              {count>0
+                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
+                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
             </button>;
           })}
         </div>
       </div>
 
-      {hasSelection&&<div className={styles.results} id="service-discovery-results" aria-live="polite">
+      {hasSelection&&<div ref={resultsRef} tabIndex={-1} className={styles.results} id="service-discovery-results" aria-live="polite" aria-labelledby="hh-service-discovery-results-title">
         <div className={styles.resultHeader}>
           <div>
             <p className={styles.eyebrow}><Sparkles size={13} aria-hidden="true"/> {aiStatus==="ai"?t.aiMatch:t.localMatch}</p>
-            <h2>{t.resultTitle}</h2>
+            <h2 id="hh-service-discovery-results-title">{t.resultTitle}</h2>
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
@@ -296,10 +330,10 @@ export function ServicesSmartDiscovery({
               <div className={styles.suggestionTop}><span>{mainArea?.label[locale]||t.service}</span><strong>{formatPrice(service,locale,t)}</strong></div>
               <h3>{service.copy.title}</h3>
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
-              <p className={styles.practitioner}>{t.practitioner}: <Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
+              <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}<ArrowRight size={15} aria-hidden="true"/></Link>
                 <Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>
+                <Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}<ArrowRight size={14} aria-hidden="true"/></Link>
               </div>
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
             </article>;
