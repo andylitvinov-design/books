@@ -5,8 +5,14 @@ import styles from './client-session.module.css'
 
 // A secondary voluntary entry. It opens the same consent dialog used when
 // leaving the consultation, rather than a second save implementation.
-export function SaveClientSessionToAccount({locale='en',appAvailable=true}){
+export function SaveClientSessionToAccount({locale='en',appAvailable=true,compact=false}){
   const ru=locale==='ru',navigation=useSessionExitNavigation()
+  if(compact)return <button type="button" className={styles.sessionBottomPrimary}
+    disabled={!appAvailable||!navigation} onClick={()=>navigation?.requestSave()}>
+    <BookmarkCheck size={20} aria-hidden="true"/>
+    {navigation?.savedSessionId?(ru?'Открыть сохранённый отчёт':'Open saved report'):
+      ru?'Войти в свой кабинет и сохранить отчёт':'Sign in to your Cabinet and save report'}
+  </button>
   return <section className={styles.saveSessionBox} aria-label={ru?'Сохранить консультацию':'Save consultation'}>
     <div className={styles.saveSessionHeading}>
       <BookmarkCheck size={24} aria-hidden="true"/>
