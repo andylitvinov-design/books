@@ -37,6 +37,7 @@ type Props = {
   label?: string;
   event?: AcquisitionEvent;
   analyticsEvent?: PublicAnalyticsEvent;
+  onChannelClick?: (channel: "whatsapp" | "telegram") => void;
   attributes?: Record<string, string>;
   id?: string;
 };
@@ -49,6 +50,7 @@ export function ContactChannelChooser({
   label,
   event = "contact_click",
   analyticsEvent,
+  onChannelClick,
   attributes,
   id,
 }: Props) {
@@ -89,6 +91,7 @@ export function ContactChannelChooser({
             href={whatsappUrl}
             event={event}
             analyticsEvent={analyticsEvent}
+            onClick={() => onChannelClick?.("whatsapp")}
             target="_blank"
             rel="noopener noreferrer"
             attributes={{ ...attributes, "data-contact-channel": "whatsapp" }}
@@ -101,6 +104,7 @@ export function ContactChannelChooser({
             href={telegramUrl}
             event={event}
             analyticsEvent={analyticsEvent}
+            onClick={() => onChannelClick?.("telegram")}
             target="_blank"
             rel="noopener noreferrer"
             attributes={{ ...attributes, "data-contact-channel": "telegram" }}
