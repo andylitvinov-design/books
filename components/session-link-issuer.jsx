@@ -31,6 +31,9 @@ export function SessionLinkIssuer({recordId,clientId,locale='en'}) {
       setMessage(code==='SESSION_NOT_PUBLISHED'?
         (ru?'Отчёт сохранён, но страница клиента не опубликована. Откройте редактор и подтвердите публикацию.':
           'Report saved, but its client page is not published. Review and explicitly publish the session.'):
+        code==='SESSION_REPORT_CHANGED'?
+          (ru?'Отчёт изменился после публикации. Проверьте и повторно опубликуйте страницу клиента.':
+            'The report changed after publication. Review and republish the client page.'):
         code==='SESSION_LINK_EXPIRED'?
           (ru?'Доступ истёк или отозван. Обновите приглашение в редакторе сессии.':
             'Link expired or revoked. Renew access in the session editor.'):
