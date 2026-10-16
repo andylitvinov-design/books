@@ -77,6 +77,10 @@ const nextConfig: NextConfig = {
     return [
       // English has one canonical root. Russian is served at its own /ru URL.
       { source: "/en", destination: "/", permanent: true },
+      // Old campaign/CTA links should always reach the public tool or cabinet.
+      { source: "/:locale(en|ru|es)/tests", destination: "/:locale/client/tests", permanent: true },
+      { source: "/:locale(en|ru|es)/cabinet", destination: "/:locale/client", permanent: true },
+      { source: "/:locale(en|ru|es)/review", destination: "/:locale/services/free-situation-review", permanent: true },
       { source: "/book", destination: "/books", permanent: true },
       { source: "/book/:bookId", destination: "/books/:bookId", permanent: true },
       { source: "/homeopathy", destination: "/ru/homeopathy", permanent: true },
