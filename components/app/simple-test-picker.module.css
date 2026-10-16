@@ -1474,3 +1474,161 @@
   }
   .shell .testInfo .testTypeLine .testKindBadge{padding:3px 6px;gap:4px}
 }
+
+/* My Tests optional filters: responsive navy-and-wine editorial refresh, 2026-10-15.
+   Prevent the three depth choices from being cut off on iPhone; preserve handlers. */
+.shell .advanced{
+  margin:12px 0;border:1px solid #d8e4ec;border-radius:19px;
+  background:#fff;box-shadow:0 4px 15px rgba(23,57,87,.045);overflow:hidden
+}
+.shell .advanced>summary{
+  min-height:65px;padding:12px 17px;gap:12px;background:#f9fcfe
+}
+.shell .advanced[open]>summary{background:#f4f8fc}
+.shell .advanced .filterIcon{
+  width:39px;height:39px;flex-basis:39px;border-radius:12px;
+  color:#173957;background:#e8f0f7
+}
+.shell .advanced .filterText strong{
+  font:600 1.07rem/1.25 Georgia,serif;color:#173957
+}
+.shell .advanced .filterText small{
+  font-size:.78rem;line-height:1.42;color:#637e91
+}
+.shell .advanced .chevron{color:#173957}
+.shell .advanced .appliedMark{
+  flex:0 0 auto;display:inline-grid;place-items:center;
+  min-width:26px;height:26px;padding:0 6px;border-radius:9px;
+  background:#173957;color:#fff;font:750 .75rem/1 system-ui,-apple-system,sans-serif
+}
+.shell .advancedBody{
+  min-width:0;padding:17px 20px 19px;border-top:1px solid #e1eaf1;
+  background:#fff
+}
+.shell .filterGroup{
+  min-width:0;margin:0;padding:0 0 18px;border-bottom:1px solid #e6edf2
+}
+.shell .filterGroup+.filterGroup{padding-top:17px}
+.shell .advancedBody .filterGroup h3,.shell .kindFilters legend{
+  margin:0 0 5px;padding:0;color:#173957;
+  font:600 1.19rem/1.27 Georgia,serif
+}
+.shell .advancedBody .filterGroup>p,.shell .kindFilters>p{
+  margin:0 0 12px;color:#6d8392;font-size:.81rem;line-height:1.45
+}
+.shell .depthOptions{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;overflow:visible;padding:0;min-width:0
+}
+.shell .depthOption{
+  position:relative;display:flex;flex:initial;flex-direction:row;align-items:flex-start;
+  min-width:0;min-height:91px;gap:10px;padding:13px 12px;
+  border:1px solid #d4e1eb;border-radius:13px;
+  background:#fdfefe;color:#173957;text-align:left;
+  box-shadow:0 1px 3px rgba(23,57,87,.025);white-space:normal
+}
+.shell .depthOption>svg:first-child{flex:0 0 auto;color:#3b6f8f}
+.shell .depthOption span{display:grid;min-width:0;gap:5px}
+.shell .depthOption strong{font-size:.9rem;line-height:1.25;font-weight:750;overflow-wrap:break-word}
+.shell .depthOption small{color:#6b8090;font-size:.76rem;line-height:1.32;overflow-wrap:break-word}
+.shell .depthOption .depthCheck{
+  position:absolute;top:10px;right:10px;color:#fff;flex:0 0 auto
+}
+.shell .depthOption:hover:not([aria-pressed=true]){background:#f3f8fc;border-color:#9cb8ca}
+.shell .depthOption[aria-pressed=true]{
+  background:#173957;border-color:#173957;color:#fff;box-shadow:0 4px 12px rgba(23,57,87,.13)
+}
+.shell .depthOption[aria-pressed=true]>svg:first-child{color:#d6e9f5}
+.shell .depthOption[aria-pressed=true] small{color:#d6e4ef}
+.shell .timeButtons{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;min-width:0;margin-top:12px;gap:8px
+}
+.shell .timeButtons button{
+  min-width:0;min-height:45px;padding:8px;
+  border:1px solid #d2e0e9;border-radius:11px;
+  background:#fff;color:#173957;font-size:.83rem!important;font-weight:700;
+  line-height:1.25;white-space:normal
+}
+.shell .timeButtons button:hover:not([aria-pressed=true]){background:#f2f7fa;border-color:#9db8cb}
+.shell .timeButtons button[aria-pressed=true]{
+  background:#173957;border-color:#173957;color:#fff;box-shadow:0 3px 9px rgba(23,57,87,.1)
+}
+.shell .kindFilters{
+  min-width:0;min-inline-size:0;max-width:100%;padding:17px 0 0;margin:0;
+  background:transparent;border:0;border-radius:0
+}
+.shell .kindFilters legend{float:none;max-width:100%;margin:0 0 5px}
+.shell .kindChoices{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  min-width:0;gap:9px
+}
+.shell .kindChoice{
+  display:flex;align-items:center;min-width:0;min-height:60px;max-width:100%;
+  padding:10px 12px;gap:9px;border:1px solid #d3e0ea;border-radius:12px;
+  background:#fff;color:#173957;box-shadow:0 1px 3px rgba(23,57,87,.025);
+  font-size:.82rem;line-height:1.3;font-weight:740;overflow-wrap:break-word
+}
+.shell .kindChoice span{min-width:0;flex:1}
+.shell .kindChoice input{
+  width:19px;height:19px;flex:0 0 19px;accent-color:#173957
+}
+.shell .kindChoice svg{flex:0 0 auto;color:#356a8b}
+.shell .kindChoice:hover:not([data-checked=true]){background:#f3f8fc;border-color:#9cb8cb}
+.shell .kindChoice[data-checked=true]{
+  background:#173957;border-color:#173957;color:#fff;box-shadow:0 3px 10px rgba(23,57,87,.12)
+}
+.shell .kindChoice[data-checked=true] svg{color:#e4f0f8}
+.shell .kindChoice[data-checked=true] input{accent-color:#9dc5df}
+.shell .clearFilters{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin:15px 0 0;min-height:42px;padding:9px 13px;
+  border:1px solid #d9e4ec;border-radius:11px;
+  background:#f8fafc;color:#173957;text-decoration:none;
+  font-size:.79rem!important;font-weight:750
+}
+.shell .clearFilters:hover{background:#edf3f8;border-color:#b3cadb}
+.shell .advanced :is(button,input,summary):focus-visible{
+  outline:3px solid #537fa0;outline-offset:3px
+}
+@media(max-width:760px){
+  .shell .kindChoices{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .shell .advanced{border-radius:16px;margin:10px 0}
+  .shell .advanced>summary{min-height:61px;padding:10px 12px;gap:10px}
+  .shell .advanced .filterIcon{width:35px;height:35px;flex-basis:35px}
+  .shell .advanced .filterText strong{font-size:.98rem}
+  .shell .advanced .filterText small{font-size:.72rem}
+  .shell .advancedBody{padding:14px 12px 16px}
+  .shell .filterGroup{padding-bottom:16px}
+  .shell .filterGroup+.filterGroup{padding-top:15px}
+  .shell .advancedBody .filterGroup h3,.shell .kindFilters legend{font-size:1.08rem}
+  .shell .advancedBody .filterGroup>p,.shell .kindFilters>p{font-size:.75rem;margin-bottom:11px}
+  .shell .depthOptions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .shell .depthOption{
+    flex-direction:column;align-items:flex-start;min-height:108px;
+    gap:8px;padding:11px 12px
+  }
+  .shell .depthOption strong{font-size:.84rem}
+  .shell .depthOption small{font-size:.72rem}
+  .shell .depthOption:last-child{
+    grid-column:1/-1;min-height:76px;flex-direction:row;align-items:center
+  }
+  .shell .timeButtons{gap:6px;margin-top:10px}
+  .shell .timeButtons button{min-height:44px;padding:7px 5px;font-size:.74rem!important}
+  .shell .kindFilters{padding-top:16px}
+  .shell .kindChoices{grid-template-columns:minmax(0,1fr);gap:7px}
+  .shell .kindChoice{min-height:51px;padding:10px 12px;font-size:.83rem;gap:11px}
+  .shell .clearFilters{width:100%;margin-top:12px}
+}
+@media(max-width:350px){
+  .shell .depthOptions{grid-template-columns:minmax(0,1fr)}
+  .shell .depthOption,.shell .depthOption:last-child{
+    grid-column:auto;flex-direction:row;align-items:center;min-height:73px
+  }
+  .shell .timeButtons button{font-size:.69rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .shell .advanced :is(.depthOption,.kindChoice,.timeButtons button){transition:none}
+}
