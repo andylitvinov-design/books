@@ -250,7 +250,7 @@ const videoCopy: Record<PublicLocale, {
   en: {
     introduction: "STEP 1 · WATCH FIRST", flightCta: "Start with Flight to the Sun", flightTitle: "Flight to the Sun",
     flightLead: "Begin with Andrey's shamanic-flight meditation: guided imagery, attention and the symbolism of the sun. This practice is separate from the three Reiki initiations.",
-    flightPending: "The exact original English video link is not yet verified. No other person's recording will be substituted.",
+    flightPending: "The original video is temporarily unavailable in this player.",
     flightVerified: "Original guided meditation · English",
     originalEnglish: "Original video · English audio · click to play",
     explore: "Explore the three Reiki systems",
@@ -263,7 +263,7 @@ const videoCopy: Record<PublicLocale, {
   ru: {
     introduction: "ШАГ 1 · СНАЧАЛА МЕДИТАЦИЯ", flightCta: "Начать с медитации «Полёт к Солнцу»", flightTitle: "Полёт к Солнцу",
     flightLead: "Начните с авторской медитации Андрея — шаманского путешествия к Солнцу через работу с образами и вниманием. Эта практика не заменяет инициацию Рейки.",
-    flightPending: "Подтверждённая ссылка на оригинальную английскую запись пока не найдена. Чужое видео подставлять не будем.",
+    flightPending: "Оригинальное видео временно недоступно в этом проигрывателе.",
     flightVerified: "Авторская медитация · английский язык",
     originalEnglish: "Оригинальное видео · на английском · просмотр по нажатию",
     explore: "Перейти к трём системам Рейки",
@@ -276,7 +276,7 @@ const videoCopy: Record<PublicLocale, {
   es: {
     introduction: "PASO 1 · EMPIEZA CON LA MEDITACIÓN", flightCta: "Empezar con Vuelo hacia el Sol", flightTitle: "Vuelo hacia el Sol",
     flightLead: "Empieza con la meditación de vuelo chamánico de Andrey: atención, imágenes guiadas y simbolismo del sol. Es distinta de las iniciaciones Reiki.",
-    flightPending: "Aún no se ha verificado el enlace exacto de la grabación original en inglés. No se mostrará otro vídeo como sustituto.",
+    flightPending: "El vídeo original no está disponible temporalmente en este reproductor.",
     flightVerified: "Meditación original · audio en inglés",
     originalEnglish: "Vídeo original · audio en inglés · pulsar para reproducir",
     explore: "Explorar los tres sistemas Reiki",
