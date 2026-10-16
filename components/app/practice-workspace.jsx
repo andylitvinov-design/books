@@ -367,13 +367,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 }
 
 function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
+  const ru=locale==='ru'
   const [step,setStep]=useState(practitioner?.reviewNote?1:practitioner?2:1)
   const [includeService,setIncludeService]=useState(Boolean(service)||!practitioner)
   const [profile,setProfile]=useState({...emptyProfile,...(data.suggestedProfile||{}),...(practitioner?.draftProfile||{})})
   const serviceBase=service?.draftCopy&&Object.keys(service.draftCopy).length
     ? {...emptyFreeService,...service.draftCopy,pricingMode:'free',confirmedPrice:null,currency:''}
     : service
-      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??''}
+      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})},es:{...emptyFreeService.copy.es,...(service.localizedCopy?.es||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??''}
       : emptyFreeService
   const [offer,setOffer]=useState(serviceBase)
   const setProfileValue=(k,x)=>setProfile(s=>({...s,[k]:x}))
@@ -691,7 +692,7 @@ function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
         </select></label>
         <label>{t.location}<input maxLength="200" value={v.locationLabel||''} onChange={event=>set('locationLabel',event.target.value)}/></label>
         <label>{ru?'Языки консультации (например: en, ru)':'Spoken languages (e.g. en, ru)'}
-          <input value={arr(v.languages)} onChange={event=>set('languages',list(event.target.value))}/></label>
+          <input value={Array.isArray(v.languages)?arr(v.languages):v.languages||''} onChange={event=>set('languages',event.target.value)}/></label>
         <label>{t.duration}<input type="number" min="5" max="1440" value={v.durationMinutes??''} onChange={event=>set('durationMinutes',event.target.value)}/></label>
       </div>
     </details>
