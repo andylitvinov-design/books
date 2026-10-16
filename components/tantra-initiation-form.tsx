@@ -26,6 +26,7 @@ const copy = {
     personal: "Personal online initiation · €50 / 30 min",
     session: "Personal session + initiation · €100 / 60 min",
     answers: "Already answered the 7 questions? Send your answers",
+    feedback: "Share your impressions after the practice",
     note: "Choose WhatsApp or Telegram. Review the prepared message and tap Send yourself — nothing is sent by the website.",
     tagline: "Direct conversation · no registration",
   },
@@ -46,6 +47,7 @@ const copy = {
     personal: "Личная онлайн-инициация · €50 / 30 мин",
     session: "Сессия + инициация · 100 € / 60 мин",
     answers: "Уже ответили на 7 вопросов? Отправить ответы",
+    feedback: "Поделиться впечатлениями после практики",
     note: "Выберите WhatsApp или Telegram, проверьте подготовленный текст и нажмите «Отправить» — сайт ничего не отправляет автоматически.",
     tagline: "Личное общение · без регистрации",
   },
@@ -66,6 +68,7 @@ const copy = {
     personal: "Iniciación personal online · €50 / 30 min",
     session: "Sesión personal + iniciación · 100 € / 60 min",
     answers: "¿Ya respondiste a las 7 preguntas? Envíalas",
+    feedback: "Compartir mis impresiones tras la práctica",
     note: "Elige WhatsApp o Telegram, revisa el mensaje y pulsa Enviar; el sitio no envía nada automáticamente.",
     tagline: "Contacto directo · sin registro",
   },
@@ -103,6 +106,9 @@ export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
       </div>
       <div className={styles.whatsappAnswersSlot}>
         <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} label={t.answers} id="apply-answers" />
+      </div>
+      <div className={styles.whatsappFeedbackSlot}>
+        <ContactChannelChooser locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "feedback")} label={t.feedback} id="apply-feedback" />
       </div>
       <p className={styles.whatsappNote}>{t.note}</p>
     </div>
