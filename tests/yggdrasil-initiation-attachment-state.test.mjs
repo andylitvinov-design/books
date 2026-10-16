@@ -58,7 +58,7 @@ function fixture({ hash = "", locale = "en" } = {}) {
     if(!node||typeof node!=="object")return found;
     if(Array.isArray(node)){node.forEach(child=>nodes(predicate,child,found));return found;}
     if(predicate(node))found.push(node);
-    return nodes(predicate,node.props?.children,found);
+    return nodes(predicate,node.props?.children ?? null,found);
   }
   function render() {
     let attempts=0;
