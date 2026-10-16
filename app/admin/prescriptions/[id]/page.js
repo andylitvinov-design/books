@@ -15,7 +15,7 @@ import { updatePrescriptionAction, retryPrescriptionPublicationAction } from '..
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'Edit recommendation' }
 
-export default async function EditPrescriptionPage({ params,searchParams }) {
+export default async function EditPrescriptionPage({ params }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
   const store = getPrescriptionStore()
