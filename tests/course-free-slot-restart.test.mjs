@@ -47,7 +47,7 @@ test('closing the only free course frees its slot and starts another without par
   await approveStart(h)
   const writes = h.calls.filter(call => call.body)
   assert.equal(writes.length, 1)
-  assert.deepEqual(writes[0].body, {
+  assert.deepEqual(JSON.parse(JSON.stringify(writes[0].body)), {
     action: 'start', consent: true, courseId: archived.id,
     newCourse: false, expectedRevision: 8,
   })
