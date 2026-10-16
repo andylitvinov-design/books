@@ -9,6 +9,7 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
     heading: "Больше ясности, опоры и вариантов движения",
     lead: "Три бесплатных способа начать: мониторинг психологического состояния и внутренних ресурсов, личный разбор ситуации или профиль У-Син. Личная работа — по желанию.",
+    mobileLead: "Начните бесплатно: тесты самочувствия, письменный разбор ситуации или профиль ресурсов У-Син.",
     benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
     cta: "Бесплатный разбор ситуации",
     secondary: "Все три бесплатных варианта",
@@ -22,6 +23,7 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
     heading: "More clarity, inner resources and choices",
     lead: "Three free ways to begin: free mental wellbeing and inner resources monitoring, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
+    mobileLead: "Start free with wellbeing tests, a written situation review or a Wu Xing resource profile.",
     benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
     cta: "Get a free situation review",
     secondary: "See all three free options",
@@ -35,6 +37,7 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · ACOMPAÑAMIENTO PERSONAL",
     heading: "Más claridad, recursos y caminos para avanzar",
     lead: "Tres formas gratuitas de empezar: cuestionarios de autoobservación, revisión escrita de tu situación o perfil simbólico Wu Xing. Las sesiones personales son opcionales.",
+    mobileLead: "Empieza gratis: cuestionarios de bienestar, revisión escrita o perfil de recursos Wu Xing.",
     benefits: ["3 maneras de empezar gratis", "Sesiones individuales opcionales", "Toronto y en línea"],
     cta: "Solicitar revisión escrita gratuita",
     secondary: "Opciones gratuitas y cursos",
@@ -54,6 +57,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         <p className={styles.eyebrow}><span className={styles.spark} aria-hidden="true">✦</span>{t.eyebrow}</p>
         <h1 id="services-conversion-title">{t.heading}</h1>
         <p className={styles.lead}>{t.lead}</p>
+        <p className={styles.mobileLead}>{t.mobileLead}</p>
         <div className={styles.actions}>
           <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
