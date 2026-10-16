@@ -1023,13 +1023,15 @@
 
 /* Report editor inline YouTube-link capture (shares private session draft). */
 .youtubeQuickAdd{
-  margin:14px 0 19px;background:#fff;border:1px solid #d7e2eb;
+  margin:13px 0 18px;background:#eef8f8;border:2px solid #a1cbd1;
   border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(33,66,85,.045);
 }
 .youtubeQuickAdd>summary{
   display:flex;align-items:center;gap:12px;cursor:pointer;min-height:53px;
-  padding:13px 17px;list-style:none;color:#173957;font-weight:750;font-size:16px;
+  padding:13px 17px;list-style:none;color:#236d7c;font-weight:750;font-size:16px;
 }
+.youtubeQuickAdd>summary::after{content:'+';margin-left:auto;font-size:24px;font-weight:400}
+.youtubeQuickAdd[open]>summary::after{content:'−'}
 .youtubeQuickAdd>summary::-webkit-details-marker{display:none}
 .youtubeQuickAdd>summary svg{color:#315c7c}
 .youtubeQuickAdd[open]>summary{background:#eef3f8;border-bottom:1px solid #d9e4ec}
