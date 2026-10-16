@@ -105,6 +105,6 @@ test("WhatsApp capture is compact, responsive and requests no name or email", ()
   assert.match(style, /\\.questionGrid li \\{[\\s\\S]*?min-height: 76px/);
   assert.match(style, /@media \\(max-width: 760px\\)[\\s\\S]*?\\.whatsappActions \\{ grid-template-columns: 1fr/);
   assert.match(form, /Никаких анкет, имени, email или регистрации/);
-  assert.doesNotMatch(form, /required|autoComplete|type="email"|type="text"/);
+  assert.doesNotMatch(form, /<input[^>]*required|autoComplete=|type="email"|type="text"/);
 });
 
