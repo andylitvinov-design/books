@@ -1,6 +1,7 @@
 import { ownerDelivery, privateJson } from '@/lib/clients/delivery-http'
 import { getOwnerSession } from '@/lib/clients/session-delivery-service'
 import { privateMediaStream } from '@/lib/clients/session-delivery-storage'
+import {streamReadyMaterial} from '@/lib/clients/material-library'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -11,6 +12,13 @@ async function handle(request,{params},play=false) {
   const {id,sessionId,assetId}=await params
   return ownerDelivery(request,async({config,store})=>{
     const session=await getOwnerSession(config,store,id,sessionId)
+    // A reusable catalog asset is playable only when this owner has attached
+    // it in this consultation draft or its published revision.
+    const catalog=[...(session.draft?.plan?.materials||[]),...(session.published?.plan?.materials||[])]
+    if(catalog.some(item=>item.id===assetId&&['image','video'].includes(item.kind))){
+      if(play)return privateJson({url:new URL(request.url).pathname,expiresIn:300})
+      return streamReadyMaterial(config,assetId,request)
+    }
     const asset=session.assets.find(row=>row.id===assetId&&row.status==='ready')
     const referenced=[...(session.draft?.media||[]),...(session.published?.media||[])]
       .some(item=>item.assetId===assetId)
