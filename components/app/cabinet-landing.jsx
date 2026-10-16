@@ -572,12 +572,13 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     replaceGuestRoute({ planId: owningPlanId, runId: created.id })
   }
 
-  async function bootstrapForStartedTest() {
+  async function bootstrapForStartedTest(epoch = runLifetime.current) {
     // Only a deliberate test-start action can create a temporary guest session.
     // Do not create accounts/cookies simply when somebody opens the page.
     try {
       return await guestFetch('guest/bootstrap')
     } catch (error) {
+      if (runLifetime.current !== epoch) return null
       if (error.status !== 401 || error.code !== 'GUEST_SESSION_REQUIRED') throw error
       const session = await guestFetch('guest/session', {
         adult: true,
@@ -585,6 +586,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         uiLocale: locale === 'ru' ? 'ru' : 'en',
         timezone: localZone(),
       })
+      if (runLifetime.current !== epoch) return null
       setSessionExpires(session.expiresAt)
       return guestFetch('guest/bootstrap')
     }
