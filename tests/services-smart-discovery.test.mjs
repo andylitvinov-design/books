@@ -1,10 +1,30 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { parse } from 'postcss'
 import {
   classifyDiscoveryIntent, DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery,
   normalizeDiscoveryInput,
 } from '../lib/practitioners/discovery-intent.js'
+
+const mobileResultCss=(css)=>{
+  const nodes=parse(css).nodes
+  const start=nodes.findIndex(node=>node.type==='comment' && node.text.startsWith('Results: one full-width horizontal service row'))
+  assert.notEqual(start,-1,'the Results CSS section must exist')
+  const end=nodes.findIndex((node,index)=>index>start && node.type==='comment')
+  const selectors=new Set(['.suggestionGrid,.editorialList','.suggestion','.suggestionActions a'])
+  // Only the result section's direct 620px rules count, regardless of later hero media queries.
+  return nodes.slice(start+1,end===-1?undefined:end)
+    .filter(node=>node.type==='atrule' && node.name==='media' && node.params.replace(/\s/g,'')==='(max-width:620px)')
+    .flatMap(node=>node.nodes||[])
+    .filter(node=>node.type==='rule' && selectors.has(node.selector.trim().replace(/\s*,\s*/g,',')))
+    .map(rule=>{
+      const selector=rule.selector.trim().replace(/\s*,\s*/g,',')
+      const declarations=rule.nodes.filter(node=>node.type==='decl')
+        .map(node=>`${node.prop}:${node.value}${node.important?'!important':''}`).join(';')
+      return `${selector}{${declarations}}`
+    }).join('\n')
+}
 
 const offering=(id,areaKey,title,description)=>{
   return {
@@ -145,7 +165,7 @@ test('service match results show full-width horizontal service and editorial row
   assert.ok(css.includes('.suggestionActions{grid-column:2;grid-row:2/5;'))
   assert.ok(css.includes('.editorialList a{box-sizing:border-box;display:flex;'))
   assert.ok(css.includes('.results:focus-visible{outline:2px solid'))
-  const mobile=css.slice(css.lastIndexOf('@media(max-width:620px){'))
+  const mobile=mobileResultCss(css)
   assert.ok(mobile.includes('.suggestionGrid,.editorialList{grid-template-columns:minmax(0,1fr);gap:8px}'))
   assert.ok(mobile.includes('.suggestion{grid-template-columns:minmax(0,1fr) 100px;'))
   assert.ok(mobile.includes('.suggestionActions a{width:100%;min-height:44px;'))
@@ -155,6 +175,41 @@ test('service match results show full-width horizontal service and editorial row
   const requestLink=ui.indexOf('<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>')
   const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
   assert.ok(requestLink>0 && detailLink>requestLink)
+})
+
+test('mobile result requirements cannot be supplied by hero rules or other breakpoints',()=>{
+  const marker='/* Results: one full-width horizontal service row, never narrow catalogue tiles. */'
+  const rules=[
+    '.suggestionGrid,.editorialList{grid-template-columns:minmax(0,1fr);gap:8px}',
+    '.suggestion{grid-template-columns:minmax(0,1fr) 100px;column-gap:10px}',
+    '.suggestionActions a{width:100%;min-height:44px;padding:7px 6px}',
+  ]
+  const requirements=[
+    rules[0],
+    '.suggestion{grid-template-columns:minmax(0,1fr) 100px;',
+    '.suggestionActions a{width:100%;min-height:44px;',
+  ]
+  const decoys=[
+    ['hero selectors',`@media(max-width:620px){
+      .hero .suggestionGrid,.hero .editorialList{grid-template-columns:minmax(0,1fr);gap:8px}
+      .hero .suggestion{grid-template-columns:minmax(0,1fr) 100px;column-gap:10px}
+      .hero .suggestionActions a{width:100%;min-height:44px;padding:7px 6px}
+    }`],
+    ['other breakpoints',`@media(max-width:350px){${rules.join('\n')}}
+      @media(max-width:767px){${rules.join('\n')}}`],
+    ['later hero section',`/* Services first screen: unrelated hero rules. */
+      @media(max-width:620px){${rules.join('\n')}}`],
+  ]
+  const complete=`${marker}\n@media (max-width: 620px){${rules.join('\n')}}`
+  for(const requirement of requirements) assert.ok(mobileResultCss(complete).includes(requirement))
+  for(const [index,requirement] of requirements.entries()){
+    const remaining=rules.filter((_,ruleIndex)=>ruleIndex!==index).join('\n')
+    for(const [name,decoy] of decoys){
+      const mobile=mobileResultCss(`${marker}\n@media(max-width:620px){${remaining}}\n${decoy}`)
+      assert.ok(!mobile.includes(requirement),`${name} must not satisfy missing requirement: ${requirement}`)
+      for(const other of requirements.filter((_,otherIndex)=>otherIndex!==index)) assert.ok(mobile.includes(other))
+    }
+  }
 })
 
 
