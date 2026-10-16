@@ -4,20 +4,42 @@ import {readFileSync} from 'node:fs'
 
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('private consultation HTML has prescription-first course-style hierarchy',()=>{
+test('private consultation follows one-level mobile-first reading order with a single PDF action',()=>{
  const page=src('components/client-session-page.jsx')
  const report=src('components/client-session-prescription.jsx')
  const css=src('components/client-session.module.css')
- for(const marker of ['id="session-message"','part="summary"','part="remedies"',
-   'id="session-report"','id="session-guide"','id="session-recommendations"','id="session-resources"'])
+ for(const marker of ['id="session-message"','part="remedies"','id="session-report"',
+   'id="session-guide"','id="session-recommendations"','id="session-resources"'])
    assert.ok(page.includes(marker),marker)
+ const ordered=['part="remedies"','id="session-recommendations"','id="session-message"',
+   'id="session-photos"','id="session-guide"','id="session-resources"','id="session-report"']
+ ordered.reduce((previous,marker)=>{
+   const index=page.indexOf(marker)
+   assert.ok(index>previous,marker+' must follow the previous section')
+   return index
+ },-1)
+ assert.doesNotMatch(page,/part="summary"|nextAnchor|nextStepLink|Развернуть полную HTML-версию/)
+ assert.match(page,/reportContent&&\(!hasRecommendation\|\|hasReportAppendix\)/)
+ assert.match(page,/session\.summary&&<details/)
+ assert.match(page,/item\.transcript&&<div className=\{styles\.transcriptText\}/)
+ assert.equal((page.match(/className=\{styles\.downloadButton\}/g)||[]).length,1)
+ assert.match(page,/Скачать отчёт/)\n assert.match(page,/Приложения к отчёту/)
+ assert.match(page,/className=\{styles\.clientWordmark\}/)
  for(const marker of ["recommendation.generalInstructions","recommendation.includeDistanceHomeopathy",
-   "item.displayName","<details","remedySchedule(item,locale"])
+   "item.displayName","<details","remedySchedule(item,locale","id=\"session-prescription\""])
    assert.ok(report.includes(marker),marker)
+ assert.doesNotMatch(report,/className=\{styles\.nestedDetail\}/)
+ assert.match(report,/return <div className=\{styles\.adviceSupplement\}>/)
  assert.doesNotMatch(report,/recommendationGuidance/)
+ assert.ok(css.includes('.cabinetSessionPage .sessionDisclosure'))
+ assert.ok(css.includes('.sessionDisclosure[open]>summary .disclosureChevron'))
  assert.ok(css.includes('.courseSessionPage'))
  assert.ok(css.includes('.remedyAccordion[open]'))
  assert.ok(css.includes('min-height:44px'))
+ assert.match(report,/parsed.toISOString\(\).slice\(0, 10\) !== value/,'invalid ISO dates remain unchanged')
+ assert.match(css,/Client consultation report v4/,'approved premium visual design stays active')
+ assert.match(css,/@media\(max-width:355px\)/,'320px phones keep the corrected identity strip')
+ assert.match(css,/@media print\{/,'print retains compact document layout')
 })
 
 test('client and cabinet route supply only authorized report projection and client name',()=>{
@@ -30,31 +52,4 @@ test('client and cabinet route supply only authorized report projection and clie
  assert.match(guest,/recommendation=\{recommendation\}/)
  assert.match(cabinet,/recommendation=\{recommendation\}/)
  assert.doesNotMatch(guest,/return <ClientSessionPage[^]*?internalNotes=/)
-})
-
-
-test('private report v4 removes visual duplication while retaining protected report actions',()=>{
-  const page=src('components/client-session-page.jsx')
-  const report=src('components/client-session-prescription.jsx')
-  const css=src('components/client-session.module.css')
-  const summary=report.split("if(part==='summary')return")[1]?.split("if(part==='remedies')return")[0]
-  assert.ok(summary,'the original approved summary projection remains')
-  assert.doesNotMatch(summary,/prescriptionOverviewList/,'prescriptions appear only in the expandable list')
-  assert.match(summary,/prescriptionSummaryLead/)
-  assert.match(report,/remedyAccordions/)
-  assert.match(report,/followUpDateLabel\(recommendation.followUpDate,locale\)/)
-  assert.match(report,/parsed.toISOString\(\).slice\(0, 10\) !== value/,'invalid ISO dates are not reformatted')
-  assert.match(page,/className=\{styles.clientWordmark\}/)
-  assert.match(page,/Читать полный отчёт на странице/)
-  assert.match(page,/className=\{styles.reportExpandIcon\}/)
-  assert.match(page,/href=\{pdfPath\}/,'PDF uses the original protected route')
-  assert.match(page,/PrivatePlayer/)
-  assert.match(page,/SaveClientSessionToAccount/)
-  assert.match(page,/SessionExitSaveGuard/)
-  assert.match(css,/Client consultation report v4/)
-  assert.match(css,/\.cabinetSessionPage \.sessionIdentity\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(css,/\.cabinetSessionPage \.remedyDetailSection\{/)
-  assert.match(css,/@media\(max-width:355px\)/,'320px phones get a single-column identity strip')
-  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  assert.match(css,/@media print\{/)
 })
