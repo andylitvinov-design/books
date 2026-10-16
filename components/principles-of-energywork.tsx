@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
@@ -8,6 +8,7 @@ import { EnergyworkReikiCapture } from "@/components/energywork-reiki-capture";
 import { EnergyworkVideoArchive } from "@/components/energywork-video-archive";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./principles-of-energywork.module.css";
 
@@ -497,7 +498,7 @@ export function KundaliniFreeInitiation({ locale }: { locale: PublicLocale }) {
             <h2>{k.requestTitle}</h2>
             <p>{k.requestLead}</p>
           </div>
-          <a className={styles.requestButton} href={requestUrl} target="_blank" rel="noopener noreferrer" data-reiki-free-request="kundalini"><MessageCircle size={20} aria-hidden="true" />{k.requestButton}<ArrowRight size={18} aria-hidden="true" /></a>
+          <ContactChannelChooser locale={locale} whatsappUrl={requestUrl} className={styles.requestButton} attributes={{ "data-reiki-free-request": "kundalini" }} />
           <small>{k.note}</small>
         </section>
         <div className={styles.otherPaths}><Link href={academyUrl(locale, "principles-of-energywork")}>{k.otherPaths}<ArrowRight size={17} aria-hidden="true" /></Link></div>
