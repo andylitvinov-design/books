@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
 import { coreOfferDetailData, type DetailKind } from "@/components/core-service-detail";
 import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
@@ -160,9 +161,13 @@ export function SitewideLeadCapture() {
             <h2 id="sitewide-capture-title">{coreDetail.action}</h2>
             <p className={styles.description}>{coreDetail.note}</p>
             <div className={styles.actions}>
-              <AcquisitionEventLink prefetch={false} className={styles.primary} event="service_request_start" href={coreWhatsappUrl} target="_blank" rel="noopener noreferrer" attributes={{ "data-contact-channel": "whatsapp", "data-service-request": coreKind }}>
-                {coreDetail.action} <ArrowUpRight aria-hidden="true" size={19} />
-              </AcquisitionEventLink>
+              <ContactChannelChooser
+                locale={locale}
+                whatsappUrl={coreWhatsappUrl}
+                className={styles.primary}
+                event="service_request_start"
+                attributes={{ "data-service-request": coreKind }}
+              />
             </div>
             <details className={styles.alternative}>
               <summary>{alternative.summary}</summary>
@@ -189,9 +194,18 @@ export function SitewideLeadCapture() {
           <h2 id="sitewide-capture-title">{c.title}</h2>
           <p className={styles.description}>{c.description}</p>
           <div className={styles.actions}>
-            <AcquisitionEventLink prefetch={false} className={styles.primary} event={external ? "contact_click" : "service_request_start"} href={primary} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-              {primaryLabel} {external ? <ArrowUpRight aria-hidden="true" size={19} /> : <ArrowRight aria-hidden="true" size={19}/>}
-            </AcquisitionEventLink>
+            {external ? (
+              <ContactChannelChooser
+                locale={locale}
+                whatsappUrl={primary}
+                className={styles.primary}
+                event="contact_click"
+              />
+            ) : (
+              <AcquisitionEventLink prefetch={false} className={styles.primary} event="service_request_start" href={primary}>
+                {primaryLabel} <ArrowRight aria-hidden="true" size={19}/>
+              </AcquisitionEventLink>
+            )}
             {kind !== "network" ? <Link prefetch={false} className={styles.secondary} href={secondary}>{c.secondary} <ArrowRight aria-hidden="true" size={16}/></Link> : null}
           </div>
         </div>
