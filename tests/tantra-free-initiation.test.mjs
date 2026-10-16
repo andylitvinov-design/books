@@ -40,8 +40,8 @@ test("exactly the seven owner-approved Russian questions are visible in natural 
   assert.match(landing, /t\.questions\.map/);
 });
 
-test("six-section page uses the approved original video with no HeyGen generation or autoplay", () => {
-  for (const id of ["intro", "initiation-choices", "study-questions", "tantra-practice-video", "course-materials", "tantra-apply"]) {
+test("seven-section learning path uses owner video before original questions, without autoplay", () => {
+  for (const id of ["intro", "initiation-choices", "how-to", "tantra-practice-video", "course-materials", "study-questions", "tantra-apply"]) {
     assert.ok(landing.includes('id="' + id + '"'), "missing section " + id);
   }
   assert.match(media, /key: "tantra-reiki"[\s\S]+?youtubeId: "w2BN-HYmHUk"/);
@@ -79,4 +79,20 @@ test("new visual system stays isolated to its page and works on mobile", () => {
   assert.match(style, /@media \(max-width: 760px\)/);
   assert.match(style, /@media \(max-width: 450px\)/);
   assert.match(style, /prefers-reduced-motion: reduce/);
+});
+
+test("learn first: simple three steps precede video, study materials and the questions", () => {
+  const markers = ['id="how-to"', 'id="tantra-practice-video"', 'id="course-materials"', 'id="study-questions"', 'id="tantra-apply"'];
+  const positions = markers.map(marker => landing.indexOf(marker));
+  assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])), "learning flow must be sequential");
+  assert.match(landing, /guideTitle: "Как получить Тантра Рейки бесплатно"/);
+  assert.equal((landing.match(/    guideSteps: \[/g)||[]).length,3);
+  assert.match(landing, /t\.guideSteps\.map/);
+  assert.match(style, /\.howGrid\s*\{/);
+});
+
+test("free initiation and answer sharing do not require email, name or account creation", () => {
+  assert.doesNotMatch(form, /input required|autoComplete="email"|setEmail|localStorage|fetch\(/);
+  assert.match(form, /name: "Ваше имя \(необязательно\)"/);
+  assert.match(form, /contact: "Контакт для ответа \(необязательно\)"/);
 });
