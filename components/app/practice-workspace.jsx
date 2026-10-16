@@ -543,7 +543,7 @@ function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
     contacts:{...emptyService.contacts,...(draft.contacts||{})}}
   const [v,setV]=useState(initial)
   const [editingLocale,setEditingLocale]=useState(v.displayLocales[0]||'en')
-  const [sourceLocale,setSourceLocale]=useState('en')
+  const [sourceLocale,setSourceLocale]=useState(v.displayLocales[0]||'en')
   const [photoBusy,setPhotoBusy]=useState(false)
   const [translationBusy,setTranslationBusy]=useState(false)
   const [formError,setFormError]=useState('')
@@ -591,7 +591,7 @@ function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
       if(!response.ok||!json.copy)throw new Error(json.error||'TRANSLATION_UNAVAILABLE')
       setV(previous=>({...previous,copy:{...previous.copy,[target]:json.copy}}))
       setInfo(ru?'Перевод добавлен. Проверьте его перед публикацией.':'Translation added. Review it before publication.')
-    }catch(error){setFormError(error.message||'TRANSLATION_UNAVAILABLE')}
+    }catch(error){setFormError(error.message==='TRANSLATION_NOT_ENABLED'?(ru?'Автоперевод пока не подключён. Заполните перевод вручную.':'Automatic translation is not configured yet. You can write the translation manually.'):(error.message||'TRANSLATION_UNAVAILABLE'))}
     finally{setTranslationBusy(false)}
   }
   function publish(){
@@ -632,7 +632,7 @@ function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
       {v.displayLocales.length>1&&<div className="hh-listing-translate">
         <span>{ru?'Помощь с переводом (при подключённом ИИ)':'Translation assistance (when AI is connected)'}</span>
         <div className="hh-listing-translate-controls"><select aria-label={ru?'Исходный язык':'Source language'} value={sourceLocale} onChange={event=>setSourceLocale(event.target.value)}>
-          {Object.entries(LISTING_LANGS).map(([lang,name])=><option key={lang} value={lang}>{name}</option>)}
+          {Object.entries(LISTING_LANGS).filter(([lang])=>v.displayLocales.includes(lang)).map(([lang,name])=><option key={lang} value={lang}>{name}</option>)}
         </select>
         <button type="button" disabled={busy||translationBusy||sourceLocale===editingLocale} onClick={()=>translate(editingLocale)}>
           {translationBusy?(ru?'Перевод…':'Translating…'):(ru?'Перевести в ':'Translate into ')+editingLocale.toUpperCase()}
