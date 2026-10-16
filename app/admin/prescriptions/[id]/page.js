@@ -1,5 +1,5 @@
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
-import { SessionAudioRecorder } from '@/components/session-audio-recorder'
+import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
 import { notFound, redirect } from 'next/navigation'
 
 import { PrescriptionForm } from '@/components/prescription-form'
@@ -23,5 +23,7 @@ export default async function EditPrescriptionPage({ params }) {
   const candidate = prescription.paymentDocumentId ? await store.findById(prescription.paymentDocumentId) : undefined
   const payment = candidate?.kind === 'payment' ? candidate : undefined
   const action = updatePrescriptionAction.bind(null, prescription.id)
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Consultation documents" description="Create and share the payment document and recommendation separately." />{deliveryEnabled() && prescription.clientId && prescription.kind !== 'report' && prescription.status === 'active' && <SessionAudioRecorder key={prescription.id} clientId={prescription.clientId} documentId={prescription.id} locale={prescription.languagePreference==='ru'?'ru':'en'} />}<AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getConsultationRemedyOptions()} /></section></main>
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Consultation documents" description="Create and share the payment document and recommendation separately." />{deliveryEnabled() && prescription.clientId && prescription.kind !== 'report' && prescription.status === 'active' && <ReportVideoMaterialsEditor key={prescription.id} clientId={prescription.clientId}
+  documentId={prescription.id} sourceConsultationId={prescription.consultationId||prescription.id}
+  locale={prescription.languagePreference==='ru'?'ru':'en'} />}<AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getConsultationRemedyOptions()} /></section></main>
 }

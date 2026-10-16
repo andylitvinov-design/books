@@ -3,7 +3,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { ConsultationForm } from '@/components/consultation-form'
-import { SessionAudioRecorder } from '@/components/session-audio-recorder'
+import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { updateConsultationAction } from '../../actions'
@@ -16,5 +16,10 @@ export default async function EditConsultation({ params }) {
   const consultation = store ? await store.findById(id) : undefined
   const payment = consultation?.paymentDocumentId ? await store.findById(consultation.paymentDocumentId) : undefined
   if (!consultation || consultation.kind === 'payment' || (consultation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
-  return <main className="prescription-admin-shell consultation-edit-shell consultation-studio-shell"><PrescriptionAdminHeader title="Edit consultation" />{deliveryEnabled() && consultation.clientId && consultation.status === 'active' && <div style={{maxWidth:850,margin:'30px auto'}}><SessionAudioRecorder clientId={consultation.clientId} documentId={consultation.id} locale={consultation.languagePreference==='ru'?'ru':'en'} /></div>}<ConsultationForm action={updateConsultationAction.bind(null, id)} remedies={getConsultationRemedyOptions()} consultation={consultation} payment={payment} /></main>
+  return <main className="prescription-admin-shell consultation-edit-shell consultation-studio-shell"><PrescriptionAdminHeader title="Edit consultation" />{deliveryEnabled() && consultation.clientId && consultation.status === 'active' &&
+  <div style={{maxWidth:920,margin:'24px auto'}}>
+    <ReportVideoMaterialsEditor clientId={consultation.clientId} documentId={consultation.id}
+      sourceConsultationId={consultation.consultationId||consultation.id}
+      locale={consultation.languagePreference==='ru'?'ru':'en'}/>
+  </div>}<ConsultationForm action={updateConsultationAction.bind(null, id)} remedies={getConsultationRemedyOptions()} consultation={consultation} payment={payment} /></main>
 }
