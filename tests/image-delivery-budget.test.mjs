@@ -48,7 +48,11 @@ test('global optimizer remains enabled for existing book redirects', () => {
   const config = readFileSync('next.config.ts','utf8');
   assert.doesNotMatch(config,/images:\s*\{\s*unoptimized:\s*true/);
   assert.ok(readFileSync('components/book-catalog.tsx','utf8').includes('src={"/media/" + book.mediaSeries'));
-  assert.ok(!readFileSync('components/book-catalog.tsx','utf8').includes('unoptimized'));
+  const catalog = readFileSync('components/book-catalog.tsx','utf8');
+  assert.match(catalog, /<Image\s+unoptimized\s+alt=[\s\S]*?src="\/images\/holistic-house\/books-library\.webp"/);
+  // The optimized dynamic book covers remain separate and never inherit the hero opt-out.
+  assert.match(catalog, /<Image\s+alt=\{book\.title\}/);
+  assert.match(catalog, /src=\{"\/media\/" \+ book\.mediaSeries/);
   assert.match(config,/hostname: "psitrends.com", pathname: "\/images\/\*\*"/);
   assert.match(config,/outputFileTracingIncludes/);
 });

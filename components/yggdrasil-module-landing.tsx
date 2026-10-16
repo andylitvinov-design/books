@@ -122,7 +122,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                 </div>
               </div>
               <div className={styles.heroArt}>
-                <Image src={module.image} alt="" fill sizes="(max-width: 760px) 100vw, 35vw" priority />
+                <Image unoptimized src={module.image} alt="" fill sizes="(max-width: 760px) 100vw, 35vw" priority />
                 <div className={styles.imageCaption}><CheckCircle2 size={17} aria-hidden="true" />{b.five}</div>
               </div>
             </header>
@@ -164,7 +164,7 @@ export function YggdrasilModuleLandingPage({ locale, module }: { locale: PublicL
                 </div>
               </div>
               <div className="yggdrasil-module-hero-image">
-                <Image src={module.image} alt="" fill sizes="(max-width: 800px) 100vw, 42vw" priority />
+                <Image unoptimized src={module.image} alt="" fill sizes="(max-width: 800px) 100vw, 42vw" priority />
               </div>
             </header>
             <aside className="academy-archive-notice">{copy.notice}</aside>
