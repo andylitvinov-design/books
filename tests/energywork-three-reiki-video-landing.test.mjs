@@ -18,7 +18,7 @@ test("Principles of Energywork puts Flight to the Sun before all three Reiki vid
   for (const title of ["Flight to the Sun", "Полёт к Солнцу", "Vuelo hacia el Sol"]) {
     assert.ok(page.includes(title), "Missing original title " + title);
   }
-  assert.match(meditations, /key: "flight-to-sun",[\s\S]*?youtubeId: null/);
+  assert.match(meditations, /key: "flight-to-sun",[\s\S]*?youtubeId: "HqfixazXqRY"/);
   assert.match(page, /flight\?\.youtubeId \? \([\s\S]*?<AcademyVideoPlayer youtubeId=\{flight\.youtubeId\}/);
   assert.match(page, /data-video-source-pending="flight-to-sun"/);
   assert.doesNotMatch(page, /qM_nFUkYJ1k|XvMdX5czoOc/);
@@ -37,7 +37,9 @@ test("All three Reiki systems display video or explicit source-gated media and a
   assert.match(page, /tantraPractice\?\.youtubeId/);
   assert.match(page, /yggdrasilMeditation\?\.youtubeId/);
   assert.match(page, /youtubeId="DYo-fG-SyKw"/);
-  assert.match(page, /data-video-source-pending="kundalini"/);
+  assert.match(page, /<AcademyVideoPlayer youtubeId=\{kundaliniMeditation\.youtubeId\} title=\{kundaliniMeditation\.title\}/);
+  assert.doesNotMatch(page, /data-video-source-pending="kundalini"/);
+  assert.doesNotMatch(page, /kundaliniMissing|kundaliniSource/);
   assert.match(page, /<EnergyworkReikiCapture locale=\{locale\} course=\{system\.key\} \/>/);
   assert.match(page, /href=\{academyUrl\(locale, system\.study\)\}/);
   assert.match(page, /href=\{academyUrl\(locale, system\.free\)\}/);
@@ -101,8 +103,42 @@ test("Verified meditations come only from their owner-supplied source registry",
   ]);
   assert.match(registry, /youtubeId: "w2BN-HYmHUk"/);
   assert.match(registry, /youtubeId: "80xZ7jN6o2Y"/);
+  assert.match(registry, /key: "kundalini-reiki",[\s\S]*?youtubeId: "_IOX0E8N-To"/);
   assert.match(page, /englishGuidedMeditations\.find\(\(item\) => item\.key === "tantra-reiki"\)/);
   assert.match(page, /englishGuidedMeditations\.find\(\(item\) => item\.key === "reiki-yggdrasil"\)/);
   assert.match(free, /originalLevelOneVideoId = "DYo-fG-SyKw"/);
   assert.match(page, /youtubeId="DYo-fG-SyKw"/);
+});
+
+test("Reiki promo presents four clearly labeled sequential learning sections in EN/RU/ES", async () => {
+  const [page, css] = await Promise.all([
+    read("components/principles-of-energywork.tsx"),
+    read("components/principles-of-energywork.module.css"),
+  ]);
+  for (const prefix of ["STEP", "ШАГ", "PASO"]) {
+    for (const number of [1, 2, 3, 4]) {
+      assert.ok(page.includes(prefix + " " + number + " ·"), "Missing " + prefix + " " + number);
+    }
+  }
+  assert.match(page, /styles\.sequenceStep/);
+  assert.match(css, /\.sequenceStep\s*\{/);
+  assert.match(page, /System"\} \{system\.badge\}/);
+  assert.ok(page.indexOf('id="energywork-flight-to-sun"') < page.indexOf('id="energywork-systems"'));
+});
+
+test("Owner's Kundalini Reiki video is embedded in the promo and the dedicated course landing", async () => {
+  const [registry, promo, course, css] = await Promise.all([
+    read("data/academy/english-guided-meditations.ts"),
+    read("components/principles-of-energywork.tsx"),
+    read("components/kundalini-reiki-course.tsx"),
+    read("components/kundalini-reiki-course.module.css"),
+  ]);
+  assert.match(registry, /key: "kundalini-reiki",[\s\S]*?youtubeId: "_IOX0E8N-To"/);
+  assert.match(promo, /key === "kundalini-reiki"/);
+  assert.match(course, /key === "kundalini-reiki"/);
+  assert.match(course, /<AcademyVideoPlayer youtubeId=\{meditation\.youtubeId\}/);
+  assert.match(course, /videoCopy\.eyebrow/);
+  assert.match(css, /\.meditationFrame/);
+  assert.match(css, /@media \(max-width:760px\)/);
+  assert.doesNotMatch(promo, /data-video-source-pending="kundalini"/);
 });
