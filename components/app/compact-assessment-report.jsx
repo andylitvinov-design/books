@@ -125,6 +125,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <small>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>
       </details>
     </div>
-    <div id="hh-assessment-next-step"><FreeCourseBanner locale={locale}/></div>
+    <span id="hh-assessment-next-step" aria-hidden="true" style={{ scrollMarginTop: 80 }}/>
+    <FreeCourseBanner locale={locale}/>
   </section>
 }
