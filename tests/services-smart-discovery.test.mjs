@@ -112,3 +112,17 @@ test('Service discovery scrolls to submitted and category results on mobile and 
   assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
   assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
 })
+
+test('Explore by area is compact on mobile without removing category selection or result scrolling',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.ok(css.includes('.category,.categoryActive{display:flex;'))
+  assert.ok(css.includes('.category,.categoryActive{min-height:56px;padding:8px;gap:7px}'))
+  assert.ok(css.includes('.categoryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}'))
+  assert.ok(ui.includes('className={styles.categoryCount}'))
+  assert.ok(!ui.includes('className={styles.categoryDescription}'))
+  assert.ok(ui.includes('onClick={()=>chooseCategory(area.key)}'))
+  assert.ok(ui.includes('ref={resultsRef}'))
+})
