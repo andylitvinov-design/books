@@ -88,7 +88,7 @@ const UI = {
     measured: 'Measured',
     source: 'Source',
     save: 'Create / sign in to my Cabinet — get free analysis',
-    saveHint: 'Read your scales without signing in. For full free analysis and recommendations, confirm saving only this test to your chosen Google account.',
+    saveHint: 'By continuing, only this selected test is saved to your Google Cabinet. Your full scale explanations and practical recommendations open there automatically.',
     consultKicker: 'If you would like to discuss your result',
     consultTitle: 'Book a consultation with a specialist',
     consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
@@ -172,7 +172,7 @@ const UI = {
     measured: 'Дата измерения',
     source: 'Источник',
     save: 'Создать / войти в мой кабинет и получить анализ (бесплатно)',
-    saveHint: 'Шкалы доступны без регистрации. Для полного бесплатного анализа и рекомендаций подтвердите сохранение только этого теста в выбранный Google-аккаунт.',
+    saveHint: 'Нажимая кнопку, вы сохраняете только этот тест в своём Google-кабинете. Там сразу откроются подробные пояснения шкал и практические рекомендации.',
     consultKicker: 'Если хочется обсудить результат',
     consultTitle: 'Заказать консультацию специалиста',
     consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
@@ -964,7 +964,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         operationId: crypto.randomUUID(),
       })
       if (intent.signedIn) {
-        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id))
+        window.location.assign('/' + locale + '/app/continue?intent=' + encodeURIComponent(intent.id) + '&auto=1')
         return
       }
       await signIn(intent.id)
