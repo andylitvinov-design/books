@@ -24,11 +24,11 @@ export default async function ClientVideoStorageSetup(){
   const isR2=backend==='r2'
   const isCanada=backend==='s3_ca'
   const copy=ru?{
-    title:'Хранилище клиентских видео',desc:'Настройка отдельных приватных MP4 без переполнения Supabase.',
+    title:'Хранилище клиентских видео',desc:'Настройка приватных MOV с iPhone и MP4 без переполнения Supabase.',
     status:'Состояние',base:'Клиентские консультации',on:'Настроено',off:'Требует настройки',
     external:'Внешнее видео',configured:'Серверные параметры заполнены. Приватность и воспроизведение ещё нужно проверить.',
     incomplete:'Данные провайдера неполные или некорректные. Видео блокируется.',
-    disconnected:'R2/S3 не подключены. Новые видео не загружаются в Supabase автоматически.',
+    disconnected:'R2/S3 не подключены. Видео MOV/MP4 не загружаются в Supabase автоматически.',
     choices:'Выберите, где хранить персональные видео',
     r2:'Cloudflare R2 — дешевле, но без гарантии хранения в Канаде. Используйте только после оценки конфиденциальности.',
     s3:'Amazon S3 (Канада) — регион ca-central-1. Предпочтительный вариант, если важна канадская локализация.',
@@ -38,11 +38,11 @@ export default async function ClientVideoStorageSetup(){
     done:'После настройки вернитесь в редактор консультации и проверьте статус загрузки. Видеосессии клиентов не отправляются на YouTube.',
     back:'Перейти к клиентам',provider:'Выбранный провайдер'
   }:{
-    title:'Private client video storage',desc:'Keep personal MP4 recordings separate from Supabase Free storage.',
+    title:'Private client video storage',desc:'Keep private iPhone MOV and MP4 recordings off Supabase Free storage.',
     status:'Status',base:'Client delivery',on:'Configured',off:'Needs setup',
     external:'External video',configured:'Server settings are present. Privacy and playback still need independent testing.',
     incomplete:'Provider settings are incomplete or invalid. New video uploads are blocked.',
-    disconnected:'R2/S3 is not connected. New client MP4s never silently consume Supabase storage.',
+    disconnected:'R2/S3 is not connected. New MOV/MP4 videos never silently consume Supabase storage.',
     choices:'Choose where personal videos will be stored',
     r2:'Cloudflare R2 — lower storage cost, but no guarantee of Canadian residency. Requires privacy acceptance.',
     s3:'Amazon S3 Canada — ca-central-1 region. Prefer this when Canadian data location matters.',

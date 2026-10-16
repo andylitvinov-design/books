@@ -1,3 +1,4 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -63,9 +64,12 @@ async function fill(page,d,mode,guest,locale,responseValues){
   }
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
  await expect(report.locator('article')).toHaveCount(4)
@@ -75,6 +79,7 @@ async function fill(page,d,mode,guest,locale,responseValues){
  await expect(report).toContainText(locale==='ru'?'не исключает психическое расстройство':'cannot rule out mental illness')
  await expect(report).toContainText('Corey L. M. Keyes')
  await expect(report).toContainText('PHAC (2017)')
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:true})
 }
@@ -167,7 +172,8 @@ try{
   guestResultIds.add(result.id)
   assert.deepEqual(result.dimensions.map(x=>x.value),i?[31,3,13,15]:[70,15,25,30])
   assert.equal(result.instrumentLocale,'en');assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await page.close()
  }
  const guestResults=(await api(guest,'guest/bootstrap')).results.filter(r=>r.definitionKey==='mhc-sf')

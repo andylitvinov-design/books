@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { SessionAudioRecorder } from './session-audio-recorder'
+import { SessionYouTubePlayer } from './session-youtube-player'
+import { parseSessionYouTubeUrl } from '@/lib/clients/youtube-resource'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
 
@@ -189,30 +191,50 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           onChange={event=>updatePlan({additionalRecommendations:event.target.value})}/>
       </label>
       <div className={styles.planEditorSection}>
-        <h3>{ru?'Дополнительные материалы и медитации':'Extra materials and meditations'} <small>{(plan.resources||[]).length}/8</small></h3>
+        <h3>{ru?'Материалы, медитации и видео YouTube':'Materials, meditations & YouTube videos'} <small>{(plan.resources||[]).length}/8</small></h3>
         <p>{ru?'Добавляйте здесь только проверенные общедоступные HTTPS-материалы. Приватные аудио, видео и PDF загружайте отдельным полем ниже.':
           'Use this for approved public HTTPS resources only. Upload private audio, video and PDF below instead.'}</p>
         {(plan.resources||[]).map((resource,index)=><div className={styles.planEditorPractice} key={index}>
-          <label className={styles.field}>{ru?'Название материала':'Material title'}
+          <label className={styles.field}>{resource.kind==='youtube'?(ru?'Название обучающего видео':'Educational video title'):(ru?'Название материала':'Material title')}
             <input maxLength={140} value={resource.title} onChange={e=>changeResource(index,{title:e.target.value})}/>
           </label>
-          <label className={styles.field}>{ru?'Публичная HTTPS-ссылка':'Public HTTPS link'}
+          <label className={styles.field}>{resource.kind==='youtube'?(ru?'Ссылка на YouTube':'YouTube URL'):(ru?'Публичная HTTPS-ссылка':'Public HTTPS link')}
             <input inputMode="url" type="url" maxLength={1500} value={resource.url}
-              placeholder="https://" onChange={e=>changeResource(index,{url:e.target.value})}/>
+              placeholder={resource.kind==='youtube'?'https://youtu.be/XXXXXXXXXXX':'https://'}
+              onChange={e=>changeResource(index,{url:e.target.value})}/>
           </label>
+          {resource.kind==='youtube'&&resource.url.trim()&&!parseSessionYouTubeUrl(resource.url)&&
+            <p role="alert" className={styles.youtubeEditorWarning}>
+              {ru?'Вставьте ссылку на одно YouTube-видео (youtu.be, watch, shorts).':
+                'Enter one YouTube video URL (youtu.be, watch or shorts).'}
+            </p>}
+          {resource.kind==='youtube'&&parseSessionYouTubeUrl(resource.url)&&
+            <SessionYouTubePlayer title={resource.title} url={resource.url}
+              description={resource.description} locale={locale}/>}
+          {resource.kind==='youtube'&&<p className={styles.youtubeEditorNote}>{ru?
+            'Только общие обучающие ролики. Даже Unlisted на YouTube доступен каждому, у кого есть ссылка. Не добавляйте персональные записи клиентов.':
+            'General educational videos only. Unlisted is viewable by anyone with the link. Never attach private client recordings.'}</p>}
           <label className={styles.field}>{ru?'Короткое описание':'Short description'}
             <textarea rows={2} maxLength={500} value={resource.description||''}
               onChange={e=>changeResource(index,{description:e.target.value})}/>
           </label>
           <button type="button" className={styles.secondaryButton} onClick={()=>
             updatePlan({resources:plan.resources.filter((_,i)=>i!==index)})}>
-            {ru?'Удалить материал':'Remove material'}
+            {resource.kind==='youtube'?(ru?'Удалить видео':'Remove video'):(ru?'Удалить материал':'Remove material')}
           </button>
         </div>)}
-        {(plan.resources||[]).length<8&&<button type="button" className={styles.secondaryButton}
-          onClick={()=>updatePlan({resources:[...(plan.resources||[]),{title:ru?'Новый материал':'New material',description:'',url:'https://'}]})}>
-          + {ru?'Добавить ссылку':'Add resource link'}
-        </button>}
+        {(plan.resources||[]).length<8&&<>
+          <button type="button" className={styles.secondaryButton}
+            onClick={()=>updatePlan({resources:[...(plan.resources||[]),
+              {kind:'youtube',title:ru?'Обучающее видео':'Educational video',description:'',url:''}]})}>
+            + {ru?'Добавить видео с YouTube':'Add YouTube video'}
+          </button>
+          <button type="button" className={styles.secondaryButton}
+            onClick={()=>updatePlan({resources:[...(plan.resources||[]),
+              {title:ru?'Новый материал':'New material',description:'',url:'https://'}]})}>
+            + {ru?'Добавить ссылку':'Add resource link'}
+          </button>
+        </>}
       </div>
       <div className={styles.actions}>
         <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
@@ -220,7 +242,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         }}><Save size={17}/>{ru?'Сохранить план':'Save plan'}</button>
       </div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
+    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} showYouTubeQuickAdd={false}
+      onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>

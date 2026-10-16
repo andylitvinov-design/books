@@ -32,7 +32,8 @@ test('Spanish public explorer, privacy and terms exist and authenticate via the 
  for(const path of ['app/es/client/tests/page.tsx','app/es/privacy/page.tsx','app/es/terms/page.tsx']) assert.ok(exists(path),path);
  assert.match(content('components/app/test-explorer.jsx'),/Prepara tu selección de pruebas/);
  assert.match(content('components/app/public-test-explorer.jsx'),/locale === 'ru' \? 'ru' : 'en'/);
- assert.match(content('components/app/public-test-explorer.jsx'),/continueTo: 'tests'/);
+ assert.match(content('components/app/public-test-explorer.jsx'),/client\?startTests=/);
+ assert.doesNotMatch(content('components/app/public-test-explorer.jsx'),/auth\/start/);
  assert.match(content('app/es/client/tests/page.tsx'),/idioma original/);
  assert.match(content('app/es/privacy/page.tsx'),/Privacidad/);
  assert.match(content('app/es/terms/page.tsx'),/Condiciones de uso/);

@@ -50,7 +50,7 @@ test("integrated private Profile links to Services without cloning public free o
 
 test("the homepage test link has a real target before a visitor starts any questionnaire", () => {
   const landing = read("components/app/cabinet-landing.jsx");
-  assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/><\/div>/);
+  assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/><\/div>/);
   assert.match(landing, /phase !== 'catalog' && <section[^>]+id="cabinet-tests"/);
 });
 

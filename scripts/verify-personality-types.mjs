@@ -1,3 +1,4 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -60,9 +61,12 @@ async function fill(page,d,mode,guest,locale){
   assert.ok((await saved).ok())
   if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
  }
- const finish=page.getByRole('button',{name:locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
+ const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
  await finish.click()
+ if(guest){
+  await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({timeout:20000})
+ }else{
  const report=page.locator('[data-personal-result-report]')
  await expect(report).toBeVisible({timeout:20000})
  await expect(report.locator('article')).toHaveCount(d.scoring.dimensions.length)
@@ -73,6 +77,7 @@ async function fill(page,d,mode,guest,locale){
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'
    : locale==='ru'?'Несколько равных ведущих паттернов':'Several equally prominent patterns')
  await summary.scrollIntoViewIfNeeded()
+ }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
 }
@@ -178,7 +183,8 @@ try{
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
   assert.deepEqual(result.dimensions.map(x=>x.value),Array(d.scoring.dimensions.length).fill(d.key==='hh-disc-style-20'?15:12))
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
-  passed(d.key+' guest '+locale+' '+mode+': private consented runner and complete report')
+  await assertGuestScaleResult(page,expect,result,locale)
+  passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
   await page.waitForLoadState('networkidle')
   await page.close()
   guestPacer.settled()

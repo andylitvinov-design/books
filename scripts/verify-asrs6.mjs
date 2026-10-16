@@ -1,3 +1,4 @@
+import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
 // Requires the approved isolated database, app and provider protocol double.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -163,7 +164,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     const saved = target.waitForResponse(response => response.url().includes('/runs/') && response.url().endsWith('/save') && response.request().method() === 'POST')
     await buttons.nth(values[index]).click()
     assert.ok((await saved).ok())
-    if (index < 5) await expect(target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
+    if (index < 5) await expect(target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })).toHaveCount(0)
     // A saved zero must remain distinct from an unanswered question after reload.
     if (mode === 'quick' && index === 2) {
       await target.waitForLoadState('networkidle')
@@ -176,7 +177,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     }
     if (mode === 'guided' && index < 5) await target.getByRole('button', { name: locale === 'ru' ? 'Далее' : 'Next', exact: true }).click()
   }
-  const finish = target.getByRole('button', { name: locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
+  const finish = target.getByRole('button', { name: guest ? guestFinishLabel(locale) : locale === 'ru' ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations', exact: true })
   await expect(finish).toBeEnabled()
   await finish.click()
 }
@@ -255,11 +256,12 @@ try {
     await navigate(page, origin + '/' + locale + '/client?plan=' + plan.id)
     await selectMode(page, mode)
     await fill(page, definition, mode, true, locale, values)
-    await assertReport(page, definition, locale, expected)
+    await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({ timeout: 20000 })
     const stored = (await api(guest, 'guest/bootstrap')).results.find(result => result.definitionId === definition.id && !resultIds.has(result.id))
     assertStored(stored, definition, expected); resultIds.add(stored.id)
+    await assertGuestScaleResult(page, expect, stored, locale)
     await page.screenshot({ path: output + '/guest-' + locale + '-' + mode + '.png', fullPage: true })
-    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count and report')
+    passed('guest ' + locale + ' ' + mode + ': exact source, five anchors, shading, private saved count, exact scales and item-scoped optional analysis')
     await page.close()
   }
   assert.equal(resultIds.size, 4)

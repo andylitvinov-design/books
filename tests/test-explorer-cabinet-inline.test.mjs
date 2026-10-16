@@ -8,11 +8,11 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   const publicExplorer = read('components/app/public-test-explorer.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const styles = read('components/app/test-explorer.module.css')
-  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/>/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('className="cabinet-signin-strip'), 'one-click start must precede secondary account entry')
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('<MoodCheckIn'), 'mood check-in is optional and must not block test start')
-  assert.doesNotMatch(cabinet, /without signing in|можно подобрать и пройти без входа/)
-  assert.match(publicExplorer, /<TestExplorer locale=\{locale\} audience="account" embedded=\{embedded\}/)
+  assert.match(cabinet, /without signing in/, 'guest scales must be accessible before Google sign-in')
+  assert.match(publicExplorer, /<TestExplorer locale=\{locale\} audience="guest" embedded=\{embedded\}/)
   assert.match(explorer, /embedded \? styles\.embedded/)
   assert.match(styles, /\.explorer \.battery\{position:static/)
   assert.match(styles, /\.customizer\[hidden\]\{display:none/)
@@ -33,7 +33,7 @@ test('public Client entry shows the photo portrait immediately with Booking-styl
   const explorer = read('components/app/test-explorer.jsx')
   const visual = read('components/app/test-explorer-visual.jsx')
   const styles = read('components/app/test-explorer.module.css')
-  // One click must start the existing rights-cleared battery and OAuth handoff.
+  // One click must start the existing rights-cleared guest battery without OAuth.
   assert.match(explorer, /<button type="button" className=\{styles\.quickPrimary\}/)
   assert.match(explorer, /buildStarterBattery\(/)
   assert.match(explorer, /onStart\(activeBattery, \{/)

@@ -71,7 +71,7 @@ test('neutral personality scales are not interpreted as a clinical severity or u
   assert.match(report.note, /not a clinical cutoff/)
 })
 
-test('account and guest Quick/Guided flows render the same two explicit finish actions', () => {
+test('account runner keeps two actions, guest runner shows scales first with no premature next action', () => {
   const controls = source('components/app/test-finish-actions.jsx')
   const account = source('components/app/app-workspace.jsx')
   const guest = source('components/app/cabinet-landing.jsx')
@@ -82,9 +82,13 @@ test('account and guest Quick/Guided flows render the same two explicit finish a
   for (const ui of [account, guest]) {
     assert.match(ui, /<TestFinishActions/)
     assert.match(ui, /onReport=\{\(\) =>/)
-    assert.match(ui, /onNext=\{\(\) =>/)
-    assert.match(ui, /<PersonalResultReport result=/)
   }
+  assert.match(account, /onNext=\{\(\) =>/)
+  assert.match(account, /<PersonalResultReport result=/)
+  assert.match(guest, /guestScaleOnly/)
+  assert.match(guest, /<GuestScaleInterpretation result=\{guestResult\}/)
+  assert.doesNotMatch(guest, /onNext=\{\(\) =>/)
+  assert.match(controls, /See scores and scale explanations/)
   assert.match(account, /onComplete\(result, pending\.destination\)/)
   assert.match(account, /root \+ '\/results\/' \+ encodeURIComponent\(result\.id\)/)
   assert.match(account, /advanced\.definitionIds\?\.\[advanced\.currentIndex\]/)
@@ -101,7 +105,8 @@ test('both report surfaces use persisted scored dimensions; guest Google save is
   assert.match(account, /appFetch\('results\/' \+ id\)/)
   assert.match(account, /<PersonalResultReport result=\{result\}/)
   assert.match(guest, /guest\/runs\/' \+ pending\.run\.id \+ '\/submit'/)
-  assert.match(guest, /<PersonalResultReport result=\{guestResult\}/)
+  assert.match(guest, /<GuestScaleInterpretation result=\{guestResult\}/)
+  assert.doesNotMatch(guest, /<PersonalResultReport result=\{guestResult\}/)
   assert.match(guest, /sourceKind: 'guest_result'/)
   assert.match(guest, /onClick=\{saveToCabinet\}/)
 })

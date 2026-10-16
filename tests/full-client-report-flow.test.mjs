@@ -9,7 +9,7 @@ function assertUploadPreflight(recorder) {
   assert.ok(start>=0&&end>start,'upload function must be bounded')
   const upload=recorder.slice(start,end)
   const preflight=upload.indexOf('const availability=await checkReady()')
-  const ready=upload.indexOf("if(video&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')")
+  const ready=upload.indexOf("if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')")
   const size=upload.indexOf('if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))')
   const sizeThrow=upload.indexOf('throw new Error(',size)
   const session=upload.indexOf('const sid=await ensureSession()')
@@ -87,7 +87,7 @@ test('mobile recording checks private bucket before camera / microphone permissi
   // The same preflight returns separate audio and video readiness. Video must
   // fail closed before any session, camera prompt or private object upload.
   assert.match(recorder,/const availability=await checkReady\(\)/)
-  assert.match(recorder,/if\(video&&availability\.videoReady===false\)throw new Error\('MEDIA_STORAGE_NOT_CONFIGURED'\)/)
+  assert.match(recorder,/if\(video&&availability\.videoReady===false\)throw new Error\('VIDEO_STORAGE_NOT_CONFIGURED'\)/)
   assert.ok(recorder.indexOf('const availability=await checkReady()',recorder.indexOf('async function chooseFile'))<recorder.indexOf('const sid=await ensureSession()',recorder.indexOf('async function chooseFile')))
   assertUploadPreflight(recorder)
   const readiness=src('lib/clients/recording-readiness.js')

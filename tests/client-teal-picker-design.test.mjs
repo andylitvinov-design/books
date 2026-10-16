@@ -16,7 +16,7 @@ test('the approved teal refresh belongs to the public /client test picker, not t
   assert.match(picker, /data-client-tests-promo/)
   assert.match(picker, /heroHeadline:'Лучше понять себя и свою жизнь'/)
   assert.match(picker, /heroHeadline:'Understand yourself and your life better'/)
-  assert.match(picker, /src="\/images\/holistic-house\/assessment-coast\.svg"/)
+  assert.ok(picker.includes('src="/images/holistic-house/assessment-coast.svg"'))
   assert.match(routeCss, /\.client-entry-shell \.house-header/)
 })
 
@@ -28,11 +28,11 @@ test('the new entrance leads to the functioning first step, not a fake action', 
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /problemsForTopics\(focus\)/)
   assert.match(picker, /onToggleProblem\(problem\.key\)/)
-  assert.match(picker, /<details className=\{styles\.advanced\} id="hh-more-test-filters">/)
+  assert.ok(picker.includes('<details className={styles.advanced} id="hh-more-test-filters">'))
 })
 
 test('test recommendations, scale guide, course switch and sign in remain wired to data', () => {
-  assert.match(picker, /browseRecommendations\.slice\(0, visibleCount\)/)
+  assert.ok(picker.includes('browseRecommendations.slice(0, visibleCount)'))
   assert.match(picker, /entry\.matchPercent/)
   assert.match(picker, /entry\.durationMinutes/)
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)

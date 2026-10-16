@@ -96,3 +96,47 @@ test('guest missing-version recovery guards question header and context form',()
  assert.match(guest,/phase === 'mode' && definition && run && traumaContextReady/)
  assert.match(guest,/phase === 'context' && definition\?\.optionalContext\?\.length > 0/)
 })
+
+function batteryContext() {
+ const first={id:'first-en-v1',key:'first',version:'v1',instrumentLocale:'en',questions:[{id:'q'}]}
+ const second={id:'second-en-v1',key:'second',version:'v1',instrumentLocale:'en',questions:[{id:'q'}]}
+ const ctx={runLifetime:{current:0},saving:{current:false},submitting:{current:false},saveOperation:{current:{old:true}},completion:{current:{old:true}},run:{id:'old'},locale:'ru',pendingMood:null,pendingGuestDefinitions:[],definition:first,adult:true,necessary:true,c:{error:'failed'},crypto:{randomUUID},localZone:()=> 'UTC',calls:[],definitions:[first,second],
+ definitionFor:key=>[first,second].find(d=>d.key===key),getDefinitionById:id=>{const d=[first,second].find(d=>d.id===id);if(!d)throw Error('unknown');return d},
+ async guestFetch(path,body){ctx.calls.push({path,body});if(path==='guest/bootstrap')return{runs:[],results:[]};if(path==='guest/session')return{};if(path==='guest/test-plans')return{id:'plan',status:'active',currentIndex:1,definitionIds:[first.id,second.id]};if(path==='guest/runs')return{id:'new-'+body.definitionKey,definitionId:[first,second].find(d=>d.key===body.definitionKey).id};throw Error(path)}}
+ for(const name of ['Busy','Run','Active','GuestResult','Error','SaveState','SessionExpires','LatestGuestMood','Answers','Context','Index','Mode','Phase','ActivePlan','PlanResults','PendingGuestDefinitions'])ctx['set'+name]=value=>{ctx[name[0].toLowerCase()+name.slice(1)]=value}
+ vm.createContext(ctx)
+ vm.runInContext(extract(guest,'  async function startRun(','  async function saveGuestRun(')+extract(guest,'  function resetToCatalog()','  return (\n    <>'),ctx)
+ return ctx
+}
+const tick=()=>new Promise(resolve=>setImmediate(resolve))
+for(const stage of ['guest/bootstrap','guest/test-plans','guest/runs'])for(const transition of ['reset','new launch'])test(`guest battery ignores delayed ${stage} after ${transition}`,async()=>{
+ const ctx=batteryContext();const fetch=ctx.guestFetch;let release;let held=true
+ ctx.guestFetch=async(path,body)=>{if(held&&path===stage){held=false;return new Promise(resolve=>{release=()=>resolve(fetch(path,body))})}return fetch(path,body)}
+ const old=ctx.beginGuestBattery([{key:'first'},{key:'second'}]);await tick();assert.equal(typeof release,'function')
+ assert.equal(ctx.saveOperation.current,null);assert.equal(ctx.completion.current,null);assert.equal(ctx.run,null)
+ if(transition==='reset')ctx.resetToCatalog();else await ctx.beginGuestBattery([{key:'first'}])
+ const expected={run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error}
+ release();await old
+ assert.deepEqual({run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error},expected)
+})
+test('guest consent resumes returned plan currentIndex and pinned instrument language',async()=>{
+ const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions
+ await ctx.createGuestSession()
+ const call=ctx.calls.find(c=>c.path==='guest/runs');assert.equal(call.body.definitionKey,'second');assert.equal(call.body.instrumentLocale,'en');assert.equal(call.body.definitionVersion,'v1');assert.equal(ctx.locale,'ru');assert.equal(ctx.phase,'mode');assert.equal(ctx.busy,false)
+})
+test('guest completed consent battery shows saved summary without starting another run',async()=>{
+ const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions;const fetch=ctx.guestFetch
+ ctx.guestFetch=(path,body)=>path==='guest/test-plans'?Promise.resolve({id:'plan',status:'completed',completedRunIds:[]}):fetch(path,body)
+ await ctx.createGuestSession();assert.equal(ctx.phase,'summary');assert.equal(ctx.busy,false);assert.equal(ctx.calls.filter(c=>c.path==='guest/runs').length,0)
+})
+for(const stage of ['guest/session','guest/test-plans','guest/runs'])test(`guest consent ignores delayed ${stage} after reset`,async()=>{
+ const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions;const fetch=ctx.guestFetch;let release
+ ctx.guestFetch=(path,body)=>path===stage?new Promise(resolve=>{release=()=>resolve(fetch(path,body))}):fetch(path,body)
+ const pending=ctx.createGuestSession();await tick();assert.equal(typeof release,'function');ctx.resetToCatalog();release();await pending
+ assert.equal(ctx.phase,'catalog');assert.equal(ctx.run,null);assert.equal(ctx.activePlan,null);assert.equal(ctx.busy,false)
+})
+test('guest continue uses plan definition even when UI locale differs',async()=>{
+ const ctx=batteryContext();ctx.activePlan={id:'plan',status:'active',currentIndex:1,definitionIds:ctx.definitions.map(d=>d.id)}
+ ctx.definitionFor=()=>{throw Error('must not substitute current UI definition')}
+ await ctx.continuePlan();assert.equal(ctx.run.definitionId,'second-en-v1');assert.equal(ctx.activePlan.id,'plan');assert.equal(ctx.busy,false)
+})

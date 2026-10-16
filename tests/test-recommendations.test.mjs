@@ -90,7 +90,7 @@ test('public and signed-in routes share the complete Test Explorer rather than a
     readFile('components/app/test-explorer.jsx', 'utf8'),
     readFile('components/app/public-test-explorer.jsx', 'utf8'),
   ])
-  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\} \/>/)
+  assert.match(landing, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.match(explorer, /const matchCount =/)
   assert.doesNotMatch(landing, /\.slice\(0, 3\)/)
   assert.doesNotMatch(landing, /cabinet-test-recommender/)
@@ -100,9 +100,9 @@ test('public and signed-in routes share the complete Test Explorer rather than a
   assert.match(route, /PublicTestExplorer/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
   for (const token of ['buildExplorerEntries', 'filterExplorerEntries', 'rankExplorerEntries', 'buildStarterBattery', 'coverageForSelection', 'Available now', 'Full database', 'Start free monitoring']) assert.match(explorer, new RegExp(token))
-  assert.match(publicExplorer, /auth\/start/)
-  assert.match(publicExplorer, /makeTestSelectionIntent/)
-  assert.doesNotMatch(publicExplorer, /localStorage/)
+  assert.match(publicExplorer, /guestStartable\(entries\)/)
+  assert.match(publicExplorer, /onGuestStart\(entries\)/)
+  assert.doesNotMatch(publicExplorer, /auth\/start|localStorage/)
   assert.match(publicExplorer, /sessionStorage\.setItem/)
 })
 
@@ -228,7 +228,7 @@ test('advanced controls are included on the embedded client page and in shared e
     readFile('components/app/cabinet-landing.jsx', 'utf8'),
     readFile('components/app/test-explorer.jsx', 'utf8'),
   ])
-  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStartSingle={(entry) => begin(entry.key, null)} />'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
   for (const token of ['TEST_EXPLORER_DETAIL_TOPICS', 'TEST_EXPLORER_AXES', 'detailCounts', 'setMaxMinutes', 'setLanguage', 'setTracking', 'coverageForFilters', 'const matchCount =']) {
     assert.ok(source.includes(token), token)
   }

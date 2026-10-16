@@ -1,12 +1,13 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
-import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
+import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
+import { SessionYouTubePlayer } from './session-youtube-player'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
@@ -16,6 +17,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
+  const isMov=isVideo&&item.mime==='video/quicktime'
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
@@ -54,7 +56,9 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   }
   function playbackError(){
     if(expiry&&Date.now()>expiry-45000&&!busy.current)void load(true)
-    else{setSource('');setError(ru?'Откройте запись повторно':'Please reopen the recording')}
+    else{setSource('');setError(isMov?
+      (ru?'Этот MOV/HEVC может не поддерживаться вашим браузером. Попробуйте открыть оригинальный файл.':'This MOV/HEVC may not play in your browser. Try opening the original file.'):
+      (ru?'Откройте запись повторно':'Please reopen the recording'))}
   }
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
@@ -70,7 +74,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
           onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
       <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
-    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
+    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button>{isMov&&<> <a href={route} download="consultation-video.mov">{ru?'Открыть оригинал MOV':'Open original MOV'}</a></>}</p>}
   </article>
 }
 export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false}) {
@@ -81,6 +85,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
   const practices=Array.isArray(plan.practices)?plan.practices:[]
   const resources=Array.isArray(plan.resources)?plan.resources:[]
+  const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
+  const linkedResources=resources.filter(resource=>resource.kind!=='youtube')
   const media=session.media||[]
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
     .sort((a,b)=>(a.kind==='video'?0:1)-(b.kind==='video'?0:1))
@@ -101,7 +107,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':youtubeResources.length?'#session-youtube':(supplementary.length||linkedResources.length)?'#session-resources':'#session-title'
   // The approved HTML document is the only source of report narrative and prescriptions.
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
@@ -115,13 +121,11 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
       <div className={styles.clientBrand}>
-        {!hasFullReport&&<span className={styles.clientWordmark}>Holistic House</span>}
+        {mode==='owner'&&!hasFullReport&&<span className={styles.clientWordmark}>Holistic House</span>}
+        <span className={styles.sessionCrumb}>{ru?'МОЯ КОНСУЛЬТАЦИЯ':'MY CONSULTATION'}</span>
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
-      {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
-        {ru?'← Мой кабинет':'← My Cabinet'}</a>
-        :mode==='owner'?<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>
-        : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
+      {mode==='owner'&&<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>}
     </header>
     {!hasFullReport&&<section className={styles.sessionHero} aria-labelledby="session-title">
       <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
@@ -214,6 +218,20 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
     </section>}
 
+    {youtubeResources.length>0&&<section id="session-youtube" className={styles.clientSection}
+      aria-label={ru?'Обучающие видео с YouTube':'Educational YouTube videos'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Video size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОМАТЕРИАЛЫ':'VIDEO MATERIALS'}</span>
+          <h2>{ru?'Видео к вашей консультации':'Videos for your consultation'}</h2></div>
+      </header>
+      <div className={styles.youtubeLessonList}>
+        {youtubeResources.map((item,index)=><SessionYouTubePlayer
+          key={item.url+'-'+index} title={item.title} url={item.url}
+          description={item.description} locale={locale}/>)}
+      </div>
+    </section>}
+
     {hasAdvice&&<section id="session-recommendations" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><ListChecks size={20}/></span>
@@ -243,7 +261,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
-    {(supplementary.length>0||resources.length>0)&&<section id="session-resources" className={styles.clientSection}>
+    {(supplementary.length>0||linkedResources.length>0)&&<section id="session-resources" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><FolderOpen size={20}/></span>
         <div><span className={styles.sectionKicker}>{ru?'ЛИЧНАЯ БИБЛИОТЕКА СЕССИИ':'YOUR SESSION MATERIALS'}</span>
@@ -258,7 +276,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           </a>
         </article>
         :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
-      {resources.map((item,index)=><a className={styles.attachmentCard} key={index}
+      {linkedResources.map((item,index)=><a className={styles.attachmentCard} key={index}
         href={item.url} target="_blank" rel="noopener noreferrer">
         <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
           {item.description&&<small>{item.description}</small>}</div>
@@ -290,9 +308,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           'The video’s comparisons are personal impressions and do not prove that more pellets have a stronger effect. Do not change your amount based on this video; follow your individual written instructions.'}</p>
       </section>}
 
-    {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount locale={locale} selector={selector}
-      sessionId={mode==='cabinet'?session.id:null} appAvailable={appAvailable}/>}
-    {mode!=='saved'&&mode!=='owner'&&<ClientSessionCabinetEntry locale={locale} variant="footer" appAvailable={appAvailable}/>}
 
 
     <footer className={styles.clientFooter}>
@@ -302,12 +317,28 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       <p className={styles.safetyLine}>{ru?
         'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
         'This information does not replace appropriate medical assessment or care.'}</p>
-      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}>
-        <ArrowLeft size={17}/>{ru?'Мои сохранённые отчёты':'My saved reports'}</a>}
-      {mode==='cabinet'&&<a href={'/'+locale+'/client/'+selector}><ArrowLeft size={17}/>
-        {ru?'Все мои консультации':'All my sessions'}</a>}
     </footer>
+
+    {mode!=='owner'&&<nav className={styles.sessionBottomActions}
+      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
+      {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
+        locale={locale} appAvailable={appAvailable} compact/>}
+      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
+        className={styles.sessionBottomPrimary}><FolderOpen size={20} aria-hidden="true"/>
+        {ru?'Открыть мои сохранённые отчёты':'Open my saved reports'}</a>}
+      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
+        <ListChecks size={20} aria-hidden="true"/>
+        {ru?'Пройти другие тесты':'Take more tests'}</a>
+      {!appAvailable&&mode!=='saved'&&<p className={styles.sessionBottomHint} role="status">
+        {ru?'Сохранение через Google сейчас недоступно. Отчёт остаётся доступным по защищённой ссылке.':
+          'Google saving is temporarily unavailable. This report remains accessible through its private link.'}
+      </p>}
+    </nav>}
   </main>
-  return mode==='saved'||mode==='owner'?content:<SessionExitSaveGuard locale={locale} selector={selector}
-    sessionId={session.id} cabinetMode={mode==='cabinet'} appAvailable={appAvailable}>{content}</SessionExitSaveGuard>
+  const reportView=<div className={styles.sessionSiteShell} lang={locale}>
+    <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
+    {content}
+  </div>
+  return mode==='saved'||mode==='owner'?reportView:<SessionExitSaveGuard locale={locale} selector={selector}
+    sessionId={session.id} cabinetMode={mode==='cabinet'} appAvailable={appAvailable}>{reportView}</SessionExitSaveGuard>
 }
