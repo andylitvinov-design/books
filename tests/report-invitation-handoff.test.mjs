@@ -5,10 +5,11 @@ import { canAutoContinueSave, savedResourcePath } from '../lib/app/client-handof
 
 const report = { sourceKind: 'delivered_report', status: 'pending', expired: false }
 const document = { sourceKind: 'legacy_document', status: 'pending', expired: false }
+const guestResult = { sourceKind: 'guest_result', status: 'pending', expired: false }
 const id = '30000000-0000-4000-8000-000000000001'
 
-test('automatic handoff is limited to explicit, unexpired private document invitations', () => {
-  for (const intent of [report, document]) {
+test('automatic handoff requires an explicit unexpired and browser-bound item selection', () => {
+  for (const intent of [report, document, guestResult]) {
     assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent }), true)
     assert.equal(canAutoContinueSave({ automatic: false, authStatus: '', intent }), false)
     assert.equal(canAutoContinueSave({ automatic: true, authStatus: 'cancelled', intent }), false)
@@ -18,7 +19,8 @@ test('automatic handoff is limited to explicit, unexpired private document invit
     assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { ...intent, status: 'committed', resourceId: id } }), true)
     assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { ...intent, status: 'committed' } }), false)
   }
-  assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: { sourceKind: 'guest_result', status: 'pending' } }), false)
+  assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: guestResult }), true)
+  assert.equal(canAutoContinueSave({ automatic: false, authStatus: '', intent: guestResult }), false)
   assert.equal(canAutoContinueSave({ automatic: true, authStatus: '', intent: null }), false)
 })
 

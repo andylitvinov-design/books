@@ -99,7 +99,7 @@ async function exercise(options={}){
  }
  const diagnosticPage=async(context,label)=>{
   assert.equal(context,guest);assert.ok(pages.every(p=>p.closed),'Only one guest page can remain active')
-  const result={closed:false,idle:false,label,locator(selector){assert.equal(selector,'.hh-test-mode-grid button');return {nth:index=>({click:async()=>{assert.equal(index,pages.length%2?1:0)}})}},waitForLoadState:async state=>{assert.equal(state,'networkidle');result.idle=true},close:async()=>{assert.equal(result.idle,true);result.closed=true}}
+  const result={closed:false,idle:false,label,mode:null,waitForLoadState:async state=>{assert.equal(state,'networkidle');result.idle=true},close:async()=>{assert.equal(result.idle,true);result.closed=true}}
   pages.push(result);return result
  }
  const navigate=async(target,url)=>{
@@ -113,8 +113,14 @@ async function exercise(options={}){
   runs.push(run)
  }
  const expect=()=>({toBeVisible:async()=>{}})
+ const enterGuestQuestionnaireMode=async(target,_expect,{mode,definition})=>{
+  assert.equal(target,pages.at(-1));assert.equal(_expect,expect)
+  assert.equal(definition.id,run.definitionId)
+  assert.equal(mode,pages.length%2?'guided':'quick')
+  target.mode=mode
+ }
  const fill=async(target,definition,mode,isGuest,locale)=>{
-  assert.equal(target,pages.at(-1));assert.equal(isGuest,true);assert.equal(locale,definition.instrumentLocale)
+  assert.equal(target,pages.at(-1));assert.equal(isGuest,true);assert.equal(locale,definition.instrumentLocale);assert.equal(target.mode,mode)
   for(let i=0;i<definition.questions.length;i++){
    request('guest/runs/'+run.id+'/save','POST',true)
    if(mode==='guided'&&i<definition.questions.length-1)request('guest/runs/'+run.id+'/save','POST',true)
@@ -130,7 +136,7 @@ async function exercise(options={}){
   run.status='completed';plan.status='completed';plan.completedRunIds=[run.id]
  }
  const assertGuestScaleResult=async(target,_expect,result,locale)=>{assert.equal(target,pages.at(-1));assert.equal(result.runId,run.id);assert.equal(locale,result.instrumentLocale);ctas.push(result.id)}
- const dependencies={browser,api,origin,guestPacer,defs:definitions,localized,diagnosticPage,navigate,expect,fill,assertGuestScaleResult,passed:check=>checks.push(check),navigationMarker(){},randomUUID,assert}
+ const dependencies={browser,api,origin,guestPacer,defs:definitions,localized,diagnosticPage,navigate,expect,enterGuestQuestionnaireMode,fill,assertGuestScaleResult,passed:check=>checks.push(check),navigationMarker(){},randomUUID,assert}
  const execute=new AsyncFunction(...Object.keys(dependencies),'let pacedGuestContext=null,page;'+block+';return {guestResults,guestJourneys,guestPlanIds,guestRunIds,guestResultIds}')
  const outcome=await execute(...Object.values(dependencies))
  assert.equal(contextCount,1);assert.equal(sessionCount,1);assert.equal(contextClosed,true)

@@ -36,7 +36,7 @@ const TEXT = {
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
-    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Your selection stays on this page until you choose to continue. Results stay temporary; create or open your Cabinet for a free personal analysis.',
+    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Results stay temporary in this browser; create or open your Cabinet for a free personal analysis.', startNotice:'By pressing Take test or Start free monitoring, you confirm you are 18 or older and agree to temporary private processing of your answers and results. No registration is required.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
     more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
     selectAll:'Select all',clearAll:'Clear topics',skip:'Skip',problemSearch:'e.g. trouble relaxing, low energy, relationships…',noProblemMatches:'No matching concerns.',filterTitle:'Filter tests',filters:'Filters',problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
@@ -45,7 +45,7 @@ const TEXT = {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
     heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
     heroDescription:'Выберите темы, пройдите тесты и получите персональные рекомендации.',
-    accessNote:'Выбирайте темы свободно. Доступные тесты и наборы проходятся без регистрации. После каждого — расшифровка шкал; бесплатный анализ — после входа в кабинет.', guestAction:'Попробовать без регистрации',
+    accessNote:'Выбирайте темы свободно. Доступные тесты и наборы проходятся без регистрации. После каждого — шкалы и баллы; бесплатные пояснения и анализ — после входа в кабинет.', guestAction:'Попробовать без регистрации',
     benefitOne:'Измеримый прогресс', benefitTwo:'Глубокое понимание', benefitThree:'Персональные рекомендации', benefitFour:'Поддержка и развитие',
     promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с базовых тестов',
     promoText:'Узнайте больше о стрессе, настроении и ресурсах, а затем получите рекомендации.', promoAction:'Выбрать темы',
@@ -65,7 +65,7 @@ const TEXT = {
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
-    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'До нажатия кнопки продолжения выбор остаётся на этой странице. Результаты временные. Для бесплатного анализа создайте кабинет или войдите в него.',
+    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'Результаты временно сохраняются в этом браузере. Для бесплатного анализа создайте кабинет или войдите в него.', startNotice:'Нажимая «Пройти» или «Начать мониторинг», вы подтверждаете, что вам есть 18 лет, и соглашаетесь на временную приватную обработку ответов и результатов. Регистрация не нужна.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
     more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
     selectAll:'Выбрать все',clearAll:'Снять выбор',skip:'Пропустить',problemSearch:'Например: не могу расслабиться, мало энергии, отношения…',noProblemMatches:'Уточнения не найдены.',filterTitle:'Фильтры тестов',filters:'Фильтры',problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
@@ -94,7 +94,7 @@ const TEXT = {
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
-    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'La selección queda en esta página hasta que continúes. Los resultados son temporales. Entra a tu espacio para el análisis gratuito.',
+    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'Los resultados son temporales en este navegador. Entra a tu espacio para el análisis gratuito.', startNotice:'Al pulsar Realizar o Iniciar monitoreo, confirmas que tienes 18 años o más y aceptas el tratamiento privado y temporal de tus respuestas y resultados. No necesitas registrarte.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
     more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
     selectAll:'Elegir todo',clearAll:'Quitar selección',skip:'Omitir',problemSearch:'Por ejemplo: tensión, poca energía, relaciones…',noProblemMatches:'Sin resultados.',filterTitle:'Filtrar pruebas',filters:'Filtros',problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
@@ -366,6 +366,7 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      {!authenticated && <p className={styles.privacy} data-guest-start-notice>{c.startNotice}</p>}
       {onStartCourse && <div className={styles.modeSwitch} role="group" aria-label={c.modeLabel} data-test-course-switch>
         <button type="button" aria-pressed={journeyMode === 'tests'} onClick={() => setJourneyMode('tests')}>{c.modeTests}</button>
         <button type="button" aria-pressed={journeyMode === 'course'} onClick={() => setJourneyMode('course')}>{c.modeCourse}</button>
@@ -496,6 +497,7 @@ export function SimpleTestPicker({
         <span><strong>{starting ? '…' : journeyMode === 'course' ? c.courseCta : c.build}</strong><small>{journeyMode === 'course' ? c.courseCtaHint : c.buildHelp}</small></span>
         <ArrowRight size={23} aria-hidden="true"/>
       </button>
+      {!authenticated && <p className={styles.privacy} data-guest-start-notice>{c.startNotice}</p>}
       {actionError && <p className={styles.error} role="alert">{actionError.code || actionError.message || String(actionError)}</p>}
       {!activeBattery.length && <p className={styles.noMatches} role="status">{c.noTests}</p>}
       <button type="button" className={styles.fullDatabase} onClick={onBrowseCore}>

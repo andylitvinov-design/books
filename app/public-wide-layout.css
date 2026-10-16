@@ -56,3 +56,21 @@
     padding-inline: var(--hh-wide-page-gutter);
   }
 }
+
+/* Services landing (EN/RU/ES): align every following panel with the opening
+   portrait hero. The shell already supplies the page gutter, so the nested
+   section-level widths must not add a second inset. Keep this scoped to the
+   Services landing rather than widening consultation forms on other routes. */
+.services-shell--studio > :is(section, details) {
+  box-sizing: border-box;
+  width: min(1240px, calc(100% - 38px));
+  max-width: none;
+  margin-inline: auto;
+}
+
+@media screen and (max-width: 760px) {
+  .services-shell--studio > :is(section, details) {
+    width: calc(100% + 12px);
+    margin-inline: -6px;
+  }
+}

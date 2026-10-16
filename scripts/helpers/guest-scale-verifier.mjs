@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { buildAssessmentResultReport } from '../../lib/assessments/result-report.js'
 
 const normalized = value => String(value ?? '').replace(/\s+/g, ' ').trim()
-export const guestFinishLabel = locale => locale === 'ru' ? 'Посмотреть шкалы и расшифровку' : 'See scores and scale explanations'
-export const guestAnalysisLabel = locale => locale === 'ru' ? 'Создать / войти в мой кабинет и получить анализ (бесплатно)' : 'Create / sign in to my Cabinet — get free analysis'
+const numeral = (value, locale) => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
+export const guestFinishLabel = locale => locale === 'ru' ? 'Посмотреть шкалы и баллы' : 'See my scores and scales'
+export const guestAnalysisLabel = locale => locale === 'ru' ? 'Создать кабинет и получить пояснения' : 'Create my Cabinet and get explanations'
 export function assertGuestSaveIntent(body, result) {
   assert.deepEqual(Object.keys(body).sort(), ['operationId', 'sourceId', 'sourceKind'])
   assert.equal(body.sourceKind, 'guest_result')
@@ -13,24 +14,94 @@ export function assertGuestSaveIntent(body, result) {
 export function assertGuestSnapshot(snapshot, result, locale) {
   const report = buildAssessmentResultReport(result, locale), ru = locale === 'ru'
   assert.ok(report.sections.length, 'Expected scored sections must not be empty')
+  assert.equal(snapshot.scoreOnly, true, 'Guest result must declare its score-only contract')
+  assert.equal(snapshot.scaleCount, report.sections.length)
+  assert.equal(snapshot.detailsCount, 0, 'Full explanations must not be hidden in guest disclosures')
   assert.equal(snapshot.accountAnalysisCount, 0, 'Guest must not render account analysis')
   assert.equal(snapshot.analysisCtaCount, 1, 'Exactly one optional Cabinet analysis CTA')
   assert.equal(snapshot.analysisLabel, guestAnalysisLabel(locale))
   assert.equal(snapshot.scales.length, report.sections.length, 'Every scored scale must be shown exactly once')
   for (const [index, section] of report.sections.entries()) {
     const actual = snapshot.scales[index]
+    const dimension = result.dimensions.find(item => item.key === section.key)
+    assert.ok(dimension, 'Every verified scale must retain its scored dimension')
+    for (const field of ['value', 'min', 'max']) assert.equal(section[field], dimension[field], 'Exact scored ' + field)
     assert.equal(actual.key, section.key, 'Exact ordered scale key')
     assert.equal(normalized(actual.title), normalized(section.construct || section.title || section.key))
-    assert.equal(normalized(actual.numeric), `${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'Диапазон' : 'Range'} ${section.min}–${section.max}`, 'Exact scored value and range')
-    for (const text of [section.band, section.meaning].filter(Boolean)) assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact scale explanation: ' + section.key)
-    const caution = section.bandBasis === 'screening'
-      ? ru ? 'Опубликованный скрининговый диапазон. Это не диагноз.' : 'Published screening band. This is not a diagnosis.'
-      : ru ? 'Описательный балл — не клинический диагноз и не процент здоровья.' : 'This descriptive score is not a clinical diagnosis or health percentage.'
-    assert.ok(normalized(actual.text).includes(caution), 'Scale limitations remain visible')
-    for (const step of section.steps || []) assert.ok(!normalized(snapshot.text).includes(normalized(step)), 'Account-only practical advice leaked into guest result')
+    assert.equal(normalized(actual.numeric), `${numeral(section.value, locale)} / ${numeral(section.max, locale)}`, 'Exact localized score and upper bound')
+    assert.equal(actual.gaugeCount, 1, 'Exactly one gauge per scored scale')
+    assert.equal(actual.progressCount, 0, 'Scores must not be presented as progress or health percentages')
+    assert.equal(normalized(actual.band), section.bandBasis === 'screening' ? normalized(section.band) : '', 'Only the exact source screening band may be shown')
+    if (dimension.key === 'symptoms.asrs6.shaded_count') {
+      assert.equal(dimension.displayKind, 'screening-count')
+      assert.equal(dimension.min, 0); assert.equal(dimension.max, 6)
+      assert.ok(Number.isInteger(dimension.value) && dimension.value >= 0 && dimension.value <= 6)
+      assert.equal(actual.gaugeKind, 'screening-count')
+      assert.equal(actual.svgCount, 0, 'ASRS must remain a discrete count, not a severity dial')
+      assert.equal(actual.needle, null)
+      assert.equal(normalized(actual.caption), dimension.value >= 4
+        ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
+        : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)')
+      assert.equal(normalized(actual.caution), ru ? 'Скрининг, не диагноз' : 'Screening, not a diagnosis')
+    } else {
+      const kind = dimension.dimensionClass === 'trait' || dimension.direction === 'non-normative' ? 'neutral'
+        : dimension.direction?.startsWith('higher-reported-') ? 'resource'
+          : dimension.direction?.startsWith('lower-reported-') ? 'difficulty' : 'neutral'
+      const caption = kind === 'difficulty' ? ru ? 'Меньше трудностей →' : 'Fewer difficulties →'
+        : kind === 'resource' ? ru ? 'Больше ресурсов →' : 'More resources →'
+          : ru ? 'Описательная шкала' : 'Descriptive scale'
+      assert.equal(actual.gaugeKind, kind)
+      assert.equal(normalized(actual.caption), caption)
+      assert.equal(normalized(actual.caution), '')
+      assert.equal(normalized(actual.gaugeLabel), `${ru ? 'Шкала' : 'Scale'}: ${numeral(section.value, locale)} / ${numeral(section.max, locale)}. ${caption}`)
+      assert.equal(actual.svgCount, 1)
+      // The score-only UI has no range paragraph. Verify the actual needle against
+      // BOTH persisted bounds, including nonzero minima and reversed difficulty.
+      assert.ok(Number.isFinite(section.value) && Number.isFinite(section.min) && Number.isFinite(section.max))
+      assert.ok(section.max > section.min && section.value >= section.min && section.value <= section.max)
+      const fraction = (section.value - section.min) / (section.max - section.min)
+      const angle = (kind === 'difficulty' ? fraction : 1 - fraction) * Math.PI
+      const expected = { x1: 100, y1: 98, x2: 100 + 65 * Math.cos(angle), y2: 98 - 65 * Math.sin(angle) }
+      for (const [key, value] of Object.entries(expected)) assert.ok(Number.isFinite(actual.needle?.[key]) && Math.abs(actual.needle[key] - value) < 1e-6, 'Exact range-normalized gauge needle: ' + key)
+    }
+    assert.doesNotMatch(actual.text, /%/, 'Guest scales must not imply health percentages')
+    assert.equal(normalized(actual.text), normalized([actual.title, actual.numeric, actual.caption, actual.caution, actual.band].join('')), 'Guest card contains only its scale, gauge and source screening label')
   }
-  for (const text of [report.methodology, report.note].filter(Boolean)) assert.ok(normalized(snapshot.methodology).includes(normalized(text)), 'Exact methodology/source limitations must remain available')
+  const accountOnly = [report.methodology, report.note, report.contextNote,
+    report.personalityType?.headline, report.personalityType?.description,
+    ...report.sections.flatMap(section => [section.meaning, section.followUp, ...(section.steps || [])])].filter(Boolean)
+  for (const text of accountOnly) assert.ok(!normalized(snapshot.text).includes(normalized(text)), 'Account-only explanation or advice leaked into guest result')
   assert.ok(normalized(snapshot.source).includes(`${result.definitionKey} · ${result.definitionVersion} · ${result.instrumentLocale.toUpperCase()}`), 'Exact versioned instrument source')
+}
+
+// Preserve the former exact interpretation checks on their authenticated surface.
+export function assertAccountReportSnapshot(snapshot, result, locale) {
+  const report = buildAssessmentResultReport(result, locale), ru = locale === 'ru'
+  assert.ok(report.sections.length)
+  assert.equal(snapshot.guestCount, 0, 'Authenticated reports must not fall back to guest scales')
+  assert.equal(snapshot.scales.length, report.sections.length)
+  for (const [index, section] of report.sections.entries()) {
+    const actual = snapshot.scales[index]
+    assert.equal(normalized(actual.title), normalized(section.construct || section.title))
+    assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
+    for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || [])].filter(Boolean))
+      assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)
+  }
+  if (report.methodology) assert.ok(normalized(snapshot.methodology).includes(normalized(report.methodology)), 'Exact authenticated methodology')
+  if (report.note) assert.ok(normalized(snapshot.text).includes(normalized(report.note)), 'Exact authenticated source limitations')
+}
+export async function assertAccountScaleReport(page, expect, result, locale) {
+  const root = page.locator('[data-personal-result-report]')
+  await expect(root).toBeVisible({ timeout: 20000 })
+  await expect(root).toHaveCount(1)
+  for (const detail of await root.locator('details').all()) if ((await detail.getAttribute('open')) === null) await detail.locator(':scope > summary').click()
+  const snapshot = await root.evaluate(root => ({
+    scales: [...root.querySelectorAll('[data-assessment-scales] > article')].map(card => ({ title: card.querySelector('h3')?.textContent, text: card.textContent })),
+    text: root.textContent,
+    methodology: root.querySelector('[data-assessment-methodology]')?.textContent,
+    guestCount: document.querySelectorAll('[data-guest-scale-interpretation]').length,
+  }))
+  assertAccountReportSnapshot(snapshot, result, locale)
 }
 
 // Deliberate routing probes require a SW-blocked fixture context in WebKit.
@@ -46,29 +117,41 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
   await expect(root).toHaveCount(1)
   await expect(root.locator('button, a')).toHaveCount(0)
   await expect(page.getByRole('button', { name: guestAnalysisLabel(locale), exact: true })).toHaveCount(1)
-  for (const detail of await root.locator('details').all()) if ((await detail.getAttribute('open')) === null) await detail.locator('summary').click()
-  const snapshot = await page.evaluate(() => {
-    const root = document.querySelector('[data-guest-scale-interpretation]')
-    const gate = document.querySelector('[data-guest-analysis-gate]')
+  const resultCard = page.locator('.cabinet-guest-result').filter({ has: root })
+  const options = resultCard.locator(':scope > details')
+  await expect(options).toHaveCount(1)
+  if ((await options.getAttribute('open')) === null) await options.locator(':scope > summary').click()
+  const snapshot = await root.evaluate(root => {
+    const resultCard = root.closest('.cabinet-guest-result')
+    const gate = resultCard.querySelector('[data-guest-analysis-gate]')
+    const label = gate?.querySelector('button')?.cloneNode(true)
+    label?.querySelectorAll('[aria-hidden="true"]').forEach(node => node.remove())
     return {
-      scales: [...root.querySelectorAll('[data-guest-scale]')].map(card => ({ key: card.dataset.guestScale, title: card.querySelector('h5')?.textContent, numeric: card.querySelector('p strong')?.closest('p')?.textContent, text: card.textContent })),
-      text: root.closest('.cabinet-guest-result')?.textContent || root.textContent,
-      methodology: [...root.querySelectorAll('details')].map(node => node.textContent).join(' '),
-      source: document.querySelector('.cabinet-result-footer')?.textContent,
+      scoreOnly: root.hasAttribute('data-score-only'),
+      scaleCount: Number(root.getAttribute('data-scale-count')),
+      detailsCount: root.querySelectorAll('details').length,
+      scales: [...root.querySelectorAll('[data-guest-scale]')].map(card => {
+        const gauge = card.querySelector('[data-assessment-gauge]')
+        const needle = gauge?.querySelector('svg line')
+        return {
+          key: card.dataset.guestScale, title: card.querySelector('h5')?.textContent,
+          numeric: gauge?.querySelector('strong')?.textContent, text: card.textContent,
+          band: card.querySelector(':scope > p')?.textContent,
+          gaugeCount: card.querySelectorAll('[data-assessment-gauge]').length,
+          gaugeKind: gauge?.dataset.assessmentGauge, gaugeLabel: gauge?.getAttribute('aria-label'),
+          caption: gauge?.querySelector('figcaption')?.textContent, caution: gauge?.querySelector('small')?.textContent,
+          svgCount: card.querySelectorAll('svg').length, progressCount: card.querySelectorAll('[role="progressbar"]').length,
+          needle: needle ? Object.fromEntries(['x1', 'y1', 'x2', 'y2'].map(key => [key, Number(needle.getAttribute(key))])) : null,
+        }
+      }),
+      text: resultCard.textContent,
+      source: resultCard.querySelector(':scope > details')?.textContent,
       analysisCtaCount: gate?.querySelectorAll('button, a').length || 0,
-      analysisLabel: gate?.querySelector('button')?.textContent,
-      accountAnalysisCount: document.querySelectorAll('[data-personal-result-report], [data-personality-type-summary], [data-assessment-context], [data-free-course-banner], [data-report-scale]').length,
+      analysisLabel: label?.textContent.trim(),
+      accountAnalysisCount: document.querySelectorAll('[data-personal-result-report], [data-personality-type-summary], [data-assessment-context], [data-assessment-methodology], [data-free-course-banner], [data-report-scale]').length,
     }
   })
   assertGuestSnapshot(snapshot, result, locale)
-  if (result.definitionKey === 'asrs-6') {
-    const count = root.locator('[data-assessment-gauge="screening-count"]')
-    await expect(count).toHaveCount(1)
-    await expect(count.locator('strong')).toHaveText(result.dimensions[0].value + ' / 6')
-    await expect(count.locator('svg')).toHaveCount(0)
-    await expect(root.locator('[role="progressbar"], [data-assessment-gauge="difficulty"], [data-assessment-gauge="resource"]')).toHaveCount(0)
-    assert.doesNotMatch(await count.innerText(), /%/)
-  }
   const button = page.locator('[data-guest-analysis-gate]').getByRole('button', { name: guestAnalysisLabel(locale), exact: true })
   await expect(button).toBeEnabled()
   // Observe the actual item-scoped payload without creating an intent or opening auth.

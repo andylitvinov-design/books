@@ -135,8 +135,15 @@ const GUIDED_COPY = {
 const toggle = (items, key) => items.includes(key) ? items.filter((item) => item !== key) : [...items, key]
 const depthOptions = ['quick', 'balanced', 'deep']
 
+const GUEST_START_NOTICE = {
+  en: 'By starting a test, you confirm you are 18 or older and agree to temporary private processing of your answers and results. No sign-in required.',
+  ru: 'Начиная тест, вы подтверждаете, что вам есть 18 лет, и соглашаетесь на временную приватную обработку ответов и результатов. Регистрация не нужна.',
+  es: 'Al iniciar una prueba, confirmas que tienes 18 años o más y aceptas el tratamiento privado y temporal de tus respuestas y resultados. No necesitas registrarte.',
+}
+
 export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
+  const guestStartNotice = GUEST_START_NOTICE[locale] || GUEST_START_NOTICE.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
   const [availability, setAvailability] = useState('available')
@@ -406,6 +413,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         <button type="button" className={styles.quickPrimary} data-test-action={explicitSelectionOnly ? 'save' : 'start'} disabled={!activeBattery.length || starting || !onStart} onClick={() => start()}>{starting ? '…' : explicitSelectionOnly ? (locale === 'ru' ? 'Сохранить выбранные тесты' : 'Save my chosen tests') : c.start}</button>
         <span>{activeBattery.length} {quick.summary} · {questions} {c.questions} · ~{minutes} {c.minutes}</span>
       </div>
+      {audience === 'guest' && <p className={styles.quickPrivacy} data-guest-start-notice>{guestStartNotice}</p>}
       {actionError && <p role="alert" className={styles.quickError}>{actionError.code || actionError.message}</p>}
     </header>
     <aside className={styles.heroPortrait} aria-label={locale === 'ru' ? 'Визуальная модель психического портрета' : locale === 'es' ? 'Vista previa del retrato' : 'Psychological portrait preview'}>
@@ -555,7 +563,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         <div>
           <strong>{activeBattery.length ? `${activeBattery.length} · ${questions} ${c.questions} · ~${minutes} ${c.minutes} · ${activeCoverage.coveredCount} ${c.axes} · ${breadth}` : c.choose}</strong>
           {(activeBattery.length > 8 || minutes > 30) && <p>{c.warning}</p>}
-          <small>{c.privacy}</small>
+          <small>{audience === 'guest' ? guestStartNotice : c.privacy}</small>
         </div>
         <div>
           <button type="button" onClick={() => setSelectedKeys([])}>{quick.resetSet}</button>

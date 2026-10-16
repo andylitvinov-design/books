@@ -88,7 +88,7 @@ test('account runner keeps two actions, guest runner shows scales first with no 
   assert.match(guest, /guestScaleOnly/)
   assert.match(guest, /<GuestScaleInterpretation result=\{guestResult\}/)
   assert.doesNotMatch(guest, /onNext=\{\(\) =>/)
-  assert.match(controls, /See scores and scale explanations/)
+  assert.match(controls, /See my scores and scales/)
   assert.match(account, /onComplete\(result, pending\.destination\)/)
   assert.match(account, /root \+ '\/results\/' \+ encodeURIComponent\(result\.id\)/)
   assert.match(account, /advanced\.definitionIds\?\.\[advanced\.currentIndex\]/)

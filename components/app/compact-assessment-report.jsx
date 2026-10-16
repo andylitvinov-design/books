@@ -81,6 +81,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
               <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
             </div>
           </div>
+          <p className={styles.explanation}>{section.meaning}</p>
           {showSteps && section.steps.length > 0 && <div className={styles.recommendations}>
             <h4>{result.definitionKey === 'asrs-6' ? (ru ? 'Пояснение Holistic House' : 'Holistic House explanation') : (ru ? 'Что поможет на этой неделе' : 'Two steps for this week')}</h4>
             <ol>{section.steps.slice(0, 2).map((step, i) => <li key={i}>{step}</li>)}</ol>
@@ -92,7 +93,6 @@ export function CompactAssessmentReport({ result, previous = null, report, local
               <h4>{ru ? 'Что можно попробовать по желанию' : 'Optional steps to try'}</h4>
               <ol>{section.steps.slice(0, 2).map((step, i) => <li key={i}>{step}</li>)}</ol>
             </div>}
-            <p>{section.meaning}</p>
             {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
             {guide?.skill && <p><strong>{ru ? 'Навык:' : 'Optional skill:'}</strong> {guide.skill}</p>}
             {!section.recommendedReview && <p>{section.followUp}</p>}

@@ -1,4 +1,5 @@
-import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -102,11 +103,12 @@ try{
   const locale=i?'ru':'en',mode=i?'guided':'quick'
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
   await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
-  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await assertQuestionnaireMode(page,expect,{mode,guest:false,definition:d})
   await fill(page,d,mode,false,locale,i?mixed:Array(14).fill(0))
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),i?[31,3,13,15]:[0,0,0,0])
+  await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
@@ -164,8 +166,7 @@ try{
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();observePage(page,'guest-'+locale+'-'+mode)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
-  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
-  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await enterGuestQuestionnaireMode(page,expect,{mode,definition:d})
   await fill(page,d,mode,true,locale,i?mixed:Array(14).fill(5))
   const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key&&!guestResultIds.has(r.id))
   assert.ok(result,'each MHC-SF journey persists a new result')

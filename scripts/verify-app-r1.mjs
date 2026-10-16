@@ -228,7 +228,7 @@ async function chooseSingleAccountTest(target,name,{beforeSelection=null}={}){
 }
 // A public launch, including one with Google cookies, must stay guest-only.
 // Observe requests as well as durable state so even a rejected account write fails.
-async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinition,{embedded=false}={}){
+async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinition){
  const before=await api('bootstrap',null,ctx)
  const accountWrites=[]
  const observe=request=>{
@@ -238,21 +238,24 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
  target.on('request',observe)
  try{
   await target.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
-  await expect(target).toHaveURL(url=>url.pathname==='/en/client'&&(embedded?url.search==='':url.searchParams.get('startTests')===expectedDefinition.key))
   const guest=target.locator('#cabinet-tests')
   await expect(guest).toBeVisible()
-  const consent=guest.getByRole('heading',{name:'Before you start',exact:true})
-  const mode=guest.locator('.hh-test-mode-picker')
-  await expect(consent.or(mode)).toBeVisible()
-  if(await consent.isVisible()){
-   await guest.getByLabel('I am 18 or older.',{exact:true}).check()
-   await guest.getByLabel('I agree to temporary private processing of my answers and result for this self-observation test.',{exact:true}).check()
-   await guest.getByRole('button',{name:'Continue',exact:true}).click()
-  }
-  await expect(mode).toBeVisible()
+  // Public Start now opens Quick directly, with no consent or mode-selection page.
+  // Require the actual selected questionnaire, not merely its surrounding section.
+  await expect(guest.locator('.hh-test-mode-picker')).toHaveCount(0)
+  await expect(guest.getByRole('heading',{name:'Before you start',exact:true})).toHaveCount(0)
+  const quick=guest.locator('.cabinet-quick-form')
+  await expect(quick).toBeVisible()
+  await expect(quick.locator('.cabinet-quick-question')).toHaveCount(expectedDefinition.questions.length)
+  await expect(quick.getByRole('heading',{level:3})).toHaveText(expectedDefinition.questions.map(question=>question.text))
+  await expect(quick.locator('.cabinet-quick-question').first()).toBeVisible()
   const guestState=await api('guest/bootstrap',null,ctx)
   assert.equal(guestState.status,200)
-  assert.ok(guestState.data.runs.some(run=>run.definitionId===expectedDefinition.id),'the exact selected definition starts as a guest run')
+  const guestRun=guestState.data.runs.find(run=>run.definitionId===expectedDefinition.id)
+  assert.ok(guestRun,'the exact selected definition starts as a guest run')
+  // Both dedicated and embedded single-test launches settle on the durable run URL.
+  // Checking the transient startTests query races the direct launch in either engine.
+  await expect(target).toHaveURL(url=>url.pathname==='/en/client'&&url.search==='?run='+guestRun.id&&url.hash==='')
   const after=await api('bootstrap',null,ctx)
   assert.equal(after.status,before.status,'public Start does not authenticate the account')
   if(before.status===200){
@@ -1213,7 +1216,7 @@ try {
  passed('Cabinet entry has a prominent Google sign-in and one integrated battery builder')
 
  await chooseSinglePublicTestAfterCatalog(page,newPublicTest.title)
- await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition,{embedded:true})
+ await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition)
  // Sign in explicitly, then append through the actual account picker.
  await page.goto(origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()

@@ -26,7 +26,8 @@ async function publicTopicButton(picker, locale, title) {
  await expect(button).toBeVisible()
  return button
 }
-import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 import { createGuestVerifierPacer } from './helpers/guest-verifier-pacing.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -287,18 +288,16 @@ async function launchPublicRelationshipGuest(target,ctx,definition){
   const start=picker.getByRole('button',{name:'Start free monitoring No registration required to start',exact:true})
   await expect(start).toHaveCount(1)
   await start.click()
-  await expect(target).toHaveURL(origin+'/en/client?startTests='+encodeURIComponent(definition.key))
   const guest=target.locator('#cabinet-tests')
   await expect(guest).toBeVisible()
-  const consent=guest.getByRole('heading',{name:'Before you start',exact:true})
-  const mode=guest.locator('.hh-test-mode-picker')
-  await expect(consent.or(mode)).toBeVisible()
-  if(await consent.isVisible()){
-   await guest.getByLabel('I am 18 or older.',{exact:true}).check()
-   await guest.getByLabel('I agree to temporary private processing of my answers and result for this self-observation test.',{exact:true}).check()
-   await guest.getByRole('button',{name:'Continue',exact:true}).click()
-  }
-  await expect(mode).toBeVisible()
+  // The current public Start renders the selected Quick questionnaire directly.
+  await expect(guest.locator('.hh-test-mode-picker')).toHaveCount(0)
+  await expect(guest.getByRole('heading',{name:'Before you start',exact:true})).toHaveCount(0)
+  const quick=guest.locator('.cabinet-quick-form')
+  await expect(quick).toBeVisible()
+  await expect(quick.locator('.cabinet-quick-question')).toHaveCount(definition.questions.length)
+  await expect(quick.getByRole('heading',{level:3})).toHaveText(definition.questions.map(question=>question.text))
+  await expect(quick.getByRole('heading',{name:definition.questions[0].text,exact:true})).toBeVisible()
   await target.waitForLoadState('networkidle')
   const guestState=await api(ctx,'guest/bootstrap')
   // CabinetLanding sends one selected definition directly to begin/startRun;
@@ -572,11 +571,12 @@ try{
   const locale=i%2?'ru':'en',mode=i%2?'guided':'quick',d=localized(base.key,locale)
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
   await navigate(page,origin+'/'+locale+'/app/runs/'+run.id+'?mode='+mode)
-  if(mode==='guided')await page.locator('.hh-test-mode-grid button').nth(1).click()
+  await assertQuestionnaireMode(page,expect,{mode,guest:false,definition:d})
   await fill(page,d,mode,false,locale)
   const data=await api(account,'bootstrap'),result=data.results.find(r=>r.runId===run.id)
   assert.ok(result);assert.equal(result.contentHash,d.contentHash)
   assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])
+  await assertAccountScaleReport(page,expect,result,locale)
   await page.waitForLoadState('networkidle')
   navigationMarker(page,'before-reload')
   await page.reload()
@@ -652,8 +652,7 @@ try{
   assert.deepEqual(plan.definitionIds,[d.id]);assert.deepEqual(plan.completedRunIds,[])
   page=await diagnosticPage(guest,'guest-'+d.key+'-'+locale)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
-  const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
-  await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  await enterGuestQuestionnaireMode(page,expect,{mode,definition:d})
   const started=await api(guest,'guest/bootstrap')
   assert.equal(started.activeTestPlan?.id,plan.id)
   assert.equal(started.runs.length,1,'only this plan has an unfinished run')
