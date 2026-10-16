@@ -119,8 +119,14 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (width === 390) {
-          const footerCta = main.locator('a[data-contact-channel="whatsapp"]').last();
+          const footerChooser = main.locator('[data-contact-channel-chooser]').last();
+          const footerCta = footerChooser.locator('button[data-contact-order]');
           await footerCta.scrollIntoViewIfNeeded();
+          assert.equal(await footerCta.getAttribute("aria-expanded"), "false", "footer messenger choice starts collapsed");
+          await footerCta.click();
+          await visible(footerChooser.locator('a[data-contact-channel="whatsapp"]'));
+          await visible(footerChooser.locator('a[data-contact-channel="telegram"]'));
+          assert.equal(await footerCta.getAttribute("aria-expanded"), "true", "order button reveals two channels without redirect");
           const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
           assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
           await alternative.locator("summary").click();
