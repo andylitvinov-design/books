@@ -20,6 +20,7 @@
 .aiOption input{width:19px;height:19px;flex:none;accent-color:#a04963}
 .aiOption span{display:grid;gap:3px}
 .aiOption small{font:400 11px/1.6 system-ui,sans-serif;color:#ccd6e5}
+.eyebrow{display:flex;align-items:center;gap:6px;color:#84364c;font:750 10px/1.4 system-ui,sans-serif;letter-spacing:.13em;margin:0}
 .categorySection{margin:16px 0 20px}
 .categoryHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
 .categoryHead h2{font:400 clamp(21px,2.5vw,27px)/1.18 Georgia,serif;letter-spacing:-.025em;color:#1f344f;margin:0}
