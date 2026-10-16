@@ -142,7 +142,11 @@ try {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
-      await visible(page.locator("[data-free-drawing-intake]"));
+      await visible(page.locator("[data-free-quick-request]").first());
+      const detailIntake = page.locator("[data-free-drawing-intake]");
+      await detailIntake.waitFor({ state: "hidden" });
+      const advanced = page.locator("details").filter({ has: detailIntake });
+      assert.equal(await advanced.evaluate(element => element.open), false, "Detailed questionnaire must start collapsed");
       await assertNoDevIssueOverlay(page, locale + "/free-situation-review/" + width);
       await assertViewport(page, locale + "/free-situation-review/" + width);
       if (width === 390 || width === 1188) {
@@ -153,7 +157,15 @@ try {
 
     const page = await createPage(390);
     await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
+    const quick = page.locator("[data-free-quick-request]").first();
+    await visible(quick);
+    const quickChooser = await openContactChannelChooser(quick, expect);
+    await assertPreparedContactChannels(quickChooser, expect);
     const intake = page.locator("[data-free-drawing-intake]");
+    const advanced = page.locator("details").filter({ has: intake });
+    await intake.waitFor({ state: "hidden" });
+    await advanced.locator(":scope > summary").click();
+    await visible(intake);
     // A reflected state transition proves React is interactive before controlled inputs are filled.
     const topicChoice = intake.locator('fieldset button[type="button"]').nth(1);
     await topicChoice.click();
