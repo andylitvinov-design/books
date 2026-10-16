@@ -2,7 +2,6 @@
 import {useState} from 'react'
 import {Video} from 'lucide-react'
 import {parseSessionYouTubeUrl} from '@/lib/clients/youtube-resource'
-import {SessionYouTubePlayer} from './session-youtube-player'
 import styles from './client-session.module.css'
 
 // Shared by the existing report/consultation editors that already offer
@@ -87,7 +86,9 @@ export function SessionYouTubeQuickAdd({clientId,ensureSession,locale='en',onSav
             setUrl(e.target.value);setSavedSessionId('');setError('')
           }}/>
       </label>
-      {parsed&&<SessionYouTubePlayer title={title} url={url} locale={locale}/>}
+      {parsed&&<p className={styles.youtubeEditorNote} role="status">{ru?
+        'Ссылка распознана. Плеер появится на странице отчёта после публикации.':
+        'Valid video link. The player will appear on the report after publication.'}</p>}
       {error&&<p role="alert" className={styles.youtubeEditorWarning}>{error}</p>}
       <button type="button" className={styles.primaryButton}
         disabled={busy||!parsed||!title.trim()} onClick={addVideo}>
