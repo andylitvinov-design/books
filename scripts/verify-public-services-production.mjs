@@ -167,8 +167,16 @@ try {
     await intake.locator('form button[type="submit"]').click();
     const ready = intake.locator('[role="region"]');
     await visible(ready);
-    const href = await ready.locator('a[data-contact-channel="whatsapp"]').getAttribute("href");
+    const readyChooser = ready.locator("[data-contact-channel-chooser]");
+    const readyButton = readyChooser.locator("button[data-contact-order]");
+    assert.equal(await readyButton.getAttribute("aria-expanded"), "false", "free review must not auto-open messaging");
+    await readyButton.click();
+    await visible(readyChooser.locator('a[data-contact-channel="whatsapp"]'));
+    await visible(readyChooser.locator('a[data-contact-channel="telegram"]'));
+    const href = await readyChooser.locator('a[data-contact-channel="whatsapp"]').getAttribute("href");
     const whatsappText = new URL(href || "").searchParams.get("text") || "";
+    const telegramHref = await readyChooser.locator('a[data-contact-channel="telegram"]').getAttribute("href");
+    assert.equal(new URL(telegramHref || "").searchParams.get("text"), whatsappText, "free review draft is identical across channels");
     const decodedPageUrl = decodeURIComponent(page.url());
     for (const marker of [markerA, markerB]) {
       assert.ok(!whatsappText.includes(marker), "WhatsApp query text must not include answer marker");
