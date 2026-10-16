@@ -25,7 +25,7 @@ test('guest battery resumes the exact pending run and then the scored result', (
   assert.equal(guestRoutePath(scored,{}),'/en/client')
 })
 
-test('guest query rejects malformed, cross-origin, conflicting and non-UUID resume references', () => {
+test('guest query rejects malformed, conflicting and non-UUID resume references', () => {
   assert.equal(isGuestReference(result),true)
   assert.equal(isGuestReference('personal-stress'),false)
   for (const value of ['javascript:alert(1)', '../../test', 'x', '', '00000000-0000-0000-0000-000000000000']) {
@@ -39,7 +39,7 @@ test('guest Cabinet flow restores the same result, with an explicit opt-in save 
   const landing = source('components/app/cabinet-landing.jsx')
   const account = source('components/app/app-workspace.jsx')
   assert.match(landing,/requestedGuestResult = searchParams\.get\('result'\)/)
-  assert.match(landing,/bootstrap\.results\.find\(\(item\) => item\.id === requestedGuestResult\)/)
+  assert.match(landing,/\(bootstrap\.results \|\| \[\]\)\.find\(\(item\) => item\.id === requestedGuestResult\)/)
   assert.match(landing,/setGuestResult\(result\)/)
   assert.match(landing,/replaceGuestRoute\(\{\s*planId:[^\n]*resultId:\s*result\.id\s*\}\)/)
   assert.match(landing,/onClick=\{saveToCabinet\}/)
