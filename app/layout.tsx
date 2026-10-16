@@ -27,7 +27,7 @@ import "./public-wide-layout.css";
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
   title: "Holistic House",
-  description: "Holistic House — индивидуальные сессии, практики, программы, препараты и авторские материалы для внутреннего развития.",
+  description: "Holistic House offers free self-checks, educational books and optional personal development sessions with Andrey Litvinov in Toronto and online.",
   verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
   openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
   twitter: { card: "summary_large_image", images: ["/images/holistic-house/andy-about.png"] },
