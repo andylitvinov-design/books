@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const families = new Map<string, Partial<Record<PublicLocale, string>>>();
   for (const entry of unique) {
     const pathname = new URL(entry.url).pathname;
-    const match = pathname.match(/^\\/(en|ru|es)(?=\\/|$)/);
+    const match = pathname.match(/^\/(en|ru|es)(?=\/|$)/);
     const locale = pathname === '/' ? 'en' : match?.[1] as PublicLocale | undefined;
     if (!locale) continue;
     const family = pathname === '/' ? '/' : pathname.slice(locale.length + 1) || '/';
@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const releaseDate = new Date('2026-10-16T00:00:00.000Z');
   return unique.map(entry => {
     const pathname = new URL(entry.url).pathname;
-    const match = pathname.match(/^\\/(en|ru|es)(?=\\/|$)/);
+    const match = pathname.match(/^\/(en|ru|es)(?=\/|$)/);
     const locale = pathname === '/' ? 'en' : match?.[1] as PublicLocale | undefined;
     const family = pathname === '/' ? '/' : locale ? pathname.slice(locale.length + 1) || '/' : '';
     const members = families.get(family);
