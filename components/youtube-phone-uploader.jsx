@@ -537,9 +537,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly}
             onChange={addFiles}/>
         </label>
-        <div className={styles.files}>
+        {entries.length > 0 && <div className={styles.files}>
           <h3>{t.selected} ({entries.filter(item => item.state !== 'done').length})</h3>
-          {!entries.length && <p className={styles.muted}>{t.empty}</p>}
           {entries.map(item => (
             <div className={styles.file} key={item.id}>
               <div className={styles.filehead}>
@@ -571,16 +570,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
               </div>}
             </div>
           ))}
-        </div>
-        <label className={styles.field}><span>{t.description}</span>
-          <textarea rows={2} value={description} maxLength={5000} disabled={busy}
-            onChange={event => setDescription(event.target.value)}/>
-        </label>
-        <div className={styles.visibility}><strong>{t.unlisted}</strong></div>
-        <label className={styles.check}><input type="checkbox" checked={synthetic}
-          disabled={busy} onChange={event => setSynthetic(event.target.checked)}/>{t.ai}</label>
-        <label className={styles.check}><input type="checkbox" checked={madeForKids}
-          disabled={busy} onChange={event => setMadeForKids(event.target.checked)}/>{t.kids}</label>
+        </div>}
         {error && <p className={styles.error} role="alert">{error}</p>}
         {message && <p className={styles.success} role="status">{message}</p>}
         <div className={styles.actions}>
@@ -591,13 +581,29 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             onClick={() => abortRef.current?.abort()}>{t.pause}</button>}
           <Link href="/admin/videos" className={styles.siteLink}>{t.back} ↗</Link>
         </div>
+        <details className={styles.advanced}>
+          <summary>{t.settingsTitle} <small>{t.unlisted}</small></summary>
+          <div className={styles.advancedBody}>
+        <label className={styles.field}><span>{t.description}</span>
+          <textarea rows={2} value={description} maxLength={5000} disabled={busy}
+            onChange={event => setDescription(event.target.value)}/>
+        </label>
+        <div className={styles.visibility}><strong>{t.unlisted}</strong></div>
+        <label className={styles.check}><input type="checkbox" checked={synthetic}
+          disabled={busy} onChange={event => setSynthetic(event.target.checked)}/>{t.ai}</label>
+        <label className={styles.check}><input type="checkbox" checked={madeForKids}
+          disabled={busy} onChange={event => setMadeForKids(event.target.checked)}/>{t.kids}</label>
+          </div>
+        </details>
         <p className={styles.muted}>{t.stay}</p>
       </div>
-      <section className={styles.history} aria-label={t.history}>
-        <div className={styles.historyHeading}>
-          <h3>{t.history} ({history.length})</h3>
-          <button type="button" className={styles.refresh} onClick={refreshHistory}>{t.refresh}</button>
-        </div>
+      <details className={styles.history} aria-label={t.history}>
+        <summary className={styles.historySummary}>{t.history} <span>{history.length}</span></summary>
+        <div className={styles.historyBody}>
+          <div className={styles.historyHeading}>
+            <p>{t.historyHelp}</p>
+            <button type="button" className={styles.refresh} onClick={refreshHistory}>{t.refresh}</button>
+          </div>
         <div className={styles.historyFilters} role="group" aria-label={t.target}>
           {(['all','ru','en']).map(option =>
             <button type="button" key={option} aria-pressed={historyFilter === option}
@@ -618,7 +624,12 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             </div>
           </div>
         ))}
-      </section>
+        </div>
+      </details>
+      <details className={styles.safetyDisclosure}>
+        <summary>{t.safetyTitle}</summary>
+        <p className={styles.warning}>{t.noClient}</p>
+      </details>
     </section>
   )
 }
