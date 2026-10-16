@@ -15,7 +15,7 @@ export function AdminDocumentActions({ record, locale = record.languagePreferenc
     <Link href={`/admin/documents/${record.id}/view?locale=${locale}&print=1`} prefetch={false}>Print</Link>
     {record.status === 'active' ? (record.kind==='payment'
       ? <div><span>{locale==='ru'?'Ссылка на счёт':'Invoice link'}</span><PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></div>
-      : <div><SessionLinkIssuer recordId={record.id} locale={locale} />
+      : <div><SessionLinkIssuer recordId={record.id} clientId={record.clientId} locale={locale} />
         <details><summary>{locale==='ru'?'Только старый документ (без вложений)':'Legacy document only (no attachments)'}</summary>
           <PrescriptionLinkIssuer recordId={record.id} hasAccess={Boolean(record.access)} /></details></div>)
       : <p>Activate the document to issue a private client link.</p>}
