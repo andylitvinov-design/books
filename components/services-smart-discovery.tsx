@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
@@ -165,6 +165,9 @@ export function ServicesSmartDiscovery({
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
   const [aiStatus,setAiStatus] = useState<"local"|"ai"|"unavailable"|"loading">("local");
   const requestNumber = useRef(0);
+  const searchInputRef = useRef<HTMLTextAreaElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const [scrollRequest, setScrollRequest] = useState(0);
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
   const suggestions = useMemo(() => {
@@ -184,12 +187,29 @@ export function ServicesSmartDiscovery({
     [submitted,editorialOffers,activeCategory,suggestions.length]
   );
 
+  // Scroll only after a new selection has rendered. AI updates should not
+  // unexpectedly pull the visitor back to the results while they read.
+  useEffect(() => {
+    if (!hasSelection || scrollRequest === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = resultsRef.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hasSelection, scrollRequest]);
 
   function chooseCategory(key: string) {
     requestNumber.current += 1;
-    setActiveCategory(key === activeCategory ? "" : key);
+    const selecting = key !== activeCategory;
+    setActiveCategory(selecting ? key : "");
     setSubmitted("");
-    setHasSelection(key !== activeCategory);
+    setHasSelection(selecting);
+    if (selecting) setScrollRequest((count) => count + 1);
     setAiOrder(null);
     setAiStatus("local");
   }
@@ -198,6 +218,8 @@ export function ServicesSmartDiscovery({
     const nonce = ++requestNumber.current;
     const text = queryText.trim().slice(0,350);
     if (!text) return;
+    searchInputRef.current?.blur(); // Dismiss the mobile keyboard before navigating.
+    setScrollRequest((count) => count + 1);
     setActiveCategory("");
     setSubmitted(text);
     setHasSelection(true);
@@ -237,7 +259,7 @@ export function ServicesSmartDiscovery({
         </div>
         <form className={styles.form} role="search" onSubmit={event=>{event.preventDefault();void find(query)}}>
           <label htmlFor="hh-service-free-text" className={styles.srOnly}>{t.title}</label>
-          <textarea id="hh-service-free-text" value={query} maxLength={350} rows={2}
+          <textarea ref={searchInputRef} id="hh-service-free-text" value={query} maxLength={350} rows={2}
             placeholder={t.placeholder} onChange={event=>setQuery(event.target.value)}
             autoComplete="off" className={styles.textarea}/>
           <button type="submit" className={styles.submit} disabled={!query.trim() || aiStatus==="loading"}>
@@ -278,11 +300,11 @@ export function ServicesSmartDiscovery({
         </div>
       </div>
 
-      {hasSelection&&<div className={styles.results} id="service-discovery-results" aria-live="polite">
+      {hasSelection&&<div ref={resultsRef} tabIndex={-1} className={styles.results} id="service-discovery-results" aria-live="polite" aria-labelledby="hh-service-discovery-results-title">
         <div className={styles.resultHeader}>
           <div>
             <p className={styles.eyebrow}><Sparkles size={13} aria-hidden="true"/> {aiStatus==="ai"?t.aiMatch:t.localMatch}</p>
-            <h2>{t.resultTitle}</h2>
+            <h2 id="hh-service-discovery-results-title">{t.resultTitle}</h2>
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
