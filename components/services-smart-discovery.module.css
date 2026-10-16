@@ -342,3 +342,8 @@
 @media(prefers-reduced-motion:reduce){
   .suggestionDetailsToggle svg,.editorialDetailsButton svg{transition:none}
 }
+
+.quickFacets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.quickFacets label{font-size:12px;font-weight:650;display:grid;gap:4px;min-width:0}
+.quickFacets select{width:100%;min-width:0;border-radius:10px;border:1px solid #cfbabb;background:#fff;padding:9px;color:#301c26;font-size:14px}
+@media(max-width:620px){.quickFacets{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.quickFacets select{font-size:13px;padding:8px}}

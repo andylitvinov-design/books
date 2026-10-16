@@ -7,6 +7,7 @@ import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import { createArticleRepository } from '@/lib/practitioners/article-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
   createGuestCredential,
@@ -345,7 +346,8 @@ async function handle(request, { params }) {
 
     const actor = await auth.verified(),
       repo = createAppRepository(config),
-      practiceRepo = createPractitionerRepository(config)
+      practiceRepo = createPractitionerRepository(config),
+      articleRepo = createArticleRepository(config)
     const expectedAccount = request.headers.get('x-hh-account-id')
     if (expectedAccount && expectedAccount !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     await consumeRate(
@@ -491,6 +493,7 @@ async function handle(request, { params }) {
       return response
     }
     if (joined === 'practice' && method === 'GET') return json(await practiceRepo.getMyPractice(actor))
+    if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
       const store = getPrescriptionStore()
@@ -600,6 +603,14 @@ async function handle(request, { params }) {
       if (path.length === 3) {
         if (body.action === 'delete') return json(await practiceRepo.deleteCredential(actor, path[2]))
         return json(await practiceRepo.saveCredential(actor, path[2], body))
+      }
+    }
+    if (path[0] === 'practice' && path[1] === 'articles') {
+      if(path.length === 2) return json(await articleRepo.save(actor,null,body),201)
+      if(path.length === 3){
+        if(body.action === 'submit') return json(await articleRepo.submit(actor,path[2],body))
+        if(body.action === 'archive') return json(await articleRepo.archive(actor,path[2],body))
+        return json(await articleRepo.save(actor,path[2],body))
       }
     }
     if (path[0] === 'practice' && path[1] === 'services') {

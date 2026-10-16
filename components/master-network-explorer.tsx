@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
+import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -142,10 +143,14 @@ type FilterState = {
   format: string;
   language: string;
   pricing: PriceChoice;
+  goal: string;
+  method: string;
+  maxPrice: string;
+  currency: string;
   sort: string;
 };
 
-const INITIAL: FilterState = { query: "", area: "", format: "", language: "", pricing: "all", sort: "default" };
+const INITIAL: FilterState = { query: "", area: "", format: "", language: "", pricing: "all", goal: "", method: "", maxPrice: "", currency: "EUR", sort: "default" };
 
 const localized = (locale: string): Locale => (locale === "ru" || locale === "es" ? locale : "en");
 const isFree = (service: PublicService) =>
@@ -176,10 +181,14 @@ function serviceMatches(service: PublicService, f: FilterState) {
   if (f.pricing === "free" && !isFree(service)) return false;
   if (f.pricing === "paid" && !hasPrice(service)) return false;
   if (f.pricing === "contact" && service.pricingMode !== "contact") return false;
+  if (f.goal && !serviceMatchesGoal(service,f.goal)) return false;
+  if (f.method && !(service.methods||[]).some(x=>clean(x)===f.method)) return false;
+  if (f.maxPrice && (!hasPrice(service) || service.currency!==f.currency || Number(service.confirmedPrice)>Number(f.maxPrice))) return false;
   if (!f.query) return true;
   return clean([
     service.copy.title, service.copy.shortDescription, service.copy.description,
     service.practitionerName, service.professionalTitle, service.locationLabel,
+    ...(service.goals||[]), ...(service.methods||[]), ...(service.benefits||[]),
     areaName(service.areaKey, "en"), areaName(service.areaKey, "ru"), areaName(service.areaKey, "es"),
   ].join(" ")).includes(clean(f.query));
 }
@@ -202,7 +211,7 @@ function masterMatches(master: PublicPractitioner, f: FilterState) {
 }
 
 function Filters({
-  locale, mode, state, setState, count, languages,
+  locale, mode, state, setState, count, languages, methods,
 }: {
   locale: Locale;
   mode: "masters" | "services";
@@ -210,10 +219,11 @@ function Filters({
   setState: (next: FilterState) => void;
   count: number;
   languages: string[];
+  methods: string[];
 }) {
   const t = COPY[locale];
   const set = (field: keyof FilterState, value: string) => setState({ ...state, [field]: value });
-  const active = state.query || state.area || state.format || state.language || state.pricing !== "all" || state.sort !== "default";
+  const active = state.query || state.area || state.format || state.language || state.pricing !== "all" || state.goal || state.method || state.maxPrice || state.sort !== "default";
   return (
     <section className={styles.filters} aria-label={t.filterTitle}>
       <div className={styles.heading}>
@@ -271,6 +281,27 @@ function Filters({
           </select>
         </label>
       </div>
+      {mode==="services"&&<details className={styles.advanced}><summary>{locale==="ru"?"Цель, метод и бюджет":locale==="es"?"Objetivo, método y presupuesto":"Goal, method & budget"}</summary>
+        <div className={styles.selectGrid}>
+          <label>{locale==="ru"?"Желаемая цель":"Desired goal"}
+            <select value={state.goal} onChange={event=>set("goal",event.target.value)}>
+              <option value="">{locale==="ru"?"Любая цель":"Any goal"}</option>
+              {([["confidence","Уверенность","Confidence"],["relationships","Отношения","Relationships"],["relaxation","Расслабление","Relaxation"],["learning","Обучение","Learning"],["clarity","Ясность","Clarity"],["purpose","Предназначение","Purpose"],["energy","Энергия","Energy"],["self_awareness","Самопознание","Self-awareness"]] as const).map(([id,ru,en])=><option value={id} key={id}>{locale==="ru"?ru:en}</option>)}
+            </select>
+          </label>
+          <label>{locale==="ru"?"Метод":"Method"}
+            <select value={state.method} onChange={event=>set("method",event.target.value)}>
+              <option value="">{locale==="ru"?"Любой":"Any"}</option>{methods.map(method=><option value={method} key={method}>{method}</option>)}
+            </select>
+          </label>
+          <label>{locale==="ru"?"Бюджет до":"Budget up to"}
+            <select value={state.maxPrice} onChange={event=>set("maxPrice",event.target.value)}>
+              <option value="">{locale==="ru"?"Без лимита":"No limit"}</option>{[30,50,75,100,150,200,300].map(value=><option value={value} key={value}>{value}</option>)}
+            </select>
+          </label>
+          <label>{locale==="ru"?"Валюта":"Currency"}<select value={state.currency} onChange={event=>set("currency",event.target.value)}>{["EUR","CAD","USD"].map(value=><option key={value} value={value}>{value}</option>)}</select></label>
+        </div><small>{locale==="ru"?"Цены сравниваются только в одной валюте.":"Prices are compared in the selected currency only."}</small>
+      </details>}
       {active ? <button type="button" className={styles.reset} onClick={() => setState(INITIAL)}>{t.clear} ×</button> : null}
     </section>
   );
@@ -307,6 +338,7 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
   const languages = useMemo(() => [...new Set(services.flatMap((service) => service.languages || []).map(clean).filter(Boolean))].sort(), [services]);
+  const methods = useMemo(()=>[...new Set(services.flatMap(s=>s.methods||[]).map(clean).filter(Boolean))].sort(),[services]);
   const visible = useMemo(() => {
     const list = services.filter((service) => serviceMatches(service, state));
     if (state.sort === "az") return list.sort((a, b) => a.copy.title.localeCompare(b.copy.title, pageLocale));
@@ -316,7 +348,7 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
   }, [services, state, pageLocale]);
   return (
     <div className={styles.explorer}>
-      <Filters locale={locale} mode="services" state={state} setState={setState} count={visible.length} languages={languages} />
+      <Filters locale={locale} mode="services" state={state} setState={setState} count={visible.length} languages={languages} methods={methods} />
       {visible.length ? <div className={styles.cardGrid}>{visible.map((service) => <ServiceCard key={service.id} service={service} locale={locale} />)}</div>
         : <p className={styles.empty} role="status">{COPY[locale].noResults}</p>}
     </div>
@@ -338,7 +370,7 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
   const t = COPY[locale];
   return (
     <div className={styles.explorer}>
-      <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} />
+      <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} methods={[]} />
       {visible.length ? <div className={styles.cardGrid}>
         {visible.map((master) => {
           const profile = master.profile || {};

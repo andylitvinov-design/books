@@ -59,3 +59,7 @@
   .serviceCard h3,.masterCard h3 { font-size:23px; }
 }
 @media (prefers-reduced-motion:reduce) { .categories button { transition:none; } }
+
+.advanced{padding:12px;margin-top:12px;border:1px solid rgba(83,58,70,.2);border-radius:12px}
+.advanced summary{font-weight:700;cursor:pointer;margin-bottom:12px}
+.advanced select{max-width:100%;min-width:0}
