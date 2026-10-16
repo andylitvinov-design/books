@@ -20,7 +20,7 @@ const approaches = [
 
 export default function SpanishServicesPage() {
  return <main className="services-shell services-shell--studio" lang="es">
-  <PublicSiteHeader locale="es" />
+  <PublicSiteHeader locale="es" showAssessmentStrip={false} />
   <ServicesConversionHero locale="es" />
   <ServicesTestsIntro locale="es" />
   <section className={offerStyles.section} id="solutions" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>
