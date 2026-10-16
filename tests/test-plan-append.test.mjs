@@ -32,16 +32,14 @@ test('append mode is explicit, validated and limited to the signed-in owner', ()
   assert.equal(validateTestPlanInput({ items: [item], operationId: randomUUID() }, { audience: 'account' }).appendActive, false)
 })
 
-test('public signed-in Start writes to account before navigating; guest OAuth keeps a scoped intent', () => {
+test('public guest Start is separate from account-owned appended test plans', () => {
   const publicExplorer = read('components/app/public-test-explorer.jsx')
-  assert.match(publicExplorer, /const saved = await request\('test-plans'/)
-  assert.match(publicExplorer, /appendActive: true/)
-  assert.match(publicExplorer, /router\.push\('\/' \+ effectiveLocale \+ '\/app\/tests\?plan=' \+ encodeURIComponent\(saved\.id\)\)/)
-  assert.ok(publicExplorer.indexOf("const saved = await request('test-plans'") <
-    publicExplorer.indexOf('window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY'),
-    'signed-in users must not depend on sessionStorage for durable saving')
-  assert.match(publicExplorer, /makeTestSelectionIntent\(entries\.map/)
-  assert.match(publicExplorer, /continueTo: 'tests'/)
+  assert.match(publicExplorer, /guestStartable\(entries\)/)
+  assert.match(publicExplorer, /onGuestStart\(entries\)/)
+  assert.match(publicExplorer, /client\?startTests=/)
+  assert.doesNotMatch(publicExplorer, /auth\/start|PENDING_TEST_SELECTION_KEY/)
+  const account = read('components/app/account-test-battery.jsx')
+  assert.match(account, /appendActive: !replaceActive/)
 })
 
 test('Google return and in-Cabinet filters append automatically, and do not ask to replace', () => {
