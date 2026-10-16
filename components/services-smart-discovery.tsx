@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
   HeartHandshake, Leaf, Search, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
-import { DISCOVERY_AREAS, classifyDiscoveryIntent, rankDiscoveryServices, rankEditorialDiscovery } from "@/lib/practitioners/discovery-intent.js";
+import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery } from "@/lib/practitioners/discovery-intent.js";
 import styles from "./services-smart-discovery.module.css";
 
 type Locale = "en" | "ru" | "es";
@@ -164,6 +164,7 @@ export function ServicesSmartDiscovery({
   const [useExternalAi,setUseExternalAi] = useState(false);
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
   const [aiStatus,setAiStatus] = useState<"local"|"ai"|"unavailable"|"loading">("local");
+  const requestNumber = useRef(0);
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
   const suggestions = useMemo(() => {
@@ -175,9 +176,10 @@ export function ServicesSmartDiscovery({
     () => rankEditorialDiscovery(submitted,editorialOffers,{category:activeCategory,limit:suggestions.length?2:4}),
     [submitted,editorialOffers,activeCategory,suggestions.length]
   );
-  const intent = useMemo(() => classifyDiscoveryIntent(submitted),[submitted]);
+
 
   function chooseCategory(key: string) {
+    requestNumber.current += 1;
     setActiveCategory(key === activeCategory ? "" : key);
     setSubmitted("");
     setHasSelection(key !== activeCategory);
@@ -186,6 +188,7 @@ export function ServicesSmartDiscovery({
   }
 
   async function find(queryText: string) {
+    const nonce = ++requestNumber.current;
     const text = queryText.trim().slice(0,350);
     if (!text) return;
     setActiveCategory("");
@@ -199,15 +202,16 @@ export function ServicesSmartDiscovery({
       const response=await fetch("/api/marketplace/intent-match",{
         method:"POST",credentials:"omit",cache:"no-store",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text,locale}),
+        body:JSON.stringify({text,locale,consent:true}),
       });
       if (!response.ok) throw new Error("AI_UNAVAILABLE");
       const result: AIResult = await response.json();
+      if (nonce !== requestNumber.current) return;
       if (result.mode !== "ai" || !Array.isArray(result.serviceIds)) throw new Error("AI_UNAVAILABLE");
       setAiOrder(result.serviceIds.slice(0,4));
       setAiStatus("ai");
     } catch {
-      setAiStatus("unavailable");
+      if (nonce === requestNumber.current) setAiStatus("unavailable");
     }
   }
 
@@ -215,7 +219,7 @@ export function ServicesSmartDiscovery({
 
   const highlighted = submitted || activeCategory;
   const selectedArea = DISCOVERY_AREAS.find((area)=>area.key===activeCategory);
-  const masterMap = new Map(suggestions.map((item)=>[item.service.practitionerSlug,item.service.practitionerName]));
+
   return (
     <section className={styles.discovery} id="find-your-service" aria-labelledby="hh-service-discovery-title">
       <div className={styles.hero}>
@@ -275,7 +279,7 @@ export function ServicesSmartDiscovery({
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
-          <button type="button" className={styles.clear} onClick={()=>{setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local")}}>{t.clear} ×</button>
+          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local")}}>{t.clear} ×</button>
         </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
         {suggestions.length>0?<div className={styles.suggestionGrid}>
