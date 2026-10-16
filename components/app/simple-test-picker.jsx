@@ -8,7 +8,7 @@ import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
-import { TEST_KINDS } from '@/lib/assessments/test-kinds'
+import { TEST_KINDS, testKindCardLabel } from '@/lib/assessments/test-kinds'
 import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
 
 const TEXT = {
@@ -22,11 +22,12 @@ const TEXT = {
     promoText:'Explore stress, mood and inner resources, with gentle next steps.', promoAction:'Choose my topics',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
-    detail:'Detailed selection (optional)', detailHelp:'Choose the level of detail or add time and format filters.',
-    depth:'How deep do you want to go?', depthHelp:'This helps prioritize recommendations. It does not limit your options.',
-    quick:'Quick check-in', quickNote:'Short introductory tests',
-    balanced:'Core set', balancedNote:'A balanced overview',
-    deep:'In-depth battery', deepNote:'More detailed questionnaires',
+    detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
+    activeFilters:'Active filters', kindsTitle:'Test types', kindsHelp:'Select one or several. If none are selected, all types are included.',
+    depth:'Which tests would you like to see first?', depthHelp:'Adjusts the order and estimated match of recommendations, without hiding tests. Set a time limit below.',
+    quick:'Shorter tests', quickNote:'Prioritize shorter questionnaires',
+    balanced:'Balanced', balancedNote:'Prioritize medium-length questionnaires',
+    deep:'Longer tests', deepNote:'Prioritize longer questionnaires',
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
@@ -50,11 +51,12 @@ const TEXT = {
     promoText:'Узнайте больше о стрессе, настроении и ресурсах, а затем получите рекомендации.', promoAction:'Выбрать темы',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
-    detail:'Подробный подбор (необязательно)', detailHelp:'Глубина, время прохождения и формат — при желании.',
-    depth:'Насколько глубоко хотите исследовать?', depthHelp:'Меняет порядок рекомендаций, не закрывая другие тесты.',
-    quick:'Быстрый обзор', quickNote:'Короткие вводные тесты',
-    balanced:'Основной набор', balancedNote:'Сбалансированная подборка',
-    deep:'Глубокий анализ', deepNote:'Более подробные опросники',
+    detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
+    activeFilters:'Активные фильтры', kindsTitle:'Типы тестов', kindsHelp:'Можно выбрать несколько. Без выбора доступны все типы.',
+    depth:'Какие тесты показывать первыми?', depthHelp:'Влияет на порядок и условный % соответствия. Тесты остаются доступны; ограничение времени — ниже.',
+    quick:'Короткие', quickNote:'Сначала короткие анкеты',
+    balanced:'Баланс', balancedNote:'Сначала тесты средней длины',
+    deep:'Длинные', deepNote:'Сначала более длинные анкеты',
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
@@ -78,11 +80,12 @@ const TEXT = {
     promoText:'Explora tu estrés, tu ánimo y tus recursos para dar el siguiente paso.', promoAction:'Elegir temas',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
-    detail:'Selección detallada (opcional)', detailHelp:'Profundidad, tiempo y formato.',
-    depth:'¿Cuánto quieres profundizar?', depthHelp:'Ajusta la prioridad, sin excluir los demás tests.',
-    quick:'Revisión rápida', quickNote:'Pruebas introductorias',
-    balanced:'Conjunto básico', balancedNote:'Selección equilibrada',
-    deep:'Análisis profundo', deepNote:'Cuestionarios más completos',
+    detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
+    activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas', kindsHelp:'Elige uno o varios. Sin seleccionar, se incluyen todos.',
+    depth:'¿Qué pruebas quieres ver primero?', depthHelp:'Ajusta el orden y la coincidencia estimada sin ocultar pruebas. Puedes limitar el tiempo abajo.',
+    quick:'Cortas', quickNote:'Priorizar cuestionarios cortos',
+    balanced:'Equilibrado', balancedNote:'Priorizar duración media',
+    deep:'Largas', deepNote:'Priorizar cuestionarios más largos',
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
@@ -122,22 +125,17 @@ function matchesBrowseTab(entry, key) {
   return tags.some((tag) => String(tag).toLowerCase() === key || (key === 'relationships' && tag === 'intimacy'))
 }
 
-// A pictogram and a short, non-clinical type label, including on phones.
-const COMPACT_KIND_LABELS = {
-  professional: { en: 'Sourced', ru: 'Методика', es: 'Con fuente' },
-  monitoring: { en: 'Check-in', ru: 'Состояние', es: 'Estado' },
-  hobby: { en: 'Explore', ru: 'Самопознание', es: 'Explorar' },
-}
-
+// Always display the explicit assessment type, including on narrow phones.
 function KindBadge({ entry, locale }) {
-  const kind = TEST_KINDS.find((type) => type.key === entry.testKind)
+  const kind = TEST_KINDS.find((type) => type.key === entry?.testKind)
   if (!kind) return null
   const Icon = TEST_KIND_ICONS[kind.key]
-  const label = COMPACT_KIND_LABELS[kind.key]?.[locale] || COMPACT_KIND_LABELS[kind.key]?.en || kind.label.en
+  const label = testKindCardLabel(entry, locale)
+  const prefix = locale === 'ru' ? 'Тип' : locale === 'es' ? 'Tipo' : 'Type'
   return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
-    title={kind.description[locale] || kind.description.en}
-    aria-label={`${locale === 'ru' ? 'Тип теста' : locale === 'es' ? 'Tipo de prueba' : 'Test type'}: ${kind.label[locale] || kind.label.en}`}>
-    <Icon size={14} aria-hidden="true" /><span>{label}</span>
+    title={kind.description[locale] || kind.description.en} aria-label={`${prefix}: ${label}`}>
+    <Icon size={14} aria-hidden="true" />
+    <span className={styles.kindBadgeText}>{prefix}: {label}</span>
   </span>
 }
 
@@ -206,7 +204,8 @@ export function SimpleTestPicker({
   const nextBatch = Math.min(5, remainingCount)
   const format = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
   const minutes = activeBattery.reduce((total, item) => total + (item.durationMinutes || 0), 0)
-  const hasExtraFilters = maxMinutes > 0 || testKinds.length > 0 || depth !== 'balanced'
+  const appliedFilterCount = Number(maxMinutes > 0) + Number(depth !== 'balanced') + testKinds.length
+  const hasExtraFilters = appliedFilterCount > 0
   const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
   const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
@@ -317,33 +316,36 @@ export function SimpleTestPicker({
       <summary>
         <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
         <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
-        {hasExtraFilters && <span className={styles.appliedMark} aria-label={locale === 'ru' ? 'Есть активные фильтры' : 'Filters active'}>•</span>}
+        {hasExtraFilters && <span className={styles.appliedMark} title={c.activeFilters} aria-label={c.activeFilters}>{appliedFilterCount}</span>}
         <ChevronDown aria-hidden="true" size={20} className={styles.chevron}/>
       </summary>
       <div className={styles.advancedBody}>
-        <h3>{c.depth}</h3>
-        <p>{c.depthHelp}</p>
-        <div className={styles.depthOptions} role="group" aria-label={c.depth}>
-          {[
-            {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
-            {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
-            {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
-          ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
-            aria-pressed={depth === key} onClick={() => onDepth(key)} key={key}>
-            <Icon size={21} aria-hidden="true"/><span><strong>{name}</strong><small>{desc}</small></span>
-          </button>)}
-        </div>
-        <div className={styles.extraRow}>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
+          <h3 id="hh-test-depth-title">{c.depth}</h3>
+          <p>{c.depthHelp}</p>
+          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
+            {[
+              {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
+              {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
+              {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
+            ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
+              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
+              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
+              {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
+            </button>)}
+          </div>
+        </section>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-time-title">
+          <h3 id="hh-test-time-title">{c.time}</h3>
           <div className={styles.timeButtons} role="group" aria-label={c.time}>
-            <strong>{c.time}</strong>
             {[[0,c.anyTime],[5,c.shortTime],[10,c.mediumTime]].map(([minutes,label]) =>
               <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
             )}
           </div>
-        </div>
+        </section>
         <fieldset className={styles.kindFilters} data-test-kind-filter>
-          <legend>{locale === 'ru' ? 'Выберите типы тестов' : locale === 'es' ? 'Elige tipos de pruebas' : 'Choose types of tests'}</legend>
-          <p>{locale === 'ru' ? 'Можно отметить несколько типов одновременно. Остальные фильтры тоже сохранятся.' : locale === 'es' ? 'Puedes seleccionar varios tipos a la vez.' : 'Select one or more types. Other filters still apply.'}</p>
+          <legend>{c.kindsTitle}</legend>
+          <p>{c.kindsHelp}</p>
           <div className={styles.kindChoices}>
             {TEST_KINDS.map((kind) => {
               const Icon = TEST_KIND_ICONS[kind.key]
@@ -355,10 +357,9 @@ export function SimpleTestPicker({
             })}
           </div>
         </fieldset>
-        <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>
+        {hasExtraFilters && <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>}
       </div>
     </details>
-
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
       <div className={styles.sectionHeader}>
@@ -401,8 +402,10 @@ export function SimpleTestPicker({
                <label htmlFor={inputId} className={styles.testInfo}>
                  <strong>{entry.title}</strong>
                  <small>{entry.description || entry.category}</small>
-                 <span className={styles.testChips}>
+                 <span className={styles.testTypeLine} data-test-type-line>
                    <KindBadge entry={entry} locale={locale} />
+                 </span>
+                 <span className={styles.testChips}>
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
@@ -458,6 +461,7 @@ export function SimpleTestPicker({
       {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
         <div className={styles.viaFamilyIntro}>
           <strong>{viaCopy.title}</strong>
+          {fullVia && <div className={styles.viaTypeLine} data-test-type-line><KindBadge entry={fullVia} locale={locale} /></div>}
           <p>{viaCopy.description}</p>
         </div>
         {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>

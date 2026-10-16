@@ -42,12 +42,13 @@ test("free initiation and FAQ link only into the canonical public learning pages
   assert.match(modules, /\/free-initiation/);
   assert.match(book, /\/free-initiation/);
   assert.match(free, /id="learning-faq"/);
-  assert.match(free, /reading\.map/);
-  assert.match(free, /<Link href=\{url\} key=\{url\}>/);
+  assert.match(free, /id="preparation-readings"/);
+  assert.match(free, /learningFaqs\[locale\]\.map/);
   assert.match(free, /root \+ "\/basic-course\/description"/);
-  assert.match(free, /root \+ "\/basic-course#ry-l01-s01"/);
+  assert.match(free, /href=\{root \+ "\/basic-course"\}/);
   assert.doesNotMatch(free, /superskills\.vip/);
-  assert.match(free, /AcademyVideoPlayer youtubeId="DYo-fG-SyKw"/);
+  assert.match(free, /const originalLevelOneVideoId = "DYo-fG-SyKw"/);
+  assert.match(free, /AcademyVideoPlayer youtubeId=\{originalLevelOneVideoId\}/);
 });
 
 test("source records remain for provenance without duplicate five or six level lists in the customer journey", () => {
@@ -57,4 +58,17 @@ test("source records remain for provenance without duplicate five or six level l
   assert.doesNotMatch(modules, /<YggdrasilSourceStudyGuide/);
   assert.doesNotMatch(program, /<YggdrasilSourceStudyGuide/);
   assert.doesNotMatch(program, /yggdrasil-source-footer-panel/);
+});
+
+test('current reading/contact routes reject missing or foreign replacements',()=>{
+ const contract=source=>{
+  assert.match(source,/href=\{root \+ "\/basic-course"\}/);
+  assert.match(source,/href=\{root \+ "\/basic-course\/description"\}/);
+  assert.match(source,/id="preparation-readings"/);
+  assert.match(source,/learningFaqs\[locale\]\.map/);
+  assert.match(source,/<YggdrasilInitiationForm locale=\{locale\} \/>/);
+ };
+ contract(free);
+ for(const token of ['href={root + "/basic-course"}','href={root + "/basic-course/description"}','id="preparation-readings"','learningFaqs[locale].map','<YggdrasilInitiationForm locale={locale} />'])assert.throws(()=>contract(free.replace(token,'REMOVED')));
+ assert.throws(()=>contract(free.replace('href={root + "/basic-course"}','href="https://example.invalid"')));
 });

@@ -7,7 +7,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessme
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, auditTestKey } from '../lib/assessments/test-kinds.js'
+import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, testKindCardLabel, auditTestKey } from '../lib/assessments/test-kinds.js'
 
 const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'min' ? (q.min ?? def.answerScale?.min) : (q.max ?? def.answerScale?.max),
@@ -157,4 +157,28 @@ test('public client and explorer guard against mobile horizontal overflow', asyn
   assert.match(simpleCss, /\.shell\s*\{[^}]*overflow-x:\s*clip/s)
   assert.match(fullCss, /\.explorer\s*\{[^}]*overflow-x:\s*clip/s)
   assert.match(fullCss, /\.explorer \.scaleRail, \.explorer \.quickFilterChips, \.explorer \.quickFilterExtras/)
+})
+
+
+test('type badges distinguish documented sources, HH-authored check-ins and exploratory tests without validation claims', () => {
+  const professional = { key: 'phq-4', testKind: 'professional' }
+  const authored = { key: 'hh-current-state', testKind: 'monitoring' }
+  const monitoring = { key: 'other-state-check', testKind: 'monitoring' }
+  const hobby = { key: 'hh-bach-flower-profile', testKind: 'hobby' }
+  for (const [language, labels] of Object.entries({
+    en: ['Source-backed method', 'Holistic House check-in', 'State questionnaire', 'Self-discovery'],
+    ru: ['Методика с источником', 'Авторский опросник', 'Опросник состояния', 'Самопознание'],
+    es: ['Método con fuente', 'Cuestionario de Holistic House', 'Cuestionario de estado', 'Autoconocimiento'],
+  })) {
+    assert.deepEqual([professional, authored, monitoring, hobby].map((entry) => testKindCardLabel(entry, language)), labels)
+  }
+  assert.equal(testKindCardLabel({testKind: 'unknown', key: 'unknown'}, 'en'), null)
+  assert.equal(testKindCardLabel(null, 'ru'), null)
+  assert.equal(testKindCardLabel(professional, 'xx'), 'Source-backed method')
+  const available = buildExplorerEntries({ locale: 'en' }).filter((item) => item.selectable)
+  assert.ok(available.length > 30)
+  for (const entry of available) {
+    assert.ok(testKindCardLabel(entry, 'en'), entry.key)
+    assert.ok(testKindCardLabel(entry, 'ru'), entry.key)
+  }
 })

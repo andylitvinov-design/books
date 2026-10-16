@@ -7,6 +7,9 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 test("Services EN/RU: original green photo hero, blue courses and tests, then image-left offers", () => {
   const page = read("app/[locale]/services/page.tsx");
   const banner = read("components/services-tests-intro.tsx");
+  const greenHero = read("components/services-conversion-hero.tsx");
+  const heroCss = read("components/services-conversion-hero.module.css");
+  const sharedHeader = read("components/public-site-header.tsx");
   const bannerCss = read("components/services-tests-intro.module.css");
   const services = read("components/services-solutions.tsx");
   const style = read("components/services-solutions.module.css");
@@ -15,6 +18,19 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   const cardPos = page.indexOf("<ServicesSolutions locale={locale as Locale} />");
   const aboutPos = page.indexOf("<ServicesAboutEntry locale={locale as Locale} />");
   assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && aboutPos > cardPos);
+  assert.match(page, /<PublicSiteHeader locale=\{locale\} showAssessmentStrip=\{false\} \/>/);
+  assert.match(sharedHeader, /showAssessmentStrip = true/);
+  assert.match(sharedHeader, /showAssessmentStrip && <MindBodyMonitorStrip/);
+  assert.match(greenHero, /<StaticPortrait/);
+  assert.match(greenHero, /andy-about\.png/);
+  assert.match(greenHero, /className=\{styles\.visual\}/);
+  assert.match(greenHero, /className=\{styles\.mobileLead\}/);
+  assert.match(heroCss, /\.hero \{[\s\S]*?width: calc\(100% \+ 12px\)/);
+  assert.match(heroCss, /margin: 8px -6px 14px/);
+  assert.match(heroCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(heroCss, /\.actions \.cta \{[\s\S]*?grid-column: 1 \/ -1/);
+  assert.match(heroCss, /\.visual \{[\s\S]*?min-height: 118px/);
+  assert.doesNotMatch(greenHero, /src="\/images\/placeholder/);
   assert.doesNotMatch(page, /ServiceCart|service-cart/);
   assert.doesNotMatch(page, /<FreeInsightsPaths/);
   assert.match(read("components/services-conversion-hero.module.css"), /background:#243b32/);
@@ -41,6 +57,7 @@ test("Services Spanish retains its routes with a compact photographic treatment"
   const page = read("app/es/services/page.tsx");
   const css = read("components/services-es-offers.module.css");
   assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') > 0);
+  assert.match(page, /<PublicSiteHeader locale="es" showAssessmentStrip=\{false\} \/>/);
   assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') < page.indexOf('<ServicesTestsIntro locale="es" />'));
   assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') < page.indexOf('data-es-services-photo-cards'));
   assert.match(page, /id="solutions"/);

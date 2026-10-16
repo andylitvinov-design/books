@@ -47,7 +47,7 @@ test('the public client page uses navy text, burgundy controls, and narrow-scree
 })
 
 test('compact navy/wine test details show type, time and measured scales before optional methodology', () => {
-  assert.match(picker, /const COMPACT_KIND_LABELS/)
+  assert.match(picker, /testKindCardLabel\(entry, locale\)/)
   assert.match(picker, /data-test-kind-badge/)
   assert.match(picker, /data-compact-test-scales/)
   assert.match(picker, /entry\.scaleGuide\.scales\.slice\(0, 3\)/)
@@ -203,3 +203,75 @@ test('recommendation tabs filter only the displayed entries and keep server test
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
   assert.ok(picker.indexOf('id="hh-public-recommended-tests"') < picker.indexOf('data-via-family'), 'optional VIA family follows main tests')
 })
+
+
+test('every recommended test visibly explains its kind without hiding the label on small phones', () => {
+  const main = picker.indexOf('<label htmlFor={inputId} className={styles.testInfo}>')
+  const title = picker.indexOf('<strong>{entry.title}</strong>', main)
+  const description = picker.indexOf('<small>{entry.description || entry.category}</small>', title)
+  const kind = picker.indexOf('className={styles.testTypeLine} data-test-type-line', description)
+  const metadata = picker.indexOf('className={styles.testChips}', kind)
+  assert.ok(main >= 0 && title > main && description > title && kind > description && metadata > kind)
+  assert.equal((picker.match(/<KindBadge entry=\{entry\} locale=\{locale\} \/>/g) || []).length, 1)
+  assert.match(picker, /<KindBadge entry=\{fullVia\} locale=\{locale\} \/>/)
+  assert.match(picker, /className=\{styles\.kindBadgeText\}/)
+  assert.match(picker, /data-test-kind-badge=\{kind\.key\}/)
+  assert.match(picker, /aria-label=\{\x60\$\{prefix\}: \$\{label\}\x60\}/)
+  assert.match(css, /test type is a separate, readable fact/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge \.kindBadgeText/)
+  assert.match(css, /@media\(max-width:370px\)[\s\S]*?\.kindBadgeText\{[\s\S]*?display:inline!important/)
+  assert.match(explorer, /testKindCardLabel\(entry, locale\)/)
+})
+
+test('priority choice is a compact three-way row on desktop and iPhone, never a fake package', () => {
+  const scope = css.slice(css.indexOf('My Tests priority ordering clarity — compact, explicit, mobile-first'))
+  assert.ok(scope.length > 500)
+  assert.match(picker, /data-test-priority-selector/)
+  assert.match(scope, /\.shell \.depthOptions\{\s*display:grid;\s*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(scope, /@media\(max-width:620px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(scope, /@media\(max-width:350px\)\{[\s\S]*?\.shell \.depthOptions\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(picker, /<small>\{desc\}<\/small>/)
+  assert.match(picker, /title=\{desc\} aria-label=\{name \+ '\. ' \+ desc\}/)
+  assert.match(picker, /depth:'Which tests would you like to see first\?'/)
+  assert.match(picker, /depth:'Какие тесты показывать первыми\?'/)
+  assert.match(picker, /depth:'¿Qué pruebas quieres ver primero\?'/)
+  assert.doesNotMatch(picker, /depth:'How deep do you want to go\?'/)
+  assert.doesNotMatch(picker, /deep:'In-depth battery'/)
+})
+
+
+test('optional filters retain all three functional facets and reset only when needed', () => {
+  assert.match(picker, /const appliedFilterCount = Number\(maxMinutes > 0\) \+ Number\(depth !== 'balanced'\) \+ testKinds\.length/)
+  assert.match(picker, /const hasExtraFilters = appliedFilterCount > 0/)
+  assert.match(picker, /aria-pressed=\{depth === key\} onClick=\{\(\) => onDepth\(key\)\}/)
+  assert.match(picker, /aria-pressed=\{maxMinutes===minutes\} onClick=\{\(\) => onMaxMinutes\(minutes\)\}/)
+  assert.match(picker, /data-test-kind-checkbox value=\{kind\.key\} checked=\{testKinds\.includes\(kind\.key\)\}/)
+  assert.match(picker, /onChange=\{\(\) => onToggleTestKind\?\.\(kind\.key\)\}/)
+  assert.match(picker, /\{hasExtraFilters && <button type="button" className=\{styles\.clearFilters\}/)
+  assert.match(picker, /onDepth\('balanced'\); onMaxMinutes\(0\); onClearTestKinds\?\.\(\)/)
+})
+
+test('detailed test selections use navy, preserve burgundy test starts and have EN RU ES labels', () => {
+  const scope = css.slice(css.indexOf('My Tests optional filters: responsive navy-and-wine editorial refresh'))
+  assert.match(scope, /\.shell \.depthOption\[aria-pressed=true\]\{\s*background:#173957;border-color:#173957;color:#fff/)
+  assert.match(scope, /\.shell \.timeButtons button\[aria-pressed=true\]\{\s*background:#173957/)
+  assert.match(scope, /\.shell \.kindChoice\[data-checked=true\]\{\s*background:#173957/)
+  assert.match(scope, /\.shell \.kindFilters\{\s*min-width:0;min-inline-size:0;max-width:100%;padding:17px 0 0;margin:0;\s*background:transparent;border:0/)
+  assert.match(css, /background:linear-gradient\(110deg,#973a5b,#822b48\)!important/)
+  assert.match(picker, /activeFilters:'Active filters', kindsTitle:'Test types'/)
+  assert.match(picker, /activeFilters:'Активные фильтры', kindsTitle:'Типы тестов'/)
+  assert.match(picker, /activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas'/)
+  assert.match(picker, /<KindBadge entry=\{entry\} locale=\{locale\} \/>/)
+})
+
+test('recommendation priority never becomes a strict time filter, and test type badges remain', () => {
+  assert.match(picker, /Adjusts the order and estimated match of recommendations, without hiding tests/)
+  assert.match(picker, /Влияет на порядок и условный % соответствия/)
+  assert.match(picker, /Ajusta el orden y la coincidencia estimada sin ocultar pruebas/)
+  assert.match(picker, /aria-pressed=\{depth === key\} onClick=\{\(\) => onDepth\(key\)\}/)
+  assert.match(picker, /aria-pressed=\{maxMinutes===minutes\} onClick=\{\(\) => onMaxMinutes\(minutes\)\}/)
+  assert.match(picker, /<KindBadge entry=\{entry\} locale=\{locale\} \/>/)
+})
+

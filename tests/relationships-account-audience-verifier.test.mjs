@@ -162,8 +162,8 @@ test('real scenario calls the tested helpers and retains opt-in, filters, scorin
 
 
 test('only the guest claim-interception fixture blocks service workers',async()=>{
- const start=source.indexOf("  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided'")
- const end=source.indexOf("  await api(guest,'guest/session'",start)
+ const start=source.indexOf(" const guest=await browser.newContext(")
+ const end=source.indexOf(" await api(guest,'guest/session'",start)
  assert.ok(start>0&&end>start)
  let options
  const browser={newContext:async value=>{options=value;return 'guest-context'}}

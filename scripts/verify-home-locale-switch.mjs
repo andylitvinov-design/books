@@ -12,6 +12,31 @@ let app;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const navigationTraceKey = 'hh-home-entry-navigation-trace';
 
+function homePath(locale) {
+  assert.ok(locale === 'en' || locale === 'ru', 'Expected an EN/RU homepage locale');
+  return locale === 'en' ? '/' : '/ru';
+}
+
+function shouldHoldHomeRsc(request, delayedLocale) {
+  // With no active switch, a query-free URL must never match a null locale.
+  if (delayedLocale !== 'en' && delayedLocale !== 'ru') return false;
+  const url = new URL(request.url());
+  return url.origin === origin
+    && url.pathname === homePath(delayedLocale)
+    && !url.searchParams.has('lang')
+    && request.headers().rsc === '1';
+}
+
+async function chooseHomeLocale(page, locale) {
+  const menu = page.locator('.site-language-menu');
+  await expect(menu).toHaveCount(1);
+  await menu.locator('.site-language-menu-trigger').click();
+  const link = menu.locator(`a[lang="${locale}"]`);
+  await expect(link).toHaveCount(1);
+  await expect(link).toHaveAttribute('href', homePath(locale));
+  await link.click();
+}
+
 async function installEntryDiagnostics(context, page) {
   const requests = [];
   await context.addInitScript(({ key }) => {
@@ -100,7 +125,8 @@ async function exerciseFreeJourneys(page, engine, width) {
       ['wu', '/services/dao-health-profile', '[data-core-service-detail="dao"] h1'],
       ['stress', '/client#cabinet-tests', '#cabinet-tests [data-prelogin-test-picker]'],
     ]) {
-      await page.goto(`${origin}/?lang=${locale}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(origin + homePath(locale));
       // Let homepage prefetches settle before intentionally replacing its document.
       await page.waitForLoadState('networkidle');
       const bootstrapFinished = id === 'stress'
@@ -123,7 +149,7 @@ async function exerciseFreeJourneys(page, engine, width) {
       // Complete the synthetic bootstrap/prefetches; retain the strict pageerror check.
       await page.waitForLoadState('networkidle');
       await page.goBack();
-      await expect(page).toHaveURL(`${origin}/?lang=${locale}`);
+      await expect(page).toHaveURL(origin + homePath(locale));
       await expect(page.locator('[data-home-contact-capture] [data-home-free-capture]')).toBeVisible();
       await page.waitForLoadState('networkidle');
       results.push({ engine, width, locale, freeJourney: id, destinationRendered: true, backReturned: true, submitted: false });
@@ -141,32 +167,41 @@ async function exercise(engine, browserType, width) {
   page.on('pageerror', error => errors.push(error.message));
   let delayedLocale = null;
   let heldRequests = 0;
+  let delayedRscGate = Promise.resolve();
+  let releaseHeldRsc = () => {};
   // Hold the real RSC response. This makes the old double-switch race deterministic.
   await page.route('**/*', async route => {
     const request = route.request();
-    const url = new URL(request.url());
-    if (url.origin === origin && url.pathname === '/' && request.headers().rsc === '1' && url.searchParams.get('lang') === delayedLocale) {
+    if (shouldHoldHomeRsc(request, delayedLocale)) {
+      const gate = delayedRscGate;
       heldRequests++;
       const response = await route.fetch();
       await pause(2000);
+      await gate;
       await route.fulfill({ response });
     } else await route.continue();
   });
   try {
-    await page.goto(origin + '/?lang=en', { waitUntil: 'domcontentloaded' });
     for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
+      // A fresh source document keeps the target out of the client router cache:
+      // both directions must prove an actual held RSC request, not a cached return.
+      await page.goto(origin + homePath(from), { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(origin + homePath(from));
+      await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
       const current = page.locator(`[data-video-slot="home-intro"][data-video-locale="${from}"]`);
       if (await current.locator('iframe').count() === 0) await current.locator('.site-video-play').click();
       await expect(current.locator('iframe')).toHaveCount(1);
       const countBefore = heldRequests;
+      delayedRscGate = new Promise(resolve => { releaseHeldRsc = resolve; });
       delayedLocale = to;
-      await page.locator('.site-language-menu-trigger').click();
-      await page.locator(`.site-language-switch button[lang="${to}"]`).click();
+      await chooseHomeLocale(page, to);
       await expect.poll(() => heldRequests, { timeout: 15000 }).toBeGreaterThan(countBefore);
       // Before the navigation commits, the new language must not become a clickable
       // optimistic player that will be discarded when the RSC response arrives.
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
       const next = page.locator(`[data-video-slot="home-intro"][data-video-locale="${to}"]`);
+      await expect(next).toHaveCount(0);
+      releaseHeldRsc();
       await expect(next).toHaveCount(1, { timeout: 20000 });
       await expect(next.locator('iframe')).toHaveCount(0);
       await next.locator('.site-video-play').click();
@@ -175,7 +210,7 @@ async function exercise(engine, browserType, width) {
       const frame = await next.locator('iframe').elementHandle();
       await pause(2200);
       assert.ok(await frame.evaluate(element => element.isConnected), 'First-click iframe was discarded after navigation');
-      await expect(page).toHaveURL(new RegExp(`\\?lang=${to}$`));
+      await expect(page).toHaveURL(origin + homePath(to));
       delayedLocale = null;
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
       await verifyFreeOffers(page, to, engine, width);
@@ -262,6 +297,8 @@ async function exercise(engine, browserType, width) {
     await page.screenshot({ path: `${evidence}/failed-${engine}-${width}.png`, fullPage: true }).catch(() => {});
     throw error;
   } finally {
+    delayedLocale = null;
+    releaseHeldRsc();
     const lifecycle = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || '[]'), navigationTraceKey).catch(() => []);
     await writeFile(`${evidence}/${live ? 'live' : 'local'}-${engine}-${width}-navigation-diagnostics.json`, JSON.stringify({ engine, width, lifecycle, requests: navigationRequests, errors }, null, 2));
     await context.close();

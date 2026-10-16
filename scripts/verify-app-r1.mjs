@@ -5,6 +5,7 @@ import {createHmac} from 'node:crypto'
 import {billingStatusRequestDiagnostic,installBillingStatusLifecycleDiagnostics} from './billing-status-browser-diagnostics.mjs'
 import {installTestPlanNavigationDiagnostics} from './test-plan-navigation-diagnostics.mjs'
 import {buildExplorerEntries} from '../lib/assessments/test-explorer.js'
+import {testKindCardLabel} from '../lib/assessments/test-kinds.js'
 import {MONITORING_CATALOG} from '../data/assessments/catalog.js'
 import {adminClient,assertIsolated,A} from '../tests/helpers/app-db-setup.mjs'
 assertIsolated()
@@ -526,15 +527,21 @@ try {
  await expect(typeChoices).toHaveCount(3)
  await expect(typeChoices.locator('xpath=..').first()).toBeVisible()
  assert.deepEqual(await typeChoices.evaluateAll(nodes=>nodes.map(node=>node.value)),['professional','monitoring','hobby'])
- // Collapsed test details repeat the category; validate the visible card label itself.
+ // Bind visible type labels to registered entries, never infer source status from the DOM.
+ const registeredPickerEntries=new Map(buildExplorerEntries({locale:'en',audience:'public'}).map(entry=>[entry.key,entry]))
  for(const card of await rankedCards.all()){
+  const entry=registeredPickerEntries.get(await card.getAttribute('data-test-match'))
+  assert.ok(entry,'Every displayed card must resolve to a registered explorer entry')
+  const kindLabel=testKindCardLabel(entry,'en')
+  assert.ok(kindLabel,'Every displayed card must have a source-faithful type label')
   const category=card.locator('label [data-test-kind-badge]')
   await expect(category).toHaveCount(1)
   await expect(category).toBeVisible()
   await expect(category.locator('svg')).toBeVisible()
   await expect(category.locator('span')).toBeVisible()
-  await expect(category.locator('span')).toHaveText(/\S/)
-  await expect(category).toHaveAttribute('aria-label',/^Test type: \S/)
+  await expect(category).toHaveAttribute('data-test-kind-badge',entry.testKind)
+  await expect(category.locator('span')).toHaveText(`Type: ${kindLabel}`)
+  await expect(category).toHaveAttribute('aria-label',`Type: ${kindLabel}`)
  }
  const selectedSummary=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
  await expect(selectedSummary).toHaveCount(3)
@@ -594,8 +601,12 @@ try {
  await expect(rankedCards.locator('input[type="checkbox"]:checked')).toHaveCount(3)
  await expect(picker.getByRole('heading',{name:'Recommended for you',exact:true})).toBeVisible()
  await optional.locator('summary').click()
- await picker.getByRole('button',{name:/Quick check-in/}).click()
- await expect(picker.getByRole('button',{name:/Quick check-in/})).toHaveAttribute('aria-pressed','true')
+ const recommendationPriority=picker.getByRole('group',{name:'Which tests would you like to see first?',exact:true})
+ await expect(recommendationPriority).toHaveCount(1)
+ const shorterPriority=recommendationPriority.getByRole('button',{name:'Shorter tests. Prioritize shorter questionnaires',exact:true})
+ await expect(shorterPriority).toHaveCount(1)
+ await shorterPriority.click()
+ await expect(shorterPriority).toHaveAttribute('aria-pressed','true')
  await optional.locator('summary').click()
  const handoffKeys=await selectedSummary.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey))
  await picker.getByRole('button',{name:'Browse full database'}).click()

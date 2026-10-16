@@ -1,3 +1,23 @@
+async function downloadAccountReport(page, locale) {
+ const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
+ await expect(action).toHaveCount(1)
+ await expect(action).toBeVisible()
+ await expect(action).toBeEnabled()
+ navigationMarker(page,'before-report-download')
+ try{
+  // Attach rejection handling to both operations immediately. A failed download
+  // must reach the outer evidence catch instead of terminating Node unhandled.
+  const [file]=await Promise.all([
+   page.waitForEvent('download',{timeout:60000}),
+   action.click(),
+  ])
+  navigationMarker(page,'report-download-received')
+  return file
+ }catch(error){
+  navigationMarker(page,'report-download-failed')
+  throw error
+ }
+}
 async function publicTopicButton(picker, locale, title) {
  const group = picker.getByRole('group', { name: locale === 'ru' ? 'Что вы хотите исследовать?' : 'What would you like to explore?', exact: true })
  await expect(group).toHaveCount(1)
@@ -7,6 +27,7 @@ async function publicTopicButton(picker, locale, title) {
  return button
 }
 import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
+import { createGuestVerifierPacer } from './helpers/guest-verifier-pacing.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -28,6 +49,8 @@ const browser=await engine.launch(process.env.HH_TEST_BROWSER_EXECUTABLE?{execut
 const output='artifacts/app-r1/relationships-'+engine.name()
 await mkdir(output,{recursive:true})
 const checks=[], errors=[]
+const guestPacer=createGuestVerifierPacer({log:event=>console.log('RELATIONSHIPS_GUEST_BUDGET',JSON.stringify(event))})
+let pacedGuestContext=null
 // Passive diagnostics only: preserve the strict page-error gate and navigation timing.
 const navigationDiagnostics=[]
 function diagnosticUrl(value){
@@ -122,6 +145,7 @@ async function navigate(page,url){
  await page.waitForLoadState('networkidle')
 }
 async function api(context,path,body){
+ if(context===pacedGuestContext)guestPacer.record('/api/app/'+path,body?'POST':'GET')
  const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
  const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
 }
@@ -598,34 +622,74 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
-  const download=page.waitForEvent('download',{timeout:60000})
-  await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
-  const file=await download,bytes=await readFile(await file.path())
+  const file=await downloadAccountReport(page,locale),bytes=await readFile(await file.path())
   assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');assert.ok(bytes.length>12000)
   await file.saveAs(output+'/report-'+locale+'.pdf')
   passed(locale+' PDF download includes persisted experimental relationship report model')
  }
+ // One consented guest owns all eight result journeys. Keep the earlier signed-in
+ // public-launch isolation fixture separate, and retain the unchanged IP quota.
+ // Only this claim-probe context blocks SWs so its synthetic 409 cannot reach auth.
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
+ await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+ pacedGuestContext=guest
+ guest.on('request',request=>{
+  const url=new URL(request.url())
+  if(url.origin===origin&&url.pathname.startsWith('/api/app/guest/'))guestPacer.record(url.pathname,request.method())
+ })
+ const guestPlanIds=new Set(),guestRunIds=new Set(),guestResultIds=new Set(),guestJourneys=[]
  for(const [i,base] of defs.entries()){
-  // The guest claim fixture intercepts its POST; a controlling service worker
-  // bypasses Playwright routing in WebKit and would send the real request instead.
-  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
-  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
+  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale)
+  // Close each page, then allow the prior guest request window to expire naturally.
+  await guestPacer.beforeScenario(d.key)
+  if(i===0){
+   const initial=await api(guest,'guest/bootstrap')
+   assert.deepEqual(initial.runs,[]);assert.deepEqual(initial.results,[])
+  }
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
+  assert.ok(!guestPlanIds.has(plan.id),'each journey creates a fresh plan')
+  guestPlanIds.add(plan.id)
+  assert.deepEqual(plan.definitionIds,[d.id]);assert.deepEqual(plan.completedRunIds,[])
   page=await diagnosticPage(guest,'guest-'+d.key+'-'+locale)
   await navigate(page,origin+'/'+locale+'/client?plan='+plan.id)
   const modeButton=page.locator('.hh-test-mode-grid button').nth(mode==='quick'?0:1)
   await expect(modeButton).toBeVisible({timeout:20000});await modeButton.click()
+  const started=await api(guest,'guest/bootstrap')
+  assert.equal(started.activeTestPlan?.id,plan.id)
+  assert.equal(started.runs.length,1,'only this plan has an unfinished run')
+  const [run]=started.runs
+  assert.ok(!guestRunIds.has(run.id),'each journey starts a fresh run')
+  guestRunIds.add(run.id)
+  for(const [key,value] of Object.entries({definitionId:d.id,definitionKey:d.key,definitionVersion:d.version,instrumentLocale:locale,contentHash:d.contentHash}))assert.equal(run[key],value,key)
+  assert.deepEqual(run.answers,{});assert.equal(run.progress,0);assert.equal(run.status,'draft')
   await fill(page,d,mode,true,locale)
-  const data=await api(guest,'guest/bootstrap'),result=data.results.find(r=>r.definitionKey===d.key)
+  const data=await api(guest,'guest/bootstrap'),matching=data.results.filter(r=>r.runId===run.id)
+  assert.equal(matching.length,1,'this exact fresh run persists one result')
+  const [result]=matching
+  assert.ok(!guestResultIds.has(result.id),'each journey retains a distinct result')
+  guestResultIds.add(result.id)
+  assert.equal(result.definitionId,d.id);assert.equal(result.definitionKey,d.key);assert.equal(result.definitionVersion,d.version)
   assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])
   assert.equal(result.instrumentLocale,locale);assert.equal(result.contentHash,d.contentHash)
   await assertGuestScaleResult(page,expect,result,locale)
+  const completed=await api(guest,'guest/test-plans/'+plan.id)
+  assert.equal(completed.status,'completed');assert.deepEqual(completed.completedRunIds,[run.id])
+  assert.deepEqual(completed.definitionIds,[d.id])
+  guestJourneys.push({definitionKey:d.key,definitionVersion:d.version,instrumentLocale:locale,mode,planId:plan.id,runId:run.id,resultId:result.id})
   passed(d.key+' guest '+locale+' '+mode+': private consented runner, exact scales and item-scoped optional analysis')
-  navigationMarker(page,'before-guest-context-close')
-  await guest.close()
+  await page.waitForLoadState('networkidle')
+  navigationMarker(page,'before-guest-page-close')
+  await page.close()
+  guestPacer.settled()
  }
+ const guestResults=(await api(guest,'guest/bootstrap')).results
+ assert.equal(guestPlanIds.size,defs.length);assert.equal(guestRunIds.size,defs.length);assert.equal(guestResultIds.size,defs.length)
+ assert.equal(guestResults.length,defs.length)
+ assert.ok(guestResults.every(result=>guestResultIds.has(result.id)))
+ assert.deepEqual(guestResults.map(result=>result.definitionKey).sort(),defs.map(d=>d.key).sort())
+ await guest.close()
  assert.deepEqual(errors,[])
- await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
+ await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,browser:await browser.version(),checks,guestSessions:2,guestPublicLaunchSessions:1,guestJourneySessions:1,guestResults:guestResults.length,guestJourneys,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
 } catch(error){
  await page?.screenshot({path:output+'/failure.png',fullPage:false}).catch(()=>{})
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message},null,2));throw error

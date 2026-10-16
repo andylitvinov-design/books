@@ -58,9 +58,12 @@ export function auditSeoSources() {
   const shell = read("app/layout.tsx");
   check(/type="application\/ld\+json"/.test(shell) && /"@type": "WebSite"/.test(shell), "Public WebSite JSON-LD is missing");
   const freeInitiation = read("components/yggdrasil-free-initiation.tsx");
-  for (const suffix of ["/basic-course#ry-l01-s01", "/basic-course/description", "/basic-course"]) {
+  for (const suffix of ["/basic-course/description", "/basic-course"]) {
     check(freeInitiation.includes(suffix), "Missing internal Yggdrasil learning link: " + suffix);
   }
+  check(/href=\{root \+ "\/basic-course"\}/.test(freeInitiation), "Missing first-party course entry");
+  check(/id="preparation-readings"/.test(freeInitiation), "Missing reading entry section");
+  check(/<YggdrasilInitiationForm locale=\{locale\} \/>/.test(freeInitiation), "Missing localized contact form");
   return { ok: failures.length === 0, failures, checked: { publicRoutes: publicRouteSources.length, privateRoutes: privateRouteSources.length, prioritySitemapEntries: entries.length } };
 }
 
