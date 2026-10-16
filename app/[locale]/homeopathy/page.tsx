@@ -63,8 +63,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.description,
     alternates: {
       canonical: `/${locale}/homeopathy`,
-      languages: { ru: "/ru/homeopathy", en: "/en/homeopathy" },
+      languages: { ru: "/ru/homeopathy", en: "/en/homeopathy", es: "/es/homeopathy", "x-default": "/en/homeopathy" },
     },
+    openGraph: { type: "website", title: current.title, description: current.description, url: `/${locale}/homeopathy`, images: ["/images/holistic-house/distance-homeopathy.webp"] },
+    twitter: { card: "summary_large_image", title: current.title, description: current.description, images: ["/images/holistic-house/distance-homeopathy.webp"] },
   };
 }
 
