@@ -1,0 +1,134 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import test from 'node:test';
+import { runInNewContext } from 'node:vm';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ts from 'typescript';
+
+const require = createRequire(import.meta.url);
+const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+const empty = () => null;
+const anchor = ({ href, children }) => React.createElement('a', { href }, children);
+
+// Render the real page components, stubbing unrelated child UI and framework
+// hooks so these checks need neither a server nor external data or requests.
+function loadComponent(path, imports) {
+  const compiled = ts.transpileModule(read(path), {
+    fileName: path,
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+  }).outputText;
+  const exports = {};
+  runInNewContext(compiled, {
+    exports,
+    require(name) {
+      if (name === 'react/jsx-runtime') return require(name);
+      if (Object.hasOwn(imports, name)) return imports[name];
+      throw new Error('Unexpected dependency in ' + path + ': ' + name);
+    },
+  });
+  return exports;
+}
+
+const shared = {
+  'next/link': anchor,
+  'next/image': empty,
+  'lucide-react': { ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
+  '@/components/static-portrait': { StaticPortrait: empty },
+  '@/components/public-site-header': { PublicSiteHeader: empty },
+};
+const home = loadComponent('components/holistic-house-home.tsx', {
+  ...shared,
+  '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
+  '@/components/homepage-contact-cta': { HomepageContactCta: empty },
+  '@/components/services-solutions': { ServicesSolutions: empty },
+  '@/components/homepage-topic-journeys': { HomepageTopicJourneys: empty },
+  '@/components/home-free-tests-banner': { HomeFreeTestsBanner: empty },
+  '@/components/personal-testimonials': { PersonalTestimonials: empty },
+  '@/components/site-navigation': { SiteNavigation: empty },
+  '@/components/sitewide-antistress-banner': { TestSelectionCourseBanner: empty },
+  '@/data/local-acquisition': { LOCAL_ACQUISITION: Object.fromEntries(['en', 'ru'].map((locale) => [locale, {
+    hero: { eyebrow: 'Holistic House', servicesLabel: 'Services' },
+    selfCheck: { href: `/${locale}/tests` },
+    practitioner: { href: `/${locale}/about` },
+  }])) },
+}).HolisticHouseHome;
+const spanishHome = loadComponent('app/es/page.tsx', {
+  ...shared,
+  '@/components/public-consultation-cta': { PublicConsultationCta: empty },
+  '@/lib/spanish-metadata': { spanishMetadata: empty },
+}).default;
+const academy = loadComponent('components/academy-hub.tsx', {
+  ...shared,
+  '@/components/academy-video-courses': { AcademyVideoCourses: empty },
+  '@/components/catalog-showcase': { CatalogShowcase: ({ items }) => items.map((item) => React.createElement('a', { key: item.id, href: item.href }, item.title)) },
+  '@/components/academy-course-capture': { AcademyCourseCapture: empty },
+  '@/components/academy-free-course-banner': { AcademyFreeCourseBanner: empty },
+  '@/data/academy/catalog': { academyCopy: Object.fromEntries(['en', 'ru', 'es'].map((locale) => [locale, {
+    title: 'Academy', programs: 'Programs', videos: 'Videos', lead: 'Explore learning', allPrograms: 'All programs',
+  }])) },
+}).AcademyHub;
+
+const links = (html) => [...html.matchAll(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(([, href, content]) => ({ href, text: content.replace(/<[^>]+>/g, '') }));
+const renderLinks = (component, props) => links(renderToStaticMarkup(React.createElement(component, props)));
+const labels = { en: /Tantra Reiki.*free Level 1 initiation/, ru: /Тантра Рейки.*бесплатная инициация 1-й ступени/, es: /Tantra Reiki.*iniciación gratuita de Nivel 1/ };
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} Home renders a direct localized Tantra entry and preserves its written-review link`, () => {
+    const pageLinks = renderLinks(locale === 'es' ? spanishHome : home, { locale });
+    const tantra = pageLinks.filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`);
+    assert.equal(tantra.length, 1);
+    assert.match(tantra[0].text, labels[locale]);
+    assert.ok(pageLinks.some((link) => link.href === `/${locale}/services/free-situation-review`));
+    assert.ok(pageLinks.some((link) => link.href === (locale === 'es' ? '/es/books' : `/${locale}/library`)));
+  });
+
+  test(`${locale} Academy renders a direct localized Tantra entry without replacing the full program`, () => {
+    for (const view of ['programs', 'videos']) {
+      const pageLinks = renderLinks(academy, { locale, view });
+      const tantra = pageLinks.filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`);
+      assert.equal(tantra.length, 1, view);
+      assert.match(tantra[0].text, labels[locale]);
+      if (view === 'programs') assert.ok(pageLinks.some((link) => link.href === `/${locale}/academy/reiki/tantra-reiki`));
+    }
+  });
+}
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} inline course CTA preserves its quick-entry route and discloses any English fallback`, () => {
+    const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
+      ...shared,
+      'next/navigation': { usePathname: () => `/${locale}/academy` },
+      './sitewide-antistress-banner.module.css': {},
+    }).TestSelectionCourseBanner;
+    const pageLinks = renderLinks(banner, { locale });
+    const target = locale === 'es' ? 'en' : locale;
+    const cta = pageLinks.find((link) => link.href === `/${target}/app/course?program=stress&amp;entry=quick`);
+    assert.ok(cta);
+    assert.equal(cta.text, { en: 'Start free course', ru: 'Начать курс', es: 'Empezar el curso en inglés' }[locale]);
+    assert.ok(pageLinks.some((link) => link.href === `/${locale}/courses/antistress`));
+  });
+}
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} global ribbon still offers localized written review rather than the inline course`, () => {
+    const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
+      ...shared,
+      'next/navigation': { usePathname: () => `/${locale}/academy` },
+      './sitewide-antistress-banner.module.css': {},
+    }).SitewideAntistressBanner;
+    const pageLinks = renderLinks(banner, { initialLocale: locale });
+    assert.equal(pageLinks.length, 2);
+    assert.ok(pageLinks.every((link) => link.href === `/${locale}/services/free-situation-review`));
+  });
+}
+
+test('Home retains server-provided intro content and consultation CTA after contextual link addition', () => {
+  for (const locale of ['en', 'ru']) {
+    const html = renderToStaticMarkup(React.createElement(home, { locale, introVideoContent: React.createElement('section', { 'data-streamed-intro': 'preserved' }, 'Original intro') }));
+    assert.match(html, /data-streamed-intro="preserved"/);
+    assert.ok(links(html).some((link) => link.href === `/${locale}/services#consultation`));
+  }
+  assert.ok(renderLinks(spanishHome, {}).some((link) => link.href === '/es/services#consultation'));
+});

@@ -227,6 +227,16 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
               : "Courses, modules and individual lessons, grouped by program and original audio language."
           : text.lead}</p>
       </header>
+      <p className="academy-archive-nav">
+        <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>
+          {locale === "ru"
+            ? "Начните знакомство с Тантра Рейки: бесплатная инициация 1-й ступени"
+            : locale === "es"
+              ? "Descubre Tantra Reiki: iniciación gratuita de Nivel 1"
+              : "Explore Tantra Reiki: free Level 1 initiation"}
+          <span aria-hidden="true"> →</span>
+        </Link>
+      </p>
       <AcademyFreeCourseBanner locale={locale} />
       {view === "videos" ? <AcademyVideoCourses locale={locale} /> : <CatalogShowcase items={items} label={text.allPrograms} />}
       {view === "programs" ? (
