@@ -267,9 +267,9 @@ test('detailed test selections use navy, preserve burgundy test starts and have 
 })
 
 test('recommendation priority never becomes a strict time filter, and test type badges remain', () => {
-  assert.match(picker, /Changes recommendation order only\. No tests are hidden/)
-  assert.match(picker, /Меняется только порядок рекомендаций/)
-  assert.match(picker, /Solo cambia el orden\. No oculta pruebas/)
+  assert.match(picker, /Adjusts the order and estimated match of recommendations, without hiding tests/)
+  assert.match(picker, /Влияет на порядок и условный % соответствия/)
+  assert.match(picker, /Ajusta el orden y la coincidencia estimada sin ocultar pruebas/)
   assert.match(picker, /aria-pressed=\{depth === key\} onClick=\{\(\) => onDepth\(key\)\}/)
   assert.match(picker, /aria-pressed=\{maxMinutes===minutes\} onClick=\{\(\) => onMaxMinutes\(minutes\)\}/)
   assert.match(picker, /<KindBadge entry=\{entry\} locale=\{locale\} \/>/)
