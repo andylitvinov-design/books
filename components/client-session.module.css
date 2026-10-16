@@ -1274,3 +1274,11 @@
 @media(prefers-reduced-motion:reduce){
  .youtubeLessonShade{transition:none}
 }
+
+/* Reusable, practitioner-selected appendix: deliberately after report content. */
+.reportLibraryList{display:grid;gap:15px;max-width:810px}
+.reportLibraryList>.sessionPhotoCard{max-width:640px}
+.reportLibraryList>.sessionPhotoCard img{aspect-ratio:16/10;object-fit:contain}
+.reportLibraryList>.sessionPhotoCard p{padding:0 6px;font-size:14px;line-height:1.5;color:#546d80}
+.reportLibraryList>.clientMediaCard{margin:0}
+@media(max-width:580px){.reportLibraryList{gap:12px}.reportLibraryList>.sessionPhotoCard img{aspect-ratio:4/3}}
