@@ -7,7 +7,7 @@ export function TestFinishActions({ locale = 'en', disabled = false, onReport, o
     <div className={styles.wrap} role="group" aria-label={ru ? 'Завершить тест' : 'Finish assessment'} data-test-finish-actions>
       {(guestScaleOnly || !courseMode) && <button type="button" className={styles.report} disabled={disabled} onClick={onReport}>
         <span className={styles.icon} aria-hidden="true">✦</span>
-        <span>{guestScaleOnly ? (ru ? 'Посмотреть шкалы и расшифровку' : 'See scores and scale explanations') : (ru ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations')}</span>
+        <span>{guestScaleOnly ? (ru ? 'Посмотреть шкалы и баллы' : 'See my scores and scales') : (ru ? 'Сохранить результат и получить рекомендации' : 'Save results and get recommendations')}</span>
         <span aria-hidden="true">→</span>
       </button>}
       {!guestScaleOnly && <button type="button" className={courseMode ? styles.courseNext : styles.next} disabled={disabled} onClick={onNext}>
