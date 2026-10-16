@@ -10,6 +10,7 @@ export function SessionYouTubeQuickAdd({clientId,ensureSession,locale='en',onSav
   const ru=locale==='ru'
   const [title,setTitle]=useState(ru?'Обучающее видео':'Educational video')
   const [url,setUrl]=useState('')
+  const [placement,setPlacement]=useState('materials')
   const [busy,setBusy]=useState(false)
   const [savedSessionId,setSavedSessionId]=useState('')
   const [error,setError]=useState('')
@@ -53,7 +54,7 @@ export function SessionYouTubeQuickAdd({clientId,ensureSession,locale='en',onSav
         }
         if(resources.length>=8)throw Error('RESOURCE_LIMIT')
         const draft={...session.draft,plan:{...session.draft.plan,
-          resources:[...resources,{kind:'youtube',title:label,url:link.url,description:''}]}}
+          resources:[...resources,{kind:'youtube',title:label,url:link.url,description:'',placement}]}}
         try{
           await api(path,'PATCH',{expectedRevision:session.draftRevision,draft})
           setSavedSessionId(sid)
@@ -85,6 +86,12 @@ export function SessionYouTubeQuickAdd({clientId,ensureSession,locale='en',onSav
           placeholder="https://youtu.be/XXXXXXXXXXX" onChange={e=>{
             setUrl(e.target.value);setSavedSessionId('');setError('')
           }}/>
+      </label>
+      <label className={styles.field}>{ru?'Где показывать видео':'Video placement'}
+        <select value={placement} disabled={busy} onChange={e=>setPlacement(e.target.value)}>
+          <option value="materials">{ru?'Материалы в конце отчёта':'Materials at the end'}</option>
+          <option value="top">{ru?'Видео над отчётом':'Video above the report'}</option>
+        </select>
       </label>
       {parsed&&<p className={styles.youtubeEditorNote} role="status">{ru?
         'Ссылка распознана. Плеер появится на странице отчёта после публикации.':

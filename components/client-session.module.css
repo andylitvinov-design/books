@@ -1171,3 +1171,61 @@
   .reportMaterialsSection .youtubeLessonFrame,
   .reportMaterialsSection .video,.reportMaterialsSection .audio{display:none!important}
 }
+
+/* Owner report editor video curation. This stays outside consultation forms:
+   saving selected videos is a separate, revision-checked session-draft action. */
+.ownerReportMaterials{
+  --hh-line:#d6e4e7;
+  max-width:940px;margin:16px auto 26px;
+  border:1px solid #cfdfe5;border-radius:20px;
+  background:linear-gradient(140deg,#f4f9fc,#fffdf9 74%);
+  padding:clamp(15px,2.8vw,25px);
+  box-shadow:0 9px 28px rgba(23,57,87,.07);
+  color:#173957;line-height:1.55;
+}
+.ownerMaterialsHeader{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:start;gap:14px}
+.ownerMaterialsSymbol{display:grid;place-items:center;width:43px;height:43px;border:1px solid #c0d5de;
+  border-radius:13px;background:#e8f4f8;color:#173957}
+.ownerMaterialsHeader h2{font:600 clamp(23px,3vw,30px)/1.25 Georgia,serif;color:#173957;margin:3px 0 8px}
+.ownerMaterialsHeader p{color:#57717d;font-size:14px;margin:0}
+.ownerMaterialsCount{font-size:12px;font-weight:750;white-space:nowrap;background:#e7f2f5;
+  border-radius:999px;padding:8px 12px;color:#184761}
+.ownerMaterialsNotice{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;
+  margin:19px 0;border:1px solid #cee3e5;border-radius:12px;background:#edf8f7;
+  color:#426a71;font-size:13px}
+.ownerMaterialsNotice svg{flex:none}
+.ownerMaterialsGroup{padding:16px 0;border-top:1px solid #dce6e8}
+.ownerMaterialsGroup h3{display:flex;align-items:center;gap:8px;font-size:18px;margin:0 0 12px;color:#173957}
+.ownerMaterialsMuted{font-size:14px;color:#69808a;margin:10px 0 14px}
+.ownerMaterialsRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(195px,.75fr) auto;
+  gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #e1e9eb;font-size:14px}
+.ownerMaterialsRow strong{font-size:14px;min-width:0;overflow-wrap:anywhere}
+.ownerMaterialsRow label,.ownerMaterialsAdd label{display:grid;gap:5px;min-width:0;
+  color:#486372;font-size:12px;font-weight:750}
+.ownerMaterialsRow select,.ownerMaterialsAdd input{width:100%;max-width:100%;min-height:44px;
+  padding:9px 12px;border:1px solid #c6d8df;border-radius:10px;background:#fff;
+  color:#173957;font-size:15px}
+.ownerMaterialsRow button,.ownerMaterialsAdd button,.ownerMaterialsToolbar button,.ownerMaterialsToolbar a{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
+  padding:10px 14px;border:1px solid #bfced8;border-radius:10px;text-decoration:none;
+  color:#173957;background:#fff;font:700 13px/1.3 system-ui;cursor:pointer
+}
+.ownerMaterialsAdd{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr) auto;
+  gap:12px;align-items:end;margin:15px 0 4px}
+.ownerMaterialsAdd button{background:#173957;color:#fff;border-color:#173957;min-height:44px}
+.ownerMaterialsAdd button:disabled,.ownerMaterialsRow button:disabled{opacity:.5;cursor:not-allowed}
+.ownerMaterialsToolbar{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.ownerMaterialsPublish{display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+  background:#fffdf8;border:1px solid #e2e3d7;border-radius:12px;
+  padding:12px 14px;font-size:13px;color:#536c65}
+.ownerMaterialsPublish a{color:#173957;font-weight:800}
+.ownerMaterialsPublish svg{color:#2d7c6a;flex:none}
+.ownerReportMaterials .recorder{margin-bottom:0;border-color:#c9dde2;background:#fff}
+.ownerReportMaterials :is(button,a,select,input):focus-visible{outline:3px solid #866ba3;outline-offset:2px}
+@media(max-width:720px){
+  .ownerMaterialsHeader{grid-template-columns:40px minmax(0,1fr);gap:11px}
+  .ownerMaterialsCount{grid-column:2;justify-self:start}
+  .ownerMaterialsRow,.ownerMaterialsAdd{grid-template-columns:minmax(0,1fr)}
+  .ownerMaterialsRow{gap:8px}
+  .ownerMaterialsAdd button,.ownerMaterialsRow button{width:100%}
+}
