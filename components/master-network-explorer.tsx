@@ -282,6 +282,10 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   return (
     <article className={styles.serviceCard}>
+      {service.photos?.[0] ? <Link className={styles.serviceCover} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>
+        {/* Public files are served directly to avoid Vercel image optimization quota. */}
+        <img src={service.photos[0]} loading="lazy" alt={service.copy.title} />
+      </Link> : null}
       <div className={styles.cardTop}>
         <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
           <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>
