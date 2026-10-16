@@ -7,14 +7,14 @@ import type { PublicPractitioner, PublicService } from "@/lib/practitioners/publ
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
-  ["emotional_psychological", "Emotional wellbeing", "Эмоции и психология", "Bienestar emocional"],
+  ["personal_development", "Personal growth", "Личностный рост", "Crecimiento personal"],
+  ["energy_spiritual", "Reiki & energywork", "Рейки и энергопрактики", "Reiki y energía"],
+  ["relationships", "Relationships & constellations", "Отношения и расстановки", "Relaciones y constelaciones"],
+  ["emotional_psychological", "Emotional wellbeing", "Эмоции и внутренняя опора", "Bienestar emocional"],
   ["body_somatic", "Body & somatic", "Тело и соматика", "Cuerpo y somática"],
-  ["relationships", "Relationships", "Отношения", "Relaciones"],
-  ["homeopathy_holistic", "Holistic wellbeing", "Холистический подход", "Bienestar holístico"],
-  ["energy_spiritual", "Energy & spiritual", "Энергетические практики", "Prácticas energéticas"],
-  ["career_purpose", "Career & purpose", "Карьера и предназначение", "Vocación y propósito"],
-  ["business_money", "Business & money", "Бизнес и деньги", "Negocios y dinero"],
-  ["personal_development", "Personal development", "Личностное развитие", "Desarrollo personal"],
+  ["homeopathy_holistic", "Holistic & Wu Xing", "Холистический подход и У-Син", "Bienestar holístico"],
+  ["career_purpose", "Career & purpose", "Призвание и карьера", "Vocación y carrera"],
+  ["business_money", "Goals & business", "Цели и бизнес", "Metas y negocios"],
 ] as const;
 
 const COPY = {
@@ -311,7 +311,8 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
     const list = services.filter((service) => serviceMatches(service, state));
     if (state.sort === "az") return list.sort((a, b) => a.copy.title.localeCompare(b.copy.title, pageLocale));
     if (state.sort === "shorter") return list.sort((a, b) => (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity));
-    return list;
+    const areas = AREAS.map(([id])=>id);
+    return list.sort((a,b)=>areas.indexOf(a.areaKey as typeof areas[number])-areas.indexOf(b.areaKey as typeof areas[number]));
   }, [services, state, pageLocale]);
   return (
     <div className={styles.explorer}>
