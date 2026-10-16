@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
+import { requestOwnerDocumentLink, prepareReportSession, tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 
 export function ConsultationDocumentActions({
   recordId,
+  clientId,
   locale,
   dateIssued,
   kind = 'recommendation',
@@ -25,13 +27,13 @@ export function ConsultationDocumentActions({
   const [status, setStatus] = useState('')
   const [copying, setCopying] = useState(false)
   const [copiedLocale, setCopiedLocale] = useState(null)
+  const [shareUrl,setShareUrl]=useState('')
+  const [preparing,setPreparing]=useState(false)
 
-  if (!cache.current) cache.current = createDocumentLinkCache(async () => {
-    const endpoint = kind === 'payment' ? 'client-link' : 'session-link'
-    const response = await fetch(`/admin/api/documents/${recordId}/${endpoint}`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-    if (!response.ok) throw new Error('Session unavailable or not published')
-    return response.json()
-  }, { scope: kind === 'payment' ? 'document' : 'session' })
+  if (!cache.current) cache.current = createDocumentLinkCache(
+    () => requestOwnerDocumentLink(recordId, kind),
+    { scope: kind === 'payment' ? 'document' : 'session' },
+  )
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -40,21 +42,39 @@ export function ConsultationDocumentActions({
   const pdfFilename = kind === 'payment' ? (paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename({dateIssued})
   const ru = locale === 'ru'
 
-  const copy = async () => {
-    setCopying(true)
+  function onCopied() {
     setStatus('')
-    setCopiedLocale(null)
-    try {
-      await navigator.clipboard.writeText(await cache.current.url(locale, window.location.origin))
-      setCopiedLocale(locale)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setCopiedLocale(null), 2200)
-    } catch {
-      setStatus('error')
-    } finally {
-      setCopying(false)
-    }
+    setCopiedLocale(locale)
+    clearTimeout(timer.current)
+    timer.current=setTimeout(()=>setCopiedLocale(null),2200)
   }
+  const copy=async()=>{
+    setCopying(true);setStatus('');setCopiedLocale(null);setShareUrl('')
+    try {
+      const url=await cache.current.url(locale,window.location.origin)
+      setShareUrl(url)
+      if(await tryCopyOwnerLink(url,navigator.clipboard))onCopied()
+      else setStatus('manual')
+    } catch(error) {
+      const code=error?.code||error?.message
+      setStatus(code==='SESSION_NOT_PUBLISHED'?'not-published':
+        code==='SESSION_LINK_EXPIRED'?'expired':
+        code==='SESSION_REPORT_CHANGED'?'changed':
+        code==='SESSION_UNAVAILABLE'?'unavailable':'failed')
+    } finally {setCopying(false)}
+  }
+  const retryCopy=async()=>{
+    if(!shareUrl)return
+    if(await tryCopyOwnerLink(shareUrl,navigator.clipboard))onCopied()
+    else setStatus('manual')
+  }
+  const prepare=async()=>{
+    if(!clientId||!recordId||preparing)return
+    setPreparing(true)
+    try{const editor=await prepareReportSession(clientId,recordId);window.location.assign(editor)}
+    catch{setStatus('prepare-failed');setPreparing(false)}
+  }
+  const needsPublication=['not-published','changed','expired','prepare-failed'].includes(status)
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
@@ -77,8 +97,33 @@ export function ConsultationDocumentActions({
       </form>}
     </div>
 
+
+    {shareUrl&&<div className="consultation-share-link-ready">
+      <label htmlFor={'consultation-link-'+recordId}>{ru?'Личная ссылка на этот отчёт':'Private link to this report'}</label>
+      <div className="consultation-share-link-controls">
+        <input id={'consultation-link-'+recordId} readOnly type="text" value={shareUrl}
+          onFocus={event=>event.target.select()}
+          aria-label={ru?'Ссылка на отчёт клиента':'Client report link'}/>
+        <button type="button" onClick={retryCopy}>{ru?'Копировать ещё раз':'Copy again'}</button>
+      </div>
+    </div>}
     <p className="consultation-copy-feedback" role="status" aria-live="polite">
-      {status ? (ru?'Сначала опубликуйте страницу консультации с материалами или проверьте авторизацию.':'Publish the client session first, or check your sign-in.') : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}
+      {status==='manual'?(ru?'Ссылка получена, но Safari запретил автокопирование. Нажмите «Копировать ещё раз» или выделите адрес в поле.':'Link ready, but Safari blocked automatic copying. Tap Copy again or select the URL.'):
+       status==='not-published'?(ru?'Отчёт сохранён, но страница клиента ещё не опубликована. Проверьте её и нажмите «Опубликовать клиенту».':'Report saved, but the client page is not yet published. Review it and explicitly publish.'):
+       status==='changed'?(ru?'Опубликованная версия отчёта устарела. Проверьте и опубликуйте обновлённую страницу.':'The published report is outdated. Review and republish the updated page.'):
+       status==='expired'?(ru?'Доступ к ссылке истёк или отозван. Обновите приглашение в редакторе сессии.':'Invitation expired or revoked. Renew it in the session editor.'):
+       status==='unavailable'?(ru?'Сервис защищённых ссылок недоступен либо требуется повторный вход в кабинет специалиста.':'Private session links unavailable or practitioner sign-in expired.'):
+       status==='prepare-failed'?(ru?'Не удалось открыть редактор клиентской сессии. Проверьте авторизацию и повторите.':'Could not open the session editor. Check your sign-in and retry.'):
+       status==='failed'?(ru?'Не удалось получить ссылку. Попробуйте ещё раз.':'Could not retrieve the link. Try again.'):
+       copiedLocale===locale?labels.copiedFeedback:!active?labels.disabled:''}
     </p>
+    {needsPublication&&kind!=='payment'&&active&&clientId&&
+      <button className="consultation-prepare-session" type="button" disabled={preparing} onClick={prepare}>
+        {preparing?(ru?'Открываем редактор…':'Opening editor…'):
+          (ru?'Проверить и опубликовать страницу клиента →':'Review and publish client page →')}
+      </button>}
+    {needsPublication&&kind!=='payment'&&!clientId&&<p className="consultation-copy-feedback">
+      {ru?'Отчёт не связан с клиентом. Сначала укажите клиента в редакторе.':'Assign the report to a client before private sharing.'}
+    </p>}
   </>
 }
