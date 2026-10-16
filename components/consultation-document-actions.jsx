@@ -42,21 +42,39 @@ export function ConsultationDocumentActions({
   const pdfFilename = kind === 'payment' ? (paymentStatus === 'received' ? 'receipt.pdf' : 'invoice.pdf') : reportPdfFilename({dateIssued})
   const ru = locale === 'ru'
 
-  const copy = async () => {
-    setCopying(true)
+  function onCopied() {
     setStatus('')
-    setCopiedLocale(null)
-    try {
-      await navigator.clipboard.writeText(await cache.current.url(locale, window.location.origin))
-      setCopiedLocale(locale)
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => setCopiedLocale(null), 2200)
-    } catch {
-      setStatus('error')
-    } finally {
-      setCopying(false)
-    }
+    setCopiedLocale(locale)
+    clearTimeout(timer.current)
+    timer.current=setTimeout(()=>setCopiedLocale(null),2200)
   }
+  const copy=async()=>{
+    setCopying(true);setStatus('');setCopiedLocale(null);setShareUrl('')
+    try {
+      const url=await cache.current.url(locale,window.location.origin)
+      setShareUrl(url)
+      if(await tryCopyOwnerLink(url,navigator.clipboard))onCopied()
+      else setStatus('manual')
+    } catch(error) {
+      const code=error?.code||error?.message
+      setStatus(code==='SESSION_NOT_PUBLISHED'?'not-published':
+        code==='SESSION_LINK_EXPIRED'?'expired':
+        code==='SESSION_REPORT_CHANGED'?'changed':
+        code==='SESSION_UNAVAILABLE'?'unavailable':'failed')
+    } finally {setCopying(false)}
+  }
+  const retryCopy=async()=>{
+    if(!shareUrl)return
+    if(await tryCopyOwnerLink(shareUrl,navigator.clipboard))onCopied()
+    else setStatus('manual')
+  }
+  const prepare=async()=>{
+    if(!clientId||!recordId||preparing)return
+    setPreparing(true)
+    try{const editor=await prepareReportSession(clientId,recordId);window.location.assign(editor)}
+    catch{setStatus('prepare-failed');setPreparing(false)}
+  }
+  const needsPublication=['not-published','changed','expired'].includes(status)
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
