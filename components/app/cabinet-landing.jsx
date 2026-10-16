@@ -9,6 +9,7 @@ import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
+import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
@@ -27,7 +28,7 @@ const UI = {
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Free wellbeing & resources monitoring',
-    tryText: 'Take available tests without registering. See your scale scores first, then choose whether to open free analysis in your Cabinet.',
+    tryText: 'Take available tests without registering. See your scores and gauges first; free explanations and advice are available in your Cabinet.'
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -92,8 +93,8 @@ const UI = {
     result: 'Your result',
     measured: 'Measured',
     source: 'Source',
-    save: 'Create / sign in to my Cabinet — get free analysis',
-    saveHint: 'Read your scales without signing in. For full free analysis and recommendations, confirm saving only this test to your chosen Google account.',
+    save: 'Create my Cabinet and get explanations'
+    saveHint: 'Sign in with Google to get free explanations of your scores and personal recommendations in your Cabinet.'
     consultKicker: 'If you would like to discuss your result',
     consultTitle: 'Book a consultation with a specialist',
     consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
@@ -116,7 +117,7 @@ const UI = {
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Бесплатный мониторинг состояния и ресурсов',
-    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите баллы и расшифровку шкал, затем получайте бесплатный персональный анализ в кабинете.',
+    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите шкалы и баллы, затем получайте бесплатные пояснения и рекомендации в кабинете.'
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -181,8 +182,8 @@ const UI = {
     result: 'Ваш результат',
     measured: 'Дата измерения',
     source: 'Источник',
-    save: 'Создать / войти в мой кабинет и получить анализ (бесплатно)',
-    saveHint: 'Шкалы доступны без регистрации. Для полного бесплатного анализа и рекомендаций подтвердите сохранение только этого теста в выбранный Google-аккаунт.',
+    save: 'Создать кабинет и получить пояснения'
+    saveHint: 'Войдите через Google и бесплатно получите пояснения к результатам и индивидуальные рекомендации в своём кабинете.'
     consultKicker: 'Если хочется обсудить результат',
     consultTitle: 'Заказать консультацию специалиста',
     consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
@@ -1322,48 +1323,44 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </header>
 
             <GuestScaleInterpretation result={guestResult} locale={locale} />
-            <div className="cabinet-result-actions-grid" data-guest-analysis-gate style={{ display: 'block', maxWidth: 780, margin: '22px auto' }}>
-              <section className="cabinet-result-save-panel">
-                <p className="about-kicker">{locale === 'ru' ? 'Бесплатный персональный анализ' : 'Free personal analysis'}</p>
-                <h4>{locale === 'ru' ? 'Полный анализ ваших результатов' : 'Understand your complete results'}</h4>
-                <p>{c.saveHint}</p>
-                <button className="cabinet-save-result" type="button" onClick={saveToCabinet} disabled={busy}>
-                  {c.save}
-                </button>
-              </section>
+            <section className={guestActions.capture} data-guest-analysis-gate aria-label={locale === 'ru' ? 'Бесплатные пояснения к тесту' : 'Free test explanations'}>
+              <p className={guestActions.kicker}>{locale === 'ru' ? 'БЕСПЛАТНО · ЧЕРЕЗ GOOGLE' : 'FREE · WITH GOOGLE'}</p>
+              <h4 className={guestActions.heading}>{locale === 'ru' ? 'Что означают ваши результаты?' : 'What do your scores mean?'}</h4>
+              <p className={guestActions.explain}>{c.saveHint}</p>
+              <button className={guestActions.googleButton} type="button" onClick={saveToCabinet} disabled={busy}>
+                <span className={guestActions.googleMark} aria-hidden="true">G</span>
+                <span>{c.save}</span>
+                <span className={guestActions.buttonArrow} aria-hidden="true">→</span>
+              </button>
+              <p className={guestActions.privacy}>{locale === 'ru'
+                ? 'Этот тест сохраняется в аккаунте только после вашего подтверждения.'
+                : 'This test is saved to your account only after you confirm.'}</p>
+            </section>
 
-              
-            </div>
+            <nav className={guestActions.nextActions} aria-label={locale === 'ru' ? 'Что делать дальше' : 'Next steps'}>
+              <a className={guestActions.secondary} href={`/${locale}/courses/antistress`}>
+                {locale === 'ru' ? 'Пройти антистресс-курс →' : 'Take the Anti-Stress course →'}
+              </a>
+              <button className={guestActions.secondary} type="button" disabled={busy}
+                onClick={activePlan?.status === 'active' ? continuePlan : resetToCatalog}>
+                {locale === 'ru' ? 'Перейти к следующему тесту →' : 'Go to the next test →'}
+              </button>
+            </nav>
 
-            <footer className="cabinet-result-footer">
-              <p className="cabinet-test-note">
-                {c.source}: {guestResult.definitionKey} · {guestResult.definitionVersion} · {guestResult.instrumentLocale?.toUpperCase()}
-              </p>
-              {(guestResult.expiresAt || sessionExpires) && (
-                <p className="cabinet-test-note">
-                  {c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.
-                </p>
-              )}
-              <div className="cabinet-test-actions">
-                {activePlan?.status === 'active' && (
-                  <button className="cabinet-save-result" type="button" disabled={busy} onClick={continuePlan}>
-                    {locale === 'ru' ? 'Продолжить набор' : 'Continue set'}
-                  </button>
-                )}
+            <details className={guestActions.more}>
+              <summary>{locale === 'ru' ? 'Управление результатом' : 'Result options'}</summary>
+              <div className={guestActions.moreBody}>
+                <p>{c.source}: {guestResult.definitionKey} · {guestResult.definitionVersion} · {guestResult.instrumentLocale?.toUpperCase()}</p>
+                {(guestResult.expiresAt || sessionExpires) && <p>{c.temporary} {new Date(guestResult.expiresAt || sessionExpires).toLocaleString(locale)}.</p>}
                 {activePlan?.status === 'completed' && (
-                  <button className="cabinet-text-button" type="button" disabled={busy}
+                  <button type="button" disabled={busy}
                     onClick={() => { replaceGuestRoute({planId: activePlan.id}); setPhase('summary') }}>
                     {locale === 'ru' ? 'Обзор пройденных тестов' : 'View completed test set'}
                   </button>
                 )}
-                <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>
-                  {c.restart}
-                </button>
-                <button className="cabinet-text-button" type="button" disabled={busy} onClick={deleteResult}>
-                  {c.delete}
-                </button>
+                <button type="button" disabled={busy} onClick={deleteResult}>{c.delete}</button>
               </div>
-            </footer>
+            </details>
           </article>
         )}
         {phase === 'summary' && activePlan && (
