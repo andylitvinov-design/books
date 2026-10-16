@@ -202,6 +202,9 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
         </div>
       </section>
 
+      {/* Guide-first, compact capture after the authentic course hero. */}
+      <YggdrasilLeadForms locale={locale} placement="top" />
+
       <section className="yggdrasil-program-section" id="system-modules">
         <p className="homeopathy-kicker">{text.mapEyebrow}</p>
         <h2>{text.mapTitle}</h2>
@@ -268,11 +271,10 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
 
       <YggdrasilMeditationFeature locale={locale} />
 
-      <YggdrasilLeadForms locale={locale} />
-
       <YggdrasilTestimonials locale={locale} />
 
       <YggdrasilEnglishVideoGuide locale={locale} scope="all" />
+
 
 
     </div>
