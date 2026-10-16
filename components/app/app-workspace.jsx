@@ -698,6 +698,43 @@ function SaveContinuation({ data, locale, reload }) {
             monitoringCatalogItem(intent?.source?.definitionKey)?.title?.en ||
             (ru ? 'Результат теста' : 'Test result'))
         : (ru ? 'Документ' : 'Document')
+  // After the guest explicitly clicked Get free analysis, the item-scoped
+  // HttpOnly intent is sufficient consent to save that one result. Keep the
+  // OAuth handoff visually transitional, never expose a second Save form.
+  if (autoSave && !authFailure && !error &&
+      (!intent || canAutoContinueSave({ automatic: autoSave, authStatus: authFailure, intent }))) {
+    return (
+      <section className="hh-panel hh-entry" aria-busy="true">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Открываем ваш результат' : 'Opening your result'}</h1>
+        <p role="status">{ru
+          ? 'Сохраняем выбранный тест в кабинете и открываем пояснения шкал и рекомендации…'
+          : 'Saving your selected test and opening your scale explanations and recommendations…'}</p>
+      </section>
+    )
+  }
+  if (autoSave && intent?.sourceKind === 'guest_result') {
+    // A failed OAuth or import does not require asking for Save consent again.
+    // Keep the selected result in guest storage and offer safe recovery.
+    return (
+      <section className="hh-panel hh-entry">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Не удалось открыть анализ' : 'Could not open your analysis'}</h1>
+        <p role="alert">{error || (ru
+          ? 'Вернитесь к результату теста и повторите вход через Google.'
+          : 'Return to your test result and try Google sign-in again.')}</p>
+        {!authFailure && !intent.expired && intent.status === 'pending' && (
+          <button type="button" className="hh-primary" disabled={busy} onClick={commit}>
+            {busy ? (ru ? 'Повторяем…' : 'Retrying…')
+              : (ru ? 'Повторить открытие анализа' : 'Retry opening analysis')}
+          </button>
+        )}
+        <Link href={`/${locale}/client?result=${encodeURIComponent(intent.sourceId)}`} prefetch={false}>
+          {ru ? 'Вернуться к результату теста' : 'Back to my test result'}
+        </Link>
+      </section>
+    )
+  }
   return (
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
@@ -1225,7 +1262,7 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
     [status, setStatus] = useState(''),
     [context, setContext] = useState({}),
     [showDiscard, setShowDiscard] = useState(false),
-    [mode, setMode] = useState(initialMode === 'guided' && courseMode ? 'guided' : initialMode === 'quick' ? 'quick' : null),
+    [mode, setMode] = useState(initialMode === 'guided' ? 'guided' : 'quick'),
     [safetyAcknowledged, setSafetyAcknowledged] = useState(false)
   const operation = useRef(null),
     inflight = useRef(false),
@@ -1450,45 +1487,8 @@ function Runner({ id, locale, onExit, onComplete, initialMode = null, courseMode
       return names[section] || ''
     }
 
-  if (!mode && !isContext)
-    return (
-      <section className="hh-runner hh-panel hh-runner-mode-picker">
-        <div className="hh-test-mode-intro">
-          <p className="hh-kicker">
-            {monitoringCatalogItem(def.key)?.title?.[locale] || monitoringCatalogItem(def.key)?.title?.en || def.title}
-          </p>
-          <h1>{modeCopy.title}</h1>
-          <p>{modeCopy.intro}</p>
-        </div>
-        <div className="hh-test-mode-grid">
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('quick')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">⚡</span>
-            <span>
-              <small>{modeCopy.quick} · ~{quickMinutes} {timeUnit}</small>
-              <strong>{modeCopy.quickTitle}</strong>
-              <em>{modeCopy.quickText}</em>
-            </span>
-          </button>
-          <button className="hh-test-mode-card" type="button" onClick={() => setMode('guided')}>
-            <span className="hh-test-mode-icon" aria-hidden="true">✦</span>
-            <span>
-              <small>{modeCopy.guided} · ~{guidedMinutes} {timeUnit}</small>
-              <strong>{modeCopy.guidedTitle}</strong>
-              <em>{modeCopy.guidedText}</em>
-            </span>
-          </button>
-        </div>
-        <p className="hh-fine hh-test-mode-same">{modeCopy.same}</p>
-        <div className="hh-actions hh-test-mode-exit">
-          <button disabled={busy || Boolean(operation.current) || Boolean(completion.current)} onClick={exit}>
-            {c.saveExit}
-          </button>
-        </div>
-      </section>
-    )
-
   return (
-    <section className={`hh-runner hh-panel hh-runner--${mode || 'guided'} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
+    <section className={`hh-runner hh-panel hh-runner--${mode} ${courseMode && mode !== 'quick' ? courseQuizStyles.questRunner : ''}`} data-course-quiz={courseMode ? 'true' : undefined}>
       <header className="hh-runner-head">
         <div className="hh-runner-topline">
           <p className="hh-kicker">

@@ -60,7 +60,7 @@ test('guest successful next-test creation hands busy state to new run',async()=>
  getDefinitionById(){return{id:'next-definition',key:'next',version:'v1',instrumentLocale:'ru',questions:[{id:'q'}]}},
  async guestFetch(path){if(path.endsWith('/submit'))return{id:'result',runId:'old'};if(path==='guest/test-plans/plan')return{id:'plan',status:'active',revision:1,completedRunIds:['old'],definitionIds:['first','next-definition'],currentIndex:1};if(path==='guest/bootstrap')return{results:[]};if(path==='guest/runs')return{id:'new',revision:0,answers:{}};throw Error(path)}}
  vm.createContext(ctx);vm.runInContext(extract(guest,'  async function startRun(','  async function begin(')+extract(guest,'  async function submitSavedRun(','  async function choose(value')+extract(guest,'  async function submitResult(','  async function next()'),ctx)
- await ctx.submitResult(ctx.run,'next');assert.equal(ctx.run.id,'new');assert.equal(ctx.phase,'mode');assert.equal(ctx.busy,false);assert.equal(ctx.submitting.current,false);assert.equal(ctx.completion.current,null)
+ await ctx.submitResult(ctx.run,'next');assert.equal(ctx.run.id,'new');assert.equal(ctx.phase,'questions');assert.equal(ctx.busy,false);assert.equal(ctx.submitting.current,false);assert.equal(ctx.completion.current,null)
 })
 test('guest old next-test response cannot clear newer completion recovery',async()=>{
  let release;const newer={run:{id:'new'},result:null};const ctx={runLifetime:{current:0},replaceGuestRoute(){},completion:{current:null},activePlan:{id:'plan'},setGuestResult(){},setActivePlan(){},setPlanResults(){},setActive(){},getDefinitionById(){return{key:'next'}},startRun:()=>new Promise(resolve=>{release=resolve}),
@@ -76,7 +76,7 @@ test('guest plan resume pins instrument version and language independently of UI
  vm.createContext(ctx);vm.runInContext(line+'; globalThis.displayed=definition',ctx)
  assert.equal(ctx.displayed,en);assert.equal(ctx.displayed.instrumentLocale,'en');assert.equal(ctx.displayed.version,'v1');assert.equal(ctx.locale,'ru')
  const fresh={...ctx,run:null};vm.createContext(fresh);vm.runInContext(line+'; globalThis.displayed=definition',fresh);assert.equal(fresh.displayed,ru)
- assert.match(extract(guest,'  async function begin(','  async function createGuestSession()'),/setRun\(null\)\n\s+setActive\(id\)/)
+ assert.match(extract(guest,'  async function begin(','  async function beginGuestBattery('),/setRun\(null\)\n\s+setActive\(id\)/)
 })
 
 test('guest missing or unknown persisted definition fails closed without locale substitution',()=>{
@@ -93,7 +93,7 @@ test('guest missing or unknown persisted definition fails closed without locale 
 
 test('guest missing-version recovery guards question header and context form',()=>{
  assert.match(guest,/phase === 'questions' && definition \? \(/)
- assert.match(guest,/phase === 'mode' && definition && run && traumaContextReady/)
+ assert.match(guest,/phase === 'questions' && definition && question && run && traumaContextReady/)
  assert.match(guest,/phase === 'context' && definition\?\.optionalContext\?\.length > 0/)
 })
 
@@ -102,7 +102,11 @@ function batteryContext() {
  const second={id:'second-en-v1',key:'second',version:'v1',instrumentLocale:'en',questions:[{id:'q'}]}
  const ctx={runLifetime:{current:0},replaceGuestRoute(){},saving:{current:false},submitting:{current:false},saveOperation:{current:{old:true}},completion:{current:{old:true}},run:{id:'old'},locale:'ru',pendingMood:null,pendingGuestDefinitions:[],definition:first,adult:true,necessary:true,c:{error:'failed'},crypto:{randomUUID},localZone:()=> 'UTC',calls:[],definitions:[first,second],
  definitionFor:key=>[first,second].find(d=>d.key===key),getDefinitionById:id=>{const d=[first,second].find(d=>d.id===id);if(!d)throw Error('unknown');return d},
- async guestFetch(path,body){ctx.calls.push({path,body});if(path==='guest/bootstrap')return{runs:[],results:[]};if(path==='guest/session')return{};if(path==='guest/test-plans')return{id:'plan',status:'active',currentIndex:1,definitionIds:[first.id,second.id]};if(path==='guest/runs')return{id:'new-'+body.definitionKey,definitionId:[first,second].find(d=>d.key===body.definitionKey).id};throw Error(path)}}
+ async guestFetch(path,body){ctx.calls.push({path,body});if(path==='guest/bootstrap'){
+    if(ctx.guestSessionMissing)throw Object.assign(new Error('GUEST_SESSION_REQUIRED'),{status:401,code:'GUEST_SESSION_REQUIRED'});
+    return {runs:[],results:[]}
+  }
+  if(path==='guest/session'){ctx.guestSessionMissing=false;return{expiresAt:'2026-10-23T12:00:00.000Z'}};if(path==='guest/test-plans')return{id:'plan',status:'active',currentIndex:1,definitionIds:[first.id,second.id]};if(path==='guest/runs')return{id:'new-'+body.definitionKey,definitionId:[first,second].find(d=>d.key===body.definitionKey).id};throw Error(path)}}
  for(const name of ['Busy','Run','Active','GuestResult','Error','SaveState','SessionExpires','LatestGuestMood','Answers','Context','Index','Mode','Phase','ActivePlan','PlanResults','PendingGuestDefinitions'])ctx['set'+name]=value=>{ctx[name[0].toLowerCase()+name.slice(1)]=value}
  vm.createContext(ctx)
  vm.runInContext(extract(guest,'  async function startRun(','  async function saveGuestRun(')+extract(guest,'  function resetToCatalog()','  return (\n    <>'),ctx)
@@ -119,21 +123,43 @@ for(const stage of ['guest/bootstrap','guest/test-plans','guest/runs'])for(const
  release();await old
  assert.deepEqual({run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error},expected)
 })
-test('guest consent resumes returned plan currentIndex and pinned instrument language',async()=>{
- const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions
- await ctx.createGuestSession()
- const call=ctx.calls.find(c=>c.path==='guest/runs');assert.equal(call.body.definitionKey,'second');assert.equal(call.body.instrumentLocale,'en');assert.equal(call.body.definitionVersion,'v1');assert.equal(ctx.locale,'ru');assert.equal(ctx.phase,'mode');assert.equal(ctx.busy,false)
+test('guest CTA creates one session automatically and honors pinned plan instrument',async()=>{
+ const ctx=batteryContext();ctx.guestSessionMissing=true
+ await ctx.beginGuestBattery([{key:'first'},{key:'second'}])
+ const session=ctx.calls.filter(c=>c.path==='guest/session')
+ assert.equal(session.length,1)
+ assert.deepEqual(JSON.parse(JSON.stringify(session[0].body)),{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
+ assert.equal(ctx.sessionExpires,'2026-10-23T12:00:00.000Z')
+ const call=ctx.calls.find(c=>c.path==='guest/runs')
+ assert.equal(call.body.definitionKey,'second');assert.equal(call.body.instrumentLocale,'en');assert.equal(call.body.definitionVersion,'v1')
+ assert.equal(ctx.locale,'ru');assert.equal(ctx.phase,'questions');assert.equal(ctx.busy,false)
 })
-test('guest completed consent battery shows saved summary without starting another run',async()=>{
- const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions;const fetch=ctx.guestFetch
+test('existing guest starts directly without creating another temporary session',async()=>{
+ const ctx=batteryContext()
+ await ctx.beginGuestBattery([{key:'first'},{key:'second'}])
+ assert.equal(ctx.calls.filter(c=>c.path==='guest/session').length,0)
+ assert.equal(ctx.phase,'questions')
+})
+test('guest completed battery goes to saved summary with no extra run',async()=>{
+ const ctx=batteryContext();const fetch=ctx.guestFetch
  ctx.guestFetch=(path,body)=>path==='guest/test-plans'?Promise.resolve({id:'plan',status:'completed',completedRunIds:[]}):fetch(path,body)
- await ctx.createGuestSession();assert.equal(ctx.phase,'summary');assert.equal(ctx.busy,false);assert.equal(ctx.calls.filter(c=>c.path==='guest/runs').length,0)
+ await ctx.beginGuestBattery([{key:'first'},{key:'second'}])
+ assert.equal(ctx.phase,'summary');assert.equal(ctx.busy,false);assert.equal(ctx.calls.filter(c=>c.path==='guest/runs').length,0)
 })
-for(const stage of ['guest/session','guest/test-plans','guest/runs'])test(`guest consent ignores delayed ${stage} after reset`,async()=>{
- const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions;const fetch=ctx.guestFetch;let release
+for(const stage of ['guest/session','guest/test-plans','guest/runs'])test(`guest direct start ignores delayed ${stage} after reset`,async()=>{
+ const ctx=batteryContext();ctx.guestSessionMissing=stage==='guest/session'
+ const fetch=ctx.guestFetch;let release
  ctx.guestFetch=(path,body)=>path===stage?new Promise(resolve=>{release=()=>resolve(fetch(path,body))}):fetch(path,body)
- const pending=ctx.createGuestSession();await tick();assert.equal(typeof release,'function');ctx.resetToCatalog();release();await pending
+ const pending=ctx.beginGuestBattery([{key:'first'},{key:'second'}])
+ await tick();assert.equal(typeof release,'function');ctx.resetToCatalog();release();await pending
  assert.equal(ctx.phase,'catalog');assert.equal(ctx.run,null);assert.equal(ctx.activePlan,null);assert.equal(ctx.busy,false)
+})
+test('failed guest bootstrap does not silently create a guest session',async()=>{
+ const ctx=batteryContext(),fetch=ctx.guestFetch
+ ctx.guestFetch=(path,body)=>path==='guest/bootstrap'?Promise.reject(Object.assign(new Error('SERVICE_UNAVAILABLE'),{status:503,code:'SERVICE_UNAVAILABLE'})):fetch(path,body)
+ await ctx.beginGuestBattery([{key:'first'},{key:'second'}])
+ assert.equal(ctx.calls.filter(c=>c.path==='guest/session').length,0)
+ assert.equal(ctx.error,'failed')
 })
 test('guest continue uses plan definition even when UI locale differs',async()=>{
  const ctx=batteryContext();ctx.activePlan={id:'plan',status:'active',currentIndex:1,definitionIds:ctx.definitions.map(d=>d.id)}
@@ -202,7 +228,7 @@ test('guest run URL pins saved version, instrument language, progress and zero a
  assert.equal(ctx.active, 'second')
  assert.equal(ctx.answers.q, 0)
  assert.equal(ctx.index, 0)
- assert.equal(ctx.phase, 'mode')
+ assert.equal(ctx.phase, 'questions')
  assert.equal(ctx.locale, 'ru')
 })
 

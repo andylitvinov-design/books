@@ -1,0 +1,65 @@
+.capture {
+  --capture-navy: #1a3a5d;
+  --capture-wine: #913c57;
+  padding: 18px;
+  background: linear-gradient(125deg,#f1f4f8 0%,#fcfbfc 74%);
+  border: 1px solid #dce2e9;
+  border-radius: 14px;
+}
+.prompt { margin:0 0 12px; color:#243e5b; font-size:14px; line-height:1.35; font-weight:800; }
+.choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.choice {
+  min-height:67px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:6px;
+  border:1px solid #d7e0e9;
+  border-radius:9px;
+  padding:10px 7px;
+  color:#213e59;
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+  line-height:1.22;
+  font-weight:800;
+  text-align:center;
+}
+.choice:hover { border-color:#9eb2c7; background:#eef3f8; }
+.choice[data-selected="true"] { background:#1a4b66; color:#fff; border-color:#1a4b66; }
+.choiceNumber {
+  display:grid;place-items:center;flex:0 0 23px;width:23px;height:23px;
+  border:1px solid currentColor; border-radius:50%; font-size:10px;font-weight:850;
+}
+.help { margin:10px 0 12px; min-height:22px; color:#5d6e81; font-size:12px; line-height:1.5; }
+.action {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:47px;
+  width:100%;
+  padding:12px 15px;
+  border-radius:10px;
+  background:#913c57;
+  color:#fff;
+  text-decoration:none;
+  font-size:13px;
+  line-height:1.35;
+  font-weight:800;
+  text-align:center;
+}
+.action:hover { background:#762b44;color:#fff; }
+.action svg { flex-shrink:0; }
+.action svg:last-child { margin-left:auto; }
+.note { display:block; margin:11px 0 0; color:#758095; font-size:11px; line-height:1.5; }
+.choice:focus-visible,.action:focus-visible { outline:3px solid #d9b971;outline-offset:3px; }
+@media(max-width:590px) {
+  .capture { padding:15px 11px; }
+  .choices { gap:6px; }
+  .choice { padding:9px 4px; font-size:11px; min-height:75px; }
+  .choiceNumber { width:21px;height:21px;flex-basis:21px; }
+  .action { padding:12px 10px;font-size:12px; }
+}
