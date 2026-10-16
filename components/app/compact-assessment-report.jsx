@@ -6,13 +6,6 @@ import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
 
-function firstSentence(value) {
-  if (typeof value !== 'string') return ''
-  const trimmed = value.trim()
-  const match = trimmed.match(/^.+?[.!?](?=\s|$)/u)
-  return match ? match[0] : trimmed
-}
-
 // Only presentation changes here: instrument scores, banding and recommendations
 // are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
@@ -45,12 +38,15 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       : model.orientation === 'resource'
         ? ru ? 'Больше баллов = больше описанных ресурсов.' : 'A higher score means more reported resources.'
         : ru ? 'Описательная шкала: больше не означает лучше или хуже.' : 'Descriptive scale: higher is not automatically better or worse.'
-  const conciseMeaning = firstSentence(section.meaning)
+  // The model supplies the semantic explanation separately from the numeric
+  // score prefix. Legacy/specialised reports retain their complete explanation.
+  const conciseMeaning = section.summary || section.meaning
   const canShowScore = typeof section.value === 'number' && Number.isFinite(section.value)
   const isAsrs = result.definitionKey === 'asrs-6'
 
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
     aria-label={ru ? 'Мои результаты и рекомендации' : 'Results and recommendations'}>
+    {report.verified === false && <p className={styles.contextNote} role="note" data-unverified-assessment-result>{report.intro}</p>}
     <section className={styles.picker} id="hh-assessment-scales" data-assessment-scales data-assessment-scale-picker
       aria-labelledby="hh-assessment-scale-title">
       <div className={styles.pickerHeader}>
@@ -91,18 +87,20 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <div className={styles.summary}>
           <h3>{section.construct || section.title}</h3>
           {section.band && <p className={styles.band}>{section.band}</p>}
-          {canShowScore && <p className={styles.scale}>{ru ? 'Баллы' : 'Score'}: {section.value} · {ru ? 'шкала' : 'range'} {section.min}–{section.max}</p>}
+          {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
+            ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
+              ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
           {rawNote && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
-      {conciseMeaning && <p className={styles.explanation}>{conciseMeaning}</p>}
+      {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
       {section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
       {section.recommendedReview && section.followUp && <p className={styles.care} role="note">{section.followUp}</p>}
       {section.steps?.length > 0 && <div className={styles.recommendations}>
         <h4>{isAsrs
           ? (ru ? 'Пояснение к результату' : 'About your result')
-          : (ru ? 'Два шага на неделю' : 'Two steps this week')}</h4>
+          : (ru ? 'Что можно сделать дальше' : 'What you can do next')}</h4>
         <ol>{section.steps.slice(0, 2).map((step, index) => <li key={index}>{step}</li>)}</ol>
       </div>}
       <details className={styles.details}>

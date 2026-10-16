@@ -56,7 +56,7 @@ test('report and recommendations remain available and based on completed private
  assert.match(dash,/<ClientReportActions data=\{data\} locale=\{locale\} singleAction/)
  assert.match(dash,/nextPersonalRecommendation\(\{results:results\|\|\[\],snapshot,locale\}\)/)
  assert.match(report,/generateClientPdf/)
- assert.match(model,/latest\.dimensions\.map/)
+ assert.match(model,/savedDimensionRows\(latest\)\.map/)
 })
 
 test('filters are an explicit optional action; pending public selection is reviewed there only',()=>{

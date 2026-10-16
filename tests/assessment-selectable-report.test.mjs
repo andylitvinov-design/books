@@ -83,8 +83,10 @@ function mount(props) {
   }
 }
 const scored = (definition, edge = 'min') => scoreAssessment(definition,
-  Object.fromEntries(definition.questions.map(question => [question.id,
-    question[edge] ?? definition.answerScale[edge]])), syntheticTraumaContext(definition))
+  Object.fromEntries(definition.questions.map((question, index) => {
+    const choice = edge === 'mixed' ? (index % 2 ? 'max' : 'min') : edge
+    return [question.id, question[choice] ?? definition.answerScale[choice]]
+  })), syntheticTraumaContext(definition))
 const fixture = (key, instrumentLocale = 'en', version = 'v1') => scored(getAssessmentDefinition(key, version, instrumentLocale))
 
 function assertSelected(h, result, report, section, locale) {
@@ -98,6 +100,8 @@ function assertSelected(h, result, report, section, locale) {
   assert.equal(pressed[0].props['data-assessment-scale-trigger'], section.key)
   assert.equal(pressed[0].props['aria-controls'], panel.props.id)
   assert.ok(text(panel).includes(section.meaning), 'Full source meaning remains available')
+  assert.ok(visibleText(panel).includes(section.summary || section.meaning),
+    'The semantic explanation must be visible without expanding details, not just its numeric prefix')
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
   for (const limit of section.limitations || []) assert.ok(visibleText(panel).includes(limit), 'Source limitations must not require expansion')
   if (section.followUp) assert.ok(text(panel).includes(section.followUp))
@@ -127,12 +131,12 @@ function assertSelected(h, result, report, section, locale) {
   }
 }
 
-test('actual buttons reach every saved measure with exact source content and gauge in EN/RU', () => {
+test('actual buttons expose every semantic explanation at min, max and mixed answers in EN/RU', () => {
   const enabled = new Set(MONITORING_CATALOG.filter(item => item.startable).map(item => item.key + ':' + item.version))
   const definitions = ASSESSMENT_DEFINITIONS.filter(definition => enabled.has(definition.key + ':' + definition.version))
   assert.ok(definitions.length >= 80)
-  for (const definition of definitions) {
-    const result = scored(definition)
+  for (const definition of definitions) for (const profile of ['min', 'max', 'mixed']) {
+    const result = scored(definition, profile)
     const saved = JSON.stringify(result)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(result, locale)

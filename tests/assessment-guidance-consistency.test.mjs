@@ -54,10 +54,10 @@ for (const locale of ['en', 'ru']) test(`personal reflection uses shared score-s
   assert.equal(JSON.stringify([prior, current]), original)
 })
 
-test('unverified versions get context-only reflection rather than score-linked advice', () => {
+test('unverified versions do not supply score-linked personal reflection', () => {
   const current = fixture('erq', 12)
   const altered = {...current, contentHash: 'unknown'}
-  assert.match(practicalReflection([altered]), /scores alone do not explain why/)
+  assert.equal(practicalReflection([altered]), '')
   assert.doesNotMatch(practicalReflection([altered]), /reappraisal|suppression|1 \(1/)
 })
 

@@ -236,7 +236,10 @@ test('synthetic history/snapshot retain zero, count display identity and reject 
   assert.throws(()=>validateResult({...result,dimensions:[{...result.dimensions[0],value:.5}]}),/INVALID_RESULT/)
   assert.throws(()=>validateResult({...result,dimensions:[{...result.dimensions[0],displayKind:undefined}]}),/INVALID_RESULT/)
   const invalid=buildClientReport({results:[{...result,contentHash:'tampered'}],locale:'en'})
-  assert.equal(invalid.tests.length,0)
+  assert.equal(invalid.tests.length,1)
+  assert.equal(invalid.tests[0].interpretation.verified,false)
+  assert.equal(invalid.tests[0].dimensions[0].value,result.dimensions[0].value)
+  assert.ok(invalid.verificationWarnings.length)
 })
 
 test('three-run Psi-Monitoring patterns stay higher/lower/unchanged, never improvement or decline',async()=>{

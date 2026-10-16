@@ -91,12 +91,21 @@ test('every score dimension in each runnable test has a localized report at vali
   }
 })
 
-test('every single numeric value in all integer-scale score ranges maps to one total, unambiguous interpretation', () => {
+test('synthetic scores across instrument ranges have an unambiguous supported or unavailable interpretation', () => {
   let checked = 0
   for (const def of runnable) {
     const scored = scoreAssessment(def, answersFor(def, 'min'), syntheticTraumaContext(def))
     for (const d of scored.dimensions) {
       const min = d.min, max = d.max
+      const spec = def.scoring?.dimensions?.find(item => item.key === d.key)
+      let attainableMeans = null
+      if (spec?.method === 'mean') {
+        const questions = spec.items.map(id => def.questions.find(question => question.id === id))
+        const minimum = questions.reduce((sum, question) => sum + (question.min ?? def.answerScale.min), 0)
+        const maximum = questions.reduce((sum, question) => sum + (question.max ?? def.answerScale.max), 0)
+        attainableMeans = new Set(Array.from({length: maximum - minimum + 1}, (_, index) =>
+          Math.round(((minimum + index) / questions.length) * (spec.multiplier ?? 1) * 100) / 100))
+      }
       assert.ok(Number.isFinite(min) && Number.isFinite(max) && max > min)
       const values = [min, (min + max) / 2, max]
       if (Number.isInteger(min) && Number.isInteger(max) && max - min <= 100) {
@@ -109,10 +118,14 @@ test('every single numeric value in all integer-scale score ranges maps to one t
           const info = interpretationForDimension(interpretationResult, dimension, locale)
           assert.ok(info.code && info.meaning && info.label, def.key + '/' + d.key + '/' + value)
           assert.ok(['screening','published-reference','descriptive','unavailable'].includes(info.basis))
-          // Fractional synthetic values are impossible on official summed
-          // instruments; they are rejected rather than mislabeled.
-          if (info.basis === 'unavailable') assert.equal(Number.isInteger(value), false)
-          else assert.ok(info.meaning.length > 35)
+          // Summed scales cannot emit fractional values. Rounded means also
+          // have discrete outputs; CBI's multiplier makes some integers impossible.
+          if (info.basis === 'unavailable')
+            assert.ok(!Number.isInteger(value) || (attainableMeans && !attainableMeans.has(value)))
+          else {
+            assert.ok(info.meaning.length > 35)
+            if (attainableMeans) assert.ok(attainableMeans.has(value))
+          }
           checked++
         }
       }
