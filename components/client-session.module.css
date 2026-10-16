@@ -1274,3 +1274,49 @@
 @media(prefers-reduced-motion:reduce){
  .youtubeLessonShade{transition:none}
 }
+
+/* Always-visible report completion actions. Both actions render even in
+   practitioner preview (save is disabled there) and mobile-safe scrolling. */
+.cabinetSessionPage .sessionBottomActions{
+  width:100%;margin:28px 0 16px;padding:clamp(17px,3vw,26px);
+  border:1px solid #cbdce6;border-radius:21px;
+  background:linear-gradient(138deg,#f0f6fa,#f9fcfd 62%,#fff7f8);
+  box-shadow:0 12px 32px rgba(23,57,87,.08);
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+}
+.sessionBottomHeading{grid-column:1/-1;margin:0 0 4px}
+.cabinetSessionPage .sessionBottomHeading h2{
+  margin:3px 0 0;font:650 clamp(21px,3vw,28px)/1.25 Georgia,serif;
+  color:#173957;letter-spacing:-.018em
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{
+  width:100%;min-height:64px;display:flex;align-items:center;justify-content:center;
+  gap:11px;padding:15px 18px;text-align:center;text-decoration:none;
+  border-radius:14px;font:800 clamp(14px,1.7vw,16px)/1.35 system-ui,-apple-system,sans-serif;
+  box-shadow:0 4px 13px rgba(27,48,70,.12);
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary{
+  color:#fff!important;background:#173957;border:1px solid #173957
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{
+  color:#fff!important;background:#843d55;border:1px solid #843d55
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary:hover:not(:disabled){background:#0e2d47}
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:hover{background:#722b43}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary:disabled{
+  opacity:.72;cursor:not-allowed;box-shadow:none
+}
+.cabinetSessionPage .sessionBottomActions svg{flex:0 0 auto}
+.cabinetSessionPage .sessionBottomHint{grid-column:1/-1;margin:0;padding:0 2px;
+  color:#586b79;font-size:13px;line-height:1.5}
+@media(max-width:700px){
+  .cabinetSessionPage .sessionBottomActions{
+    display:grid;grid-template-columns:minmax(0,1fr);gap:11px;
+    padding:16px 13px;margin:25px 0 15px;
+    padding-bottom:max(16px,env(safe-area-inset-bottom));
+  }
+  .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+  .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{min-height:57px;padding:14px 12px}
+}
+@media print{.cabinetSessionPage .sessionBottomActions{display:none!important}}
