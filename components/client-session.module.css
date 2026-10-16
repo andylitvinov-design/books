@@ -1019,3 +1019,26 @@
   .youtubeLessonStart{font-size:15px;gap:7px}
   .youtubeLessonStart svg{width:39px;height:39px}
 }
+
+
+/* Report editor inline YouTube-link capture (shares private session draft). */
+.youtubeQuickAdd{
+  margin:14px 0 19px;background:#fff;border:1px solid #d7e2eb;
+  border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(33,66,85,.045);
+}
+.youtubeQuickAdd>summary{
+  display:flex;align-items:center;gap:12px;cursor:pointer;min-height:53px;
+  padding:13px 17px;list-style:none;color:#173957;font-weight:750;font-size:16px;
+}
+.youtubeQuickAdd>summary::-webkit-details-marker{display:none}
+.youtubeQuickAdd>summary svg{color:#315c7c}
+.youtubeQuickAdd[open]>summary{background:#eef3f8;border-bottom:1px solid #d9e4ec}
+.youtubeQuickAddBody{padding:16px 19px 19px}
+.youtubeQuickAddBody .youtubeLesson{margin:14px 0;max-width:700px}
+.youtubeQuickAddBody .success{display:block}
+.youtubeQuickAddBody .success a{display:inline-block;margin-left:7px;color:#1a5877;font-weight:750}
+.youtubeQuickAddBody .primaryButton{width:auto;min-height:44px}
+@media(max-width:580px){
+  .youtubeQuickAddBody{padding:13px}
+  .youtubeQuickAddBody .primaryButton{width:100%;justify-content:center}
+}
