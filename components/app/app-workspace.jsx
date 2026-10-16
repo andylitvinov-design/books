@@ -713,6 +713,28 @@ function SaveContinuation({ data, locale, reload }) {
       </section>
     )
   }
+  if (autoSave && intent?.sourceKind === 'guest_result') {
+    // A failed OAuth or import does not require asking for Save consent again.
+    // Keep the selected result in guest storage and offer safe recovery.
+    return (
+      <section className="hh-panel hh-entry">
+        <p className="hh-kicker">Holistic House</p>
+        <h1>{ru ? 'Не удалось открыть анализ' : 'Could not open your analysis'}</h1>
+        <p role="alert">{error || (ru
+          ? 'Вернитесь к результату теста и повторите вход через Google.'
+          : 'Return to your test result and try Google sign-in again.')}</p>
+        {!authFailure && !intent.expired && intent.status === 'pending' && (
+          <button type="button" className="hh-primary" disabled={busy} onClick={commit}>
+            {busy ? (ru ? 'Повторяем…' : 'Retrying…')
+              : (ru ? 'Повторить открытие анализа' : 'Retry opening analysis')}
+          </button>
+        )}
+        <Link href={`/${locale}/client?result=${encodeURIComponent(intent.sourceId)}`} prefetch={false}>
+          {ru ? 'Вернуться к результату теста' : 'Back to my test result'}
+        </Link>
+      </section>
+    )
+  }
   return (
     <section className="hh-panel hh-entry">
       <p className="hh-kicker">{ru ? 'Подтверждение' : 'Confirmation'}</p>
