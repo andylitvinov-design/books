@@ -62,8 +62,9 @@ test('guided tests remain original instrument and autosave while course links la
   assert.match(courseSteps, /\?mode=guided&course=1/)
   assert.match(runner, /\?mode=guided&course=1/)
   assert.match(runner, /initialMode=\{searchParams\.get\('mode'\) === 'quick' \? 'quick' : searchParams\.get\('mode'\) === 'guided' \? 'guided' : null\}/)
-  // Non-course guided URLs must still show the original mode chooser.
-  assert.match(runner, /initialMode === 'guided' && courseMode \? 'guided'/)
+  // An explicit Guided URL opens the one-question runner directly, for courses and regular tests.
+  assert.match(runner, /initialMode === 'guided' \? 'guided' : 'quick'/)
+  assert.doesNotMatch(runner, /hh-runner-mode-picker/)
   assert.match(runner, /courseQuizStyles\.questRunner/)
   assert.match(runner, /data-course-quiz=\{courseMode \? 'true' : undefined\}/)
   assert.match(runner, /RunnerAnswerChoices/)
