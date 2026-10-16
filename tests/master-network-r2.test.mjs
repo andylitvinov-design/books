@@ -72,13 +72,14 @@ test('R2 migration preserves original Andy and service identities and adds scope
 })
 
 test('R2 UI exposes My Practice, public Masters and moderation without changing personal nav', async () => {
-  const [workspace, practice, moderation, route, repository, services] = await Promise.all([
+  const [workspace, practice, moderation, route, repository, services, explorer] = await Promise.all([
     readFile(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/practitioner-moderation.jsx',import.meta.url),'utf8'),
     readFile(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8'),
     readFile(new URL('../lib/practitioners/repository.js',import.meta.url),'utf8'),
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/master-network-explorer.tsx',import.meta.url),'utf8'),
   ])
   assert.match(workspace,/My Practice/)
   assert.match(workspace,/data\.services/)
@@ -91,5 +92,6 @@ test('R2 UI exposes My Practice, public Masters and moderation without changing 
   assert.match(route,/practice\/onboarding/)
   assert.match(repository,/async onboarding\(actor,input\)/)
   assert.match(repository,/pricingMode:'free'/)
-  assert.match(services,/Request free service/)
+  assert.match(services,/<MarketplaceServiceFinder services=/)
+  assert.match(explorer,/Request free service/)
 })
