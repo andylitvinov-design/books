@@ -290,3 +290,17 @@
   .hh-app .hh-practice-service-toolbar h3,.hh-app .hh-practice-service-toolbar h2 { font-size:21px; }
   .hh-app .hh-practice-service-row > summary { padding:12px; }
 }
+
+/* Keep the master service editor practical on narrow phones. */
+.hh-app .hh-practice-advanced-copy {
+  padding:11px 12px;margin:4px 0 8px;border:1px solid #d9dce4;border-radius:12px;
+  background:#f7f8fa;
+}
+.hh-app .hh-practice-advanced-copy > summary {
+  min-height:42px;display:flex;align-items:center;cursor:pointer;
+  font:700 12px/1.4 system-ui,sans-serif;color:#243954;
+}
+.hh-app .hh-practice-advanced-copy[open] > summary{margin-bottom:12px}
+.hh-app .hh-practice-advanced-copy label+label{margin-top:12px}
+.hh-app .hh-practice-advanced-copy textarea{min-height:84px;resize:vertical}
+.hh-app .hh-practice-advanced-copy > summary:focus-visible{outline:3px solid #a74460;outline-offset:3px}
