@@ -38,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         en: "/en/courses/methodology",
         ru: "/ru/courses/methodology",
         es: "/es/courses/methodology",
+        "x-default": "/en/courses/methodology",
       },
     },
     openGraph: { title: seo[language].title, description: seo[language].description, type: "article" },

@@ -245,7 +245,9 @@ test('top site header keeps a visible direct link to the private personal app on
 
   assert.match(home, /<SiteNavigation locale=\{locale\}/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
-  assert.match(nav, /filter\(item => item\.id !== 'cabinet'\)/)
+  assert.match(nav, /filter\(item => item\.id === 'services'\)/)
+  assert.match(nav, /site-nav-free-entry/)
+  assert.match(nav, /site-nav-about-entry/)
   assert.match(nav, /className="site-cabinet-entry"/)
   assert.match(nav, /href=\{\`\/\$\{activeLocale === 'es' \? 'en' : activeLocale\}\/app\`\}/)
   assert.match(nav, /data-nav-item="cabinet"/)

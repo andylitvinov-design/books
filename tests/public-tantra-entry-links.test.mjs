@@ -34,10 +34,16 @@ function loadComponent(path, imports) {
 const shared = {
   'next/link': anchor,
   'next/image': empty,
-  'lucide-react': { ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
+  'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
   '@/components/static-portrait': { StaticPortrait: empty },
   '@/components/public-site-header': { PublicSiteHeader: empty },
 };
+const freePaths = loadComponent('components/home-free-paths.tsx', {
+  ...shared,
+  '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
+  './home-free-paths.module.css': {},
+}).HomeFreePaths;
+shared['@/components/home-free-paths'] = { HomeFreePaths: freePaths };
 const home = loadComponent('components/holistic-house-home.tsx', {
   ...shared,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
@@ -148,3 +154,21 @@ test('Spanish Tantra link belongs to the new learning card and preserves current
   assert.match(html, /data-video-id="m9RfDgK76PU"/);
   assert.match(html, /data-video-id="5oj0BIbLT4w"/);
 });
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} preserves the three free paths and free-first hero while keeping Tantra in learning`, () => {
+    const options = renderLinks(freePaths, { locale });
+    assert.deepEqual(options.map((link) => link.href), [
+      `/${locale}/services/free-situation-review`, `/${locale}/wu-xing`, `/${locale}/client/tests`,
+    ]);
+    const html = renderToStaticMarkup(React.createElement(locale === 'es' ? spanishHome : home, { locale }));
+    const hero = html.match(/<section class="service-home-hero"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(hero);
+    assert.deepEqual(links(hero).map((link) => link.href), [
+      `/${locale}/services/free-situation-review`, `/${locale}/client/tests`, `/${locale}/services#consultation`,
+    ]);
+    const learning = html.match(/<article class="service-home-start-card service-home-start-card--learning">([\s\S]*?)<\/article>/)?.[1];
+    assert.ok(learning);
+    assert.equal(links(learning).filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`).length, 1);
+  });
+}
