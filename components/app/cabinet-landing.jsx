@@ -543,7 +543,17 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       })
       setActivePlan(plan)
       setPendingGuestDefinitions([])
-      await startRun(definitions[0])
+      if (plan.status === 'completed') {
+        const latest = await guestFetch('guest/bootstrap')
+        setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
+        setPhase('summary')
+      } else {
+        // Reopening the same guest battery resumes the actual outstanding test,
+        // rather than restarting the first item or losing previous measurements.
+        const next = getDefinitionById(plan.definitionIds[plan.currentIndex])
+        setActive(next.key)
+        await startRun(next)
+      }
     } catch (cause) {
       if (cause.status === 401 || cause.code === 'GUEST_SESSION_REQUIRED') setPhase('consent')
       else { setError(c.error); setPendingGuestDefinitions([]) }
