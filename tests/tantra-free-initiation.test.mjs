@@ -19,7 +19,7 @@ test("new localized Tantra Reiki Level 1 landing is routed, linked and indexed",
   assert.match(routes, /"Tantra Reiki — iniciación gratuita de Nivel 1"/);
   assert.match(routes, /"reiki\/tantra-reiki\/free-initiation"[\s\S]*?locale === "ru"/);
   assert.match(sitemap, /\/reiki\/tantra-reiki\/free-initiation/);
-  assert.match(course, /<Link className="tantra-course-hero__cta" href=\{."\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"\}/);
+  assert.ok(course.includes('<Link className="tantra-course-hero__cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}'));
 });
 
 test("exactly the seven owner-approved Russian questions are visible in natural order", () => {
