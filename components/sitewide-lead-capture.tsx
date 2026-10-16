@@ -10,6 +10,7 @@ import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-captur
 import { coreOfferDetailData, type DetailKind } from "@/components/core-service-detail";
 import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
@@ -152,7 +153,13 @@ export function SitewideLeadCapture() {
     const alternative = locale === "ru"
       ? { summary: "Предпочитаете сначала бесплатный письменный разбор ситуации?", action: "Открыть бесплатный разбор" }
       : { summary: "Prefer to start with a free written situation review?", action: "Open the free written review" };
-    const coreWhatsappUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(coreDetail.actionMessage);
+    const coreWhatsappUrl = whatsappEnquiryUrl({
+      locale,
+      service: coreDetail.title,
+      request: coreDetail.actionMessage,
+      option: coreDetail.action,
+      pagePath: pathname,
+    });
     return (
       <aside className={styles.section} aria-labelledby="sitewide-capture-title" data-sitewide-capture="core-service" data-core-service-capture={coreKind} lang={locale}>
         <div className={styles.inner}>

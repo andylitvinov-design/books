@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Check, ChevronRight, Sparkles } from "lucide-react";
+import { Check, ChevronRight, Sparkles } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./temple-initiation-chooser.module.css";
 
 type Localized = Record<PublicLocale, string>;
@@ -111,8 +113,8 @@ const copy = {
     customDeity: "Name a deity or ask for guidance",
     undecided: "Please help me choose",
     selected: "Your selection",
-    contact: "Request this mystery on WhatsApp",
-    note: "WhatsApp opens with your exact tradition, deity/channel and format. You decide whether to send.",
+    contact: "Request this mystery",
+    note: "Choose WhatsApp or Telegram. Your exact tradition, deity and format are in the draft; only you decide whether to send.",
     availability: "Dates, group availability and fees are confirmed personally.",
     messageIntro: "Hello Andrey! I would like to ask about a Temple Studies initiation.",
     messageClosing: "Please confirm the available format, schedule and price.",
@@ -145,8 +147,8 @@ const copy = {
     customDeity: "Назовите божество или попросите помочь",
     undecided: "Помогите мне выбрать",
     selected: "Ваш выбор",
-    contact: "Запросить мистерию в WhatsApp",
-    note: "WhatsApp откроется с указанием точной традиции, божества и формата. Сообщение отправляете вы.",
+    contact: "Заказать мистерию",
+    note: "Выберите WhatsApp или Telegram: традиция, божество и формат уже указаны в заявке. Отправка — только вами.",
     availability: "Даты, наличие группы и стоимость уточняются лично.",
     messageIntro: "Здравствуйте, Андрей! Хочу узнать о посвящении Temple Studies.",
     messageClosing: "Подскажите доступные форматы, даты и стоимость.",
@@ -179,8 +181,8 @@ const copy = {
     customDeity: "Nombra una deidad o pide orientación",
     undecided: "Ayúdame a elegir",
     selected: "Tu selección",
-    contact: "Solicitar este misterio por WhatsApp",
-    note: "WhatsApp abre tu solicitud exacta. Tú decides si enviarla.",
+    contact: "Solicitar este misterio",
+    note: "Elige WhatsApp o Telegram: la tradición, deidad y modalidad se incluirán en tu solicitud. Solo tú decides enviarla.",
     availability: "Las fechas, los grupos y los precios se confirman personalmente.",
     messageIntro: "Hola Andrey. Me gustaría consultar sobre una iniciación Temple Studies.",
     messageClosing: "Por favor, confirma los formatos, fechas y precios disponibles.",
@@ -190,14 +192,6 @@ const copy = {
     context: "El «canal» se aborda mediante una práctica espiritual y simbólica moderna; no es una iniciación oficial a una comunidad religiosa histórica.",
   },
 } as const;
-
-function WhatsAppLogo() {
-  return (
-    <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.198-.347.223-.644.075-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.76-1.653-2.057-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.496.099-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.206-.242-.579-.487-.5-.669-.51-.173-.008-.372-.01-.57-.01-.198 0-.52.074-.792.372-.273.297-1.04 1.016-1.04 2.478s1.064 2.874 1.213 3.073c.148.198 2.095 3.2 5.076 4.487.709.306 1.262.489 1.693.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.288.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.886 9.886 0 0 1-5.031-1.378l-.361-.214-3.74.981.998-3.646-.235-.374a9.866 9.866 0 0 1-1.51-5.26c.002-5.45 4.437-9.885 9.888-9.885a9.824 9.824 0 0 1 6.99 2.897 9.825 9.825 0 0 1 2.893 6.994c-.002 5.45-4.437 9.885-9.888 9.885m8.413-18.3A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.334.157 11.892a11.833 11.833 0 0 0 1.587 5.937L.057 24l6.314-1.656a11.884 11.884 0 0 0 5.674 1.446h.005c6.557 0 11.892-5.334 11.895-11.893a11.82 11.82 0 0 0-3.48-8.413Z" />
-    </svg>
-  );
-}
 
 export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -257,7 +251,13 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
     t.messageClosing,
     "Page: https://holistichouse.vercel.app/" + locale + "/academy/temple-studies",
   ].join("\n");
-  const whatsappUrl = ready ? "https://wa.me/14376066502?text=" + encodeURIComponent(message) : "";
+  const whatsappUrl = ready ? whatsappEnquiryUrl({
+    locale,
+    service: "Temple Studies",
+    request: message,
+    option: format?.title[locale],
+    pagePath: "/" + locale + "/academy/temple-studies",
+  }) : "";
 
   const steps = [
     { number: 1 as const, title: t.step1, enabled: true, done: hasTradition },
@@ -374,10 +374,13 @@ export function TempleInitiationChooser({ locale }: { locale: PublicLocale }) {
             <small>{format?.title[locale] ?? t.pending}</small>
           </div>
           {ready ? (
-            <a className={styles.action} href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-              data-temple-whatsapp-request>
-              <WhatsAppLogo /> {t.contact} <ArrowUpRight size={18} aria-hidden="true" />
-            </a>
+            <ContactChannelChooser
+              locale={locale}
+              whatsappUrl={whatsappUrl}
+              className={styles.action}
+              label={t.contact}
+              attributes={{ "data-temple-whatsapp-request": "true" }}
+            />
           ) : (
             <span className={styles.actionDisabled} data-temple-whatsapp-disabled>{t.choosePrompt}</span>
           )}

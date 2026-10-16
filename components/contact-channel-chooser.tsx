@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
@@ -37,6 +37,7 @@ type Props = {
   label?: string;
   event?: AcquisitionEvent;
   analyticsEvent?: PublicAnalyticsEvent;
+  onChannelClick?: (channel: "whatsapp" | "telegram") => void;
   attributes?: Record<string, string>;
   id?: string;
 };
@@ -49,11 +50,21 @@ export function ContactChannelChooser({
   label,
   event = "contact_click",
   analyticsEvent,
+  onChannelClick,
   attributes,
   id,
 }: Props) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  // A new selected service should never inherit the previous open handoff.
+  useEffect(() => setOpen(false), [whatsappUrl]);
+  // Show the newly revealed mini-form even if the order button sits at the bottom of a phone viewport.
+  useEffect(() => {
+    if (!open) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    panelRef.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
+  }, [open]);
   const c = copy[locale];
   const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
   return (
@@ -71,7 +82,7 @@ export function ContactChannelChooser({
         <span>{label || c.order}</span>
         <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
       </button>
-      <div className={styles.panel} id={panelId} hidden={!open}>
+      <div ref={panelRef} className={styles.panel} id={panelId} hidden={!open}>
         <p className={styles.question}>{c.question}</p>
         <div className={styles.choices} role="group" aria-label={c.question}>
           <AcquisitionEventLink
@@ -80,6 +91,7 @@ export function ContactChannelChooser({
             href={whatsappUrl}
             event={event}
             analyticsEvent={analyticsEvent}
+            onClick={() => onChannelClick?.("whatsapp")}
             target="_blank"
             rel="noopener noreferrer"
             attributes={{ ...attributes, "data-contact-channel": "whatsapp" }}
@@ -92,6 +104,7 @@ export function ContactChannelChooser({
             href={telegramUrl}
             event={event}
             analyticsEvent={analyticsEvent}
+            onClick={() => onChannelClick?.("telegram")}
             target="_blank"
             rel="noopener noreferrer"
             attributes={{ ...attributes, "data-contact-channel": "telegram" }}
