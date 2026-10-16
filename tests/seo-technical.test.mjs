@@ -8,5 +8,5 @@ test("technical SEO audit accepts the tracked public routes and rejects private 
   assert.equal(report.ok, true, report.failures.join("\n"));
   assert.equal(report.checked.publicRoutes, 4);
   assert.equal(report.checked.privateRoutes, 4);
-  assert.equal(report.checked.prioritySitemapEntries, 12);
+  assert.equal(report.checked.prioritySitemapEntries, 15);
 });
