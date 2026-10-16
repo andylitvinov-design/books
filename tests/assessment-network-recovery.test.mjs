@@ -60,7 +60,7 @@ test('guest successful next-test creation hands busy state to new run',async()=>
  getDefinitionById(){return{id:'next-definition',key:'next',version:'v1',instrumentLocale:'ru',questions:[{id:'q'}]}},
  async guestFetch(path){if(path.endsWith('/submit'))return{id:'result',runId:'old'};if(path==='guest/test-plans/plan')return{id:'plan',status:'active',revision:1,completedRunIds:['old'],definitionIds:['first','next-definition'],currentIndex:1};if(path==='guest/bootstrap')return{results:[]};if(path==='guest/runs')return{id:'new',revision:0,answers:{}};throw Error(path)}}
  vm.createContext(ctx);vm.runInContext(extract(guest,'  async function startRun(','  async function begin(')+extract(guest,'  async function submitSavedRun(','  async function choose(value')+extract(guest,'  async function submitResult(','  async function next()'),ctx)
- await ctx.submitResult(ctx.run,'next');assert.equal(ctx.run.id,'new');assert.equal(ctx.phase,'mode');assert.equal(ctx.busy,false);assert.equal(ctx.submitting.current,false);assert.equal(ctx.completion.current,null)
+ await ctx.submitResult(ctx.run,'next');assert.equal(ctx.run.id,'new');assert.equal(ctx.phase,'questions');assert.equal(ctx.busy,false);assert.equal(ctx.submitting.current,false);assert.equal(ctx.completion.current,null)
 })
 test('guest old next-test response cannot clear newer completion recovery',async()=>{
  let release;const newer={run:{id:'new'},result:null};const ctx={runLifetime:{current:0},replaceGuestRoute(){},completion:{current:null},activePlan:{id:'plan'},setGuestResult(){},setActivePlan(){},setPlanResults(){},setActive(){},getDefinitionById(){return{key:'next'}},startRun:()=>new Promise(resolve=>{release=resolve}),
@@ -93,7 +93,7 @@ test('guest missing or unknown persisted definition fails closed without locale 
 
 test('guest missing-version recovery guards question header and context form',()=>{
  assert.match(guest,/phase === 'questions' && definition \? \(/)
- assert.match(guest,/phase === 'mode' && definition && run && traumaContextReady/)
+ assert.match(guest,/phase === 'questions' && definition && question && run && traumaContextReady/)
  assert.match(guest,/phase === 'context' && definition\?\.optionalContext\?\.length > 0/)
 })
 
@@ -122,7 +122,7 @@ for(const stage of ['guest/bootstrap','guest/test-plans','guest/runs'])for(const
 test('guest consent resumes returned plan currentIndex and pinned instrument language',async()=>{
  const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions
  await ctx.createGuestSession()
- const call=ctx.calls.find(c=>c.path==='guest/runs');assert.equal(call.body.definitionKey,'second');assert.equal(call.body.instrumentLocale,'en');assert.equal(call.body.definitionVersion,'v1');assert.equal(ctx.locale,'ru');assert.equal(ctx.phase,'mode');assert.equal(ctx.busy,false)
+ const call=ctx.calls.find(c=>c.path==='guest/runs');assert.equal(call.body.definitionKey,'second');assert.equal(call.body.instrumentLocale,'en');assert.equal(call.body.definitionVersion,'v1');assert.equal(ctx.locale,'ru');assert.equal(ctx.phase,'questions');assert.equal(ctx.busy,false)
 })
 test('guest completed consent battery shows saved summary without starting another run',async()=>{
  const ctx=batteryContext();ctx.pendingGuestDefinitions=ctx.definitions;const fetch=ctx.guestFetch
@@ -202,7 +202,7 @@ test('guest run URL pins saved version, instrument language, progress and zero a
  assert.equal(ctx.active, 'second')
  assert.equal(ctx.answers.q, 0)
  assert.equal(ctx.index, 0)
- assert.equal(ctx.phase, 'mode')
+ assert.equal(ctx.phase, 'questions')
  assert.equal(ctx.locale, 'ru')
 })
 
