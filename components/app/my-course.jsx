@@ -205,7 +205,7 @@ export function MyCourse({ data, locale = 'en' }) {
       if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
       selectedCourse.current = response.course?.id || null
       setSnapshot({ accountId, value: response })
-      if (openPrimaryToday && !courseId && response.course?.stage === 4 && response.course.status !== 'archived') {
+      if (openPrimaryToday && !courseId && response.course?.stage === 4 && ['active','paused'].includes(response.course.status)) {
         setView('detail');replaceCourseUrl(selectedCourse.current)
       } else if (updateUrl) replaceCourseUrl(selectedCourse.current)
       return response
