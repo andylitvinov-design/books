@@ -64,6 +64,11 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   for (const b of boxes) {
     assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
+    const hittable = await page.evaluate(({x,y,width,height}) => {
+      const point = document.elementFromPoint(x + width / 2, y + height - 6);
+      return Boolean(point?.closest('a[data-contact-channel]'));
+    }, {x:b.x,y:b.y,width:b.width,height:b.height});
+    assert.ok(hittable, "Messenger button must not be obstructed by the mobile tab bar: " + name);
   }
   const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
   assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));
