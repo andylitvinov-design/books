@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Check, ChevronRight, Sparkles } from "lucide-react";
+import { Check, ChevronRight, Sparkles } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
