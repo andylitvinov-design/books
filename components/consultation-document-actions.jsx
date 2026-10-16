@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { resultCopy } from '@/lib/consultations/result-copy'
 import { createDocumentLinkCache, documentActionUrls } from '@/lib/consultations/result-actions'
 import { reportPdfFilename } from '@/lib/documents/report-filename'
+import { requestOwnerDocumentLink, prepareReportSession, tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 
 export function ConsultationDocumentActions({
   recordId,
+  clientId,
   locale,
   dateIssued,
   kind = 'recommendation',
@@ -25,13 +27,13 @@ export function ConsultationDocumentActions({
   const [status, setStatus] = useState('')
   const [copying, setCopying] = useState(false)
   const [copiedLocale, setCopiedLocale] = useState(null)
+  const [shareUrl,setShareUrl]=useState('')
+  const [preparing,setPreparing]=useState(false)
 
-  if (!cache.current) cache.current = createDocumentLinkCache(async () => {
-    const endpoint = kind === 'payment' ? 'client-link' : 'session-link'
-    const response = await fetch(`/admin/api/documents/${recordId}/${endpoint}`, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-    if (!response.ok) throw new Error('Session unavailable or not published')
-    return response.json()
-  }, { scope: kind === 'payment' ? 'document' : 'session' })
+  if (!cache.current) cache.current = createDocumentLinkCache(
+    () => requestOwnerDocumentLink(recordId, kind),
+    { scope: kind === 'payment' ? 'document' : 'session' },
+  )
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
