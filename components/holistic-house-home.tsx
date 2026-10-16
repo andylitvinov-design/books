@@ -11,6 +11,7 @@ import { ServicesSolutions } from "@/components/services-solutions";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
 import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
+import { HomeFreePaths } from "@/components/home-free-paths";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -20,11 +21,11 @@ const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Бесплатные тесты. Личная поддержка.",
-    heroIntro: "Пройдите бесплатные тесты или запросите письменный разбор ситуации. Для личной работы со мной доступны консультации онлайн и в Торонто.",
+    heroTitle: "Разберитесь в ситуации. Найдите следующий шаг.",
+    heroIntro: "Бесплатные тесты и персональный письменный разбор. При желании — платные консультации с Андреем Литвиновым в Торонто или онлайн.",
     heroPrimary: "Получить бесплатный разбор",
-    heroBook: "Записаться на консультацию",
-    heroSecondary: "Четыре предложения",
+    heroBook: "Личная сессия · от €50",
+    heroSecondary: "Пройти бесплатные тесты",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
     startIntro: "Мониторинг состояния, книги и программы — в дополнение к личной работе.",
@@ -53,11 +54,11 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "Free self-checks. Personal guidance.",
-    heroIntro: "Start with free self-checks or a written situation review. For a personal conversation, book a paid session with me in Toronto or online.",
+    heroTitle: "Understand your situation. Find your next step.",
+    heroIntro: "Free self-checks and a personal written review. Optional paid sessions with Andrey Litvinov in Toronto or online.",
     heroPrimary: "Get a free written review",
-    heroBook: "Book a consultation",
-    heroSecondary: "Explore four services",
+    heroBook: "Personal sessions · from €50",
+    heroSecondary: "Take free self-checks",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
     startIntro: "Free wellbeing monitoring, courses and books to complement personal work.",
@@ -120,27 +121,30 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
             <AcquisitionEventLink
-              className="service-home-button service-home-button--consultation"
-              href={`/${locale}/services#consultation`}
-              event="service_request_start"
-            >
-              {text.heroBook}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
-            <AcquisitionEventLink
               className="service-home-button service-home-button--primary"
               href={`/${locale}/services/free-situation-review`}
               event="service_request_start"
+              attributes={{ "data-hero-cta": "free-written-review" }}
             >
               {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
-              href="#core-services"
-              event="service_view"
+              href={`/${locale}/client/tests`}
+              event="self_check_start"
+              attributes={{ "data-hero-cta": "free-tests" }}
             >
               {text.heroSecondary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
           </div>
+          <AcquisitionEventLink
+            className="service-home-paid-link"
+            href={`/${locale}/services#consultation`}
+            event="service_view"
+            attributes={{ "data-hero-cta": "paid-sessions" }}
+          >
+            {text.heroBook}<span aria-hidden="true">→</span>
+          </AcquisitionEventLink>
           <p className="service-home-offer-note">
             {locale === "ru"
               ? "Бесплатный формат — анкета, рисунок и личный письменный отчёт; звонок не входит. Личные сессии оплачиваются отдельно."
@@ -149,6 +153,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
       </section>
 
+      <HomeFreePaths locale={locale} />
       <HomeFreeTestsBanner locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
       <HomepageTopicJourneys locale={locale} />
