@@ -1,0 +1,69 @@
+.wrapper {
+  width: 100%;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #dce4ed;
+  border-radius: 22px;
+  background: linear-gradient(165deg, #f9fbff 0%, #ffffff 60%, #fffaf7 100%);
+  color: #233d59;
+}
+
+.header { margin-bottom: 20px; }
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .69rem;
+  font-weight: 750;
+  color: #833f50;
+}
+.header h4 { margin: 0 0 8px; font-size: clamp(1.3rem, 2vw, 1.7rem); color: #192f50; }
+.header > p:last-child { margin: 0; max-width: 70ch; line-height: 1.55; color: #4f6274; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e2e7ef;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 3px 15px rgba(25, 47, 80, .04);
+}
+.cardHead { display: flex; align-items: flex-start; gap: 10px; }
+.index {
+  flex: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px; height: 30px;
+  background: #eff2f8;
+  border-radius: 8px;
+  color: #71374c;
+  font-size: .74rem;
+  font-weight: 750;
+}
+.cardHead h5 { margin: 2px 0 5px; color: #172b4e; font-size: 1rem; line-height: 1.35; }
+.band { margin: 0; color: #6d3c4e; font-size: .87rem; line-height: 1.4; }
+.gaugeRow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; }
+.gaugeRow figure { max-width: 148px; margin: 0; }
+.numeric { margin: 0; color: #314963; line-height: 1.45; font-size: .86rem; }
+.numeric strong { font-weight: 750; color: #172b4e; }
+.meaning { margin: 9px 0; line-height: 1.6; color: #364c61; font-size: .9rem; }
+.caution { margin: 10px 0 0; font-size: .78rem; color: #687787; line-height: 1.45; }
+.support {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid #824054;
+  border-radius: 6px;
+  background: #fbf7f8;
+  color: #5d3b4a;
+  font-size: .83rem;
+  line-height: 1.45;
+}
+.methodology { margin-top: 18px; border-top: 1px solid #e4e9f0; padding-top: 14px; }
+.methodology summary { font-weight: 650; cursor: pointer; }
+.methodology p { line-height: 1.55; color: #536779; }
+.footer { margin: 18px 0 0; color: #62758a; font-size: .81rem; line-height: 1.5; }
+@media (max-width: 480px) {
+  .wrapper { border-radius: 15px; padding: 16px 13px; }
+  .cards { gap: 12px; }
+  .card { padding: 14px; }
+}
