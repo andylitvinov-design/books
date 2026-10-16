@@ -153,7 +153,7 @@ test('first-screen preset and personal choices require consent before account-ow
   assert.match(ui, /await act\('start', \{ consent: true,/)
   assert.match(ui, /presetId: intent\.presetId/)
   assert.match(ui, /onClick=\{\(\) => void confirmStart\(\)\}/)
-  assert.match(ui, /request\(accountId, \{ action: 'start', consent: true, courseId: requestedCourseId,\s*newCourse: !restartingClosed/)
+  assert.match(ui, /requestedCourseId=restartingClosed \? state\.course\.id : newCourseId\.current/)
   assert.match(ui, /expectedRevision: started\.course\.revision/)
   assert.match(css, /\.heroActions/)
   assert.match(css, /\.details/)
