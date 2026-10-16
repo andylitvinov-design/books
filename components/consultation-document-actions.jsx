@@ -74,7 +74,7 @@ export function ConsultationDocumentActions({
     try{const editor=await prepareReportSession(clientId,recordId);window.location.assign(editor)}
     catch{setStatus('prepare-failed');setPreparing(false)}
   }
-  const needsPublication=['not-published','changed','expired'].includes(status)
+  const needsPublication=['not-published','changed','expired','prepare-failed'].includes(status)
 
   return <>
     <div className="consultation-result-actions consultation-document-actions" aria-label={ru ? 'Просмотр и отправка документа' : 'Document preview and sharing'}>
