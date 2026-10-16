@@ -33,7 +33,7 @@ function ModerationService({service:s,busy,act}){
      </p>}
    </div>
    <div className="practitioner-cabinet-actions">
-     <button disabled={busy||!['submitted','changes_requested'].includes(s.status)} onClick={()=>act('service',s.id,'approve')}>Publish</button>
+     <button disabled={busy||s.status!=='submitted'} onClick={()=>act('service',s.id,'approve')}>Publish</button>
      <button disabled={busy} onClick={()=>act('service',s.id,'changes_requested',{note:'Please revise this service and resubmit.'})}>Request changes</button>
      <button disabled={busy} onClick={()=>window.confirm('Suspend this public service?')&&act('service',s.id,'suspend',{note:'Suspended by Holistic House.'})}>Suspend</button>
      <button disabled={busy} onClick={()=>act('service',s.id,'archive')}>Archive</button>
