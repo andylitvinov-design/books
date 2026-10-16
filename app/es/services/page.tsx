@@ -31,10 +31,20 @@ export default async function SpanishServicesPage() {
    imagery:"personal_development", business:"business_money", constellations:"relationships",
  };
  const editorial = [
-   ...approaches.map(({id,title,situation,href})=>({id,title,promise:situation,href,areaKey:areas[id]})),
+   ...approaches.map(({id,title,situation,detail,href})=>({
+     id,title,promise:situation,details:detail,href,areaKey:areas[id],
+     label:id==="situation"?"Revisión gratuita":"Sesión personal",
+     price:id==="situation"?"Gratis":id==="business"||id==="constellations"||id==="imagery"||id==="psychohomeopathy"
+       ?"€50 / 30 min · €100 / 60 min":undefined,
+     free:id==="situation",
+   })),
    {id:"yggdrasil",title:"Reiki Yggdrasil — iniciación gratuita",promise:"Meditación, Reiki y materiales para comenzar.",
+     details:"Consulta los vídeos originales, los materiales de estudio y las opciones de iniciación gratuita o personal.",
+     label:"Reiki · Nivel 1",price:"Gratis",free:true,
      href:"/es/academy/reiki/yggdrasil/free-initiation",areaKey:"energy_spiritual"},
    {id:"tantra",title:"Tantra Reiki — iniciación gratuita",promise:"Práctica simbólica, estudio e iniciación personal.",
+     details:"Consulta el material introductorio y solicita el primer nivel gratuito o una iniciación personal.",
+     label:"Tantra Reiki · Nivel 1",price:"Gratis",free:true,
      href:"/es/academy/reiki/tantra-reiki/free-initiation",areaKey:"energy_spiritual"},
  ];
  return <main className="services-shell services-shell--studio" lang="es">

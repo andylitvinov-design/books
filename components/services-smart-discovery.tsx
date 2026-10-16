@@ -4,14 +4,16 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Leaf, Search, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery } from "@/lib/practitioners/discovery-intent.js";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
 
 type Locale = "en" | "ru" | "es";
-type Editorial = {id:string;title:string;promise:string;benefit?:string;href:string;areaKey:string;label?:string};
+type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean};
 type AIResult = { serviceIds: string[]; mode: "ai" | "local" };
 
 const COPY = {
@@ -32,16 +34,25 @@ const COPY = {
     noLive:"More services will appear here as practitioners are approved.",
     resultTitle:"Your options",
     resultFor:"Your request",
-    matchIntro:"Real published services. Check practitioner details before requesting.",
-    noDirect:"There isn't a precise match in the currently published listings. Here are real pages you can explore.",
+    matchIntro:"Choose a service, view its details, or send a request.",
+    noDirect:"No services found for this topic yet. Try another area or a broader question.",
     online:"Online",
     free:"Free",
     contact:"Price on request",
     service:"Service",
-    curated:"More from Holistic House",
+    curated:"Services you can request",
     practitioner:"Practitioner",
     details:"Details",
     request:"Request",
+    order:"Order",
+    freeOrder:"Get free",
+    less:"Less",
+    fullPage:"Full service description",
+    freeStart:"Open free service form",
+    chooseChannel:"Where should we send your request?",
+    sendNote:"Review and send the prepared message yourself. No booking or payment happens automatically.",
+    duration:"Duration",
+    minutes:"min",
     browse:"All practitioners",
     clear:"Reset",
     personal:"Prefer personal guidance?",
@@ -74,16 +85,25 @@ const COPY = {
     noLive:"Новые услуги появятся здесь после модерации мастеров.",
     resultTitle:"Ваши варианты",
     resultFor:"Ваш запрос",
-    matchIntro:"Реальные опубликованные услуги. Проверьте мастера и условия перед заявкой.",
-    noDirect:"Среди опубликованных услуг нет точного совпадения. Вот существующие страницы, которые можно изучить.",
+    matchIntro:"Выберите услугу, раскройте подробности или отправьте заявку.",
+    noDirect:"Пока нет услуг по этому запросу. Попробуйте другое направление или более общий вопрос.",
     online:"Онлайн",
     free:"Бесплатно",
     contact:"Стоимость по запросу",
     service:"Услуга",
-    curated:"Ещё от Holistic House",
+    curated:"Услуги, которые можно заказать",
     practitioner:"Мастер",
     details:"Подробнее",
     request:"Оставить заявку",
+    order:"Заказать",
+    freeOrder:"Получить бесплатно",
+    less:"Свернуть",
+    fullPage:"Полное описание услуги",
+    freeStart:"Перейти к бесплатной форме",
+    chooseChannel:"Куда отправить вашу заявку?",
+    sendNote:"Вы проверяете текст и отправляете его сами. Запись и оплата не происходят автоматически.",
+    duration:"Длительность",
+    minutes:"мин",
     browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
@@ -116,16 +136,25 @@ const COPY = {
     noLive:"Aparecerán más servicios cuando se aprueben nuevos profesionales.",
     resultTitle:"Tus opciones",
     resultFor:"Tu búsqueda",
-    matchIntro:"Servicios publicados. Consulta los detalles antes de solicitar.",
-    noDirect:"Todavía no hay una coincidencia precisa. Estas páginas de servicios ya existen.",
+    matchIntro:"Elige un servicio, abre los detalles o envía una solicitud.",
+    noDirect:"Aún no hay servicios para este tema. Prueba otra categoría o una pregunta más amplia.",
     online:"En línea",
     free:"Gratis",
     contact:"Precio a consultar",
     service:"Servicio",
-    curated:"Más de Holistic House",
+    curated:"Servicios disponibles para solicitar",
     practitioner:"Profesional",
     details:"Ver detalles",
     request:"Solicitar",
+    order:"Solicitar",
+    freeOrder:"Solicitar gratis",
+    less:"Cerrar",
+    fullPage:"Descripción completa del servicio",
+    freeStart:"Abrir el formulario gratuito",
+    chooseChannel:"¿Dónde quieres enviar la solicitud?",
+    sendNote:"Revisa y envía el mensaje tú mismo. No se confirma ninguna reserva ni se realiza ningún pago automáticamente.",
+    duration:"Duración",
+    minutes:"min",
     browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
@@ -156,6 +185,19 @@ function formatPrice(service: PublicService, locale: Locale, t: typeof COPY[Loca
   } catch { return t.contact; }
 }
 
+function editorialEnquiryUrl(item: Editorial, locale: Locale) {
+  // Do not include a visitor's free-text search or any private data in
+  // messenger URLs. Only use the confirmed public service name and page.
+  const request = item.free
+    ? {en:"I would like to request this free service. Please explain how to begin.",
+       ru:"Хочу получить эту бесплатную услугу. Подскажите, как начать.",
+       es:"Quisiera solicitar este servicio gratuito. ¿Cómo puedo comenzar?"}[locale]
+    : {en:"I would like to order this service. Please confirm the format, availability and price before booking.",
+       ru:"Хочу заказать эту услугу. Подскажите формат, доступное время и стоимость до записи.",
+       es:"Quisiera solicitar este servicio. Confirma el formato, disponibilidad y precio antes de reservar."}[locale];
+  return whatsappEnquiryUrl({locale, service:item.title, request, option:item.label, pagePath:item.href});
+}
+
 export function ServicesSmartDiscovery({
   locale: givenLocale, services, editorialOffers, aiAvailable = false,
 }: {
@@ -170,9 +212,12 @@ export function ServicesSmartDiscovery({
   const [useExternalAi,setUseExternalAi] = useState(false);
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
   const [aiStatus,setAiStatus] = useState<"local"|"ai"|"unavailable"|"loading">("local");
+  const [expandedCard,setExpandedCard] = useState<string|null>(null);
+  const [orderingCard,setOrderingCard] = useState<string|null>(null);
   const requestNumber = useRef(0);
   const searchInputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const orderPanelRef = useRef<HTMLDivElement>(null);
   const [scrollRequest, setScrollRequest] = useState(0);
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
@@ -209,6 +254,18 @@ export function ServicesSmartDiscovery({
     return () => window.cancelAnimationFrame(frame);
   }, [hasSelection, scrollRequest]);
 
+  // Keep the revealed messenger choices visible above the fixed phone tab bar.
+  useEffect(() => {
+    if (!orderingCard) return;
+    const frame = window.requestAnimationFrame(() => {
+      orderPanelRef.current?.scrollIntoView({
+        block:"nearest",
+        behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [orderingCard]);
+
   function chooseCategory(key: string) {
     requestNumber.current += 1;
     const selecting = key !== activeCategory;
@@ -218,6 +275,8 @@ export function ServicesSmartDiscovery({
     if (selecting) setScrollRequest((count) => count + 1);
     setAiOrder(null);
     setAiStatus("local");
+    setExpandedCard(null);
+    setOrderingCard(null);
   }
 
   async function find(queryText: string) {
@@ -229,6 +288,8 @@ export function ServicesSmartDiscovery({
     setActiveCategory("");
     setSubmitted(text);
     setHasSelection(true);
+    setExpandedCard(null);
+    setOrderingCard(null);
     setAiOrder(null);
     setAiStatus("local");
     if (!aiAvailable || !useExternalAi) return;
@@ -320,7 +381,7 @@ export function ServicesSmartDiscovery({
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
-          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local")}}>{t.clear} ×</button>
+          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null)}}>{t.clear} ×</button>
         </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
         {suggestions.length>0?<div className={styles.suggestionGrid}>
@@ -333,17 +394,76 @@ export function ServicesSmartDiscovery({
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
                 <Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>
-                <Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}<ArrowRight size={14} aria-hidden="true"/></Link>
+                <button type="button" className={styles.suggestionDetailsToggle}
+                  aria-expanded={expandedCard==="listing:"+service.id}
+                  aria-controls={"hh-listing-details-"+service.id}
+                  onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
+                  {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
               </div>
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
+              <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
+                <p>{service.copy.description || service.copy.shortDescription}</p>
+                {service.durationMinutes&&service.durationMinutes>0
+                  ? <p className={styles.serviceFact}>{t.duration}: {service.durationMinutes} {t.minutes}</p>:null}
+                <Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.fullPage}<ArrowRight size={15} aria-hidden="true"/></Link>
+              </div>
             </article>;
           })}
-        </div>:<p className={styles.message}>{t.noDirect}</p>}
+        </div>:editorial.length===0?<p className={styles.message}>{t.noDirect}</p>:null}
         {editorial.length>0&&<div className={styles.editorial}>
           <h3>{t.curated}</h3>
-          <div className={styles.editorialList}>{editorial.map(item=><Link key={item.id} href={item.href}>
-            <span><strong>{item.title}</strong><small>{item.promise}</small></span><ArrowRight size={17} aria-hidden="true"/>
-          </Link>)}</div>
+          <div className={styles.editorialList}>{editorial.map(item=>{
+            const id = "editorial:"+item.id;
+            const expanded = expandedCard===id;
+            const ordering = orderingCard===id;
+            const whatsappUrl = editorialEnquiryUrl(item,locale);
+            const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
+            return <article key={item.id} className={styles.editorialCard} data-discovery-editorial-offer={item.id} data-selected={ordering}>
+              <div className={styles.editorialCardMeta}>
+                <span>{item.label || DISCOVERY_AREAS.find(area=>area.key===item.areaKey)?.label[locale] || t.service}</span>
+                <strong>{item.price || (item.free?t.free:t.contact)}</strong>
+              </div>
+              <div className={styles.editorialCardCopy}>
+                <h4>{item.title}</h4>
+                <p>{item.promise}</p>
+                <small>{t.practitioner}: Andrey Litvinov</small>
+              </div>
+              <div className={styles.editorialCardActions}>
+                <button type="button" className={styles.editorialOrderButton}
+                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
+                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
+                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
+                </button>
+                <button type="button" className={styles.editorialDetailsButton}
+                  aria-expanded={expanded} aria-controls={"hh-details-"+item.id}
+                  onClick={()=>setExpandedCard(current=>current===id?null:id)}>
+                  {expanded?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
+              </div>
+              <div id={"hh-details-"+item.id} className={styles.editorialDetailsPanel} hidden={!expanded}>
+                <p>{item.details || item.benefit || item.promise}</p>
+                {item.benefit && item.benefit!==item.details
+                  ? <p className={styles.editorialBenefit}>{item.benefit}</p>:null}
+                <Link href={item.href}>{t.fullPage}<ArrowRight size={16} aria-hidden="true"/></Link>
+              </div>
+              <div id={"hh-order-"+item.id} ref={ordering?orderPanelRef:undefined} className={styles.editorialOrderPanel} hidden={!ordering}>
+                <strong>{t.chooseChannel}</strong>
+                {item.free?<Link className={styles.editorialFreeStart} href={item.href}>
+                  {t.freeStart}<ArrowRight size={17} aria-hidden="true"/>
+                </Link>:null}
+                <div className={styles.editorialChannels}>
+                  <AcquisitionEventLink href={whatsappUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
+                    event="service_request_start" attributes={{"data-discovery-offer":item.id,"data-contact-channel":"whatsapp"}}
+                    className={styles.editorialWhatsapp}><MessageCircle size={18} aria-hidden="true"/>WhatsApp</AcquisitionEventLink>
+                  <AcquisitionEventLink href={telegramUrl} prefetch={false} target="_blank" rel="noopener noreferrer"
+                    event="service_request_start" attributes={{"data-discovery-offer":item.id,"data-contact-channel":"telegram"}}
+                    className={styles.editorialTelegram}><Send size={18} aria-hidden="true"/>Telegram</AcquisitionEventLink>
+                </div>
+                <small>{t.sendNote}</small>
+              </div>
+            </article>;
+          })}</div>
         </div>}
         <details className={styles.why}><summary>{t.expand}<ChevronDown size={16} aria-hidden="true"/></summary><p>{t.help}</p></details>
       </div>}

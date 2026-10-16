@@ -36,7 +36,11 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(offers, /Курс гипнотерапии/);
   assert.match(ui, /id="methods"/);
   assert.doesNotMatch(hero, /ME, GOAL|draw by hand|€100/i);
-  assert.doesNotMatch(page, /€50|€100/);
+  const editorialStart = page.indexOf("const editorialOffers =");
+  const renderStart = page.indexOf("  return (");
+  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
+  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
   assert.doesNotMatch(offers, /€50|€100/);
   assert.match(hero, /paidCta: "Personal consultation · from €50"/);
   assert.match(hero, /free-situation-review#personal-consultation/);
