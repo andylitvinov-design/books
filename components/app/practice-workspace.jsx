@@ -113,7 +113,7 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState('')
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   useEffect(()=>{
@@ -163,6 +163,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   }
   function choosePanel(panel) {
     setActivePanel(current=>current===panel?null:panel)
+    setError('')
+  }
+  function addService(){
+    setActivePanel('services')
+    setNewServiceRequest(current=>current+1)
     setError('')
   }
   if(!data)return <section className="hh-practice-dashboard" aria-busy={!error}>
@@ -247,7 +252,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     {!needsOnboarding&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
         <button className="hh-practice-quick-primary" type="button"
-          aria-pressed={activePanel==='services'} onClick={()=>choosePanel('services')}>
+          aria-pressed={activePanel==='services'} onClick={addService}>
           <Plus aria-hidden="true" />{d.addService}
         </button>
         {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
@@ -297,7 +302,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
             <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
           </details>
-          <Services items={services} t={t} locale={locale} busy={busy}
+          <Services items={services} t={t} locale={locale} busy={busy} createRequest={newServiceRequest}
             onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
             onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
             onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
@@ -426,11 +431,12 @@ function Credentials({items,t,busy,onCreate,onDelete}){
   <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onCreate({...v,expiresOn:v.expiresOn||null});setV({title:'',issuer:'',jurisdiction:'',reference:'',public:true,expiresOn:''})}}><h3>{t.add}</h3>
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
-function Services({items,t,locale,busy,onSave,onSubmit,onPause}){
+function Services({items,t,locale,busy,createRequest=0,onSave,onSubmit,onPause}){
   const ru=locale==='ru'
   const [creating,setCreating]=useState(items.length===0)
   const [status,setStatus]=useState('all')
   useEffect(()=>{if(items.length)setCreating(false)},[items.length])
+  useEffect(()=>{if(createRequest>0)setCreating(true)},[createRequest])
   const visible=items.filter(item=>status==='all'||(status==='published'?item.status==='published':status==='review'?['submitted','changes_requested'].includes(item.status):['draft','paused'].includes(item.status)))
   const statusLabel=value=>({
     published:ru?'Опубликовано':'Published',
