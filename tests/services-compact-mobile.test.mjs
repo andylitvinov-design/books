@@ -35,8 +35,11 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(offers, /Alchemy of the Soul/);
   assert.match(offers, /Курс гипнотерапии/);
   assert.match(ui, /id="methods"/);
-  assert.doesNotMatch(hero, /ME, GOAL|draw by hand|€50|€100/i);
+  assert.doesNotMatch(hero, /ME, GOAL|draw by hand|€100/i);
   assert.doesNotMatch(page, /€50|€100/);
+  assert.doesNotMatch(offers, /€50|€100/);
+  assert.match(hero, /paidCta: "Personal consultation · from €50"/);
+  assert.match(hero, /free-situation-review#personal-consultation/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:44px/);

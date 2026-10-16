@@ -16,7 +16,7 @@ test("home presents four photo-left offer cards before videos", () => {
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with free-test banner and five compact photo offers, without prices in the overview", () => {
+test("Services leads with free-test banner and five compact photo offers, with a separately priced optional consultation action", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -34,8 +34,8 @@ test("Services leads with free-test banner and five compact photo offers, withou
     assert.ok(offers.includes('id: "' + id + '"'), id);
   for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(hero, /Get a free situation review/);
-  assert.doesNotMatch(hero, /Draw by hand on paper|€50|€100/);
+  assert.match(hero, /Get a free written review/);
+  assert.doesNotMatch(hero, /Draw by hand on paper|€100/);
   assert.doesNotMatch(page, /€50|€100/);
 });
 
@@ -61,7 +61,7 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   const form = source("components", "free-situation-review-form.tsx");
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free situation & drawing assessment",
+  for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
     "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "paidOptions"]) {
     assert.ok(free.includes(phrase), phrase);
   }
@@ -96,7 +96,14 @@ test("Services hero sells the options and points to free review without diagnost
   assert.match(hero, /free-situation-review/);
   assert.match(hero, /See all three free options/);
   assert.match(hero, /href="#free-insights"/);
-  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper|€50/);
+  for (const label of ["Personal consultation · from €50", "Личная консультация · от €50", "Consulta personal · desde €50"]) assert.ok(hero.includes(label), label);
+  assert.match(hero, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review#personal-consultation"\}/);
+  assert.match(hero, /A live one-to-one session is separate and optional/);
+  assert.match(hero, /Личная встреча — отдельно и по желанию/);
+  assert.match(hero, /La sesión en directo es opcional y de pago/);
+  assert.match(css, /\.paidLink:focus-visible/);
+  assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
+  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:60px/);
 });
