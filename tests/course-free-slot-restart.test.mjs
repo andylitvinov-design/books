@@ -75,7 +75,7 @@ test('a free account can start its first course, but cannot start a parallel sec
   assert.match(firstWrite.body.courseId, /^[0-9a-f-]{36}$/)
   h.unmount()
 
-  const active = course('active-course', 4)
+  const active = course('active-course', 1)
   const full = mount('my-course', {
     enterCourse: true,
     props: { data: account('owner-a'), locale: 'en' },
