@@ -57,6 +57,7 @@ export function auditSeoSources() {
   check(/\.\.\.existing, \.\.\.entries, \.\.\.priorityEntries, \.\.\.network/.test(sitemapCode), "Sitemap merge or deduplication contract changed");
   const shell = read("app/layout.tsx");
   check(/type="application\/ld\+json"/.test(shell) && /"@type": "WebSite"/.test(shell), "Public WebSite JSON-LD is missing");
+  check(/"google-site-verification"/.test(shell), "Existing owner-approved Google Search Console verification metadata is missing");
   const freeInitiation = read("components/yggdrasil-free-initiation.tsx");
   for (const suffix of ["/basic-course/description", "/basic-course"]) {
     check(freeInitiation.includes(suffix), "Missing internal Yggdrasil learning link: " + suffix);
@@ -101,7 +102,7 @@ if (liveArg) {
   const robotsResponse = await fetch(base + "/robots.txt", { redirect: "manual" });
   assert.equal(robotsResponse.status, 200);
   assert.ok((await robotsResponse.text()).includes("Sitemap: " + base + "/sitemap.xml"));
-  for (const path of ["/en/about", "/ru/about", "/en/services/free-situation-review", "/en/academy/reiki/yggdrasil/free-initiation"]) {
+  for (const path of ["/en/about", "/ru/about", "/en/services/free-situation-review", "/en/academy/reiki/yggdrasil/free-initiation", "/en/academy/reiki/tantra-reiki/free-initiation", "/ru/academy/reiki/tantra-reiki/free-initiation", "/es/academy/reiki/tantra-reiki/free-initiation"]) {
     const result = await fetch(base + path, { method: "HEAD", redirect: "manual" });
     assert.equal(result.status, 200, "Public route not reachable " + path);
   }
