@@ -49,6 +49,7 @@ function fixture({ hash = "", locale = "en" } = {}) {
     if(name==="react/jsx-runtime")return {jsx,jsxs:jsx,Fragment:"fragment"};
     if(name==="lucide-react")return new Proxy({}, {get:(_target,icon)=>function MockIcon(props){return jsx("icon",{...props,icon});}});
     if(name==="@/lib/whatsapp-enquiry")return {whatsappEnquiryUrl};
+    if(name==="@/components/contact-channel-chooser")return {ContactChannelChooser:"contact-channel-chooser"};
     if(name.endsWith(".module.css"))return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})};
     throw new Error("Unexpected dependency: "+name);
   };
@@ -86,7 +87,7 @@ function fixture({ hash = "", locale = "en" } = {}) {
     buttons:()=>nodes(n=>n.type==="button"&&Boolean(n.props?.["data-intent"])),
     allNative:()=>nodes(n=>["input","textarea","form"].includes(n.type)),
     urls:()=>nodes(n=>n.type==="a"&&typeof n.props?.href==="string").map(n=>n.props.href),
-    handoff:()=>nodes(n=>n.props?.["data-reiki-initiation-handoff"])[0],
+    handoff:()=>nodes(n=>n.type==="contact-channel-chooser"&&n.props?.attributes?.["data-reiki-initiation-handoff"])[0],
     pdf:()=>nodes(n=>n.type==="a"&&n.props?.download)[0],
   };
 }
@@ -110,10 +111,9 @@ test("free level 1 opens only an explicit, localized WhatsApp handoff", () => {
   for(const locale of ["en","ru","es"]){
     const f=fixture({locale});
     const link=f.handoff();
-    assert.equal(link.props.target,"_blank");
-    assert.equal(link.props.rel,"noopener noreferrer");
-    assert.equal(link.props["data-reiki-initiation-handoff"],"free");
-    const message=messageFrom(link.props.href);
+    assert.equal(link.type,"contact-channel-chooser");
+    assert.equal(link.props.attributes["data-reiki-initiation-handoff"],"free");
+    const message=messageFrom(link.props.whatsappUrl);
     assert.match(message,/Reiki Yggdrasil/);
     assert.match(message, /FREE|БЕСПЛАТНУЮ|GRATIS/);
     assert.ok(message.includes("/"+locale+"/academy/reiki/yggdrasil/free-initiation"));
@@ -123,10 +123,10 @@ test("free level 1 opens only an explicit, localized WhatsApp handoff", () => {
 
 test("personal option changes the actual handoff and does not retain the free request", () => {
   const f=fixture();
-  const initial=messageFrom(f.handoff().props.href);
+  const initial=messageFrom(f.handoff().props.whatsappUrl);
   f.mode("personal");
   assert.deepEqual(f.buttons().map(x=>x.props["aria-pressed"]),[false,true,false]);
-  const personal=messageFrom(f.handoff().props.href);
+  const personal=messageFrom(f.handoff().props.whatsappUrl);
   assert.notEqual(personal,initial);
   assert.match(personal,/PERSONAL.*Reiki Yggdrasil|\bPERSONAL\b/);
   assert.match(personal,/€100/);
@@ -145,10 +145,10 @@ test("PDF choice links to the existing guide endpoint and never sends a chat mes
 
 test("old answer-upload links safely select the free initiation without restoring a file picker", () => {
   const f=fixture({hash:"#apply-answers"});
-  assert.equal(f.handoff().props["data-reiki-initiation-handoff"],"free");
+  assert.equal(f.handoff().props.attributes["data-reiki-initiation-handoff"],"free");
   f.mode("personal");
   f.hash("#apply-answers");
-  assert.equal(f.handoff().props["data-reiki-initiation-handoff"],"free");
+  assert.equal(f.handoff().props.attributes["data-reiki-initiation-handoff"],"free");
   assert.deepEqual(f.allNative(),[]);
 });
 

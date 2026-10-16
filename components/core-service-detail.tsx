@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/data/remedies";
@@ -145,7 +145,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <h1>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
-          <AcquisitionEventLink className={styles.primary} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={20} aria-hidden="true"/></AcquisitionEventLink>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.primary} event="service_request_start" attributes={{ "data-service-request": kind }}/>
           <p className={styles.note}>{t.note}</p>
           <aside className={styles.andrey}>
             <strong>{locale === "ru" ? "С Андреем Литвиновым" : "With Andrey Litvinov"}</strong>
@@ -166,7 +166,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <AcquisitionEventLink className={styles.footerCta} href={whatsappUrl} target="_blank" rel="noopener noreferrer" prefetch={false} event="service_request_start" attributes={{ "data-contact-channel":"whatsapp", "data-service-request":kind }}>{t.action}<ArrowUpRight size={16} aria-hidden="true"/></AcquisitionEventLink>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
         </div>
         <details className={styles.freeAlternative}>
           <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?"}</summary>
