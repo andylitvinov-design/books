@@ -112,7 +112,7 @@ export function PersonalTestimonials({
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{current.videoLanguage}</span>
+        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
       <div className={styles.videoGrid}>
         {presentedVideos.map((item) => (
