@@ -1,11 +1,10 @@
 import Link from 'next/link'
-import {ArrowLeft,Download,FileText,Languages,PencilLine} from 'lucide-react'
+import {ArrowLeft,Languages,PencilLine} from 'lucide-react'
 import {notFound,redirect} from 'next/navigation'
 import {getPrescriptionStore} from '@/lib/prescriptions/store'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {getClientPaymentDocument} from '@/lib/documents/payment'
 import {getClientPrescription} from '@/lib/prescriptions/service'
-import {reportPdfFilename} from '@/lib/documents/report-filename'
 import {documentPreviewEditHref} from '@/lib/consultations/document-preview-navigation'
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
 import {getAppConfig} from '@/lib/app/config'
@@ -86,7 +85,6 @@ export default async function FullClientSessionPreview({params,searchParams}) {
   }
   const session=opened.session||fallback
   const root='/admin/documents/'+encodeURIComponent(record.id)
-  const pdf='/admin/api/documents/'+encodeURIComponent(record.id)+'/pdf?locale='+locale
   const edit=documentPreviewEditHref(record,payment?record.consultationId:undefined)
   const info=opened.state==='published'
     ?(ru?'Опубликованная версия: ниже показана полная клиентская страница с доступными вложениями.':'Published version: the full client page and authorized attachments appear below.')
@@ -102,10 +100,6 @@ export default async function FullClientSessionPreview({params,searchParams}) {
       <div className={styles.controls}>
         <Link href={root+'/session-preview?locale='+(ru?'en':'ru')} className={styles.control}>
           <Languages size={16}/>{ru?'EN':'RU'}</Link>
-        <a href={pdf+'&preview=1'} className={styles.control} target="_blank" rel="noopener noreferrer">
-          <FileText size={16}/>{ru?'Открыть PDF':'Open PDF'}</a>
-        <a href={pdf} download={payment?(record.paymentStatus==='received'?'receipt.pdf':'invoice.pdf'):reportPdfFilename(document)}
-          className={styles.control}><Download size={16}/>{ru?'Скачать PDF':'Download PDF'}</a>
         <Link href={edit} className={styles.edit}><PencilLine size={16}/>{ru?'Редактировать':'Edit'}</Link>
       </div>
     </nav>

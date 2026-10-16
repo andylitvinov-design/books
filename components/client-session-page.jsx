@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,ChevronDown } from 'lucide-react'
+import { ArrowLeft,FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { ClientSessionCabinetEntry } from './client-session-cabinet-entry'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -88,6 +88,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const photos=media.filter(item=>item.kind==='image')
   const supplementary=media.filter(item=>item.kind!=='image'&&(item.kind==='pdf'||['meditation','additional'].includes(item.role)||
     (item.role==='instruction'&&item.kind==='audio')))
+  const hasFullReport=Boolean(reportContent)
   const hasRecommendation=Boolean(recommendation?.items?.length)
   const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
     recommendationItemType(item,recommendation.recommendationType)==='homeopathy')
@@ -101,12 +102,20 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
     session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+  // The approved HTML document is the only source of report narrative and prescriptions.
+  // Keep independently authored session messages visible without repeating report text.
+  const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
+  const alreadyInReport=Boolean(hasFullReport&&authoredMessage&&[
+    recommendation?.analysis,recommendation?.additionalNotes,recommendation?.generalInstructions,
+  ].some(text=>typeof text==='string'&&text.includes(authoredMessage)))
+  const extraSessionMessage=hasFullReport&&!alreadyInReport?authoredMessage:''
   const hasAdvice=Boolean(plan.additionalRecommendations||takeaways.length||practices.length||
-    recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)
+    (hasFullReport?(extraSessionMessage||plan.nextStep||plan.focus):
+      (recommendation?.additionalNotes||recommendation?.followUp||recommendation?.analysis)))
   const content=<main className={styles.clientPage+' '+styles.courseSessionPage+' '+styles.cabinetSessionPage} lang={locale}>
     <header className={styles.clientHeader}>
       <div className={styles.clientBrand}>
-        <span className={styles.clientWordmark}>Holistic House</span>
+        {!hasFullReport&&<span className={styles.clientWordmark}>Holistic House</span>}
         <span className={styles.privateLabel}><ShieldCheck size={15}/>{ru?'Защищённые материалы':'Private materials'}</span>
       </div>
       {mode==='saved'?<a href={'/'+locale+'/app/portrait#personal-reports'} className={styles.savedSessionBack}>
@@ -114,7 +123,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         :mode==='owner'?<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>
         : <ClientSessionCabinetEntry locale={locale} variant="header" appAvailable={appAvailable}/>} 
     </header>
-    <section className={styles.sessionHero} aria-labelledby="session-title">
+    {!hasFullReport&&<section className={styles.sessionHero} aria-labelledby="session-title">
       <span className={styles.sectionKicker}>{ru?'ПЕРСОНАЛЬНЫЙ ПЛАН ПОСЛЕ КОНСУЛЬТАЦИИ':'YOUR PERSONAL SESSION GUIDE'}</span>
       <h1 id="session-title">{session.title}</h1>
       <dl className={styles.sessionIdentity}>
@@ -136,7 +145,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <a href={nextAnchor} className={styles.nextStepLink}>{hasRecommendation?(ru?'Смотреть назначения ↓':'Review recommendations ↓'):(ru?'Перейти к материалам ↓':'Continue to materials ↓')}</a>
       </div>}
       <div className={styles.practitionerCredit}>{ru?'Подготовлено специалистом':'Prepared by'} · Andrii Litvinov · Holistic House</div>
-    </section>
+    </section>}
+
+    {hasFullReport&&<section id="session-report" className={styles.fullReportSection}
+      aria-label={ru?'Полный отчёт консультации':'Complete consultation report'}>
+      <div className={styles.fullReportContent}>{reportContent}</div>
+    </section>}
 
     {personalMedia.length>0&&<section id="session-message" className={styles.clientSection} aria-label={ru?'Личное обращение':'Personal message'}>
       <header className={styles.sectionHeader}>
@@ -150,12 +164,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </div>
     </section>}
 
-    {hasRecommendation&&<>
+    {!hasFullReport&&hasRecommendation&&<>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="summary"/>
       <SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="remedies"/>
     </>}
 
-    {session.report&&<section id="session-report" className={styles.clientSection}>
+    {session.report&&<section id={hasFullReport?'session-download':'session-report'} className={styles.clientSection+' '+styles.reportDownloadSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><FileDown size={20}/></span>
         <div><span className={styles.sectionKicker}>{ru?'ДОКУМЕНТ КОНСУЛЬТАЦИИ':'SESSION DOCUMENT'}</span>
@@ -167,10 +181,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <a href={pdfPath} className={styles.downloadButton} download><FileDown size={20}/>
           {ru?'Скачать PDF-отчёт':'Download the full PDF'}</a>
       </div>
-      {reportContent&&<details className={styles.reportDetails}>
-        <summary><BookOpen size={18} aria-hidden="true"/><span>{ru?'Читать полный отчёт на странице':'Read the complete report here'}</span><ChevronDown size={18} className={styles.reportExpandIcon} aria-hidden="true"/></summary>
-        <div className={styles.reportContent}>{reportContent}</div>
-      </details>}
     </section>}
 
     {photos.length>0&&<section id="session-photos" className={styles.clientSection}>
@@ -210,6 +220,12 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         <div><span className={styles.sectionKicker}>{ru?'ДАЛЬНЕЙШИЕ ШАГИ':'NEXT STEPS'}</span>
           <h2>{ru?'Дополнительные рекомендации':'Additional recommendations'}</h2></div>
       </header>
+      {extraSessionMessage&&<div className={styles.adviceCard}>
+        <strong>{ru?'Личное сообщение специалиста':'Personal message from your practitioner'}</strong>
+        <p className={styles.plainReportText}>{extraSessionMessage}</p>
+      </div>}
+      {hasFullReport&&plan.nextStep&&<div className={styles.adviceCard}><p className={styles.plainReportText}>{plan.nextStep}</p></div>}
+      {hasFullReport&&plan.focus&&plan.focus!==plan.nextStep&&<div className={styles.adviceCard}><p className={styles.plainReportText}>{plan.focus}</p></div>}
       {plan.additionalRecommendations&&<div className={styles.adviceCard}>
         <p>{plan.additionalRecommendations}</p>
       </div>}
@@ -224,7 +240,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           <div><h3>{practice.title}</h3>{practice.instructions&&<p>{practice.instructions}</p>}</div>
         </article>)}
       </div>}
-      {hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
+      {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
     {(supplementary.length>0||resources.length>0)&&<section id="session-resources" className={styles.clientSection}>
