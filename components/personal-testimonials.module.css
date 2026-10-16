@@ -154,3 +154,14 @@
 @media (prefers-reduced-motion: reduce) {
   .more, .contact { scroll-behavior: auto; }
 }
+
+/* Full review archive stays browsable on a phone without turning the sales landing into twelve screens of videos. */
+.videoLanguageTag{margin:0 0 7px;color:#7b5a48;font:700 11px/1.45 Arial,Helvetica,sans-serif}
+@media(max-width:767px){
+  .section[data-personal-testimonials="all"] .videoGrid{
+    display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,82%);grid-template-columns:none;
+    overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;
+    padding:4px 2px 14px;margin:0 -2px;scrollbar-width:thin;
+  }
+  .section[data-personal-testimonials="all"] .videoItem{scroll-snap-align:start}
+}
