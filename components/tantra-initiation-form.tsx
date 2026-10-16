@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowDown, ArrowUpRight, Check, Download, FileText, MessageCircle, Send } from "lucide-react";
+import { ArrowDown, ArrowUpRight, Check, Download, FileText, Heart, MessageCircle, Send } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { WHATSAPP_NUMBER } from "@/lib/whatsapp-enquiry";
 import styles from "./tantra-free-initiation.module.css";
