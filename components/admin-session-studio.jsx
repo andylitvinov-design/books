@@ -345,7 +345,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         <button className={styles.secondaryButton} disabled={block||session.status!=='published'}
           onClick={()=>act('copy')}><Copy size={18}/>{ru?'Скопировать ссылку сессии':'Copy session-only link'}</button>
       </div>
-      {link&&<div className="consultation-share-link-ready">
+      {link&&<div className={styles.sessionShareLinkReady}>
         <label className={styles.field}>{ru?'Личная ссылка (только на эту сессию)':'Private link (this session only)'}
           <input readOnly value={link} onFocus={e=>e.target.select()} aria-label="Session share link"/></label>
         <button type="button" className={styles.secondaryButton} onClick={async()=>{
