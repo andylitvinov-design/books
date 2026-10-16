@@ -7,8 +7,11 @@ export function sanitizeCspRequest(input, origin) {
       : typeof Request !== 'undefined' && input instanceof Request ? Object.getOwnPropertyDescriptor(Request.prototype, 'url').get.call(input) : null;
     if (address === null) return null;
     const url = new URL(address, base);
-    if (url.origin !== base.origin || url.username || url.password || url.hash) return null;
+    if (url.origin !== base.origin || url.username || url.password) return null;
     if (!['/', '/en/about', '/en/services', '/en/services/free-situation-review', '/en/academy/reiki/tantra-reiki'].includes(url.pathname)) return null;
+    // Native fetch omits fragments from its network URL. Normalize only this
+    // observation clone; never change the caller's URL or emit fragment values.
+    url.hash = '';
     const keys = [...url.searchParams.keys()];
     if (keys.length && !(keys.length === 1 && keys[0] === '_rsc' && url.searchParams.get('_rsc'))) return null;
     return { path: url.pathname, rsc: keys.length === 1 };

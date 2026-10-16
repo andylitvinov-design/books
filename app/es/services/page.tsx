@@ -12,7 +12,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
 
-export const metadata = spanishMetadata("/es/services", "Servicios y evaluación gratuita mediante dibujo — Holistic House", "Completa un formulario de coaching, dibuja YO, META y PROBLEMA a mano y recibe un informe escrito personal. Las consultas en directo son de pago. También ofrecemos consultoría empresarial con constelaciones y activación de metas.");
+export const metadata = spanishMetadata("/es/services", "Servicios y evaluación gratuita mediante dibujo — Holistic House", "Explora servicios personales, constelaciones, terapia con imágenes y revisión escrita gratuita de tu situación. Sesiones en Toronto o en línea.");
 
 const approaches = [
   { id: "situation", image: "/images/holistic-house/hero-olive-incense.webp", title: "Revisión gratuita de tu situación", situation: "¿Quieres comprender mejor tu problema y tus próximos pasos?", detail: "Completa un cuestionario breve y comparte un dibujo YO / META / PROBLEMA. Puedes solicitar una reflexión personal por escrito. No es una llamada gratuita ni un diagnóstico médico.", action: "Solicitar revisión escrita gratuita", href: "/es/services/free-situation-review" },

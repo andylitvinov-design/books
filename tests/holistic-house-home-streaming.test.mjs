@@ -21,21 +21,28 @@ test("EN and RU heroes stream public video without awaiting Redis", () => {
   assert.match(section, /data-video-slot="home-intro"/);
 });
 
-test("EN/RU/ES first screen matches SEO promise and links a real consultation chooser", () => {
+test("EN/RU/ES first screen clearly distinguishes free written review, tests and paid booking", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx"), esServices = read("app/es/services/page.tsx");
   const seo = read("lib/home-seo.ts"), css = read("app/holistic-house-home.css");
-  assert.match(home, /heroTitle: "Free self-checks\. Personal guidance\."/);
-  assert.match(home, /heroTitle: "Бесплатные тесты\. Личная поддержка\."/);
-  assert.match(es, /Autoevaluaciones gratuitas/);
+  assert.match(home, /heroTitle: "Understand your situation\. Find your next step\."/);
+  assert.match(home, /heroTitle: "Разберитесь в ситуации/);
+  assert.match(es, /Comprende tu situación/);
   assert.match(seo, /free self-checks and personal guidance in Toronto/);
   assert.match(seo, /openGraph:/);
   assert.match(seo, /twitter:/);
+  for (const page of [home, es]) {
+    assert.match(page, /data-hero-cta": "free-written-review"|data-hero-cta="free-written-review"/);
+    assert.match(page, /data-hero-cta": "free-tests"|data-hero-cta="free-tests"/);
+    assert.match(page, /data-hero-cta": "paid-sessions"|data-hero-cta="paid-sessions"/);
+    assert.ok(page.indexOf('service-home-button--primary') < page.indexOf('service-home-button--secondary'));
+    assert.match(page, /HomeFreePaths/);
+  }
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(es, /href="\/es\/services#consultation"/);
   assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking \/>/);
-  assert.match(css, /\.house-home--services \.service-home-button--consultation/);
-  assert.match(css, /\.house-home--services \.service-home-button--secondary \{ display: none; \}/);
+  assert.match(css, /\.house-home--services \.service-home-button--primary \{/);
+  assert.match(css, /\.house-home--services \.service-home-button--secondary \{ display: inline-flex; \}/);
 });
 
 test("canonical TTFB measurement and nonce safety remain intact", () => {

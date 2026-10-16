@@ -14,13 +14,9 @@ import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
-import "./site-video-admin.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
-import "./academy.css";
-import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
-import "./temple-studies.css";
 import "./sitewide-capture.css";
 import "./public-wide-layout.css";
 

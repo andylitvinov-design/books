@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 import { readFileSync } from 'node:fs';
 import { sanitizeCspRequest, installCspFetchTelemetry, attachCspRequestTelemetry, cspFetchTelemetrySource } from '../scripts/csp-request-telemetry.mjs';
 const origin = 'http://127.0.0.1:3123';
@@ -43,7 +45,7 @@ test('broken observer storage and nonstandard input cannot change native behavio
 });
 test('only known loopback public paths and exact RSC query shape are recorded', () => {
   for (const input of [requestUrl, new URL(requestUrl), new Request(requestUrl)]) assert.deepEqual(sanitizeCspRequest(input, origin), { path: '/en/about', rsc: true });
-  for (const input of ['/api/app/guest/bootstrap', '/en/client', '/en/about?token=private', '/en/about?_rsc=x&other=y', '/en/about?_rsc=x&_rsc=y', '/en/about?_rsc=', '/en/about#private', 'https://example.com/en/about?_rsc=x', 'http://name:secret@127.0.0.1:3123/en/about', '/unknown', { url: requestUrl }]) assert.equal(sanitizeCspRequest(input, origin), null);
+  for (const input of ['/api/app/guest/bootstrap', '/en/client', '/en/about?token=private', '/en/about?_rsc=x&other=y', '/en/about?_rsc=x&_rsc=y', '/en/about?_rsc=', 'https://example.com/en/about?_rsc=x', 'http://name:secret@127.0.0.1:3123/en/about', '/unknown', { url: requestUrl }]) assert.equal(sanitizeCspRequest(input, origin), null);
   assert.equal(sanitizeCspRequest('https://holistichouse.vercel.app/en/about', 'https://holistichouse.vercel.app'), null);
   for (const protocol of ['file:', 'ftp:']) assert.equal(sanitizeCspRequest(protocol + '//localhost/en/about', protocol + '//localhost'), null);
 });
@@ -102,4 +104,44 @@ test('iframe fetch is untouched and network event collection remains bounded', (
   attachCspRequestTelemetry({ on: (type, fn) => { listeners[type] = fn; } }, origin, events);
   for (let i = 0; i < 520; i++) listeners.request({ url: () => requestUrl });
   assert.equal(events.length, 512);
+});
+
+test('fragment observations match native network paths without changing fetch arguments', () => {
+  const address = origin + '/en/services?_rsc=opaque-secret#consultation-secret';
+  for (const input of [address, new URL(address), new Request(address)]) {
+    const promise = Promise.resolve('native');
+    const options = { signal: new AbortController().signal };
+    const { env, events } = fixture(function (actual, init) {
+      assert.equal(actual, input);
+      assert.equal(init, options);
+      return promise;
+    });
+    assert.equal(env.fetch(input, options), promise);
+    assert.deepEqual(sanitizeCspRequest(input, origin), { path: '/en/services', rsc: true });
+    assert.doesNotMatch(JSON.stringify(events()), /opaque-secret|consultation-secret|#/);
+    if (input instanceof URL) assert.equal(input.hash, '#consultation-secret');
+    if (input instanceof Request) assert.equal(input.url, address);
+  }
+  for (const path of ['/en/services#fragment', '/en/services#']) assert.deepEqual(sanitizeCspRequest(origin + path, origin), { path: '/en/services', rsc: false });
+  for (const input of [origin + '/en/client?_rsc=x#fragment', origin + '/en/services?token=secret#fragment', origin + '/en/services?_rsc=x&extra=y#fragment', 'https://external.test/en/services?_rsc=x#fragment', 'http://user:secret@127.0.0.1:3123/en/services?_rsc=x#fragment']) assert.equal(sanitizeCspRequest(input, origin), null);
+});
+
+test('pinned Next prefetch URL construction retains fragment before native fetch', async () => {
+  assert.equal(require('next/package.json').version, '15.5.21');
+  const { setCacheBustingSearchParam } = require('next/dist/client/components/router-reducer/set-cache-busting-search-param.js');
+  const headers = require('next/dist/client/components/app-router-headers.js');
+  const input = new URL(origin + '/en/services#consultation');
+  const fetchUrl = new URL(input);
+  await setCacheBustingSearchParam(fetchUrl, {
+    [headers.NEXT_ROUTER_PREFETCH_HEADER]: '1',
+    [headers.NEXT_ROUTER_STATE_TREE_HEADER]: encodeURIComponent(JSON.stringify(['', {}])),
+  });
+  assert.equal(fetchUrl.hash, '#consultation');
+  assert.ok(fetchUrl.searchParams.get('_rsc'));
+  assert.equal(input.search, '');
+  assert.deepEqual(sanitizeCspRequest(fetchUrl, origin), { path: '/en/services', rsc: true });
+  const source = readFileSync(require.resolve('next/dist/client/components/router-reducer/fetch-server-response.js'), 'utf8');
+  const construction = source.slice(source.indexOf('let fetchUrl = new URL(url);'), source.indexOf('let browserResponse = await fetch(fetchUrl, fetchOptions);'));
+  assert.match(construction, /setCacheBustingSearchParam/);
+  assert.doesNotMatch(construction, /hash\s*=/);
 });
