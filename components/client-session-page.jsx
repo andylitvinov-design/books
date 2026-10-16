@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -337,6 +337,37 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
     </section>}
 
+    <nav className={styles.sessionBottomActions} data-hh-report-next-actions
+      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
+      <div className={styles.sessionBottomHeading}>
+        <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
+        <h2>{ru?'Ваши следующие шаги':'Your next steps'}</h2>
+      </div>
+      {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
+        locale={locale} appAvailable={appAvailable} compact/>}
+      {mode==='owner'&&<button className={styles.sessionBottomPrimary} type="button" disabled>
+        <BookmarkCheck size={20} aria-hidden="true"/>
+        {ru?'Войти в мой кабинет и сохранить отчёт':'Sign in to my Cabinet and save report'}
+      </button>}
+      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
+        className={styles.sessionBottomPrimary}>
+        <BookmarkCheck size={20} aria-hidden="true"/>
+        {ru?'Открыть мой кабинет — отчёт сохранён':'Open my Cabinet — report saved'}
+      </a>}
+      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
+        <Gift size={21} aria-hidden="true"/>
+        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
+      </a>
+      {mode==='owner'&&<p className={styles.sessionBottomHint} role="note">
+        {ru?'Предпросмотр специалиста: кнопка сохранения становится активной у клиента по защищённой ссылке.':
+          'Practitioner preview: the save button is enabled only for the client with an authorized report link.'}
+      </p>}
+      {!appAvailable&&mode!=='owner'&&mode!=='guest'&&<p className={styles.sessionBottomHint} role="status">
+        {ru?'Сохранение через Google временно недоступно. Этот отчёт остаётся доступным по защищённой ссылке.':
+          'Google saving is temporarily unavailable. This report remains accessible through its protected link.'}
+      </p>}
+    </nav>
+
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):
         ru?'Эта защищённая ссылка относится только к данной консультации. Не пересылайте её другим людям.':
@@ -345,22 +376,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
         'This information does not replace appropriate medical assessment or care.'}</p>
     </footer>
-
-    {mode!=='owner'&&<nav className={styles.sessionBottomActions}
-      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
-      {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
-        locale={locale} appAvailable={appAvailable} compact/>}
-      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
-        className={styles.sessionBottomPrimary}><FolderOpen size={20} aria-hidden="true"/>
-        {ru?'Открыть мои сохранённые отчёты':'Open my saved reports'}</a>}
-      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
-        <ListChecks size={20} aria-hidden="true"/>
-        {ru?'Пройти другие тесты':'Take more tests'}</a>
-      {!appAvailable&&mode!=='saved'&&<p className={styles.sessionBottomHint} role="status">
-        {ru?'Сохранение через Google сейчас недоступно. Отчёт остаётся доступным по защищённой ссылке.':
-          'Google saving is temporarily unavailable. This report remains accessible through its private link.'}
-      </p>}
-    </nav>}
   </main>
   const reportView=<div className={styles.sessionSiteShell} lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
