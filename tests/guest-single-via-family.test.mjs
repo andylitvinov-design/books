@@ -51,8 +51,8 @@ test('complete VIA 96 is available even when short-form ranking omits it, but ne
   assert.match(explorer, /viaProfileEntry=\{entries\.find\(\(entry\) => entry\.key === 'ipip-via-r-strengths-96'/)
 })
 
-function publicHarness({ signedIn = false, guestHandler = async () => {} } = {}) {
-  const requests = [], storage = [], redirects = [], navigation = [], guest = []
+function publicHarness({ withGuestCallback = true, guestHandler = async () => {} } = {}) {
+  const navigation = [], guest = []
   const exported = {}
   const jsx = (type, props) => ({ type, props })
   const compiled = ts.transpileModule(src('components/app/public-test-explorer.jsx'),
@@ -64,38 +64,20 @@ function publicHarness({ signedIn = false, guestHandler = async () => {} } = {})
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' }
       if (name === 'next/navigation') return { useRouter() { return { push(route) { navigation.push(route) } } } }
       if (name === './test-explorer') return { TestExplorer: 'TestExplorer' }
-      if (name === '@/lib/app/test-selection-intent') return {
-        PENDING_TEST_SELECTION_KEY: 'pending-test-selection',
-        makeTestSelectionIntent(keys) { return JSON.stringify(keys) },
-      }
       if (name === '@/lib/inner-growth/course-entry-intent') return {
         COURSE_ENTRY_INTENT_KEY: 'course',
         makeCourseEntryIntent() { return 'draft' },
       }
       throw new Error('Unexpected dependency: ' + name)
     },
-    fetch: async (url, options = {}) => {
-      requests.push({ url, method: options.method || 'GET', body: options.body || null })
-      if (url === '/api/app/bootstrap') return {
-        ok: signedIn, status: signedIn ? 200 : 401,
-        json: async () => signedIn ? { account: { id: 'synthetic-owner' } } : { error: 'ACCOUNT_REQUIRED' },
-      }
-      if (url === '/api/app/test-plans') return { ok: true, status: 200, json: async () => ({ id: 'synthetic-plan' }) }
-      if (url === '/api/app/auth/start') return { ok: true, status: 200, json: async () => ({ redirectUrl: 'https://example.invalid/oauth' }) }
-      throw new Error('Unexpected HTTP call ' + url)
-    },
-    window: {
-      sessionStorage: { setItem(key, value) { storage.push({ key, value }) } },
-      location: { assign(url) { redirects.push(url) } },
-    },
-    crypto: { randomUUID() { return '00000000-0000-4000-8000-000000000000' } },
+    window: { sessionStorage: { setItem() { throw new Error('Test-start must not write to browser storage') } } },
   })
-  const node = exported.PublicTestExplorer({
-    locale: 'en', embedded: true, onGuestStartSingle: async (entry) => {
-      guest.push(entry.key)
-      await guestHandler(entry)
-    },
-  })
+  const props = { locale: 'en', embedded: true }
+  if (withGuestCallback) props.onGuestStart = async entries => {
+    guest.push(entries.map(entry => entry.key))
+    await guestHandler(entries)
+  }
+  const node = exported.PublicTestExplorer(props)
   const find = (n) => {
     if (!n || typeof n !== 'object') return null
     if (n.type === 'TestExplorer') return n
@@ -105,56 +87,61 @@ function publicHarness({ signedIn = false, guestHandler = async () => {} } = {})
   }
   const explorer = find(node)
   assert.ok(explorer?.props?.onStart)
-  return { requests, storage, redirects, navigation, guest, onStart: explorer.props.onStart }
+  return { navigation, guest, onStart: explorer.props.onStart }
 }
 
-test('one eligible anonymous test goes straight to existing guest consent flow, not OAuth or storage', async () => {
+test('one eligible anonymous test opens existing guest runner, without OAuth', async () => {
   const h = publicHarness()
   await h.onStart([eligible()], { focus: ['stress'] })
-  assert.deepEqual(h.guest, ['hh-current-state'])
-  assert.deepEqual(h.requests.map(r => r.url), ['/api/app/bootstrap'])
-  assert.equal(h.storage.length, 0)
-  assert.equal(h.redirects.length, 0)
-  assert.equal(h.navigation.length, 0)
+  assert.deepEqual(h.guest, [['hh-current-state']])
+  assert.deepEqual(h.navigation, [])
 })
 
-test('multiple anonymous tests or guest-ineligible tests still require Google and never start a guest run', async () => {
-  for (const list of [[eligible(),eligible('mini-ipip-20')], [{ ...eligible('phq-9'),guestEligible: false }]]) {
+test('a full selection of eligible tests starts guest runner without Google', async () => {
+  const h = publicHarness()
+  await h.onStart([eligible(), eligible('mini-ipip-20')], { focus: ['mood'] })
+  assert.deepEqual(h.guest, [['hh-current-state', 'mini-ipip-20']])
+  assert.deepEqual(h.navigation, [])
+})
+
+test('guest-ineligible or unlicensed tests fail closed', async () => {
+  for (const list of [
+    [{ ...eligible('phq-9'), guestEligible: false }],
+    [{ ...eligible('restricted-test'), rightsStatus: 'review_required' }],
+    Array.from({ length: 13 }, (_, i) => eligible('test-' + i)),
+    [],
+  ]) {
     const h = publicHarness()
-    await h.onStart(list, { focus: ['mood'] })
+    await assert.rejects(h.onStart(list), /GUEST_TEST_UNAVAILABLE/)
     assert.deepEqual(h.guest, [])
-    assert.deepEqual(h.requests.map(r => r.url), ['/api/app/bootstrap', '/api/app/auth/start'])
-    assert.equal(h.storage.length, 1)
-    assert.equal(h.redirects.length, 1)
+    assert.deepEqual(h.navigation, [])
   }
 })
 
-test('signed-in single test remains account-owned plan without guest run or Google reauthentication', async () => {
-  const h = publicHarness({signedIn: true})
-  await h.onStart([eligible()], { focus: ['stress'] })
-  assert.deepEqual(h.guest, [])
-  assert.deepEqual(h.requests.map(r => r.url), ['/api/app/bootstrap', '/api/app/test-plans'])
-  assert.deepEqual(h.navigation, ['/en/app/tests?plan=synthetic-plan'])
-  assert.equal(h.storage.length, 0)
-  assert.equal(h.redirects.length, 0)
+test('dedicated public explorer joins the existing guest runner with public keys only', async () => {
+  const h = publicHarness({ withGuestCallback: false })
+  await h.onStart([eligible(), eligible('mini-ipip-20')])
+  assert.deepEqual(h.navigation, ['/en/client?startTests=hh-current-state%2Cmini-ipip-20'])
 })
 
-test('client entry uses the existing server-backed consent-first guest runner and never bypasses eligibility', () => {
+test('guest entry uses existing server-backed consent, item-scoped save and protected catalog', () => {
   const cabinet = src('components/app/cabinet-landing.jsx')
   const publicFlow = src('components/app/public-test-explorer.jsx')
   const picker = src('components/app/simple-test-picker.jsx')
   const css = src('components/app/simple-test-picker.module.css')
-  assert.match(cabinet, /onGuestStartSingle=\{\(entry\) => begin\(entry\.key, null\)\}/)
+  assert.match(cabinet, /onGuestStart=\{beginGuestBattery\}/)
   assert.match(cabinet, /setPhase\('consent'\)/)
   assert.match(cabinet, /item\.rightsStatus !== 'cleared'/)
   assert.match(cabinet, /item\.rightsStatus === 'cleared'/)
   assert.match(cabinet, /guestFetch\('guest\/session'/)
+  assert.match(cabinet, /guestFetch\('guest\/test-plans'/)
+  assert.match(cabinet, /sourceKind: 'guest_result'/)
   assert.match(cabinet, /await startRun\(definition\)/)
-  assert.match(publicFlow, /candidate\?\.rightsStatus === 'cleared'/)
-  assert.match(publicFlow, /candidate\?\.guestEligible === true/)
+  assert.match(publicFlow, /entry\?\.rightsStatus === 'cleared'/)
+  assert.match(publicFlow, /entry\?\.guestEligible === true/)
   assert.match(picker, /data-via-family/)
   assert.match(picker, /aria-expanded=\{showIndividualVia\}/)
   assert.match(picker, /groupViaRecommendations\(recommendations, selectedKeys, showIndividualVia\)/)
   assert.match(css, /\.shell \.viaFamilyActions \.takeTest/)
-  assert.match(picker, /создания и сохранения набора|составления и сохранения набора/)
+  assert.match(picker, /наборы проходятся без регистрации/)
 })
