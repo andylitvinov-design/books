@@ -5,6 +5,7 @@ import Link from 'next/link'
 import styles from './youtube-phone-uploader.module.css'
 import {YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READ_SCOPE, isVideoFile, titleFromFilename, uploadMetadata, videoWatchUrl} from '@/lib/youtube/phone-upload-protocol.mjs'
 import {beginUpload, getConnectedChannel, probeUpload, putChunk, readUploadedDetails} from '@/lib/youtube/browser-upload'
+import {completeYoutubeUpload, hasUnarchivedCompletedUpload, retainUploadEntry, uploadNeedsRecovery} from '@/lib/youtube/upload-completion.mjs'
 import {getYoutubeUploadStateAction, pairEnglishYoutubeChannelAction, saveYoutubeUploadHistoryAction, configureYoutubeWebOauthAction} from '@/app/admin/youtube-upload/actions'
 
 const copy = {
@@ -37,7 +38,9 @@ const copy = {
     ai:'В видео присутствует реалистичный ИИ-аватар или синтезированный голос',
     kids:'Видео предназначено детям',
     start:'Загрузить на YouTube', resume:'Продолжить', pause:'Приостановить',
-    waiting:'Ожидает', sending:'Загружается', done:'Загружено', failed:'Ошибка', paused:'Приостановлено',
+    waiting:'Ожидает', sending:'Загружается', verifying:'Проверка YouTube', done:'Загружено', failed:'Ошибка', paused:'Приостановлено',
+    retryVerify:'Повторить проверку YouTube',
+    verifyHelp:'Видео уже передано. Повторная проверка использует эту же ссылку и не загружает файл заново.',
     remove:'Убрать', copy:'Скопировать ссылку', copied:'Скопировано ✓', open:'Открыть YouTube',
     back:'Видео сайта', history:'История загруженных видео', refresh:'Обновить историю', historyEmpty:'Здесь будут ссылки на видео, загруженные через это приложение.',
     all:'Все', historySaved:'Сохранено', historyError:'YouTube загрузил видео, но сохранение ссылки не завершилось. Скопируйте ссылку и повторите сохранение.',
@@ -52,6 +55,8 @@ const copy = {
       youtube_permission:'Разрешения Google отсутствуют или срок входа истёк. Переподключите YouTube.',
       youtube_quota:'Лимит загрузок YouTube исчерпан или действует ограничение канала.',
       wrong_channel:'Авторизован другой канал. Выберите правильный YouTube в окне Google.',
+      readback_unverified:'YouTube пока не подтвердил канал и видимость. Очередь остановлена. Повторите проверку уже загруженного видео.',
+      unexpected_visibility:'YouTube не подтвердил Unlisted. Очередь остановлена. Проверьте ограничение в YouTube Studio, затем повторите проверку.',
       channel_ambiguous:'Google не смог определить один канал. Выберите нужный YouTube-канал.',
       history_unavailable:'Хранилище ссылок недоступно. Повторите сохранение позже.',
       channel_conflict:'Английский канал уже привязан к другому ID. Загрузка остановлена для защиты.',
@@ -100,7 +105,9 @@ const copy = {
     ai:'Video includes a realistic AI avatar or synthetic voice',
     kids:'Video is made for kids',
     start:'Upload to YouTube', resume:'Resume upload', pause:'Pause',
-    waiting:'Queued', sending:'Uploading', done:'Uploaded', failed:'Incomplete', paused:'Paused',
+    waiting:'Queued', sending:'Uploading', verifying:'Verifying YouTube', done:'Uploaded', failed:'Incomplete', paused:'Paused',
+    retryVerify:'Retry YouTube verification',
+    verifyHelp:'The video was already transferred. Verification reuses this link without uploading the file again.',
     remove:'Remove', copy:'Copy link', copied:'Copied ✓', open:'Open YouTube',
     back:'Website videos', history:'Uploaded video links', refresh:'Refresh history', historyEmpty:'Videos uploaded through this app will appear here.',
     all:'All', historySaved:'Saved', historyError:'YouTube uploaded the video but the link was not archived. Copy it and retry saving.',
@@ -115,6 +122,8 @@ const copy = {
       youtube_permission:'Missing Google permissions or expired sign-in. Reconnect YouTube.',
       youtube_quota:'YouTube upload quota or channel limit reached.',
       wrong_channel:'The wrong channel is authorized. Select the intended YouTube channel in Google.',
+      readback_unverified:'YouTube has not confirmed the channel and visibility. The queue is stopped. Retry verification of the existing video.',
+      unexpected_visibility:'YouTube did not confirm Unlisted. The queue is stopped. Check the restriction in YouTube Studio, then retry verification.',
       channel_ambiguous:'Google could not resolve a single channel. Select the desired YouTube channel.',
       history_unavailable:'The saved link archive is unavailable. Retry after it recovers.',
       channel_conflict:'English channel is already paired to another ID. Upload is blocked.',
@@ -168,6 +177,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [history, setHistory] = useState(initialHistory)
+  const historySync = useRef({revision:0,request:0})
   const [historyStatus, setHistoryStatus] = useState(Boolean(historyReady))
   const [historyFilter, setHistoryFilter] = useState('all')
   const [copiedId, setCopiedId] = useState('')
@@ -274,7 +284,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
   }, [enabled,clientId,locale])
 
   function chooseTarget(next) {
-    if (busy || authPending || entriesRef.current.some(item => item.state !== 'done' && sessions.current.has(item.id))) {
+    if (busy || authPending || entriesRef.current.some(item => uploadNeedsRecovery(item) || (item.state !== 'done' && sessions.current.has(item.id)))) {
       setError(t.more);return
     }
     if (next === target) return
@@ -342,11 +352,12 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     const files = Array.from(event.target.files || [])
     event.target.value = ''
     if (files.length === 0) return
+    if (entriesRef.current.some(uploadNeedsRecovery)) {setError(t.more);return}
     const unfinished = entriesRef.current.filter(item => item.state !== 'done')
     if (unfinished.length + files.length > 10) {setError(t.errors.too_many);return}
     if (files.some(file => !isVideoFile(file))) {setError(t.errors.invalid_file);return}
     const suffix = String(Date.now()) + '-' + Math.random().toString(36).slice(2)
-    alter(old => [...old.filter(item => item.state !== 'done'),...files.map((file,index) => ({
+    alter(old => [...old.filter(retainUploadEntry),...files.map((file,index) => ({
       id:suffix+'-'+index, file, title:titleFromFilename(file.name),
       target, state:'waiting', progress:0, videoId:null, privacyStatus:'unknown', saved:false,
     }))])
@@ -360,6 +371,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         requestedVisibility:'unlisted',
       })
       if (!result.ok) throw new Error(result.error)
+      historySync.current.revision += 1
       setHistory(old => mergeHistory(old,result.record))
       update(entryId,{saved:true,saveError:false})
       setHistoryStatus(true)
@@ -373,22 +385,18 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   async function finish(entry, resultId, auth, channelId) {
-    const details = await readUploadedDetails(resultId,auth.value)
-    const actual = details?.privacyStatus || 'unknown'
-    const wrongChannel = Boolean(details?.channelId && details.channelId !== channelId)
-    // Always show the YouTube video ID even if Google placed it in an unexpected channel.
-    update(entry.id,{state:'done', progress:100, videoId:resultId, privacyStatus:actual,saved:false,wrongChannel})
-    if (wrongChannel) {
-      setHistoryStatus(false)
-      throw new Error('wrong_channel')
-    }
-    const archived = await saveLink(entry.id,resultId,actual,entry.title,entry.target,channelId)
-    if (!archived) throw new Error('history_unavailable')
+    await completeYoutubeUpload({
+      videoId:resultId,channelId,
+      readDetails:() => readUploadedDetails(resultId,auth.value),
+      update:partial => update(entry.id,partial),
+      save:details => saveLink(entry.id,resultId,details.privacyStatus,entry.title,entry.target,details.channelId),
+    })
   }
   async function runUploads() {
     const desired = channels[target]
     if (!enabled || !historyStatus || !desired?.id || !connected ||
       connected.target !== target || connected.id !== desired.id || active.current) return
+    if (hasUnarchivedCompletedUpload(entriesRef.current)) {setError(t.historyError);return}
     const remaining = entriesRef.current.filter(item => item.state !== 'done')
     if (!remaining.length || remaining.some(item => item.target !== target)) return
     if (!authToken.current || authToken.current.expiresAt < Date.now() + 30_000) {
@@ -407,6 +415,10 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         const auth = authToken.current
         if (!auth || auth.expiresAt < Date.now() + 30_000) throw new Error('session_expired')
         if (!connected || connected.id !== desired.id || entry.target !== targetRef.current) throw new Error('wrong_channel')
+        if (entry.videoId) {
+          await finish(entry,entry.videoId,auth,desired.id)
+          continue
+        }
         const metadata = uploadMetadata({title:entry.title,description,visibility:'unlisted',language:target,synthetic,madeForKids})
         update(entry.id,{state:'sending'})
         let session = sessions.current.get(entry.id)
@@ -452,19 +464,26 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
     }
   }
   async function refreshHistory() {
+    const revision = historySync.current.revision
+    const request = ++historySync.current.request
     const result = await getYoutubeUploadStateAction()
+    // A prior snapshot must not hide a link saved while this request was in flight.
+    if (request !== historySync.current.request || revision !== historySync.current.revision) return
     if (!result.ok) {setError(humanError(result.error,t));setHistoryStatus(false);return}
     setHistory(result.history)
     setChannels(result.channels)
     setHistoryStatus(true)
-    setError('')
+    const recovery = entriesRef.current.find(uploadNeedsRecovery)
+    setError(recovery ? (recovery.verificationError ? humanError(recovery.verificationError,t) : t.historyError) : '')
   }
 
   const configured = Boolean(enabled && authReady)
   const selectedConfig = channels[target]
   const connectedCorrectly = Boolean(connected?.id && connected?.id === selectedConfig?.id && connected.target === target)
   const pending = entries.filter(item => item.state !== 'done')
+  const unresolvedUpload = entries.some(uploadNeedsRecovery)
   const canUpload = Boolean(enabled && historyStatus && connectedCorrectly && !busy && !authPending && pending.length &&
+    !hasUnarchivedCompletedUpload(entries) &&
     pending.every(item => item.target === target))
   const filteredHistory = historyFilter === 'all' ? history : history.filter(item => item.target === historyFilter)
   return (
@@ -534,7 +553,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         <label className={styles.picker}>
           <span>＋ {t.select}</span>
           <input type="file" accept="video/*,.mp4,.mov,.m4v,.webm" multiple
-            disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly}
+            disabled={!configured || !historyStatus || busy || authPending || pairBusy || !connectedCorrectly || unresolvedUpload}
             onChange={addFiles}/>
         </label>
         {entries.length > 0 && <div className={styles.files}>
@@ -543,13 +562,13 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
             <div className={styles.file} key={item.id}>
               <div className={styles.filehead}>
                 <span className={styles.filename}>{item.target.toUpperCase()} · {item.file.name} · {filesize(item.file.size)}</span>
-                {!busy && item.state !== 'done' && !sessions.current.has(item.id) && <button type="button" className={styles.remove} onClick={() => {
+                {!busy && item.state !== 'done' && !item.videoId && !sessions.current.has(item.id) && <button type="button" className={styles.remove} onClick={() => {
                   sessions.current.delete(item.id)
                   alter(all => all.filter(row => row.id !== item.id))
                 }}>{t.remove}</button>}
               </div>
               <label className={styles.field}><span>{t.title}</span><input value={item.title}
-                maxLength={100} disabled={busy || item.state === 'done' || sessions.current.has(item.id)}
+                maxLength={100} disabled={busy || item.state === 'done' || Boolean(item.videoId) || sessions.current.has(item.id)}
                 onChange={event => update(item.id,{title:event.target.value})}/></label>
               <div className={styles.progressLine}><span>{t[item.state]}</span><strong>{item.progress}%</strong></div>
               <progress max="100" value={item.progress} aria-label={item.file.name}/>
@@ -560,7 +579,8 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
                   <button type="button" onClick={() => copyLink(item.videoId)}>{copiedId === item.videoId ? t.copied : t.copy}</button>
                 </div>
                 {item.wrongChannel && <p className={styles.error}>{t.wrongResult}</p>}
-                {!item.saved && !item.wrongChannel && <div className={styles.caution}>
+                {item.verificationError && <p className={styles.caution}>{t.verifyHelp}</p>}
+                {item.state === 'done' && !item.saved && !item.verificationError && !item.wrongChannel && <div className={styles.caution}>
                   <p>{t.historyError}</p>
                   <button type="button" disabled={busy} onClick={() =>
                     saveLink(item.id,item.videoId,item.privacyStatus,item.title,item.target,
@@ -575,7 +595,7 @@ export function YoutubePhoneUploader({locale='ru', enabled=false, clientId='', s
         {message && <p className={styles.success} role="status">{message}</p>}
         <div className={styles.actions}>
           <button type="button" className={styles.primary} disabled={!canUpload} onClick={runUploads}>
-            {pending.some(item => ['paused','failed'].includes(item.state)) ? t.resume : t.start}
+            {pending.some(item => item.videoId) ? t.retryVerify : pending.some(item => ['paused','failed'].includes(item.state)) ? t.resume : t.start}
           </button>
           {busy && <button type="button" className={styles.secondary}
             onClick={() => abortRef.current?.abort()}>{t.pause}</button>}
