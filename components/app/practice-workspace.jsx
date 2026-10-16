@@ -175,6 +175,8 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
   const services=data.services||[]
   const publishedCount=services.filter(item=>item.status==='published').length
   const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
+  const newRequests=requests.filter(item=>item.status==='requested').length
+  const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   return <section className="hh-practice-dashboard">
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
@@ -192,6 +194,16 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
+    {!needsOnboarding&&<div className="hh-practice-overview" aria-label={ru?'Обзор практики':'Practice overview'}>
+      <div><strong>{newRequests}</strong><span>{ru?'Новые заявки':'New requests'}</span></div>
+      <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
+      <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
+    </div>}
+    {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
+      <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
+        {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
+      </Link>
+    </p>}
     {!needsOnboarding&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
         <button className="hh-practice-quick-primary" type="button"
@@ -240,10 +252,16 @@ export default function PracticeWorkspace({locale,ownerTools=null}){
           <h2>{activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
-        {activePanel==='services'&&<Services items={services} t={t} locale={locale} busy={busy}
-          onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
-          onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
-          onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />}
+        {activePanel==='services'&&<>
+          <aside className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
+            <strong>{ru?'Заказы через сайт: комиссия 20%':'Website orders: 20% platform commission'}</strong>
+            <p>{ru?'Для оплаченных услуг, заказанных и оплаченных через Holistic House, доля мастера — 80% до применимых платёжных сборов и налогов. Бесплатные услуги без комиссии. Приём и распределение платежей мастерам пока не активированы.':'For paid services ordered and paid through Holistic House, the practitioner share is 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
+          </aside>
+          <Services items={services} t={t} locale={locale} busy={busy}
+            onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
+            onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+            onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
+        </>}
         {activePanel==='profile'&&<>
           <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
             onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
@@ -365,14 +383,37 @@ function Credentials({items,t,busy,onCreate,onDelete}){
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
 function Services({items,t,locale,busy,onSave,onSubmit,onPause}){
+  const ru=locale==='ru'
+  const [creating,setCreating]=useState(items.length===0)
+  const [status,setStatus]=useState('all')
+  useEffect(()=>{if(items.length)setCreating(false)},[items.length])
+  const visible=items.filter(item=>status==='all'||(status==='published'?item.status==='published':status==='review'?['submitted','changes_requested'].includes(item.status):['draft','paused'].includes(item.status)))
+  const draftPrice=item=>item.pricingMode==='free'?' · '+(ru?'Бесплатно':'Free'):item.pricingMode==='contact'?'':item.confirmedPrice!=null?' · '+item.currency+' '+item.confirmedPrice:''
   return <section className="hh-practice-services-editor">
-    <ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
-      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />
-    {items.length>0&&<details className="hh-practice-saved-services">
-      <summary>{locale==='ru'?'Существующие услуги':'Existing services'} ({items.length})</summary>
-      {items.map(item=><ServiceEditor key={item.id+item.revision} item={item} t={t} locale={locale}
-        busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>)}
-    </details>}
+    <div className="hh-practice-service-toolbar">
+      <h3>{ru?'Мои услуги':'My services'} <small>({items.length})</small></h3>
+      <button type="button" className="hh-practice-new-service" aria-expanded={creating} onClick={()=>setCreating(value=>!value)}>{creating?(ru?'Закрыть форму':'Close form'):(ru?'+ Новая услуга':'+ New service')}</button>
+    </div>
+    {creating&&<ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
+      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />}
+    {items.length>0&&<div className="hh-practice-service-filter">
+      <label htmlFor="hh-practice-service-status">{ru?'Показывать':'Show'}</label>
+      <select id="hh-practice-service-status" value={status} onChange={event=>setStatus(event.target.value)}>
+        <option value="all">{ru?'Все услуги':'All services'}</option>
+        <option value="published">{ru?'Опубликованные':'Published'}</option>
+        <option value="review">{ru?'На проверке':'Under review'}</option>
+        <option value="draft">{ru?'Черновики и пауза':'Drafts and paused'}</option>
+      </select>
+      <span role="status">{visible.length}/{items.length}</span>
+    </div>}
+    {visible.map(item=><details key={item.id+':'+item.revision} className="hh-practice-service-row">
+      <summary>
+        <span className="hh-practice-service-row-title">{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</span>
+        <span className="hh-practice-service-row-meta">{item.status}{draftPrice(item)}</span>
+      </summary>
+      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
+    </details>)}
+    {items.length>0&&!visible.length&&<p role="status" className="hh-fine">{ru?'Услуг с таким статусом нет.':'No services with this status.'}</p>}
   </section>
 }
 function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
@@ -390,5 +431,21 @@ function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
   </form>
 }
 function Requests({items,t,busy,onStatus}){
-  return <section className="hh-section"><h2>{t.requests}</h2>{!items.length&&<p>{t.none}</p>}{items.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{x.contact}</p>{x.message&&<p>{x.message}</p>}{x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}</section>
+  const [status,setStatus]=useState('open')
+  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted'].includes(item.status):item.status===status))
+  const ru=t.requests==='Заявки'
+  return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
+    <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
+      <select value={status} onChange={event=>setStatus(event.target.value)} aria-label={ru?'Фильтр заявок':'Filter requests'}>
+        <option value="open">{ru?'Требуют внимания':'Needs attention'}</option>
+        <option value="requested">{ru?'Новые':'New requests'}</option>
+        <option value="contacted">{ru?'Связались':'Contacted'}</option>
+        <option value="closed">{ru?'Закрытые':'Closed'}</option>
+        <option value="all">{ru?'Все заявки':'All requests'}</option>
+      </select>
+    </label>
+  </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
+    {!visible.length&&<p>{t.none}</p>}
+    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{x.contact}</p>{x.message&&<p>{x.message}</p>}{x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
+  </section>
 }
