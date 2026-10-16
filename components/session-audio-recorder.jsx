@@ -126,12 +126,17 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         // Safari no longer needs to connect directly to Supabase Storage.
         // Large files are never sent through Vercel's 4.5 MB body limit.
         if(intent.provider!=='external'&&canProxyOwnerAudio(file)){
-          const response=await fetch('/api/admin/clients/'+encodeURIComponent(job.clientId)+
-            '/sessions/'+encodeURIComponent(job.sessionId)+'/media/'+
-            encodeURIComponent(intent.assetId)+'/upload',{
-              method:'POST',headers:{'content-type':mime},body:file,
-              credentials:'same-origin',cache:'no-store',
-            })
+          let response
+          try {
+            response=await fetch('/api/admin/clients/'+encodeURIComponent(job.clientId)+
+              '/sessions/'+encodeURIComponent(job.sessionId)+'/media/'+
+              encodeURIComponent(intent.assetId)+'/upload',{
+                method:'POST',headers:{'content-type':mime},body:file,
+                credentials:'same-origin',cache:'no-store',
+              })
+          } catch {
+            throw new Error('AUDIO_STORAGE_CONNECTION_FAILED')
+          }
           const result=await response.json().catch(()=>({}))
           if(response.status===401)throw new Error('ADMIN_SIGN_IN_REQUIRED')
           if(!response.ok||result.uploaded!==true)
