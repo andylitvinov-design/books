@@ -3,7 +3,6 @@ import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administr
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
@@ -247,10 +246,6 @@ function answerLabels(definition, question) {
     value: min + index,
     label: String(min + index),
   }))
-}
-
-function resultLabel(definition, dimension) {
-  return dimension.sourceConstruct || definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
 }
 
 function localZone() {
