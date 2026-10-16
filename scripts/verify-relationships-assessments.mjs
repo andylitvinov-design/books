@@ -1,4 +1,3 @@
-import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
  await expect(action).toHaveCount(1)
@@ -27,6 +26,7 @@ async function publicTopicButton(picker, locale, title) {
  await expect(button).toBeVisible()
  return button
 }
+import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 import { createGuestVerifierPacer } from './helpers/guest-verifier-pacing.mjs'
