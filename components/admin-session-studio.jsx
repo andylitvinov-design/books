@@ -315,7 +315,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           <h4>{ru?'Выводы':'Key takeaways'}</h4>
           <ol>{plan.takeaways.filter(Boolean).map((point,index)=><li key={index}>{point}</li>)}</ol>
         </>}
-        {draft.media.some(item=>item.scope==='client')&&<>
+        {draft.media.some(item=>item.scope==='client'&&item.role!=='hidden')&&<>
           <h4>{ru?'Личные медиа':'Client media'}</h4>
           {draft.media.filter(item=>item.scope==='client'&&item.role!=='hidden').map(item=>
             <p key={item.assetId}>{activeAssets.get(item.assetId)?.kind==='image'?'▧ ':'♫ '}{item.title||mediaTitle(activeAssets.get(item.assetId),locale)}
