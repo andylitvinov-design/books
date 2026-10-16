@@ -26,29 +26,30 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.doesNotMatch(publicSource, /force-static|s-maxage|public, max-age/);
 });
 
-test("homepage differentiates paid booking from free written review and bottom chooser", () => {
+test("homepage prioritizes free written review and tests while preserving accessible paid booking", () => {
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Book a consultation"/);
-  assert.match(home, /heroBook: "Записаться на консультацию"/);
+  assert.match(home, /heroBook: "Personal sessions · from €50"/);
+  assert.match(home, /heroBook: "Личная сессия · от €50"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
-  assert.match(home, /className="service-home-button service-home-button--consultation"/);
+  assert.match(home, /className="service-home-paid-link"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
-  assert.match(freeCapture, /selected === "situation" \? `\/\$\{locale\}\/services\/free-situation-review`/);
-  assert.match(freeCapture, /selected === "wu" \? `\/\$\{locale\}\/services\/dao-health-profile`/);
-  assert.match(freeCapture, /`\/\$\{locale\}\/client#cabinet-tests`/);
+  assert.match(freeCapture, /selected === "situation" \? \x60\/\$\{locale\}\/services\/free-situation-review\x60/);
+  assert.match(freeCapture, /selected === "wu" \? \x60\/\$\{locale\}\/services\/dao-health-profile\x60/);
+  assert.match(freeCapture, /\x60\/\$\{locale\}\/client#cabinet-tests\x60/);
   assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
-  assert.match(home, /href="#core-services"/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
-  const book = home.indexOf('className="service-home-button service-home-button--consultation"');
   const free = home.indexOf('className="service-home-button service-home-button--primary"');
+  const tests = home.indexOf('className="service-home-button service-home-button--secondary"');
+  const book = home.indexOf('className="service-home-paid-link"');
   const belowFold = home.indexOf("<ServicesSolutions");
-  assert.ok(firstScreen < book && book < free && free < belowFold, "Paid booking must be the first hero action");
+  assert.ok(firstScreen < free && free < tests && tests < book && book < belowFold, "Free routes must precede the optional paid booking");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 

@@ -5,12 +5,13 @@ const read = path => readFileSync(path, 'utf8');
 test('language disclosure handles escape, outside focus and selected locale with cleanup', () => {
   const nav = read('components/site-navigation.tsx');
   for (const type of ['pointerdown', 'focusin', 'keydown']) {
-    assert.ok(nav.includes(`addEventListener("${type}"`));
-    assert.ok(nav.includes(`removeEventListener("${type}"`));
+    assert.match(nav, new RegExp(`addEventListener\\(['"]${type}['"]`));
+    assert.match(nav, new RegExp(`removeEventListener\\(['"]${type}['"]`));
   }
-  assert.match(nav, /event\.key !== "Escape"/);
-  assert.match(nav, /querySelector<HTMLElement>\("summary"\)\?\.focus/);
-  assert.match(nav, /if \(menuRef\.current\) menuRef\.current\.open = false/);
+  assert.match(nav, /event\.key !== ['"]Escape['"]/);
+  assert.match(nav, /querySelector<HTMLElement>\(['"]summary['"]\)\?\.focus/);
+  assert.match(nav, /if \(languageRef\.current\) languageRef\.current\.open = false/);
+  assert.match(nav, /if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');

@@ -1,0 +1,25 @@
+.section{max-width:1200px;margin:0 auto;padding:36px clamp(16px,4vw,48px) 22px;scroll-margin-top:100px;color:#352b24}
+.heading{max-width:720px;margin:0 0 22px}
+.kicker{margin:0 0 8px;color:#775038;font-size:12px;font-weight:700;letter-spacing:.12em}
+.heading h2{margin:0 0 8px;font-family:Georgia,serif;font-weight:400;font-size:clamp(30px,3.3vw,42px);line-height:1.15}
+.heading>p:last-child{margin:0;color:#59493d;font-size:16px;line-height:1.5}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{display:flex;flex-direction:column;min-width:0;padding:22px 22px 18px;border:1px solid #ded0c0;border-radius:18px;background:#fffdf8;box-shadow:0 4px 18px rgba(55,40,28,.045)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.icon{display:grid;width:42px;height:42px;place-items:center;border-radius:12px;background:#f1e7da;color:#70452e}
+.free{padding:5px 10px;border-radius:99px;background:#e8efe8;color:#305942;font-size:12px;font-weight:700}
+.card h3{margin:18px 0 8px;font-family:Georgia,serif;font-size:clamp(21px,2.25vw,27px);font-weight:400;line-height:1.16}
+.card p{margin:0 0 10px;font-size:15px;line-height:1.53;color:#51463d}
+.card .result{color:#665244;font-size:14px}
+.action{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;margin-top:auto;padding:9px 0 0;border-top:1px solid #e8ded2;color:#713e2d;font-size:15px;font-weight:700;text-decoration:none}
+.action:hover{color:#4b281e;text-decoration:underline}
+.action:focus-visible{outline:3px solid #945838;outline-offset:4px;border-radius:4px}
+.steps{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px;margin-top:20px;padding:15px 18px;border-radius:12px;background:#f0e8dd}
+.steps strong{font-size:15px}
+.steps ol{display:flex;flex:1;flex-wrap:wrap;gap:10px 22px;margin:0;padding-left:21px}
+.steps li{font-size:13px;line-height:1.45}
+.steps p{margin:0;color:#594638;font-size:13px}
+.disclaimer{margin:11px 0 0;color:#615950;font-size:12px;line-height:1.5}
+@media(max-width:840px){.cards{gap:9px}.card{padding:16px}.steps{display:block}.steps ol{margin:8px 0}.steps p{margin-top:8px}}
+@media(max-width:680px){.section{padding:27px 16px 20px}.cards{grid-template-columns:1fr;gap:10px}.card{padding:16px 18px}.card h3{margin:10px 0 6px;font-size:23px}.card p{font-size:15px}.card .result{font-size:14px}.heading h2{font-size:32px}.steps{margin-top:12px}.steps ol{display:block}.steps li+li{margin-top:6px}}
+@media(prefers-reduced-motion:reduce){.action{scroll-behavior:auto}}
