@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
   HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
-import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery } from "@/lib/practitioners/discovery-intent.js";
+import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
@@ -208,6 +208,10 @@ export function ServicesSmartDiscovery({
   const [query,setQuery] = useState("");
   const [submitted,setSubmitted] = useState("");
   const [activeCategory,setActiveCategory] = useState("");
+  const [goal,setGoal] = useState("");
+  const [format,setFormat] = useState("");
+  const [language,setLanguage] = useState("");
+  const [budget,setBudget] = useState("");
   const [hasSelection,setHasSelection] = useState(false);
   const [useExternalAi,setUseExternalAi] = useState(false);
   const [aiOrder,setAiOrder] = useState<string[]|null>(null);
@@ -220,7 +224,12 @@ export function ServicesSmartDiscovery({
   const orderPanelRef = useRef<HTMLDivElement>(null);
   const [scrollRequest, setScrollRequest] = useState(0);
 
-  const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
+  // User-selected hard constraints are enforced even when an AI reranker is enabled.
+  const eligible=useCallback((service:PublicService)=>serviceMatchesGoal(service,goal)
+    &&(!format||service.deliveryFormat===format||service.deliveryFormat==='hybrid')
+    &&(!language||(service.languages||[]).includes(language))
+    &&(!budget||(service.pricingMode!=='contact'&&service.confirmedPrice!=null&&service.currency==='EUR'&&service.confirmedPrice<=Number(budget))),[goal,format,language,budget]);
+  const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:4}),[submitted,services,activeCategory,eligible]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
     // The model is permitted to select ONLY existing published service IDs.
@@ -228,14 +237,14 @@ export function ServicesSmartDiscovery({
     // AI results to merely reshuffling that shortlist.
     const fromAi = aiOrder.flatMap((id) => {
       const service = services.find((item) => item.id === id && item.practitionerSlug && item.slug && item.copy?.title);
-      return service ? [{ service, areaKey: service.areaKey, score: 50, reasonKey: "explore" }] : [];
+      return service && eligible(service) ? [{ service, areaKey: service.areaKey, score: 50, reasonKey: "explore" }] : [];
     });
     const chosen = new Set(fromAi.map((entry) => entry.service.id));
     return [...fromAi, ...listed.filter((entry) => !chosen.has(entry.service.id))].slice(0,4);
-  },[listed,aiOrder,services]);
+  },[listed,aiOrder,services,eligible]);
   const editorial = useMemo(
-    () => rankEditorialDiscovery(submitted,editorialOffers,{category:activeCategory,limit:suggestions.length?2:4}),
-    [submitted,editorialOffers,activeCategory,suggestions.length]
+    () => goal||format||language||budget?[]:rankEditorialDiscovery(submitted,editorialOffers,{category:activeCategory,limit:suggestions.length?2:4}),
+    [submitted,editorialOffers,activeCategory,suggestions.length,goal,format,language,budget]
   );
 
   // Scroll only after a new selection has rendered. AI updates should not
@@ -313,7 +322,7 @@ export function ServicesSmartDiscovery({
 
   function runExample(text: string) { setQuery(text); void find(text); }
 
-  const highlighted = submitted || activeCategory;
+  const highlighted = submitted || activeCategory || goal || format || language || budget;
   const selectedArea = DISCOVERY_AREAS.find((area)=>area.key===activeCategory);
 
   return (
@@ -333,6 +342,29 @@ export function ServicesSmartDiscovery({
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
         </form>
+        <div className={styles.quickFacets} aria-label={locale==="ru"?"Фильтры поиска":"Search filters"}>
+          <label>{locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}
+            <select value={goal} onChange={e=>{setGoal(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
+              <option value="">{locale==="ru"?"Любая":locale==="es"?"Cualquiera":"Any"}</option>
+              {([["confidence","Уверенность","Confidence"],["relationships","Отношения","Relationships"],["relaxation","Расслабление","Relaxation"],["learning","Обучение","Learning"],["clarity","Ясность","Clarity"],["purpose","Предназначение","Purpose"],["energy","Энергия","Energy"],["self_awareness","Самопознание","Self-awareness"]] as const).map(([id,ru,en])=><option key={id} value={id}>{locale==="ru"?ru:en}</option>)}
+            </select>
+          </label>
+          <label>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}
+            <select value={format} onChange={e=>{setFormat(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
+              <option value="">{locale==="ru"?"Любой":"Any"}</option><option value="online">Online</option><option value="in_person">{locale==="ru"?"Очно":"In person"}</option>
+            </select>
+          </label>
+          <label>{locale==="ru"?"Цена":locale==="es"?"Precio":"Price"}
+            <select value={budget} onChange={e=>{setBudget(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
+              <option value="">{locale==="ru"?"Любая":"Any"}</option>{[30,50,75,100,200].map(value=><option key={value} value={value}>{locale==="ru"?"До ":"Up to "}€{value}</option>)}
+            </select>
+          </label>
+          <label>{locale==="ru"?"Язык":locale==="es"?"Idioma":"Language"}
+            <select value={language} onChange={e=>{setLanguage(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
+              <option value="">{locale==="ru"?"Любой":"Any"}</option>{["en","ru","es"].map(value=><option key={value} value={value}>{value.toUpperCase()}</option>)}
+            </select>
+          </label>
+        </div>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
           {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
@@ -381,7 +413,7 @@ export function ServicesSmartDiscovery({
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
-          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null)}}>{t.clear} ×</button>
+          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setGoal("");setFormat("");setLanguage("");setBudget("")}}>{t.clear} ×</button>
         </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
         {suggestions.length>0?<div className={styles.suggestionGrid}>

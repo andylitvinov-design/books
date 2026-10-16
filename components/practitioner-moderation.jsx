@@ -7,7 +7,7 @@ export default function PractitionerModeration(){
  async function load(){setError('');try{const r=await fetch('/admin/practitioners/data',{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error();setItems((await r.json()).items||[])}catch{setError('Unable to load practitioner network.')}}
  useEffect(()=>{load()},[])
  async function act(kind,id,action,extra={}){setBusy(true);setError('');try{const r=await fetch('/admin/practitioners/data',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,id,action,...extra})});if(!r.ok)throw new Error();await load()}catch{setError('The moderation action failed.')}finally{setBusy(false)}}
- return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Practitioner Network" description="Review practitioner profiles, credentials and public services."/>
+ return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Practitioner Network" description="Review practitioner profiles, credentials and public services."/><p><a href="/admin/practitioners/articles">Review practitioner articles →</a></p>
   {error&&<p role="alert">{error}</p>}
   {!items.length&&!error&&<p>No practitioner records yet.</p>}
   {items.map(({practitioner:p,credentials,services})=><section className="client-detail-card" key={p.id}>

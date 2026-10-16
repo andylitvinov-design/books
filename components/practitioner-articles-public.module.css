@@ -1,0 +1,31 @@
+.hero{padding:clamp(26px,5vw,64px) max(18px,6vw);max-width:1100px;margin:auto;color:#34313b}
+.hero h1{font-size:clamp(30px,4vw,54px);line-height:1.09;margin:12px 0}
+.hero p{max-width:650px}
+.grid{max-width:1150px;margin:12px auto 64px;padding:0 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px}
+.card{border:1px solid #e7d9d6;background:#fffaf6;border-radius:17px;padding:20px;min-width:0;overflow-wrap:anywhere}
+.card h2{font-size:22px;line-height:1.2;margin:10px 0}
+.card h3{font-size:18px;margin:0 0 10px}
+.card a{color:#6f2943}
+.meta{font-size:13px;color:#75636e}
+.cover{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px}
+.primary{display:inline-block;margin-top:12px;padding:11px 17px;border-radius:10px;background:#772d4b;color:white!important;text-decoration:none;font-weight:650}
+.empty{padding:22px;text-align:center}
+.article{max-width:810px;margin:auto;padding:26px max(18px,4vw) 80px;color:#342d32}
+.article h1{font-size:clamp(32px,5vw,56px);line-height:1.1;margin:24px 0}
+.article a{color:#7b2b46}
+.article .lead{font-size:19px;line-height:1.6}
+.heroCover{width:100%;border-radius:14px;margin:20px 0}
+.body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;font-size:17px}
+.body p{margin:0 0 22px}
+.body h2{font-size:25px;line-height:1.2;margin:34px 0 15px}
+.sources,.related{border-top:1px solid #dfd4d4;padding-top:24px;margin-top:40px}
+.related .grid{padding:0}
+.notice{font-size:13px;color:#756973;margin-top:30px}
+@media(max-width:620px){.article{padding-top:18px}.hero{padding:24px 18px}.card{padding:16px}.grid{gap:10px}}
+.directory{max-width:1160px;margin:0 auto 40px}
+.articleFilters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(2,minmax(130px,1fr)) auto;gap:12px;align-items:end;padding:0 18px 16px}
+.articleFilters label{font-size:13px;display:grid;gap:5px;font-weight:650}
+.articleFilters input,.articleFilters select{padding:12px;border:1px solid #dbc9c9;border-radius:10px;min-width:0;background:#fff;color:#32292b}
+.reset{cursor:pointer;padding:12px;border:1px solid #dbc9c9;border-radius:10px;background:#fff}
+.directory>.meta{padding:0 18px}
+@media(max-width:650px){.articleFilters{grid-template-columns:repeat(2,minmax(0,1fr))}.articleFilters label:first-child{grid-column:1 / -1}}
