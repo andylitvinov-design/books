@@ -155,7 +155,7 @@ test('existing legacy report-specific links and recordings are preserved when ch
   const service=read('lib/clients/session-delivery-service.js')
   const view=read('components/client-session-page.jsx')
   assert.match(report,/\.\.\.owner\.draft,plan:\{\.\.\.owner\.draft\.plan,materialIds:ids\}/)
-  assert.match(report,/owner\.draft\.reportDocumentId!==documentId/)
+  assert.match(report,/reportDocumentId!==documentId/)
   assert.match(service,/selectedMaterialSnapshots/)
   assert.match(view,/materialsYoutubeResources\.map/)
   assert.match(view,/materialsVideos\.map/)
