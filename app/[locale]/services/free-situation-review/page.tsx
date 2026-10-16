@@ -203,7 +203,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   if (!isPublicLocale(locale)) return { title: "Not found" };
   const t = copy[locale];
-  const outcome = outcomes[locale];
   return {
     metadataBase: metadataBaseFor(),
     title: t.title + " — Holistic House",
@@ -291,6 +290,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
+  const outcome = outcomes[locale];
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
