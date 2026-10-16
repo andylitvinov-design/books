@@ -54,6 +54,7 @@ export function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = pathname === '/admin/videos'
+  const materialLibraryPage = pathname === '/admin/materials'
   const youtubePhoneUploader = pathname === '/admin/youtube-upload'
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(pathname)
   const privateDocument = privatePath(pathname)
@@ -70,6 +71,7 @@ export function middleware(request: NextRequest) {
     || /^\/(en|ru)\/app\/sessions\/[^/]+\/?$/.test(pathname)
     || /^\/admin\/clients\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
     || /^\/admin\/documents\/[^/]+\/session-preview\/?$/.test(pathname)
+    || materialLibraryPage
   // Only the practitioner consultation editor may frame a locally generated PDF blob.
   // Client cabinets and every other private page keep frame-src 'none'.
   const practitionerDraftPreview = pathname === '/admin/consultations/new'
@@ -79,6 +81,7 @@ export function middleware(request: NextRequest) {
     || /^\/admin\/clients\/[^/]+\/sessions(?:\/|$)/.test(pathname)
     || /^\/admin\/documents\/[^/]+\/?$/.test(pathname)
     || /^\/admin\/consultations\/[^/]+\/edit\/?$/.test(pathname)
+    || materialLibraryPage
     || /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
     || /^\/(en|ru)\/client\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
   // A local MediaRecorder preview uses a blob: URL even if the optional
@@ -86,7 +89,7 @@ export function middleware(request: NextRequest) {
   // existing staff session editors, never public/client report readers.
   const ownerRecorderPage = deliveryPath && pathname.startsWith('/admin/')
   const deliveryOrigin = (() => {
-    if(process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true' || !deliveryPath) return ''
+    if((process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true'&&!materialLibraryPage) || !deliveryPath) return ''
     try {
       const value = new URL(process.env.HH_APP_SUPABASE_URL || '')
       if (value.protocol !== 'https:' || !value.hostname.endsWith('.supabase.co')) return ''
@@ -95,7 +98,7 @@ export function middleware(request: NextRequest) {
   })()
   // Owner-only private video PUT; never widen client/guest playback CSP.
   const externalVideoUploadOrigin = (() => {
-    if (process.env.HH_CLIENT_DELIVERY_ENABLED!=='true' ||
+    if ((process.env.HH_CLIENT_DELIVERY_ENABLED!=='true'&&!materialLibraryPage) ||
       process.env.HH_CLIENT_VIDEO_EXTERNAL_ENABLED!=='true' ||
       !deliveryPath || !pathname.startsWith('/admin/')) return ''
     if (process.env.HH_CLIENT_VIDEO_BACKEND==='s3_ca') return ' https://s3.ca-central-1.amazonaws.com'
