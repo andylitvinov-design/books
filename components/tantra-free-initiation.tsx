@@ -17,7 +17,7 @@ import styles from "./tantra-free-initiation.module.css";
  */
 const copy = {
   en: {
-    back: "Back to Tantra Reiki", nav: ["Discover", "Choose", "Questions", "Video", "Materials", "Apply"],
+    back: "Back to Tantra Reiki", nav: ["Discover", "Choose", "How to", "Video", "Materials", "Questions", "Apply"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · LEVEL ONE",
     heroTitle: "Feel the flow. Awaken connection.",
     heroLead: "An invitation to explore Tantra Reiki through presence, sensitivity and the symbolic language of love and creativity. Begin with the Spring of Life — the first step of a nine-level path.",
@@ -41,7 +41,14 @@ const copy = {
     personalText: "A dedicated individual session to learn the first-level themes, discuss your questions and arrange the initiation directly with Andrey.",
     personalButton: "Request a personal session",
     availability: "Sessions and free introductory availability are confirmed personally. Reading or submitting answers does not itself grant an initiation.",
-    questionsEyebrow: "03 / PREPARE", questionsTitle: "Seven questions before your initiation",
+    guideEyebrow: "03 / YOUR PATH", guideTitle: "How to receive Level 1 for free",
+    guideLead: "Three simple steps. Explore the practice, read the course and send your answers before agreeing a session with Andrey.",
+    guideSteps: [
+      { title: "Watch the video", text: "Get to know the original Tantra Reiki practice with Andrey." },
+      { title: "Read the materials", text: "Explore the first level and the complete nine-level path." },
+      { title: "Answer seven questions", text: "Share short answers and arrange your teacher-guided initiation." },
+    ],
+    questionsEyebrow: "06 / YOUR QUESTIONS", questionsTitle: "Seven questions before your initiation",
     questionsLead: "Read Andrey's original Tantra Reiki materials and answer in your own words. One to three sentences per question is enough.",
     questions: [
       "Who created the Tantra Reiki system, and what is the source of its energy?",
@@ -64,13 +71,13 @@ const copy = {
       { title: "Full teaching programme", subtitle: "Attunements, mandalas, artifacts and practice" },
       { title: "Download the Tantra Reiki PDF", subtitle: "Course overview and first-level study guide" },
     ],
-    formEyebrow: "06 / YOUR NEXT STEP", formTitle: "Ready to begin?",
+    formEyebrow: "07 / YOUR NEXT STEP", formTitle: "Ready to begin?",
     formLead: "Choose a free introduction, a personal Level 1 session, a PDF download, or send your seven answers. Just one simple form.",
     disclaimer: "Tantra Reiki is presented here as a spiritual and reflective tradition. Its descriptions of energies or effects are not established medical facts. It does not replace healthcare or guarantee results.",
     footer: "Return to the full Tantra Reiki course",
   },
   ru: {
-    back: "К курсу Тантра Рейки", nav: ["Система", "Выбор", "Вопросы", "Видео", "Материалы", "Заявка"],
+    back: "К курсу Тантра Рейки", nav: ["Система", "Выбор", "Как получить", "Видео", "Материалы", "Вопросы", "Заявка"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · ТАНТРА РЕЙКИ · 1-Я СТУПЕНЬ",
     heroTitle: "Почувствуйте поток. Откройте близость.",
     heroLead: "Знакомство с Тантра Рейки через присутствие, чувствительность, любовь и творчество. Начните с «Родника Жизни» — первой ступени девятиступенчатой системы.",
@@ -94,7 +101,14 @@ const copy = {
     personalText: "Индивидуальное занятие, чтобы познакомиться с темами первой ступени, задать вопросы и пройти инициацию с Андреем.",
     personalButton: "Записаться на личную инициацию",
     availability: "Возможность бесплатной встречи, даты и формат подтверждает Андрей. Чтение материалов и ответы на вопросы сами по себе не являются инициацией.",
-    questionsEyebrow: "03 / ПОДГОТОВКА", questionsTitle: "7 вопросов перед инициацией",
+    guideEyebrow: "03 / КАК ПОЛУЧИТЬ", guideTitle: "Как получить Тантра Рейки бесплатно",
+    guideLead: "Всего три шага: познакомьтесь с практикой, прочитайте материалы и отправьте ответы, чтобы согласовать инициацию с Андреем.",
+    guideSteps: [
+      { title: "Посмотрите видео", text: "Познакомьтесь с оригинальной практикой Тантра Рейки от Андрея." },
+      { title: "Прочитайте материалы", text: "Изучите первую ступень и структуру всех девяти ступеней." },
+      { title: "Ответьте на 7 вопросов", text: "Отправьте короткие ответы и согласуйте инициацию." },
+    ],
+    questionsEyebrow: "06 / ВОПРОСЫ", questionsTitle: "7 вопросов перед инициацией",
     questionsLead: "Прочитайте авторские материалы о Тантра Рейки и ответьте своими словами. Достаточно 1–3 предложений на каждый вопрос.",
     questions: [
       "Кто является создателем системы Тантра Рейки и каков источник её энергии?",
@@ -117,13 +131,13 @@ const copy = {
       { title: "Полная программа обучения", subtitle: "Настройки, мандалы, артефакты и практика" },
       { title: "Скачать PDF по Тантра Рейки", subtitle: "Описание системы и материалы первой ступени" },
     ],
-    formEyebrow: "06 / ЗАЯВКА", formTitle: "Готовы начать?",
+    formEyebrow: "07 / ЗАЯВКА", formTitle: "Готовы начать?",
     formLead: "Выберите бесплатную инициацию, личное занятие, скачайте PDF или отправьте семь ответов. Всё в одной форме.",
     disclaimer: "Тантра Рейки здесь представлена как духовная и созерцательная традиция. Описания потоков и эффектов относятся к учению, не являются доказанными медицинскими фактами и не заменяют медицинскую помощь.",
     footer: "Вернуться к полной программе Тантра Рейки",
   },
   es: {
-    back: "Volver a Tantra Reiki", nav: ["Sistema", "Opciones", "Preguntas", "Vídeo", "Materiales", "Solicitud"],
+    back: "Volver a Tantra Reiki", nav: ["Sistema", "Opciones", "Cómo empezar", "Vídeo", "Materiales", "Preguntas", "Solicitud"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · NIVEL UNO",
     heroTitle: "Siente el flujo. Descubre la conexión.",
     heroLead: "Conoce Tantra Reiki a través de la presencia, la sensibilidad, el amor y la creatividad. Comienza con Manantial de Vida, el primero de nueve niveles.",
@@ -147,7 +161,14 @@ const copy = {
     personalText: "Una sesión individual para conocer los temas del primer nivel, resolver dudas y acordar la iniciación con Andrey.",
     personalButton: "Solicitar sesión personal",
     availability: "La disponibilidad y la fecha se confirman personalmente. Leer o enviar respuestas no constituye una iniciación.",
-    questionsEyebrow: "03 / PREPARACIÓN", questionsTitle: "7 preguntas antes de tu iniciación",
+    guideEyebrow: "03 / CÓMO EMPEZAR", guideTitle: "Cómo recibir Tantra Reiki gratis",
+    guideLead: "Solo tres pasos: mira el vídeo, lee los materiales y comparte las siete respuestas para acordar una sesión con Andrey.",
+    guideSteps: [
+      { title: "Mira el vídeo", text: "Conoce la práctica original de Tantra Reiki con Andrey." },
+      { title: "Lee los materiales", text: "Explora el primer nivel y el camino de los nueve niveles." },
+      { title: "Responde 7 preguntas", text: "Comparte respuestas breves y acuerda tu iniciación." },
+    ],
+    questionsEyebrow: "06 / PREGUNTAS", questionsTitle: "7 preguntas antes de tu iniciación",
     questionsLead: "Lee los materiales originales de Andrey. Responde con tus palabras; bastan de 1 a 3 frases por pregunta.",
     questions: [
       "¿Quién creó el sistema Tantra Reiki y cuál es el origen de su energía?",
@@ -170,14 +191,14 @@ const copy = {
       { title: "Programa de formación completo", subtitle: "Sintonizaciones, mandalas, artefactos y prácticas" },
       { title: "Descarga la guía PDF", subtitle: "Descripción del sistema y primer nivel" },
     ],
-    formEyebrow: "06 / SOLICITUD", formTitle: "¿Listo para comenzar?",
+    formEyebrow: "07 / SOLICITUD", formTitle: "¿Listo para comenzar?",
     formLead: "Solicita la introducción gratuita, una sesión personal, descarga el PDF o envía tus siete respuestas.",
     disclaimer: "Tantra Reiki se presenta como tradición espiritual y reflexiva. Las afirmaciones sobre energía no son hechos médicos demostrados ni sustituyen la atención sanitaria.",
     footer: "Volver al curso completo Tantra Reiki",
   },
 } as const;
 
-const steps = ["intro", "initiation-choices", "study-questions", "tantra-practice-video", "course-materials", "tantra-apply"] as const;
+const steps = ["intro", "initiation-choices", "how-to", "tantra-practice-video", "course-materials", "study-questions", "tantra-apply"] as const;
 
 export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
@@ -239,7 +260,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.choiceFree}>
               <span className={styles.offerFlag}><Sparkles size={14} aria-hidden="true"/>{t.freeFlag}</span>
               <h3>{t.freeTitle}</h3><p>{t.freeText}</p>
-              <div className={styles.offerBottom}><strong>{t.freePrice}</strong><a className={styles.buttonWine} href="#apply-free">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
+              <div className={styles.offerBottom}><strong>{t.freePrice}</strong><a className={styles.buttonWine} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
             </div>
             <div className={styles.choicePersonal}>
               <span className={styles.offerFlag}><Heart size={14} aria-hidden="true"/>{t.personalFlag}</span>
@@ -250,12 +271,17 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           <p className={styles.availability}><ShieldCheck size={17} aria-hidden="true"/>{t.availability}</p>
         </section>
 
-        <section id="study-questions" className={styles.questionsSection} aria-labelledby="tantra-questions-title">
-          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.questionsEyebrow}</p><h2 id="tantra-questions-title">{t.questionsTitle}</h2><p>{t.questionsLead}</p></header>
-          <ol className={styles.questionGrid}>
-            {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
-          </ol>
-          <div className={styles.questionFooter}><span>{t.questionNote}</span><a href="#apply-answers" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
+        <section id="how-to" className={styles.howSection} aria-labelledby="tantra-how-title">
+          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.guideEyebrow}</p><h2 id="tantra-how-title">{t.guideTitle}</h2><p>{t.guideLead}</p></header>
+          <div className={styles.howGrid}>
+            {t.guideSteps.map((step, index) => (
+              <a key={step.title} className={styles.howCard} href={["#tantra-practice-video", "#course-materials", "#study-questions"][index]}>
+                <span className={styles.howNumber}>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{step.title}</h3><p>{step.text}</p>
+                <ArrowRight size={18} aria-hidden="true" />
+              </a>
+            ))}
+          </div>
         </section>
 
         <section id="tantra-practice-video" className={styles.section} aria-labelledby="tantra-video-title">
@@ -279,6 +305,14 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               </Link>;
             })}
           </div>
+        </section>
+
+        <section id="study-questions" className={styles.questionsSection} aria-labelledby="tantra-questions-title">
+          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.questionsEyebrow}</p><h2 id="tantra-questions-title">{t.questionsTitle}</h2><p>{t.questionsLead}</p></header>
+          <ol className={styles.questionGrid}>
+            {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
+          </ol>
+          <div className={styles.questionFooter}><span>{t.questionNote}</span><a href="#apply-answers" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">
