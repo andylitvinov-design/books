@@ -889,3 +889,87 @@
   }
   .cabinetSessionPage .nextStepLink{display:none}
 }
+
+
+/* Original signed HTML report: always-visible, not a disclosure or a second
+   prescription renderer. Preserve the approved lighthouse/burgundy document
+   styles, source text, progress rings, photographs, notes and signature. */
+.cabinetSessionPage .fullReportSection {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0 auto;
+  padding:0;
+  scroll-margin-top:12px;
+}
+.cabinetSessionPage .fullReportContent {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  padding:0;
+  margin:0;
+  background:transparent;
+  overflow:visible;
+}
+.cabinetSessionPage .fullReportContent :global(.prescription-shell.canonical-shell) {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+}
+.cabinetSessionPage .fullReportContent :global(.canonical-document--editorial) {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  box-shadow:0 8px 26px rgba(48,40,42,.08);
+}
+/* Download is a supplementary action after the readable document; it is
+   never a stand-in for the HTML report or a second full-document viewer. */
+.cabinetSessionPage .reportDownloadSection {
+  padding:15px;
+  border:1px solid #dee7df;
+  border-radius:16px;
+  background:#f5f8f3;
+  box-shadow:none;
+}
+.cabinetSessionPage .reportDownloadSection .sectionHeader {
+  margin-bottom:9px;
+}
+.cabinetSessionPage .reportDownloadSection .sectionHeader h2 {
+  font-size:clamp(20px,3vw,24px);
+}
+.cabinetSessionPage .reportDownloadSection .reportPanel {
+  padding:0 0 0 47px;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.cabinetSessionPage .reportDownloadSection .reportPanel p {
+  margin-bottom:11px;
+  color:#667468;
+}
+.cabinetSessionPage .plainReportText {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+@media(max-width:700px) {
+  .cabinetSessionPage .fullReportSection { margin:0; }
+  .cabinetSessionPage .fullReportContent :global(.canonical-document--editorial) {
+    box-shadow:0 4px 18px rgba(48,40,42,.055);
+  }
+  .cabinetSessionPage .reportDownloadSection { padding:14px; }
+  .cabinetSessionPage .reportDownloadSection .reportPanel { padding-left:0; }
+}
+@media print {
+  .cabinetSessionPage:has(.fullReportSection) > :not(.fullReportSection) {
+    display:none!important;
+  }
+  .cabinetSessionPage .fullReportContent :global(.canonical-document--editorial) {
+    box-shadow:none;
+    border:0;
+  }
+}
