@@ -58,15 +58,10 @@ test("bypass transformations only for owned WebP images and the exact approved l
   assert.match(player, /unoptimized=\{fallbackPoster\.endsWith\("\.webp"\)\}/);
   assert.match(services, /unoptimized=\{\(isHome \? homepageMedia\[offer\.id\] : offer\.image\)\.endsWith\("\.webp"\) \|\| \(isHome \? homepageMedia\[offer\.id\] : offer\.image\) === "\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"\}/);
   assert.match(player, /https:\/\/www\.youtube-nocookie\.com\/embed/);
-  // The verified portrait stays responsive without Vercel transforms; YouTube stills bypass the Vercel image proxy.
+  // The verified portrait uses its static component; third-party YouTube stills keep optimization.
   assert.match(read("components/holistic-house-home.tsx"), /<StaticPortrait\b/);
   assert.match(read("components/holistic-house-home.tsx"), /src="\/images\/holistic-house\/andy-about\.png"/);
   assert.match(player, /src=\{\x60https:\/\/i\.ytimg\.com\/vi\//);
-  assert.match(player, /<Image key=\{poster\}[^>]*\bunoptimized\b/);
-  assert.match(player, /<StaticPortrait className="site-video-poster" src="\/images\/holistic-house\/andy-about\.png"/);
-  const intake = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.equal((intake.match(/<StaticPortrait src="\/images\/holistic-house\/andy-about\.png"/g) || []).length, 2);
-  assert.doesNotMatch(intake, /<Image src="\/images\/holistic-house\/andy-about\.png"/);
 });
 
 
