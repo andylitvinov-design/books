@@ -109,3 +109,114 @@
 @media (prefers-reduced-motion: reduce) {
   .studyKit > summary svg, .studentExamples > summary svg { transition: none; }
 }
+
+
+/* Opt-in Holistic House navy/wine presentation for the Basic Course only. */
+.curriculum[data-visual-theme="navy"] {
+  padding: 28px 0 28px;
+  color: #1d3654;
+}
+.curriculum[data-visual-theme="navy"] .curriculumIntro { margin: 0 0 24px; }
+.curriculum[data-visual-theme="navy"] .curriculumIntro :global(.homeopathy-kicker) { color: #8d3f58; }
+.curriculum[data-visual-theme="navy"] .curriculumIntro h2 {
+  color: #172f4f;
+  font-size: clamp(31px,3.4vw,44px);
+  font-weight: 520;
+  line-height: 1.11;
+}
+.curriculum[data-visual-theme="navy"] .curriculumIntro > p:not(:global(.homeopathy-kicker)) {
+  color: #5f6d80;
+  font-size: 15px;
+  max-width: 745px;
+}
+.curriculum[data-visual-theme="navy"] .levelHeading { display: none; }
+.curriculum[data-visual-theme="navy"] .stageNavigation { display: none; }
+.curriculum[data-visual-theme="navy"] .visualSteps { gap: 22px; }
+.curriculum[data-visual-theme="navy"] .stepCard {
+  grid-template-columns: minmax(0, 37%) minmax(0,63%);
+  scroll-margin-top: 115px;
+  border: 1px solid #dbe2eb;
+  border-radius: 19px;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(21,43,69,.055);
+}
+.curriculum[data-visual-theme="navy"] .stepPhoto { background-color: #e4e9ed; min-height: 310px; }
+.curriculum[data-visual-theme="navy"] .photoRibbon {
+  border-color: rgba(255,255,255,.25);
+  background: rgba(17,40,68,.84);
+  padding: 9px 14px;
+  font-size: 12px;
+  color: #fff;
+}
+.curriculum[data-visual-theme="navy"] .stepText { padding: clamp(21px,2.6vw,32px); }
+.curriculum[data-visual-theme="navy"] .stageKicker { color: #9b425f; }
+.curriculum[data-visual-theme="navy"] .stepHeader h3 {
+  color: #1b3351;
+  font-size: clamp(26px,3.1vw,38px);
+  font-weight: 540;
+  line-height: 1.15;
+}
+.curriculum[data-visual-theme="navy"] .stepIntroduction { color: #5b6b7b; font-size: 15px; line-height: 1.59; margin: 13px 0 17px; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading) {
+  border-bottom: 1px solid #e6e9ee;
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading h4) {
+  color: #883d55;
+  font-size: 13px;
+  font-weight: 800;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-heading span) { color: #6f7e91; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-settings-list) { border: 0; padding: 0; background: transparent; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row) {
+  border: 0;
+  border-bottom: 1px solid #e9edf3;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  padding: 12px 0;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row:last-child) { border-bottom: 0; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-glyph) {
+  color: #873954;
+  background: #f5e9ed;
+  border-color: #ead7dd;
+  border-radius: 10px;
+}
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text h5) { color: #223b59; font-weight: 800; font-size: 14px; }
+.curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text p) { color: #667488; font-size: 13px; line-height: 1.55; }
+.curriculum[data-visual-theme="navy"] .studyKit {
+  background: #f1f4f8;
+  border: 1px solid #dee6ed;
+  border-radius: 11px;
+  margin-top: 13px;
+}
+.curriculum[data-visual-theme="navy"] .studyKit > summary { color: #234360; min-height: 52px; }
+.curriculum[data-visual-theme="navy"] .studyKit > summary span { color: #873954; }
+.curriculum[data-visual-theme="navy"] .studyKitBody {
+  border-color: #dce4ec;
+  background: #fbfcfd;
+  color: #586b7e;
+}
+.curriculum[data-visual-theme="navy"] .studyKitBody h4 { color: #254665; }
+.curriculum[data-visual-theme="navy"] .suggestedPractice { border-color: #a86b84; background: #f4ebef; }
+.curriculum[data-visual-theme="navy"] .studyKitLinks a { border: 1px solid #dce2eb; color: #254460; background: #fff; }
+.curriculum[data-visual-theme="navy"] .sourceDetails { border-top-color: #dbe1e9; color: #566b7f; }
+.curriculum[data-visual-theme="navy"] .studentExamples { border-color: #dce2eb; background: #fff; border-radius: 11px; }
+.curriculum[data-visual-theme="navy"] .studentExamples > summary { color: #274562; }
+@media (max-width: 800px) {
+  .curriculum[data-visual-theme="navy"] .stepCard { grid-template-columns: minmax(0,1fr); }
+  .curriculum[data-visual-theme="navy"] .stepPhoto { min-height: 222px; height: 222px; }
+  .curriculum[data-visual-theme="navy"] .stepText { padding: 21px 18px; }
+}
+@media (max-width: 600px) {
+  .curriculum[data-visual-theme="navy"] { padding-top: 20px; }
+  .curriculum[data-visual-theme="navy"] .curriculumIntro h2 { font-size: 31px; }
+  .curriculum[data-visual-theme="navy"] .visualSteps { gap: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepCard { border-radius: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepPhoto { min-height: 196px; height: 196px; }
+  .curriculum[data-visual-theme="navy"] .stepHeader h3 { font-size: 30px; }
+  .curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text h5) { font-size: 15px; }
+  .curriculum[data-visual-theme="navy"] .stepBody :global(.yggdrasil-setting-row__text p) { font-size: 15px; }
+}
