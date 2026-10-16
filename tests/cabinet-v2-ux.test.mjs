@@ -234,7 +234,7 @@ test('Cabinet entry prioritizes the one-click monitoring battery with optional G
   assert.ok(landing.includes('className="cabinet-signin-strip cabinet-signin-hero"'))
   assert.ok(landing.includes('Enter personal cabinet with Google'))
   assert.ok(landing.includes('Войти в личный кабинет через Google'))
-  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded />'))
+  assert.ok(landing.includes('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />'))
   assert.ok(landing.includes("phase !== 'catalog' && <section"))
   assert.ok(landing.indexOf('<PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} />') < landing.indexOf('cabinet-signin-hero'))
   assert.ok(!landing.includes('className="cabinet-test-image"'))
