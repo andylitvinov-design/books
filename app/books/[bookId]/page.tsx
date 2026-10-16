@@ -138,6 +138,12 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       images: [{ url: coverUrl, alt: labels.cover + ": " + display.title }],
       type: "article",
     },
+    twitter: {
+      card: "summary_large_image",
+      title: display.title,
+      description: seoDescription,
+      images: [coverUrl],
+    },
   };
 }
 
