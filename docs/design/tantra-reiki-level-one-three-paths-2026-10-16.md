@@ -12,7 +12,7 @@ Recreate the approved pastel offer cards, staying within Holistic House’s exis
 | --- | --- | --- |
 | Free guided introductory request | €0 | Scroll to the five-step free guide |
 | Personal distance Level 1 initiation | €50 / 30 minutes per level | Pre-filled WhatsApp enquiry |
-| Personal session + Level 1 initiation | €75 / 45 minutes | Distinct pre-filled WhatsApp enquiry |
+| Personal session + Level 1 initiation | €100 / 60 minutes | Distinct pre-filled WhatsApp enquiry |
 
 **English third-offer copy:** “We explore your situation and check for solutions. Includes your Level 1 initiation.”
 
@@ -35,3 +35,9 @@ Recreate the approved pastel offer cards, staying within Holistic House’s exis
 - `tests/tantra-free-initiation.test.mjs`
 
 The image is the design reference, not an image to display as a background in place of real responsive HTML. Use accessible native links and text. Other Reiki programme pages stay unchanged.
+
+## Approved amendment — 2026-10-16
+
+- Personal session + Level 1 initiation: **€100 / 60 min** (was €75 / 45 min); update the offer card and all EN/RU/ES WhatsApp handoffs consistently. The separate initiation-only offer remains €50 / 30 min.
+- The seven study questions are preserved but presented inside a native `<details>` element without an `open` attribute, so questions are initially **collapsed** and can be opened by mouse, touch or keyboard.
+- The folded header reads “7 questions to get your free initiation” in English, with corresponding RU/ES translations and a compact mobile-friendly chevron control.

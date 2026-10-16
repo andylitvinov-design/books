@@ -82,8 +82,8 @@ test("free, initiation, personal session and answers WhatsApp links keep distinc
     }
     assert.ok(/free|бесплатн|gratuit/i.test(messages[0]));
     assert.ok(messages[1].includes("€50 / 30"));
-    assert.match(messages[2], /75\s?€|€75/);
-    assert.match(messages[2], /45\s?(minutes|минут|minutos)/);
+    assert.match(messages[2], /100\s?€|€100/);
+    assert.match(messages[2], /60\s?(minutes|минут|minutos)/);
     assert.ok(/seven|7|siete/i.test(messages[3]));
   }
 });

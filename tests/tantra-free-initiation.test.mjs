@@ -40,6 +40,13 @@ test("all seven owner-approved questions remain inside an initially closed, acce
   assert.match(landing, /t\.questions\.map/);
   assert.match(landing, /<details className=\{styles\.questionsDisclosure\}>/);
   assert.match(landing, /<summary className=\{styles\.questionsSummary\}>/);
+  for (const title of [
+    '7 questions to get your free initiation',
+    '7 вопросов для бесплатной инициации',
+    '7 preguntas para recibir tu iniciación gratuita',
+  ]) assert.ok(landing.includes('questionsTitle: "' + title + '"'), title);
+  assert.match(style, /\.questionsSummary \{[\s\S]*?min-height: 84px/);
+  assert.match(style, /@media \(max-width: 470px\)[\s\S]*?flex-direction: row/);
   assert.doesNotMatch(landing, /<details className=\{styles\.questionsDisclosure\}\s+open(?:\s|>)/);
   assert.match(landing, /<span className=\{styles\.questionsSummaryTitle\} role="heading" aria-level=\{2\}/);
   for (const label of ["Show 7 questions", "Показать 7 вопросов", "Ver las 7 preguntas"]) assert.ok(landing.includes(label), label);
@@ -127,7 +134,7 @@ test("WhatsApp capture is compact, responsive and requests no name or email", ()
 });
 
 
-test("approved three-choice Tantra design includes a genuine €75 personal session in EN/RU/ES", () => {
+test("approved three-choice Tantra design includes a genuine €100 personal session in EN/RU/ES", () => {
   assert.match(landing, /choiceTitle: "Choose your Level 1 path"/);
   assert.match(landing, /choiceTitle: "Три пути к первой ступени"/);
   assert.match(landing, /choiceTitle: "Tres caminos al nivel 1"/);
@@ -137,12 +144,15 @@ test("approved three-choice Tantra design includes a genuine €75 personal sess
   }
   assert.equal((landing.match(/combinedPrice:/g) || []).length, 3);
   assert.equal((landing.match(/combinedDuration:/g) || []).length, 3);
+  assert.match(landing, /combinedPrice: "€100", combinedDuration: "60 MIN"/);
+  assert.match(landing, /combinedPrice: "100 €", combinedDuration: "60 МИН"/);
+  assert.match(landing, /combinedPrice: "100 €", combinedDuration: "60 MIN"/);
   assert.match(landing, /We explore your situation and check for solutions/);
   assert.match(landing, /formatReikiLevelPrice\("tantra", locale\)/);
   assert.match(landing, /tantraInitiationWhatsAppUrl\(locale, "session"\)/);
-  assert.match(form, /€75 \/ 45 minutes/);
-  assert.match(form, /75 € \/ 45 минут/);
-  assert.match(form, /75 € \/ 45 minutos/);
+  assert.match(form, /€100 \/ 60 minutes/);
+  assert.match(form, /100 € \/ 60 минут/);
+  assert.match(form, /100 € \/ 60 minutos/);
   assert.match(style, /\.choiceGrid \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(style, /\.choiceCombined \{/);
   assert.match(style, /\.buttonCopper \{/);
