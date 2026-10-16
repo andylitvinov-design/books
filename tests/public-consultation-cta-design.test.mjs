@@ -10,7 +10,7 @@ test("public consultation CTA uses compact buttons and clean external-link icons
   const component = read("components", "public-consultation-cta.tsx");
   const styles = read("app", "globals.css");
 
-  assert.match(component, /ArrowUpRight/);
+  assert.match(component, /ContactChannelChooser/);
   assert.doesNotMatch(component, />↗</);
   assert.match(styles, /\.public-consultation-cta\s*\{[^}]*border-radius:\s*20px/);
   assert.match(styles, /\.public-consultation-cta__actions a\s*\{[^}]*min-height:\s*42px/);
