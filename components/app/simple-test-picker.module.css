@@ -1310,3 +1310,117 @@
 @media(prefers-reduced-motion:reduce){
   .shell :is(.topic,.promoAction,.takeTest,.browseTabs button){transition:none}
 }
+
+
+/* 2026-10-15 approved mockup: 10 topics (2 columns on phone), restrained wine CTAs.
+   Preserve the airy aqua canvas, source-cleared catalog and all action handlers. */
+.shell {
+  --action-wine:#8b3151;
+  --action-wine-hover:#6d2540;
+  --action-wine-tint:#fbf0f3;
+  --action-wine-line:#dab8c5;
+}
+/* Desktop uses two compact rows; phones use the requested five rows of two. */
+.shell .topicGrid {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:9px;
+}
+.shell .topic{
+  min-width:0;
+  min-height:54px;
+  background:#fff;
+  border-color:#d8e9ed;
+  border-radius:12px;
+  font-size:.77rem;
+  line-height:1.28;
+  padding:10px;
+}
+.shell .topic span:not(.topicCheck){min-width:0;overflow-wrap:break-word}
+.shell .topic[aria-pressed=true]{
+  background:var(--action-wine-tint);
+  border-color:var(--action-wine-line);
+  box-shadow:inset 0 0 0 1px rgba(139,49,81,.07);
+  color:#71334b;
+}
+.shell .topic[aria-pressed=true] svg,
+.shell .topic[aria-pressed=true] .topicCheck{color:var(--action-wine)}
+.shell .topic:hover:not([aria-pressed=true]){border-color:#9dcfd5;background:#f6fcfc}
+.shell .promoAction,
+.shell .cta[data-test-start-mode=tests],
+.shell .cta[data-test-start-mode=course]{
+  color:#fff!important;
+  background:linear-gradient(110deg,#973a5b,#822b48)!important;
+  border:1px solid #822b48!important;
+  box-shadow:0 5px 15px rgba(121,41,69,.18);
+}
+.shell .promoAction:hover,
+.shell .cta[data-test-start-mode=tests]:hover:not(:disabled),
+.shell .cta[data-test-start-mode=course]:hover:not(:disabled){
+  background:var(--action-wine-hover)!important;
+  border-color:var(--action-wine-hover)!important;
+}
+.shell .takeTest,.shell .viaFamilyActions .takeTest{
+  background:linear-gradient(110deg,#953a59,#812d4a)!important;
+  color:#fff!important;
+  border:1px solid #812d4a!important;
+  border-bottom:1px solid #72253e!important;
+  box-shadow:0 4px 12px rgba(117,41,66,.16);
+}
+.shell .takeTest:hover:not(:disabled),.shell .viaFamilyActions .takeTest:hover:not(:disabled){
+  background:var(--action-wine-hover)!important;
+  border-color:var(--action-wine-hover)!important;
+}
+.shell .browseTabs button[aria-pressed=true]{
+  color:white;background:var(--action-wine);border-color:var(--action-wine);
+  box-shadow:0 2px 8px rgba(125,42,70,.13);
+}
+.shell .browseTabs button[aria-pressed=true]:hover{background:var(--action-wine-hover)}
+.shell .testEntry[data-selected=true]{
+  border:1px solid #d49aac;
+  border-left:3px solid var(--action-wine);
+  box-shadow:0 3px 12px rgba(139,49,81,.055);
+}
+.shell .testEntry .testRow[data-selected=true]{
+  background:linear-gradient(110deg,#fff9fa,#fdf3f6 76%,#fff);
+}
+.shell .testEntry .testRow input{accent-color:var(--action-wine)}
+.shell .testChips .matchBadge{
+  background:#f7ebef;color:#7f3a52;border:1px solid #f0dce4;
+}
+.shell .selectedSummary svg{color:var(--action-wine)}
+.shell .viaSelect[aria-pressed=true]{
+  background:var(--action-wine-tint);
+  border-color:var(--action-wine-line);color:#73374d;
+}
+.shell .cta small{color:#fff1f6}
+@media(max-width:760px){
+  .shell .topicGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 9px;
+  }
+  .shell .topic{
+    min-height:53px;
+    padding:9px 11px;
+    gap:8px;
+    border-radius:11px;
+    font-size:.81rem;
+    font-weight:650;
+  }
+  .shell .topic svg{width:19px;height:19px}
+  .shell .topicCheck{width:14px;height:14px}
+  .shell .takeTest{min-height:44px;min-width:90px;font-size:.76rem!important}
+}
+@media(max-width:370px){
+  .shell .topicGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .shell .topic{
+    min-height:54px;
+    font-size:.74rem;
+    padding:8px;
+    gap:6px;
+  }
+  .shell .topic svg{width:17px;height:17px}
+}
+@media(prefers-reduced-motion:reduce){
+  .shell :is(.topic,.browseTabs button,.promoAction,.takeTest){transition:none}
+}
