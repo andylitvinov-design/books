@@ -432,31 +432,54 @@ function Services({items,t,locale,busy,onSave,onSubmit,onPause}){
   const [status,setStatus]=useState('all')
   useEffect(()=>{if(items.length)setCreating(false)},[items.length])
   const visible=items.filter(item=>status==='all'||(status==='published'?item.status==='published':status==='review'?['submitted','changes_requested'].includes(item.status):['draft','paused'].includes(item.status)))
-  const draftPrice=item=>item.pricingMode==='free'?' · '+(ru?'Бесплатно':'Free'):item.pricingMode==='contact'?'':item.confirmedPrice!=null?' · '+item.currency+' '+item.confirmedPrice:''
+  const statusLabel=value=>({
+    published:ru?'Опубликовано':'Published',
+    submitted:ru?'На проверке':'In review',
+    changes_requested:ru?'Нужны правки':'Changes needed',
+    draft:ru?'Черновик':'Draft',
+    paused:ru?'На паузе':'Paused',
+    suspended:ru?'Приостановлено':'Suspended',
+  }[value]||value)
+  const priceLabel=item=>item.pricingMode==='free'?(ru?'Бесплатно':'Free'):item.pricingMode==='contact'?(ru?'По запросу':'Price on request'):item.confirmedPrice!=null?((item.pricingMode==='from'?(ru?'От ':'From '):'')+[item.currency,item.confirmedPrice].filter(Boolean).join(' ')):(ru?'По запросу':'Price on request')
   return <section className="hh-practice-services-editor">
     <div className="hh-practice-service-toolbar">
-      <h3>{ru?'Мои услуги':'My services'} <small>({items.length})</small></h3>
-      <button type="button" className="hh-practice-new-service" aria-expanded={creating} onClick={()=>setCreating(value=>!value)}>{creating?(ru?'Закрыть форму':'Close form'):(ru?'+ Новая услуга':'+ New service')}</button>
+      <div><h3>{ru?'Мои услуги':'My services'} <small>({items.length})</small></h3>
+        <p>{ru?'Редактируйте предложения и следите за публикацией.':'Edit your offers and track publication.'}</p>
+      </div>
+      <div className="hh-practice-service-controls">
+        <select aria-label={ru?'Фильтр услуг':'Filter services'} value={status} onChange={event=>setStatus(event.target.value)}>
+          <option value="all">{ru?'Все услуги':'All services'}</option>
+          <option value="published">{ru?'Опубликованные':'Published'}</option>
+          <option value="review">{ru?'На проверке':'Under review'}</option>
+          <option value="draft">{ru?'Черновики и пауза':'Drafts / paused'}</option>
+        </select>
+        <button type="button" className="hh-practice-new-service" aria-expanded={creating} onClick={()=>setCreating(value=>!value)}>
+          {creating?(ru?'Закрыть':'Close'):(ru?'+ Новая услуга':'+ New service')}
+        </button>
+      </div>
     </div>
+    <p className="hh-practice-services-count" role="status">{ru?'Показано':'Showing'} {visible.length} / {items.length}</p>
     {creating&&<ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
       onSave={onSave} onSubmit={onSubmit} onPause={onPause} />}
-    {items.length>0&&<div className="hh-practice-service-filter">
-      <label htmlFor="hh-practice-service-status">{ru?'Показывать':'Show'}</label>
-      <select id="hh-practice-service-status" value={status} onChange={event=>setStatus(event.target.value)}>
-        <option value="all">{ru?'Все услуги':'All services'}</option>
-        <option value="published">{ru?'Опубликованные':'Published'}</option>
-        <option value="review">{ru?'На проверке':'Under review'}</option>
-        <option value="draft">{ru?'Черновики и пауза':'Drafts and paused'}</option>
-      </select>
-      <span role="status">{visible.length}/{items.length}</span>
-    </div>}
     {visible.map(item=><details key={item.id+':'+item.revision} className="hh-practice-service-row">
       <summary>
-        <span className="hh-practice-service-row-title">{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</span>
-        <span className="hh-practice-service-row-meta">{item.status}{draftPrice(item)}</span>
+        <span className="hh-practice-service-row-main">
+          <span className="hh-practice-service-symbol" aria-hidden="true"><Leaf /></span>
+          <span className="hh-practice-service-row-description">
+            <strong>{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
+            <small>{item.deliveryFormat==='in_person'?(ru?'Лично':'In person'):item.deliveryFormat==='hybrid'?(ru?'Онлайн или лично':'Online or in person'):(ru?'Онлайн':'Online')}{item.durationMinutes?' · '+item.durationMinutes+' min':''}</small>
+            <small className="hh-practice-service-price">{priceLabel(item)}</small>
+          </span>
+        </span>
+        <span className="hh-practice-service-row-meta" data-status={item.status}>{statusLabel(item.status)}</span>
+        <ChevronRight className="hh-practice-service-chevron" aria-hidden="true"/>
       </summary>
       <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
     </details>)}
+    {items.length===0&&!creating&&<div className="hh-practice-empty-state">
+      <p>{ru?'Пока нет услуг. Создайте своё первое предложение.':'No services yet. Add your first offer.'}</p>
+      <button type="button" onClick={()=>setCreating(true)}>{ru?'+ Создать услугу':'+ Add a service'}</button>
+    </div>}
     {items.length>0&&!visible.length&&<p role="status" className="hh-fine">{ru?'Услуг с таким статусом нет.':'No services with this status.'}</p>}
   </section>
 }
