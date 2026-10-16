@@ -25,8 +25,8 @@ export function auditSeoSources() {
   const check = (condition, message) => { if (!condition) failures.push(message); };
   const entries = getPrioritySitemapEntries(origin);
   const map = JSON.parse(read("data/seo-demand-map.json"));
-  check(entries.length === 12, "Unexpected number of public locale-complete pages");
-  check(SEO_PRIORITY_PAGE_FAMILIES.length === 4, "Unexpected number of priority page families");
+  check(entries.length === 15, "Unexpected number of public locale-complete pages");
+  check(SEO_PRIORITY_PAGE_FAMILIES.length === 5, "Unexpected number of priority page families");
   check(new Set(entries.map((entry) => entry.url)).size === entries.length, "Duplicate priority sitemap URLs");
   for (const entry of entries) {
     check(entry.url.startsWith(origin + "/"), "Priority URL must use the canonical HTTPS origin: " + entry.url);
