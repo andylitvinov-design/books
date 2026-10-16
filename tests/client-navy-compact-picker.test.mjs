@@ -220,7 +220,7 @@ test('every recommended test visibly explains its kind without hiding the label 
   assert.match(css, /test type is a separate, readable fact/)
   assert.match(css, /\.shell \.testInfo \.testTypeLine/)
   assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge/)
-  assert.match(css, /\.shell \.testInfo \.testKindBadge \.kindBadgeText/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge \.kindBadgeText/)
   assert.match(css, /@media\(max-width:370px\)[\s\S]*?\.kindBadgeText\{[\s\S]*?display:inline!important/)
   assert.match(explorer, /testKindCardLabel\(entry, locale\)/)
 })
