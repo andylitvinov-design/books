@@ -111,7 +111,7 @@ try{
   passed(locale+' PDF download includes persisted compassion assessment report model')
  }
  for(const [i,d] of defs.entries()){
-  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844}})
+  const locale=i?'en':'ru',mode=i?'guided':'quick',guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en'}],operationId:randomUUID()})
   page=await guest.newPage();page.on('pageerror',e=>errors.push(e.message))

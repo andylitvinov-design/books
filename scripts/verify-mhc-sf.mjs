@@ -157,7 +157,7 @@ try{
  }
  // Both language/mode journeys use one consented guest and retain separate saved results.
  // The complete browser matrix stays within the unchanged 12 sessions/IP/hour limit.
- const guest=await browser.newContext({viewport:{width:390,height:844}}), guestResultIds=new Set()
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}), guestResultIds=new Set()
  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  for(const [i,d] of [defs[0],defs[0]].entries()){
   const locale=i?'en':'ru',mode=i?'guided':'quick'

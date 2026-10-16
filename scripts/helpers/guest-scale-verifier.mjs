@@ -33,6 +33,13 @@ export function assertGuestSnapshot(snapshot, result, locale) {
   assert.ok(normalized(snapshot.source).includes(`${result.definitionKey} · ${result.definitionVersion} · ${result.instrumentLocale.toUpperCase()}`), 'Exact versioned instrument source')
 }
 
+// Deliberate routing probes require a SW-blocked fixture context in WebKit.
+// Keep production worker/privacy coverage in the other, unmodified contexts.
+export function assertGuestProbeIntercept(hitCount, status) {
+  assert.equal(hitCount, 1, 'Guest analysis probe must intercept exactly one request')
+  assert.equal(status, 409, 'Guest analysis probe must observe its synthetic rejection')
+}
+
 export async function assertGuestScaleResult(page, expect, result, locale) {
   const root = page.locator('[data-guest-scale-interpretation]')
   await expect(root).toBeVisible({ timeout: 20000 })
@@ -67,8 +74,9 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
   // Observe the actual item-scoped payload without creating an intent or opening auth.
   // A deterministic local rejection exercises the existing recoverable-error branch.
   const endpoint = '**/api/app/save-intents'
-  let captured
+  let captured, intercepted = 0
   const intercept = async route => {
+    intercepted += 1
     captured = route.request().postDataJSON()
     await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: 'synthetic_verifier_stop_before_auth' }) })
   }
@@ -76,7 +84,8 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
   try {
     const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/app/save-intents' && r.request().method() === 'POST')
     await button.click()
-    await response
+    const observed = await response
+    assertGuestProbeIntercept(intercepted, observed.status())
     await expect(button).toBeEnabled()
     assertGuestSaveIntent(captured, result)
     await expect(root).toBeVisible()

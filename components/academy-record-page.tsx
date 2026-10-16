@@ -5,6 +5,7 @@ import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
+import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { TantraReikiLeadForms } from "@/components/tantra-reiki-lead-forms";
 import { TantraReikiFestivalMoments, TantraReikiTeacher } from "@/components/tantra-reiki-story";
@@ -209,6 +210,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
           </section>
         ) : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
+        {isCanonicalYggdrasil ? <YggdrasilLeadForms locale={locale} placement="bottom" /> : null}
         {!isCanonicalYggdrasil ? (
           <footer className="academy-source-footer">
             {!isVerbatimTantraArchive && (record.skippedRiskyBlocks || publicOmittedCount) ? <p>{text.filtered}</p> : null}

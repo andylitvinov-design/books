@@ -158,7 +158,7 @@ try{
  // One consented guest completes four instruments, retaining the same private
  // cookie while changing UI language and runner mode. Creating a new guest for
  // every instrument exhausts the unchanged 12/IP/hour limit after earlier suites.
- const guest=await browser.newContext({viewport:{width:390,height:844}})
+ const guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:'ru',timezone:'UTC'})
  pacedGuestContext=guest
  guest.on('request',request=>{

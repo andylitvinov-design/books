@@ -1,3 +1,11 @@
+async function publicTopicButton(picker, locale, title) {
+ const group = picker.getByRole('group', { name: locale === 'ru' ? 'Что вы хотите исследовать?' : 'What would you like to explore?', exact: true })
+ await expect(group).toHaveCount(1)
+ const button = group.getByRole('button', { name: title, exact: true })
+ await expect(button).toHaveCount(1)
+ await expect(button).toBeVisible()
+ return button
+}
 import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -117,6 +125,179 @@ async function api(context,path,body){
  const response=await context.request.fetch(origin+'/api/app/'+path,{method:body?'POST':'GET',headers:body?{Origin:origin,'Content-Type':'application/json'}:{},data:body})
  const value=await response.json();assert.ok(response.ok(),path+': '+JSON.stringify(value));return value
 }
+// Save scenarios belong to the authenticated picker, even when public pages
+// share its presentational component. Start from a clean, explicitly empty draft.
+async function openAccountRelationshipPicker(target){
+ await navigate(target,origin+'/en/app/tests')
+ await expect(target).toHaveURL(origin+'/en/app/tests')
+ const dashboard=target.locator('[data-my-tests-dashboard]')
+ await expect(dashboard).toBeVisible()
+ const explorer=target.locator('#my-test-explorer')
+ if(!(await explorer.isVisible())){
+  const open=dashboard.getByRole('button',{name:/^(Open test filters|Review test filters)/})
+  await expect(open).toHaveCount(1)
+  await open.click()
+ }
+ await expect(explorer).toHaveCount(1)
+ await expect(explorer).toBeVisible()
+ const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
+ await expect(browse).toHaveCount(1)
+ await browse.click()
+ const customizer=explorer.locator('#hh-test-customizer')
+ if(!(await customizer.isVisible())){
+  const customize=explorer.locator('button[aria-controls="hh-test-customizer"]')
+  await expect(customize).toHaveCount(1)
+  await customize.click()
+ }
+ const reset=customizer.getByRole('button',{name:'Reset filters',exact:true})
+ await expect(reset).toHaveCount(1)
+ await reset.click()
+ const checked=explorer.locator('article input[type="checkbox"]:checked')
+ const names=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
+ for(const [index,name]of names.entries()){
+  const choice=explorer.getByRole('checkbox',{name,exact:true,checked:true})
+  await expect(choice).toHaveCount(1)
+  await choice.click()
+  await expect(choice).toHaveCount(0)
+  await expect.poll(async()=>(await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(names.slice(index+1).sort())
+ }
+ await expect(checked).toHaveCount(0)
+ const back=explorer.getByRole('button',{name:'← Back to easy selection',exact:true})
+ await expect(back).toHaveCount(1)
+ await back.click()
+ const picker=explorer.locator('[data-prelogin-test-picker]')
+ await expect(picker).toHaveCount(1)
+ await expect(picker).toBeVisible()
+ await expect(picker.locator('[data-public-selected-tests] [data-selected-test-key]')).toHaveCount(0)
+ return picker
+}
+async function relationshipChoice(picker,key){
+ const choice=picker.locator('[data-test-match="'+key+'"] input[type="checkbox"]')
+ // Expand the actual five-at-a-time list. A missing/ambiguous expansion fails.
+ for(let batch=0;await choice.count()===0&&batch<Math.ceil(MONITORING_CATALOG.length/5);batch++){
+  const more=picker.getByRole('button',{name:/^Show \d+ more tests$/})
+  await expect(more).toHaveCount(1)
+  await more.click()
+ }
+ await expect(choice).toHaveCount(1)
+ await expect(choice).toBeVisible()
+ return choice
+}
+async function saveAccountRelationshipSelection(target,ctx,picker,definitions,preferences){
+ await expect(target).toHaveURL(origin+'/en/app/tests')
+ await expect(target.locator('#my-test-explorer [data-prelogin-test-picker]')).toHaveCount(1)
+ const selected=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+ await expect(selected).toHaveCount(definitions.length)
+ assert.deepEqual(await selected.evaluateAll(nodes=>nodes.map(node=>node.dataset.selectedTestKey)),definitions.map(d=>d.key))
+ const before=await api(ctx,'bootstrap'),owner=before.account.id
+ const prior=before.activeTestPlan||(before.latestTestPlan?.status==='completed'?before.latestTestPlan:null)
+ const expectedIds=[...new Set([...(prior?.definitionIds||[]),...definitions.map(d=>d.id)])]
+ const accountWrites=[]
+ const observe=request=>{
+  const path=new URL(request.url()).pathname
+  if(path.startsWith('/api/app/')&&!path.startsWith('/api/app/guest/')&&request.method()!=='GET')accountWrites.push(path)
+ }
+ target.on('request',observe)
+ try{
+ const saving=target.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST')
+ const save=picker.getByRole('button',{name:'Add selected tests Save these tests to My tests',exact:true})
+ await expect(save).toHaveCount(1)
+ await expect(save).toBeEnabled()
+ await save.click()
+ const response=await saving
+ assert.ok(response.ok())
+ assert.equal(response.request().headers()['x-hh-account-id'],owner)
+ const submitted=response.request().postDataJSON()
+ assert.equal(submitted.appendActive,true)
+ assert.equal(submitted.replaceActive,false)
+ assert.deepEqual(submitted.items,definitions.map(d=>({definitionKey:d.key,definitionVersion:d.version,instrumentLocale:d.instrumentLocale})))
+ assert.deepEqual(submitted.selectionPreferences,preferences)
+ const plan=await response.json()
+ assert.ok(plan.id)
+ if(prior)assert.equal(plan.id,prior.id)
+ assert.deepEqual(plan.definitionIds,expectedIds,'save appends only the explicitly selected definitions in exact order')
+ assert.deepEqual(plan.completedRunIds,prior?.completedRunIds||[])
+ assert.deepEqual(plan.selectionPreferences,preferences)
+ await response.finished()
+ await expect(target).toHaveURL(origin+'/en/app/tests?plan='+encodeURIComponent(plan.id))
+ await expect(target.locator('#my-tests-list')).toBeVisible()
+ await target.waitForLoadState('networkidle')
+ // Read back the saved plan; a same-page append need not remount its loader.
+ assert.deepEqual(await api(ctx,'test-plans/'+plan.id),plan)
+ const reloading=target.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans/'+plan.id&&response.request().method()==='GET')
+ navigationMarker(target,'before-reload')
+ await target.reload()
+ await expect(target.locator('#my-tests-list')).toBeVisible()
+ const reloaded=await reloading
+ assert.ok(reloaded.ok())
+ assert.deepEqual(await reloaded.json(),plan)
+ await reloaded.finished()
+ const after=await api(ctx,'bootstrap')
+ assert.equal(after.account.id,owner)
+ assert.deepEqual(after.activeTestPlan||after.latestTestPlan,plan)
+ for(const key of ['runs','results'])assert.deepEqual(after[key],before[key],'saving choices preserves existing '+key)
+ assert.deepEqual(accountWrites,['/api/app/test-plans'],'one explicit account save makes exactly one account mutation')
+ return plan
+ }finally{target.off('request',observe)}
+}
+// A public deep-link Start remains a guest launch with authenticated cookies.
+// Check attempted writes as well as durable account state, including rejected POSTs.
+async function launchPublicRelationshipGuest(target,ctx,definition){
+ const before=await api(ctx,'bootstrap'),accountWrites=[],guestPlanWrites=[]
+ const observe=request=>{
+  const path=new URL(request.url()).pathname
+  if(path.startsWith('/api/app/')&&!path.startsWith('/api/app/guest/')&&request.method()!=='GET')accountWrites.push(path)
+  if(path==='/api/app/guest/test-plans'&&request.method()!=='GET')guestPlanWrites.push(path)
+ }
+ target.on('request',observe)
+ try{
+  await navigate(target,origin+'/en/client/tests?test='+definition.key)
+  await expect(target).toHaveURL(origin+'/en/client/tests?test='+definition.key)
+  const picker=target.locator('[data-prelogin-test-picker]')
+  await expect(picker).toHaveCount(1)
+  await expect(picker).toBeVisible()
+  const selected=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+  await expect(selected).toHaveCount(1)
+  await expect(selected).toHaveAttribute('data-selected-test-key',definition.key)
+  const start=picker.getByRole('button',{name:'Start free monitoring No registration required to start',exact:true})
+  await expect(start).toHaveCount(1)
+  await start.click()
+  await expect(target).toHaveURL(origin+'/en/client?startTests='+encodeURIComponent(definition.key))
+  const guest=target.locator('#cabinet-tests')
+  await expect(guest).toBeVisible()
+  const consent=guest.getByRole('heading',{name:'Before you start',exact:true})
+  const mode=guest.locator('.hh-test-mode-picker')
+  await expect(consent.or(mode)).toBeVisible()
+  if(await consent.isVisible()){
+   await guest.getByLabel('I am 18 or older.',{exact:true}).check()
+   await guest.getByLabel('I agree to temporary private processing of my answers and result for this self-observation test.',{exact:true}).check()
+   await guest.getByRole('button',{name:'Continue',exact:true}).click()
+  }
+  await expect(mode).toBeVisible()
+  await target.waitForLoadState('networkidle')
+  const guestState=await api(ctx,'guest/bootstrap')
+  // CabinetLanding sends one selected definition directly to begin/startRun;
+  // only a multi-test battery creates a guest plan. This cookie context is fresh.
+  assert.equal(guestState.activeTestPlan,null)
+  assert.deepEqual(guestPlanWrites,[],'a single public test must not create a guest battery')
+  assert.deepEqual(guestState.runs.map(run=>run.definitionId),[definition.id])
+  const [run]=guestState.runs
+  assert.equal(run.definitionKey,definition.key)
+  assert.equal(run.definitionVersion,definition.version)
+  assert.equal(run.instrumentLocale,definition.instrumentLocale)
+  assert.equal(run.contentHash,definition.contentHash)
+  assert.deepEqual(run.answers,{})
+  assert.equal(run.progress,0)
+  assert.equal(run.status,'draft')
+  assert.deepEqual(guestState.results,[])
+  await expect(target).toHaveURL(origin+'/en/client?run='+encodeURIComponent(run.id))
+  const after=await api(ctx,'bootstrap')
+  assert.equal(after.account.id,before.account.id)
+  for(const key of ['activeTestPlan','latestTestPlan','runs','results'])assert.deepEqual(after[key],before[key],'public guest launch preserves account '+key)
+  assert.deepEqual(accountWrites,[],'public Start must never attempt account writes or Google sign-in')
+ }finally{target.off('request',observe)}
+}
 async function fill(page,d,mode,guest,locale){
  const quick=guest?'.cabinet-quick-question':'.hh-quick-question'
  for(let i=0;i<d.questions.length;i++){
@@ -162,7 +343,7 @@ try{
    await navigate(pickerPage,origin+'/'+locale+'/client')
    const picker=pickerPage.locator('[data-prelogin-test-picker]')
    await expect(picker).toBeVisible()
-   if(resources)await picker.getByRole('button',{name:locale==='ru'?'Внутренняя опора':'Self-support',exact:true}).click()
+   if(resources)await (await publicTopicButton(picker,locale,locale==='ru'?'Внутренняя опора':'Self-support')).click()
    // Opening the full editor exposes every selected entry, including those
    // below the first five recommendation cards. This also checks the handoff.
    await picker.getByRole('button',{name:locale==='ru'?'Открыть всю базу тестов':'Browse full database',exact:true}).click()
@@ -224,7 +405,7 @@ try{
   await easySelection.click()
   const focusedPicker=page.locator('[data-prelogin-test-picker]')
   await expect(focusedPicker).toBeVisible()
-  await expect(focusedPicker.getByRole('button',{name:locale==='ru'?'Отношения':'Relationships',exact:true})).toHaveAttribute('aria-pressed','true')
+  await expect(await publicTopicButton(focusedPicker,locale,locale==='ru'?'Отношения':'Relationships')).toHaveAttribute('aria-pressed','true')
   await expect(focusedPicker.getByRole('button',{name:locale==='ru'?'Убрать фильтр: Сексуальное благополучие и согласие':'Remove filter: Sexual wellbeing & consent',exact:true})).toBeVisible()
   await expect(focusedPicker.locator('[data-recommendation-mode]')).toHaveAttribute('data-recommendation-mode','tests')
   const assertBoundaryConcerns=async()=>{
@@ -378,63 +559,28 @@ try{
   await expect(page.locator('[data-personal-result-report]')).toBeVisible()
   passed(d.key+' account '+locale+' '+mode+': save, original items, score, report and reload')
  }
- await navigate(page,origin+'/en/client')
- const picker=page.locator('[data-prelogin-test-picker]')
- await picker.getByRole('button',{name:'Relationships',exact:true}).click()
- const voluntary=picker.locator('[data-test-match="hh-love-affection"] input')
+ const picker=await openAccountRelationshipPicker(page)
+ await (await publicTopicButton(picker,'en','Relationships')).click()
+ const voluntary=await relationshipChoice(picker,'hh-love-affection')
  await expect(voluntary).not.toBeChecked()
  await voluntary.check()
- await picker.getByRole('button',{name:'Relationships',exact:true}).click()
- await picker.getByRole('button',{name:'Self-support',exact:true}).click()
- // A broader filter can move the chosen card below the first five matches.
- // Expand the real paged list before inspecting its retained checkbox.
- for(let batch=0;await voluntary.count()===0&&batch<21;batch++)
-  await picker.getByRole('button',{name:/^Show \d+ more tests$/}).click()
- await expect(voluntary).toBeChecked()
- await expect(picker.locator('[data-public-selected-tests]')).toContainText('Love & Affection')
- const saveVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
- const loadVoluntary=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
- await picker.getByRole('button',{name:'Start free monitoring Save your selection and get started',exact:true}).click()
- const voluntaryResponse=await saveVoluntary
- assert.ok(voluntaryResponse.ok())
- const voluntaryPlan=await voluntaryResponse.json()
+ const selectedAccountTest=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+ await expect(selectedAccountTest).toHaveCount(1)
+ await expect(selectedAccountTest).toHaveAttribute('data-selected-test-key','hh-love-affection')
+ await (await publicTopicButton(picker,'en','Relationships')).click()
+ await (await publicTopicButton(picker,'en','Self-support')).click()
+ await expect(await publicTopicButton(picker,'en','Relationships')).toHaveAttribute('aria-pressed','false')
+ await expect(await publicTopicButton(picker,'en','Self-support')).toHaveAttribute('aria-pressed','true')
+ await expect(await relationshipChoice(picker,'hh-love-affection')).toBeChecked()
+ await expect(selectedAccountTest).toHaveCount(1)
+ await expect(selectedAccountTest).toHaveAttribute('data-selected-test-key','hh-love-affection')
+ const selectionPreferences={focus:['resources'],problems:[],details:[],axes:[],areas:[],styles:[],kinds:[],lengths:[],depth:'balanced',maxMinutes:0,language:'any',tracking:'any',freeOnly:false}
+ const voluntaryPlan=await saveAccountRelationshipSelection(page,account,picker,[localized('hh-love-affection','en')],selectionPreferences)
  assert.ok(voluntaryPlan.definitionIds.includes(localized('hh-love-affection','en').id))
  assert.ok(!voluntaryPlan.definitionIds.includes(localized('hh-sexual-self-kindness','en').id))
- await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
- await expect(page.locator('#my-tests-list')).toBeVisible()
- const loadedVoluntary=await loadVoluntary
- assert.ok(loadedVoluntary.ok());assert.equal((await loadedVoluntary.json()).id,voluntaryPlan.id)
- await loadedVoluntary.finished()
- await page.waitForLoadState('networkidle')
- const reloadVoluntary=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans/'+voluntaryPlan.id)&&r.request().method()==='GET')
- navigationMarker(page,'before-reload')
- await page.reload()
- await expect(page.locator('#my-tests-list')).toBeVisible()
- const reloadedVoluntary=await reloadVoluntary
- assert.ok(reloadedVoluntary.ok());assert.equal((await reloadedVoluntary.json()).id,voluntaryPlan.id)
- await reloadedVoluntary.finished()
- const savedChoice=await api(account,'bootstrap')
- assert.ok(savedChoice.activeTestPlan.definitionIds.includes(localized('hh-love-affection','en').id))
- passed('explicit relationship choice survives broader filters, private plan saving and reload without adding other intimate forms')
- await navigate(page,origin+'/en/client/tests?test=hh-love-affection')
- const selectedPublicTest=picker.locator('[data-public-selected-tests] [data-selected-test-key]')
- await expect(selectedPublicTest).toHaveCount(1)
- await expect(selectedPublicTest).toHaveAttribute('data-selected-test-key','hh-love-affection')
- const selectionResponse=page.waitForResponse(r=>r.url().endsWith('/api/app/test-plans')&&r.request().method()==='POST')
- const selectionLoaded=page.waitForResponse(r=>/\/api\/app\/test-plans\/[^/?]+$/.test(r.url())&&r.request().method()==='GET')
- await picker.getByRole('button',{name:'Start free monitoring Save your selection and get started',exact:true}).click()
- const selection=await selectionResponse
- assert.ok(selection.ok())
- const savedPlan=await selection.json()
- assert.ok(savedPlan.definitionIds.includes(localized('hh-love-affection','en').id))
- await expect(page).toHaveURL(/\/en\/app\/tests\?plan=/)
- await expect(page.locator('#my-tests-list')).toBeVisible()
- // The dashboard shell renders before its requested plan finishes loading.
- // Verify the real read before leaving, so WebKit never aborts it mid-request.
- const loadedSelection=await selectionLoaded
- assert.ok(loadedSelection.ok());assert.equal((await loadedSelection.json()).id,savedPlan.id)
- await loadedSelection.finished()
- passed('keyboard selection and signed-in hub selection preserve the intended questionnaire in the private plan')
+ passed('explicit relationship choice survives broader filters, exact owner-bound private plan saving and reload without adding other intimate forms')
+ await launchPublicRelationshipGuest(page,account,localized('hh-love-affection','en'))
+ passed('signed-in public deep link starts exactly the intended guest questionnaire with zero account writes and unchanged private plan')
  const d=defs[0]
  let repeat=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:'en',operationId:randomUUID()})
  repeat=await api(account,'runs/'+repeat.id+'/save',{answers:Object.fromEntries(d.questions.map(q=>[q.id,3])),context:{},progress:6,expectedRevision:repeat.revision,operationId:randomUUID()})
@@ -460,7 +606,9 @@ try{
   passed(locale+' PDF download includes persisted experimental relationship report model')
  }
  for(const [i,base] of defs.entries()){
-  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844}})
+  // The guest claim fixture intercepts its POST; a controlling service worker
+  // bypasses Playwright routing in WebKit and would send the real request instead.
+  const locale=i%2?'en':'ru',mode=i%2?'quick':'guided',d=localized(base.key,locale),guest=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
   await api(guest,'guest/session',{adult:true,necessary:true,uiLocale:locale,timezone:'UTC'})
   const plan=await api(guest,'guest/test-plans',{items:[{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale}],operationId:randomUUID()})
   page=await diagnosticPage(guest,'guest-'+d.key+'-'+locale)

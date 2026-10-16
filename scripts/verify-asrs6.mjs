@@ -23,13 +23,15 @@ const mixed = [2, 2, 2, 3, 0, 0] // Classic count 4; continuous sum 9 is not use
 const passed = label => { checks.push(label); console.log('PASS ' + label) }
 let page
 
-async function isolatedContext(fixtureIp = '192.0.2.61') {
+async function isolatedContext(fixtureIp = '192.0.2.61', guestProbe = false) {
   // RFC 5737 TEST-NET-1 fixtures, sent only to the asserted loopback app.
   // Keep this suite independent from the other suites' 12/IP/hour budget.
   // The application limiter and its headers contract remain unchanged.
   assert.ok(['192.0.2.61', '192.0.2.62', '192.0.2.63'].includes(fixtureIp))
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 }, timezoneId: 'UTC',
+    // Only the guest result probe deliberately intercepts its save-intent POST.
+    serviceWorkers: guestProbe ? 'block' : 'allow',
     extraHTTPHeaders: { 'X-Forwarded-For': fixtureIp },
   })
   // Keep all browser traffic on loopback, including the synthetic auth provider.
@@ -247,7 +249,7 @@ try {
   await account.close()
 
   // One consented guest session for four journeys, within the unchanged IP/session limits.
-  const guest = await isolatedContext(), resultIds = new Set()
+  const guest = await isolatedContext(undefined, true), resultIds = new Set()
   await api(guest, 'guest/session', { adult: true, necessary: true, uiLocale: 'en', timezone: 'UTC' })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
