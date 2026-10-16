@@ -493,3 +493,9 @@
 .whatsappAnswersSlot { margin-top:12px; }
 .whatsappCombinedSlot button, .whatsappAnswersSlot button { width:100%; }
 @media(max-width:590px) { .whatsappCombinedSlot { grid-column:auto; } }
+
+.whatsappFeedbackSlot { margin-top:9px; }
+.whatsappFeedbackSlot button { background:#233c62; }
+.choiceGrid [data-contact-channel-chooser] { width:100%; }
+.questionFooter [data-contact-channel-chooser] { max-width:340px; }
+@media(max-width:760px) { .questionFooter [data-contact-channel-chooser] { max-width:none; } }
