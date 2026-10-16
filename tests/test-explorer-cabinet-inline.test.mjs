@@ -11,7 +11,7 @@ test('public Client Cabinet includes the same interactive Test Explorer before a
   assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('className="cabinet-signin-strip'), 'one-click start must precede secondary account entry')
   assert.ok(cabinet.indexOf('<PublicTestExplorer') < cabinet.indexOf('<MoodCheckIn'), 'mood check-in is optional and must not block test start')
-  assert.doesNotMatch(cabinet, /without signing in|можно подобрать и пройти без входа/)
+  assert.match(cabinet, /without signing in/, 'guest scales must be accessible before Google sign-in')
   assert.match(publicExplorer, /<TestExplorer locale=\{locale\} audience="guest" embedded=\{embedded\}/)
   assert.match(explorer, /embedded \? styles\.embedded/)
   assert.match(styles, /\.explorer \.battery\{position:static/)
