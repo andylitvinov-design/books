@@ -1669,3 +1669,23 @@
   }
   .shell .depthOption strong{font-size:.72rem}
 }
+
+/* Four one-tap type filters fit across a phone without horizontal scrolling.
+   Keep the fifth button for the existing detailed filtering dialog. */
+@media(max-width:760px){
+  .shell .browseTabs{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 36px;
+    gap:5px;overflow:visible;min-width:0;scrollbar-width:none
+  }
+  .shell .browseTabs button{
+    flex:initial;width:100%;min-width:0;max-width:100%;
+    padding:6px 3px;white-space:nowrap;font-size:.68rem!important
+  }
+  .shell .browseTabs .moreFilterButton{
+    position:static;right:auto;min-width:0;width:100%;margin:0;padding:0
+  }
+}
+@media(max-width:350px){
+  .shell .browseTabs{grid-template-columns:repeat(4,minmax(0,1fr)) 33px;gap:3px}
+  .shell .browseTabs button{font-size:.61rem!important;padding:5px 1px}
+}
