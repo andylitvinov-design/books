@@ -22,6 +22,41 @@ async function assertPublicPickerEntrance(target,locale){
  await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
  await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
 }
+// Keep direct actions compact; the complete catalog remains in the site menu.
+async function assertSpanishNavigation(page, path) {
+  const currentUrl = page.url();
+  const navigation = page.locator('.site-navigation');
+  await expect(navigation).toHaveCount(1);
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/en/app'], 'Spanish direct destinations: ' + path);
+  const destinations = [
+    ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
+    ['/es/library', 'Biblioteca'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/courses', 'Mis cursos'],
+    ['/en/app', 'Mis pruebas'], ['/es/about', 'Sobre mí'],
+  ];
+  const menu = navigation.locator('details.site-main-menu');
+  const trigger = menu.locator('summary');
+  const links = menu.locator('.site-main-menu-panel > a');
+  await expect(menu).toHaveCount(1);
+  await expect(menu).toHaveJSProperty('open', false);
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAccessibleName('Abrir menú del sitio');
+  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), destinations.map(([href]) => href), 'Spanish full menu destinations: ' + path);
+  await trigger.focus();
+  await trigger.press('Enter');
+  await expect(menu).toHaveJSProperty('open', true);
+  for (let index = 0; index < destinations.length; index++) {
+    await expect(links.nth(index)).toBeVisible();
+    await expect(links.nth(index)).toHaveAccessibleName(destinations[index][1]);
+  }
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
+  await trigger.press('Tab');
+  await expect(links.first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveJSProperty('open', false);
+  await expect(trigger).toBeFocused();
+  await expect(page).toHaveURL(currentUrl);
+}
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
@@ -40,9 +75,6 @@ const evidence = '/tmp/site-video-evidence';
 const results = [];
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
-// The top-level cabinet entry now goes to the supported English app; the
-// separate /es/client landing remains a valid Spanish language counterpart.
-const nav = ['/es', '/es/library', '/es/services', '/es/academy', '/es/courses', '/en/app'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -100,7 +132,7 @@ try {
           assert.ok(/<html lang="es"/.test(await response.text()),'Spanish server-rendered document language: '+path);
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
-          assert.deepEqual(await page.locator('.site-navigation > a').evaluateAll(elements=>elements.map(el=>el.getAttribute('href'))),nav,path);
+          await assertSpanishNavigation(page, path);
           assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
@@ -191,7 +223,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'five Spanish destinations plus supported EN account entry',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eight-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
