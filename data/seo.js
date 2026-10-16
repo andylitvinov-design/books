@@ -34,7 +34,7 @@ export function getSitemapEntries(baseUrl) {
   return [
     { url: at(base, '/'), changeFrequency: 'weekly', priority: 1, alternates: { languages: homepageLanguages } },
     { url: at(base, '/ru'), changeFrequency: 'weekly', priority: 1, alternates: { languages: homepageLanguages } },
-    { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...homeopathyIndexes, ...servicesIndexes, ...remedyEntries]
+    ...booksEntries, ...homeopathyIndexes, ...servicesIndexes, ...remedyEntries]
 }
 
 export function getRobotsPolicy(baseUrl) {
