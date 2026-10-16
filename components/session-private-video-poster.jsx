@@ -48,7 +48,10 @@ export function SessionPrivateVideoPoster({src}) {
       if(loaded||!active)return
       loaded=true
       probe.preload='metadata'
-      probe.src=src
+      // Media fragments improve native first-frame visibility on iPhone even
+      // if HEVC/canvas capture is restricted. The #t fragment never reaches
+      // the authenticated server GET/Range endpoint.
+      probe.src=src+'#t=0.1'
       probe.load()
     }
     probe.addEventListener('loadedmetadata',metadata)
