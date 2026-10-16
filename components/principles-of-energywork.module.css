@@ -372,3 +372,195 @@
 @media (prefers-reduced-motion: reduce) {
   .systemImage img, .primaryButton, .ghostButton, .requestButton { transition: none; }
 }
+
+
+/* 2026-10-16 · Video-led three-system Academy landing. Scoped to this page. */
+.flightSection {
+  margin-top: clamp(40px,5vw,65px);
+  padding-top: 0;
+  scroll-margin-top: 95px;
+}
+.flightLayout {
+  display:grid;
+  grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+  overflow:hidden;
+  border:1px solid #d9e0e9;
+  border-radius:19px;
+  background:#fff;
+  box-shadow:0 8px 26px rgba(19,39,66,.05);
+}
+.flightMedia {
+  position:relative;
+  min-width:0;
+  aspect-ratio:16/9;
+  background:#12243f;
+}
+.flightMedia :global(.academy-video-frame),
+.flightMedia :global(.academy-video-poster) { width:100%;height:100%; }
+.flightMedia iframe { width:100%;height:100%;border:0; }
+.flightMedia :global(.academy-video-poster) img { width:100%;height:100%;object-fit:cover; }
+.sourcePending {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  background:#112845;
+  color:#fff;
+}
+.sourcePending img { object-fit:cover;filter:saturate(.75) brightness(.55); }
+.sourcePending::after {
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  background:linear-gradient(180deg,rgba(8,24,43,.0),rgba(8,24,43,.81));
+}
+.sourcePendingCopy {
+  position:absolute;
+  z-index:2;
+  left:clamp(17px,3vw,31px);
+  right:clamp(17px,3vw,31px);
+  bottom:clamp(17px,3vw,30px);
+  display:grid;
+  gap:7px;
+}
+.sourcePendingCopy span { color:#f1ced8;letter-spacing:.09em;text-transform:uppercase;font-size:11px;font-weight:850; }
+.sourcePendingCopy strong { max-width:530px;color:#fff;font-size:clamp(13px,1.4vw,16px);line-height:1.5;font-weight:650; }
+.flightDetails { padding:clamp(21px,3vw,35px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px; }
+.flightDetails h3 { color:#1b3451;margin:0;font-size:clamp(24px,2.5vw,32px);line-height:1.16; }
+.flightDetails > p:not(.systemLabel) { margin:0;color:#5a6a7d;font-size:14px;line-height:1.63; }
+.flightDetails .flightNotice {
+  border-left:3px solid #a24965;
+  background:#f7eef1;
+  padding:10px 13px;
+  color:#714357 !important;
+  border-radius:3px 8px 8px 3px;
+  font-size:12px !important;
+}
+.flightDetails .systemPrimary {
+  min-height:44px;
+  padding:11px 15px;
+  margin-top:6px;
+  gap:10px;
+  text-decoration:none;
+}
+.systemsSection { scroll-margin-top:95px; }
+.systemGrid { display:grid;grid-template-columns:minmax(0,1fr);gap:19px; }
+.systemCard {
+  display:grid;
+  grid-template-columns:minmax(0,43%) minmax(0,57%);
+  overflow:hidden;
+  border-radius:20px;
+  border:1px solid #dbe1e9;
+  background:#fff;
+  box-shadow:0 9px 27px rgba(15,42,72,.055);
+  min-width:0;
+}
+.systemMedia {
+  padding:19px;
+  min-width:0;
+  background:linear-gradient(150deg,#172e4f,#27344c 70%,#382b3f);
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:10px;
+}
+.systemVideo {
+  width:100%;
+  min-width:0;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  border-radius:12px;
+  background:#0d203a;
+  box-shadow:0 5px 24px rgba(4,13,25,.28);
+}
+.systemVideo :global(.academy-video-poster),
+.systemVideo :global(.academy-video-frame) { width:100%;height:100%; }
+.systemVideo :global(.academy-video-poster) img { width:100%;height:100%;object-fit:cover; }
+.systemVideo :global(.academy-video-poster) span { font-size:12px; }
+.systemVideo iframe { width:100%;height:100%;border:0; }
+.yggdrasilVideoStack { display:grid;gap:12px; }
+.kundaliniSource {
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  border-radius:13px;
+  overflow:hidden;
+  background:#f4eee7;
+  border:1px solid #d8cdbf;
+}
+.kundaliniSource img { object-fit:contain;padding:12px; }
+.kundaliniSource span {
+  position:absolute;left:0;right:0;bottom:0;
+  z-index:1;
+  color:#fff;
+  background:rgba(21,43,71,.90);
+  padding:10px 13px;
+  font-size:12px;font-weight:750;text-align:center;
+}
+.originalLanguage { color:#d9e2ef;font-size:11px;line-height:1.4; }
+.systemBody {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:12px;
+  padding:clamp(20px,3vw,31px);
+}
+.systemBody .systemLabel { margin:0;color:#99445b; }
+.systemBody h3 { color:#182f4f;margin:0;font-size:clamp(28px,3vw,39px); }
+.systemBody .systemDescription { flex:unset;color:#5d6e81;font-size:14px;line-height:1.65;margin:0; }
+.videoCaution {
+  color:#735466;
+  background:#f8f0f3;
+  border-left:3px solid #9c526b;
+  padding:10px 13px;
+  margin:0;
+  font-size:12px;
+  line-height:1.5;
+  border-radius:4px 9px 9px 4px;
+}
+.courseLinks { display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center; }
+.courseLinks .systemSecondary {
+  border-radius:9px;
+  width:auto;
+  min-height:41px;
+  gap:9px;
+  justify-content:center;
+  text-align:center;
+  padding:10px 13px;
+  color:#163b60;
+  background:#eaf0f6;
+  font-weight:800;
+  font-size:12px;
+}
+.courseLinks .systemSecondary:hover { color:#17334e;background:#dbe6f1; }
+.courseDetailLink {
+  color:#8c3d57;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:800;
+}
+.courseDetailLink:hover { color:#702940;text-decoration:underline; }
+.archiveRow { grid-column:1 / -1; padding:0 19px 20px; }
+.archiveRow > * { margin-top:0; }
+@media (max-width:850px) {
+  .flightLayout,.systemCard { grid-template-columns:1fr; }
+  .flightMedia { max-height:440px; }
+  .systemMedia { padding:16px; }
+  .systemBody { padding:21px; }
+}
+@media (max-width:550px) {
+  .flightSection { margin-top:32px; }
+  .flightLayout { border-radius:15px; }
+  .flightMedia { aspect-ratio:16/10; }
+  .flightDetails { padding:19px 16px; }
+  .systemCard { border-radius:15px; }
+  .systemMedia { padding:13px; }
+  .systemBody { padding:18px 13px; gap:11px; }
+  .systemBody h3 { font-size:30px; }
+  .courseLinks { flex-direction:column;align-items:stretch;gap:8px; }
+  .courseLinks .systemSecondary,.courseDetailLink { justify-content:center; }
+  .archiveRow { padding:0 12px 15px; }
+}
