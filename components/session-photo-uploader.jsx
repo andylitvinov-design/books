@@ -12,7 +12,7 @@ const MAX_PHOTOS_PER_SELECTION=12
 
 // Decode locally, correct orientation, downsize and re-encode. Re-encoding
 // discards EXIF (including geolocation), original filename and camera metadata.
-async function preparePhoto(original) {
+export async function preparePhoto(original) {
   const mime=(original?.type||'').toLowerCase()
   if(!INPUT_TYPES.has(mime))throw new Error('PHOTO_FORMAT_NOT_ALLOWED')
   if(original.size<128||original.size>MAX_INPUT_BYTES)throw new Error('PHOTO_SIZE_NOT_ALLOWED')
