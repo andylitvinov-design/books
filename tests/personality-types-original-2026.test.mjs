@@ -112,7 +112,7 @@ test('personal result reports carry bilingual type hypotheses and distinct, safe
       for(const section of report.sections){
         assert.equal(section.domain,'personality')
         assert.ok(section.meaning.length>100)
-        assert.ok(section.steps.length===2 && section.steps.every(x=>x.length>40))
+        assert.ok(section.steps.length>=2 && section.steps.every(x=>x.length>40))
         assert.match(section.meaning,locale==='ru'?/не является нормативным рейтингом/:/not a population ranking/)
         assert.ok(section.followUp.length>50)
       }
@@ -223,7 +223,20 @@ test('all sixteen socionics mappings use an explicit independent code fixture',(
 test('canonical 170 prior definitions and earlier 169/153-definition baselines remain unchanged',()=>{
   const ids=new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id))
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6'&&!ids.has(d.id))
+  // Exclude only the six appended split-v2 IDs from this historical baseline.
+  const splitV2Ids=new Set([
+    '52c75d85-d99e-5178-8ee4-3b7faa802601',
+    '7715324b-f54c-5d7c-8ca7-08ff17ba8c8e',
+    'f65b9e09-2818-5c01-abb7-438600530e8f',
+    '3ea615ee-b188-5c1e-8e41-2bfd221a75d7',
+    '0c27f7d6-0280-5dcd-8f10-59447585b1df',
+    '9a864e36-7362-567b-923e-ea99228f933d',
+  ])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
+  // The separately approved Bach pair is additive; no historical ID is excluded.
+  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6'&&!ids.has(d.id))
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   assert.equal(prior.length,170)
   assert.equal(digest(prior),'2b7a4c102bbcf65ed0b6f3d3530d803c93dfa8f27456b5c2bf4a490ea6fc3e93')

@@ -1,35 +1,30 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildTestDynamicsGroups } from '../lib/assessments/test-dynamics.js'
 
-const base = (id, at, value, extra = {}) => ({
-  id, accountId: 'private-account-1',
-  definitionId: 'definition-1', definitionKey: 'example-assessment',
-  definitionVersion: '1.0', contentHash: 'hash-v1',
-  instrumentLocale: 'en', scoringKey: 'configured',
-  scoringVersion: '1', resultVersion: '1', timeframe: 'now',
-  measurementAt: at,
-  dimensions: [{
-    key: 'anxiety', min: 0, max: 10, unit: 'points',
-    timeframe: 'now', direction: 'neutral', dimensionClass: 'state',
-    sourceConstruct: 'Reported tension', displayKind: 'continuous',
-    value,
-  }],
-  ...extra,
-})
+const base = (id, at, value, extra = {}) => {
+  const definition = getAssessmentDefinition(extra.definitionKey || 'hh-current-state', 'v1', 'en')
+  const scored = scoreAssessment(definition, Object.fromEntries(definition.questions.map(question =>
+    [question.id, question.min ?? definition.answerScale.min])))
+  return { ...scored, id, accountId: 'private-account-1', measurementAt: at,
+    dimensions: scored.dimensions.map((dimension, index) => index === 0 ? { ...dimension, value } : dimension),
+    ...extra }
+}
 
 test('dynamics defaults to all time and shows first/last values and retake data for every test', () => {
   const one = base('one', '2026-08-01T12:00:00Z', 8)
   const two = base('two', '2026-10-13T12:00:00Z', 4)
   const other = base('other', '2026-10-10T12:00:00Z', 3, {
-    definitionId: 'definition-2', definitionKey: 'different-assessment',
+    definitionKey: 'hh-weekly-pulse',
   })
   const view = buildTestDynamicsGroups([two, other, one], 'ru')
   assert.equal(view.valid, true)
   assert.equal(view.groups.length, 2)
   assert.equal(view.attempts, 3)
   assert.equal(view.repeated, 1)
-  const repeated = view.groups.find(group => group.key === 'example-assessment')
+  const repeated = view.groups.find(group => group.key === 'hh-current-state')
   assert.equal(repeated.count, 2)
   assert.equal(repeated.first.id, 'one')
   assert.equal(repeated.latest.id, 'two')
@@ -40,7 +35,7 @@ test('dynamics defaults to all time and shows first/last values and retake data 
   assert.equal(repeated.scales[0].gaugeDimension.value, 4)
   assert.equal(repeated.scales[0].gaugeDimension.min, 0)
   assert.equal(repeated.scales[0].gaugeDimension.max, 10)
-  const baseline = view.groups.find(group => group.key === 'different-assessment')
+  const baseline = view.groups.find(group => group.key === 'hh-weekly-pulse')
   assert.equal(baseline.count, 1)
   assert.equal(baseline.scales[0].firstValue, 3)
   assert.equal(baseline.scales[0].lastValue, null, 'do not repeat the first score as the missing retake')
@@ -79,5 +74,5 @@ test('retained histories remain visible even when there is no active test plan',
   const result = base('saved', '2026-06-01T12:00:00Z', 7)
   const view = buildTestDynamicsGroups([result], 'en')
   assert.equal(view.groups.length, 1)
-  assert.equal(view.groups[0].latest.definitionId, 'definition-1')
+  assert.equal(view.groups[0].latest.definitionId, getAssessmentDefinition('hh-current-state','v1','en').id)
 })

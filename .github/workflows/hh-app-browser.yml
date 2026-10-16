@@ -75,7 +75,7 @@ jobs:
           # Hydration also warms shared API routes; repeat it for each fresh app.
           case "$HH_TEST_SUITE" in
             core) scripts="verify-document-hydration verify-app-r1 verify-compassion-assessments verify-relationships-assessments" ;;
-            extended) scripts="verify-document-hydration verify-mhc-sf verify-asrs6 verify-asrs6-pdf verify-personality-types verify-account-status-filters" ;;
+            extended) scripts="verify-document-hydration verify-mhc-sf verify-asrs6 verify-asrs6-pdf verify-personality-types verify-account-status-filters verify-bach-personal-report-browser" ;;
             *) echo "Unknown browser journey suite: $HH_TEST_SUITE" >&2; exit 1 ;;
           esac
           for script in $scripts; do

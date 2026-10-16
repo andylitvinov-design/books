@@ -11,6 +11,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
 
 const key = 'ipip-big-five-50'
 const definition = IPIP_BIG_FIVE_50_EN_V1
@@ -110,7 +111,9 @@ test('IPIP-50 Insights reports five distinct non-diagnostic trait interpretation
     assert.equal(report.sections.length, 5)
     assert.equal(new Set(report.sections.map(section => section.construct)).size, 5)
     assert.ok(report.sections.every(section => section.domain === 'personality'))
-    assert.ok(report.sections.every(section => section.steps.length === 2 && section.steps.every(step => step.length > 30)))
+    assert.ok(report.sections.every(section => section.steps.length >= 2 && section.steps.every(step => step.length > 30)))
+    report.sections.forEach((section, index) => assert.deepEqual(section.steps.slice(0, 2),
+      interpretationBandModel(scored, scored.dimensions[index], locale).actions.slice(0, 2)))
     assert.ok(report.sections.every(section => section.meaning.length > 100))
     assert.ok(report.sections.every(section => section.max === 50))
     assert.equal(report.seekSupport, null)

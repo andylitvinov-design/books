@@ -48,19 +48,21 @@ test('CBI Personal Burnout is interpreted as exhaustion, not just a 0–100 numb
   assert.equal(high.sections[0].domain, 'burnout')
   assert.match(high.sections[0].title, /Exhaustion/)
   assert.match(high.sections[0].steps.join(' '), /7 days/)
-  assert.match(high.sections[0].meaning, /upper part/)
-  assert.match(low.sections[0].meaning, /lower part/)
-  assert.match(low.sections[0].steps[0], /maintain your balance/)
-  assert.match(high.sections[0].steps[0], /For 7 days/)
+  assert.match(high.sections[0].meaning, /100 \(0–100\).*more reported exhaustion/)
+  assert.match(low.sections[0].meaning, /0 \(0–100\)/)
+  assert.match(low.sections[0].steps[0], /lowest possible response value/)
+  assert.match(high.sections[0].steps[0], /highest possible response value/)
+  assert.doesNotMatch(high.sections[0].meaning, /upper part|clinical severity/)
   assert.match(high.sections[0].followUp, /healthcare professional/)
   assert.match(buildAssessmentResultReport(scoreAssessment(def, answersFor(def), syntheticTraumaContext(def)), 'ru').sections[0].steps.join(' '), /7 дней/)
 })
 
-test('high resource measurements receive maintenance rather than deficit advice', () => {
+test('resource maximum is an explicit response endpoint without a fabricated severity category', () => {
   const def = tests.find(item => item.key === 'hh-role-freedom')
   assert.ok(def)
   const report = buildAssessmentResultReport(scoreAssessment(def, answersFor(def, 'max'), syntheticTraumaContext(def)), 'en')
-  assert.ok(report.sections.some(section => /source of support or strength/.test(section.steps[0])))
+  assert.ok(report.sections.some(section => /highest possible response value/.test(section.steps[0])))
+  assert.ok(report.sections.every(section => !/deficien|clinical severity/.test(section.steps.join(' '))))
 })
 
 test('neutral personality scales are not interpreted as a clinical severity or universal good/bad score', () => {
@@ -137,10 +139,11 @@ test('full report appears before the optional raw score panel; no overall unrela
 test('PDF report includes personal interpretation and next steps for each individual assessment', () => {
   const building = source('lib/profile/client-report.js')
   const rendering = source('lib/profile/client-report-pdf.js')
-  assert.match(building, /interpretation:buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /const interpretation = buildAssessmentResultReport\(latest, lang\)/)
+  assert.match(building, /conclusion:[^\n]+,\s*interpretation,/)
   assert.match(rendering, /test\.interpretation\?\.sections\?\.length/)
   assert.match(rendering, /for \(const section of test\.interpretation\.sections\)/)
-  assert.match(rendering, /section\.steps\.slice\(0,2\)/)
+  assert.match(rendering, /for \(const step of section\.steps \|\| \[\]\)/)
 })
 test('each per-test report explains purpose and has human-readable labels rather than machine keys', () => {
   const component = source('components/app/personal-result-report.jsx')

@@ -115,7 +115,20 @@ test('one MHC-SF replaces its research reference in EN/RU guest/account filters 
   assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
+  // Exclude only the six appended split-v2 IDs from this historical baseline.
+  const splitV2Ids=new Set([
+    '52c75d85-d99e-5178-8ee4-3b7faa802601',
+    '7715324b-f54c-5d7c-8ca7-08ff17ba8c8e',
+    'f65b9e09-2818-5c01-abb7-438600530e8f',
+    '3ea615ee-b188-5c1e-8e41-2bfd221a75d7',
+    '0c27f7d6-0280-5dcd-8f10-59447585b1df',
+    '9a864e36-7362-567b-923e-ea99228f933d',
+  ])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
+  // The separately approved Bach pair is additive; no historical ID is excluded.
+  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
+  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(x=>x.key!=='asrs-6'&&x.key!=='mhc-sf'&&!['hh-socionics-32','hh-enneagram-36','hh-disc-style-20','hh-temperaments-16'].includes(x.key))
   assert.equal(prior.length,169)
   assert.equal(digest(prior),'6258ebd96876d8ce3af28b49ee2437746a33bf80b2c6e8e2060fd1e20c98126c')
   const relationshipIds=new Set(RELATIONSHIPS_INTIMACY_DEFINITIONS.map(d=>d.id))
