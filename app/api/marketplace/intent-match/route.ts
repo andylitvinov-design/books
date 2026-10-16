@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicService } from "@/lib/practitioners/public-types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
 
   try {
     const repo=createPractitionerRepository(getAppConfig());
-    const services=await repo.listPublicServices(locale);
+    const services: PublicService[]=await repo.listPublicServices(locale);
     const choices=services.filter((entry)=>entry && entry.id && entry.copy?.title)
       .slice(0,50)
       .map((entry)=>({
