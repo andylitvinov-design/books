@@ -5,6 +5,7 @@ import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } f
 import { SiteVideoPlayer } from '@/components/site-video-player';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { HomeFreePaths } from '@/components/home-free-paths';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Holistic House — autoevaluaciones gratuitas y acompañamiento personal', 'Empieza con una revisión escrita de tu situación, una guía simbólica Wu Xing o pruebas de autoobservación. Sesiones personales opcionales en Toronto y en línea.');
 const cards = [
@@ -17,8 +18,19 @@ export default function SpanishHomePage() {
     <PublicSiteHeader locale="es" />
     <section className="service-home-hero" aria-labelledby="house-title">
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
-      <div className="service-home-hero-copy"><p className="service-home-kicker">Un espacio amable para</p><h1 id="house-title"><span>Autoevaluaciones gratuitas.</span>{" "}<span>Acompañamiento personal.</span></h1><p className="service-home-intro">Empieza con autoevaluaciones o una revisión escrita gratuita. Para hablar conmigo, solicita una sesión personal de pago, en Toronto o en línea.</p><div className="service-home-actions"><Link className="service-home-button service-home-button--consultation" href="/es/services#consultation">Reservar consulta<span aria-hidden="true">→</span></Link><Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review">Revisión escrita gratuita<span aria-hidden="true">→</span></Link><Link className="service-home-button service-home-button--secondary" href="/es/services">Explorar servicios<span aria-hidden="true">→</span></Link></div></div>
+      <div className="service-home-hero-copy">
+        <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
+        <h1 id="house-title"><span>Comprende tu situación.</span><span>Elige tu próximo paso.</span></h1>
+        <p className="service-home-intro">Pruebas gratuitas y una revisión personal por escrito. Si lo deseas, sesiones individuales de pago con Andrey Litvinov.</p>
+        <div className="service-home-actions">
+          <Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review" data-hero-cta="free-written-review">Solicitar revisión gratuita<span aria-hidden="true">→</span></Link>
+          <Link className="service-home-button service-home-button--secondary" href="/es/client/tests" data-hero-cta="free-tests">Hacer pruebas gratuitas<span aria-hidden="true">→</span></Link>
+        </div>
+        <Link className="service-home-paid-link" href="/es/services#consultation" data-hero-cta="paid-sessions">Sesiones personales · desde €50 <span aria-hidden="true">→</span></Link>
+        <p className="service-home-offer-note">La revisión gratuita es un informe escrito, no una llamada. Las consultas individuales son de pago.</p>
+      </div>
     </section>
+    <HomeFreePaths locale="es" />
     <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
       <header className="service-home-start__heading">
         <p className="service-home-kicker">Herramientas gratuitas y aprendizaje</p>
