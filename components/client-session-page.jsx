@@ -8,6 +8,7 @@ import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/s
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
+import { SessionPrivateVideoPoster } from './session-private-video-poster'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
@@ -66,8 +67,18 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
         <small>{educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
           isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     </div>
-    {!source?<button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
-      <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}</button>
+    {!source?(isVideo?
+      <div className={styles.privateVideoPreview}>
+        <SessionPrivateVideoPoster src={route}/>
+        <button className={styles.privateVideoPreviewButton} type="button"
+          disabled={loading} onClick={()=>load(false)}>
+          <PlayCircle size={44} aria-hidden="true"/>
+          <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
+        </button>
+      </div>:
+      <button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
+        <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}
+      </button>)
       :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
         onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
         <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
