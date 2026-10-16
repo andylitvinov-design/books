@@ -53,3 +53,86 @@
  .visualText{bottom:13px}
  .visualText p{font-size:19px;margin-top:6px}
 }
+
+
+/* Services mobile hero v3: wide, calm, one-screen design with the authentic portrait
+   at the bottom. The parent .services-shell already has mobile horizontal padding;
+   cancel most of that gutter here rather than narrowing the hero twice.
+   Desktop/tablet photo and original green treatment remain unchanged. */
+.mobileLead { display: none; }
+@media (max-width: 760px) {
+  .hero {
+    width: calc(100% + 12px);
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    margin: 8px -6px 14px;
+    border-radius: 21px;
+    grid-template-columns: minmax(0, 1fr);
+    box-shadow: 0 9px 27px rgba(34, 47, 37, .1);
+  }
+  .copy { padding: 17px 17px 12px; }
+  .eyebrow { margin-bottom: 8px; font-size: 9px; line-height: 1.25; letter-spacing: .085em; }
+  .spark { font-size: 14px; margin-right: 7px; }
+  .copy h1 {
+    max-width: none;
+    font-size: clamp(29px, 7.9vw, 37px);
+    line-height: 1.065;
+    letter-spacing: -.035em;
+  }
+  .lead { display: none; }
+  .mobileLead {
+    display: block;
+    max-width: 54ch;
+    margin: 10px 0 0;
+    font: 12px/1.43 Arial, Helvetica, sans-serif;
+    color: #ecede4;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 13px;
+  }
+  .actions .cta {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 45px;
+    padding: 11px 15px;
+    font-size: 13px;
+    border-radius: 999px;
+  }
+  .secondary {
+    display: flex;
+    min-width: 0;
+    min-height: 44px;
+    gap: 5px;
+    align-items: center;
+    font-size: 11px;
+    line-height: 1.25;
+    text-underline-offset: 3px;
+  }
+  .secondary svg { flex: none; width: 14px; height: 14px; }
+  .small, .benefits { display: none; }
+  .visual {
+    height: 118px;
+    min-height: 118px;
+    width: 100%;
+    overflow: hidden;
+    background: #d5c8b6;
+  }
+  .image { object-fit: cover; object-position: center 29%; }
+  .visual::after { background: linear-gradient(180deg, transparent 38%, rgba(22, 33, 25, .6)); }
+  .visualText { left: 14px; right: 14px; bottom: 9px; }
+  .visualLabel { padding: 5px 8px; font-size: 9px; }
+  .visualText p { font-size: 13px; line-height: 1.18; margin-top: 4px; }
+}
+@media (max-width: 365px) {
+  .copy { padding-inline: 14px; }
+  .copy h1 { font-size: 28px; }
+  .mobileLead { font-size: 11.5px; }
+  .secondary { font-size: 10.5px; }
+  .visual { height: 110px; min-height: 110px; }
+}
