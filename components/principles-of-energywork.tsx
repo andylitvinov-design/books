@@ -3,6 +3,10 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, MessageCircle, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { EnergyworkReikiCapture } from "@/components/energywork-reiki-capture";
+import { EnergyworkVideoArchive } from "@/components/energywork-video-archive";
+import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./principles-of-energywork.module.css";
@@ -235,6 +239,59 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
   },
 };
 
+// The first English Flight to the Sun recording is still awaiting a verified
+// original YouTube ID (see source issue #253). Never substitute a testimonial,
+// an unrelated meditation or a stock recording for Andrey's original.
+const videoCopy: Record<PublicLocale, {
+  introduction: string; flightTitle: string; flightLead: string; flightPending: string;
+  flightVerified: string; originalEnglish: string;
+  explore: string; description: string; freeStudy: string; videoTitle: string;
+  yggdrasilFirst: string; kundaliniMissing: string; kundaliniSource: string;
+}> = {
+  en: {
+    introduction: "01 / WATCH FIRST", flightTitle: "Flight to the Sun",
+    flightLead: "Begin with Andrey's shamanic-flight meditation: guided imagery, attention and the symbolism of the sun. This practice is separate from the three Reiki initiations.",
+    flightPending: "The exact original English video link is not yet verified. No other person's recording will be substituted.",
+    flightVerified: "Original guided meditation · English",
+    originalEnglish: "Original video · English audio · click to play",
+    explore: "Explore the three Reiki systems",
+    description: "Full course description",
+    freeStudy: "Level 1 study and initiation details",
+    videoTitle: "Watch and choose your Reiki path",
+    yggdrasilFirst: "Andrey's original Level 1 introduction · English",
+    kundaliniMissing: "The original Kundalini Reiki-specific video has not yet been verified. The three-level course and Paul Crick's original PDF are available below.",
+    kundaliniSource: "Course source image · No video substitute",
+  },
+  ru: {
+    introduction: "01 / СНАЧАЛА МЕДИТАЦИЯ", flightTitle: "Полёт к Солнцу",
+    flightLead: "Начните с авторской медитации Андрея — шаманского путешествия к Солнцу через работу с образами и вниманием. Эта практика не заменяет инициацию Рейки.",
+    flightPending: "Подтверждённая ссылка на оригинальную английскую запись пока не найдена. Чужое видео подставлять не будем.",
+    flightVerified: "Авторская медитация · английский язык",
+    originalEnglish: "Оригинальное видео · на английском · просмотр по нажатию",
+    explore: "Перейти к трём системам Рейки",
+    description: "Полное описание системы",
+    freeStudy: "Обучение и бесплатная 1-я ступень",
+    videoTitle: "Смотрите видео и выбирайте систему",
+    yggdrasilFirst: "Оригинальное видео Андрея о 1-й ступени · английский",
+    kundaliniMissing: "Исходное видео именно по Кундалини Рейки пока не подтверждено. Ниже доступны полный трёхступенчатый курс и оригинальная PDF-методичка Пола Крика.",
+    kundaliniSource: "Иллюстрация из исходной методички · не видео",
+  },
+  es: {
+    introduction: "01 / PRIMERO UNA MEDITACIÓN", flightTitle: "Vuelo hacia el Sol",
+    flightLead: "Empieza con la meditación de vuelo chamánico de Andrey: atención, imágenes guiadas y simbolismo del sol. Es distinta de las iniciaciones Reiki.",
+    flightPending: "Aún no se ha verificado el enlace exacto de la grabación original en inglés. No se mostrará otro vídeo como sustituto.",
+    flightVerified: "Meditación original · audio en inglés",
+    originalEnglish: "Vídeo original · audio en inglés · pulsar para reproducir",
+    explore: "Explorar los tres sistemas Reiki",
+    description: "Descripción completa del sistema",
+    freeStudy: "Materiales e iniciación gratis del Nivel 1",
+    videoTitle: "Mira los vídeos y elige tu camino Reiki",
+    yggdrasilFirst: "Introducción original de Andrey al Nivel 1 · inglés",
+    kundaliniMissing: "Aún no hay un vídeo confirmado de Kundalini Reiki. Puedes consultar el curso de tres niveles y el PDF original de Paul Crick.",
+    kundaliniSource: "Ilustración del manual original · no es un vídeo",
+  },
+};
+
 const paths = [
   {
     key: "yggdrasil",
@@ -268,6 +325,10 @@ function academyUrl(locale: PublicLocale, path: string) {
 
 export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
   const t = translations[locale];
+  const v = videoCopy[locale];
+  const flight = englishGuidedMeditations.find((item) => item.key === "flight-to-sun");
+  const tantraPractice = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
+  const yggdrasilMeditation = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
   return (
     <main className={styles.page} lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -294,6 +355,36 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
+        <section className={styles.flightSection} id="energywork-flight-to-sun" aria-labelledby="flight-to-sun-title">
+          <div className={styles.sectionHeader}>
+            <p className={styles.sectionEyebrow}>{v.introduction}</p>
+            <h2 id="flight-to-sun-title">{v.flightTitle}</h2>
+            <p>{v.flightLead}</p>
+          </div>
+          <div className={styles.flightLayout}>
+            <div className={styles.flightMedia}>
+              {flight?.youtubeId ? (
+                <AcademyVideoPlayer youtubeId={flight.youtubeId} title={flight.title} />
+              ) : (
+                <div className={styles.sourcePending} data-video-source-pending="flight-to-sun">
+                  <Image src={flight?.image ?? "/academy/reiki-yggdrasil/source/toltec-tradition.jpg"} alt="" fill sizes="(max-width: 760px) 100vw, 54vw" />
+                  <div className={styles.sourcePendingCopy}>
+                    <span>{v.flightTitle}</span>
+                    <strong>{v.flightPending}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className={styles.flightDetails}>
+              <p className={styles.systemLabel}>{v.flightVerified}</p>
+              <h3>{v.flightTitle}</h3>
+              <p>{v.flightLead}</p>
+              {!flight?.youtubeId ? <p className={styles.flightNotice}>{v.flightPending}</p> : null}
+              <a className={styles.systemPrimary} href="#energywork-systems">{v.explore}<ArrowRight size={17} aria-hidden="true" /></a>
+            </div>
+          </div>
+        </section>
+
         <section className={styles.foundations} aria-labelledby="energywork-foundations">
           <div className={styles.sectionHeader}><p className={styles.sectionEyebrow}>{t.foundationsEyebrow}</p><h2 id="energywork-foundations">{t.foundationsTitle}</h2><p>{t.foundationsLead}</p></div>
           <div className={styles.foundationGrid}>
@@ -309,19 +400,44 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
           <div className={styles.systemGrid}>
             {paths.map((system, index) => (
               <article className={styles.systemCard} key={system.key} data-reiki-path={system.key}>
-                <div className={styles.systemImage}>
-                  <Image src={system.image} alt="" fill sizes="(max-width: 780px) 100vw, (max-width: 1020px) 50vw, 33vw" />
-                  <span className={styles.systemIndex}>{system.badge} / 03</span>
+                <div className={styles.systemMedia} aria-label={system.title}>
+                  {system.key === "tantra" && tantraPractice?.youtubeId ? (
+                    <div className={styles.systemVideo}>
+                      <AcademyVideoPlayer youtubeId={tantraPractice.youtubeId} title={tantraPractice.title} />
+                    </div>
+                  ) : null}
+                  {system.key === "yggdrasil" ? (
+                    <div className={styles.yggdrasilVideoStack}>
+                      {yggdrasilMeditation?.youtubeId ? (
+                        <div className={styles.systemVideo}>
+                          <AcademyVideoPlayer youtubeId={yggdrasilMeditation.youtubeId} title={yggdrasilMeditation.title} />
+                        </div>
+                      ) : null}
+                      <div className={styles.systemVideo}>
+                        <AcademyVideoPlayer youtubeId="DYo-fG-SyKw" title={v.yggdrasilFirst} />
+                      </div>
+                    </div>
+                  ) : null}
+                  {system.key === "kundalini" ? (
+                    <div className={styles.kundaliniSource} data-video-source-pending="kundalini">
+                      <Image src={system.image} alt="" fill sizes="(max-width: 760px) 100vw, 43vw" />
+                      <span>{v.kundaliniSource}</span>
+                    </div>
+                  ) : null}
+                  <small className={styles.originalLanguage}>{system.key === "kundalini" ? v.kundaliniSource : v.originalEnglish}</small>
                 </div>
                 <div className={styles.systemBody}>
                   <p className={styles.systemLabel}>{t.systemTags[index]}</p>
                   <h3>{system.title}</h3>
                   <p className={styles.systemDescription}>{t.systemDescriptions[index]}</p>
-                  <div className={styles.systemActions}>
-                    <Link className={styles.systemPrimary} href={academyUrl(locale, system.free)}>{t.request}<ArrowRight size={18} aria-hidden="true" /></Link>
-                    <Link className={styles.systemSecondary} href={academyUrl(locale, system.study)}>{t.learn}<ArrowRight size={16} aria-hidden="true" /></Link>
+                  {system.key === "kundalini" ? <p className={styles.videoCaution}>{v.kundaliniMissing}</p> : null}
+                  <div className={styles.courseLinks}>
+                    <Link className={styles.systemSecondary} href={academyUrl(locale, system.study)}>{v.description}<ArrowRight size={16} aria-hidden="true" /></Link>
+                    <Link className={styles.courseDetailLink} href={academyUrl(locale, system.free)}>{v.freeStudy}<ArrowRight size={15} aria-hidden="true" /></Link>
                   </div>
+                  <EnergyworkReikiCapture locale={locale} course={system.key} />
                 </div>
+                {system.key === "yggdrasil" ? <div className={styles.archiveRow}><EnergyworkVideoArchive locale={locale} /></div> : null}
               </article>
             ))}
           </div>
