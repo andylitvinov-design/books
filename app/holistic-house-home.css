@@ -917,3 +917,40 @@ a.service-home-start-card:hover {
   .house-header--services .site-navigation { gap: 4px; }
   .house-header--services .site-language-menu-trigger { padding-inline: 6px; }
 }
+
+/* 2026-10-16: one unmistakable paid booking CTA above the fold;
+   free written review stays distinct. No change to mobile navigation. */
+.house-home--services .service-home-button--consultation {
+  background: #742c42;
+  color: #fffaf4;
+  border-color: #742c42;
+  box-shadow: 0 7px 20px rgb(86 30 49 / .18);
+}
+.house-home--services .service-home-button--consultation:hover {
+  background: #612238;
+  color: #fff;
+}
+.house-home--services .service-home-button--primary {
+  background: rgba(255, 250, 244, .94);
+  color: #70452e;
+  border-color: #b79b85;
+  box-shadow: 0 4px 12px rgb(60 40 24 / .05);
+}
+.house-home--services .service-home-button--primary:hover {
+  background: #fff;
+  color: #653923;
+}
+@media (max-width: 767px) {
+  .house-home--services .service-home-hero-copy { padding-top: 22px; padding-bottom: 25px; }
+  .house-home--services .service-home-hero h1 { margin: 10px 0 12px; font-size: clamp(29px, 7.4vw, 39px); }
+  .house-home--services .service-home-hero h1::after { margin-top: 12px; }
+  .house-home--services .service-home-intro { max-width: 86%; font-size: 13px; line-height: 1.43; }
+  .house-home--services .service-home-actions { max-width: min(316px, 91%); margin-top: 14px; gap: 8px; }
+  .house-home--services .service-home-button { min-height: 48px; font-size: 13px; line-height: 1.25; }
+  .house-home--services .service-home-button--consultation { font-weight: 750; }
+  .house-home--services .service-home-button--secondary { display: none; }
+  .house-home--services .service-home-offer-note { max-width: 85%; margin-top: 9px; line-height: 1.35; }
+  .house-home--services .service-home-hero-photo::after {
+    background: linear-gradient(90deg, rgba(251,247,239,.97), rgba(251,247,239,.85) 56%, rgba(251,247,239,.24) 100%);
+  }
+}

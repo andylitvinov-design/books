@@ -42,6 +42,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Responsive Andy portrait variants include their content hash in the name.
+      // Immutable caching saves repeated bytes without Vercel image transforms.
+      {
+        source: "/images/holistic-house/portrait-static/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({

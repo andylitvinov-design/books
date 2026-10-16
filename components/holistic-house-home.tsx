@@ -3,6 +3,7 @@
 import { ClipboardCheck, GraduationCap } from "lucide-react";
 import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
@@ -11,19 +12,17 @@ import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
-import { SiteVideoPlayer } from "@/components/site-video-player";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
-import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 
 const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Найдите больше ясности и внутренней опоры",
-    heroIntro: "Начните с бесплатного письменного разбора вашей ситуации — или выберите личную консультацию. Также доступны тесты и профиль У-Син.",
-    heroPrimary: "Получить бесплатный письменный разбор",
-    heroBook: "Личная консультация · от €50",
+    heroTitle: "Бесплатные тесты. Личная поддержка.",
+    heroIntro: "Пройдите бесплатные тесты или запросите письменный разбор ситуации. Для личной работы со мной доступны консультации онлайн и в Торонто.",
+    heroPrimary: "Получить бесплатный разбор",
+    heroBook: "Записаться на консультацию",
     heroSecondary: "Четыре предложения",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -53,10 +52,10 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "Explore your question. Find a clearer way forward.",
-    heroIntro: "Begin with a free personal written review of your situation, or explore it together in a one-to-one session. Self-tests and Wu Xing are also available.",
-    heroPrimary: "Get a free written situation review",
-    heroBook: "Personal session · from €50",
+    heroTitle: "Free self-checks. Personal guidance.",
+    heroIntro: "Start with free self-checks or a written situation review. For a personal conversation, book a paid session with me in Toronto or online.",
+    heroPrimary: "Get a free written review",
+    heroBook: "Book a consultation",
     heroSecondary: "Explore four services",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -87,13 +86,12 @@ const copy = {
 
 type HolisticHouseHomeProps = {
   locale?: Locale;
-  introVideos?: Partial<Record<Locale, PublishedSiteVideo>>;
+  introVideoContent?: ReactNode;
 };
 
-export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticHouseHomeProps) {
+export function HolisticHouseHome({ locale = "en", introVideoContent }: HolisticHouseHomeProps) {
   const text = copy[locale];
   const entry = LOCAL_ACQUISITION[locale];
-  const introVideo = introVideos[locale];
 
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
@@ -121,18 +119,18 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
             <AcquisitionEventLink
+              className="service-home-button service-home-button--consultation"
+              href={`/${locale}/services#consultation`}
+              event="service_request_start"
+            >
+              {text.heroBook}<span aria-hidden="true">→</span>
+            </AcquisitionEventLink>
+            <AcquisitionEventLink
               className="service-home-button service-home-button--primary"
               href={`/${locale}/services/free-situation-review`}
               event="service_request_start"
             >
               {text.heroPrimary}<span aria-hidden="true">→</span>
-            </AcquisitionEventLink>
-            <AcquisitionEventLink
-              className="service-home-button service-home-button--consultation"
-              href={`/${locale}/services/free-situation-review#personal-consultation`}
-              event="service_request_start"
-            >
-              {text.heroBook}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
               className="service-home-button service-home-button--secondary"
@@ -191,17 +189,7 @@ export function HolisticHouseHome({ locale = "en", introVideos = {} }: HolisticH
         </p>
       </section>
 
-      {introVideo ? (
-        <section className="service-home-video" aria-labelledby="service-home-video-title">
-          <header>
-            <p className="service-home-kicker">{text.videoKicker}</p>
-            <h2 id="service-home-video-title">{text.videoTitle}</h2>
-          </header>
-          <div className="site-video-block" data-video-slot="home-intro" data-video-locale={locale} aria-label={introVideo.title}>
-            <SiteVideoPlayer key={locale} video={introVideo} locale={locale} className="site-video--home" />
-          </div>
-        </section>
-      ) : null}
+      {introVideoContent}
 
       <PersonalTestimonials locale={locale} variant="home" />
 
