@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { SessionAudioRecorder } from './session-audio-recorder'
+import { SessionMaterialPicker } from './session-material-picker'
 import { SessionYouTubePlayer } from './session-youtube-player'
 import { parseSessionYouTubeUrl } from '@/lib/clients/youtube-resource'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
@@ -211,12 +212,6 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           {resource.kind==='youtube'&&parseSessionYouTubeUrl(resource.url)&&
             <SessionYouTubePlayer title={resource.title} url={resource.url}
               description={resource.description} locale={locale}/>}
-          {resource.kind==='youtube'&&<label className={styles.field}>{ru?'Где показывать видео':'Video location in the report'}
-            <select value={resource.placement||'top'} onChange={e=>changeResource(index,{placement:e.target.value})}>
-              <option value="top">{ru?'Над текстом отчёта':'Above the report'}</option>
-              <option value="materials">{ru?'Материалы — в конце отчёта':'Materials — at the end'}</option>
-            </select>
-          </label>}
           {resource.kind==='youtube'&&<p className={styles.youtubeEditorNote}>{ru?
             'Только общие обучающие ролики. Даже Unlisted на YouTube доступен каждому, у кого есть ссылка. Не добавляйте персональные записи клиентов.':
             'General educational videos only. Unlisted is viewable by anyone with the link. Never attach private client recordings.'}</p>}
@@ -242,6 +237,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           </button>
         </>}
       </div>
+      <SessionMaterialPicker locale={locale}
+        selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
+        onChange={ids=>updatePlan({materialIds:ids})}/>
       <div className={styles.actions}>
         <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
           setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
@@ -261,7 +259,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         return <div key={row.assetId} className={styles.mediaEditor}>
           <div className={styles.mediaToolbar}>
             <strong>{mediaTitle(asset,locale)}</strong>
-            <span className={styles.scopeBadge}>{row.scope==='practitioner'?(ru?'Только мне':'Owner only'):row.role==='hidden'?(ru?'Не показывать клиенту':'Hidden from client'):(ru?'Для клиента':'For client')}</span>
+            <span className={styles.scopeBadge}>{row.scope==='practitioner'?(ru?'Только мне':'Owner only'):(ru?'Для клиента':'For client')}</span>
             <button aria-label={ru?'Поднять выше':'Move up'} onClick={()=>moveMedia(index,-1)} disabled={index===0||block}><ChevronUp size={18}/></button>
             <button aria-label={ru?'Опустить ниже':'Move down'} onClick={()=>moveMedia(index,1)} disabled={index===draft.media.length-1||block}><ChevronDown size={18}/></button>
             <button aria-label={ru?'Убрать из сессии':'Detach from draft'} onClick={()=>discardMedia(row.assetId)} disabled={block}><Trash2 size={18}/></button>
@@ -274,8 +272,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
               <option value="personal">{ru?'Личное обращение вверху':'Personal message (top)'}</option>
               {asset?.kind==='video'&&<option value="instruction">{ru?'Видео: как принимать препараты':'Video: how to follow the recommendations'}</option>}
               <option value="meditation">{ru?'Дополнительная медитация':'Additional meditation'}</option>
-              <option value="additional">{asset?.kind==='video'?(ru?'Материалы — в конце отчёта':'Materials — report footer'):(ru?'Другие материалы':'Other materials')}</option>
-              {asset?.kind==='video'&&<option value="hidden">{ru?'Не показывать клиенту':'Do not show to client'}</option>}
+              <option value="additional">{ru?'Другие материалы':'Other materials'}</option>
             </select>
           </label>}
           {asset?.kind!=='image'&&<label className={styles.field}>{ru?'Текст / расшифровка (необязательно)':'Transcript (optional)'}
@@ -315,9 +312,9 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           <h4>{ru?'Выводы':'Key takeaways'}</h4>
           <ol>{plan.takeaways.filter(Boolean).map((point,index)=><li key={index}>{point}</li>)}</ol>
         </>}
-        {draft.media.some(item=>item.scope==='client'&&item.role!=='hidden')&&<>
+        {draft.media.some(item=>item.scope==='client')&&<>
           <h4>{ru?'Личные медиа':'Client media'}</h4>
-          {draft.media.filter(item=>item.scope==='client'&&item.role!=='hidden').map(item=>
+          {draft.media.filter(item=>item.scope==='client').map(item=>
             <p key={item.assetId}>{activeAssets.get(item.assetId)?.kind==='image'?'▧ ':'♫ '}{item.title||mediaTitle(activeAssets.get(item.assetId),locale)}
               {item.transcript&&<small> · {ru?'Есть текст записи':'Transcript available'}</small>}
             </p>)}
