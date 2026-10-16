@@ -100,7 +100,7 @@ test("the final form offers three compact choices without name, email or answer 
   assert.match(form, /hash === "#apply-answers"[\s\S]*?switchMode\("free"\)/);
   assert.match(form, /reiki-guide\?course=yggdrasil/);
   assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /data-reiki-initiation-handoff=\{mode\}/);
+  assert.match(form, /"data-reiki-initiation-handoff": mode/);
   assert.match(form, /aria-pressed=\{mode === intent\}/);
   assert.match(form, /https:\/\/t\.me\/AndyTherapist/);
   assert.doesNotMatch(form, /<input|<textarea|type="file"|navigator\.canShare|navigator\.share|FormData|localStorage|fetch\("/);
