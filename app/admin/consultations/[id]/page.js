@@ -5,22 +5,31 @@ import { logout } from '@/app/admin/logout/actions'
 import { ConsultationResult as ResultScreen } from '@/components/consultation-result'
 import { SessionPhotoUploader } from '@/components/session-photo-uploader'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
-import { revokeConsultationDocumentAction, reactivateConsultationDocumentAction } from '../actions'
+import { inspectSavedClientReportPublication } from '@/lib/clients/report-auto-publish'
+import { revokeConsultationDocumentAction, reactivateConsultationDocumentAction, retryConsultationPublicationAction } from '../actions'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Documents ready', robots: { index: false, follow: false } }
-export default async function ConsultationResult({ params }) {
+export default async function ConsultationResult({ params,searchParams }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
+  const query=await searchParams
   const store = getPrescriptionStore()
   const recommendation = store ? await store.findById(id) : undefined
   const payment = recommendation?.paymentDocumentId ? await store.findById(recommendation.paymentDocumentId) : undefined
   if (!recommendation || recommendation.kind === 'payment' || (recommendation.paymentDocumentId && payment?.kind !== 'payment')) notFound()
+  const publication=await inspectSavedClientReportPublication(recommendation,store)
+  const publicationAttempt=typeof query?.publication==='string'?query.publication:''
+  const retryPublication=retryConsultationPublicationAction.bind(null,recommendation.id)
   const documents = [
     ...(payment ? [{ record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` }] : []),
     { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/prescriptions/${recommendation.id}#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
-    <ResultScreen clientId={recommendation.clientId} logout={logout} patientName={recommendation.patientName} dateIssued={recommendation.dateIssued} languagePreference={recommendation.languagePreference} documents={documents} />
+    <ResultScreen clientId={recommendation.clientId} logout={logout}
+      patientName={recommendation.patientName} dateIssued={recommendation.dateIssued}
+      languagePreference={recommendation.languagePreference} documents={documents}
+      publication={publication} publicationAttempt={publicationAttempt}
+      retryPublication={retryPublication}/>
     {deliveryEnabled() && recommendation.clientId && recommendation.status==='active' &&
       <div style={{maxWidth:850,margin:'22px auto'}}>
         <SessionPhotoUploader clientId={recommendation.clientId} documentId={recommendation.id}
