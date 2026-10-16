@@ -29,19 +29,32 @@ test("Basic Course has its own localized reading page with all five levels", asy
   assert.match(content, /Vuelo/);
 });
 
+function assertCourseStyleOwnership(route, layout) {
+  assert.match(route, /^import "@\/app\/yggdrasil-basic-description\.css";$/m);
+  assert.doesNotMatch(layout, /import\s+["'][^"']*yggdrasil-basic-description\.css["']/);
+}
+
 test("Course landing, program landing and sidebar all link to the new reading page", async () => {
-  const [program, module, sidebar, layout, css] = await Promise.all([
+  const [program, module, sidebar, layout, route, css] = await Promise.all([
     readFile("components/yggdrasil-program-landing.tsx", "utf8"),
     readFile("components/yggdrasil-module-landing.tsx", "utf8"),
     readFile("components/reiki-course-side-nav.tsx", "utf8"),
     readFile("app/layout.tsx", "utf8"),
+    readFile(routePath, "utf8"),
     readFile("app/yggdrasil-basic-description.css", "utf8"),
   ]);
 
   for (const item of [program, module, sidebar]) assert.match(item, /basic-course\/description/);
   assert.match(sidebar, /activeSlug/);
-  assert.match(layout, /yggdrasil-basic-description\.css/);
+  assertCourseStyleOwnership(route, layout);
   assert.match(css, /@media \(max-width: 780px\)/);
+});
+
+test("course CSS ownership rejects a missing route import or accidental root reintroduction", async () => {
+  const [route, layout] = await Promise.all([readFile(routePath, "utf8"), readFile("app/layout.tsx", "utf8")]);
+  assertCourseStyleOwnership(route, layout);
+  assert.throws(() => assertCourseStyleOwnership(route.replace('import "@/app/yggdrasil-basic-description.css";', ''), layout));
+  assert.throws(() => assertCourseStyleOwnership(route, layout + '\nimport "./yggdrasil-basic-description.css";'));
 });
 
 test("Public reading description respects historical and health boundaries", async () => {

@@ -14,20 +14,16 @@ import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
-import "./site-video-admin.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
-import "./academy.css";
-import "./yggdrasil-basic-description.css";
 import "./catalog-showcase.css";
-import "./temple-studies.css";
 import "./sitewide-capture.css";
 import "./public-wide-layout.css";
 
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
   title: "Holistic House",
-  description: "Holistic House — индивидуальные сессии, практики, программы, препараты и авторские материалы для внутреннего развития.",
+  description: "Holistic House offers free self-checks, educational resources and optional personal sessions with Andrey Litvinov in Toronto and online.",
   verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
   openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
   twitter: { card: "summary_large_image", images: ["/images/holistic-house/andy-about.png"] },

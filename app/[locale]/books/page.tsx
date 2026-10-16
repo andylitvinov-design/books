@@ -16,11 +16,11 @@ type PageProps = {
 const meta = {
   ru: {
     title: "Библиотека книг — Holistic House",
-    description: "Книги, справочные материалы и опубликованные тексты Holistic House.",
+    description: "Книги и методички Holistic House: авторские материалы об алхимии души, гомеопатии, традициях Дао и Майя. Откройте каталог и выберите книгу.",
   },
   en: {
     title: "Books & Library — Holistic House",
-    description: "Books, reference materials, and published Holistic House texts.",
+    description: "Browse the Holistic House book catalog: guides on inner development, homeopathy, Daoist traditions and Maya culture. Discover original texts and editions.",
   },
 } as const;
 
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: current.description,
     alternates: {
       canonical: "/" + locale + "/books",
-      languages: { ru: "/ru/books", en: "/en/books" },
+      languages: { ru: "/ru/books", en: "/en/books", es: "/es/books", "x-default": "/en/books" },
     },
   };
 }

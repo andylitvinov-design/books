@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import "@/app/academy.css";
+import "@/app/yggdrasil-basic-description.css";
+import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
@@ -112,7 +115,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: metadataBaseFor(),
     title: resolvedTitle,
     description: resolvedDescription,
-    alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, ...(tantraFreeInitiation ? { "x-default": "/en/academy" + languageSuffix } : {}) } },
+    alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, "x-default": "/en/academy" + languageSuffix } },
     ...(tantraFreeInitiation ? {
       openGraph: {
         type: "website" as const,

@@ -8,7 +8,7 @@ import { spanishMetadata } from "@/lib/spanish-metadata";
 export const metadata = spanishMetadata(
   "/es/books",
   "Libros — Holistic House",
-  "Biblioteca del autor: Alquimia del Alma, tradición taoísta y tradición maya. Títulos y descripciones en español.",
+  "Explora los libros del autor de Holistic House sobre desarrollo interior, alquimia, Dao y tradición maya. Descubre el catálogo y los textos originales.",
 );
 
 export default function SpanishBooksPage() {

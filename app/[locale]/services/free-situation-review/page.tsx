@@ -211,6 +211,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         en: "/en/services/free-situation-review",
         ru: "/ru/services/free-situation-review",
         es: "/es/services/free-situation-review",
+        "x-default": "/en/services/free-situation-review",
       },
     },
   };

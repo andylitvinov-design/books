@@ -92,7 +92,19 @@ export default async function ServicesPage({ params }: PageProps) {
           ? (locale === "ru"
             ? "Знакомство с ресурсами в авторской символической модели пяти элементов У-Син. Это самоисследование, не медицинская диагностика."
             : "Explore personal resources with the author-led symbolic Wu Xing five-element model. This is reflective self-exploration, not a medical diagnosis.")
-          : offer.benefit,
+          : offer.id === "alchemy"
+            ? (locale === "ru"
+              ? "На личной сессии мы уточняем запрос, исследуем динамику ситуации через системную расстановку и обсуждаем возможные шаги. Символический и дополнительный гомеопатический подходы не заменяют медицинскую помощь."
+              : "We clarify your question, explore the dynamics through a personal systemic constellation and discuss possible next steps. Symbolic and complementary homeopathic approaches do not replace medical care.")
+            : offer.id === "hypnotherapy"
+              ? (locale === "ru"
+                ? "Индивидуальная работа с внутренними образами, эмоциями и повторяющимися реакциями. Можно начать с одной встречи и затем обсудить продолжение курса; клиническую помощь это не заменяет."
+                : "A personal series of guided-imagery sessions exploring inner resources, emotions and recurring patterns. You can begin with one session and decide later about a longer course; this does not replace clinical care.")
+              : offer.id === "business"
+                ? (locale === "ru"
+                  ? "Проясняем деловую цель, создаём символическую карту бизнеса через расстановку и обсуждаем реальные следующие шаги, включая план на 14 дней. Это не финансовый прогноз и не гарантия дохода."
+                  : "Clarify a business goal, map the organization symbolically through a constellation and consider practical next steps, including a 14-day action plan. This is not a financial forecast or income guarantee.")
+                : offer.benefit,
       label:offer.label,
       price: offer.id === "situation" || offer.id === "dao"
         ? (locale === "ru" ? "Бесплатно" : "Free")

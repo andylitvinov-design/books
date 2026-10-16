@@ -1,9 +1,11 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import Link from 'next/link';
-import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
+import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } from 'lucide-react';
+import { SiteVideoPlayer } from '@/components/site-video-player';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
+import { HomeFreePaths } from '@/components/home-free-paths';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Holistic House — autoevaluaciones gratuitas y acompañamiento personal', 'Empieza con una revisión escrita de tu situación, una guía simbólica Wu Xing o pruebas de autoobservación. Sesiones personales opcionales en Toronto y en línea.');
 const cards = [
@@ -16,10 +18,60 @@ export default function SpanishHomePage() {
     <PublicSiteHeader locale="es" />
     <section className="service-home-hero" aria-labelledby="house-title">
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
-      <div className="service-home-hero-copy"><p className="service-home-kicker">Un espacio amable para</p><h1 id="house-title"><span>Autoevaluaciones gratuitas.</span>{" "}<span>Acompañamiento personal.</span></h1><p className="service-home-intro">Empieza con autoevaluaciones o una revisión escrita gratuita. Para hablar conmigo, solicita una sesión personal de pago, en Toronto o en línea.</p><div className="service-home-actions"><Link className="service-home-button service-home-button--consultation" href="/es/services#consultation">Reservar consulta<span aria-hidden="true">→</span></Link><Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review">Revisión escrita gratuita<span aria-hidden="true">→</span></Link><Link className="service-home-button service-home-button--secondary" href="/es/services">Explorar servicios<span aria-hidden="true">→</span></Link></div></div>
+      <div className="service-home-hero-copy">
+        <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
+        <h1 id="house-title"><span>Comprende tu situación.</span><span>Elige tu próximo paso.</span></h1>
+        <p className="service-home-intro">Pruebas gratuitas y una revisión personal por escrito. Si lo deseas, sesiones individuales de pago con Andrey Litvinov.</p>
+        <div className="service-home-actions">
+          <Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review" data-hero-cta="free-written-review">Solicitar revisión gratuita<span aria-hidden="true">→</span></Link>
+          <Link className="service-home-button service-home-button--secondary" href="/es/client/tests" data-hero-cta="free-tests">Hacer pruebas gratuitas<span aria-hidden="true">→</span></Link>
+        </div>
+        <Link className="service-home-paid-link" href="/es/services#consultation" data-hero-cta="paid-sessions">Sesiones personales · desde €50 <span aria-hidden="true">→</span></Link>
+        <p className="service-home-offer-note">La revisión gratuita es un informe escrito, no una llamada. Las consultas individuales son de pago.</p>
+      </div>
+    </section>
+    <HomeFreePaths locale="es" />
+    <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
+      <header className="service-home-start__heading">
+        <p className="service-home-kicker">Herramientas gratuitas y aprendizaje</p>
+        <h2 id="service-home-start-title">Explora a tu ritmo</h2>
+        <p>Comienza con autoobservación gratuita, cursos educativos o libros. No necesitas contratar una sesión individual.</p>
+      </header>
+      <div className="service-home-start__grid">
+        <Link className="service-home-start-card" href="/es/client/tests">
+          <span className="service-home-start-card__icon" aria-hidden="true"><ClipboardCheck /></span>
+          <span className="service-home-start-card__eyebrow">1 · Evaluación gratuita</span>
+          <h3>Bienestar y recursos personales</h3>
+          <p>Explora el estrés, el estado de ánimo y tus recursos. Las preguntas y los informes de algunas pruebas aún están disponibles en inglés o ruso.</p>
+          <strong>Explorar las pruebas gratuitas <span aria-hidden="true">→</span></strong>
+        </Link>
+        <article className="service-home-start-card service-home-start-card--learning">
+          <span className="service-home-start-card__icon" aria-hidden="true"><GraduationCap /></span>
+          <span className="service-home-start-card__eyebrow">2 · Cursos y lecturas</span>
+          <h3>Academia y biblioteca</h3>
+          <p>Descubre cursos, libros, materiales y prácticas para el desarrollo personal, con información sobre el idioma original de cada recurso.</p>
+          <div className="service-home-start-card__actions">
+            <Link href="/es/academy">Academia <span aria-hidden="true">→</span></Link>
+            <Link href="/es/library">Biblioteca <span aria-hidden="true">→</span></Link>
+          </div>
+        </article>
+      </div>
+      <p className="service-home-start__returning">¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
     </section>
     <section className="service-home-services" aria-labelledby="service-home-services-title"><div className="service-home-section-heading"><h2 id="service-home-services-title">Tres maneras de trabajar conmigo</h2><Link href="/es/services">Ver todos los servicios<span aria-hidden="true">→</span></Link></div><div className="service-home-card-grid">{cards.map(({ icon: Icon, ...card }) => <Link className="service-home-card" href={card.href} key={card.title}><span className="service-home-card-photo" aria-hidden="true"><Image unoptimized src={card.image} alt="" fill sizes="(max-width: 640px) 100vw, 320px" loading="lazy" /></span><span className="service-home-card-symbol" aria-hidden="true"><Icon /></span><h3>{card.title}</h3><p>{card.text}</p><span className="service-home-card-action">Saber más<span aria-hidden="true">→</span></span></Link>)}</div></section>
-    <section className="service-home-about" aria-labelledby="service-home-about-title"><div><p className="service-home-kicker">Sobre mí</p><h2 id="service-home-about-title">Andrii Litvinov</h2></div><div><p>Consultor, facilitador y docente. Llevo más de 20 años trabajando con grupos y prácticas de desarrollo interior, combinando constelaciones sistémicas, trabajo con imágenes, enfoques corporales y exploración arquetípica.</p><Link href="/es/about">Conoce mi trabajo<span aria-hidden="true">→</span></Link></div></section>
+    <section className="about-testimonials" aria-labelledby="home-es-testimonials-title">
+      <div className="about-section-heading">
+        <p className="homeopathy-kicker">Experiencias de participantes</p>
+        <h2 id="home-es-testimonials-title">Testimonios en vídeo</h2>
+        <p>Testimonios anteriores de participantes, grabados originalmente en ruso. Puedes consultar más testimonios y el contexto de los archivos en la página Sobre mí.</p>
+        <Link href="/es/about#testimonials-title">Ver todos los testimonios <span aria-hidden="true">→</span></Link>
+      </div>
+      <div className="about-video-grid">
+        <SiteVideoPlayer video={{ youtubeId: 'm9RfDgK76PU', title: 'Anton Korchinsky — testimonio sobre nuestro trabajo', language: 'ru' }} locale="es" textLanguage="es" compact />
+        <SiteVideoPlayer video={{ youtubeId: '5oj0BIbLT4w', title: 'Elena Bakhtina — testimonio de una clienta', language: 'ru' }} locale="es" textLanguage="es" compact />
+      </div>
+    </section>
+    <section className="service-home-about" aria-labelledby="service-home-about-title"><div><p className="service-home-kicker">Sobre mí</p><h2 id="service-home-about-title">Andrey Litvinov</h2></div><div><p>Consultor, facilitador y docente. Llevo más de 20 años trabajando con grupos y prácticas de desarrollo interior, combinando constelaciones sistémicas, trabajo con imágenes, enfoques corporales y exploración arquetípica.</p><Link href="/es/about">Conoce mi trabajo<span aria-hidden="true">→</span></Link></div></section>
     <section className="service-home-library" aria-labelledby="service-home-library-title"><Image unoptimized src="/images/holistic-house/books-library.webp" alt="" fill sizes="(max-width: 767px) 100vw, 1200px" className="service-home-library-photo" /><div className="service-home-library-copy"><p className="service-home-kicker">Libro del autor</p><h2 id="service-home-library-title">El poder de la vida</h2><p className="service-home-library-intro">Mi libro sobre desarrollo interior, psicohomeopatía y un enfoque integrador del trabajo con los estados humanos.</p><Link href="/es/books">Explorar la biblioteca<span aria-hidden="true">→</span></Link></div></section>
     <PublicConsultationCta locale="es" />
     <footer className="service-home-footer"><Link className="house-wordmark" href="/es">Holistic House</Link><p>Trabajo individual, práctica consciente y un espacio para el desarrollo interior.</p><Link href="/es/services">Explorar servicios<span aria-hidden="true">→</span></Link></footer>

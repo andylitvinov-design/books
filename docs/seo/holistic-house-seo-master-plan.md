@@ -138,3 +138,53 @@
 **Changelog 2026-10-16 · afternoon:** Google ownership/siteOwner verified, sitemap 594/0 Google snapshot, all 19 URL inspected and tracked, 19/19 on-page indexable; source-backed first 28/90d zeros saved. See GSC baseline. Safe Organization logo and Yggdrasil metadata improvements in next SEO PR.
 
 **Changelog 2026-10-16:** v3 consolidates Free Tantra L1 SEO release, 15 priority locale URLs, real GSC access blocker, R07 seed, updated paid/free offers, goals, roadmap, Codex specs, KPI and privacy policies.
+
+## SEO live follow-up — 2026-10-16 (post-#741/#743)
+
+Production audit is tied to the exact Vercel source SHA, not the repository
+default branch. On 16 October 2026 the verified production deployment was
+\`4c7e64dd3a6e7cdeaa5389731eedfa58db3d790a\` (READY, aliased to
+\`https://holistichouse.vercel.app\`).
+
+- The public sitemap fetch returned **604 distinct URLs**: **196 EN, 197 RU,
+  187 ES**, plus **24 unprefixed** (mostly canonical book-reader paths).
+  Old \`/books\` redirect and client/admin routes were absent.
+- Source/live spot checks: ES homepage language metadata is Spanish; EN Books
+  canonical/OG/Twitter are present; \`/en/tests\` resolves to
+  \`/en/client/tests\`; random RU missing route returns real HTTP 404.
+- In the sample, EN/RU/ES remedy Arnica descriptions are complete, localized
+  and 126–134 characters. The legacy EN/RU Books descriptions were only
+  67 characters; ES Services description was 229; EN Library 165. This
+  follow-up adds human-written 120–160-character replacements.
+- **Google Search Console:** the earlier *historical baseline* on this date
+  remains 594 submitted, 0 indexed, 0 errors, 0 warnings. Updated sitemap
+  was **re-submitted successfully at 2026-10-16 19:44:25 UTC**. Google
+  confirmed receipt, with a new download pending. Do not confuse the live
+  604-URL sitemap with a confirmed Google fetched/indexed count.
+- The dedicated public-only live auditor checks *every* indexed route for
+  HTTP 200, sitemap lastmod/hreflang reciprocity, redirects and sampled
+  page title/description/H1/lang/canonical/OG/Twitter plus 404. It stores a
+  JSON report as a GitHub Actions artifact. An independent Lighthouse workflow
+  measures mobile/desktop performance, LCP, CLS, TBT and lab SEO, with INP
+  only if actually available.
+- CrUX field data **not configured** in the connected GSC Wizard (no CrUX
+  API key). Google mobile performance >=90 and field INP are **not verified**;
+  do not assert a performance score without a real Lighthouse report.
+- Historical broad test-suite failures include pre-existing brittle
+  Services/Nav assertions; acceptance must distinguish them from actual code
+  regressions. Separate SEO/live tests remain mandatory, not silently waived.
+
+**Remaining pass gate:** Live audit artifact must show all 604+ canonical
+sitemap URLs = HTTP 200 and no invalid hreflang/metadata; then check the
+updated Vercel SHA/alias, mobile Lighthouse score and real ES source quality
+on the most frequently visited pages.
+
+
+### 16.10.2026 — live SEO acceptance, updated canonical sitemap
+
+- Production commit `d46b97755a890b77590f5cb504a7f82bf2632e2e` verified READY with `holistichouse.vercel.app` alias. Source PRs: [#741](https://github.com/andylitvinov-design/books/pull/741), [#743](https://github.com/andylitvinov-design/books/pull/743), [#745](https://github.com/andylitvinov-design/books/pull/745).
+- First exhaustive GitHub Actions audit checked 604 indexed sitemap URLs: 599 returned 200, 5 redirects, 0 404/5xx, 0 network failures. The 5 redirects were two obsolete Relationships paths and three `master-shamanic-healing` Academy aliases. The code now indexes canonical pages only; live map has **601 distinct URLs** (five removed, two canonical Explore pages added).
+- Google Search Console downloaded the final 601-URL sitemap on **2026-10-16 19:55:59 UTC**. Warnings=0, errors=0, indexed=0 in current crawl snapshot. Do not equate accepted URLs with indexed URLs. Earlier 594/604 snapshots are historical.
+- Confirmed 404 pages for EN/RU/ES return HTTP 404, one H1, correct locale, consistent title and `noindex`. EN/RU/ES book and library descriptions plus ES Services description were corrected to 120–160 characters. Canonicals/OG/Twitter are checked on selected pages by the automated auditor.
+- A GitHub Actions workflow now checks *every* current sitemap URL and publishes a JSON artifact, with a production-deploy grace period on push to avoid checking the previous Vercel commit. An independent Lighthouse workflow records public Home mobile/desktop LCP/CLS/TBT/score and lab SEO once executed.
+- CrUX real-user history is **not configured** in connected GSC Wizard, and Lighthouse score ≥90 or INP are not yet confirmed. The broad pre-existing suite has unrelated legacy UI-contract failures; the dedicated live SEO audit is not to be bypassed.

@@ -9,7 +9,7 @@ const testimonials = readFileSync(new URL("../components/personal-testimonials.t
 test("iteration 1: home hero offers direct routes, visible photo services and bottom free chooser", () => {
   assert.match(home, /heroPrimary: "Get a free written review"/);
   assert.match(home, /heroPrimary: "Получить бесплатный разбор"/);
-  assert.match(home, /href="#core-services"/);
+  assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
   assert.match(home, /services\/free-situation-review/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
   assert.match(home, /event="service_request_start"/);
