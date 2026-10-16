@@ -71,7 +71,7 @@ test("Tantra Reiki price and source PDF remain available without a bottom PDF fo
   assert.doesNotMatch(form, /reiki-guide\?course=yggdrasil|Download PDF guide|Скачать PDF/);
 });
 
-test("bottom lead capture provides all three offers and answer submission through WhatsApp", () => {
+test("bottom lead capture offers the same intents with an explicit messenger selection", () => {
   assert.match(form, /type Intent = "free" \| "personal" \| "session" \| "answers" \| "feedback"/);
   assert.match(form, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
   assert.match(form, /return whatsappEnquiryUrl\(\{/);
@@ -79,13 +79,13 @@ test("bottom lead capture provides all three offers and answer submission throug
   assert.match(form, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/);
   for (const intent of ["free", "personal", "session", "answers"]) {
     assert.ok(form.includes('id="apply-' + intent + '"'), intent);
-    assert.ok(form.includes('href={tantraInitiationWhatsAppUrl(locale, "' + intent + '")}'), intent);
+    assert.ok(form.includes('whatsappUrl={tantraInitiationWhatsAppUrl(locale, "' + intent + '")}'), intent);
   }
-  assert.equal((form.match(/target="_blank"/g) || []).length, 4);
+  assert.equal((form.match(/<ContactChannelChooser /g) || []).length, 5);
   assert.match(form, /data-tantra-whatsapp-capture/);
-  assert.match(form, /Я напишу или вставлю ответы на вопросы 1–7 непосредственно в WhatsApp/);
-  assert.match(landing, /href=\{tantraInitiationWhatsAppUrl\(locale, "answers"\)\}/);
-  assert.match(landing, /href=\{tantraInitiationWhatsAppUrl\(locale, "personal"\)\}/);
+  assert.match(form, /Я напишу или вставлю ответы на вопросы 1–7 в выбранном мессенджере/);
+  assert.match(landing, /whatsappUrl=\{tantraInitiationWhatsAppUrl\(locale, "answers"\)\}/);
+  assert.match(landing, /whatsappUrl=\{tantraInitiationWhatsAppUrl\(locale, "personal"\)\}/);
   assert.doesNotMatch(form, /<form\b|<input\b|<textarea\b|<select\b|<button\b|<label\b/);
   assert.doesNotMatch(form, /navigator\.|window\.|fetch\(|localStorage|FormData|onSubmit/);
 });
@@ -111,11 +111,11 @@ test("five steps put the flow review after video and optional distance initiatio
   assert.match(landing, /title: "Напишите отзыв"/);
   assert.match(landing, /title: "Запишитесь на личную дистанционную инициацию"/);
   assert.match(landing, /дистанционная инициация — по желанию/);
-  assert.match(landing, /tantraInitiationWhatsAppUrl\(locale, "feedback"\)/);
+  assert.match(landing, /#apply-feedback/);
   assert.match(landing, /guideLinks\[index\]/);
   assert.match(landing, /data-personal=\{index === 4\}/);
-  assert.match(landing, /target=\{index === 1 \|\| index === 4 \? "_blank" : undefined\}/);
-  assert.match(landing, /rel=\{index === 1 \|\| index === 4 \? "noopener noreferrer" : undefined\}/);
+  assert.match(landing, /href=\{guideLinks\[index\]\}/);
+  assert.match(landing, /#apply-personal/);
   assert.match(landing, /t\.guideSteps\.map/);
   assert.match(style, /\.howGrid\s*\{ display: grid; grid-template-columns: repeat\(2,/);
   assert.match(style, /\.howCard\[data-personal="true"\]\s*\{/);
