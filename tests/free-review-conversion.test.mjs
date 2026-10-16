@@ -11,6 +11,40 @@ const form = read("components/free-situation-review-form.tsx");
 const intake = read("components/free-drawing-intake.tsx");
 const intakeCss = read("components/free-drawing-intake.module.css");
 
+function assertStaticPortraits(source) {
+  const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const imports = ast.statements.filter(node => ts.isImportDeclaration(node) && node.moduleSpecifier.text === "@/components/static-portrait");
+  assert.equal(imports.length, 1, "Use the approved static portrait wrapper");
+  const bindings = imports[0].importClause?.namedBindings;
+  assert.ok(bindings && ts.isNamedImports(bindings));
+  assert.ok(bindings.elements.some(node => node.name.text === "StaticPortrait" && (!node.propertyName || node.propertyName.text === "StaticPortrait")));
+  const portraits = [];
+  const visit = node => {
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(ast) === "StaticPortrait") portraits.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.equal(portraits.length, 2, "Keep both practitioner portrait placements");
+  for (const portrait of portraits) {
+    const attributes = portrait.attributes.properties;
+    assert.ok(attributes.every(node => !ts.isJsxSpreadAttribute(node)), "Do not override verified portrait props");
+    const src = attributes.filter(node => ts.isJsxAttribute(node) && node.name.text === "src");
+    assert.equal(src.length, 1);
+    assert.ok(src[0].initializer && ts.isStringLiteral(src[0].initializer));
+    assert.equal(src[0].initializer.text, "/images/holistic-house/andy-about.png");
+  }
+}
+
+test("portrait contract rejects other components, sources and missing placements", () => {
+  for (const altered of [
+    landing.replaceAll("<StaticPortrait", "<Image"),
+    landing.replaceAll("@/components/static-portrait", "@/components/other-portrait"),
+    landing.replace("/images/holistic-house/andy-about.png", "/other.png"),
+    landing.replace("<StaticPortrait", "<OtherPortrait"),
+    landing.replace("<StaticPortrait", "<StaticPortrait {...unverified}"),
+  ]) assert.throws(() => assertStaticPortraits(altered));
+});
+
 test("EN, RU, ES free offer is a handwritten drawing diagnostic with a written report", () => {
   for (const phrase of ["Бесплатная диагностика ситуации и личная консультация", "Free Situation Review & Personal Consultation",
     "Revisión gratuita y consulta personal", "Коучинг-форма", "Coaching questionnaire", "Formulario de coaching",
@@ -20,7 +54,7 @@ test("EN, RU, ES free offer is a handwritten drawing diagnostic with a written r
   for (const path of ["/en/services/free-situation-review", "/ru/services/free-situation-review", "/es/services/free-situation-review"]) {
     assert.ok(landing.includes(path), "Locale/canonical missing: " + path);
   }
-  assert.ok(landing.includes('Image src="/images/holistic-house/andy-about.png"'));
+  assertStaticPortraits(landing);
   assert.ok(landing.includes("<FreeSituationReviewForm locale={locale} />"));
   assert.ok(landing.includes('id="request-free-review"'));
 });
