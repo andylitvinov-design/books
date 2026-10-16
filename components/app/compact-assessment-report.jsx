@@ -16,10 +16,16 @@ function firstSentence(value) {
 // are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
   const ru = locale === 'ru'
-  const sections = report.sections
+  const sections = Array.isArray(report?.sections) ? report.sections : []
   const guideByScale = new Map((getTestScaleGuide(result.definitionKey, locale)?.scales || []).map(scale => [scale.key, scale]))
   const overview = assessmentResultOverview(report, result, locale)
   const [activeIndex, setActiveIndex] = useState(() => Math.max(0, sections.findIndex(item => item.recommendedReview)))
+  // Empty/incompatible reports have no score to select; keep the optional course
+  // boundary stable for legacy records without fabricating an instrument value.
+  if (!sections.length) return <section data-personal-result-report data-compact-assessment-report>
+    <small>{report.rulesVersion}</small>
+    <FreeCourseBanner locale={locale} compact/>
+  </section>
   const selectedIndex = activeIndex < sections.length ? activeIndex : 0
   const section = sections[selectedIndex]
   const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
