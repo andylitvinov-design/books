@@ -81,8 +81,8 @@ function ReikiContactCard({ locale, kind, course }: { locale: PublicLocale; kind
 
 // Keep existing exported names and anchor IDs so all site links continue to work.
 // Retain the historical export and the #reiki-free-level-one deep link.
-export function YggdrasilLeadForms({ locale }: { locale: PublicLocale }) {
-  return <ReikiChoiceCapture locale={locale} course="yggdrasil" />;
+export function YggdrasilLeadForms({ locale, placement = "bottom" }: { locale: PublicLocale; placement?: "top" | "bottom" }) {
+  return <ReikiChoiceCapture locale={locale} course="yggdrasil" placement={placement} />;
 }
 
 export function ReikiConsultationForm({ locale, course }: { locale: PublicLocale; course: string }) {
