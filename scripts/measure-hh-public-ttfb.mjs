@@ -19,7 +19,8 @@ const median = values => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
-for (const suffix of ['/?lang=en', '/?lang=ru']) {
+// Measure actual canonical documents: legacy /?lang=ru is a 308 redirect.
+for (const suffix of ['/', '/ru']) {
   const url = new URL(suffix, base);
   const measurements = [];
   for (let i = 0; i < samples; i++) {
@@ -31,7 +32,7 @@ for (const suffix of ['/?lang=en', '/?lang=ru']) {
     });
     const ttfbMs = Math.round(performance.now() - start);
     await response.arrayBuffer();
-    if (!response.ok) throw new Error(`Public page ${url.pathname + url.search} returned HTTP ${response.status}`);
+    if (response.status !== 200) throw new Error(`Canonical public page ${url.pathname} returned HTTP ${response.status}`);
     measurements.push({
       ttfbMs,
       vercelCache: response.headers.get('x-vercel-cache') ?? 'unknown',
