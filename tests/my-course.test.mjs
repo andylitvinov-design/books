@@ -146,7 +146,7 @@ test('first-screen preset and personal choices require consent before account-ow
   assert.match(catalog, /onClick=\{\(\)=>onPreset\(preset\.id\)\}/)
   assert.match(catalog, /onClick=\{onPersonal\}/)
   assert.match(ui, /if \(!optIn \|\| busy\) return/)
-  assert.match(ui, /newCourse: !restartingClosed/)
+  assert.match(ui, /newCourse: access\\?\\.multiCourseEnabled === true/)
   assert.match(ui, /ref=\{startDialogRef\}/)
   assert.match(ui, /startDialogRef\.current\?\.showModal\(\)/)
   assert.match(ui, /disabled=\{!optIn \|\| busy\}/)
