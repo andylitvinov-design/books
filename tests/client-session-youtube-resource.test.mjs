@@ -109,7 +109,7 @@ test('session-only CSP permits nocookie embed without widening other private pag
   assert.match(source,/sessionEducationEmbed \? "frame-src https:\/\/www\.youtube-nocookie\.com"/)
   assert.match(source,/practitionerDraftPreview \? "frame-src blob:" : "frame-src 'none'"/)
   const start=source.indexOf('  const sessionEducationEmbed =')
-  const end=source.indexOf('  // A local MediaRecorder preview',start)
+  const end=source.indexOf('  // Only the practitioner consultation editor',start)
   assert.ok(start>=0&&end>start)
   const allowed=source.slice(start,end)
   assert.equal((allowed.match(/\.test\(pathname\)/g)||[]).length,5)
