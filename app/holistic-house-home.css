@@ -791,3 +791,30 @@ a.service-home-start-card:hover {
 @media (prefers-reduced-motion: reduce) {
   .house-header--services .site-navigation > .site-cabinet-entry { transition: none; }
 }
+
+/* Give the free written review and paid one-to-one session equal clarity in the hero. */
+.service-home-button--primary{
+  background:#82344a;
+  border-color:#82344a;
+  color:#fff;
+  box-shadow:0 7px 20px rgba(88,35,55,.17)
+}
+.service-home-button--primary:hover{background:#672538;color:#fff}
+.service-home-button--consultation{
+  background:rgba(250,250,249,.92);
+  color:#213a50;
+  border-color:#9caeb5;
+  box-shadow:0 5px 15px rgba(24,57,72,.08)
+}
+.service-home-button--consultation:hover{background:#fff;color:#1c3449}
+.service-home-offer-note{
+  max-width:540px;
+  margin:11px 0 0;
+  color:#5e5a56;
+  font:12px/1.5 Arial,Helvetica,sans-serif
+}
+@media(max-width:767px){
+  .service-home-actions{max-width:min(320px,82%)}
+  .service-home-button--primary,.service-home-button--consultation{font-size:12px;line-height:1.35;text-align:left}
+  .service-home-offer-note{max-width:79%;font-size:10px;line-height:1.44;margin-top:9px}
+}
