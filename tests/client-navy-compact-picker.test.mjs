@@ -190,12 +190,13 @@ test('problems search and optional skip use the existing topic-derived concerns'
   assert.match(picker, /getElementById\('hh-simple-recommendations'\)/)
 })
 
-test('recommendation tabs filter only the displayed entries and keep server test intent unchanged', () => {
-  assert.match(picker, /const BROWSE_TABS = \[/)
-  assert.match(picker, /const browseRecommendations = browseTab === 'all'/)
+test('public test type tabs use the canonical kind facet and keep start actions unchanged', () => {
+  assert.match(picker, /const BROWSE_TABS = Object\.freeze\(\[/)
+  assert.match(picker, /const browseRecommendations = groupedRecommendations/)
   assert.match(picker, /browseRecommendations\.slice\(0, visibleCount\)/)
   assert.match(picker, /className=\{styles\.browseTabs\}/)
-  assert.match(picker, /setBrowseTab\(tab\.key\)/)
+  assert.match(picker, /onSelectTestKind\?\.\(tab\.key === 'all' \? null : tab\.key\)/)
+  assert.match(explorer, /onSelectTestKind=\{\(kind\) => setKinds\(kind \? \[kind\] : \[\]\)\}/)
   assert.match(picker, /Math\.min\(browseRecommendations\.length, current \+ 5\)/)
   assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
   assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
@@ -216,7 +217,7 @@ test('every recommended test visibly explains its kind without hiding the label 
   assert.match(picker, /<KindBadge entry=\{fullVia\} locale=\{locale\} \/>/)
   assert.match(picker, /className=\{styles\.kindBadgeText\}/)
   assert.match(picker, /data-test-kind-badge=\{kind\.key\}/)
-  assert.match(picker, /aria-label=\{\x60\$\{prefix\}: \$\{label\}\x60\}/)
+  assert.match(picker, /aria-label=\{\x60\$\{prefix\}: \$\{label\}\. \$\{evidence\}\x60\}/)
   assert.match(css, /test type is a separate, readable fact/)
   assert.match(css, /\.shell \.testInfo \.testTypeLine/)
   assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge/)

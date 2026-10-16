@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap, GraduationCap } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
 import { TEST_RECOMMENDATION_FOCUS, TEST_STYLE_FILTERS, TEST_LENGTH_FILTERS } from '@/lib/assessments/test-recommendations'
-import { TEST_KINDS, testKindCardLabel } from '@/lib/assessments/test-kinds'
+import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
 import { MONITOR_AREAS } from '@/data/assessments/mind-body-monitor-registry'
 import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-core-100'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
@@ -106,9 +106,11 @@ function TestKindBadge({ entry, locale }) {
   if (!kind) return null
   const Icon = TEST_KIND_ICONS[kind.key]
   const prefix = locale === 'ru' ? 'Тип' : locale === 'es' ? 'Tipo' : 'Type'
-  const label = testKindCardLabel(entry, locale)
+  const label = testKindShortLabel(entry, locale)
+  const evidence = testKindCardLabel(entry, locale)
   return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
-    title={kind.description[locale] || kind.description.en} aria-label={`${prefix}: ${label}`}>
+    title={`${evidence}. ${kind.description[locale] || kind.description.en}`}
+    aria-label={`${prefix}: ${label}. ${evidence}`}>
     <Icon size={14} aria-hidden="true" />
     <span className={styles.testKindBadgeLabel}>{prefix}: {label}</span>
   </span>
@@ -375,6 +377,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       testKinds={kinds}
       onToggleTestKind={(key) => setKinds((current) => toggle(current, key))}
       onClearTestKinds={() => setKinds([])}
+      onSelectTestKind={(kind) => setKinds(kind ? [kind] : [])}
       recommendations={simpleRecommendations}
       viaProfileEntry={entries.find((entry) => entry.key === 'ipip-via-r-strengths-96' && entry.selectable) || null}
       activeBattery={activeBattery}

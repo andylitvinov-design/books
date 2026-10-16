@@ -8,7 +8,7 @@ import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
-import { TEST_KINDS, testKindCardLabel } from '@/lib/assessments/test-kinds'
+import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
 import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
 
 const TEXT = {
@@ -110,30 +110,25 @@ const TOPICS = [...HOME_TEST_TOPICS, { key: 'function', en: 'Work & daily life',
   // Existing physical-wellbeing/recovery scales, not a new medical test or diagnosis.
   { key: 'health', en: 'Health', ru: 'Здоровье', es: 'Salud' }]
   .map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
-const BROWSE_TABS = [
-  { key: 'all', label: { en: 'All', ru: 'Все', es: 'Todas' } },
-  { key: 'closest', label: { en: 'Best fit', ru: 'Подходят', es: 'Más afines' } },
-  { key: 'professional', label: { en: 'Sourced', ru: 'Методики', es: 'Con fuente' } },
-  { key: 'personality', label: { en: 'Personality', ru: 'Личность', es: 'Personalidad' } },
-  { key: 'relationships', label: { en: 'Relationships', ru: 'Отношения', es: 'Relaciones' } },
-  { key: 'stress', label: { en: 'Stress', ru: 'Стресс', es: 'Estrés' } },
-]
-function matchesBrowseTab(entry, key) {
-  if (key === 'all') return true
-  if (key === 'professional') return entry.testKind === 'professional'
-  const tags = [...(entry.topics || []), ...(entry.measurementAxes || []), ...(entry.areas || [])]
-  return tags.some((tag) => String(tag).toLowerCase() === key || (key === 'relationships' && tag === 'intimacy'))
-}
+// The quick tabs and detailed checkboxes use the same source-backed kind facet.
+const BROWSE_TABS = Object.freeze([
+  { key: 'all', label: { en: 'All', ru: 'Все', es: 'Todos' } },
+  { key: 'monitoring' },
+  { key: 'professional' },
+  { key: 'hobby' },
+])
 
 // Always display the explicit assessment type, including on narrow phones.
 function KindBadge({ entry, locale }) {
   const kind = TEST_KINDS.find((type) => type.key === entry?.testKind)
   if (!kind) return null
   const Icon = TEST_KIND_ICONS[kind.key]
-  const label = testKindCardLabel(entry, locale)
+  const label = testKindShortLabel(entry, locale)
+  const evidence = testKindCardLabel(entry, locale)
   const prefix = locale === 'ru' ? 'Тип' : locale === 'es' ? 'Tipo' : 'Type'
   return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
-    title={kind.description[locale] || kind.description.en} aria-label={`${prefix}: ${label}`}>
+    title={`${evidence}. ${kind.description[locale] || kind.description.en}`}
+    aria-label={`${prefix}: ${label}. ${evidence}`}>
     <Icon size={14} aria-hidden="true" />
     <span className={styles.kindBadgeText}>{prefix}: {label}</span>
   </span>
@@ -159,7 +154,7 @@ export function SimpleTestPicker({
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
-  testKinds = [], onToggleTestKind, onClearTestKinds,
+  testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
   recommendations, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
@@ -175,7 +170,7 @@ export function SimpleTestPicker({
   const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
   const [showAllProblems, setShowAllProblems] = useState(false)
   const [problemQuery, setProblemQuery] = useState('')
-  const [browseTab, setBrowseTab] = useState('all')
+  const browseTab = testKinds.length === 0 ? 'all' : testKinds.length === 1 ? testKinds[0] : null
   const [showIndividualVia, setShowIndividualVia] = useState(false)
   const focusKey = [...focus].sort().join('|')
   const problemKey = [...problems].sort().join('|')
@@ -196,9 +191,8 @@ export function SimpleTestPicker({
   const fullVia = resolveViaProfile(via, viaProfileEntry, selectedKeys, { maxMinutes, testKinds })
   const viaCopy = VIA_COPY[locale] || VIA_COPY.en
   const groupedRecommendations = via.visible
-  const browseRecommendations = browseTab === 'all' ? groupedRecommendations
-    : browseTab === 'closest' ? groupedRecommendations.slice(0, 12)
-    : groupedRecommendations.filter((entry) => matchesBrowseTab(entry, browseTab))
+  // The parent has already applied the selected kind(s) to these recommendations.
+  const browseRecommendations = groupedRecommendations
   const visibleRecommendations = browseRecommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, browseRecommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -381,7 +375,9 @@ export function SimpleTestPicker({
       </div>
       <div className={styles.browseTabs} role="group" aria-label={c.filterTitle}>
         {BROWSE_TABS.map((tab) => <button key={tab.key} type="button" aria-pressed={browseTab === tab.key}
-          onClick={() => { setBrowseTab(tab.key); setVisibleCount(5) }}>{tab.label[locale] || tab.label.en}</button>)}
+          onClick={() => { onSelectTestKind?.(tab.key === 'all' ? null : tab.key); setVisibleCount(5) }}>
+          {tab.key === 'all' ? (tab.label[locale] || tab.label.en) : testKindShortLabel({ testKind: tab.key }, locale)}
+        </button>)}
         <button type="button" className={styles.moreFilterButton} title={c.filters} aria-label={c.filters}
           onClick={() => {
             const details = document.getElementById('hh-more-test-filters')
@@ -459,7 +455,7 @@ export function SimpleTestPicker({
           {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
         </button>}
       </div>}
-      {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+      {(testKinds.length === 0 || testKinds.includes('professional')) && (fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
         <div className={styles.viaFamilyIntro}>
           <strong>{viaCopy.title}</strong>
           {fullVia && <div className={styles.viaTypeLine} data-test-type-line><KindBadge entry={fullVia} locale={locale} /></div>}

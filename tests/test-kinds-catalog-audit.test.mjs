@@ -7,7 +7,7 @@ import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessme
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
-import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, testKindCardLabel, auditTestKey } from '../lib/assessments/test-kinds.js'
+import { TEST_KINDS, HOBBY_TEST_KEYS, testKindFor, testKindCardLabel, testKindShortLabel, auditTestKey } from '../lib/assessments/test-kinds.js'
 
 const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'min' ? (q.min ?? def.answerScale?.min) : (q.max ?? def.answerScale?.max),
@@ -180,5 +180,39 @@ test('type badges distinguish documented sources, HH-authored check-ins and expl
   for (const entry of available) {
     assert.ok(testKindCardLabel(entry, 'en'), entry.key)
     assert.ok(testKindCardLabel(entry, 'ru'), entry.key)
+  }
+})
+
+test('four public shortcuts sync with the real kind facet and small card badges', async () => {
+  const [simple, full, css] = await Promise.all([
+    readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/app/simple-test-picker.module.css', import.meta.url), 'utf8'),
+  ])
+  const tabBlock = simple.slice(simple.indexOf('const BROWSE_TABS'), simple.indexOf('// Always display the explicit assessment type'))
+  assert.deepEqual([...tabBlock.matchAll(/\{ key: '(all|monitoring|professional|hobby)'/g)].map((match) => match[1]),
+    ['all', 'monitoring', 'professional', 'hobby'])
+  assert.doesNotMatch(tabBlock, /Best fit|Personality|Relationships|Stress/)
+  assert.match(simple, /onSelectTestKind\?\.\(tab\.key === 'all' \? null : tab\.key\)/)
+  assert.match(full, /onSelectTestKind=\{\(kind\) => setKinds\(kind \? \[kind\] : \[\]\)\}/)
+  assert.match(simple, /aria-pressed=\{browseTab === tab\.key\}/)
+  assert.match(simple, /testKindShortLabel\(entry, locale\)/)
+  assert.match(full, /testKindShortLabel\(entry, locale\)/)
+  assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\) 36px/)
+  const translations = {
+    en: ['Check-in', 'Pro', 'Hobby'],
+    ru: ['Чек-ин', 'Про', 'Хобби'],
+    es: ['Chequeo', 'Pro', 'Hobby'],
+  }
+  for (const [locale, labels] of Object.entries(translations)) {
+    assert.deepEqual(['monitoring','professional','hobby'].map((testKind) =>
+      testKindShortLabel({ testKind }, locale)), labels)
+  }
+  assert.equal(testKindShortLabel({ testKind: 'unknown' }, 'en'), null)
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  for (const kind of ['monitoring','professional','hobby']) {
+    const filtered = filterExplorerEntries(entries, { availability: 'available', kinds: [kind] })
+    assert.ok(filtered.length > 0, kind)
+    assert.ok(filtered.every((entry) => entry.testKind === kind), kind)
   }
 })
