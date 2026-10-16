@@ -189,7 +189,7 @@ export default async function ServicesPage({ params }: PageProps) {
           <MarketplaceServiceFinder services={marketplaceOfferings} locale={locale} />
         ) : !featuredService ? (
           <p className="services-marketplace-empty">
-            {locale === "ru" ? "Каталог услуг сейчас обновляется." : locale === "es" ? "Estamos actualizando el catálogo." : "The service catalogue is being updated."}
+            {locale === "ru" ? "Каталог услуг сейчас обновляется." : "The service catalogue is being updated."}
           </p>
         ) : null}
         <p className="services-marketplace-all">
