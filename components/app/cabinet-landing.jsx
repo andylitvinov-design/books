@@ -2,14 +2,13 @@
 import { TraumaFrontMatter, TraumaSectionInstructions } from './trauma-administration'
 import { hasTraumaAdministration, traumaContextReady } from '@/lib/assessments/trauma-administration'
 
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
-import { PersonalResultReport } from '@/components/app/personal-result-report'
+import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
@@ -27,7 +26,7 @@ const UI = {
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Free wellbeing & resources monitoring',
-    tryText: 'Choose self-checks for stress, mood and resilience. View guidance now; save results if you want to track changes over time.',
+    tryText: 'Take available tests without registering. See your scale scores first, then choose whether to open free analysis in your Cabinet.',
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -92,8 +91,8 @@ const UI = {
     result: 'Your result',
     measured: 'Measured',
     source: 'Source',
-    save: 'Save to my Cabinet',
-    saveHint: 'Saving is optional. Only this selected result will be attached to the Google account you confirm.',
+    save: 'Create / sign in to my Cabinet — get free analysis',
+    saveHint: 'Read your scales without signing in. For full free analysis and recommendations, confirm saving only this test to your chosen Google account.',
     consultKicker: 'If you would like to discuss your result',
     consultTitle: 'Book a consultation with a specialist',
     consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
@@ -181,8 +180,8 @@ const UI = {
     result: 'Ваш результат',
     measured: 'Дата измерения',
     source: 'Источник',
-    save: 'Сохранить в личном кабинете',
-    saveHint: 'Сохранение необязательно. Только этот выбранный результат будет добавлен в подтверждённый Google-аккаунт.',
+    save: 'Создать / войти в мой кабинет и получить анализ (бесплатно)',
+    saveHint: 'Шкалы доступны без регистрации. Для полного бесплатного анализа и рекомендаций подтвердите сохранение только этого теста в выбранный Google-аккаунт.',
     consultKicker: 'Если хочется обсудить результат',
     consultTitle: 'Заказать консультацию специалиста',
     consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
@@ -247,10 +246,6 @@ function answerLabels(definition, question) {
     value: min + index,
     label: String(min + index),
   }))
-}
-
-function resultLabel(definition, dimension) {
-  return dimension.sourceConstruct || definition.questions.find((item) => item.id === dimension.key)?.label || dimension.key
 }
 
 function localZone() {
@@ -319,6 +314,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const c = UI[locale] || UI.en
   const searchParams = useSearchParams()
   const planId = searchParams.get('plan')
+  const requestedGuestTests = searchParams.get('startTests')
   const [active, setActive] = useState(null)
   const [run, setRun] = useState(null)
   const [answers, setAnswers] = useState({})
@@ -329,6 +325,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [guestResult, setGuestResult] = useState(null)
   const [activePlan, setActivePlan] = useState(null)
   const [planResults, setPlanResults] = useState([])
+  const [pendingGuestDefinitions, setPendingGuestDefinitions] = useState([])
+  const initialLaunchRef = useRef(null)
   const [sessionExpires, setSessionExpires] = useState(null)
   const [pendingMood, setPendingMood] = useState(null)
   const [latestGuestMood, setLatestGuestMood] = useState(null)
@@ -381,6 +379,15 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       live = false
     }
   }, [locale, planId])
+
+  useEffect(() => {
+    // Only public definition keys travel from /client/tests, never answers/results.
+    if (!requestedGuestTests || initialLaunchRef.current === requestedGuestTests) return
+    initialLaunchRef.current = requestedGuestTests
+    const keys = [...new Set(requestedGuestTests.split(',').map(value => value.trim()).filter(Boolean))]
+    if (keys.length === 0 || keys.length > 12) { setError(c.error); return }
+    void beginGuestBattery(keys.map(key => ({ key })))
+  }, [requestedGuestTests])
 
   async function signIn(intentId = null) {
     if (!appAvailable) {
@@ -497,6 +504,62 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
+  async function beginGuestBattery(entries) {
+    const keys = entries.map(entry => entry.key)
+    if (keys.length < 1 || keys.length > 12 || new Set(keys).size !== keys.length) {
+      setError(c.error)
+      return
+    }
+    const definitions = []
+    for (const key of keys) {
+      try {
+        const resolved = definitionFor(key, locale)
+        if (!resolved) { setError(c.error); return }
+        definitions.push(resolved)
+      } catch { setError(c.error); return }
+    }
+    if (definitions.length === 1) {
+      setPendingGuestDefinitions([])
+      setActivePlan(null)
+      return begin(definitions[0].key, null)
+    }
+
+    setPendingGuestDefinitions(definitions)
+    setActive(definitions[0].key)
+    setGuestResult(null)
+    setPlanResults([])
+    setSaveState('')
+    setError('')
+    setBusy(true)
+    try {
+      const bootstrap = await guestFetch('guest/bootstrap')
+      setSessionExpires(bootstrap.expiresAt)
+      const plan = await guestFetch('guest/test-plans', {
+        items: definitions.map(item => ({
+          definitionKey: item.key, definitionVersion: item.version, instrumentLocale: item.instrumentLocale,
+        })),
+        replaceActive: true,
+        operationId: crypto.randomUUID(),
+      })
+      setActivePlan(plan)
+      setPendingGuestDefinitions([])
+      if (plan.status === 'completed') {
+        const latest = await guestFetch('guest/bootstrap')
+        setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
+        setPhase('summary')
+      } else {
+        // Reopening the same guest battery resumes the actual outstanding test,
+        // rather than restarting the first item or losing previous measurements.
+        const next = getDefinitionById(plan.definitionIds[plan.currentIndex])
+        setActive(next.key)
+        await startRun(next)
+      }
+    } catch (cause) {
+      if (cause.status === 401 || cause.code === 'GUEST_SESSION_REQUIRED') setPhase('consent')
+      else { setError(c.error); setPendingGuestDefinitions([]) }
+    } finally { setBusy(false) }
+  }
+
   async function createGuestSession() {
     if (!adult || !necessary || !definition) return
     setBusy(true)
@@ -510,6 +573,18 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       })
       setSessionExpires(session.expiresAt)
       if (pendingMood) await persistGuestMood(pendingMood)
+      if (pendingGuestDefinitions.length > 1) {
+        const plan = await guestFetch('guest/test-plans', {
+          items: pendingGuestDefinitions.map(item => ({
+            definitionKey: item.key, definitionVersion: item.version, instrumentLocale: item.instrumentLocale,
+          })),
+          replaceActive: true,
+          operationId: crypto.randomUUID(),
+        })
+        setActivePlan(plan)
+        setPlanResults([])
+        setPendingGuestDefinitions([])
+      }
       await startRun(definition)
     } catch {
       setError(c.error)
@@ -710,6 +785,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setGuestResult(null)
     setActivePlan(null)
     setPlanResults([])
+    setPendingGuestDefinitions([])
     setSaveState('')
     setError('')
   }
@@ -722,7 +798,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   return (
     <>
-      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded onGuestStartSingle={(entry) => begin(entry.key, null)} /></div>}
+      {phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer locale={locale} embedded onGuestStart={beginGuestBattery} /></div>}
       {phase === 'catalog' && (
       <section className="cabinet-signin-strip cabinet-signin-hero" aria-labelledby="cabinet-title">
         <div className="cabinet-signin-copy">
@@ -919,9 +995,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </div>
             {((mode === 'guided' && index === definition.questions.length - 1 && allAnswered && !definition.optionalContext?.length) ||
               (mode === 'quick' && allAnswered)) && (
-              <TestFinishActions locale={locale} disabled={busy} temporary
+              <TestFinishActions locale={locale} disabled={busy} temporary guestScaleOnly
                 onReport={() => definition.optionalContext?.length ? saveContextAndFinish('report') : submitResult(run, 'report')}
-                onNext={() => definition.optionalContext?.length ? saveContextAndFinish('next') : submitResult(run, 'next')} />
+                />
             )}
           </div>
         )}
@@ -938,9 +1014,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <div className="cabinet-test-actions">
               <button type="button" disabled={busy} onClick={() => setPhase('questions')}>{c.back}</button>
             </div>
-            <TestFinishActions locale={locale} disabled={busy} temporary
+            <TestFinishActions locale={locale} disabled={busy} temporary guestScaleOnly
               onReport={() => saveContextAndFinish('report')}
-              onNext={() => saveContextAndFinish('next')} />
+              />
           </div>
         )}
 
@@ -962,54 +1038,18 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               </div>
             </header>
 
-            <section className="cabinet-result-section" aria-labelledby="guest-result-values">
-              <div className="cabinet-result-section-heading">
-                <div>
-                  <p className="about-kicker">{locale === 'ru' ? 'Результаты' : 'Results'}</p>
-                  <h4 id="guest-result-values">{locale === 'ru' ? 'Ваши показатели' : 'Your measurements'}</h4>
-                </div>
-                <p>
-                  {locale === 'ru'
-                    ? 'Это личная точка отсчёта. Повторные совместимые замеры помогут увидеть изменения со временем.'
-                    : 'This is a personal baseline. Compatible repeat measurements can show change over time.'}
-                </p>
-              </div>
-              <div className="cabinet-result-grid" data-count={Math.min(guestResult.dimensions.length, 3)}>
-                {guestResult.dimensions.map((dimension) => (
-                  <section key={dimension.key}>
-                    <h5>{resultLabel(definition, dimension)}</h5>
-                    <div className="cabinet-result-score">
-                      <strong>{dimension.value}</strong>
-                      <small>/ {dimension.max}</small>
-                    </div>
-                    <div className="cabinet-result-scale">
-                      <span>{locale === 'ru' ? 'Шкала' : 'Scale'} {dimension.min}–{dimension.max}</span>
-                      <b>{locale === 'ru' ? 'Первый замер' : 'Baseline'}</b>
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </section>
-
-            <PersonalResultReport result={guestResult} locale={locale} />
-            <div className="cabinet-result-actions-grid">
+            <GuestScaleInterpretation result={guestResult} locale={locale} />
+            <div className="cabinet-result-actions-grid" data-guest-analysis-gate style={{ display: 'block', maxWidth: 780, margin: '22px auto' }}>
               <section className="cabinet-result-save-panel">
-                <p className="about-kicker">{locale === 'ru' ? 'Сохранить динамику' : 'Keep your history'}</p>
-                <h4>{locale === 'ru' ? 'Сохранить результат в кабинете' : 'Save this result to your Cabinet'}</h4>
+                <p className="about-kicker">{locale === 'ru' ? 'Бесплатный персональный анализ' : 'Free personal analysis'}</p>
+                <h4>{locale === 'ru' ? 'Полный анализ ваших результатов' : 'Understand your complete results'}</h4>
                 <p>{c.saveHint}</p>
                 <button className="cabinet-save-result" type="button" onClick={saveToCabinet} disabled={busy}>
                   {c.save}
                 </button>
               </section>
 
-              <aside className="cabinet-result-consultation" aria-label={c.consultTitle}>
-                <p className="about-kicker">{c.consultKicker}</p>
-                <h4>{c.consultTitle}</h4>
-                <p>{c.consultText}</p>
-                <Link className="cabinet-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
-                  {c.consultAction}
-                </Link>
-              </aside>
+              
             </div>
 
             <footer className="cabinet-result-footer">

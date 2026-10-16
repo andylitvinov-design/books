@@ -12,7 +12,7 @@ test('the approved simple picker replaces the intimidating embedded explorer onl
   const explorer = read('components/app/test-explorer.jsx')
 
   assert.match(page, /<CabinetLanding/)
-  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded\s*\/>/)
+  assert.match(cabinet, /<PublicTestExplorer locale=\{locale\} embedded onGuestStart=\{beginGuestBattery\} \/>/)
   assert.match(wrapper, /simpleMode=\{embedded\}/)
   assert.match(explorer, /if \(simpleMode && !browseFull\)/)
   assert.match(explorer, /return <SimpleTestPicker/)
@@ -21,15 +21,15 @@ test('the approved simple picker replaces the intimidating embedded explorer onl
   assert.match(explorer, /simpleMode && browseFull/)
   assert.match(explorer, /className=\{styles\.simpleBack\}/)
   assert.match(explorer, /onStart\(activeBattery, \{/)
-  assert.match(wrapper, /PENDING_TEST_SELECTION_KEY/)
-  assert.match(wrapper, /continueTo: 'tests'/)
+  assert.match(wrapper, /guestStartable\(entries\)/)
+  assert.match(wrapper, /onGuestStart\(entries\)/)
 })
 
 test('topics immediately update the existing catalog while detailed selection stays closed', () => {
   const picker = read('components/app/simple-test-picker.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const css = read('components/app/simple-test-picker.module.css')
-  assert.match(picker, /<details className=\{styles\.advanced\}>/)
+  assert.match(picker, /<details className=\{styles\.advanced\} id="hh-more-test-filters">/)
   assert.doesNotMatch(picker, /open=\{true\}|open=\{advanced/)
   assert.match(picker, /focus\.includes\(key\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
@@ -67,14 +67,13 @@ test('preview and selected time are derived from live executable test definition
   assert.doesNotMatch(picker, /\b4 tests selected\b|\b30 min total\b|\b38%\b/)
 })
 
-test('localized public page has genuine selection/Google handoff, no premature client result upload', () => {
+test('localized public page starts guest tests without OAuth or premature result upload', () => {
   const page = read('app/[locale]/client/page.tsx')
   const explorer = read('components/app/test-explorer.jsx')
   const wrapper = read('components/app/public-test-explorer.jsx')
   assert.match(page, /title: "Free wellbeing monitoring \| Holistic House"/)
   assert.match(page, /title: "Бесплатный мониторинг состояния \| Holistic House"/)
   assert.match(explorer, /simpleSelectionChanged/)
-  assert.match(wrapper, /auth\/start/)
-  assert.match(wrapper, /window\.sessionStorage\.setItem/)
-  assert.doesNotMatch(wrapper, /guest\/test-plans|results\/import/)
+  assert.match(wrapper, /client\?startTests=/)
+  assert.doesNotMatch(wrapper, /auth\/start|results\/import|PENDING_TEST_SELECTION_KEY/)
 })

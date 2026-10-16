@@ -231,7 +231,7 @@ test('compact account copy is opt-in and leaves explicit save callbacks intact i
     const p = { locale, focus: [], depth: 'balanced', maxMinutes: 0, recommendations: [{ key: 'sample', title: 'Sample', topics: [], durationMinutes: 2 }], activeBattery: [{ key: 'sample', title: 'Sample' }], matchCount: 1, onStart() {}, onStartSingle() {} }
     const publicTree = exported.SimpleTestPicker(p)
     assert.equal(JSON.stringify(publicTree), JSON.stringify(exported.SimpleTestPicker({ ...p, authenticated: false })))
-    assert.ok(JSON.stringify(publicTree).includes('Google'), 'public sign-in requirement remains explicit')
+    assert.ok(JSON.stringify(publicTree).includes(locale === 'ru' ? 'без регистрации' : locale === 'es' ? 'sin registrarte' : 'without registration'), 'public tests must not require sign-in')
     const accountTree = exported.SimpleTestPicker({ ...p, authenticated: true })
     assert.ok(!JSON.stringify(accountTree).includes('Google'))
     assert.ok(JSON.stringify(accountTree).includes(label))
