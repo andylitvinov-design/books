@@ -128,7 +128,7 @@ test('Explore by area is compact on mobile without removing category selection o
 })
 
 
-test('service match results use compact bilingual mobile tiles without hiding booking actions',async()=>{
+test('service match results show full-width horizontal service and editorial rows, with accessible mobile actions',async()=>{
   const [ui,css]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
@@ -138,11 +138,20 @@ test('service match results use compact bilingual mobile tiles without hiding bo
   assert.ok(ui.includes('resultTitle:"Tus opciones"'))
   assert.ok(ui.includes('className={styles.suggestionActions}'))
   assert.ok(ui.includes('className={styles.editorialList}'))
-  assert.ok(css.includes('/* Compact matched-service catalogue'))
-  assert.ok(css.includes('.suggestionGrid,.editorialList{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'))
-  assert.ok(css.includes('.suggestionActions{flex-direction:column;align-items:stretch'))
-  assert.ok(css.includes('.suggestionSummary{font-size:10px;line-height:1.4}'))
-  assert.ok(css.includes('@media(max-width:350px){.suggestionGrid,.editorialList{grid-template-columns:1fr}}'))
+  assert.ok(css.includes('/* Results: one full-width horizontal service row'))
+  assert.ok(css.includes('.suggestionGrid,.editorialList{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}'))
+  assert.match(css,/\.suggestion\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) auto;/)
+  assert.ok(css.includes('.suggestionTop{grid-column:1/-1;grid-row:1;'))
+  assert.ok(css.includes('.suggestionActions{grid-column:2;grid-row:2/5;'))
+  assert.ok(css.includes('.editorialList a{box-sizing:border-box;display:flex;'))
+  assert.ok(css.includes('.results:focus-visible{outline:2px solid'))
+  const mobile=css.slice(css.lastIndexOf('@media(max-width:620px){'))
+  assert.ok(mobile.includes('.suggestionGrid,.editorialList{grid-template-columns:minmax(0,1fr);gap:8px}'))
+  assert.ok(mobile.includes('.suggestion{grid-template-columns:minmax(0,1fr) 100px;'))
+  assert.ok(mobile.includes('.suggestionActions a{width:100%;min-height:44px;'))
+  assert.ok(css.includes('@media(max-width:350px){'))
+  assert.ok(css.includes('.suggestionActions{grid-column:1;grid-row:5;'))
+  assert.doesNotMatch(css,/\.suggestionGrid,\.editorialList\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   const requestLink=ui.indexOf('<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>')
   const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
   assert.ok(requestLink>0 && detailLink>requestLink)
