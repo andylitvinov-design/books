@@ -28,7 +28,7 @@ const UI = {
     unavailable: 'This feature is temporarily unavailable. Your existing private Cabinet link still works below.',
     testsKicker: 'Mind–Body Monitor',
     tryTitle: 'Free wellbeing & resources monitoring',
-    tryText: 'Take available tests without registering. See your scores and gauges first; free explanations and advice are available in your Cabinet.'
+    tryText: 'Take available tests without registering. See your scores and gauges first; free explanations and advice are available in your Cabinet.',
     recommended: 'Recommended now',
     otherChecks: 'Other self-checks',
     areasTitle: 'What you can monitor',
@@ -93,8 +93,8 @@ const UI = {
     result: 'Your result',
     measured: 'Measured',
     source: 'Source',
-    save: 'Create my Cabinet and get explanations'
-    saveHint: 'Sign in with Google to get free explanations of your scores and personal recommendations in your Cabinet.'
+    save: 'Create my Cabinet and get explanations',
+    saveHint: 'Sign in with Google to get free explanations of your scores and personal recommendations in your Cabinet.',
     consultKicker: 'If you would like to discuss your result',
     consultTitle: 'Book a consultation with a specialist',
     consultText: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
@@ -117,7 +117,7 @@ const UI = {
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Бесплатный мониторинг состояния и ресурсов',
-    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите шкалы и баллы, затем получайте бесплатные пояснения и рекомендации в кабинете.'
+    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите шкалы и баллы, затем получайте бесплатные пояснения и рекомендации в кабинете.',
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -182,8 +182,8 @@ const UI = {
     result: 'Ваш результат',
     measured: 'Дата измерения',
     source: 'Источник',
-    save: 'Создать кабинет и получить пояснения'
-    saveHint: 'Войдите через Google и бесплатно получите пояснения к результатам и индивидуальные рекомендации в своём кабинете.'
+    save: 'Создать кабинет и получить пояснения',
+    saveHint: 'Войдите через Google и бесплатно получите пояснения к результатам и индивидуальные рекомендации в своём кабинете.',
     consultKicker: 'Если хочется обсудить результат',
     consultTitle: 'Заказать консультацию специалиста',
     consultText: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
