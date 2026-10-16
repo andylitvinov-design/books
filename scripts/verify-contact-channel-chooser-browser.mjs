@@ -66,14 +66,14 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
     assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
     // Scroll after React's effect and CSS visibility update settle. A link can be
     // temporarily below the fold during opening even though scrolling succeeds.
-    await page.waitForFunction(({channel,name}) => {
-      const anchor = document.querySelector('[data-contact-channel-chooser] a[data-contact-channel="' + channel + '"]');
+    await page.waitForFunction(({channel,panelId}) => {
+      const anchor = document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + channel + '"]');
       if (!anchor) return false;
       const r = anchor.getBoundingClientRect();
       if (r.top < 0 || r.bottom > innerHeight) return false;
       const target = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
       return Boolean(target?.closest('a[data-contact-channel="' + channel + '"]'));
-    }, {channel: b === boxes[0] ? "whatsapp" : "telegram",name}, {timeout: 5000}).catch(async error => {
+    }, {channel: b === boxes[0] ? "whatsapp" : "telegram",panelId}, {timeout: 5000}).catch(async error => {
       const diagnostic = await page.evaluate(() => ({
         nav: document.querySelector('.mobile-bottom-navigation')?.getBoundingClientRect().toJSON(),
         open: document.querySelector('[data-contact-order][aria-expanded="true"]')?.outerHTML.slice(0,250),
