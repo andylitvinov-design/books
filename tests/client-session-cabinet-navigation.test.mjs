@@ -4,13 +4,18 @@ import {readFileSync} from 'node:fs'
 
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('the session view offers a Cabinet button and gated account sections on both access paths',()=>{
+test('private consultation uses site navigation and two consent-safe next actions on both access paths',()=>{
   const component=read('components/client-session-page.jsx')
+  const save=read('components/save-client-session-to-account.jsx')
   const entry=read('components/client-session-cabinet-entry.jsx')
   const guest=read('app/[locale]/client/session/[shareSelector]/page.js')
   const cabinet=read('app/[locale]/client/[selector]/sessions/[sessionId]/page.js')
-  assert.match(component,/variant="header"/)
-  assert.match(component,/variant="footer"/)
+  assert.match(component,/PublicSiteHeader/)
+  assert.match(component,/sessionBottomActions/)
+  assert.match(component,/SaveClientSessionToAccount/)
+  assert.match(component,/href=\{'\/'\+locale\+'\/client'\}/)
+  assert.match(save,/navigation\?\.requestSave\(\)/)
+  assert.doesNotMatch(component,/variant="header"|variant="footer"/)
   assert.match(component,/cabinetSessionPage/)
   for(const section of ["'my-tests'","'my-courses'","reports","cabinet"])
     assert.ok(entry.includes(section),section)

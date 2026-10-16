@@ -1042,3 +1042,82 @@
   .youtubeQuickAddBody{padding:13px}
   .youtubeQuickAddBody .primaryButton{width:100%;justify-content:center}
 }
+
+/* Site-and-Cabinet shell for all authorized consultation readers.
+   Reuse public site navigation; keep the original report/PDF projection intact. */
+.sessionSiteShell{
+  min-height:100svh;
+  background:linear-gradient(180deg,#f5fafb 0%,#fffdf8 45%,#f9f7f2 100%);
+  color:#243d4a;
+}
+.sessionSiteShell :global(.house-header.house-header--services){
+  position:relative;
+  width:100%;
+  padding:clamp(13px,2vw,23px) max(18px,calc((100vw - 1160px)/2));
+  border-bottom:1px solid #dce7e9;
+  background:rgba(255,255,255,.95);
+  box-shadow:0 2px 12px rgba(23,57,87,.035);
+}
+.sessionSiteShell :global(.house-wordmark){color:#173957}
+.sessionSiteShell :global(.house-wordmark span){color:#71838d}
+.sessionSiteShell :global(.house-header .site-navigation > a){color:#173957}
+.sessionSiteShell .cabinetSessionPage{
+  min-height:0;background:transparent;
+  padding-top:clamp(16px,3vw,27px);
+  padding-bottom:clamp(22px,3vw,36px);
+}
+.sessionSiteShell .cabinetSessionPage .clientHeader{
+  background:#fffefa;
+  padding:12px 16px;margin:0 0 16px;
+  border:1px solid #e5e5dc;border-radius:13px;
+}
+.sessionSiteShell .clientBrand{
+  display:flex;flex-direction:row;flex-wrap:wrap;gap:8px 12px;align-items:center;
+}
+.sessionCrumb{color:#173957;font-size:11px;font-weight:800;letter-spacing:.095em}
+.sessionBottomActions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;gap:12px;
+  margin:23px 0 0;padding:18px;
+  border:1px solid #d7e3e5;border-radius:18px;
+  background:#f2f8f8;
+  box-shadow:0 9px 24px rgba(23,57,87,.045);
+}
+.sessionBottomActions .sessionBottomPrimary,
+.sessionBottomActions .sessionBottomSecondary{
+  min-width:0;min-height:54px;display:flex;align-items:center;justify-content:center;
+  gap:10px;padding:13px 16px;
+  border-radius:12px;border:1px solid #173957;
+  text-align:center;text-decoration:none;font:800 14px/1.35 system-ui,-apple-system,sans-serif;
+  transition:background-color .15s ease,border-color .15s ease;
+  cursor:pointer;
+}
+.sessionBottomActions .sessionBottomPrimary{background:#173957;color:#fff}
+.sessionBottomActions .sessionBottomSecondary{
+  background:#fff;color:#173957;border-color:#bcced8;
+}
+.sessionBottomActions .sessionBottomPrimary:hover:not(:disabled){background:#0e2d49}
+.sessionBottomActions .sessionBottomSecondary:hover{background:#e7f3f6;border-color:#173957}
+.sessionBottomActions :is(.sessionBottomPrimary,.sessionBottomSecondary):focus-visible{
+  outline:3px solid #be6c68;outline-offset:3px
+}
+.sessionBottomActions .sessionBottomPrimary:disabled{opacity:.55;cursor:not-allowed}
+.sessionBottomHint{
+  grid-column:1/-1;margin:0;color:#8a4b49;font-size:13px;line-height:1.5
+}
+@media(max-width:640px){
+  .sessionSiteShell .cabinetSessionPage{padding:13px 12px 24px}
+  .sessionSiteShell .cabinetSessionPage .clientHeader{padding:10px 12px}
+  .sessionBottomActions{grid-template-columns:minmax(0,1fr);padding:12px;
+    gap:10px;margin-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .sessionBottomActions .sessionBottomPrimary,
+  .sessionBottomActions .sessionBottomSecondary{min-height:51px}
+}
+@media(prefers-reduced-motion:reduce){
+  .sessionBottomActions :is(.sessionBottomPrimary,.sessionBottomSecondary){transition:none}
+}
+@media print{
+  .sessionSiteShell :global(.house-header),.sessionBottomActions{display:none!important}
+  .sessionSiteShell{background:#fff}
+}
