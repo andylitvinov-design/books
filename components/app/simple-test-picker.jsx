@@ -23,7 +23,7 @@ const TEXT = {
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Fine-tune depth, time and test types.',
-    activeFilters:'Active filters', kindsTitle:'Test types', kindsHelp:'Select one or several. If none are selected, all types are included.'
+    activeFilters:'Active filters', kindsTitle:'Test types', kindsHelp:'Select one or several. If none are selected, all types are included.',
     depth:'How deep do you want to go?', depthHelp:'This helps prioritize recommendations. It does not limit your options.',
     quick:'Quick check-in', quickNote:'Short introductory tests',
     balanced:'Core set', balancedNote:'A balanced overview',
@@ -52,7 +52,7 @@ const TEXT = {
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте глубину, время и типы тестов.',
-    activeFilters:'Активные фильтры', kindsTitle:'Типы тестов', kindsHelp:'Можно выбрать несколько. Без выбора доступны все типы.'
+    activeFilters:'Активные фильтры', kindsTitle:'Типы тестов', kindsHelp:'Можно выбрать несколько. Без выбора доступны все типы.',
     depth:'Насколько глубоко хотите исследовать?', depthHelp:'Меняет порядок рекомендаций, не закрывая другие тесты.',
     quick:'Быстрый обзор', quickNote:'Короткие вводные тесты',
     balanced:'Основной набор', balancedNote:'Сбалансированная подборка',
@@ -81,7 +81,7 @@ const TEXT = {
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ajusta profundidad, tiempo y tipo de prueba.',
-    activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas', kindsHelp:'Elige uno o varios. Sin seleccionar, se incluyen todos.'
+    activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas', kindsHelp:'Elige uno o varios. Sin seleccionar, se incluyen todos.',
     depth:'¿Cuánto quieres profundizar?', depthHelp:'Ajusta la prioridad, sin excluir los demás tests.',
     quick:'Revisión rápida', quickNote:'Pruebas introductorias',
     balanced:'Conjunto básico', balancedNote:'Selección equilibrada',
