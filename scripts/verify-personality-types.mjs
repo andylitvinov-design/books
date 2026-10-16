@@ -1,4 +1,5 @@
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { collectReportOverflowDiagnostics } from './helpers/report-overflow-diagnostics.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Synthetic loopback-only browser verification. No Google or production requests.
@@ -81,6 +82,15 @@ async function fill(page,d,mode,guest,locale){
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'
    : locale==='ru'?'Несколько равных ведущих паттернов':'Several equally prominent patterns')
  await summary.scrollIntoViewIfNeeded()
+ }
+ // Passive evidence for the hosted WebKit RU Enneagram overflow. Capture before
+ // the unchanged assertion; do not resize, scroll, hide content or retry it.
+ if(!guest&&locale==='ru'&&d.key==='hh-enneagram-36'){
+  try{
+   const layout=await page.evaluate(collectReportOverflowDiagnostics)
+   await writeFile(output+'/layout-account-hh-enneagram-36-ru.json',JSON.stringify({commit:process.env.GITHUB_SHA,scenario:{definitionKey:d.key,locale,mode,guest},...layout},null,2))
+   console.log('TYPOLOGY_LAYOUT',JSON.stringify({viewport:layout.viewport,document:layout.document,body:layout.body,counts:layout.counts,escapingWithoutClippingAncestor:layout.escapingWithoutClippingAncestor.slice(0,6)}))
+  }catch(error){console.log('TYPOLOGY_LAYOUT_DIAGNOSTIC_ERROR',error.message)}
  }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
