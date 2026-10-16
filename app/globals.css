@@ -5853,3 +5853,12 @@
   background:#63354c;color:#fff;font-weight:700;cursor:pointer;
 }
 @media(max-width:600px){.report-save-publication-state button{width:100%}}
+
+/* While a visitor chooses a request channel, the fixed mobile navigation must
+   never cover WhatsApp or Telegram tap targets. Restore it on collapse. */
+@media (max-width: 767px) {
+  body:has([data-contact-order][aria-expanded="true"]) .mobile-bottom-navigation {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
