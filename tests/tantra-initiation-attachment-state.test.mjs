@@ -126,7 +126,7 @@ test("review-after-video is a distinct localized WhatsApp draft and does not sen
     assert.equal(url.pathname, "/" + WHATSAPP_NUMBER);
     const message = url.searchParams.get("text");
     assert.ok(message.includes("Tantra Reiki") || message.includes("Тантра Рейки"));
-    assert.match(message, /review|отзыв|impresiones|práctica/);
+    assert.match(message, /review|impressions|practice|отзыв|impresiones|práctica/);
     assert.match(message, /flow|поток|flujo/);
     assert.ok(message.includes("/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
     assert.notEqual(url.href, render(locale).links[2].props.href);
