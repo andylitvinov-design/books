@@ -26,7 +26,7 @@ test("Reiki PDF endpoint validates all nine localized course selections", async 
   assert.match(chooser, /Download study material and prices/);
   assert.match(chooser, /Request free express Level 1 initiation/);
   assert.match(chooser, /Request full personal Level 1 initiation/);
-  assert.match(chooser, /WhatsAppMark/);
+  assert.match(chooser, /ContactChannelChooser/);
   assert.match(chooser, /option: t\.common\.options\[selected\]/);
   assert.match(chooser, /\/api\/academy\/reiki-guide\?course=/);
   assert.doesNotMatch(chooser, /course-guides.*\.txt"/);
