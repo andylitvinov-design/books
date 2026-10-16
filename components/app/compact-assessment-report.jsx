@@ -1,111 +1,106 @@
+import { useState } from 'react'
 import { FreeCourseBanner } from './free-course-banner'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
-import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
 
+function firstSentence(value) {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  const match = trimmed.match(/^.+?[.!?](?=\s|$)/u)
+  return match ? match[0] : trimmed
+}
+
+// Only presentation changes here: instrument scores, banding and recommendations
+// are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
   const ru = locale === 'ru'
-  const scaleGuide = getTestScaleGuide(result.definitionKey, locale)
-  const byScale = new Map((scaleGuide?.scales || []).map(scale => [scale.key, scale]))
+  const sections = report.sections
+  const guideByScale = new Map((getTestScaleGuide(result.definitionKey, locale)?.scales || []).map(scale => [scale.key, scale]))
   const overview = assessmentResultOverview(report, result, locale)
-  const compactManyScales = report.sections.length > 5
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, sections.findIndex(item => item.recommendedReview)))
+  const selectedIndex = activeIndex < sections.length ? activeIndex : 0
+  const section = sections[selectedIndex]
+  const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
+  const guide = guideByScale.get(section.key)
+  const conciseMeaning = firstSentence(section.meaning)
+  const canShowScore = typeof section.value === 'number' && Number.isFinite(section.value)
+  const isAsrs = result.definitionKey === 'asrs-6'
+
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
     aria-label={ru ? 'Мои результаты и рекомендации' : 'Results and recommendations'}>
-    <header className={styles.header}>
-      <h2>{ru ? 'Ваш результат' : 'Your results'}</h2>
-      <span>{report.sections.length} {ru ? 'показателей' : 'measures'}</span>
-    </header>
-    <section className={styles.overview} data-assessment-overview aria-labelledby="hh-assessment-overview-title">
-      <div className={styles.overviewHead}>
-        <div>
-          <p className={styles.overviewEyebrow}>{ru ? 'Коротко и по делу' : 'A simple starting point'}</p>
-          <h3 id="hh-assessment-overview-title">{ru ? 'Что показали ваши ответы' : 'What your answers show'}</h3>
-        </div>
-        {overview.measurementDateIso && <time dateTime={overview.measurementDateIso} className={styles.overviewDate}>{overview.measurementDateLabel}</time>}
+    <section className={styles.picker} id="hh-assessment-scales" data-assessment-scales data-assessment-scale-picker
+      aria-labelledby="hh-assessment-scale-title">
+      <div className={styles.pickerHeader}>
+        <h2 id="hh-assessment-scale-title">{ru ? 'Шкалы теста' : 'Test scales'}</h2>
+        <span>{sections.length} {ru ? 'показателей' : 'measures'}</span>
       </div>
-      {overview.purpose && <p className={styles.overviewPurpose}>{overview.purpose}</p>}
-      <ul className={styles.overviewGrid} aria-label={ru ? 'Краткий обзор показателей' : 'Quick measure overview'}>
-        {overview.preview.map(item => <li key={item.key} className={styles.overviewChip}>
-          <strong>{item.label}</strong>
-          {item.band && <span>{item.band}</span>}
-          {item.score && <small>{ru ? 'Баллы по шкале' : 'Instrument points'}: {item.score}</small>}
-        </li>)}
-      </ul>
-      {overview.additionalCount > 0 && <p className={styles.moreCount}>
-        {ru ? 'Остальные показатели и их интерпретации приведены ниже.' : 'The remaining measures and their explanations appear below.'}
-      </p>}
-      {overview.reviewNote && <p className={styles.reviewNotice} role="note">{overview.reviewNote}</p>}
-      <p className={styles.overviewLimit}>{ru
-        ? 'Это результаты отдельных шкал, не общий процент здоровья и не диагноз.'
-        : 'These are individual questionnaire measures, not a health percentage or diagnosis.'}</p>
-      <nav className={styles.overviewActions} aria-label={ru ? 'Продолжить изучение результата' : 'Explore your result'}>
-        <a className={styles.overviewLink} href="#hh-assessment-scales">{ru ? 'Подробная расшифровка ↓' : 'See every measure ↓'}</a>
-        <a className={styles.overviewNext} href="#hh-assessment-next-step">{ru ? 'Возможный следующий шаг ↓' : 'An optional next step ↓'}</a>
-      </nav>
+      <div className={styles.scaleTabs} role="group" aria-label={ru ? 'Выберите шкалу для просмотра' : 'Choose a scale to explore'}>
+        {sections.map((item, index) => {
+          const validScore = typeof item.value === 'number' && Number.isFinite(item.value)
+          return <button type="button" key={item.key + ':' + index}
+            data-assessment-scale-trigger={item.key} aria-controls="hh-assessment-scale-panel"
+            aria-pressed={selectedIndex === index}
+            className={styles.scaleTab + (selectedIndex === index ? ' ' + styles.selected : '')}
+            onClick={() => setActiveIndex(index)}>
+            <span className={styles.tabName}>{item.construct || item.title}</span>
+            <span className={styles.tabMeta}>
+              {validScore ? item.value + ' / ' + item.max : (item.band || (ru ? 'Без числового балла' : 'No numeric score'))}
+              {item.recommendedReview && <span className={styles.reviewDot} aria-label={ru ? 'Рекомендовано профессиональное обсуждение' : 'Professional follow-up suggested'}>!</span>}
+            </span>
+          </button>
+        })}
+      </div>
+      {sections.length > 6 && <label className={styles.jump}>
+        {ru ? 'Быстрый выбор шкалы' : 'Jump to a scale'}
+        <select value={selectedIndex} onChange={event => setActiveIndex(Number(event.target.value))}>
+          {sections.map((item, index) => <option key={item.key + ':' + index} value={index}>{item.construct || item.title}</option>)}
+        </select>
+      </label>}
     </section>
-    {report.methodology && <details className={styles.methodDisclosure} data-assessment-methodology>
-      <summary>{ru ? 'Происхождение и профессиональный статус' : 'Origin & evidence'}</summary>
-      <p>{report.methodology}</p>
-    </details>}
-    {report.personalityType && <aside className={styles.typeSummary} role="note" data-personality-type-summary>
-      <p>{ru ? 'Гипотеза для самопознания' : 'Self-reflection hypothesis'}</p>
+
+    <article id="hh-assessment-scale-panel" key={section.key + ':' + selectedIndex}
+      className={styles.card} role="region" aria-label={section.construct || section.title}
+      data-active-scale={section.key}>
+      <div className={styles.measure}>
+        <ScoreGauge dimension={dimension} locale={locale}/>
+        <div className={styles.summary}>
+          <h3>{section.construct || section.title}</h3>
+          {section.band && <p className={styles.band}>{section.band}</p>}
+          {!dimension && canShowScore && <p className={styles.scale}>{ru ? 'Баллы' : 'Score'}: {section.value} · {section.min}–{section.max}</p>}
+          <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
+        </div>
+      </div>
+      {conciseMeaning && <p className={styles.explanation}>{conciseMeaning}</p>}
+      {section.recommendedReview && section.followUp && <p className={styles.care} role="note">{section.followUp}</p>}
+      {section.steps?.length > 0 && <div className={styles.recommendations}>
+        <h4>{isAsrs
+          ? (ru ? 'Пояснение к результату' : 'About your result')
+          : (ru ? 'Два шага на неделю' : 'Two steps this week')}</h4>
+        <ol>{section.steps.slice(0, 2).map((step, index) => <li key={index}>{step}</li>)}</ol>
+      </div>}
+      <details className={styles.details}>
+        <summary>{ru ? 'Подробнее о шкале и источники' : 'More about this score & sources'}</summary>
+        {section.meaning && section.meaning !== conciseMeaning && <p>{section.meaning}</p>}
+        {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
+        {guide?.skill && <p><strong>{ru ? 'Навык по желанию:' : 'Optional skill:'}</strong> {guide.skill}</p>}
+        {!section.recommendedReview && section.followUp && <p>{section.followUp}</p>}
+        {section.steps?.length > 2 && <ol>{section.steps.slice(2).map((step, index) => <li key={index}>{step}</li>)}</ol>}
+        {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
+        {section.bandBasis === 'screening' && <p>{ru ? 'Скрининг не устанавливает диагноз.' : 'Screening is not a diagnosis.'}</p>}
+      </details>
+    </article>
+
+    {report.personalityType && <details className={styles.typeSummary} data-personality-type-summary>
+      <summary>{ru ? 'Личностный профиль для размышления' : 'Personal pattern for reflection'}</summary>
       <h3>{report.personalityType.headline}</h3>
       <p>{report.personalityType.description}</p>
       {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
       <small>{report.personalityType.warning}</small>
-    </aside>}
+    </details>}
     {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
-    <div className={styles.cards} id="hh-assessment-scales" data-assessment-scales>
-      {report.sections.map((section, index) => {
-        const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
-        const guide = byScale.get(section.key)
-        const showSteps = !compactManyScales || index < 2
-        const model = gaugeModel(dimension)
-        const rawNote = model?.displayKind === 'screening-count'
-          ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
-          : model?.orientation === 'difficulty'
-          ? ru ? 'Больше баллов = больше описанных трудностей.' : 'A higher score means more reported difficulties.'
-          : model?.orientation === 'resource'
-            ? ru ? 'Больше баллов = больше описанных ресурсов.' : 'A higher score means more reported resources.'
-            : ru ? 'Описательная шкала: больше не означает лучше или хуже.' : 'Descriptive scale: higher is not automatically better or worse.'
-        return <article key={section.key + ':' + index} className={styles.card}>
-          <div className={styles.measure}>
-            <ScoreGauge dimension={dimension} locale={locale}/>
-            <div className={styles.summary}>
-              <h3>{section.construct || section.title}</h3>
-              <p className={styles.band}>{section.band || (ru ? 'Результат теста' : 'Questionnaire score')}</p>
-              <p className={styles.scale}>{ru ? 'Баллы' : 'Score'}: {section.value} · {ru ? 'шкала' : 'range'} {section.min}–{section.max}</p>
-              <p className={styles.direction}>{rawNote}</p>
-              <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
-            </div>
-          </div>
-          <p className={styles.explanation}>{section.meaning}</p>
-          {showSteps && section.steps.length > 0 && <div className={styles.recommendations}>
-            <h4>{result.definitionKey === 'asrs-6' ? (ru ? 'Пояснение Holistic House' : 'Holistic House explanation') : (ru ? 'Что поможет на этой неделе' : 'Two steps for this week')}</h4>
-            <ol>{section.steps.slice(0, 2).map((step, i) => <li key={i}>{step}</li>)}</ol>
-          </div>}
-          {section.recommendedReview && <p className={styles.care}>{section.followUp}</p>}
-          <details className={styles.details}>
-            <summary>{ru ? 'Подробное пояснение и источники' : 'More about this score & sources'}</summary>
-            {!showSteps && section.steps.length > 0 && <div className={styles.recommendations}>
-              <h4>{ru ? 'Что можно попробовать по желанию' : 'Optional steps to try'}</h4>
-              <ol>{section.steps.slice(0, 2).map((step, i) => <li key={i}>{step}</li>)}</ol>
-            </div>}
-            {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
-            {guide?.skill && <p><strong>{ru ? 'Навык:' : 'Optional skill:'}</strong> {guide.skill}</p>}
-            {!section.recommendedReview && <p>{section.followUp}</p>}
-            {section.steps.length > 2 && <ol>{section.steps.slice(2).map((step, i) => <li key={i}>{step}</li>)}</ol>}
-            {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
-            <small>{section.bandBasis === 'screening'
-              ? ru ? 'Скрининг не устанавливает диагноз.' : 'Screening results are not a diagnosis.'
-              : ru ? 'Положение внутри шкалы не является клиническим порогом.' : 'Scale position is not a clinical cutoff.'}</small>
-          </details>
-        </article>
-      })}
-    </div>
-    {report.instrumentText && <aside data-asrs6-instrument-text>
+    {report.instrumentText && <aside className={styles.instrumentText} data-asrs6-instrument-text>
       <div lang={report.instrumentText.instrumentLocale}>
         <p>{report.instrumentText.eligibilityText}</p>
         <p>{report.instrumentText.printedScoringText}</p>
@@ -114,18 +109,22 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       <p lang="en">{report.instrumentText.requiredSiteAttribution}</p>
       {report.instrumentText.formCopyright && <p lang="en">{report.instrumentText.formCopyright}</p>}
     </aside>}
+
     <div className={styles.footer}>
-      <p>{ru
-        ? 'Индикаторы показывают ответы на отдельных шкалах, а не процент здоровья. Изменение балла не доказывает изменение состояния.'
-        : 'Each dial shows a questionnaire scale, not a health percentage. A score change alone does not prove a health change.'}</p>
-      <details><summary>{ru ? 'О методике, ограничениях и версии интерпретации' : 'Method, limitations & interpretation version'}</summary>
-        <p>{report.purpose}</p>
-        <p>{report.note}</p>
+      <p className={styles.safetyNote}>{ru
+        ? 'Результаты описывают ответы на вопросы, а не процент здоровья или диагноз.'
+        : 'Scores describe questionnaire answers, not a health percentage or diagnosis.'}</p>
+      <details className={styles.methodDisclosure} data-assessment-methodology>
+        <summary>{ru ? 'Методика, источники и ограничения' : 'Method, evidence & limitations'}</summary>
+        {overview.measurementDateIso && <p><time dateTime={overview.measurementDateIso}>{overview.measurementDateLabel}</time></p>}
+        {report.purpose && <p>{report.purpose}</p>}
+        {report.methodology && <p>{report.methodology}</p>}
+        {report.note && <p>{report.note}</p>}
         {report.seekSupport && <p>{report.seekSupport}</p>}
         <small>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>
       </details>
     </div>
-    <span id="hh-assessment-next-step" aria-hidden="true" style={{ scrollMarginTop: 80 }}/>
-    <FreeCourseBanner locale={locale}/>
+    <span id="hh-assessment-next-step" aria-hidden="true"/>
+    <FreeCourseBanner locale={locale} compact/>
   </section>
 }
