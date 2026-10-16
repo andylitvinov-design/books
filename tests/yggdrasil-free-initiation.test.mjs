@@ -54,12 +54,17 @@ test("three visible preparation steps lead to the videos, two study links and se
   assert.match(page, /href="#how-to-free"/);
 });
 
-test("seven original questions remain large, high-contrast, localized and not hidden", () => {
+test("seven original questions remain high-contrast and available in an initially closed disclosure", () => {
   const blocks = [...page.matchAll(/    questions: \[([\s\S]*?)\n    \],\n    statement:/g)];
   assert.equal(blocks.length,3);
   for (const [i, m] of blocks.entries()) {
     assert.equal(m[1].split("\n").filter(l => /^\s*"/.test(l)).length,7,"seven for locale " + i);
   }
+  assert.match(page, /<details className=\{styles\.questionsDisclosure\}>/);
+  assert.match(page, /<summary className=\{styles\.questionsSummary\}>/);
+  assert.doesNotMatch(page, /<details className=\{styles\.questionsDisclosure\}\s+open(?:\s|>)/);
+  assert.match(page, /<span className=\{styles\.questionsSummaryHeading\} role="heading" aria-level=\{2\}/);
+  for (const label of ["Show 7 questions", "Показать 7 вопросов", "Ver las 7 preguntas"]) assert.ok(page.includes(label), label);
   assert.match(page, /<ol className=\{styles\.questions\}>/);
   assert.match(page, /What differences does the author claim/);
   assert.match(page, /Чем автор системы объясняет/);
@@ -69,6 +74,9 @@ test("seven original questions remain large, high-contrast, localized and not hi
   assert.match(layout, /\.questionsSlide\s*\{[\s\S]*?background: linear-gradient\(147deg,#153c55/);
   assert.match(layout, /\.questionsSlide \.questions li\s*\{[\s\S]*?font: 650 17px/);
   assert.match(layout, /\.questionsSlide \.questions li::before/);
+  assert.match(layout, /\.questionsDisclosure\[open\] \.questionsHideLabel/);
+  assert.match(layout, /\.questionsSummary:focus-visible/);
+  assert.match(layout, /@media \(max-width: 470px\)/);
 });
 
 test("mobile two-column compact initiation offers fit together, and capture matches site colors", () => {

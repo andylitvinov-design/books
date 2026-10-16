@@ -22,7 +22,7 @@ test("new localized Tantra Reiki Level 1 landing is routed, linked and indexed",
   assert.ok(course.includes('<Link className="tantra-course-hero__cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}'));
 });
 
-test("exactly the seven owner-approved Russian questions are visible in natural order", () => {
+test("all seven owner-approved questions remain inside an initially closed, accessible disclosure", () => {
   const expected = [
     "Кто является создателем системы Тантра Рейки и каков источник её энергии?",
     "Какова главная цель потока Тантра Рейки? Для чего он нужен и что даёт человеку?",
@@ -38,6 +38,13 @@ test("exactly the seven owner-approved Russian questions are visible in natural 
   for (const group of groups) assert.equal((group[1].match(/^\s*"/gm) || []).length, 7);
   assert.match(landing, /<ol className=\{styles\.questionGrid\}>/);
   assert.match(landing, /t\.questions\.map/);
+  assert.match(landing, /<details className=\{styles\.questionsDisclosure\}>/);
+  assert.match(landing, /<summary className=\{styles\.questionsSummary\}>/);
+  assert.doesNotMatch(landing, /<details className=\{styles\.questionsDisclosure\}\s+open(?:\s|>)/);
+  assert.match(landing, /<span className=\{styles\.questionsSummaryTitle\} role="heading" aria-level=\{2\}/);
+  for (const label of ["Show 7 questions", "Показать 7 вопросов", "Ver las 7 preguntas"]) assert.ok(landing.includes(label), label);
+  assert.match(style, /\.questionsDisclosure\[open\] \.questionsHideLabel/);
+  assert.match(style, /\.questionsSummary:focus-visible/);
 });
 
 test("seven-section learning path uses owner video before original questions, without autoplay", () => {
