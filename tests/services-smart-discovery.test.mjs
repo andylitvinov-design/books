@@ -96,3 +96,19 @@ test('Services: booking-style search and category selector appear above untouche
   assert.doesNotMatch(api,/console\.log|analytics|saveGuestResult|logVisitorText/)
   assert.doesNotMatch(main,/<ServiceCart/)
 })
+
+test('Service discovery scrolls to submitted and category results on mobile and desktop',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  assert.match(ui,/searchInputRef\.current\?\.blur\(\)/)
+  assert.match(ui,/useEffect\(\(\) => \{[\s\S]*?target\.scrollIntoView\(/)
+  assert.match(ui,/prefers-reduced-motion/)
+  assert.match(ui,/window\.requestAnimationFrame/)
+  assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
+  assert.match(ui,/aria-labelledby="hh-service-discovery-results-title"/)
+  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,2)
+  assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
+  assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
+})
