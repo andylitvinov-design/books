@@ -36,15 +36,18 @@ assert.ok(helperStart > 0 && helperEnd > helperStart);
 const helper = verifier.slice(helperStart, helperEnd);
 
 async function posterScenario({
-  ids = fixture.en.home.map(item => item.id), sections = 1, locale = 'en',
+  ids = fixture.en.home.map(item => item.id), sections = 1, locale = 'en', posterUrl = 'relative',
   posterCount = ids.length, wrongPoster = false, wrongWatch = false,
   missingPoster = false, missingWatch = false, brokenImage = false, hiddenPoster = false,
   quoteCount = 1, hiddenQuote = false, playing = false,
 } = {}) {
   const reviews = ids.map(id => {
     let scrolled = false;
+    const expectedSrc = `/images/holistic-house/testimonial-posters/${id}.webp`;
+    const renderedSrc = ({ relative: expectedSrc, absolute: 'http://127.0.0.1:3129' + expectedSrc, foreign: 'https://other.example' + expectedSrc, query: expectedSrc + '?changed=1', hash: expectedSrc + '#changed', wrongId: expectedSrc.replace(id, 'wrongsource'), empty: '' })[posterUrl];
     const poster = {
-      count: Number(!missingPoster), visible: !hiddenPoster, src: wrongPoster ? '/images/other-person.webp' : `/images/holistic-house/testimonial-posters/${id}.webp`,
+      count: Number(!missingPoster), visible: !hiddenPoster, src: wrongPoster ? '/images/other-person.webp' : renderedSrc,
+      async getAttribute(name) { assert.equal(name, 'src'); return this.src; },
       async scrollIntoViewIfNeeded() { scrolled = true; },
       async evaluate(callback) { assert.equal(scrolled, true); return callback({ complete: !brokenImage, naturalWidth: brokenImage ? 0 : 480 }); },
     };
@@ -65,7 +68,7 @@ async function posterScenario({
     assert.ok(id);
     return reviews.find(review => review.id === id) || { count: 0 };
   } };
-  const page = { locator(selector) { assert.equal(selector, '[data-personal-testimonials="home"]'); return testimonials; } };
+  const page = { url() { return 'http://127.0.0.1:3129/'; }, locator(selector) { assert.equal(selector, '[data-personal-testimonials="home"]'); return testimonials; } };
   const expect = actual => ({
     async toHaveCount(expected) { assert.equal(actual.count, expected); },
     async toHaveAttribute(name, expected) { assert.equal(actual[name], expected); },
@@ -78,7 +81,10 @@ async function posterScenario({
 }
 
 test('actual browser helper accepts exactly the two source-selected EN Home cards and matching archived frames', () => posterScenario());
+test('actual browser helper accepts Next Image same-origin absolute URL serialization', () => posterScenario({ posterUrl: 'absolute' }));
 for (const [name, options] of Object.entries({
+  'foreign poster origin': { posterUrl: 'foreign' }, 'poster query': { posterUrl: 'query' },
+  'poster hash': { posterUrl: 'hash' }, 'wrong poster ID': { posterUrl: 'wrongId' }, 'empty poster URL': { posterUrl: 'empty' },
   'zero cards': { ids: [] }, 'one card': { ids: fixture.en.home.slice(0, 1).map(item => item.id) },
   'three service cards on Home': { ids: fixture.en.services.map(item => item.id) },
   'six catalogue cards on Home': { ids: expectedCatalog.en },

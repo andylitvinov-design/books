@@ -177,7 +177,13 @@ async function verifyHomeTestimonialPosters(page) {
     await expect(review).toHaveCount(1);
     const poster = review.locator('.site-video-fallback-poster');
     await expect(poster).toHaveCount(1);
-    await expect(poster).toHaveAttribute('src', `/images/holistic-house/testimonial-posters/${id}.webp`);
+    // Next Image may serialize a same-origin absolute src after hydration.
+    // Compare the complete resolved URL; foreign origins, query/hash and wrong IDs fail.
+    const expectedPoster = new URL(`/images/holistic-house/testimonial-posters/${id}.webp`, page.url()).href;
+    await expect.poll(async () => {
+      const src = await poster.getAttribute('src');
+      return src ? new URL(src, page.url()).href : null;
+    }).toBe(expectedPoster);
     await poster.scrollIntoViewIfNeeded();
     await expect(poster).toBeVisible();
     await expect.poll(() => poster.evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
