@@ -889,3 +889,120 @@
   }
   .cabinetSessionPage .nextStepLink{display:none}
 }
+
+/* Private consultation v4: one disclosure level, no repeated prescription list.
+   Warm Cabinet colors; only the final PDF download receives primary CTA styling. */
+.cabinetSessionPage .sessionHero{
+  padding:clamp(17px,2.7vw,25px);
+}
+.cabinetSessionPage .sessionHero h1{
+  margin:5px 0 13px;
+}
+.cabinetSessionPage .sessionIdentity{
+  margin:0;
+  gap:9px;
+}
+.cabinetSessionPage .practitionerCredit{
+  font-size:13px;
+  margin-top:14px;
+}
+.cabinetSessionPage .sessionDisclosure{
+  background:#fffdf9;
+  border:1px solid #dfdfd3;
+  border-radius:18px;
+  box-shadow:0 5px 20px rgba(62,53,38,.04);
+  overflow:hidden;
+}
+.cabinetSessionPage .sessionDisclosure>summary{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:15px 18px;
+  min-height:64px;
+  list-style:none;
+  cursor:pointer;
+  color:#423b32;
+}
+.cabinetSessionPage .sessionDisclosure>summary::-webkit-details-marker{display:none}
+.cabinetSessionPage .sessionDisclosure>summary:focus-visible,
+.cabinetSessionPage .remedyAccordion>summary:focus-visible{
+  outline:3px solid #47806e;
+  outline-offset:-3px;
+}
+.cabinetSessionPage .sessionDisclosure>summary:hover{background:#f7f8f0}
+.cabinetSessionPage .sessionDisclosure>.sectionHeader{margin:0}
+.cabinetSessionPage .sessionDisclosure>.sectionHeader>div{flex:1;min-width:0}
+.cabinetSessionPage .sessionDisclosure .sectionHeader h2{font-size:clamp(19px,3.4vw,24px);margin:3px 0 0}
+.disclosureChevron{flex:none;margin-left:auto;color:#5b8069;transition:transform .2s ease}
+.sessionDisclosure[open]>summary .disclosureChevron{transform:rotate(180deg)}
+.cabinetSessionPage .sessionDisclosure[open]>summary{background:#f5f7ee}
+.cabinetSessionPage .disclosureBody{
+  padding:17px 19px 20px;
+  border-top:1px solid #e9e5dc;
+  min-width:0;
+}
+.cabinetSessionPage .disclosureBody :is(p,li,dd){
+  overflow-wrap:anywhere;
+}
+.cabinetSessionPage .disclosureBody .sectionIntro{margin-top:0}
+.cabinetSessionPage .disclosureBody .mediaList,
+.cabinetSessionPage .disclosureBody .practiceList{margin:0}
+.cabinetSessionPage .heroDisclosure{
+  margin:15px 0 0;
+  background:#fffdf9;
+  box-shadow:none;
+}
+.cabinetSessionPage .heroDisclosureTitle{
+  font-size:15px;
+  font-weight:750;
+  min-height:50px!important;
+}
+.cabinetSessionPage .heroDisclosure .disclosureBody{padding:12px 16px 15px}
+.cabinetSessionPage .heroDisclosure .sessionSummary{margin:0}
+.cabinetSessionPage .adviceSupplement{display:grid;gap:11px}
+.cabinetSessionPage .adviceSupplement .adviceCard{margin:0}
+.cabinetSessionPage .adviceSupplement .adviceCard strong{display:block;margin-bottom:8px;color:#4d604e}
+.cabinetSessionPage .adviceSupplement .sessionFollowUp{margin:0;padding:4px 0;color:#476659}
+.cabinetSessionPage .transcriptText{
+  border-top:1px solid #e7e5db;
+  padding-top:12px;
+  margin-top:14px;
+  color:#554e43;
+}
+.cabinetSessionPage .transcriptText strong{font-size:13px;color:#4f6d5c}
+.cabinetSessionPage .transcriptText p{font-size:14px;white-space:pre-wrap;line-height:1.65;margin:7px 0 0}
+.cabinetSessionPage .downloadSection{margin-top:28px}
+.cabinetSessionPage .downloadSection .reportPanel{
+  display:flex;
+  flex-wrap:wrap;
+  gap:15px;
+  align-items:center;
+  justify-content:space-between;
+  padding:19px;
+  background:#f2f5ee;
+  border:1px solid #d7e2d1;
+  border-radius:19px;
+}
+.cabinetSessionPage .downloadCopy{display:flex;gap:11px;align-items:center;min-width:0}
+.cabinetSessionPage .downloadCopy>svg{flex:none;color:#55806b}
+.cabinetSessionPage .downloadCopy h2{
+  margin:2px 0 0;
+  font-size:clamp(20px,3vw,25px);
+  color:#443d34;
+}
+.cabinetSessionPage .downloadSection .downloadButton{
+  min-height:49px;min-width:200px;display:inline-flex;align-items:center;
+  justify-content:center;gap:9px;text-align:center;padding:11px 17px;
+  text-decoration:none;font-size:15px;font-weight:780;
+}
+@media(max-width:580px){
+ .cabinetSessionPage .sessionDisclosure>summary{padding:13px 14px;gap:9px;min-height:62px}
+ .cabinetSessionPage .sessionDisclosure .sectionHeader h2{font-size:20px}
+ .cabinetSessionPage .disclosureBody{padding:14px 14px 17px}
+ .cabinetSessionPage .downloadSection .reportPanel{padding:16px;display:grid;grid-template-columns:1fr}
+ .cabinetSessionPage .downloadSection .downloadButton{width:100%;min-width:0}
+ .cabinetSessionPage .sectionIcon{height:40px;width:40px}
+}
+@media(prefers-reduced-motion:reduce){
+ .disclosureChevron{transition:none}
+}
