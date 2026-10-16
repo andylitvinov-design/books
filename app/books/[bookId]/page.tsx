@@ -15,6 +15,7 @@ import { loadReaderDocument } from "@/data/reader-content";
 import { getBook02Remedies, getRemedyDirectory } from "@/data/remedies";
 import type { Locale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
+import { bookSeoDescription } from "@/lib/seo-descriptions";
 
 type PageProps = {
   params: Promise<{ bookId: string }>;
@@ -124,15 +125,16 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const metadataBase = metadataBaseFor();
   const canonicalUrl = new URL("/books/" + book.id + (locale === "en" ? "?lang=en" : ""), metadataBase);
   const coverUrl = new URL("/media/" + book.mediaSeries + "/" + book.cover, metadataBase);
+  const seoDescription = bookSeoDescription(display.title, display.description, locale);
 
   return {
     metadataBase,
     title: display.title,
-    description: display.description,
+    description: seoDescription,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: display.title,
-      description: display.description,
+      description: seoDescription,
       images: [{ url: coverUrl, alt: labels.cover + ": " + display.title }],
       type: "article",
     },
