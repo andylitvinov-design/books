@@ -60,8 +60,8 @@
 @media (prefers-reduced-motion: reduce) { .choice, .action { transition: none; } }
 
 
-/* Top-of-landing capture is a short, guide-first route; the bottom captures
-   enquiries with the existing express-first layout. Yggdrasil stays unchanged. */
+/* Top-of-landing capture is a short, guide-first route for both Reiki courses;
+   bottom capture preserves the original express-first offer and deep links. */
 .topCapture {
   width: 100%;
   margin: 16px auto 28px;
@@ -203,4 +203,42 @@
     padding: 10px 12px;
     font-size: 14px;
   }
+}
+
+/* Reiki Yggdrasil: the approved 2+1 choice design also applies at the upper
+   entry point; keep the original Tantra selectors and lower panels unchanged. */
+.yggdrasilTopCapture {
+  width: min(100%, 830px);
+  margin: 4px auto 24px;
+  padding: 19px 22px 18px;
+  border-color: #bad8dd;
+}
+.yggdrasilTopCapture .title { margin-top: 7px; font-size: clamp(25px, 3vw, 34px); }
+.yggdrasilTopCapture .lead { font-size: 13px; line-height: 1.45; }
+.yggdrasilTopCapture .priceLine { margin-top: 7px; font-size: 11px; }
+.yggdrasilTopCapture .question { margin: 12px 0 8px; font-size: 12px; }
+.yggdrasilTopCapture .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.yggdrasilTopCapture .choice {
+  min-height: 61px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.yggdrasilTopCapture .choice:nth-child(3) {
+  grid-column: 1 / -1;
+  min-height: 51px;
+}
+.yggdrasilTopCapture .action { min-height: 48px; margin-top: 11px; font-size: 14px; }
+.yggdrasilTopCapture .note { margin-top: 7px; font-size: 10px; }
+@media (max-width: 640px) {
+  .yggdrasilTopCapture { padding: 16px 14px; margin: 0 auto 17px; }
+  .yggdrasilTopCapture .title { font-size: clamp(25px, 6.9vw, 31px); }
+  .yggdrasilTopCapture .lead { font-size: 12px; }
+  .yggdrasilTopCapture .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .yggdrasilTopCapture .choice {
+    min-height: 75px;
+    padding: 9px 8px;
+    font-size: clamp(11px, 3vw, 12px);
+  }
+  .yggdrasilTopCapture .choice:nth-child(3) { grid-column: 1 / -1; min-height: 50px; }
+  .yggdrasilTopCapture .action { min-height: 47px; font-size: 13px; }
 }
