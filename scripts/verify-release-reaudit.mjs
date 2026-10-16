@@ -24,6 +24,17 @@ async function check(name, detail, fn) {
   try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); }
   catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); }
 }
+async function assertCspPublicHome(page) {
+  await expect(page).toHaveURL(origin + '/');
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+  // A history traversal can update the URL while the previous public document
+  // remains visible and its replacement is pending. Require the destination DOM,
+  // not load/hydration readiness: the server-rendered home is sufficient here.
+  const home = page.locator('main[data-home-design="approved-v2"]');
+  await expect(home).toHaveCount(1);
+  await expect(home).toBeVisible();
+}
+
 async function verifyCspBfcache() {
   // Playwright Page lifecycle/locators explicitly do not support BFCache.
   // Use its browser launcher only; every observation/navigation below is CDP.
@@ -454,8 +465,7 @@ async function exercise(engine, browserType, width) {
           await expect(privateWordmark).toBeVisible();
           await expect(privateWordmark).toHaveAttribute('href', '/');
           await privateWordmark.click();
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
@@ -486,8 +496,7 @@ async function exercise(engine, browserType, width) {
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
           historyPhase = 'back-to-public-home';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
@@ -497,8 +506,7 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/');
-          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });

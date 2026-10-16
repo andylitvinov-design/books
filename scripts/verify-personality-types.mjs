@@ -1,4 +1,7 @@
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
+import { assertAccountScaleJumpLayout } from './helpers/scale-jump-layout-verifier.mjs'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { collectReportOverflowDiagnostics } from './helpers/report-overflow-diagnostics.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
@@ -94,6 +97,12 @@ async function fill(page,d,mode,guest,locale){
  }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
  await page.screenshot({path:output+'/'+(guest?'guest':'account')+'-'+d.key+'-'+locale+'.png',fullPage:false})
+ if(!guest&&d.scoring.dimensions.length>6){
+  const expected=buildAssessmentResultReport(scoreAssessment(d,Object.fromEntries(d.questions.map(question=>[question.id,3]))),locale)
+  const layouts=await assertAccountScaleJumpLayout(page,expect,expected.sections,{screenshotPrefix:output+'/picker-'+d.key+'-'+locale})
+  await writeFile(output+'/picker-layout-'+d.key+'-'+locale+'.json',JSON.stringify({commit:process.env.GITHUB_SHA,definitionKey:d.key,locale,layouts},null,2))
+  console.log('TYPOLOGY_PICKER_LAYOUT',JSON.stringify({definitionKey:d.key,locale,layouts}))
+ }
 }
 let page
 try{
