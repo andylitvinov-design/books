@@ -47,7 +47,7 @@ test('the public client page uses navy text, burgundy controls, and narrow-scree
 })
 
 test('compact navy/wine test details show type, time and measured scales before optional methodology', () => {
-  assert.match(picker, /const COMPACT_KIND_LABELS/)
+  assert.match(picker, /testKindCardLabel\(entry, locale\)/)
   assert.match(picker, /data-test-kind-badge/)
   assert.match(picker, /data-compact-test-scales/)
   assert.match(picker, /entry\.scaleGuide\.scales\.slice\(0, 3\)/)
@@ -202,4 +202,25 @@ test('recommendation tabs filter only the displayed entries and keep server test
   assert.match(publicFlow, /client\?startTests=/)
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
   assert.ok(picker.indexOf('id="hh-public-recommended-tests"') < picker.indexOf('data-via-family'), 'optional VIA family follows main tests')
+})
+
+
+test('every recommended test visibly explains its kind without hiding the label on small phones', () => {
+  const main = picker.indexOf('<label htmlFor={inputId} className={styles.testInfo}>')
+  const title = picker.indexOf('<strong>{entry.title}</strong>', main)
+  const description = picker.indexOf('<small>{entry.description || entry.category}</small>', title)
+  const kind = picker.indexOf('className={styles.testTypeLine} data-test-type-line', description)
+  const metadata = picker.indexOf('className={styles.testChips}', kind)
+  assert.ok(main >= 0 && title > main && description > title && kind > description && metadata > kind)
+  assert.equal((picker.match(/<KindBadge entry=\{entry\} locale=\{locale\} \/>/g) || []).length, 1)
+  assert.match(picker, /<KindBadge entry=\{fullVia\} locale=\{locale\} \/>/)
+  assert.match(picker, /className=\{styles\.kindBadgeText\}/)
+  assert.match(picker, /data-test-kind-badge=\{kind\.key\}/)
+  assert.match(picker, /aria-label=\{\x60\$\{prefix\}: \$\{label\}\x60\}/)
+  assert.match(css, /test type is a separate, readable fact/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine/)
+  assert.match(css, /\.shell \.testInfo \.testTypeLine \.testKindBadge/)
+  assert.match(css, /\.shell \.testInfo \.testKindBadge \.kindBadgeText/)
+  assert.match(css, /@media\(max-width:370px\)[\s\S]*?\.kindBadgeText\{[\s\S]*?display:inline!important/)
+  assert.match(explorer, /testKindCardLabel\(entry, locale\)/)
 })
