@@ -138,3 +138,10 @@
 **Changelog 2026-10-16 · afternoon:** Google ownership/siteOwner verified, sitemap 594/0 Google snapshot, all 19 URL inspected and tracked, 19/19 on-page indexable; source-backed first 28/90d zeros saved. See GSC baseline. Safe Organization logo and Yggdrasil metadata improvements in next SEO PR.
 
 **Changelog 2026-10-16:** v3 consolidates Free Tantra L1 SEO release, 15 priority locale URLs, real GSC access blocker, R07 seed, updated paid/free offers, goals, roadmap, Codex specs, KPI and privacy policies.
+
+## 9. Технический мультиязычный SEO-аудит 16.10.2026
+
+План реализации и критерии приёмки: [Multilingual SEO remediation](./multilingual-seo-remediation-2026-10-16.md).
+Исходный пользовательский аудит фиксировал 87 URL; текущий код генерирует sitemap по каталогам и реальным маршрутам, а GSC baseline этого дня имеет другой объём. **Число страниц нельзя считать подтверждённым без повторной проверки фактического XML и GSC после деплоя.**
+
+**Новые акценты:** полные EN/RU/ES hreflang + x-default только при существующих маршрутах, lastmod для каждой sitemap-строки, описания без обрыва посреди предложения, единый Andrey Litvinov, noindex и навигация на 404, проверка доступности CTA, контролируемое разделение Library hub и Books catalog. На ES-главной добавить бесплатные тесты, Академию, библиотеку и проверенные отзывы; ES-каталог переводов — отдельная выборочная редакторская проверка. В P2 — Lighthouse/PSI на мобильном и реальный CWV из полевых данных. Рабочая ветка: `codex/seo-multilingual-audit-20261016`; продакшен только после CI, review и Vercel readback.
