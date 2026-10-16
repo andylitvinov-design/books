@@ -14,7 +14,9 @@ test('preview / open is owner-only complete consultation HTML, PDF is a distinct
   assert.match(owner,/scope==='client'/)
   assert.match(owner,/ClientSessionPage mode="owner"/)
   assert.match(owner,/PrescriptionDocument document=\{document\}/)
-  assert.match(owner,/\/admin\/api\/documents\//)
+  assert.match(page,/mode==='owner'\?'\/admin\/api\/documents\//)
+  assert.match(page,/href=\{pdfPath\}/)
+  assert.doesNotMatch(owner,/Download PDF|Скачать PDF/,'owner toolbar must not duplicate the inline PDF button')
   assert.match(route,/session-preview/)
   assert.match(actions,/href=\{urls\.open\}/)
   assert.match(actions,/href=\{urls\.previewPdf\}/)
@@ -38,7 +40,8 @@ test('client and Google-saved session readers include full HTML report and autho
   assert.match(page,/id="session-photos"/)
   assert.match(page,/id="session-report"/)
   assert.match(page,/id="session-message"/)
-  assert.match(page,/Read the full HTML document/)
+  assert.match(page,/className=\{styles\.fullReportContent\}>\{reportContent\}/)
+  assert.doesNotMatch(page,/<details className=\{styles\.reportDetails\}>/)
 })
 
 test('sharing the full page requires a published, unchanged single-session grant',()=>{
@@ -79,4 +82,33 @@ test('mobile recording checks private bucket before camera / microphone permissi
   assert.match(media,/privateMediaStream/)
   assert.match(media,/export const HEAD/)
   assert.match(media,/export const POST/)
+})
+
+
+test('real report is a visible canonical document followed by private attachments and one PDF action',()=>{
+  const page=src('components/client-session-page.jsx')
+  const css=src('components/client-session.module.css')
+  const owner=src('app/admin/documents/[id]/session-preview/page.js')
+  const canonical=src('components/prescription-document.jsx')
+  assert.match(page,/const hasFullReport=Boolean\(reportContent\)/)
+  assert.match(page,/\{hasFullReport&&<section id="session-report"/)
+  assert.match(page,/className=\{styles\.fullReportContent\}>\{reportContent\}/)
+  assert.ok(page.indexOf('className={styles.fullReportContent}>{reportContent}') <
+    page.indexOf('id="session-message"'),'complete report comes before media blocks')
+  assert.match(page,/!hasFullReport&&hasRecommendation/,'do not duplicate visible recommendation cards')
+  assert.match(page,/!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview/)
+  assert.match(page,/id="session-photos"/)
+  assert.match(page,/id="session-guide"/)
+  assert.match(page,/function PrivatePlayer/)
+  assert.match(page,/SaveClientSessionToAccount/)
+  assert.match(page,/SessionExitSaveGuard/)
+  assert.equal(page.match(/href=\{pdfPath\}/g)?.length,1,'only one PDF action in the client report')
+  assert.doesNotMatch(owner,/href=\{pdf[+}]/,'owner toolbar does not add another PDF action')
+  assert.match(css,/\.cabinetSessionPage \.fullReportContent :global\(\.prescription-shell\.canonical-shell\)/)
+  assert.match(css,/\.cabinetSessionPage \.fullReportSection/)
+  for(const selector of ['canonical-report-brandline','canonical-progress',
+    'canonical-report-analysis','canonical-remedy-group','canonical-guidance',
+    'canonical-follow-up-appointment','DocumentSignature','canonical-remedy-profiles']) {
+    assert.ok(canonical.includes(selector),'original signed document keeps '+selector)
+  }
 })
