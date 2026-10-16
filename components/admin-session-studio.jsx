@@ -242,7 +242,8 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         }}><Save size={17}/>{ru?'Сохранить план':'Save plan'}</button>
       </div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
+    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} showYouTubeQuickAdd={false}
+      onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
     <section className={styles.editorCard}>
       <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
