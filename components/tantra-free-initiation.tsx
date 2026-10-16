@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck } from "lucide-react";
+import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck, Video, Flower2 } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
@@ -32,14 +32,19 @@ const copy = {
       { title: "Connect", text: "Approach relationships and shared practice with openness, choice and consent." },
       { title: "Grow", text: "Follow nine levels that deepen the original stream through different forms of study." },
     ],
-    choiceEyebrow: "02 / START YOUR JOURNEY", choiceTitle: "Two ways to receive Level 1",
-    choiceLead: "Choose the introductory gift or a personal session with Andrey. Both begin with the same first level; the difference is the format and the amount of individual guidance.",
-    freeFlag: "FREE INTRODUCTORY OFFER", freeTitle: "Your first step, free",
-    freeText: "Read the materials, prepare short answers to the seven questions and ask about a teacher-guided introductory Level 1 initiation.",
-    freePrice: "€0", freeButton: "How to start for free",
+    choiceEyebrow: "02 / BEGIN YOUR JOURNEY", choiceTitle: "Choose your Level 1 path",
+    choiceLead: "Three ways to begin Tantra Reiki — from a free introduction to personal guidance with Andrey.",
+    choiceMotif: "PRESENCE · LOVE · CONNECTION",
+    freeFlag: "FREE INTRODUCTORY OFFER", freeTitle: "Start for free",
+    freeText: "Watch the practice, read the materials and answer seven questions. Ask Andrey about a free guided introduction.",
+    freePrice: "€0", freeDuration: "INTRO", freeButton: "How to start for free",
     personalFlag: "ONE-TO-ONE ONLINE", personalTitle: "Personal distance initiation",
-    personalText: "A personal online session with Andrey to discuss Level 1 and arrange your individual initiation.",
-    personalButton: "Enquire in WhatsApp",
+    personalText: "A personal online Level 1 initiation with Andrey, with time for your questions.",
+    personalDuration: "30 MIN", personalButton: "Enquire in WhatsApp",
+    combinedFlag: "PERSONAL SESSION + INITIATION", combinedTitle: "Personal session + initiation",
+    combinedText: "We explore your situation and check for solutions. Includes your Level 1 initiation.",
+    combinedPrice: "€75", combinedDuration: "45 MIN", combinedButton: "Book in WhatsApp",
+    benefits: ["Respectful space", "No prior experience needed", "Personal guidance by Andrey"],
     availability: "Sessions and free introductory availability are confirmed personally. Reading or submitting answers does not itself grant an initiation.",
     guideEyebrow: "03 / YOUR PATH", guideTitle: "How to receive Level 1 for free",
     guideLead: "Five steps: watch the practice, share your impressions, study the materials and answer the questions. A personal distance initiation is optional.",
@@ -74,7 +79,7 @@ const copy = {
       { title: "Download the Tantra Reiki PDF", subtitle: "Course overview and first-level study guide" },
     ],
     formEyebrow: "07 / WHATSAPP", formTitle: "Ready to begin?",
-    formLead: "Free introduction, personal initiation or your seven answers — all directly through WhatsApp.",
+    formLead: "Free introduction, personal initiation, a longer individual session or your seven answers — all directly through WhatsApp.",
     disclaimer: "Tantra Reiki is presented here as a spiritual and reflective tradition. Its descriptions of energies or effects are not established medical facts. It does not replace healthcare or guarantee results.",
     footer: "Return to the full Tantra Reiki course",
   },
@@ -94,14 +99,19 @@ const copy = {
       { title: "Соединяться", text: "Учиться контакту с собой и другими с уважением к выбору и границам." },
       { title: "Развиваться", text: "Последовательно изучать один поток через девять ступеней системы." },
     ],
-    choiceEyebrow: "02 / НАЧАЛО ПУТИ", choiceTitle: "Два варианта первой ступени",
-    choiceLead: "Выберите бесплатную вводную инициацию или индивидуальное занятие с Андреем. Оба варианта знакомят с первой ступенью, но различаются форматом сопровождения.",
-    freeFlag: "БЕСПЛАТНОЕ ЗНАКОМСТВО", freeTitle: "Первая ступень в подарок",
-    freeText: "Изучите материалы, подготовьте ответы на семь вопросов и запросите бесплатную вводную инициацию с преподавателем.",
-    freePrice: "0 €", freeButton: "Как получить бесплатно",
+    choiceEyebrow: "02 / НАЧАЛО ПУТИ", choiceTitle: "Три пути к первой ступени",
+    choiceLead: "Выберите бесплатное знакомство, личную инициацию или занятие с разбором вашей ситуации.",
+    choiceMotif: "ПРИСУТСТВИЕ · ЛЮБОВЬ · СВЯЗЬ",
+    freeFlag: "БЕСПЛАТНОЕ ЗНАКОМСТВО", freeTitle: "Начните бесплатно",
+    freeText: "Посмотрите практику, прочитайте материалы, ответьте на семь вопросов и запросите бесплатную вводную инициацию.",
+    freePrice: "0 €", freeDuration: "ВВОДНАЯ", freeButton: "Как начать бесплатно",
     personalFlag: "ИНДИВИДУАЛЬНО ОНЛАЙН", personalTitle: "Личная дистанционная инициация",
-    personalText: "Личная онлайн-встреча с Андреем, чтобы обсудить первую ступень и пройти индивидуальную инициацию.",
-    personalButton: "Записаться через WhatsApp",
+    personalText: "Индивидуальная онлайн-инициация первой ступени с Андреем и ответы на ваши вопросы.",
+    personalDuration: "30 МИН", personalButton: "Написать в WhatsApp",
+    combinedFlag: "ЛИЧНАЯ СЕССИЯ + ИНИЦИАЦИЯ", combinedTitle: "Личная сессия + инициация",
+    combinedText: "Разберём вашу ситуацию, поищем возможные решения и проведём инициацию первой ступени.",
+    combinedPrice: "75 €", combinedDuration: "45 МИН", combinedButton: "Записаться в WhatsApp",
+    benefits: ["Уважение и границы", "Без предварительного опыта", "Лично с Андреем"],
     availability: "Возможность бесплатной встречи, даты и формат подтверждает Андрей. Чтение материалов и ответы на вопросы сами по себе не являются инициацией.",
     guideEyebrow: "03 / КАК ПОЛУЧИТЬ", guideTitle: "Как получить Тантра Рейки бесплатно",
     guideLead: "Пять шагов: посмотрите видео, поделитесь ощущениями, изучите материалы и ответьте на вопросы. Личная дистанционная инициация — по желанию.",
@@ -136,7 +146,7 @@ const copy = {
       { title: "Скачать PDF по Тантра Рейки", subtitle: "Описание системы и материалы первой ступени" },
     ],
     formEyebrow: "07 / WHATSAPP", formTitle: "Готовы начать?",
-    formLead: "Бесплатная инициация, личное занятие или отправка семи ответов — всё напрямую через WhatsApp.",
+    formLead: "Бесплатное знакомство, личная инициация, расширенная сессия или ваши семь ответов — всё через WhatsApp.",
     disclaimer: "Тантра Рейки здесь представлена как духовная и созерцательная традиция. Описания потоков и эффектов относятся к учению, не являются доказанными медицинскими фактами и не заменяют медицинскую помощь.",
     footer: "Вернуться к полной программе Тантра Рейки",
   },
@@ -156,14 +166,19 @@ const copy = {
       { title: "Conectar", text: "Cultivar una relación consciente basada en la elección y el consentimiento." },
       { title: "Crecer", text: "Conocer los nueve niveles que profundizan el mismo flujo." },
     ],
-    choiceEyebrow: "02 / TU COMIENZO", choiceTitle: "Dos maneras de empezar",
-    choiceLead: "Elige la introducción gratuita o una sesión personal con Andrey. Las dos comienzan con el primer nivel.",
-    freeFlag: "INTRODUCCIÓN GRATUITA", freeTitle: "Tu primer nivel, gratis",
-    freeText: "Lee los materiales, prepara respuestas breves a siete preguntas y solicita una iniciación introductoria guiada.",
-    freePrice: "0 €", freeButton: "Cómo empezar gratis",
+    choiceEyebrow: "02 / TU COMIENZO", choiceTitle: "Tres caminos al nivel 1",
+    choiceLead: "Elige entre una introducción gratis, una iniciación personal y una sesión individual con Andrey.",
+    choiceMotif: "PRESENCIA · AMOR · CONEXIÓN",
+    freeFlag: "INTRODUCCIÓN GRATUITA", freeTitle: "Empieza gratis",
+    freeText: "Mira la práctica, lee los materiales, responde siete preguntas y solicita una introducción guiada gratuita.",
+    freePrice: "0 €", freeDuration: "INICIO", freeButton: "Cómo empezar gratis",
     personalFlag: "INDIVIDUAL ONLINE", personalTitle: "Iniciación personal a distancia",
-    personalText: "Una sesión individual online para conversar sobre el primer nivel y acordar la iniciación con Andrey.",
-    personalButton: "Pedir por WhatsApp",
+    personalText: "Iniciación online individual de nivel 1 con Andrey y tiempo para tus preguntas.",
+    personalDuration: "30 MIN", personalButton: "Consultar por WhatsApp",
+    combinedFlag: "SESIÓN PERSONAL + INICIACIÓN", combinedTitle: "Sesión personal + iniciación",
+    combinedText: "Exploramos tu situación y buscamos posibles soluciones. Incluye tu iniciación de nivel 1.",
+    combinedPrice: "75 €", combinedDuration: "45 MIN", combinedButton: "Reservar por WhatsApp",
+    benefits: ["Espacio respetuoso", "Sin experiencia previa", "Guía personal de Andrey"],
     availability: "La disponibilidad y la fecha se confirman personalmente. Leer o enviar respuestas no constituye una iniciación.",
     guideEyebrow: "03 / CÓMO EMPEZAR", guideTitle: "Cómo recibir Tantra Reiki gratis",
     guideLead: "Cinco pasos: mira la práctica, comparte tus impresiones, lee los materiales y responde las preguntas. La iniciación personal a distancia es opcional.",
@@ -198,7 +213,7 @@ const copy = {
       { title: "Descarga la guía PDF", subtitle: "Descripción del sistema y primer nivel" },
     ],
     formEyebrow: "07 / WHATSAPP", formTitle: "¿Listo para comenzar?",
-    formLead: "Solicita la iniciación gratis, una sesión personal o envía tus siete respuestas directamente por WhatsApp.",
+    formLead: "Pide la introducción gratuita, una iniciación personal, la sesión ampliada o envía tus siete respuestas por WhatsApp.",
     disclaimer: "Tantra Reiki se presenta como tradición espiritual y reflexiva. Las afirmaciones sobre energía no son hechos médicos demostrados ni sustituyen la atención sanitaria.",
     footer: "Volver al curso completo Tantra Reiki",
   },
@@ -267,21 +282,66 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section id="initiation-choices" className={styles.section} aria-labelledby="tantra-choices-title">
-          <header className={styles.sectionHeading}><p className={styles.eyebrow}>{t.choiceEyebrow}</p><h2 id="tantra-choices-title">{t.choiceTitle}</h2><p>{t.choiceLead}</p></header>
-          <div className={styles.choiceGrid}>
-            <div className={styles.choiceFree}>
-              <span className={styles.offerFlag}><Sparkles size={14} aria-hidden="true"/>{t.freeFlag}</span>
-              <h3>{t.freeTitle}</h3><p>{t.freeText}</p>
-              <div className={styles.offerBottom}><strong>{t.freePrice}</strong><a className={styles.buttonWine} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
+        <section id="initiation-choices" className={styles.section + " " + styles.choiceSection} aria-labelledby="tantra-choices-title">
+          <header className={styles.sectionHeading + " " + styles.choiceHeading}>
+            <div>
+              <p className={styles.eyebrow}>{t.choiceEyebrow}</p>
+              <h2 id="tantra-choices-title">{t.choiceTitle}</h2>
+              <p>{t.choiceLead}</p>
             </div>
-            <div className={styles.choicePersonal}>
-              <span className={styles.offerFlag}><Heart size={14} aria-hidden="true"/>{t.personalFlag}</span>
-              <h3>{t.personalTitle}</h3><p>{t.personalText}</p>
-              <div className={styles.offerBottom}><strong>{formatReikiLevelPrice("tantra", locale)}</strong><a className={styles.buttonNavy} href={tantraInitiationWhatsAppUrl(locale, "personal")} target="_blank" rel="noopener noreferrer">{t.personalButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
+            <div className={styles.choiceOrnament} aria-hidden="true">
+              <Flower2 size={48} strokeWidth={1.15} />
+              <span>{t.choiceMotif}</span>
             </div>
+          </header>
+          <div className={styles.choiceGrid} data-tantra-three-offers>
+            <article className={styles.choiceFree} data-tantra-offer="free">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><BookOpen size={23} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.freeFlag}</span>
+                  <h3>{t.freeTitle}</h3>
+                  <p>{t.freeText}</p>
+                </div>
+                <span className={styles.pricePill}><strong>{t.freePrice}</strong><small>{t.freeDuration}</small></span>
+              </div>
+              <a className={styles.buttonWine + " " + styles.offerButton} href="#how-to">{t.freeButton}<ArrowRight size={17} aria-hidden="true"/></a>
+            </article>
+            <article className={styles.choicePersonal} data-tantra-offer="personal">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><Video size={23} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.personalFlag}</span>
+                  <h3>{t.personalTitle}</h3>
+                  <p>{t.personalText}</p>
+                </div>
+                <span className={styles.pricePill} aria-label={formatReikiLevelPrice("tantra", locale)}>
+                  <strong>{formatReikiLevelPrice("tantra", locale).split(" / ")[0]}</strong>
+                  <small>{t.personalDuration}</small>
+                </span>
+              </div>
+              <a className={styles.buttonNavy + " " + styles.offerButton} href={tantraInitiationWhatsAppUrl(locale, "personal")} target="_blank" rel="noopener noreferrer">{t.personalButton}<ArrowRight size={17} aria-hidden="true"/></a>
+            </article>
+            <article className={styles.choiceCombined} data-tantra-offer="session">
+              <div className={styles.offerTop}>
+                <span className={styles.offerIcon}><Flower2 size={25} strokeWidth={1.6} aria-hidden="true" /></span>
+                <div className={styles.offerCopy}>
+                  <span className={styles.offerFlag}>{t.combinedFlag}</span>
+                  <h3>{t.combinedTitle}</h3>
+                  <p>{t.combinedText}</p>
+                </div>
+                <span className={styles.pricePill}><strong>{t.combinedPrice}</strong><small>{t.combinedDuration}</small></span>
+              </div>
+              <a className={styles.buttonCopper + " " + styles.offerButton} href={tantraInitiationWhatsAppUrl(locale, "session")} target="_blank" rel="noopener noreferrer">{t.combinedButton}<ArrowRight size={17} aria-hidden="true"/></a>
+            </article>
           </div>
-          <p className={styles.availability}><ShieldCheck size={17} aria-hidden="true"/>{t.availability}</p>
+          <div className={styles.choiceBenefits}>
+            {t.benefits.map((item, index) => {
+              const Icon = [ShieldCheck, Feather, Heart][index];
+              return <span key={item}><Icon size={16} aria-hidden="true"/>{item}</span>;
+            })}
+          </div>
+          <p className={styles.availability}><ShieldCheck size={16} aria-hidden="true"/>{t.availability}</p>
         </section>
 
         <section id="how-to" className={styles.howSection} aria-labelledby="tantra-how-title">

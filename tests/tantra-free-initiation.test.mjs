@@ -57,17 +57,17 @@ test("Tantra Reiki price and source PDF remain available without a bottom PDF fo
   assert.doesNotMatch(form, /reiki-guide\?course=yggdrasil|Download PDF guide|Скачать PDF/);
 });
 
-test("bottom lead capture is three direct WhatsApp actions, no web form", () => {
-  assert.match(form, /type Intent = "free" \| "personal" \| "answers" \| "feedback"/);
+test("bottom lead capture provides all three offers and answer submission through WhatsApp", () => {
+  assert.match(form, /type Intent = "free" \| "personal" \| "session" \| "answers" \| "feedback"/);
   assert.match(form, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
   assert.match(form, /return whatsappEnquiryUrl\(\{/);
   assert.match(form, /request: t\.requests\[intent\]/);
   assert.match(form, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/);
-  for (const intent of ["free", "personal", "answers"]) {
+  for (const intent of ["free", "personal", "session", "answers"]) {
     assert.ok(form.includes('id="apply-' + intent + '"'), intent);
     assert.ok(form.includes('href={tantraInitiationWhatsAppUrl(locale, "' + intent + '")}'), intent);
   }
-  assert.equal((form.match(/target="_blank"/g) || []).length, 3);
+  assert.equal((form.match(/target="_blank"/g) || []).length, 4);
   assert.match(form, /data-tantra-whatsapp-capture/);
   assert.match(form, /Я напишу или вставлю ответы на вопросы 1–7 непосредственно в WhatsApp/);
   assert.match(landing, /href=\{tantraInitiationWhatsAppUrl\(locale, "answers"\)\}/);
@@ -111,7 +111,7 @@ test("WhatsApp capture is compact, responsive and requests no name or email", ()
   assert.match(style, /\.whatsappActions \{ display: grid; grid-template-columns: repeat\(2/);
   assert.match(style, /\.whatsappCapture \{/);
   assert.match(style, /\.hero \{[\s\S]*?min-height: 440px/);
-  assert.match(style, /\.choiceFree, \.choicePersonal \{[\s\S]*?min-height: 232px/);
+  assert.match(style, /\.choiceFree, \.choicePersonal, \.choiceCombined \{[\s\S]*?min-height: 252px/);
   assert.match(style, /\.howCard \{[\s\S]*?min-height: 138px/);
   assert.match(style, /\.questionGrid li \{[\s\S]*?min-height: 76px/);
   assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.whatsappActions \{ grid-template-columns: 1fr/);
@@ -119,3 +119,26 @@ test("WhatsApp capture is compact, responsive and requests no name or email", ()
   assert.doesNotMatch(form, /<input[^>]*required|autoComplete=|type="email"|type="text"/);
 });
 
+
+test("approved three-choice Tantra design includes a genuine €75 personal session in EN/RU/ES", () => {
+  assert.match(landing, /choiceTitle: "Choose your Level 1 path"/);
+  assert.match(landing, /choiceTitle: "Три пути к первой ступени"/);
+  assert.match(landing, /choiceTitle: "Tres caminos al nivel 1"/);
+  assert.match(landing, /data-tantra-three-offers/);
+  for (const offer of ["free", "personal", "session"]) {
+    assert.ok(landing.includes('data-tantra-offer="' + offer + '"'), offer);
+  }
+  assert.equal((landing.match(/combinedPrice:/g) || []).length, 3);
+  assert.equal((landing.match(/combinedDuration:/g) || []).length, 3);
+  assert.match(landing, /We explore your situation and check for solutions/);
+  assert.match(landing, /formatReikiLevelPrice\("tantra", locale\)/);
+  assert.match(landing, /tantraInitiationWhatsAppUrl\(locale, "session"\)/);
+  assert.match(form, /€75 \/ 45 minutes/);
+  assert.match(form, /75 € \/ 45 минут/);
+  assert.match(form, /75 € \/ 45 minutos/);
+  assert.match(style, /\.choiceGrid \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(style, /\.choiceCombined \{/);
+  assert.match(style, /\.buttonCopper \{/);
+  assert.match(style, /\.pricePill \{/);
+  assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.offerButton \{/);
+});

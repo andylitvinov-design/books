@@ -49,15 +49,16 @@ function render(locale) {
   };
 }
 
-test("EN/RU/ES capture renders exactly three direct WhatsApp actions", () => {
+test("EN/RU/ES capture renders four WhatsApp actions including the personal session", () => {
   for (const locale of ["en", "ru", "es"]) {
     const { links } = render(locale);
     assert.deepEqual(links.map((link) => link.props.id), [
       "apply-free",
       "apply-personal",
+      "apply-session",
       "apply-answers",
     ]);
-    assert.equal(links.length, 3);
+    assert.equal(links.length, 4);
     for (const link of links) {
       const url = new URL(link.props.href);
       assert.equal(url.origin, "https://wa.me");
@@ -69,11 +70,11 @@ test("EN/RU/ES capture renders exactly three direct WhatsApp actions", () => {
   }
 });
 
-test("free, personal and prepared-answers WhatsApp links keep distinct localized requests", () => {
+test("free, initiation, personal session and answers WhatsApp links keep distinct localized requests", () => {
   for (const locale of ["en", "ru", "es"]) {
     const { links } = render(locale);
     const messages = links.map((link) => new URL(link.props.href).searchParams.get("text"));
-    assert.equal(new Set(messages).size, 3);
+    assert.equal(new Set(messages).size, 4);
     const service = locale === "ru" ? "Тантра Рейки" : "Tantra Reiki";
     for (const message of messages) {
       assert.ok(message.includes(service), message);
@@ -81,14 +82,16 @@ test("free, personal and prepared-answers WhatsApp links keep distinct localized
     }
     assert.ok(/free|бесплатн|gratuit/i.test(messages[0]));
     assert.ok(messages[1].includes("€50 / 30"));
-    assert.ok(/seven|7|siete/i.test(messages[2]));
+    assert.match(messages[2], /75\s?€|€75/);
+    assert.match(messages[2], /45\s?(minutes|минут|minutos)/);
+    assert.ok(/seven|7|siete/i.test(messages[3]));
   }
 });
 
 test("answers go into the user's WhatsApp draft, not a hidden uploaded document", () => {
   for (const locale of ["en", "ru", "es"]) {
     const direct = tantraInitiationWhatsAppUrl(locale, "answers");
-    const fromCard = render(locale).links[2].props.href;
+    const fromCard = render(locale).links[3].props.href;
     assert.equal(fromCard, direct);
     const draft = new URL(direct).searchParams.get("text");
     assert.ok(draft.includes("WhatsApp"));
@@ -129,7 +132,7 @@ test("review-after-video is a distinct localized WhatsApp draft and does not sen
     assert.match(message, /review|impressions|practice|отзыв|impresiones|práctica/);
     assert.match(message, /flow|поток|flujo/);
     assert.ok(message.includes("/" + locale + "/academy/reiki/tantra-reiki/free-initiation"));
-    assert.notEqual(url.href, render(locale).links[2].props.href);
+    assert.notEqual(url.href, render(locale).links[3].props.href);
   }
 });
 
