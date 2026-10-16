@@ -7,6 +7,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
+import { assessmentResultOverview } from '../../lib/assessments/result-overview.js'
 
 // Synthetic rendered-component acceptance only: no account, API, navigation or writes.
 const require = createRequire(import.meta.url)
@@ -30,6 +31,7 @@ const { CompactAssessmentReport } = loadComponent('components/app/compact-assess
   './assessment-gauge': { ScoreGauge: () => null, ScoreTrend: () => null },
   '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },
   '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },
+  '@/lib/assessments/result-overview': { assessmentResultOverview },
   './compact-assessment-report.module.css': styles('report_'),
 })
 // These two local stylesheets use plain class selectors; prefix them just as CSS modules do.
