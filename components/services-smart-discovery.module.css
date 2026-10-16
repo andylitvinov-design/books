@@ -216,3 +216,129 @@
   .examples{gap:5px}
   .examples button{padding:6px 4px;font-size:10.5px}
 }
+
+/* Orderable editorial results: full service cards with in-place detail and contact panels. */
+.suggestionDetailsToggle{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:42px;padding:9px 13px;border:1px solid #dfe3ea;border-radius:9px;
+  color:#243851;background:#f3f4f7;font:750 12px/1.25 system-ui,sans-serif;
+  cursor:pointer;text-align:center;
+}
+.suggestionDetailsToggle svg,.editorialDetailsButton svg{transition:transform .2s ease;flex:none}
+.suggestionDetailsToggle[aria-expanded="true"] svg,.editorialDetailsButton[aria-expanded="true"] svg{transform:rotate(180deg)}
+.suggestionDetailPanel{
+  grid-column:1/-1;min-width:0;margin-top:7px;padding:12px 14px;
+  border-top:1px solid #e5e2e7;background:#faf9fb;border-radius:9px;
+}
+.suggestionDetailPanel p{margin:0 0 8px;color:#56657a;font:12px/1.6 system-ui,sans-serif;white-space:pre-line;overflow-wrap:anywhere}
+.suggestionDetailPanel .serviceFact{font-weight:700}
+.suggestionDetailPanel a{display:inline-flex;align-items:center;gap:6px;color:#83324e;font:750 12px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.suggestionDetailPanel[hidden],.editorialDetailsPanel[hidden],.editorialOrderPanel[hidden]{display:none!important}
+.editorialCard{
+  box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 158px;
+  column-gap:15px;row-gap:7px;align-items:start;min-width:0;
+  padding:14px 16px;border:1px solid #dcdde4;border-radius:14px;
+  background:#fff;box-shadow:0 2px 8px rgba(25,41,62,.035);
+}
+.editorialCard[data-selected="true"]{border-color:#893b57;box-shadow:0 0 0 1px rgba(137,59,87,.14)}
+.editorialCardMeta{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:5px;margin-bottom:1px;
+}
+.editorialCardMeta span{font:750 10px/1.3 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#873b56}
+.editorialCardMeta strong{
+  font:750 10px/1.3 system-ui,sans-serif;color:#284d3d;background:#eaf3ee;
+  padding:5px 9px;border-radius:999px;
+}
+.editorialCardCopy{grid-column:1;min-width:0;align-self:center}
+.editorialCardCopy h4{
+  min-width:0;overflow-wrap:break-word;margin:0 0 5px;
+  color:#233852;font:750 clamp(17px,1.9vw,21px)/1.22 system-ui,sans-serif;
+}
+.editorialCardCopy p{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;min-width:0;margin:0 0 5px;color:#596980;
+  font:12px/1.48 system-ui,sans-serif;overflow-wrap:anywhere;
+}
+.editorialCardCopy small{display:block;font:11px/1.3 system-ui,sans-serif;color:#6c7688}
+.editorialCardActions{
+  grid-column:2;align-self:center;display:flex;flex-direction:column;
+  gap:7px;width:158px;min-width:0;
+}
+.editorialCardActions button{
+  box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  gap:6px;width:100%;min-height:43px;padding:8px 9px;
+  border-radius:9px;cursor:pointer;text-align:center;
+  font:750 12px/1.25 system-ui,sans-serif;
+}
+.editorialOrderButton{border:1px solid #82304b;background:#82304b;color:#fff}
+.editorialOrderButton:hover{background:#712741}
+.editorialOrderButton[aria-expanded="true"]{background:#65233a}
+.editorialDetailsButton{border:1px solid #dce1e9;background:#f4f6f9;color:#283d55}
+.editorialDetailsButton:hover{background:#e8edf4}
+.editorialDetailsPanel,.editorialOrderPanel{
+  grid-column:1/-1;min-width:0;box-sizing:border-box;margin-top:6px;
+  padding:12px 14px;border:1px solid #e3e4e9;border-radius:11px;
+  background:#fafbfc;color:#304359;
+}
+.editorialDetailsPanel p{
+  margin:0 0 8px;color:#495c72;font:12px/1.58 system-ui,sans-serif;
+  white-space:pre-line;overflow-wrap:anywhere;
+}
+.editorialDetailsPanel .editorialBenefit{color:#677284;font-weight:650}
+.editorialList .editorialDetailsPanel a{
+  display:inline-flex;justify-content:flex-start;align-items:center;
+  gap:7px;min-width:0;min-height:34px;margin-top:3px;padding:4px 0;
+  border:0;border-radius:0;background:transparent;color:#81314b;
+  font:750 12px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;
+}
+.editorialOrderPanel{border-color:#d7e0e9;background:#f4f8fb}
+.editorialOrderPanel>strong{display:block;font:750 13px/1.4 system-ui,sans-serif;margin-bottom:9px}
+.editorialOrderPanel>small{display:block;margin-top:9px;font:11px/1.4 system-ui,sans-serif;color:#667589}
+.editorialList .editorialFreeStart{
+  box-sizing:border-box;display:flex;justify-content:center;align-items:center;
+  gap:8px;min-height:45px;padding:9px 12px;margin:0 0 9px;
+  border:1px solid #cad9d0;border-radius:9px;background:#e2f1e8;color:#24513f;
+  font:750 12px/1.3 system-ui,sans-serif;text-decoration:none;
+}
+.editorialChannels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.editorialChannels a.editorialWhatsapp,.editorialChannels a.editorialTelegram{
+  box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+  gap:8px;min-width:0;min-height:48px;padding:9px 10px;margin:0;
+  border:0;border-radius:9px;color:#fff;
+  font:750 13px/1.35 system-ui,sans-serif;text-decoration:none;
+}
+.editorialChannels .editorialWhatsapp{background:#16845b}
+.editorialChannels .editorialTelegram{background:#2c76a7}
+.editorialChannels a:hover,.editorialList .editorialFreeStart:hover{filter:brightness(1.06)}
+.editorialCard :is(button,a):focus-visible,.suggestionDetailsToggle:focus-visible{
+  outline:3px solid #bd7792;outline-offset:3px;
+}
+@media(max-width:620px){
+  .editorialCard{grid-template-columns:minmax(0,1fr) 111px;padding:11px;column-gap:9px;row-gap:6px;border-radius:12px}
+  .editorialCardMeta{gap:5px;margin:0}
+  .editorialCardMeta span{font-size:9px}
+  .editorialCardMeta strong{font-size:9px;padding:4px 7px}
+  .editorialCardCopy h4{font-size:16px;line-height:1.2;margin-bottom:4px}
+  .editorialCardCopy p{font-size:11px;line-height:1.4;margin-bottom:4px}
+  .editorialCardCopy small{font-size:10px}
+  .editorialCardActions{width:111px;gap:6px}
+  .editorialCardActions button{font-size:11px;min-height:43px;padding:7px 5px;gap:5px}
+  .editorialCardActions button svg{width:14px;height:14px}
+  .suggestionDetailsToggle{width:100%;min-height:40px;padding:7px 5px;font-size:11px}
+  .suggestionDetailsToggle svg{width:14px;height:14px}
+  .editorialDetailsPanel,.editorialOrderPanel{padding:11px 10px}
+  .editorialDetailsPanel p{font-size:11px}
+  .editorialOrderPanel>strong{font-size:12px}
+  .editorialChannels{gap:7px}
+  .editorialChannels a.editorialWhatsapp,.editorialChannels a.editorialTelegram{min-height:48px;font-size:12px;padding:9px 6px;gap:6px}
+}
+@media(max-width:350px){
+  .editorialCard{grid-template-columns:minmax(0,1fr)}
+  .editorialCardActions{grid-column:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;margin-top:3px}
+  .editorialCardCopy{grid-column:1}
+  .editorialChannels{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  .suggestionDetailsToggle svg,.editorialDetailsButton svg{transition:none}
+}
