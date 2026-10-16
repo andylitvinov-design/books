@@ -44,7 +44,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot) {
   assert.equal(await panel.isVisible(), false, "The miniature form must start closed");
   const startUrl = page.url();
   const ctaRect = await trigger.boundingBox();
-  assert.ok(ctaRect && ctaRect.width >= 150 && ctaRect.height >= 44, "Large, accessible order button");
+  assert.ok(ctaRect && ctaRect.width >= 150 && ctaRect.height >= 44, "Large, accessible order button " + name + ": " + JSON.stringify(ctaRect));
   await trigger.click();
   await panel.waitFor({ state:"visible", timeout:10000 });
   assert.equal(await trigger.getAttribute("aria-expanded"), "true");
