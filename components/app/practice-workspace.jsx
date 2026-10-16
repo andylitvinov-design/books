@@ -178,6 +178,30 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
+  const hasProfile=Boolean(p?.profile?.displayName||p?.draftProfile?.displayName)
+  const profileLive=Boolean(p?.slug&&p.status==='approved')
+  const setupSteps=[
+    {name:ru?'Заполните профиль':'Complete your profile',hint:ru?'Расскажите о себе':'Introduce your work',done:hasProfile},
+    {name:ru?'Добавьте первую услугу':'Add your first service',hint:ru?'Можно начать с бесплатной':'A free introduction works well',done:services.length>0},
+    {name:ru?'Поделитесь страницей':'Share your public page',hint:ru?'После проверки профиля':'Available after approval',done:profileLive},
+  ]
+  const readySteps=setupSteps.filter(step=>step.done).length
+  async function shareProfile(){
+    if(!profileLive){choosePanel('profile');return}
+    const url=window.location.origin+'/'+locale+'/masters/'+p.slug
+    setShareNotice('')
+    try{
+      if(navigator.share){await navigator.share({title:'Holistic House',url});setShareNotice(ru?'Открыто меню отправки.':'Sharing menu opened.');return}
+      if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(url);setShareNotice(ru?'Ссылка скопирована.':'Profile link copied.');return}
+      setShareNotice(ru?'Скопируйте ссылку на профиль выше.':'Copy your profile link above.')
+    }catch(error){if(error?.name!=='AbortError')setShareNotice(ru?'Скопируйте ссылку на профиль выше.':'Copy your profile link above.')}
+  }
+  function openSetupStep(index){
+    if(needsOnboarding){document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+    if(index===0)choosePanel('profile')
+    else if(index===1)choosePanel('services')
+    else shareProfile()
+  }
   return <section className="hh-practice-dashboard">
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
@@ -195,6 +219,20 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
+    {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+      <div className="hh-practice-setup-head">
+        <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
+        <span>{readySteps}/3</span>
+      </div>
+      <div className="hh-practice-setup-progress" aria-hidden="true"><span style={{width:(readySteps/3*100)+'%'}} /></div>
+      <ol>{setupSteps.map((step,index)=><li key={step.name}>
+        <button type="button" disabled={step.done||(index===2&&!profileLive)} onClick={()=>openSetupStep(index)}>
+          <span className={'hh-practice-setup-number'+(step.done?' is-complete':'')}>{step.done?<CheckCircle2 aria-hidden="true" />:index+1}</span>
+          <span className="hh-practice-setup-copy"><strong>{step.name}</strong><small>{step.hint}</small></span>
+          {!step.done&&index!==2&&<ChevronRight aria-hidden="true" />}
+        </button>
+      </li>)}</ol>
+    </section>}
     {!needsOnboarding&&<div className="hh-practice-overview" aria-label={ru?'Обзор практики':'Practice overview'}>
       <div><strong>{newRequests}</strong><span>{ru?'Новые заявки':'New requests'}</span></div>
       <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
@@ -204,6 +242,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
       </Link>
+      <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
     </p>}
     {!needsOnboarding&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
