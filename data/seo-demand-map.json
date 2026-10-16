@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-11-seed-v1",
+  "version": "2026-10-16-seed-v2",
   "site": "https://holistichouse.vercel.app",
   "status": "editorial_seeds_only_not_google_metrics",
   "measurement_sources": {
@@ -829,6 +829,88 @@
         "google_trends_index": null
       },
       "next_action": "Check content parity and translated enquiry before index promotion"
+    },
+    {
+      "cluster_id": "R07",
+      "locale": "en",
+      "market": "Canada / online international EN",
+      "topic": "Academy / Tantra Reiki free Level 1 initiation",
+      "primary_keyword": "free tantra reiki initiation",
+      "supporting_keywords": [
+        "free tantra reiki level 1",
+        "online tantra reiki initiation",
+        "free tantra reiki attunement"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/en/academy/reiki/tantra-reiki/free-initiation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Maintain honest free teacher-guided introductory request subject to availability, original video, 7 questions, PDF and WhatsApp; inspect indexation after GSC owner verification"
+    },
+    {
+      "cluster_id": "R07",
+      "locale": "ru",
+      "market": "Canada / Russian-speaking online",
+      "topic": "Academy / Tantra Reiki free Level 1 initiation",
+      "primary_keyword": "бесплатная инициация тантра рейки",
+      "supporting_keywords": [
+        "тантра рейки первая ступень бесплатно",
+        "инициация тантра рейки онлайн"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/ru/academy/reiki/tantra-reiki/free-initiation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Preserve localized teacher-confirmed introductory request, study video and WhatsApp; do not equate video or answers with initiation"
+    },
+    {
+      "cluster_id": "R07",
+      "locale": "es",
+      "market": "Canada / Spanish-speaking online",
+      "topic": "Academy / Tantra Reiki free Level 1 initiation",
+      "primary_keyword": "iniciación gratis de tantra reiki",
+      "supporting_keywords": [
+        "tantra reiki nivel 1 gratis",
+        "iniciación tantra reiki online"
+      ],
+      "search_intent": "transactional",
+      "primary_path": "/es/academy/reiki/tantra-reiki/free-initiation",
+      "page_status": "public_route_checked",
+      "seo_priority": "P0",
+      "ads_gate": "hold",
+      "conversion_goal": "academy_enquiry",
+      "source": "editorial_seed_unvalidated",
+      "measured": {
+        "gsc_impressions": null,
+        "gsc_clicks": null,
+        "gsc_position": null,
+        "keyword_planner_avg_searches": null,
+        "keyword_planner_cpc": null,
+        "google_trends_index": null
+      },
+      "next_action": "Validate Spanish localized landing, original English video disclosure and WhatsApp; track real GSC metrics only after property owner verification"
     }
   ]
 }
