@@ -5,6 +5,7 @@ import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
+import { metadataBaseFor } from "@/data/site-metadata";
 import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./tantra-free-initiation.module.css";
@@ -19,13 +20,13 @@ const copy = {
   en: {
     back: "Back to Tantra Reiki", nav: ["Discover", "Choose", "How to", "Video", "Materials", "Questions", "Apply"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · LEVEL ONE",
-    heroTitle: "Feel the flow. Awaken connection.",
-    heroLead: "An invitation to explore Tantra Reiki through presence, sensitivity and the symbolic language of love and creativity. Begin with the Spring of Life — the first step of a nine-level path.",
+    heroTitle: "Free Tantra Reiki Initiation",
+    heroLead: "Start Tantra Reiki Level 1 online with Andrey Litvinov. Watch his original guided practice, explore the learning materials and seven questions, then request a free teacher-guided introduction. Feel the flow and awaken connection.",
     heroTag: "Your first initiation begins here",
     freeCta: "Explore the free initiation", watchCta: "Watch Andrey's practice",
     heroMeta: ["Level 1 · Spring of Life", "Seven simple study questions", "Teacher-guided initiation"],
     visualCaption: "The art of connection", visualLabel: "TANTRA REIKI · HOLISTIC HOUSE",
-    introEyebrow: "01 / THE SYSTEM", introTitle: "More than an energy technique",
+    introEyebrow: "01 / THE SYSTEM", introTitle: "What is Tantra Reiki?",
     introLead: "In the course's spiritual language, the Tantra Reiki flow brings together aliveness, creativity and a more attentive relationship with yourself and others. It is a practice of exploration, not a promise of outcomes.",
     pillars: [
       { title: "Feel", text: "Explore your own sensations, attention and vitality through guided practice." },
@@ -46,7 +47,7 @@ const copy = {
     combinedPrice: "€100", combinedDuration: "60 MIN", combinedButton: "Book in WhatsApp",
     benefits: ["Respectful space", "No prior experience needed", "Personal guidance by Andrey"],
     availability: "Sessions and free introductory availability are confirmed personally. Reading or submitting answers does not itself grant an initiation.",
-    guideEyebrow: "03 / YOUR PATH", guideTitle: "How to receive Level 1 for free",
+    guideEyebrow: "03 / YOUR PATH", guideTitle: "How to request your free Tantra Reiki initiation",
     guideLead: "Five steps: watch the practice, share your impressions, study the materials and answer the questions. A personal distance initiation is optional.",
     guideSteps: [
       { title: "Watch the video", text: "Explore the original Tantra Reiki practice with Andrey." },
@@ -86,13 +87,13 @@ const copy = {
   ru: {
     back: "К курсу Тантра Рейки", nav: ["Система", "Выбор", "Как получить", "Видео", "Материалы", "Вопросы", "Заявка"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · ТАНТРА РЕЙКИ · 1-Я СТУПЕНЬ",
-    heroTitle: "Почувствуйте поток. Откройте близость.",
-    heroLead: "Знакомство с Тантра Рейки через присутствие, чувствительность, любовь и творчество. Начните с «Родника Жизни» — первой ступени девятиступенчатой системы.",
+    heroTitle: "Бесплатная инициация Тантра Рейки",
+    heroLead: "Начните изучение 1-й ступени Тантра Рейки онлайн с Андреем Литвиновым: посмотрите его видео, прочитайте материалы, ответьте на 7 вопросов и запросите бесплатную вводную инициацию с преподавателем.",
     heroTag: "Ваша первая инициация начинается здесь",
     freeCta: "Получить первую ступень бесплатно", watchCta: "Смотреть практику Андрея",
     heroMeta: ["1-я ступень · Родник Жизни", "7 простых вопросов", "Инициация с преподавателем"],
     visualCaption: "Искусство соединения", visualLabel: "ТАНТРА РЕЙКИ · HOLISTIC HOUSE",
-    introEyebrow: "01 / О СИСТЕМЕ", introTitle: "Больше, чем энергетическая практика",
+    introEyebrow: "01 / О СИСТЕМЕ", introTitle: "Что такое Тантра Рейки?",
     introLead: "В авторском описании поток Тантра Рейки объединяет жизненную силу, любовь и творчество. Практика помогает исследовать контакт с собой и другими людьми — без обещаний гарантированного результата.",
     pillars: [
       { title: "Чувствовать", text: "Исследовать ощущения, внимание и жизненную энергию в практике." },
@@ -153,13 +154,13 @@ const copy = {
   es: {
     back: "Volver a Tantra Reiki", nav: ["Sistema", "Opciones", "Cómo empezar", "Vídeo", "Materiales", "Preguntas", "Solicitud"],
     eyebrow: "HOLISTIC HOUSE ACADEMY · TANTRA REIKI · NIVEL UNO",
-    heroTitle: "Siente el flujo. Descubre la conexión.",
-    heroLead: "Conoce Tantra Reiki a través de la presencia, la sensibilidad, el amor y la creatividad. Comienza con Manantial de Vida, el primero de nueve niveles.",
+    heroTitle: "Iniciación gratis de Tantra Reiki",
+    heroLead: "Empieza Tantra Reiki Nivel 1 online con Andrey Litvinov: mira su práctica original, lee los materiales, responde siete preguntas y solicita una introducción gratuita guiada por el profesor.",
     heroTag: "Tu primera iniciación comienza aquí",
     freeCta: "Solicitar la iniciación gratis", watchCta: "Ver la práctica de Andrey",
     heroMeta: ["Nivel 1 · Manantial de vida", "7 preguntas sencillas", "Iniciación con profesor"],
     visualCaption: "El arte de conectar", visualLabel: "TANTRA REIKI · HOLISTIC HOUSE",
-    introEyebrow: "01 / EL SISTEMA", introTitle: "Más que una práctica energética",
+    introEyebrow: "01 / EL SISTEMA", introTitle: "¿Qué es Tantra Reiki?",
     introLead: "En el lenguaje espiritual del curso, Tantra Reiki reúne vitalidad, amor y creatividad. Es una invitación a explorar la conexión contigo y con los demás, sin promesas de resultados.",
     pillars: [
       { title: "Sentir", text: "Explorar las sensaciones, la atención y la vitalidad." },
@@ -219,10 +220,52 @@ const copy = {
   },
 } as const;
 
+const faqCopy = {
+  en: {
+    title: "Free Tantra Reiki initiation: common questions",
+    items: [
+      { question: "Is the Tantra Reiki Level 1 introduction really free?", answer: "Yes. You can request a free teacher-guided introduction, subject to Andrey's availability. Watching a video or sending answers does not itself confer an initiation." },
+      { question: "Can I begin Tantra Reiki online?", answer: "Yes. Begin with the original English practice video, the study materials and seven questions. Arrange any teacher-led introduction directly with Andrey via WhatsApp." },
+      { question: "Do I need previous Reiki experience?", answer: "No previous Reiki experience is required for the introductory study path. A personal online initiation is also available as an optional paid session." },
+    ],
+  },
+  ru: {
+    title: "Частые вопросы о бесплатной инициации Тантра Рейки",
+    items: [
+      { question: "Можно ли получить первую ступень Тантра Рейки бесплатно?", answer: "Вы можете запросить бесплатную вводную инициацию с преподавателем, если есть свободное время. Просмотр видео и ответы сами по себе не заменяют инициацию." },
+      { question: "Можно ли начать обучение Тантра Рейки онлайн?", answer: "Да. Сначала изучите видео, материалы и семь вопросов. Для проведения вводной инициации напишите Андрею напрямую в WhatsApp." },
+      { question: "Нужен ли предыдущий опыт Рейки?", answer: "Нет, для вводного знакомства опыт не обязателен. По желанию можно заказать индивидуальную дистанционную инициацию." },
+    ],
+  },
+  es: {
+    title: "Preguntas frecuentes sobre la iniciación gratis de Tantra Reiki",
+    items: [
+      { question: "¿La introducción al Nivel 1 de Tantra Reiki es gratuita?", answer: "Puedes solicitar una introducción guiada gratuita, según la disponibilidad de Andrey. Ver el vídeo o enviar respuestas no constituye por sí solo una iniciación." },
+      { question: "¿Puedo empezar Tantra Reiki online?", answer: "Sí. Comienza con el vídeo original en inglés, los materiales y las siete preguntas. Coordina la introducción con Andrey directamente por WhatsApp." },
+      { question: "¿Necesito experiencia previa en Reiki?", answer: "No se requiere experiencia previa para el estudio introductorio. También existe una opción personal online de pago." },
+    ],
+  },
+} as const;
+
 const steps = ["intro", "initiation-choices", "how-to", "tantra-practice-video", "course-materials", "study-questions", "tantra-apply"] as const;
 
 export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const faq = faqCopy[locale];
+  const origin = metadataBaseFor().origin;
+  const pageUrl = origin + "/" + locale + "/academy/reiki/tantra-reiki/free-initiation";
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "WebPage", "@id": pageUrl, url: pageUrl, name: t.heroTitle, description: t.heroLead, inLanguage: locale,
+        isPartOf: { "@type": "WebSite", name: "Holistic House", url: origin } },
+      { "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Academy", item: origin + "/" + locale + "/academy" },
+        { "@type": "ListItem", position: 2, name: "Tantra Reiki", item: origin + "/" + locale + "/academy/reiki/tantra-reiki" },
+        { "@type": "ListItem", position: 3, name: t.heroTitle, item: pageUrl },
+      ] },
+    ],
+  };
   const root = "/" + locale + "/academy/reiki/tantra-reiki";
   const video = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const guideLinks = [
@@ -242,6 +285,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
     <main className={"academy-reading-shell academy-reading-shell--wide " + styles.shell} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <article className={styles.page}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
         <nav className={styles.subnav} aria-label={t.heroTag}>
           <Link className={styles.back} href={root}><ArrowRight className={styles.backArrow} size={15} aria-hidden="true" />{t.back}</Link>
           <div className={styles.progress}>
@@ -377,6 +421,18 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
                 <span className={styles.resourceIcon}><Icon size={19} aria-hidden="true"/></span>
               </Link>;
             })}
+          </div>
+        </section>
+
+        <section className={styles.faqSection} aria-labelledby="tantra-faq-title">
+          <h2 id="tantra-faq-title">{faq.title}</h2>
+          <div className={styles.faqList}>
+            {faq.items.map((item) => (
+              <details className={styles.faqItem} key={item.question}>
+                <summary>{item.question}<ChevronDown size={17} aria-hidden="true" /></summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
           </div>
         </section>
 

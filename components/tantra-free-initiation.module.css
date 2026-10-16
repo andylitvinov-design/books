@@ -379,6 +379,27 @@
 }
 
 
+/* Compact, readable SEO answers. Native details stay closed by default. */
+.faqSection { padding: 23px 0 20px; border-top: 1px solid var(--tn-border); }
+.faqSection > h2 { margin: 0 0 13px; color: var(--tn-ink); font: 400 clamp(24px, 2.2vw, 31px)/1.15 var(--font-serif), Georgia, serif; letter-spacing: -.025em; }
+.faqList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.faqItem { min-width: 0; background: #fff; border: 1px solid #e8dfe0; border-radius: 13px; }
+.faqItem summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; color: var(--tn-ink); font-size: 13px; font-weight: 750; line-height: 1.45; cursor: pointer; list-style: none; }
+.faqItem summary::-webkit-details-marker { display: none; }
+.faqItem summary::marker { content: ""; }
+.faqItem summary svg { flex: none; color: var(--tn-wine); transition: transform .18s ease; }
+.faqItem[open] summary svg { transform: rotate(180deg); }
+.faqItem p { padding: 0 14px 14px; margin: 0; color: #5c6270; font-size: 13px; line-height: 1.55; }
+.faqItem summary:focus-visible { outline: 3px solid #b8738c; outline-offset: 2px; border-radius: 11px; }
+@media (max-width: 760px) {
+  .faqSection { padding: 18px 0 15px; }
+  .faqList { grid-template-columns: 1fr; }
+  .faqItem summary { padding: 12px 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faqItem summary svg { transition: none; }
+}
+
 /* Seven-question preparation disclosure — collapsed on initial render.
    Whole heading is keyboard/touch operable; no questions are removed. */
 .questionsSection {
