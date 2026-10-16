@@ -136,7 +136,7 @@ test('remaining free-entry targets still match actual homepage links and destina
 
 test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
   for (const required of [
-    'await gate;', 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
+    "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
     "await firstReview.locator('.site-video-play').click()", 'youtube-nocookie\\.com\\/embed\\/Dk0LBmOivQo\\?',
     "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
@@ -147,3 +147,31 @@ test('poster reconciliation preserves held-RSC, readability, first playback, Bac
   ]) assert.ok(verifier.includes(required), required);
   assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);
 });
+
+async function assertHeldResponseOrdering(source) {
+  const begin = source.indexOf("  await page.route('**/*', async route => {");
+  const end = source.indexOf('\n  try {', begin);
+  assert.ok(begin >= 0 && end > begin);
+  let callback, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const events = [];
+  const response = {};
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  await new AsyncFunction('page','transport','shouldHoldHomeRsc','delayedLocale','delayedRscGate','heldRequests','pause', source.slice(begin,end))(
+    { route:async (_,handler) => {callback=handler;} },
+    {handle:async (_,action) => action(async (operation, action) => {events.push(operation);return await action();})},
+    () => true, 'en', gate, 0, async () => {});
+  const pending = callback({request:()=>({}), fetch:async()=>response, fulfill:async value=>{assert.equal(value.response,response);events.push('fulfilled');}});
+  try {
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.deepEqual(events,['fetch','delay','gate'],'The real response must remain unfulfilled at the observation gate');
+    release();await pending;
+    assert.deepEqual(events,['fetch','delay','gate','fulfill','fulfilled']);
+  } finally {release();await pending;}
+}
+test('supervised response is strictly held until the observation gate resolves',()=>assertHeldResponseOrdering(verifier));
+for (const [name, replacement] of [
+  ['unawaited gate', "perform('gate', () => gate);"],
+  ['bypassed gate', "await perform('gate', () => Promise.resolve());"],
+  ['removed gate', ''],
+]) test('held-response contract rejects '+name,()=>assert.rejects(assertHeldResponseOrdering(verifier.replace("await perform('gate', () => gate);",replacement))));
