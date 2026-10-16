@@ -17,6 +17,7 @@ const copy = {
 // questionnaire execution, private results, sensitive reports or admin workflows.
 const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
+  /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
   /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
