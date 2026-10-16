@@ -26,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Allow Git-triggered Vercel production build to finish before live crawl
+        if: github.event_name == 'push'
+        run: sleep 150
       - name: Run comprehensive public-only SEO audit against production
         run: node scripts/verify-live-sitemap.mjs
       - name: Add report to GitHub Actions summary
