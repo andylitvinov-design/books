@@ -414,18 +414,27 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
         <div><span className="hh-badge">{t.freePricing}</span><h2>{t.freeTitle}</h2><p>{t.freeLead}</p></div>
         <label className="hh-check"><input type="checkbox" checked={includeService} onChange={e=>setIncludeService(e.target.checked)}/>{t.includeFree}</label>
         {includeService&&<>
-          <label>{t.serviceTitleEn}<input required value={offer.copy.en.title} onChange={e=>setOfferCopy('en','title',e.target.value)}/></label>
-          <label>{t.serviceTitleRu}<input required value={offer.copy.ru.title} onChange={e=>setOfferCopy('ru','title',e.target.value)}/></label>
-          <label>{t.shortEn}<textarea required value={offer.copy.en.shortDescription||''} onChange={e=>setOfferCopy('en','shortDescription',e.target.value)}/></label>
-          <label>{t.shortRu}<textarea required value={offer.copy.ru.shortDescription||''} onChange={e=>setOfferCopy('ru','shortDescription',e.target.value)}/></label>
-          <label>{t.descEn}<textarea value={offer.copy.en.description||''} onChange={e=>setOfferCopy('en','description',e.target.value)}/></label>
-          <label>{t.descRu}<textarea value={offer.copy.ru.description||''} onChange={e=>setOfferCopy('ru','description',e.target.value)}/></label>
-          <label>{t.area}<select value={offer.areaKey} onChange={e=>setOfferValue('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
-          <label>{t.offeringType}<select value={offer.offeringType} onChange={e=>setOfferValue('offeringType',e.target.value)}><option value="session">Session</option><option value="assessment">Assessment</option></select></label>
-          <label>{t.delivery}<select value={offer.deliveryFormat} onChange={e=>setOfferValue('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
-          <label>{t.location}<input value={offer.locationLabel||''} onChange={e=>setOfferValue('locationLabel',e.target.value)}/></label>
-          <label>{t.languages}<input value={arr(offer.languages)} onChange={e=>setOfferValue('languages',list(e.target.value))}/></label>
-          <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={e=>setOfferValue('durationMinutes',e.target.value)}/></label>
+          <fieldset className="hh-listing-languages"><legend>{ru?'На каких языках показать':'Listing display languages'}</legend>
+            <div className="hh-listing-lang-options">{Object.entries(LISTING_LANGS).map(([lang,name])=><label className="hh-check" key={lang}>
+              <input type="checkbox" checked={(offer.displayLocales||['en','ru']).includes(lang)} onChange={event=>{
+                const existing=offer.displayLocales||['en','ru']
+                const next=event.target.checked?[...new Set([...existing,lang])]:existing.filter(code=>code!==lang)
+                if(next.length)setOfferValue('displayLocales',next)
+              }}/>{name}
+            </label>)}</div>
+          </fieldset>
+          {(offer.displayLocales||['en','ru']).map(lang=><section key={lang} className="hh-listing-onboarding-language">
+            <h4>{LISTING_LANGS[lang]}</h4>
+            <label>{ru?'Название':'Title'} {lang.toUpperCase()}<input required maxLength="160" value={offer.copy[lang]?.title||''} onChange={event=>setOfferCopy(lang,'title',event.target.value)}/></label>
+            <label>{ru?'Краткая польза':'Short benefit'} {lang.toUpperCase()}<textarea required maxLength="500" value={offer.copy[lang]?.shortDescription||''} onChange={event=>setOfferCopy(lang,'shortDescription',event.target.value)}/></label>
+            <label>{ru?'Подробности':'Details'} {lang.toUpperCase()}<textarea maxLength="4000" value={offer.copy[lang]?.description||''} onChange={event=>setOfferCopy(lang,'description',event.target.value)}/></label>
+          </section>)}
+          <label>{t.area}<select value={offer.areaKey} onChange={event=>setOfferValue('areaKey',event.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
+          <label>{t.offeringType}<select value={offer.offeringType} onChange={event=>setOfferValue('offeringType',event.target.value)}><option value="session">Session</option><option value="assessment">Assessment</option></select></label>
+          <label>{t.delivery}<select value={offer.deliveryFormat} onChange={event=>setOfferValue('deliveryFormat',event.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
+          <label>{t.location}<input value={offer.locationLabel||''} onChange={event=>setOfferValue('locationLabel',event.target.value)}/></label>
+          <label>{t.languages}<input value={Array.isArray(offer.languages)?arr(offer.languages):offer.languages||''} onChange={event=>setOfferValue('languages',event.target.value)}/></label>
+          <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={event=>setOfferValue('durationMinutes',event.target.value)}/></label>
         </>}
         {!includeService&&<p className="hh-notice">{t.skipFree}</p>}
         <div className="hh-actions"><button type="button" disabled={busy} onClick={()=>setStep(1)}>{t.back}</button><button type="button" disabled={busy} onClick={saveDraft}>{t.saveDraft}</button><button className="hh-primary" disabled={busy}>{includeService?t.submitTogether:t.submitProfile}</button></div>
