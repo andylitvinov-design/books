@@ -73,7 +73,9 @@ test("free Level 1 is first-party and keeps seven questions, video and teacher c
   assert.match(free, /root \+ "\/basic-course\/description"/);
   assert.match(free, /<YggdrasilInitiationForm locale=\{locale\} \/>/);
   const form = read("components/yggdrasil-initiation-form.tsx");
-  assert.match(form, /window\.open\(whatsapp\(message\)/);
+  assert.match(form, /whatsappEnquiryUrl\(\{/);
+  assert.match(form, /data-reiki-initiation-handoff=\{mode\}/);
+  assert.doesNotMatch(form, /type="file"|<input|setAttachment/);
   assert.match(form, /https:\/\/t\.me\/AndyTherapist/);
 });
 
