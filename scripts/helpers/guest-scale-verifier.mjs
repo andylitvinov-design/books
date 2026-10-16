@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { buildAssessmentResultReport } from '../../lib/assessments/result-report.js'
+import { interpretationBandModel } from '../../lib/assessments/interpretation-registry.js'
 
 const normalized = value => String(value ?? '').replace(/\s+/g, ' ').trim()
 const numeral = (value, locale) => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
@@ -32,30 +33,48 @@ export function assertGuestSnapshot(snapshot, result, locale) {
     assert.equal(actual.gaugeCount, 1, 'Exactly one gauge per scored scale')
     assert.equal(actual.progressCount, 0, 'Scores must not be presented as progress or health percentages')
     assert.equal(normalized(actual.band), section.bandBasis === 'screening' ? normalized(section.band) : '', 'Only the exact source screening band may be shown')
+    const model = interpretationBandModel(result, dimension, locale)
+    assert.notEqual(model.basis, 'unavailable', 'Guest verifier requires exact source-scored provenance')
+    const expectedIntervals = model.bands.map(band => ({
+      text: normalized(`${numeral(band.from, locale)}–${numeral(band.to, locale)} ${band.label}${band.code === model.currentBand?.code ? ru ? ' · Ваш диапазон' : ' · Your range' : ''}`),
+      current: band.code === model.currentBand?.code,
+    }))
+    assert.deepEqual(actual.intervals, expectedIntervals, 'Exact published endpoints, labels and current range; none on continuous scales')
     if (dimension.key === 'symptoms.asrs6.shaded_count') {
       assert.equal(dimension.displayKind, 'screening-count')
       assert.equal(dimension.min, 0); assert.equal(dimension.max, 6)
       assert.ok(Number.isInteger(dimension.value) && dimension.value >= 0 && dimension.value <= 6)
       assert.equal(actual.gaugeKind, 'screening-count')
+      assert.ok(actual.gaugeScale == null, 'ASRS is not a continuous or sector dial')
       assert.equal(actual.svgCount, 0, 'ASRS must remain a discrete count, not a severity dial')
       assert.equal(actual.needle, null)
+      assert.deepEqual(actual.segmentCodes, [], 'ASRS has no severity segments')
+      assert.equal(normalized(actual.endpoints), '')
       assert.equal(normalized(actual.caption), dimension.value >= 4
         ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
         : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)')
-      assert.equal(normalized(actual.caution), ru ? 'Скрининг, не диагноз' : 'Screening, not a diagnosis')
+      assert.equal(normalized(actual.caution), ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale')
     } else {
       const kind = dimension.dimensionClass === 'trait' || dimension.direction === 'non-normative' ? 'neutral'
-        : dimension.direction?.startsWith('higher-reported-') ? 'resource'
-          : dimension.direction?.startsWith('lower-reported-') ? 'difficulty' : 'neutral'
-      const caption = kind === 'difficulty' ? ru ? 'Меньше трудностей →' : 'Fewer difficulties →'
-        : kind === 'resource' ? ru ? 'Больше ресурсов →' : 'More resources →'
+        : model.presentationDirection
+      const direction = kind === 'difficulty' ? ru ? 'Меньше описанных трудностей →' : 'Fewer reported difficulties →'
+        : kind === 'resource' ? ru ? 'Больше описанных ресурсов →' : 'More reported resources →'
           : ru ? 'Описательная шкала' : 'Descriptive scale'
+      const caption = model.continuous ? ru ? 'Непрерывная шкала' : 'Continuous scale'
+        : model.basis === 'screening' ? ru ? 'Скрининговые диапазоны' : 'Screening intervals'
+          : ru ? 'Справочные диапазоны' : 'Reference intervals'
+      const caution = model.continuous ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs' : direction
       assert.equal(actual.gaugeKind, kind)
+      assert.equal(actual.gaugeScale, model.continuous ? 'continuous' : 'published-bands')
+      assert.deepEqual(actual.segmentCodes, model.bands.map(band => band.code), 'Only published intervals may become dial sectors')
       assert.equal(normalized(actual.caption), caption)
-      assert.equal(normalized(actual.caution), '')
-      assert.equal(normalized(actual.gaugeLabel), `${ru ? 'Шкала' : 'Scale'}: ${numeral(section.value, locale)} / ${numeral(section.max, locale)}. ${caption}`)
+      assert.equal(normalized(actual.caution), caution)
+      const left = kind === 'difficulty' ? section.max : section.min
+      const right = kind === 'difficulty' ? section.min : section.max
+      assert.equal(normalized(actual.endpoints), numeral(left, locale) + numeral(right, locale), 'Both exact axis endpoints')
+      assert.equal(normalized(actual.gaugeLabel), `${ru ? 'Баллы' : 'Score'}: ${numeral(section.value, locale)}. ${ru ? 'Диапазон' : 'Range'} ${numeral(section.min, locale)}–${numeral(section.max, locale)}. ${caption}. ${model.currentBand?.label || direction}`)
       assert.equal(actual.svgCount, 1)
-      // The score-only UI has no range paragraph. Verify the actual needle against
+      // Verify the actual needle against
       // BOTH persisted bounds, including nonzero minima and reversed difficulty.
       assert.ok(Number.isFinite(section.value) && Number.isFinite(section.min) && Number.isFinite(section.max))
       assert.ok(section.max > section.min && section.value >= section.min && section.value <= section.max)
@@ -65,11 +84,11 @@ export function assertGuestSnapshot(snapshot, result, locale) {
       for (const [key, value] of Object.entries(expected)) assert.ok(Number.isFinite(actual.needle?.[key]) && Math.abs(actual.needle[key] - value) < 1e-6, 'Exact range-normalized gauge needle: ' + key)
     }
     assert.doesNotMatch(actual.text, /%/, 'Guest scales must not imply health percentages')
-    assert.equal(normalized(actual.text), normalized([actual.title, actual.numeric, actual.caption, actual.caution, actual.band].join('')), 'Guest card contains only its scale, gauge and source screening label')
+    assert.equal(normalized(actual.text), normalized([actual.title, actual.numeric, actual.endpoints, actual.caption, actual.caution, ...actual.intervals.map(band => band.text), actual.band].join('')), 'Guest card contains only its scale, raw bounds, gauge and exact source intervals')
   }
   const accountOnly = [report.methodology, report.note, report.contextNote,
     report.personalityType?.headline, report.personalityType?.description,
-    ...report.sections.flatMap(section => [section.meaning, section.followUp, ...(section.steps || [])])].filter(Boolean)
+    ...report.sections.flatMap(section => [section.meaning, section.followUp, ...(section.steps || []), ...(section.limitations || [])])].filter(Boolean)
   for (const text of accountOnly) assert.ok(!normalized(snapshot.text).includes(normalized(text)), 'Account-only explanation or advice leaked into guest result')
   assert.ok(normalized(snapshot.source).includes(`${result.definitionKey} · ${result.definitionVersion} · ${result.instrumentLocale.toUpperCase()}`), 'Exact versioned instrument source')
 }
@@ -84,7 +103,7 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     const actual = snapshot.scales[index]
     assert.equal(normalized(actual.title), normalized(section.construct || section.title))
     assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
-    for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || [])].filter(Boolean))
+    for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || []), ...(section.limitations || [])].filter(Boolean))
       assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)
   }
   if (report.methodology) assert.ok(normalized(snapshot.methodology).includes(normalized(report.methodology)), 'Exact authenticated methodology')
@@ -138,6 +157,12 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
           numeric: gauge?.querySelector('strong')?.textContent, text: card.textContent,
           band: card.querySelector(':scope > p')?.textContent,
           gaugeCount: card.querySelectorAll('[data-assessment-gauge]').length,
+          gaugeScale: gauge?.dataset.gaugeScale,
+          segmentCodes: [...(gauge?.querySelectorAll('path[data-band-code]') || [])].map(node => node.dataset.bandCode),
+          endpoints: gauge?.querySelector(':scope > div[aria-hidden="true"]')?.textContent,
+          intervals: [...(gauge?.querySelectorAll('ol > li') || [])].map(node => ({
+            text: node.textContent.replace(/\s+/g, ' ').trim(), current: node.getAttribute('aria-current') === 'true',
+          })),
           gaugeKind: gauge?.dataset.assessmentGauge, gaugeLabel: gauge?.getAttribute('aria-label'),
           caption: gauge?.querySelector('figcaption')?.textContent, caution: gauge?.querySelector('small')?.textContent,
           svgCount: card.querySelectorAll('svg').length, progressCount: card.querySelectorAll('[role="progressbar"]').length,

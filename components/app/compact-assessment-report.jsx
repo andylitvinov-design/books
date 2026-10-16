@@ -62,7 +62,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
         const guide = byScale.get(section.key)
         const showSteps = !compactManyScales || index < 2
-        const model = gaugeModel(dimension)
+        const model = gaugeModel(dimension, result, locale)
         const rawNote = model?.displayKind === 'screening-count'
           ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
           : model?.orientation === 'difficulty'
@@ -72,7 +72,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             : ru ? 'Описательная шкала: больше не означает лучше или хуже.' : 'Descriptive scale: higher is not automatically better or worse.'
         return <article key={section.key + ':' + index} className={styles.card}>
           <div className={styles.measure}>
-            <ScoreGauge dimension={dimension} locale={locale}/>
+            <ScoreGauge dimension={dimension} locale={locale} result={result}/>
             <div className={styles.summary}>
               <h3>{section.construct || section.title}</h3>
               <p className={styles.band}>{section.band || (ru ? 'Результат теста' : 'Questionnaire score')}</p>
@@ -96,6 +96,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
             {guide?.skill && <p><strong>{ru ? 'Навык:' : 'Optional skill:'}</strong> {guide.skill}</p>}
             {!section.recommendedReview && <p>{section.followUp}</p>}
+            {section.limitations?.map(limit => <p key={limit}>{limit}</p>)}
             {section.steps.length > 2 && <ol>{section.steps.slice(2).map((step, i) => <li key={i}>{step}</li>)}</ol>}
             {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
             <small>{section.bandBasis === 'screening'

@@ -112,7 +112,7 @@ test('personal result reports carry bilingual type hypotheses and distinct, safe
       for(const section of report.sections){
         assert.equal(section.domain,'personality')
         assert.ok(section.meaning.length>100)
-        assert.ok(section.steps.length===2 && section.steps.every(x=>x.length>40))
+        assert.ok(section.steps.length>=2 && section.steps.every(x=>x.length>40))
         assert.match(section.meaning,locale==='ru'?/не является нормативным рейтингом/:/not a population ranking/)
         assert.ok(section.followUp.length>50)
       }

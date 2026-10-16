@@ -154,7 +154,7 @@ test('Insights, all scales and profile show discrete count, never favorable gaug
     assert.deepEqual(guide.skillAxes,[])
     assert.equal(guide.suggestedRepeatDays,null)
     const result={...score([2,2,2,3,0,0],locale),id:'synthetic',accountId:'synthetic-account',measurementAt:'2026-10-12T20:00:00Z'}
-    const d=result.dimensions[0],display=gaugeModel(d)
+    const d=result.dimensions[0],display=gaugeModel(d,result)
     assert.equal(display.displayKind,'screening-count')
     assert.equal(display.fraction,null)
     assert.equal(display.rawFraction,null)

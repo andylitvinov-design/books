@@ -11,13 +11,16 @@ import * as gaugeModule from '../lib/assessments/dashboard-gauges.js'
 import * as guideModule from '../lib/assessments/scale-guides.js'
 import * as overviewModule from '../lib/assessments/result-overview.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-types-original-2026.js'
 import { MHC_SF_DEFINITIONS } from '../data/assessments/mhc-sf-adult-dec2011.js'
 import { COMPASSION_DEFINITIONS } from '../data/assessments/compassion-2026.js'
 import { ASRS6_DEFINITIONS } from '../data/assessments/asrs-v1-6-nyu.js'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
 const { buildAssessmentResultReport } = reportModule
-const definitions = [...PERSONALITY_TYPE_DEFINITIONS, ...MHC_SF_DEFINITIONS, ...COMPASSION_DEFINITIONS, ...ASRS6_DEFINITIONS, ...RELATIONSHIPS_INTIMACY_DEFINITIONS]
+const definitions = [...PERSONALITY_TYPE_DEFINITIONS, ...MHC_SF_DEFINITIONS, ...COMPASSION_DEFINITIONS, ...ASRS6_DEFINITIONS, ...RELATIONSHIPS_INTIMACY_DEFINITIONS,
+  getAssessmentDefinition('phq-9','v1','en'), getAssessmentDefinition('brcs','v1','en'),
+  getAssessmentDefinition('gad-7','v1','ru'), getAssessmentDefinition('hh-money-pressure','v1','en')]
 const sourceRoot = process.env.HH_VERIFIER_SOURCE_ROOT ? pathToFileURL(resolve(process.env.HH_VERIFIER_SOURCE_ROOT) + '/') : new URL('../', import.meta.url)
 const read = name => readFileSync(new URL(name, sourceRoot), 'utf8')
 
@@ -70,6 +73,12 @@ function fixture(result, locale) {
       key: card.props['data-guest-scale'], title: textOf(tagged(card, 'h5')), numeric: textOf(tagged(gauge, 'strong')), text: textOf(card),
       band: textOf([].concat(card.props.children).find(node => node?.type === 'p')),
       gaugeCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
+      gaugeScale: gauge?.props['data-gauge-scale'],
+      segmentCodes: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => node.props['data-band-code']),
+      endpoints: textOf([].concat(gauge?.props.children).find(node => node?.type === 'div' && node.props['aria-hidden'] === 'true')),
+      intervals: elements(gauge).filter(node => node.type === 'li').map(node => ({
+        text: textOf(node).replace(/\s+/g, ' ').trim(), current: node.props['aria-current'] === 'true',
+      })),
       gaugeKind: gauge?.props['data-assessment-gauge'], gaugeLabel: gauge?.props['aria-label'],
       caption: textOf(tagged(gauge, 'figcaption')), caution: textOf(tagged(gauge, 'small')),
       svgCount: elements(card).filter(node => node.type === 'svg').length,
@@ -102,8 +111,12 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].title = 'another construct' },
       s => { s.scales[0].gaugeCount = 2 },
       s => { s.scales[0].gaugeKind = 'wrong-orientation' },
+      s => { s.scales[0].gaugeScale = 'wrong-category-model' },
       s => { s.scales[0].progressCount = 1 },
       s => { s.scales[0].band = 'Invented clinical band' },
+      s => { s.scales[0].intervals.push({ text: 'Invented 0–33 clinical category', current: true }) },
+      s => { s.scales[0].segmentCodes.push('fabricated-third') },
+      s => { s.scales[0].endpoints = '999999' },
       s => { s.scales[0].text += ' 100%' },
       s => { s.scales[0].text += ' Unexpected full analysis' },
       s => { s.source = 'another-test · v1 · EN' },
@@ -121,6 +134,13 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       const broken = structuredClone(snapshot); [broken.scales[0], broken.scales[1]] = [broken.scales[1], broken.scales[0]]
       assert.throws(() => assertGuestSnapshot(broken, result, locale))
     }
+    if (snapshot.scales[0].intervals.length) {
+      for (const mutate of [
+        s => { s.scales[0].intervals.pop() },
+        s => { s.scales[0].intervals[0].current = !s.scales[0].intervals[0].current },
+        s => { s.scales[0].intervals[0].text = 'Invented published cutoff' },
+      ]) { const broken = structuredClone(snapshot); mutate(broken); assert.throws(() => assertGuestSnapshot(broken, result, locale)) }
+    }
     const brokenGauge = structuredClone(snapshot)
     if (result.definitionKey === 'asrs-6') {
       brokenGauge.scales[0].svgCount = 1
@@ -128,6 +148,8 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       assert.throws(() => assertGuestSnapshot(wrongThreshold, result, locale))
       const missingCaution = structuredClone(snapshot); missingCaution.scales[0].caution = ''
       assert.throws(() => assertGuestSnapshot(missingCaution, result, locale))
+      const wrongCurrent = structuredClone(snapshot); wrongCurrent.scales[0].intervals[0].current = !wrongCurrent.scales[0].intervals[0].current
+      assert.throws(() => assertGuestSnapshot(wrongCurrent, result, locale))
       const missingBand = structuredClone(snapshot); missingBand.scales[0].band = ''
       assert.throws(() => assertGuestSnapshot(missingBand, result, locale))
     } else brokenGauge.scales[0].needle.x2 += 1
