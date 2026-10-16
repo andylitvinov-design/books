@@ -147,3 +147,18 @@ test('expired owner cookie cannot be upgraded through a failed bridge',async()=>
   await assert.rejects(prepareReportSession(CLIENT,DOCUMENT,fetcher),/SESSION_UNAVAILABLE/)
   assert.equal(calls.length,2)
 })
+
+
+test('published session editor keeps the copy-again control and private link visible on iPhone',()=>{
+ const studio=src('components/admin-session-studio.jsx')
+ const css=src('components/client-session.module.css')
+ assert.match(studio,/tryCopyOwnerLink\(url,navigator\.clipboard\)/)
+ assert.match(studio,/tryCopyOwnerLink\(link,navigator\.clipboard\)/)
+ assert.match(studio,/setLink\(url\)/)
+ assert.match(studio,/className=\{styles\.sessionShareLinkReady\}/)
+ assert.match(studio,/Копировать ещё раз/)
+ assert.match(studio,/onFocus=\{e=>e\.target\.select\(\)\}/)
+ assert.match(css,/\.sessionShareLinkReady\{/)
+ assert.match(css,/@media\(max-width:540px\)/)
+ assert.doesNotMatch(studio,/tryCopyOwnerLink[\s\S]*?case ['"]publish['"]/, 'copy retry does not publish')
+})
