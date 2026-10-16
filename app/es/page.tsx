@@ -53,6 +53,7 @@ export default function SpanishHomePage() {
           <div className="service-home-start-card__actions">
             <Link href="/es/academy">Academia <span aria-hidden="true">→</span></Link>
             <Link href="/es/library">Biblioteca <span aria-hidden="true">→</span></Link>
+            <Link href="/es/academy/reiki/tantra-reiki/free-initiation">Tantra Reiki · iniciación gratuita de Nivel 1 <span aria-hidden="true">→</span></Link>
           </div>
         </article>
       </div>

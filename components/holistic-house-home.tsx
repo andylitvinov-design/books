@@ -40,6 +40,7 @@ const copy = {
     learnText: "Курсы, книги и практические материалы.",
     academyAction: "Academy",
     libraryAction: "Library",
+    tantraAction: "Тантра Рейки · бесплатная инициация 1-й ступени",
     returning: "Уже есть профиль или результаты?",
     cabinetAction: "Открыть кабинет",
     videoKicker: "Короткое знакомство",
@@ -73,6 +74,7 @@ const copy = {
     learnText: "Courses, books and practical guides.",
     academyAction: "Academy",
     libraryAction: "Library",
+    tantraAction: "Tantra Reiki · free Level 1 initiation",
     returning: "Already have a profile or previous results?",
     cabinetAction: "Open Cabinet",
     videoKicker: "A short introduction",
@@ -185,6 +187,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             <div className="service-home-start-card__actions">
               <Link href={`/${locale}/academy`}>{text.academyAction}<span aria-hidden="true">→</span></Link>
               <Link href={`/${locale}/library`}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
             </div>
           </article>
         </div>

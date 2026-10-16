@@ -60,6 +60,7 @@ async function assertSpanishNavigation(page, path) {
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
+import { createPublicDiagnostics, installPublicLifecycle } from './es-public-diagnostics.mjs';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:https';
 import { request as httpRequest } from 'node:http';
@@ -73,6 +74,8 @@ const origin = live ? 'https://holistichouse.vercel.app' : 'https://127.0.0.1:34
 const auditOrigin = live ? origin : 'http://127.0.0.1:3202';
 const evidence = '/tmp/site-video-evidence';
 const results = [];
+const diagnostics = createPublicDiagnostics(origin);
+const saveDiagnostics = () => writeFileSync(`${evidence}/${live?'live':'local'}-es-public-diagnostics.json`, JSON.stringify({events:diagnostics.events, dropped:diagnostics.dropped}, null, 2));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
 mkdirSync(evidence, { recursive: true });
@@ -88,6 +91,7 @@ try {
       const upstream = httpRequest({hostname:'127.0.0.1',port:3202,path:incoming.url,method:incoming.method,headers:{...incoming.headers,'x-forwarded-proto':'https'}}, response => {
         outgoing.writeHead(response.statusCode || 502,response.headers); response.pipe(outgoing);
       });
+      diagnostics.observeProxy(incoming, outgoing, upstream, stage);
       upstream.on('error',()=>{ if(!outgoing.headersSent)outgoing.writeHead(502); outgoing.end(); });
       incoming.pipe(upstream);
     });
@@ -98,7 +102,13 @@ try {
     try {
       for (const width of [390,1365]) {
         const context = await browser.newContext({viewport:{width,height:900},locale:'es-MX',serviceWorkers:'block',ignoreHTTPSErrors:!live});
+        await context.exposeBinding('__esPublicEvidence', ({frame}, event) => {
+          if (frame !== frame.page().mainFrame() || !['document-init', 'DOMContentLoaded', 'load', 'pageshow', 'pagehide', 'popstate', 'error', 'unhandledrejection'].includes(event?.kind)) return;
+          diagnostics.record(event.kind, event.url, {document:event.document, sourceTime:event.sourceTime, stage});
+        });
+        await context.addInitScript(installPublicLifecycle);
         const page = await context.newPage(); const errors = [];
+        diagnostics.observePage(page, () => stage);
         const unselectedClientRequests = [];
         let watchingUnselectedClients = true;
         page.on('pageerror', error => errors.push(error.message));
@@ -253,4 +263,6 @@ try {
   writeFileSync(`${evidence}/${live?'live':'local'}-es-public-results.json`,JSON.stringify({scope:live?'read-only production':'isolated production build',results,allRemedyRoutes:slugs.length,unsupportedPrivateLocale:'browser-visible noindex 404, no cabinet',automaticTranslationLabel:true,originalBookEditions:'clearly labelled, not claimed translated',newRender:false,privateRecordsRead:false},null,2));
 } catch(error) {
   writeFileSync(`${evidence}/${live?'live':'local'}-es-public-failure.json`,JSON.stringify({stage,message:String(error.message).slice(0,4000),completedBrowserGroups:results},null,2)); throw error;
-} finally {if(proxy){proxy.closeAllConnections();proxy.close();} if(app)app.kill('SIGTERM');}
+} finally {
+  try {saveDiagnostics();} finally {if(proxy){proxy.closeAllConnections();proxy.close();} if(app)app.kill('SIGTERM');}
+}

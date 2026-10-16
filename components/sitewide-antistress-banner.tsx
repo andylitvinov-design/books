@@ -16,7 +16,7 @@ const copy = {
 const courseCopy = {
   ru: { eyebrow: "ОПОРА · БЕСПЛАТНЫЙ КУРС", detail: "14 дней · 7 навыков · короткие практики", cta: "Начать курс" },
   en: { eyebrow: "OPORA · FREE STRESS RELIEF COURSE", detail: "14 days · 7 skills · daily practice", cta: "Start free course" },
-  es: { eyebrow: "OPORA · CURSO GRATUITO", detail: "14 días · 7 habilidades · práctica diaria", cta: "Empezar el curso" },
+  es: { eyebrow: "OPORA · CURSO GRATUITO", detail: "14 días · 7 habilidades · práctica diaria", cta: "Empezar el curso en inglés" },
 } as const;
 
 // The ribbon is sitewide, but never interrupts full-screen lessons,
