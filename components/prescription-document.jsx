@@ -4,6 +4,7 @@ import { RemedyContent } from './remedy-content'
 import { DistanceHomeopathyGuide } from './distance-homeopathy-guide'
 import { recommendationCopy, recommendationGuidance, recommendationItemType, remedySchedule, reportFollowUpDetails } from '@/lib/documents/recommendation'
 import { DocumentAutoPrint } from './document-auto-print'
+import { ReportAppendixPrintExpander } from './report-appendix-print-expander'
 import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
@@ -41,6 +42,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       <PrescriptionActions locale={locale} selector={selector} autoPrint={autoPrint} mobilePdf />{cabinetAction}
     </div>}
     <article className="canonical-document canonical-document--editorial">
+      {selectedProfiles.length > 0 && <ReportAppendixPrintExpander />}
       <DocumentAutoPrint enabled={admin && autoPrint} />
       <div className="canonical-report-brandline">
         <div className="canonical-editorial-brand">
@@ -141,8 +143,11 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       {selectedProfiles.length > 0 && <section className="canonical-remedy-profiles" aria-label={locale === 'ru' ? 'Приложение' : 'Appendix'}>
         <h2>{locale === 'ru' ? 'Приложение' : 'Appendix'}</h2>
         <p className="canonical-remedy-appendix-description">{locale === 'ru' ? 'Полные тексты описаний выбранных препаратов из библиотеки Holistic House' : 'Complete library descriptions of all selected remedies'}</p>
-        {selectedProfiles.map(({ item, remedy }) => <section className="canonical-remedy-profile" key={item.remedySlug}>
-          <h3>{remedy.canonical_latin_name}</h3>
+        {selectedProfiles.map(({ item, remedy }) => <details className="canonical-remedy-profile canonical-remedy-profile-disclosure" key={item.remedySlug}>
+          <summary className="canonical-remedy-profile-summary">
+            <h3>{remedy.canonical_latin_name}</h3>
+          </summary>
+          <div className="canonical-remedy-profile-content">
           {remedy.primary_image ? <figure className="canonical-remedy-profile-photo">
             {/* The published original image is retained rather than substituted or generated. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -152,7 +157,8 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           {item.remedyPath && <p className="canonical-remedy-profile-link"><Link href={item.remedyPath}>
             {locale === 'ru' ? 'Открыть полную карточку препарата →' : 'Open full remedy profile →'}
           </Link></p>}
-        </section>)}
+          </div>
+        </details>)}
       </section>}
 
       {document.includeDistanceHomeopathy && <DistanceHomeopathyGuide locale={locale} embedded report />}
