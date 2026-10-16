@@ -1,69 +1,86 @@
 .wrapper {
   width: 100%;
-  padding: clamp(18px, 3vw, 28px);
+  padding: clamp(14px, 2.2vw, 22px);
   border: 1px solid #dce4ed;
-  border-radius: 22px;
-  background: linear-gradient(165deg, #f9fbff 0%, #ffffff 60%, #fffaf7 100%);
+  border-radius: 20px;
+  background: #f9fbfc;
   color: #233d59;
 }
-
-.header { margin-bottom: 20px; }
+.header {
+  text-align: center;
+  margin-bottom: 16px;
+}
 .eyebrow {
-  margin: 0 0 8px;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  font-size: .69rem;
-  font-weight: 750;
-  color: #833f50;
+  margin: 0 0 5px;
+  color: #8c3952;
+  font-size: .71rem;
+  font-weight: 800;
+  letter-spacing: .14em;
 }
-.header h4 { margin: 0 0 8px; font-size: clamp(1.3rem, 2vw, 1.7rem); color: #192f50; }
-.header > p:last-child { margin: 0; max-width: 70ch; line-height: 1.55; color: #4f6274; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.header h4 {
+  margin: 0;
+  color: #162c4a;
+  font-size: clamp(1.35rem, 2.1vw, 1.6rem);
+  line-height: 1.25;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 235px));
+  justify-content: center;
+  gap: 12px;
+}
 .card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
-  padding: 18px;
-  border: 1px solid #e2e7ef;
-  border-radius: 18px;
+  padding: 14px 10px;
+  border: 1px solid #dfe6ed;
+  border-radius: 16px;
   background: #fff;
-  box-shadow: 0 3px 15px rgba(25, 47, 80, .04);
+  box-shadow: 0 3px 12px rgba(22, 44, 74, .045);
+  text-align: center;
 }
-.cardHead { display: flex; align-items: flex-start; gap: 10px; }
-.index {
-  flex: none;
-  display: inline-flex;
+.card h5 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35em;
+  margin: 0 0 8px;
+  color: #172f50;
+  font-size: .94rem;
+  font-weight: 730;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+.gaugeSlot {
+  display: flex;
   justify-content: center;
   align-items: center;
-  width: 30px; height: 30px;
-  background: #eff2f8;
-  border-radius: 8px;
-  color: #71374c;
-  font-size: .74rem;
-  font-weight: 750;
+  flex: 1;
+  min-height: 100px;
+  width: 100%;
 }
-.cardHead h5 { margin: 2px 0 5px; color: #172b4e; font-size: 1rem; line-height: 1.35; }
-.band { margin: 0; color: #6d3c4e; font-size: .87rem; line-height: 1.4; }
-.gaugeRow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; }
-.gaugeRow figure { max-width: 148px; margin: 0; }
-.numeric { margin: 0; color: #314963; line-height: 1.45; font-size: .86rem; }
-.numeric strong { font-weight: 750; color: #172b4e; }
-.meaning { margin: 9px 0; line-height: 1.6; color: #364c61; font-size: .9rem; }
-.caution { margin: 10px 0 0; font-size: .78rem; color: #687787; line-height: 1.45; }
-.support {
-  margin: 10px 0 0;
-  padding: 10px 12px;
-  border-left: 3px solid #824054;
-  border-radius: 6px;
-  background: #fbf7f8;
-  color: #5d3b4a;
-  font-size: .83rem;
-  line-height: 1.45;
+.gaugeSlot figure { margin: 0 auto; }
+.fallbackScore {
+  color: #162f4d;
+  font-size: 1.5rem;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
 }
-.methodology { margin-top: 18px; border-top: 1px solid #e4e9f0; padding-top: 14px; }
-.methodology summary { font-weight: 650; cursor: pointer; }
-.methodology p { line-height: 1.55; color: #536779; }
-.footer { margin: 18px 0 0; color: #62758a; font-size: .81rem; line-height: 1.5; }
-@media (max-width: 480px) {
-  .wrapper { border-radius: 15px; padding: 16px 13px; }
-  .cards { gap: 12px; }
-  .card { padding: 14px; }
+.fallbackScore span { font-size: .85rem; color: #677686; font-weight: 550; }
+.band {
+  margin: 6px 0 0;
+  color: #784358;
+  font-size: .78rem;
+  line-height: 1.35;
+}
+@media (max-width: 600px) {
+  .wrapper { padding: 14px 10px; border-radius: 16px; }
+  .header { margin-bottom: 12px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .card { padding: 12px 6px; border-radius: 13px; }
+  .card h5 { font-size: .81rem; }
+  .gaugeSlot { min-height: 84px; }
+  .wrapper[data-scale-count="1"] .cards { grid-template-columns: minmax(0, 230px); }
 }
