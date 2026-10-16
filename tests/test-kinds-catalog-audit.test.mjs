@@ -124,7 +124,7 @@ test('test-kind checkboxes belong inside detailed selection, not the initial scr
     readFile(new URL('../components/app/simple-test-picker.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8'),
   ])
-  const disclosure = simple.indexOf('<details className={styles.advanced}>')
+  const disclosure = simple.indexOf('<details className={styles.advanced} id="hh-more-test-filters">')
   const endDisclosure = simple.indexOf('</details>', disclosure)
   const typeChoices = simple.indexOf('<fieldset className={styles.kindFilters}')
   assert.ok(disclosure >= 0 && typeChoices > disclosure && typeChoices < endDisclosure)

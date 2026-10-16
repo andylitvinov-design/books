@@ -3,6 +3,7 @@ import { useEffect,useRef,useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Mic,Video,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucide-react'
 import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
+import { getRecorderReadiness } from '../lib/clients/recording-readiness'
 import { SessionPhotoUploader } from './session-photo-uploader'
 import styles from './client-session.module.css'
 
@@ -11,6 +12,7 @@ async function post(url,body) {
   const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),
     credentials:'same-origin',cache:'no-store'})
   const result=await response.json()
+  if(response.status===401) throw new Error('ADMIN_SIGN_IN_REQUIRED')
   if(!response.ok) throw new Error(result.error||'MEDIA_STORAGE_UNAVAILABLE')
   return result
 }
@@ -19,7 +21,10 @@ function recordingError(error,ru) {
   const messages={
     ADMIN_SIGN_IN_REQUIRED:ru?'Вход в кабинет специалиста истёк. Войдите снова и повторите.':'Your practitioner sign-in expired. Sign in again before recording.',
     SESSION_UNAVAILABLE:ru?'Сервис приватных консультаций пока отключён или сессия недоступна. Запись не была загружена.':'Private consultation delivery is disabled or this session is unavailable. Nothing was uploaded.',
-    MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище для аудио и видео ещё не настроено. Файл не отправлен.':'Secure audio/video storage is not configured. Nothing was uploaded.',
+    MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище для этого файла не настроено. Файл не отправлен.':'Secure storage for this file is not configured. Nothing was uploaded.',
+    NotAllowedError:ru?'Safari не разрешил использовать микрофон или камеру. Проверьте разрешение для сайта в настройках Safari.':'Safari blocked microphone or camera access. Check the site permission in Safari settings.',
+    NotFoundError:ru?'Микрофон или камера не найдены на устройстве.':'No microphone or camera was found on this device.',
+    NotReadableError:ru?'Микрофон или камера заняты другим приложением.':'Microphone or camera is being used by another app.',
     MEDIA_STORAGE_UNAVAILABLE:ru?'Хранилище записей сейчас недоступно. Попробуйте позже или проверьте настройки сервера.':'Private recording storage is unavailable. Try again or check server settings.',
     MEDIA_TYPE_NOT_ALLOWED:ru?'Этот формат файла не поддерживается.':'This file format is not supported.',
     MEDIA_SIZE_NOT_ALLOWED:ru?'Запись слишком большая для безопасной загрузки.':'Recording is too large to upload.',
@@ -36,6 +41,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   const [stage,setStage]=useState('idle')
   const [uploadProgress,setUploadProgress]=useState(null)
   const [videoStatus,setVideoStatus]=useState(null)
+  const [signInRequired,setSignInRequired]=useState(false)
+  const [readinessError,setReadinessError]=useState('')
   const [seconds,setSeconds]=useState(0)
   const [scope,setScope]=useState('client')
   const [error,setError]=useState('')
@@ -50,34 +57,56 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     if(recorder){recorder.onstop=null;recorder.ondataavailable=null;recorder.onerror=null;if(recorder.state!=='inactive')recorder.stop()}
     streamRef.current?.getTracks().forEach(track=>track.stop());xhrRef.current?.abort()}},[])
   useEffect(()=>{const warn=e=>{if(busyRef.current||jobRef.current){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[])
-  // Show real video readiness *before* an iPhone tries to record. This is an
-  // owner-only status check; no camera prompt, object key or credentials.
+  // Preflight is the same for audio and video; after an older owner login,
+  // recover the separately scoped /api/admin cookie without losing this page.
   useEffect(()=>{
     let active=true
-    fetch('/api/admin/clients/'+clientId+'/sessions/status',{credentials:'same-origin',cache:'no-store'})
-      .then(async response=>{
-        if(!response.ok)throw new Error('MEDIA_STORAGE_UNAVAILABLE')
-        const result=await response.json()
-        if(result.ready!==true)throw new Error('MEDIA_STORAGE_UNAVAILABLE')
-        return result
-      })
+    getRecorderReadiness(clientId)
       .then(result=>{
-        if(active)setVideoStatus({provider:result.videoProvider||'unavailable',
-          limit:Number(result.videoLimitBytes)||0,ready:result.videoReady===true})
+        if(active){
+          setSignInRequired(false)
+          setReadinessError('')
+          setVideoStatus({provider:result.videoProvider||'unavailable',
+            limit:Number(result.videoLimitBytes)||0,ready:result.videoReady===true})
+        }
       })
-      .catch(()=>{if(active)setVideoStatus({provider:'unavailable',limit:0,ready:false})})
+      .catch(e=>{
+        if(active){
+          setSignInRequired(e?.message==='ADMIN_SIGN_IN_REQUIRED')
+          setReadinessError(e?.message||'MEDIA_STORAGE_UNAVAILABLE')
+          // Do not mistake an expired login or offline audio bucket for a
+          // genuinely unconfigured external VIDEO provider.
+          setVideoStatus(null)
+        }
+      })
     return ()=>{active=false}
   },[clientId])
   useEffect(()=>()=>{if(playback) URL.revokeObjectURL(playback)},[playback])
   async function checkReady() {
-    const response=await fetch('/api/admin/clients/'+clientId+'/sessions/status',{
-      method:'GET',credentials:'same-origin',cache:'no-store',
-    })
-    const data=await response.json().catch(()=>({}))
-    if(!response.ok||data.ready!==true)
-      throw new Error(data.error||'MEDIA_STORAGE_UNAVAILABLE')
-    if(mountedRef.current)setVideoStatus({provider:data.videoProvider||'supabase',limit:data.videoLimitBytes||0,ready:data.videoReady!==false})
-    return data
+    try{
+      const data=await getRecorderReadiness(clientId)
+      if(mountedRef.current){
+        setSignInRequired(false)
+        setReadinessError('')
+        setVideoStatus({provider:data.videoProvider||'unavailable',
+          limit:Number(data.videoLimitBytes)||0,ready:data.videoReady===true})
+      }
+      return data
+    }catch(e){
+      if(mountedRef.current){
+        setSignInRequired(e?.message==='ADMIN_SIGN_IN_REQUIRED')
+        setReadinessError(e?.message||'MEDIA_STORAGE_UNAVAILABLE')
+        setVideoStatus(null)
+      }
+      throw e
+    }
+  }
+  async function verifySignIn() {
+    setError('');setMessage('')
+    try{
+      await checkReady()
+      setMessage(ru?'Доступ восстановлен. Можно записать или загрузить файл.':'Access restored. You can record or upload now.')
+    }catch(e){setError(recordingError(e,ru))}
   }
   async function ensureSession() {
     if(sessionId) return sessionId
@@ -127,6 +156,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         'Material saved to this session. Your client sees it after you publish.')
       onSaved?.(job.sessionId)
     } catch(e) {
+      if(e?.message==='ADMIN_SIGN_IN_REQUIRED')setSignInRequired(true)
       if(mountedRef.current){setRetryFile(job.file);setStage('error');setError(recordingError(e,ru))}
     } finally {busyRef.current=false}
   }
@@ -251,20 +281,29 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         checked={scope==='practitioner'} onChange={()=>setScope('practitioner')} disabled={stage==='recording'||stage==='paused'||busy||Boolean(retryFile)}/>
         {ru?'Личная заметка (только мне)':'Private practitioner note'}</label>
     </div>
+    {signInRequired&&<div className={styles.error} role="alert">
+      <p>{ru?'Для записи и загрузки нужно восстановить вход в кабинет специалиста. Откройте вход в новой вкладке, чтобы не потерять незагруженный файл.':'Your practitioner access needs to be restored. Sign in in a new tab so an unsaved recording stays on this page.'}</p>
+      <a className={styles.inlineLink} href="/admin/login" target="_blank" rel="noopener noreferrer">{ru?'Войти снова ↗':'Sign in again ↗'}</a>{' '}
+      <button type="button" onClick={verifySignIn}>{ru?'Проверить вход':'Check access again'}</button>
+    </div>}
+    {!signInRequired&&readinessError&&<div className={styles.error} role="status">
+      <p>{recordingError({message:readinessError},ru)}</p>
+      <button type="button" onClick={verifySignIn}>{ru?'Повторить проверку':'Retry access check'}</button>
+    </div>}
     <div className={styles.recordControls}>
       {stage==='recording'||stage==='paused'? <>
         <span className={styles.liveIndicator}><span aria-hidden="true">●</span> {stage==='paused'?(ru?'Пауза':'Paused'):(ru?'Запись':'Recording')} · {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</span>
         <button type="button" onClick={togglePause}><Pause size={17}/>{stage==='paused'?(ru?'Продолжить':'Resume'):(ru?'Пауза':'Pause')}</button>
         <button type="button" className={styles.primaryButton} onClick={stopRecording}><Square size={17}/>{ru?'Завершить':'Finish'}</button>
       </> : <>
-        <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)}>
+        <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
         <button type="button" onClick={()=>startRecording('video')}
-          disabled={busy||Boolean(retryFile)||videoStatus?.ready===false}>
+          disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
           <Video size={20}/>{ru?'Записать видео':'Record video'}</button>
         <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить из телефона':'Choose from phone'}
           <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf"
-            onChange={chooseFile} disabled={busy||Boolean(retryFile)} hidden/></label>
+            onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}

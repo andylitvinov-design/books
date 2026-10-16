@@ -20,6 +20,7 @@ const { appHousekeepingStatus, runAppHousekeeping } = maintenance
 import { getAppConfig } from '../lib/app/config.js'
 import { closeDatabase, transaction } from '../lib/app/database.js'
 import { A, B, SB, actor, setup, adminClient, rawAs } from './helpers/app-db-setup.mjs'
+import { verifySnapshotDimensionIdentity } from './helpers/snapshot-dimension-identity-db.mjs'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
@@ -119,6 +120,14 @@ before(async () => {
   }
 })
 after(closeDatabase)
+test('snapshot SQL uses exact definition-scale identity and retains source security', async t => {
+  const db = await adminClient()
+  try {
+    await verifySnapshotDimensionIdentity(db, t)
+  } finally {
+    await db.end()
+  }
+})
 test('actual grants: own reads allowed; account status and identity updates denied', async () => {
   assert.equal(
     (await rawAs(a, 'authenticated', (db) => db.query('select id from app.accounts'))).rows.length,

@@ -10,7 +10,7 @@
 .copy{min-width:0}
 .eyebrow{margin:0 0 9px;display:flex;align-items:center;gap:8px;color:#267d91;font:800 10px/1.45 Arial,Helvetica,sans-serif;letter-spacing:.09em}
 .eyebrow svg{flex:none}
-.copy h1{margin:0;max-width:790px;color:#223b5d;font:400 clamp(29px,3.6vw,43px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.027em;text-wrap:balance}
+.copy h2{margin:0;max-width:790px;color:#223b5d;font:400 clamp(29px,3.6vw,43px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.027em;text-wrap:balance}
 .lead{margin:10px 0 0;max-width:715px;color:#506d80;font:14px/1.55 Arial,Helvetica,sans-serif}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px 18px;margin:16px 0 0}
 .cta{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:47px;padding:10px 17px;border-radius:13px;background:#772f49;color:#fff!important;text-decoration:none;font:800 13px/1.38 Arial,Helvetica,sans-serif}
@@ -27,7 +27,7 @@
 @media(max-width:760px){
  .banner{width:calc(100% - 24px);grid-template-columns:1fr;margin:10px auto 14px;padding:19px 18px 17px;border-radius:19px;gap:0}
  .visual{display:none}
- .copy h1{font-size:clamp(26px,7vw,33px)}
+ .copy h2{font-size:clamp(26px,7vw,33px)}
  .lead{font-size:12.5px;line-height:1.5}
  .actions{margin-top:13px;gap:6px 14px}
  .cta{min-height:44px;font-size:12.5px}

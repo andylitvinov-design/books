@@ -29,7 +29,7 @@ test('topics immediately update the existing catalog while detailed selection st
   const picker = read('components/app/simple-test-picker.jsx')
   const explorer = read('components/app/test-explorer.jsx')
   const css = read('components/app/simple-test-picker.module.css')
-  assert.match(picker, /<details className=\{styles\.advanced\}>/)
+  assert.match(picker, /<details className=\{styles\.advanced\} id="hh-more-test-filters">/)
   assert.doesNotMatch(picker, /open=\{true\}|open=\{advanced/)
   assert.match(picker, /focus\.includes\(key\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
@@ -42,7 +42,7 @@ test('topics immediately update the existing catalog while detailed selection st
   assert.match(explorer, /testKinds=\{kinds\}/)
   assert.match(picker, /data-test-kind-checkbox/)
   assert.match(css, /\.advanced\[open\] \.chevron/)
-  assert.match(picker, /TOPICS = HOME_TEST_TOPICS\.map/)
+  assert.match(picker, /TOPICS = \[\.\.\.HOME_TEST_TOPICS, \{ key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' \}\]\s*\.map/)
   assert.deepEqual(HOME_TEST_TOPICS.map(({ key }) => key),
     ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
 })

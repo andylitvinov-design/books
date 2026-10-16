@@ -3,10 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
+import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
-import { ServiceCart } from "@/components/commerce/service-cart";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import solutionStyles from "@/components/services-solutions.module.css";
@@ -77,9 +77,9 @@ export default async function ServicesPage({ params }: PageProps) {
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
 
+      <ServicesConversionHero locale={locale as Locale} />
       <ServicesTestsIntro locale={locale as Locale} />
       <ServicesSolutions locale={locale as Locale} />
-      <ServiceCart locale={locale as Locale} />
       <ServicesAboutEntry locale={locale as Locale} />
 
       <details className={solutionStyles.extra} id="method-videos" open>

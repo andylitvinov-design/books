@@ -61,7 +61,26 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      await visible(page.locator('[data-free-insights="public"]'));
+      const banner = page.locator('[data-services-tests-intro]#free-insights');
+      assert.equal(await banner.count(), 1, "one free tests/course banner");
+      await visible(banner);
+      await visible(banner.locator("h2#services-tests-heading"));
+      const testAction = banner.locator("a[data-services-test-action]");
+      const courseAction = banner.locator("a[data-services-course-action]");
+      await visible(testAction);
+      await visible(courseAction);
+      assert.equal(await testAction.getAttribute("href"), "/" + locale + "/client/tests", "free tests keep their locale-specific entry");
+      assert.equal(await courseAction.getAttribute("href"), "/" + locale + "/courses/antistress", "free course keeps its locale-specific entry");
+      await visible(banner.locator('a[href="#solutions"]'));
+      assert.equal(await page.locator("h1#services-conversion-title").count(), 1, "restored hero has one primary heading");
+      assert.equal(await page.evaluate(() => {
+        const hero = document.querySelector("#services-conversion-title");
+        const intro = document.querySelector("[data-services-tests-intro]#free-insights");
+        const solutions = document.querySelector("#solutions");
+        return Boolean(hero && intro && solutions &&
+          (hero.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+          (intro.compareDocumentPosition(solutions) & Node.DOCUMENT_POSITION_FOLLOWING));
+      }), true, "photographed hero precedes tests/course banner and service offers");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       const cabinetEntry = page.locator("header.house-header--services a.site-cabinet-entry");
@@ -74,7 +93,7 @@ try {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
       if (width === 390) {
-        const insights = page.locator('[data-free-insights="public"]');
+        const insights = page.locator("[data-services-tests-intro]#free-insights");
         await insights.scrollIntoViewIfNeeded();
         await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
       }
@@ -129,10 +148,16 @@ try {
     const page = await createPage(390);
     await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
     const intake = page.locator("[data-free-drawing-intake]");
+    // A reflected state transition proves React is interactive before controlled inputs are filled.
+    const topicChoice = intake.locator('fieldset button[type="button"]').nth(1);
+    await topicChoice.click();
+    await page.waitForFunction(() => document.querySelectorAll('[data-free-drawing-intake] fieldset button[type="button"]')[1]?.getAttribute('data-selected') === 'true');
     const markerA = "Synthetic privacy marker A — " + locale;
     const markerB = "Synthetic privacy marker B — " + locale;
     await intake.locator("textarea").nth(0).fill(markerA);
     await intake.locator("textarea").nth(1).fill(markerB);
+    assert.equal(await intake.locator("textarea").nth(0).inputValue(), markerA, "first answer remains intact before native submit");
+    assert.equal(await intake.locator("textarea").nth(1).inputValue(), markerB, "second answer remains intact before native submit");
     await intake.locator('form button[type="submit"]').click();
     const ready = intake.locator('[role="region"]');
     await visible(ready);

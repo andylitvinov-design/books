@@ -67,7 +67,7 @@ test('public selector displays conditional second step before optional depth and
  const css=read('components/app/simple-test-picker.module.css')
  const one=picker.indexOf('id="hh-simple-topic-title"')
  const two=picker.indexOf('id="hh-simple-problems-title"')
- const advanced=picker.indexOf('<details className={styles.advanced}>')
+ const advanced=picker.indexOf('<details className={styles.advanced} id="hh-more-test-filters">')
  const three=picker.indexOf('id="hh-simple-recommendations-title"')
  assert.ok(one>=0&&two>one&&advanced>two&&three>advanced)
  assert.match(picker,/data-topic-problem-filter/)

@@ -40,3 +40,34 @@
   background:#102d47;border-color:#102d47;color:#fff;
 }
 .client-entry-shell .cabinet-signin-hero :is(button,a):focus-visible{outline-color:#315c7f}
+
+
+/* 2026-10-15 restored My Tests reference: light aqua header, no dark capsule. */
+.client-entry-shell{
+  color:#194f60;background:linear-gradient(160deg,#feffff,#f2fbfc 49%,#faffff);
+}
+.client-entry-shell .house-header{
+  border-bottom:1px solid #e1eeef;background:rgba(255,255,255,.92);
+  box-shadow:none;
+}
+.client-entry-shell .house-wordmark{color:#164b5d}
+.client-entry-shell .house-wordmark span{color:#67919d}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link{
+  background:#fbf4ee;border:1px solid #ebdfd5;color:#65564e;box-shadow:none;
+}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link:hover{
+  background:#f7ece4;border-color:#e6d3c8;color:#55463f;
+}
+.client-entry-shell .cabinet-signin-hero{
+  background:linear-gradient(115deg,#f7ffff,#eaf9fa);
+  border-color:#d6eaed;
+}
+.client-entry-shell .cabinet-signin-hero :is(h2,h3){color:#174e61}
+.client-entry-shell .cabinet-signin-hero p{color:#678994}
+.client-entry-shell .cabinet-signin-hero .cabinet-google-button{
+  background:#1ba8b4;border-color:#1ba8b4;color:#fff;
+}
+.client-entry-shell .cabinet-signin-hero .cabinet-google-button:hover:not(:disabled){
+  background:#118d9c;border-color:#118d9c;color:#fff;
+}
+.client-entry-shell :is(button,a):focus-visible{outline-color:#258f9c}
