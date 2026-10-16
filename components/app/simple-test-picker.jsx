@@ -8,7 +8,7 @@ import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
-import { TEST_KINDS } from '@/lib/assessments/test-kinds'
+import { TEST_KINDS, testKindCardLabel } from '@/lib/assessments/test-kinds'
 import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
 
 const TEXT = {
@@ -122,22 +122,17 @@ function matchesBrowseTab(entry, key) {
   return tags.some((tag) => String(tag).toLowerCase() === key || (key === 'relationships' && tag === 'intimacy'))
 }
 
-// A pictogram and a short, non-clinical type label, including on phones.
-const COMPACT_KIND_LABELS = {
-  professional: { en: 'Sourced', ru: 'Методика', es: 'Con fuente' },
-  monitoring: { en: 'Check-in', ru: 'Состояние', es: 'Estado' },
-  hobby: { en: 'Explore', ru: 'Самопознание', es: 'Explorar' },
-}
-
+// Always display the explicit assessment type, including on narrow phones.
 function KindBadge({ entry, locale }) {
-  const kind = TEST_KINDS.find((type) => type.key === entry.testKind)
+  const kind = TEST_KINDS.find((type) => type.key === entry?.testKind)
   if (!kind) return null
   const Icon = TEST_KIND_ICONS[kind.key]
-  const label = COMPACT_KIND_LABELS[kind.key]?.[locale] || COMPACT_KIND_LABELS[kind.key]?.en || kind.label.en
+  const label = testKindCardLabel(entry, locale)
+  const prefix = locale === 'ru' ? 'Тип' : locale === 'es' ? 'Tipo' : 'Type'
   return <span className={styles.testKindBadge} data-test-kind-badge={kind.key}
-    title={kind.description[locale] || kind.description.en}
-    aria-label={`${locale === 'ru' ? 'Тип теста' : locale === 'es' ? 'Tipo de prueba' : 'Test type'}: ${kind.label[locale] || kind.label.en}`}>
-    <Icon size={14} aria-hidden="true" /><span>{label}</span>
+    title={kind.description[locale] || kind.description.en} aria-label={`${prefix}: ${label}`}>
+    <Icon size={14} aria-hidden="true" />
+    <span className={styles.kindBadgeText}>{prefix}: {label}</span>
   </span>
 }
 
@@ -401,8 +396,10 @@ export function SimpleTestPicker({
                <label htmlFor={inputId} className={styles.testInfo}>
                  <strong>{entry.title}</strong>
                  <small>{entry.description || entry.category}</small>
-                 <span className={styles.testChips}>
+                 <span className={styles.testTypeLine} data-test-type-line>
                    <KindBadge entry={entry} locale={locale} />
+                 </span>
+                 <span className={styles.testChips}>
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
@@ -458,6 +455,7 @@ export function SimpleTestPicker({
       {(fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
         <div className={styles.viaFamilyIntro}>
           <strong>{viaCopy.title}</strong>
+          {fullVia && <div className={styles.viaTypeLine} data-test-type-line><KindBadge entry={fullVia} locale={locale} /></div>}
           <p>{viaCopy.description}</p>
         </div>
         {fullVia && <div className={styles.viaFamilyActions} data-via-profile={VIA_PROFILE_KEY}>
