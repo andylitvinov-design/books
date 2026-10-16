@@ -10,6 +10,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeChange, gaugeModel } from '../lib/assessments/dashboard-gauges.js'
+import { assessmentResultOverview } from '../lib/assessments/result-overview.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -100,6 +101,7 @@ test('the actual report renders the optional banner without skill mappings or co
       : name === './assessment-gauge' ? { ScoreGauge: () => null, ScoreTrend: () => null }
         : name.endsWith('/scale-guides') ? { getTestScaleGuide: () => null }
           : name.endsWith('/dashboard-gauges') ? { gaugeModel: () => null }
+            : name.endsWith('/result-overview') ? { assessmentResultOverview }
             : name.endsWith('.module.css') ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
               : require(name),
   })
@@ -149,6 +151,7 @@ test('ASRS count-only EN/RU reports allow only a score-independent optional cour
     './free-course-banner': { FreeCourseBanner }, './assessment-gauge': gauges,
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
+    '@/lib/assessments/result-overview': { assessmentResultOverview },
   })
   // Exercise the exact pure boundary assertion used by the browser journey.
   const browserSource = read('scripts/verify-asrs6.mjs')

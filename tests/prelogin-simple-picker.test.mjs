@@ -42,7 +42,7 @@ test('topics immediately update the existing catalog while detailed selection st
   assert.match(explorer, /testKinds=\{kinds\}/)
   assert.match(picker, /data-test-kind-checkbox/)
   assert.match(css, /\.advanced\[open\] \.chevron/)
-  assert.match(picker, /TOPICS = \[\.\.\.HOME_TEST_TOPICS, \{ key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' \}\]\s*\.map/)
+  assert.match(picker, /TOPICS = \[\.\.\.HOME_TEST_TOPICS, \{ key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' \},\s*(?:\/\/[^\n]*\n\s*)?\{ key: 'health', en: 'Health', ru: 'Здоровье', es: 'Salud' \}\]\s*\.map/)
   assert.deepEqual(HOME_TEST_TOPICS.map(({ key }) => key),
     ['stress','anxiety','mood','sleep','body','relationships','resources','attention'])
 })
@@ -76,4 +76,15 @@ test('localized public page starts guest tests without OAuth or premature result
   assert.match(explorer, /simpleSelectionChanged/)
   assert.match(wrapper, /client\?startTests=/)
   assert.doesNotMatch(wrapper, /auth\/start|results\/import|PENDING_TEST_SELECTION_KEY/)
+})
+
+test('topic extension contract rejects a removed or renamed Health/function facet', () => {
+  const picker=read('components/app/simple-test-picker.jsx')
+  const contract=/TOPICS = \[\.\.\.HOME_TEST_TOPICS, \{ key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' \},\s*(?:\/\/[^\n]*\n\s*)?\{ key: 'health', en: 'Health', ru: 'Здоровье', es: 'Salud' \}\]\s*\.map/
+  assert.match(picker,contract)
+  for(const from of ["key: 'health'", "key: 'function'"]) {
+    const mutated=picker.replace(from,"key: 'wrong-facet'")
+    assert.notEqual(mutated,picker)
+    assert.doesNotMatch(mutated,contract)
+  }
 })

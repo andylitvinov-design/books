@@ -15,6 +15,7 @@ import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/cur
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
+import { isGuestReference, replaceGuestRoute as replaceGuestRoutePath } from '@/lib/app/guest-route'
 
 const UI = {
   en: {
@@ -115,7 +116,7 @@ const UI = {
     unavailable: 'Эта функция временно недоступна. Старая приватная ссылка на кабинет по-прежнему работает ниже.',
     testsKicker: 'Монитор состояния',
     tryTitle: 'Бесплатный мониторинг состояния и ресурсов',
-    tryText: 'Выберите опросники о стрессе, настроении и ресурсах. Получите рекомендации и сохраняйте результаты для наблюдения за динамикой.',
+    tryText: 'Проходите доступные тесты без регистрации. Сначала смотрите баллы и расшифровку шкал, затем получайте бесплатный персональный анализ в кабинете.',
     recommended: 'Рекомендуем сейчас',
     otherChecks: 'Другие самопроверки',
     areasTitle: 'Что можно отслеживать',
@@ -315,6 +316,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const searchParams = useSearchParams()
   const planId = searchParams.get('plan')
   const requestedGuestTests = searchParams.get('startTests')
+  const requestedGuestRun = searchParams.get('run')
+  const requestedGuestResult = searchParams.get('result')
   const [active, setActive] = useState(null)
   const [run, setRun] = useState(null)
   const [answers, setAnswers] = useState({})
@@ -336,6 +339,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
   const runLifetime = useRef(0)
+  const selfGuestRoute = useRef(null)
   const saveOperation = useRef(null)
   const saving = useRef(false)
   const completion = useRef(null)
@@ -357,26 +361,115 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const guidedMinutes = Math.max(quickMinutes + 1, Math.ceil(quickMinutes * 1.4))
   const timeUnit = locale === 'ru' ? 'мин' : 'min'
 
+  function replaceGuestRoute({ planId = null, runId = null, resultId = null } = {}) {
+    // Next observes replaceState. Do not let our own URL update replay bootstrap
+    // over an active run, an unsaved zero answer, or pending retry recovery.
+    const route = JSON.stringify([planId, runId, resultId])
+    const previousRoute = selfGuestRoute.current
+    selfGuestRoute.current = route
+    try { return replaceGuestRoutePath({ planId, runId, resultId }) }
+    catch (error) { selfGuestRoute.current = previousRoute; throw error }
+  }
+
+  useEffect(() => () => {
+    runLifetime.current += 1
+    initialLaunchRef.current = null
+    selfGuestRoute.current = null
+  }, [])
+
   useEffect(() => {
     let live = true
-    const epoch = runLifetime.current
+    const route = JSON.stringify([planId, requestedGuestRun, requestedGuestResult])
+    if (selfGuestRoute.current === route) {
+      selfGuestRoute.current = null
+      return
+    }
+    selfGuestRoute.current = null
+    // A real URL navigation owns a new lifetime, including pending run creation.
+    const epoch = ++runLifetime.current
+    saving.current = false
+    submitting.current = false
+    saveOperation.current = null
+    completion.current = null
+    setBusy(false)
+    setActive(null)
+    setRun(null)
+    setAnswers({})
+    setMode(null)
+    setGuestResult(null)
+    setActivePlan(null)
+    setPlanResults([])
+    setPendingGuestDefinitions([])
+    setSaveState('')
+    setError('')
+    setPhase('catalog')
+    // Result and draft references identify only a server-owned guest record.
+    // Never use URL-carried answer payloads or unsaved client-side scores.
+    if ((requestedGuestResult && !isGuestReference(requestedGuestResult)) ||
+        (requestedGuestRun && !isGuestReference(requestedGuestRun)) ||
+        (planId && !isGuestReference(planId)) ||
+        (requestedGuestResult && requestedGuestRun)) {
+      setError(c.error)
+      return
+    }
     guestFetch('guest/bootstrap')
       .then(async (bootstrap) => {
         if (!live || runLifetime.current !== epoch) return
         setSessionExpires(bootstrap.expiresAt)
         setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
-        if (!planId) return
-        const plan = await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
+        const plan = planId
+          ? await guestFetch('guest/test-plans/' + encodeURIComponent(planId))
+          : bootstrap.activeTestPlan
         if (!live || runLifetime.current !== epoch) return
-        setActivePlan(plan)
-        const planResultRows = (bootstrap.results || []).filter((result) => plan.completedRunIds?.includes(result.runId))
-        setPlanResults(planResultRows)
+        if (planId && plan && !requestedGuestRun && !requestedGuestResult) {
+          setActivePlan(plan)
+          setPlanResults((bootstrap.results || []).filter(item => plan.completedRunIds?.includes(item.runId)))
+        }
+
+        if (requestedGuestResult) {
+          const result = (bootstrap.results || []).find((item) => item.id === requestedGuestResult)
+          if (!result) throw new Error('GUEST_RESULT_UNAVAILABLE')
+          // Only reveal a result already authorized by this same-browser guest cookie.
+          setActive(result.definitionKey)
+          setGuestResult(result)
+          setRun(null)
+          if (plan && plan.completedRunIds?.includes(result.runId)) {
+            setActivePlan(plan)
+            setPlanResults((bootstrap.results || []).filter(item => plan.completedRunIds.includes(item.runId)))
+          }
+          setPhase('result')
+          return
+        }
+
+        if (requestedGuestRun) {
+          const existing = (bootstrap.runs || []).find(item => item.id === requestedGuestRun)
+          if (!existing) throw new Error('GUEST_RUN_UNAVAILABLE')
+          const definition = getDefinitionById(existing.definitionId)
+          if (!definition) throw new Error('GUEST_TEST_UNAVAILABLE')
+          const owningPlan = plan?.status === 'active' && plan.definitionIds?.[plan.currentIndex] === definition.id ? plan : null
+          if (planId && !owningPlan) throw new Error('GUEST_PLAN_RUN_MISMATCH')
+          if (owningPlan) {
+            setActivePlan(owningPlan)
+            setPlanResults((bootstrap.results || []).filter(item => owningPlan.completedRunIds?.includes(item.runId)))
+          }
+          setActive(definition.key)
+          setRun(existing)
+          setAnswers(existing.answers || {})
+          setContext(existing.context || { current_focus: '', trigger: '', what_helps: '', desired_change: '', note: '' })
+          setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, definition.questions.length - 1)))
+          setMode(null)
+          setPhase('mode')
+          return
+        }
+
+        if (!planId || !plan) return
         if (plan.status === 'completed') {
           setPhase('summary')
           return
         }
         const nextDefinition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-        const existing = bootstrap.runs.find((item) => item.definitionId === nextDefinition.id)
+        if (!nextDefinition) throw new Error('GUEST_TEST_UNAVAILABLE')
+        const existing = (bootstrap.runs || []).find(item => item.definitionId === nextDefinition.id)
         setActive(nextDefinition.key)
         if (existing) {
           setRun(existing)
@@ -385,23 +478,32 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
           setIndex(Math.min(Math.max(0, Number(existing.progress || 0)), Math.max(0, nextDefinition.questions.length - 1)))
           setPhase('mode')
         } else {
-          await startRun(nextDefinition)
+          await startRun(nextDefinition, plan.id)
         }
       })
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [locale, planId])
+      .catch(() => {
+        if (!live || runLifetime.current !== epoch) return
+        if (requestedGuestRun || requestedGuestResult || planId) {
+          setError(locale === 'ru'
+            ? 'Временный результат или тест недоступен. Возможно, срок гостевой сессии истёк. Начните новый тест.'
+            : 'This temporary result or test is unavailable. Your guest session may have expired. Start a new test.')
+        }
+      })
+    return () => { live = false }
+    // UI locale only changes labels; it must not restart the persisted instrument.
+  }, [planId, requestedGuestRun, requestedGuestResult])
 
   useEffect(() => {
-    // Only public definition keys travel from /client/tests, never answers/results.
+    // Dedicated /client/tests passes only allowlisted public definition keys.
+    // URL resume references take precedence over a stale initial selection.
+    if (!requestedGuestTests) { initialLaunchRef.current = null; return }
+    if (requestedGuestResult || requestedGuestRun || planId) return
     if (!requestedGuestTests || initialLaunchRef.current === requestedGuestTests) return
     initialLaunchRef.current = requestedGuestTests
     const keys = [...new Set(requestedGuestTests.split(',').map(value => value.trim()).filter(Boolean))]
     if (keys.length === 0 || keys.length > 12) { setError(c.error); return }
     void beginGuestBattery(keys.map(key => ({ key })))
-  }, [requestedGuestTests])
+  }, [requestedGuestTests, requestedGuestRun, requestedGuestResult, planId])
 
   async function signIn(intentId = null) {
     if (!appAvailable) {
@@ -456,7 +558,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     }
   }
 
-  async function startRun(def) {
+  async function startRun(def, owningPlanId = null) {
     const epoch = runLifetime.current
     const created = await guestFetch('guest/runs', {
       definitionKey: def.key,
@@ -481,6 +583,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setMode(null)
     setPhase('mode')
     setBusy(false)
+    replaceGuestRoute({ planId: owningPlanId, runId: created.id })
   }
 
   async function begin(id, moodPayload = pendingMood, pinnedDefinition = null) {
@@ -494,6 +597,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     submitting.current = false
     saveOperation.current = null
     completion.current = null
+    if (!pinnedDefinition) { setActivePlan(null); setPlanResults([]) }
     setRun(null)
     setActive(id)
     setGuestResult(null)
@@ -507,6 +611,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
       if (moodPayload) await persistGuestMood(moodPayload)
       if (runLifetime.current !== epoch) return
+      const currentPlan = pinnedDefinition && activePlan?.status === 'active' && activePlan.definitionIds?.[activePlan.currentIndex] === def.id ? activePlan : null
       const existing = bootstrap.runs.find((item) => item.definitionId === def.id)
       if (existing) {
         setRun(existing)
@@ -520,8 +625,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         )
         setMode(null)
         setPhase('mode')
+        replaceGuestRoute({planId: currentPlan?.id, runId: existing.id})
       } else {
-        await startRun(def)
+        await startRun(def, currentPlan?.id)
       }
     } catch (e) {
       if (runLifetime.current !== epoch) return
@@ -589,13 +695,14 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         const latest = await guestFetch('guest/bootstrap')
         if (runLifetime.current !== epoch) return
         setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
+        replaceGuestRoute({planId: plan.id})
         setPhase('summary')
       } else {
         // Reopening the same guest battery resumes the actual outstanding test,
         // rather than restarting the first item or losing previous measurements.
         const next = getDefinitionById(plan.definitionIds[plan.currentIndex])
         setActive(next.key)
-        await startRun(next)
+        await startRun(next, plan.id)
       }
     } catch (cause) {
       if (runLifetime.current !== epoch) return
@@ -621,6 +728,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       if (pendingMood) await persistGuestMood(pendingMood)
       if (runLifetime.current !== epoch) return
       let nextDefinition = definition
+      let owningPlanId = null
       if (pendingGuestDefinitions.length > 1) {
         const plan = await guestFetch('guest/test-plans', {
           items: pendingGuestDefinitions.map(item => ({
@@ -633,17 +741,19 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         setActivePlan(plan)
         setPlanResults([])
         setPendingGuestDefinitions([])
+        owningPlanId = plan.id
         if (plan.status === 'completed') {
           const latest = await guestFetch('guest/bootstrap')
           if (runLifetime.current !== epoch) return
           setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
+          replaceGuestRoute({planId: plan.id})
           setPhase('summary')
           return
         }
         nextDefinition = getDefinitionById(plan.definitionIds[plan.currentIndex])
         setActive(nextDefinition.key)
       }
-      await startRun(nextDefinition)
+      await startRun(nextDefinition, owningPlanId)
     } catch {
       if (runLifetime.current !== epoch) return
       setError(c.error)
@@ -768,8 +878,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       if (advanced?.status === 'active' && advanced.definitionIds?.[advanced.currentIndex]) {
         const nextDefinition = getDefinitionById(advanced.definitionIds[advanced.currentIndex])
         setActive(nextDefinition.key)
-        await startRun(nextDefinition)
+        await startRun(nextDefinition, advanced.id)
       } else if (advanced?.status === 'completed') {
+        replaceGuestRoute({planId: advanced.id})
         setPhase('summary')
       } else {
         setActive(null)
@@ -778,7 +889,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         setPhase('catalog')
       }
     } else {
-      // Always display this saved attempt's full recommendations.
+      // Persist only opaque IDs so a refresh restores the same scored scales and CTA.
+      replaceGuestRoute({planId: advanced?.id || activePlan?.id, resultId: result.id})
       setPhase('result')
     }
     if (completion.current === pending) completion.current = null
@@ -937,6 +1049,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     submitting.current = false
     saveOperation.current = null
     completion.current = null
+    replaceGuestRoute()
     setActive(null)
     setRun(null)
     setAnswers({})
@@ -954,8 +1067,11 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
   async function continuePlan() {
     if (!activePlan || activePlan.status !== 'active') return
-    const definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex])
-    await begin(definition.key, pendingMood, definition)
+    let definition
+    try { definition = getDefinitionById(activePlan.definitionIds[activePlan.currentIndex]) } catch { setError(c.error); return }
+    if (!definition) { setError(c.error); return }
+    replaceGuestRoute({planId: activePlan.id})
+    await begin(definition.key, null, definition)
   }
 
   return (
@@ -1232,6 +1348,12 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
                 {activePlan?.status === 'active' && (
                   <button className="cabinet-save-result" type="button" disabled={busy} onClick={continuePlan}>
                     {locale === 'ru' ? 'Продолжить набор' : 'Continue set'}
+                  </button>
+                )}
+                {activePlan?.status === 'completed' && (
+                  <button className="cabinet-text-button" type="button" disabled={busy}
+                    onClick={() => { replaceGuestRoute({planId: activePlan.id}); setPhase('summary') }}>
+                    {locale === 'ru' ? 'Обзор пройденных тестов' : 'View completed test set'}
                   </button>
                 )}
                 <button className="cabinet-text-button" type="button" disabled={busy} onClick={resetToCatalog}>

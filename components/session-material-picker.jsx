@@ -11,6 +11,7 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
   const [materials,setMaterials]=useState([])
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
+  const [reloadCount,setReloadCount]=useState(0)
   const [search,setSearch]=useState('')
   useEffect(()=>{
     if(!open)return
@@ -25,7 +26,7 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       .catch(e=>{if(mounted)setError(e.message)})
       .finally(()=>{if(mounted)setLoading(false)})
     return ()=>{mounted=false}
-  },[open])
+  },[open,reloadCount])
   const filtered=materials.filter(item=>
     (item.title+' '+item.description+' '+item.kind).toLowerCase().includes(search.toLowerCase()))
   function toggle(id,enabled){
@@ -38,22 +39,26 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
       onOpen?.()
     }
   }}>
-    <summary><FolderOpen size={20}/>{ru?'Материалы для клиента':'Materials for client'}
+    <summary><FolderOpen size={20}/>{ru?'Выбрать из библиотеки':'Select from library'}
       <span className={styles.count}>{selectedIds.length}</span>
     </summary>
     <div className={styles.contents}>
-      <p className={styles.help}>{ru?'Отметьте галочками фото, видео и YouTube-материалы из вашей библиотеки. Выбранное появится в конце клиентского отчёта после публикации.':
-        'Check photos, videos and YouTube links from your library. Selected items appear at the end of the published client report.'}</p>
+      <p className={styles.help}>{ru?'Отметьте галочками ранее загруженные общие фото, видео и ссылки YouTube. Здесь материалы не загружаются; они добавляются отдельно в меню «Материалы» кабинета мастера. После публикации выбранное появится в конце отчёта.':
+        'Select existing general photos, videos and YouTube links. No uploads are made here; add new resources from Practitioner Cabinet → Materials. Selected items appear at the end of the published report.'}</p>
       <div className={styles.tools}>
         <input className={styles.search} value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={ru?'Поиск по материалам…':'Search materials…'} aria-label={ru?'Поиск материалов':'Search materials'}/>
         <a className={styles.link} href="/admin/materials" target="_blank" rel="noopener noreferrer">
-          + {ru?'Добавить материал':'Add material'} ↗</a>
+          {ru?'Библиотека мастера':'Practitioner library'} ↗</a>
+        <button type="button" className={styles.refresh} disabled={loading}
+          onClick={()=>setReloadCount(value=>value+1)}>
+          {ru?'Обновить список':'Refresh list'}
+        </button>
       </div>
       {error&&<p role="alert" className={styles.alert}>{error}</p>}
       <div className={styles.items}>
         {loading?<p className={styles.empty}>{ru?'Загрузка…':'Loading…'}</p>:
-        filtered.length===0?<p className={styles.empty}>{ru?'Материалы пока не добавлены.':'No materials found.'}</p>:
+        filtered.length===0?<p className={styles.empty}>{ru?'В библиотеке пока нет подходящих материалов. Откройте меню «Материалы» в кабинете мастера.':'No matching materials yet. Use the practitioner Materials menu to populate the library.'}</p>:
         filtered.map(item=><label className={styles.item} key={item.id}>
           <input type="checkbox" checked={selectedIds.includes(item.id)} disabled={disabled||(!selectedIds.includes(item.id)&&selectedIds.length>=24)}
             onChange={event=>toggle(item.id,event.target.checked)}/>

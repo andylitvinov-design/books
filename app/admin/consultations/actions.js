@@ -43,9 +43,8 @@ export async function createConsultationAction(previous, formData) {
     else { data.clientId = String(formData.get('clientId') ?? ''); if (!data.clientId) throw new Error('Choose a client') }
     pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') }) }
   catch (error) { return { error: safeConsultationError(error) } }
-  redirect(pair.recommendation
-    ? `/admin/consultations/${pair.recommendation.id}`
-    : `/admin/payments/${pair.payment.id}`)
+  if (pair.recommendation) redirect(`/admin/consultations/${pair.recommendation.id}`)
+  redirect(`/admin/payments/${pair.payment.id}`)
 }
 
 export async function updateConsultationAction(id, previous, formData) {
@@ -59,8 +58,12 @@ export async function updateConsultationAction(id, previous, formData) {
     (payment && formData.get('includeInvoice') === 'on' && formData.get('paymentRevision') !== payment.updatedAt)) {
     return { error: 'This consultation changed in another window. Reload before saving.' }
   }
-  try { await updateConsultation(recommendation, payment, input(formData), { store }) }
-  catch (error) { return { error: safeConsultationError(error) } }
+  let values
+  try {
+    values=input(formData)
+    await updateConsultation(recommendation,payment,values,{store})
+  }
+  catch (error) { return { error:safeConsultationError(error) } }
   redirect(`/admin/consultations/${id}`)
 }
 

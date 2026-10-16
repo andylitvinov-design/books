@@ -7,7 +7,7 @@ import { ConsultationDocumentActions } from './consultation-document-actions'
 import { resultCopy, resultDocumentText } from '@/lib/consultations/result-copy'
 import { resultLocale } from '@/lib/consultations/result-actions'
 
-export function ConsultationResult({ clientId, patientName, dateIssued, languagePreference, documents, logout }) {
+export function ConsultationResult({ clientId, patientName, dateIssued, languagePreference, documents, logout, publication='skipped' }) {
   const [locale, setLocale] = useState(() => resultLocale(languagePreference))
   const labels = resultCopy(locale)
 
@@ -50,10 +50,31 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
       </fieldset>
     </section>
 
-    <div className="consultation-report-review-hint" role="note">
-      <strong>{ru ? 'Сначала просмотрите отчёт' : 'Preview before sharing'}</strong>
+    {publication!=='skipped'&&<section className={'consultation-publication-state '+(publication==='published'?'consultation-publication-state--published':'consultation-publication-state--needs-action')}
+      role="status" aria-live="polite">
+      <strong>{publication==='published'?
+        (ru?'Сохранённая версия отчёта опубликована для клиента':'Saved report version is published privately'):
+        publication==='unlinked'?(ru?'Отчёт сохранён. Не выбран клиент':'Report saved. No client linked'):
+        publication==='stale'?(ru?'Отчёт изменён — обновление ещё не опубликовано':'Report updated — client page needs refreshing'):
+        (ru?'Отчёт сохранён. Публикация ещё не завершена':'Report saved. Private publication is not complete')}</strong>
+      <p>{publication==='published'?
+        (ru?'Версия отчёта опубликована. Материалы черновика требуют отдельной проверки и публикации. Используйте «Копировать ссылку», чтобы отправить её клиенту. Доступ остаётся приватным.':
+          'The saved report version is published. Draft materials require separate review and Publish. Use Copy link to share it securely.'):
+        publication==='unlinked'?
+          (ru?'Укажите клиента в редакторе отчёта, чтобы создать его личную страницу.':
+            'Assign this report to a client before enabling private sharing.'):
+        publication==='unavailable'?
+          (ru?'Сервис защищённых страниц временно недоступен. Сохранённый отчёт не потерян — откройте редактор сессии для проверки.':
+            'Private page delivery is temporarily unavailable. The saved report is safe; review the session editor.'):
+          (ru?'Откройте редактор клиентской сессии, проверьте отчёт и материалы, затем нажмите «Опубликовать».':
+            'Open the client session editor, review the report and materials, then select Publish.')}</p>
+
+    </section>}
+
+    {publication!=='published'&&<div className="consultation-report-review-hint" role="note">
+      <strong>{ru ? 'Отчёт доступен для предпросмотра' : 'Report preview is available'}</strong>
       <p>{labels.reviewHint}</p>
-    </div>
+    </div>}
 
     <div className="consultation-result-documents">
       {documents.map(document => {

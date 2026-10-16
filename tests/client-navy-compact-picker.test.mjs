@@ -148,7 +148,7 @@ test('brief introductions remain localized and their topic action still jumps to
 })
 
 
-test('approved turquoise reference restores the soft three-column mobile topic chooser', () => {
+test('approved turquoise reference keeps its airy topic chooser with two mobile columns', () => {
   const coast = read('public/images/holistic-house/assessment-coast.svg')
   const lotus = read('public/images/holistic-house/assessment-lotus.svg')
   assert.match(coast, /Quiet sunrise above a coast/)
@@ -160,10 +160,10 @@ test('approved turquoise reference restores the soft three-column mobile topic c
   assert.match(picker, /TOPICS\.every\(\(\{key\}\) => focus\.includes\(key\)\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(css, /Restore the user's approved airy turquoise reference/)
-  assert.match(css, /\.shell \.topicGrid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css, /@media\(max-width:760px\)\{\s*\.shell \.topicGrid\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.match(css, /\.shell \.benefits>div\{/)
   assert.match(css, /\.shell \.promoAction\{/)
-  assert.match(css, /background:linear-gradient\(110deg,#24bfc4,#0aa9b4\)/)
+  assert.match(css, /background:linear-gradient\(110deg,#973a5b,#822b48\)!important/)
   assert.match(routeCss, /restored My Tests reference: light aqua header/)
 })
 

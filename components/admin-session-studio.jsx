@@ -1,9 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { SessionAudioRecorder } from './session-audio-recorder'
 import { SessionMaterialPicker } from './session-material-picker'
-import { SessionYouTubePlayer } from './session-youtube-player'
-import { parseSessionYouTubeUrl } from '@/lib/clients/youtube-resource'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
@@ -46,38 +43,48 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
     rows[index]={...rows[index],...patch}
     updatePlan({practices:rows})
   }
-  function changeResource(index,patch){
-    const links=[...(plan.resources||[])]
-    links[index]={...links[index],...patch}
-    updatePlan({resources:links})
-  }
+  const hasExtraText=Boolean(
+    plan.focus?.trim()||plan.nextStep?.trim()||plan.additionalRecommendations?.trim()||
+    (plan.takeaways||[]).some(point=>point?.trim())||
+    (plan.practices||[]).some(item=>item.title?.trim()||item.instructions?.trim())
+  )
   const changed=JSON.stringify(draft)!==JSON.stringify(session.draft)
   async function load() {
     const result=await api(base)
-    setSession(result.session)
-    setDraft(result.session.draft)
-    return result.session
-  }
-  async function refreshAfterMedia() {
-    const result=await api(base)
-    setSession(result.session)
-    setDraft(current=>{
-      if(JSON.stringify(current)===JSON.stringify(session.draft)) return result.session.draft
-      const ids=new Set(current.media.map(item=>item.assetId))
-      return {...current,media:[...current.media,...result.session.draft.media.filter(item=>!ids.has(item.assetId))]}
-    })
+    const next=result.session
+    // Background refreshes must not approve a newer version of the same report.
+    // Reload/review the editor to accept a changed source fingerprint.
+    if(next.draft.reportDocumentId===session.publicationSource?.reportDocumentId)
+      next.publicationSource=session.publicationSource
+    setSession(next)
+    setDraft(next.draft)
+    return next
   }
   async function save() {
     const result=await api(base,'PATCH',{expectedRevision:session.draftRevision,draft})
-    const updated=await load()
+    await load()
     setMessage(ru?'Черновик сохранён':'Draft saved')
-    return updated
+    // A concurrent editor may advance the GET result after our PATCH. Only the
+    // revision written by this request is eligible for the pending publication.
+    return result
   }
   async function act(action,days) {
     setBusy(action);setError('');setMessage('')
     try {
-      if(action==='publish'&&changed) await save()
-      const result=await api(base,'POST',{action,days})
+      let publication
+      if(action==='publish') {
+        const source=session.publicationSource
+        if(!source||source.reportDocumentId!==draft.reportDocumentId)
+          throw new Error('PUBLICATION_REVIEW_REQUIRED')
+        publication={expectedRevision:session.draftRevision,
+          expectedReportDocumentId:source.reportDocumentId,
+          expectedReportFingerprint:source.reportFingerprint}
+        if(changed) {
+          const saved=await save()
+          publication.expectedRevision=saved.draftRevision
+        }
+      }
+      const result=await api(base,'POST',{action,days,...publication})
       if(['copy','rotate'].includes(action)&&result.secret) {
         const url=window.location.origin+'/'+locale+'/client/session/'+result.selector+'#'+result.secret
         setLink(url)
@@ -92,7 +99,10 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       }
       if(['revoke','rotate','archive'].includes(action)) setLink('')
       await load()
-    } catch(e) {setError(e.message||String(e))}
+    } catch(e) {setError(['SESSION_CHANGED','REPORT_VERSION_CHANGED','REPORT_SESSION_MISMATCH','PUBLICATION_REVIEW_REQUIRED'].includes(e.message)?
+      (ru?'Черновик или исходный отчёт изменился. Сохраните выбранный отчёт, затем обновите страницу и проверьте его перед публикацией.':
+        'The draft or source report changed. Save the selected report, then reload and review it before publishing.'):
+      e.message||String(e))}
     finally {setBusy('')}
   }
   async function play(assetId) {
@@ -125,12 +135,11 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       <span className={styles.status}>{session.status==='published'?(ru?'Опубликовано':'Published'):
         session.status==='archived'?(ru?'Архив':'Archived'):(ru?'Черновик':'Draft')}</span>
     </header>
-    <section className={styles.editorCard}>
-      <h2>{ru?'Обращение к клиенту':'Introduction to client'}</h2>
-      <label className={styles.field}>{ru?'Название сессии':'Session title'}
-        <input value={draft.title} maxLength={160} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
-      <label className={styles.field}>{ru?'Короткое пояснение и рекомендации':'Short explanation & key next steps'}
-        <textarea rows={4} maxLength={6000} value={draft.summary} onChange={e=>setDraft({...draft,summary:e.target.value})}/></label>
+    <section className={styles.editorCard+' '+styles.reportReadyCard} id="session-attached-report">
+      <h2>{ru?'Готовый отчёт клиента':'Saved client report'}</h2>
+      <p>{ru?
+        'Анализ, назначения и рекомендации уже находятся в исходном отчёте. Заполнять их повторно для публикации не нужно.':
+        'Your original report already contains the analysis and recommendations. No additional questionnaire is required to publish it.'}</p>
       <label className={styles.field}><FileText size={18}/>{ru?'Привязанный отчёт (настоящий PDF)':'Attached report (real PDF)'}
         <select value={draft.reportDocumentId||''}
           onChange={e=>setDraft({...draft,reportDocumentId:e.target.value||null})}>
@@ -138,15 +147,37 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
           {documents.map(doc=><option key={doc.id} value={doc.id}>{doc.dateIssued} · {doc.kind}</option>)}
         </select>
       </label>
-      <div className={styles.actions}><button className={styles.secondaryButton} disabled={block||!changed}
-        onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
-          <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
-        {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
+      <div className={styles.actions}>
+        <a href="#session-publication" className={styles.jumpToPublication}>
+          {ru?'Перейти к публикации ↓':'Go to publication ↓'}
+        </a>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed}
+          onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
+          <Save size={17}/>{ru?'Сохранить черновик':'Save draft'}
+        </button>
+        {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}
+      </div>
     </section>
-    <section className={styles.editorCard} aria-label={ru?'Персональный план клиента':'Client session plan'}>
-      <h2>{ru?'План после консультации':'Plan after this consultation'}</h2>
-      <p>{ru?'Только ваш утверждённый текст. Клиент увидит его после публикации, а не во время редактирования.':
-        'Only your practitioner-approved text. The client sees this after publication, not while you edit.'}</p>
+    <details className={styles.optionalTextEditor}>
+      <summary>{ru?'Личное сопроводительное сообщение (необязательно)':'Personal cover message (optional)'}
+        {Boolean(draft.summary?.trim())&&<span className={styles.optionalFilled}>{ru?'Есть текст':'Has text'}</span>}
+      </summary>
+      <div className={styles.optionalTextBody}>
+        <p>{ru?'Не нужно повторять текст готового отчёта. Можно добавить только отдельное приветствие.':
+          'Do not repeat the report. Add a separate welcome message only if you want one.'}</p>
+      <label className={styles.field}>{ru?'Название сессии':'Session title'}
+        <input value={draft.title} maxLength={160} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
+      <label className={styles.field}>{ru?'Короткое пояснение и рекомендации':'Short explanation & key next steps'}
+        <textarea rows={4} maxLength={6000} value={draft.summary} onChange={e=>setDraft({...draft,summary:e.target.value})}/></label>
+      </div>
+    </details>
+    <details className={styles.optionalTextEditor}>
+      <summary>{ru?'Дополнительные заметки и упражнения (необязательно)':'Additional notes and practices (optional)'}
+        {hasExtraText&&<span className={styles.optionalFilled}>{ru?'Есть записи':'Has content'}</span>}
+      </summary>
+      <div className={styles.optionalTextBody}>
+        <p>{ru?'Эти поля нужны только для дополнительных указаний сверх уже составленного отчёта. Для обычной публикации оставьте их пустыми.':
+          'Use these only for genuinely additional notes beyond your existing report. Leave them blank for normal publication.'}</p>
       <label className={styles.field}>{ru?'Главный фокус встречи':'Main focus of this session'}
         <textarea rows={2} maxLength={300} value={plan.focus||''}
           placeholder={ru?'На что мы обратили внимание…':'What we focused on…'}
@@ -194,75 +225,38 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
             'Any additional practitioner-approved guidance or observations…'}
           onChange={event=>updatePlan({additionalRecommendations:event.target.value})}/>
       </label>
-      <div className={styles.planEditorSection}>
-        <h3>{ru?'Материалы, медитации и видео YouTube':'Materials, meditations & YouTube videos'} <small>{(plan.resources||[]).length}/8</small></h3>
-        <p>{ru?'Добавляйте здесь только проверенные общедоступные HTTPS-материалы. Приватные аудио, видео и PDF загружайте отдельным полем ниже.':
-          'Use this for approved public HTTPS resources only. Upload private audio, video and PDF below instead.'}</p>
-        {(plan.resources||[]).map((resource,index)=><div className={styles.planEditorPractice} key={index}>
-          <label className={styles.field}>{resource.kind==='youtube'?(ru?'Название обучающего видео':'Educational video title'):(ru?'Название материала':'Material title')}
-            <input maxLength={140} value={resource.title} onChange={e=>changeResource(index,{title:e.target.value})}/>
-          </label>
-          <label className={styles.field}>{resource.kind==='youtube'?(ru?'Ссылка на YouTube':'YouTube URL'):(ru?'Публичная HTTPS-ссылка':'Public HTTPS link')}
-            <input inputMode="url" type="url" maxLength={1500} value={resource.url}
-              placeholder={resource.kind==='youtube'?'https://youtu.be/XXXXXXXXXXX':'https://'}
-              onChange={e=>changeResource(index,{url:e.target.value})}/>
-          </label>
-          {resource.kind==='youtube'&&resource.url.trim()&&!parseSessionYouTubeUrl(resource.url)&&
-            <p role="alert" className={styles.youtubeEditorWarning}>
-              {ru?'Вставьте ссылку на одно YouTube-видео (youtu.be, watch, shorts).':
-                'Enter one YouTube video URL (youtu.be, watch or shorts).'}
-            </p>}
-          {resource.kind==='youtube'&&parseSessionYouTubeUrl(resource.url)&&
-            <SessionYouTubePlayer title={resource.title} url={resource.url}
-              description={resource.description} locale={locale}/>}
-          {resource.kind==='youtube'&&<label className={styles.field}>{ru?'Где показывать видео':'Video location in the report'}
-            <select value={resource.placement||'top'} onChange={e=>changeResource(index,{placement:e.target.value})}>
-              <option value="top">{ru?'Над текстом отчёта':'Above the report'}</option>
-              <option value="materials">{ru?'Материалы — в конце отчёта':'Materials — at the end'}</option>
-            </select>
-          </label>}
-          {resource.kind==='youtube'&&<p className={styles.youtubeEditorNote}>{ru?
-            'Только общие обучающие ролики. Даже Unlisted на YouTube доступен каждому, у кого есть ссылка. Не добавляйте персональные записи клиентов.':
-            'General educational videos only. Unlisted is viewable by anyone with the link. Never attach private client recordings.'}</p>}
-          <label className={styles.field}>{ru?'Короткое описание':'Short description'}
-            <textarea rows={2} maxLength={500} value={resource.description||''}
-              onChange={e=>changeResource(index,{description:e.target.value})}/>
-          </label>
-          <button type="button" className={styles.secondaryButton} onClick={()=>
-            updatePlan({resources:plan.resources.filter((_,i)=>i!==index)})}>
-            {resource.kind==='youtube'?(ru?'Удалить видео':'Remove video'):(ru?'Удалить материал':'Remove material')}
-          </button>
-        </div>)}
-        {(plan.resources||[]).length<8&&<>
-          <button type="button" className={styles.secondaryButton}
-            onClick={()=>updatePlan({resources:[...(plan.resources||[]),
-              {kind:'youtube',title:ru?'Обучающее видео':'Educational video',description:'',url:''}]})}>
-            + {ru?'Добавить видео с YouTube':'Add YouTube video'}
-          </button>
-          <button type="button" className={styles.secondaryButton}
-            onClick={()=>updatePlan({resources:[...(plan.resources||[]),
-              {title:ru?'Новый материал':'New material',description:'',url:'https://'}]})}>
-            + {ru?'Добавить ссылку':'Add resource link'}
-          </button>
-        </>}
       </div>
+    </details>
+    <section className={styles.editorCard} aria-label={ru?'Общие материалы из библиотеки':'Shared library materials'}>
+      <h2>{ru?'Материалы из библиотеки':'Materials from library'}</h2>
+      <p>{ru?'Выбирайте только готовые общие материалы. Загрузить фото, видео или добавить YouTube-ссылку можно в отдельном разделе кабинета мастера «Материалы».':
+        'Attach existing general materials only. Upload photos, videos or YouTube links in the separate practitioner Materials library.'}</p>
       <SessionMaterialPicker locale={locale}
         selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
         disabled={block}
         onChange={ids=>updatePlan({materialIds:ids})}/>
+      {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
+        'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
+        'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
       <div className={styles.actions}>
         <button type="button" className={styles.secondaryButton} disabled={block||!changed} onClick={()=>{
           setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))
-        }}><Save size={17}/>{ru?'Сохранить план':'Save plan'}</button>
+        }}><Save size={17}/>{ru?'Сохранить выбранные материалы':'Save selected materials'}</button>
       </div>
     </section>
-    <SessionAudioRecorder clientId={clientId} sessionId={session.id} locale={locale} showYouTubeQuickAdd={false}
-      onSaved={()=>refreshAfterMedia().catch(e=>setError(e.message))}/>
+    <section className={styles.editorCard} aria-label={ru?'Персональные записи консультации':'Private session recordings'}>
+      <h2>{ru?'Персональные записи консультации':'Private session recordings'}</h2>
+      <p>{ru?'Личные аудио, видео и фото относятся только к этой консультации и хранятся отдельно от общей библиотеки. Их запись и загрузка вынесены в отдельный экран.':
+        'Client-specific audio, video and photos remain private to this consultation. Their recorder/uploader is on a separate screen, not in shared Materials.'}</p>
+      <a className={styles.secondaryButton} href={'/admin/clients/'+encodeURIComponent(clientId)+'/sessions/'+encodeURIComponent(session.id)+'/recordings'}>
+        {ru?'Открыть личные записи →':'Open private recordings →'}
+      </a>
+    </section>
     <section className={styles.editorCard}>
-      <h2>{ru?'Материалы этой сессии':'Media for this session'}</h2>
+      <h2>{ru?'Сохранённые личные вложения':'Existing private attachments'}</h2>
       <button type="button" disabled={block} onClick={async()=>{setBusy('cleanup');setError('');try{await api(base+'/media','POST',{action:'cleanup'});setMessage(ru?'Незавершённые загрузки старше суток очищены. Сохранённые записи не затронуты.':'Incomplete uploads older than one day cleaned up. Saved recordings are unchanged.')}catch(e){setError(e.message)}finally{setBusy('')}}}>{ru?'Очистить старые незавершённые загрузки':'Clean up old incomplete uploads'}</button>
-      {!draft.media.length&&<p>{ru?'Запишите аудио или добавьте видео, PDF или фотографии.':
-        'Record audio or attach video, PDF or photos.'}</p>}
+      {!draft.media.length&&<p>{ru?'Личных вложений пока нет. Их можно загрузить на отдельном экране персональных записей.':
+        'No personal attachments yet. Upload them from the private recordings screen.'}</p>}
       <p>{ru?'Для фото измените подпись и порядок. Расшифровка аудио и видео вводится вручную, без стороннего распознавания.':'For photos, edit captions and order. Audio/video transcripts are entered manually; nothing is sent to external transcription.'}</p>
       {draft.media.map((row,index)=>{
         const asset=activeAssets.get(row.assetId)
@@ -301,7 +295,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         </div>
       })}
     </section>
-    <section className={styles.editorCard}>
+    <section className={styles.editorCard} id="session-publication">
       <h2>{ru?'Публикация для клиента':'Client publication'}</h2>
       {draft.reportDocumentId&&<p><a className={styles.secondaryButton}
         href={'/admin/documents/'+encodeURIComponent(draft.reportDocumentId)+'/session-preview?locale='+locale}
