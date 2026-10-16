@@ -56,6 +56,7 @@ const home = loadComponent('components/holistic-house-home.tsx', {
 }).HolisticHouseHome;
 const spanishHome = loadComponent('app/es/page.tsx', {
   ...shared,
+  '@/components/site-video-player': { SiteVideoPlayer: ({ video }) => React.createElement('span', { 'data-video-id': video.youtubeId }) },
   '@/components/public-consultation-cta': { PublicConsultationCta: empty },
   '@/lib/spanish-metadata': { spanishMetadata: empty },
 }).default;
@@ -131,4 +132,19 @@ test('Home retains server-provided intro content and consultation CTA after cont
     assert.ok(links(html).some((link) => link.href === `/${locale}/services#consultation`));
   }
   assert.ok(renderLinks(spanishHome, {}).some((link) => link.href === '/es/services#consultation'));
+});
+
+test('Spanish Tantra link belongs to the new learning card and preserves current public sections', () => {
+  const html = renderToStaticMarkup(React.createElement(spanishHome));
+  const learning = html.match(/<article class="service-home-start-card service-home-start-card--learning">([\s\S]*?)<\/article>/)?.[1];
+  assert.ok(learning);
+  for (const path of ['/es/academy', '/es/library', '/es/academy/reiki/tantra-reiki/free-initiation']) {
+    assert.ok(links(learning).some((link) => link.href === path), path);
+  }
+  assert.equal(links(html).filter((link) => link.href === '/es/academy/reiki/tantra-reiki/free-initiation').length, 1);
+  assert.ok(links(html).some((link) => link.href === '/es/client/tests'));
+  assert.ok(links(html).some((link) => link.href === '/es/about#testimonials-title'));
+  assert.match(html, /Andrey Litvinov/);
+  assert.match(html, /data-video-id="m9RfDgK76PU"/);
+  assert.match(html, /data-video-id="5oj0BIbLT4w"/);
 });

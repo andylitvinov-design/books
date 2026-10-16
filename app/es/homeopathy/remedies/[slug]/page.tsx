@@ -6,12 +6,13 @@ import { RemedyClientActions } from '@/components/remedy-client-actions';
 import { SpanishRemedyContent } from '@/components/spanish-remedy-content';
 import { getSpanishRemedy, getSpanishRemedySlugs } from '@/data/remedies-es';
 import { spanishMetadata } from '@/lib/spanish-metadata';
+import { remedySeoDescription } from '@/lib/seo-descriptions';
 type Props = { params: Promise<{ slug: string }> };
 export const dynamicParams = false;
 export function generateStaticParams() { return getSpanishRemedySlugs().map(slug => ({ slug })); }
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params; const remedy = getSpanishRemedy(slug);
-  return remedy ? spanishMetadata(`/es/homeopathy/remedies/${slug}`, `${remedy.canonical_latin_name} — Remedios`, remedy.description.replace(/[#*]/g, '').slice(0, 155)) : { title: 'Remedio no encontrado' };
+  return remedy ? spanishMetadata(`/es/homeopathy/remedies/${slug}`, `${remedy.canonical_latin_name} — Remedios`, remedySeoDescription(remedy.canonical_latin_name, remedy.description, 'es')) : { title: 'Remedio no encontrado' };
 }
 export default async function SpanishRemedyPage({ params }: Props) {
   const { slug } = await params; const remedy = getSpanishRemedy(slug); if (!remedy) notFound();
