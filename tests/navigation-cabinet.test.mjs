@@ -191,9 +191,9 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
 
   assert.match(cta, /data-consultation-cta/)
   assert.match(cta, /trainingEnquiryUrl/)
-  assert.match(cta, /t\.me\/AndyTherapist/)
-  assert.match(cta, /data-contact-channel="whatsapp"/)
-  assert.match(cta, /data-contact-channel="telegram"/)
+  assert.match(cta, /ContactChannelChooser/)
+  assert.match(cta, /whatsappUrl=\{whatsappUrl\}/)
+  assert.match(await readFile('components/contact-channel-chooser.tsx','utf8'), /data-contact-channel": "telegram"/)
   assert.match(cta, /Start with a free coaching form and handwritten drawing/)
   assert.match(cta, /Interested in training or the next level/)
   assert.match(cta, /data-conversion-kind=\{mode\}/)
