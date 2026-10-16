@@ -394,14 +394,14 @@
   justify-content: space-between;
   align-items: center;
   gap: 14px 24px;
-  min-height: 118px;
-  padding: clamp(20px, 3vw, 32px);
+  min-height: 84px;
+  padding: clamp(15px, 2.2vw, 23px);
   list-style: none;
   cursor: pointer;
 }
 .questionsSummary::-webkit-details-marker { display: none; }
 .questionsSummary::marker { content: ""; }
-.questionsSummaryCopy { display: grid; gap: 7px; min-width: 0; }
+.questionsSummaryCopy { display: grid; gap: 5px; min-width: 0; }
 .questionsSummaryEyebrow {
   color: #93415b;
   font-size: 11px;
@@ -413,7 +413,7 @@
 .questionsSummaryTitle {
   display: block;
   color: #253751;
-  font: 450 clamp(27px, 3.1vw, 39px)/1.14 var(--font-serif), Georgia, serif;
+  font: 450 clamp(23px, 2.6vw, 32px)/1.14 var(--font-serif), Georgia, serif;
   letter-spacing: -.025em;
   text-wrap: balance;
 }
@@ -423,8 +423,8 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 44px;
-  padding: 10px 13px;
+  min-height: 38px;
+  padding: 8px 11px;
   border: 1px solid #d8c8d3;
   border-radius: 10px;
   background: #f6e8ed;
@@ -450,16 +450,18 @@
 }
 @media (max-width: 760px) {
   .questionsSection { padding: 0; border-radius: 15px; }
-  .questionsSummary { min-height: 105px; padding: 18px 15px; gap: 10px; }
-  .questionsSummaryTitle { font-size: clamp(24px, 6.9vw, 31px); }
-  .questionsSummaryToggle { min-height: 39px; padding: 8px 11px; font-size: 11px; }
+  .questionsSummary { min-height: 75px; padding: 13px 15px; gap: 10px; }
+  .questionsSummaryTitle { font-size: clamp(21px, 5.4vw, 26px); }
+  .questionsSummaryToggle { min-height: 36px; padding: 7px 10px; font-size: 11px; }
   .questionsSummaryToggle svg { width: 17px; height: 17px; }
   .questionsContent { padding: 0 15px 20px; }
   .questionsLead { font-size: 13px; }
 }
 @media (max-width: 470px) {
-  .questionsSummary { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .questionsSummaryToggle { align-self: flex-start; }
+  .questionsSummary { align-items: center; flex-direction: row; gap: 8px; }
+  .questionsSummaryToggle { align-self: center; min-width: 34px; padding: 7px; }
+  .questionsSummaryToggle .questionsShowLabel,
+  .questionsDisclosure[open] .questionsSummaryToggle .questionsHideLabel { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .questionsSummaryToggle svg { transition: none; }
