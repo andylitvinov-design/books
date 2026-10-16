@@ -5,6 +5,7 @@ import { Mic,Video,Pause,Square,RotateCcw,UploadCloud,CheckCircle2 } from 'lucid
 import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
 import { canProxyOwnerAudio } from '../lib/clients/owner-audio-upload'
 import { getRecorderReadiness } from '../lib/clients/recording-readiness'
+import { normalizePhoneVideoFile,isQuickTimeVideo } from '../lib/clients/phone-video-file'
 import { SessionPhotoUploader } from './session-photo-uploader'
 import { SessionYouTubeQuickAdd } from './session-youtube-quick-add'
 import styles from './client-session.module.css'
@@ -24,6 +25,7 @@ function recordingError(error,ru) {
     ADMIN_SIGN_IN_REQUIRED:ru?'Вход в кабинет специалиста истёк. Войдите снова и повторите.':'Your practitioner sign-in expired. Sign in again before recording.',
     SESSION_UNAVAILABLE:ru?'Сервис приватных консультаций пока отключён или сессия недоступна. Запись не была загружена.':'Private consultation delivery is disabled or this session is unavailable. Nothing was uploaded.',
     MEDIA_STORAGE_NOT_CONFIGURED:ru?'Защищённое хранилище для этого файла не настроено. Файл не отправлен.':'Secure storage for this file is not configured. Nothing was uploaded.',
+    VIDEO_STORAGE_NOT_CONFIGURED:ru?'MOV и MP4 поддерживаются, но приватное видеохранилище пока не подключено. Файл не отправлен. Настройте R2/S3 ниже.':'MOV and MP4 are supported, but private video storage is not connected. Nothing was uploaded. Set up R2/S3 below.',
     NotAllowedError:ru?'Safari не разрешил использовать микрофон или камеру. Проверьте разрешение для сайта в настройках Safari.':'Safari blocked microphone or camera access. Check the site permission in Safari settings.',
     NotFoundError:ru?'Микрофон или камера не найдены на устройстве.':'No microphone or camera was found on this device.',
     NotReadableError:ru?'Микрофон или камера заняты другим приложением.':'Microphone or camera is being used by another app.',
@@ -54,6 +56,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   const [message,setMessage]=useState('')
   const [playback,setPlayback]=useState('')
   const [playbackKind,setPlaybackKind]=useState('audio')
+  const [selectedMov,setSelectedMov]=useState(false)
   const [recordingKind,setRecordingKind]=useState('audio')
   useEffect(()=>{setSessionId(providedSessionId)},[providedSessionId])
   useEffect(()=>{mountedRef.current=true;return ()=>{mountedRef.current=false;clearInterval(timerRef.current);
@@ -270,21 +273,20 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     r.stop()
   }
   async function chooseFile(event) {
-    const file=event.target.files?.[0]
+    const file=normalizePhoneVideoFile(event.target.files?.[0])
     if(!file||busyRef.current||jobRef.current)return
     busyRef.current=true;setStage('preparing')
     try {
-      if(file.type==='video/quicktime'||file.name.toLowerCase().endsWith('.mov'))
-        throw new Error(ru?'Для просмотра на любом телефоне требуется MP4 (H.264). Запишите MP4 или преобразуйте MOV перед загрузкой.':'Use H.264 MP4 for reliable playback. Convert this MOV before uploading.')
       const availability=await checkReady()
-      const video=file.type.startsWith('video/')||/\.mp4$/i.test(file.name)
-      if(video&&availability.videoReady===false)throw new Error('MEDIA_STORAGE_NOT_CONFIGURED')
+      const video=file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name)
+      if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')
       if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
         throw new Error(ru?('Видео превышает лимит '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' МБ.'):
           ('Video exceeds the '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' MB storage limit.'))
       const sid=await ensureSession()
-      if(file.type.startsWith('video/')||file.type.startsWith('audio/')){
-        setPlaybackKind(file.type.startsWith('video/')?'video':'audio')
+      if(video||file.type.startsWith('audio/')){
+        setPlaybackKind(video?'video':'audio')
+        setSelectedMov(video&&isQuickTimeVideo(file))
         setPlayback(URL.createObjectURL(file))
       }
       const job=recordingUpload({file,clientId,sessionId:sid,scope})
@@ -343,7 +345,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {uploadProgress!==null?' '+uploadProgress+'%':''}</p>
       {uploadProgress!==null&&<progress value={uploadProgress} max="100" aria-label={ru?'Прогресс загрузки':'Upload progress'}/>}
     </div>}
-    <p className={styles.photoHint}>{ru?'Для видео используйте MP4 (H.264/AAC). На iPhone с MOV/HEVC предварительно выберите совместимый формат. Длинный ролик лучше снимать камерой телефона и потом выбрать файл.':'For video use H.264/AAC MP4. Convert MOV/HEVC first. Record longer clips in your phone camera, then choose the file.'}
+    <p className={styles.photoHint}>{ru?'Выбирайте видео из «Фото» или «Файлы»: MOV с iPhone и MP4 поддерживаются без предварительной конвертации. Для просмотра на всех устройствах лучше MP4 (H.264/AAC).':'Choose an iPhone MOV or MP4 from Photos or Files. No conversion is required for upload. H.264/AAC MP4 offers wider playback compatibility.'}
       {videoStatus&&<span> {videoStatus.ready?
         (ru?'Лимит видео: ':'Video limit: ')+Math.floor(videoStatus.limit/1_000_000)+' MB ('+(videoStatus.provider==='supabase'?'Supabase':videoStatus.provider==='s3_ca'?'S3 Canada':'R2')+')':
         (ru?'Внешнее видеохранилище пока не настроено; аудио и документы доступны.':'External video storage is not configured; audio and documents remain available.')}</span>}
@@ -354,6 +356,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       </a>
     </p>}
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
+    {playback&&selectedMov&&<p className={styles.photoHint}>{ru?'MOV сохранится без изменения кодека. Видео HEVC может не воспроизводиться на некоторых Android/Windows — при необходимости используйте оригинал MOV или отдельную MP4-версию.':'MOV is kept unchanged. HEVC may not play on some Android/Windows browsers; keep the original or prepare a separate MP4 version for wider playback.'}</p>}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
     {error&&<div className={styles.error} role="alert"><p>{error}</p>{retryFile&&sessionId&&
       <button type="button" disabled={busy} onClick={()=>jobRef.current&&upload(jobRef.current)}><RotateCcw size={16}/>{ru?'Повторить загрузку':'Retry upload'}</button>}</div>}

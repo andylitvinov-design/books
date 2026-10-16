@@ -13,7 +13,7 @@ const {configuredVideoUploadStore,signPrivateVideoRequest,createVideoUploadUrl,c
   )(createHash,createHmac,AppError)
 const env={
   HH_CLIENT_VIDEO_EXTERNAL_ENABLED:'true',HH_CLIENT_VIDEO_BACKEND:'r2',
-  HH_CLIENT_VIDEO_R2_ACCOUNT_ID:'abcdef0123456789abcdef0123456789',
+  HH_CLIENT_R2_ACCOUNT_ID:'abcdef0123456789abcdef0123456789',
   HH_CLIENT_VIDEO_BUCKET:'hh-private-video-test',
   HH_CLIENT_VIDEO_ACCESS_KEY_ID:'synthetic-access-id',
   HH_CLIENT_VIDEO_SECRET_ACCESS_KEY:'synthetic-never-real-secret',
@@ -26,7 +26,7 @@ test('external video is disabled by default and credentials are never needed for
 })
 test('only exact approved private R2 or Canada S3 endpoint may be signed',()=>{
   const url=new URL(createVideoUploadUrl('r2',key,env))
-  assert.equal(url.hostname,env.HH_CLIENT_VIDEO_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com')
+  assert.equal(url.hostname,env.HH_CLIENT_R2_ACCOUNT_ID+'.r2.cloudflarestorage.com')
   assert.equal(url.pathname,'/hh-private-video-test/'+key)
   assert.equal(url.searchParams.get('X-Amz-Expires'),'900')
   assert.equal(url.searchParams.get('X-Amz-SignedHeaders'),'content-type;host;if-none-match')

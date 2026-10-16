@@ -17,6 +17,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
   const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
+  const isMov=isVideo&&item.mime==='video/quicktime'
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/'+item.assetId:
@@ -55,7 +56,9 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   }
   function playbackError(){
     if(expiry&&Date.now()>expiry-45000&&!busy.current)void load(true)
-    else{setSource('');setError(ru?'Откройте запись повторно':'Please reopen the recording')}
+    else{setSource('');setError(isMov?
+      (ru?'Этот MOV/HEVC может не поддерживаться вашим браузером. Попробуйте открыть оригинальный файл.':'This MOV/HEVC may not play in your browser. Try opening the original file.'):
+      (ru?'Откройте запись повторно':'Please reopen the recording'))}
   }
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
@@ -71,7 +74,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
           onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>}
     {item.transcript&&<details className={styles.transcript}><summary>{ru?'Текст записи':'Transcript'}</summary>
       <p lang={educational?'ru':undefined}>{item.transcript}</p></details>}
-    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button></p>}
+    {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>load(false)}>{ru?'Повторить':'Retry'}</button>{isMov&&<> <a href={route} download="consultation-video.mov">{ru?'Открыть оригинал MOV':'Open original MOV'}</a></>}</p>}
   </article>
 }
 export function ClientSessionPage({session,selector,locale='en',mode='guest',reportContent=null,recommendation=null,clientName='',appAvailable=true,savedId=null,sharedGuideReady=false}) {
