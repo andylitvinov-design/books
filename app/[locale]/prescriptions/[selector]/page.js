@@ -42,7 +42,7 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
       locale={locale}
       kind="document"
       saveAction={cabinetAction}
-      viewPdfHref={`/api/prescriptions/${selector}/pdf?locale=${locale}&preview=1`}
+      viewPdfHref={record.kind==='payment'?`/api/prescriptions/${selector}/pdf?locale=${locale}&preview=1`:null}
     >
       {viewer}
       {record.kind!=='payment'&&<ReportFinalActions locale={locale} mode="legacy"
