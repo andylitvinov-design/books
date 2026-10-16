@@ -1310,11 +1310,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
               <div>
                 <p className="about-kicker">{c.result}</p>
                 <h3>{definitionTitle(definition, locale)}</h3>
-                <p className="cabinet-result-intro">
-                  {locale === 'ru'
-                    ? 'Ваш личный результат самонаблюдения — спокойно, без ярлыков и автоматических выводов.'
-                    : 'Your personal self-observation result — calm, private and without automatic labels.'}
-                </p>
               </div>
               <div className="cabinet-result-meta">
                 <span>{new Date(guestResult.measurementAt).toLocaleString(locale)}</span>
