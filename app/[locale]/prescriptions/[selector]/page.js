@@ -12,6 +12,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { appEnabled } from '@/lib/app/config'
 import { SavePrivateDocumentControl } from '@/components/app/save-private-document-control'
 import { ReportInvitationGate } from '@/components/app/report-invitation-gate'
+import { ReportFinalActions } from '@/components/report-final-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,9 +42,12 @@ export default async function ClientPrescriptionPage({ params, searchParams }) {
       locale={locale}
       kind="document"
       saveAction={cabinetAction}
-      viewPdfHref={`/api/prescriptions/${selector}/pdf?locale=${locale}&preview=1`}
+      viewPdfHref={record.kind==='payment'?`/api/prescriptions/${selector}/pdf?locale=${locale}&preview=1`:null}
     >
       {viewer}
+      {record.kind!=='payment'&&<ReportFinalActions locale={locale} mode="legacy"
+        saveControl={record.clientId&&appEnabled()?
+          <SavePrivateDocumentControl selector={selector} locale={locale} appAvailable compact/>:null}/>}
     </ReportInvitationGate>
   )
 }

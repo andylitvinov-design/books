@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 const root=new URL('../',import.meta.url);
 const source=await readFile(new URL('lib/clients/session-delivery-storage.js',root),'utf8');
-const load=(src,names,values,result)=>new Function(...names,src.replace(/^import .*\n/gm,'').replace(/export /g,'')+'\nreturn '+result)(...values);
+const load=(src,names,values,result)=>new Function(...names,src.replace(/^import .*\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'').replace(/export /g,'')+'\nreturn '+result)(...values);
 class AppError extends Error{constructor(code,status){super(code);this.code=code;this.status=status}}
 function storageFixture({size=512,mime='audio/mp4',status='pending',split=false,removedDuringValidation=false}={}){
  let updates=0,attached=0;const asset={id:'asset',status,object_key:'fake',max_bytes:512,mime:'audio/mp4'};

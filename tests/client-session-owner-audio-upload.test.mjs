@@ -14,7 +14,7 @@ const createUploader=({row,upload=async()=>({error:null}),info=async()=>({error:
   })
   const factory=new Function('createClient','transaction','getOwnerSession','validUuid','PRIVATE_MEDIA_BUCKET',
     'OWNER_AUDIO_MIME_TYPES','OWNER_AUDIO_PROXY_MAX_BYTES','AppError','Buffer','Blob',
-    model.replace(/^import .*\n/gm,'').replace(/^export /gm,'')+
+    model.replace(/^import .*\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'').replace(/^export /gm,'')+
     '\nreturn uploadPrivateOwnerAudio')
   const run=factory(
     ()=>({storage:{from}}),

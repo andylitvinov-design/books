@@ -103,7 +103,7 @@ export default async function AdminDocumentPreview({ params, searchParams }) {
       </div>
       <div className={styles.actionControls}>
         {consultationId
-          ? <ConsultationDocumentActions recordId={record.id} locale={locale} dateIssued={record.dateIssued} kind={record.kind} paymentStatus={record.paymentStatus} active={record.status === 'active'} />
+          ? <ConsultationDocumentActions clientId={record.clientId} recordId={record.id} locale={locale} dateIssued={record.dateIssued} kind={record.kind} paymentStatus={record.paymentStatus} active={record.status === 'active'} />
           : <AdminDocumentActions record={record} locale={locale} />}
       </div>
     </section>

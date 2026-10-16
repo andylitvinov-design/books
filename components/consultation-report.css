@@ -3278,3 +3278,82 @@
     border:0;
   }
 }
+
+
+/* Report share recovery: iPhone Safari can deny clipboard after async issuance.
+   Always provide a selectable scoped URL and an explicit second-tap Copy. */
+.consultation-share-link-ready{
+  margin:12px 0;
+  padding:13px;
+  display:grid;
+  gap:8px;
+  min-width:0;
+  border:1px solid #c7ddda;
+  border-radius:13px;
+  background:#f2f9f7;
+}
+.consultation-share-link-ready label{
+  color:#265b5a;
+  font-size:13px;
+  line-height:1.4;
+  font-weight:750;
+}
+.consultation-share-link-controls{
+  min-width:0;
+  display:flex;
+  align-items:stretch;
+  gap:9px;
+}
+.consultation-share-link-controls input{
+  flex:1 1 210px;
+  min-width:0;
+  max-width:100%;
+  min-height:46px;
+  box-sizing:border-box;
+  padding:9px 11px;
+  border:1px solid #b9d5d1;
+  border-radius:10px;
+  background:white;
+  color:#224b4d;
+  font-size:16px;
+  direction:ltr;
+  text-align:left;
+}
+.consultation-share-link-controls button,
+.consultation-prepare-session{
+  min-height:46px;
+  padding:10px 14px;
+  border:1px solid #9dbfbb;
+  border-radius:11px;
+  background:#e6f3ef;
+  color:#235d54;
+  font-size:14px;
+  font-weight:760;
+  line-height:1.3;
+  cursor:pointer;
+}
+.consultation-prepare-session{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  margin:8px 0 12px;
+  background:#65364e;
+  border-color:#65364e;
+  color:white;
+}
+.consultation-prepare-session:disabled{opacity:.6;cursor:wait}
+.consultation-prepare-session:hover:not(:disabled){background:#4e293c}
+.consultation-share-link-controls :is(input,button):focus-visible,
+.consultation-prepare-session:focus-visible{
+  outline:3px solid #3d887e;
+  outline-offset:3px;
+}
+@media(max-width:520px){
+  .consultation-share-link-controls{flex-direction:column}
+  .consultation-share-link-controls input,.consultation-share-link-controls button{
+    flex:0 1 auto;
+    width:100%;
+  }
+  .consultation-prepare-session{width:100%}
+}

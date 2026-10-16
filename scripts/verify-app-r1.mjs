@@ -162,8 +162,12 @@ async function chooseSinglePublicTest(target,name){
  const checked=target.locator('article input[type="checkbox"]:checked')
  const suggestedNames=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
  for(const [index,selectedName] of suggestedNames.entries()){
-  await target.getByRole('checkbox',{name:selectedName,exact:true}).click()
-  await expect(checked).toHaveCount(suggestedNames.length-index-1)
+  const selected=target.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(suggestedNames.slice(index+1).sort())
  }
  await expect(checked).toHaveCount(0)
  await chooseVisibleTest(target,name)
@@ -173,7 +177,15 @@ async function chooseSinglePublicTest(target,name){
 async function chooseSinglePublicTestAfterCatalog(target,name){
  const checked=target.locator('article input[type="checkbox"]:checked')
  const names=await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))
- for(const selectedName of names)await target.getByRole('checkbox',{name:selectedName,exact:true}).uncheck()
+ for(const [index,selectedName] of names.entries()){
+  const selected=target.getByRole('checkbox',{name:selectedName,exact:true,checked:true})
+  await expect(selected).toHaveCount(1)
+  await selected.click()
+  // Deselection may remove this card from the shortened public ranked list.
+  await expect(selected).toHaveCount(0)
+  await expect.poll(async()=> (await checked.evaluateAll(inputs=>inputs.map(input=>input.getAttribute('aria-label')))).sort())
+   .toEqual(names.slice(index+1).sort())
+ }
  await expect(checked).toHaveCount(0)
  await chooseVisibleTest(target,name)
  await expect(checked).toHaveCount(1)

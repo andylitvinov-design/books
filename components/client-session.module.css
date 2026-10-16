@@ -977,7 +977,8 @@
 
 
 /* Session report: YouTube only for explicitly approved general education.
-   No third-party iframe or thumbnail request before a user clicks Play. */
+   Poster is proxied through this site's own API (no browser-to-YouTube request);
+   the third-party iframe still opens only after the viewer presses Play. */
 .youtubeLessonList { display:grid;gap:17px;max-width:810px }
 .youtubeLesson {
   overflow:hidden;border:1px solid #d9e3ec;border-radius:17px;
@@ -1141,3 +1142,199 @@
     border-radius:15px;
   }
 }
+
+/* Final report video & study materials: only owner-selected content is shown. */
+.reportMaterialsSection{
+  padding:clamp(17px,3vw,26px);
+  border:1px solid #d5e4e6;border-radius:19px;
+  background:linear-gradient(130deg,#f7fbfc 0%,#fffdf8 75%);
+  box-shadow:0 8px 22px rgba(23,57,87,.05);
+}
+.reportMaterialsSection .sectionHeader{align-items:flex-start;margin-bottom:16px}
+.reportMaterialsSection .sectionHeader h2{font-size:clamp(23px,3vw,29px);color:#173957}
+.reportMaterialsIntro{margin:6px 0 0;color:#526f7b;font-size:14px;line-height:1.55}
+.reportMaterialsSection .youtubeLessonList{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;
+  margin:12px 0 18px;
+}
+.reportMaterialsSection .mediaList{display:grid;gap:10px;margin:12px 0}
+.reportMaterialsSection .clientMediaCard{margin:0}
+.reportMaterialsSection .attachmentCard{margin-top:11px}
+.reportMaterialsEmpty{
+  padding:16px;margin:0;border:1px dashed #c8dadd;border-radius:12px;
+  background:#fff;color:#647d87;font-size:14px
+}
+@media(max-width:580px){
+  .reportMaterialsSection{padding:14px;border-radius:14px}
+  .reportMaterialsSection .youtubeLessonList{grid-template-columns:minmax(0,1fr)}
+}
+@media print{
+  .reportMaterialsSection .youtubeLessonFrame,
+  .reportMaterialsSection .video,.reportMaterialsSection .audio{display:none!important}
+}
+
+/* Owner report editor video curation. This stays outside consultation forms:
+   saving selected videos is a separate, revision-checked session-draft action. */
+.ownerReportMaterials{
+  --hh-line:#d6e4e7;
+  max-width:940px;margin:16px auto 26px;
+  border:1px solid #cfdfe5;border-radius:20px;
+  background:linear-gradient(140deg,#f4f9fc,#fffdf9 74%);
+  padding:clamp(15px,2.8vw,25px);
+  box-shadow:0 9px 28px rgba(23,57,87,.07);
+  color:#173957;line-height:1.55;
+}
+.ownerMaterialsHeader{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:start;gap:14px}
+.ownerMaterialsSymbol{display:grid;place-items:center;width:43px;height:43px;border:1px solid #c0d5de;
+  border-radius:13px;background:#e8f4f8;color:#173957}
+.ownerMaterialsHeader h2{font:600 clamp(23px,3vw,30px)/1.25 Georgia,serif;color:#173957;margin:3px 0 8px}
+.ownerMaterialsHeader p{color:#57717d;font-size:14px;margin:0}
+.ownerMaterialsCount{font-size:12px;font-weight:750;white-space:nowrap;background:#e7f2f5;
+  border-radius:999px;padding:8px 12px;color:#184761}
+.ownerMaterialsNotice{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;
+  margin:19px 0;border:1px solid #cee3e5;border-radius:12px;background:#edf8f7;
+  color:#426a71;font-size:13px}
+.ownerMaterialsNotice svg{flex:none}
+.ownerMaterialsGroup{padding:16px 0;border-top:1px solid #dce6e8}
+.ownerMaterialsGroup h3{display:flex;align-items:center;gap:8px;font-size:18px;margin:0 0 12px;color:#173957}
+.ownerMaterialsMuted{font-size:14px;color:#69808a;margin:10px 0 14px}
+.ownerMaterialsRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(195px,.75fr) auto;
+  gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #e1e9eb;font-size:14px}
+.ownerMaterialsRow strong{font-size:14px;min-width:0;overflow-wrap:anywhere}
+.ownerMaterialsRow label,.ownerMaterialsAdd label{display:grid;gap:5px;min-width:0;
+  color:#486372;font-size:12px;font-weight:750}
+.ownerMaterialsRow select,.ownerMaterialsAdd input{width:100%;max-width:100%;min-height:44px;
+  padding:9px 12px;border:1px solid #c6d8df;border-radius:10px;background:#fff;
+  color:#173957;font-size:15px}
+.ownerMaterialsRow button,.ownerMaterialsAdd button,.ownerMaterialsToolbar button,.ownerMaterialsToolbar a{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
+  padding:10px 14px;border:1px solid #bfced8;border-radius:10px;text-decoration:none;
+  color:#173957;background:#fff;font:700 13px/1.3 system-ui;cursor:pointer
+}
+.ownerMaterialsAdd{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr) auto;
+  gap:12px;align-items:end;margin:15px 0 4px}
+.ownerMaterialsAdd button{background:#173957;color:#fff;border-color:#173957;min-height:44px}
+.ownerMaterialsAdd button:disabled,.ownerMaterialsRow button:disabled{opacity:.5;cursor:not-allowed}
+.ownerMaterialsToolbar{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.ownerMaterialsPublish{display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+  background:#fffdf8;border:1px solid #e2e3d7;border-radius:12px;
+  padding:12px 14px;font-size:13px;color:#536c65}
+.ownerMaterialsPublish a{color:#173957;font-weight:800}
+.ownerMaterialsPublish svg{color:#2d7c6a;flex:none}
+.ownerReportMaterials .recorder{margin-bottom:0;border-color:#c9dde2;background:#fff}
+.ownerReportMaterials :is(button,a,select,input):focus-visible{outline:3px solid #866ba3;outline-offset:2px}
+@media(max-width:720px){
+  .ownerMaterialsHeader{grid-template-columns:40px minmax(0,1fr);gap:11px}
+  .ownerMaterialsCount{grid-column:2;justify-self:start}
+  .ownerMaterialsRow,.ownerMaterialsAdd{grid-template-columns:minmax(0,1fr)}
+  .ownerMaterialsRow{gap:8px}
+  .ownerMaterialsAdd button,.ownerMaterialsRow button{width:100%}
+}
+
+
+/* Actual video stills: no more solid/grey thumbnail rectangles.
+   Screenshots of private clips stay only in the authorized viewer's browser. */
+.youtubeLessonThumbnail,.youtubeLessonShade{
+  position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+}
+.youtubeLessonThumbnail{object-fit:cover;object-position:center;z-index:0}
+.youtubeLessonShade{
+  z-index:1;background:linear-gradient(180deg,rgba(9,27,40,.10),rgba(9,27,40,.15) 52%,rgba(9,27,40,.5));
+  transition:background .18s ease;
+}
+.youtubeLessonAction{
+  position:relative;z-index:2;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.65);
+}
+.youtubeLessonStart:hover .youtubeLessonShade{
+  background:linear-gradient(180deg,rgba(9,27,40,.16),rgba(9,27,40,.26) 52%,rgba(9,27,40,.60));
+}
+.privateVideoPreview{
+  position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:14px;
+  margin:12px 0;width:100%;background:linear-gradient(135deg,#173653,#286282);
+}
+.privateVideoStill{
+  position:absolute;inset:0;overflow:hidden;background:#1a405a;
+}
+.privateVideoStillFrame{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.privateVideoPreviewButton{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:9px;width:100%;height:100%;border:0;cursor:pointer;
+  background:linear-gradient(180deg,rgba(7,27,43,.04),rgba(7,27,43,.16) 45%,rgba(7,27,43,.56));
+  color:white;font-weight:780;font-size:16px;
+  text-shadow:0 2px 11px rgba(0,0,0,.65);
+}
+.privateVideoPreviewButton svg{filter:drop-shadow(0 3px 10px rgba(0,0,0,.32))}
+.privateVideoPreviewButton:hover{background:rgba(8,35,55,.25)}
+.privateVideoPreviewButton:focus-visible{outline:3px solid #dbf9ff;outline-offset:-4px}
+.privateVideoPreviewButton:disabled{cursor:wait;opacity:.7}
+@media(prefers-reduced-motion:reduce){
+ .youtubeLessonShade{transition:none}
+}
+
+/* Always-visible report completion actions. Both actions render even in
+   practitioner preview (save is disabled there) and mobile-safe scrolling. */
+.cabinetSessionPage .sessionBottomActions{
+  width:100%;margin:28px 0 16px;padding:clamp(17px,3vw,26px);
+  border:1px solid #cbdce6;border-radius:21px;
+  background:linear-gradient(138deg,#f0f6fa,#f9fcfd 62%,#fff7f8);
+  box-shadow:0 12px 32px rgba(23,57,87,.08);
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+}
+.sessionBottomHeading{grid-column:1/-1;margin:0 0 4px}
+.cabinetSessionPage .sessionBottomHeading h2{
+  margin:3px 0 0;font:650 clamp(21px,3vw,28px)/1.25 Georgia,serif;
+  color:#173957;letter-spacing:-.018em
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{
+  width:100%;min-height:64px;display:flex;align-items:center;justify-content:center;
+  gap:11px;padding:15px 18px;text-align:center;text-decoration:none;
+  border-radius:14px;font:800 clamp(14px,1.7vw,16px)/1.35 system-ui,-apple-system,sans-serif;
+  box-shadow:0 4px 13px rgba(27,48,70,.12);
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary{
+  color:#fff!important;background:#173957;border:1px solid #173957
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{
+  color:#fff!important;background:#843d55;border:1px solid #843d55
+}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary:hover:not(:disabled){background:#0e2d47}
+.cabinetSessionPage .sessionBottomActions .sessionBottomSecondary:hover{background:#722b43}
+.cabinetSessionPage .sessionBottomActions .sessionBottomPrimary:disabled{
+  opacity:.72;cursor:not-allowed;box-shadow:none
+}
+.cabinetSessionPage .sessionBottomActions svg{flex:0 0 auto}
+.cabinetSessionPage .sessionBottomHint{grid-column:1/-1;margin:0;padding:0 2px;
+  color:#586b79;font-size:13px;line-height:1.5}
+@media(max-width:700px){
+  .cabinetSessionPage .sessionBottomActions{
+    display:grid;grid-template-columns:minmax(0,1fr);gap:11px;
+    padding:16px 13px;margin:25px 0 15px;
+    padding-bottom:max(16px,env(safe-area-inset-bottom));
+  }
+  .cabinetSessionPage .sessionBottomActions .sessionBottomPrimary,
+  .cabinetSessionPage .sessionBottomActions .sessionBottomSecondary{min-height:57px;padding:14px 12px}
+}
+@media print{.cabinetSessionPage .sessionBottomActions{display:none!important}}
+
+
+/* Private owner session: second-tap Safari link copy recovery. */
+.sessionShareLinkReady{
+  display:grid;gap:9px;min-width:0;margin:13px 0;padding:14px;
+  border:1px solid #cbded4;border-radius:13px;background:#f1f8f3;
+}
+.sessionShareLinkReady .field{margin:0}
+.sessionShareLinkReady > button{justify-self:start;min-height:46px}
+@media(max-width:540px){.sessionShareLinkReady > button{width:100%}}
+
+/* Reusable educational materials selected from the practitioner catalog. */
+.reportLibraryList{display:grid;gap:15px;max-width:810px}
+.reportLibraryList>.sessionPhotoCard{max-width:640px}
+.reportLibraryList>.sessionPhotoCard img{aspect-ratio:16/10;object-fit:contain}
+.reportLibraryList>.sessionPhotoCard p{padding:0 6px;font-size:14px;line-height:1.5;color:#546d80}
+.reportLibraryList>.clientMediaCard{margin:0}
+@media(max-width:580px){.reportLibraryList{gap:12px}.reportLibraryList>.sessionPhotoCard img{aspect-ratio:4/3}}

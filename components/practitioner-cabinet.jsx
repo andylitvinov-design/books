@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Inbox, PlusCircle, ReceiptText, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -14,6 +14,7 @@ const copy = {
     legacy:'Старые документы',legacyText:'Разобрать и привязать ранее созданные документы к клиентам.',
     prescription:'Новый рецепт', prescriptionText:'Отдельный документ. Чтобы показать клиенту, привяжите через архив.', invoice:'Новый счёт', manualBilling:'Оплаты подписок', manualBillingText:'Заявки Advanced/Premium, счета и проверка поступлений.', invoiceText:'Отдельный счёт или квитанция. Для передачи привяжите к клиенту.', workflow:'Как передать материалы', step1:'1. Выберите клиента или создайте нового.', step2:'2. Подготовьте рекомендацию и счёт.', step3:'3. Скопируйте приватную ссылку на кабинет клиента.',
     videos:'Видео сайта',videosText:'Добавить видео на страницу, проверить и опубликовать ссылку YouTube.',
+    materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
   },
@@ -24,6 +25,7 @@ const copy = {
     legacy:'Legacy documents',legacyText:'Review and assign previously created documents to clients.',
     prescription:'New prescription', prescriptionText:'Standalone document. Assign it to a client through Legacy to share.', invoice:'New invoice', manualBilling:'Membership payments', manualBillingText:'Advanced/Premium requests, invoices and verified receipts.', invoiceText:'Standalone invoice or receipt. Assign it to a client before sharing.', workflow:'Send materials in three steps', step1:'1. Choose an existing client or create one.', step2:'2. Prepare the recommendation and invoice.', step3:'3. Copy the client’s private cabinet link.',
     videos:'Website videos',videosText:'Add a video to a page, preview it, and publish its YouTube link.',
+    materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
   },
@@ -45,6 +47,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
     {href:'/admin/manual-billing',icon:ReceiptText,title:text.manualBilling,body:text.manualBillingText},
     ...(appRequestsEnabled?[{href:'/admin/app-requests',icon:Inbox,title:text.appRequests,body:text.appRequestsText},{href:'/admin/practitioners',icon:BadgeCheck,title:text.network,body:text.networkText}]:[]),
     {href:'/admin/clients/legacy',icon:Archive,title:text.legacy,body:text.legacyText},
+    {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},
     {href:'/admin/videos',icon:Film,title:text.videos,body:text.videosText},
   ]
   return (

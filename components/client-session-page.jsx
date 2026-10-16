@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck } from 'lucide-react'
+import { FileDown,Headphones,LockKeyhole,PlayCircle,Video,Images,BookOpen,ListChecks,ExternalLink,FolderOpen,ShieldCheck,Gift,BookmarkCheck } from 'lucide-react'
 import { SessionPrescriptionOverview } from './client-session-prescription'
 import { PublicSiteHeader } from './public-site-header'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -8,6 +8,7 @@ import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/s
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
 import { SessionYouTubePlayer } from './session-youtube-player'
+import { SessionPrivateVideoPoster } from './session-private-video-poster'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
@@ -16,7 +17,7 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const busy=useRef(false),player=useRef(null),resume=useRef(null)
-  const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education'
+  const isVideo=item.kind==='video',ru=locale==='ru',educational=item.role==='education',library=item.role==='library'
   const isMov=isVideo&&item.mime==='video/quicktime'
   const route=mode==='owner'?'/api/admin/clients/'+selector+'/sessions/'+session.id+'/media/'+item.assetId:
     mode==='saved'?'/api/app/saved-sessions/'+savedId+'/media/'+item.assetId:
@@ -63,11 +64,21 @@ function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
   return <article className={styles.clientMediaCard}>
     <div className={styles.mediaHeading}>{isVideo?<Video size={20}/>:<Headphones size={20}/>}
       <div><strong>{item.title||(isVideo?(ru?'Видеообращение':'Video message'):(ru?'Голосовое сообщение':'Voice message'))}</strong>
-        <small>{educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
+        <small>{library?(ru?'Дополнительное видео':'Supplementary video'):educational?(ru?'Общее видео · 1:02':'General video · Russian audio · 1:02'):
           isVideo?(ru?'Личное видео':'Personal video'):(ru?'Личная аудиозапись':'Personal audio')}</small></div>
     </div>
-    {!source?<button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
-      <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}</button>
+    {!source?(isVideo?
+      <div className={styles.privateVideoPreview}>
+        <SessionPrivateVideoPoster src={route}/>
+        <button className={styles.privateVideoPreviewButton} type="button"
+          disabled={loading} onClick={()=>load(false)}>
+          <PlayCircle size={44} aria-hidden="true"/>
+          <span>{loading?(ru?'Подключаем видео…':'Loading video…'):(ru?'Смотреть видео':'Play video')}</span>
+        </button>
+      </div>:
+      <button className={styles.playButton} type="button" disabled={loading} onClick={()=>load(false)}>
+        <PlayCircle size={26}/>{loading?(ru?'Подключаем…':'Loading…'):(ru?'Слушать / смотреть':'Play recording')}
+      </button>)
       :isVideo?<video ref={player} className={styles.video} controls playsInline preload="metadata" src={source}
         onLoadedMetadata={restorePosition} onPlay={maybeRenew} onTimeUpdate={maybeRenew} onSeeking={maybeRenew} onError={playbackError}/>:
         <audio ref={player} className={styles.audio} controls preload="metadata" src={source}
@@ -85,17 +96,22 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
   const practices=Array.isArray(plan.practices)?plan.practices:[]
   const resources=Array.isArray(plan.resources)?plan.resources:[]
+  const libraryMaterials=Array.isArray(plan.materials)?plan.materials:[]
   const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
+  const topYoutubeResources=youtubeResources.filter(resource=>resource.placement!=='materials')
+  const materialsYoutubeResources=youtubeResources.filter(resource=>resource.placement==='materials')
   const linkedResources=resources.filter(resource=>resource.kind!=='youtube')
-  const media=session.media||[]
-  // Private and approved YouTube videos go together above the report body.
-  // Audio, PDF and photos remain in their own sections, without duplicates.
-  const videoMedia=media.filter(item=>item.kind==='video')
+  const media=(session.media||[]).filter(item=>item.role!=='hidden')
+  // Retain existing introductory videos; only explicitly selected videos
+  // and approved study links appear in the final Materials section.
+  const videoMedia=media.filter(item=>item.kind==='video'&&!['meditation','additional'].includes(item.role))
+  const materialsVideos=media.filter(item=>item.kind==='video'&&['meditation','additional'].includes(item.role))
   const personalAudio=media.filter(item=>item.kind==='audio'&&(!item.role||item.role==='personal'))
   const photos=media.filter(item=>item.kind==='image')
   const supplementary=media.filter(item=>item.kind!=='image'&&item.kind!=='video'&&
     (item.kind==='pdf'||['meditation','additional'].includes(item.role)||
     (item.role==='instruction'&&item.kind==='audio')))
+  const hasMaterials=Boolean(materialsVideos.length||materialsYoutubeResources.length||supplementary.length||linkedResources.length||libraryMaterials.length)
   const hasFullReport=Boolean(reportContent)
   const hasRecommendation=Boolean(recommendation?.items?.length)
   const hasHomeopathyRecommendation=hasRecommendation&&recommendation.items.some(item=>
@@ -110,7 +126,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalAudio.length?'#session-message':
     session.report?'#session-report':photos.length?'#session-photos':
-      (supplementary.length||linkedResources.length)?'#session-resources':'#session-title'
+      hasMaterials?'#session-resources':'#session-title'
   // The approved HTML document is the only source of report narrative and prescriptions.
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
@@ -130,7 +146,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </div>
       {mode==='owner'&&<span className={styles.privateLabel}>{ru?'Предпросмотр специалиста':'Practitioner preview'}</span>}
     </header>
-    {(videoMedia.length>0||youtubeResources.length>0)&&
+    {(videoMedia.length>0||topYoutubeResources.length>0)&&
       <section id="session-video" className={styles.clientSection+' '+styles.videoFirstSection}
         aria-label={ru?'Видео к вашей консультации':'Videos for your consultation'}>
         <header className={styles.sectionHeader}>
@@ -142,8 +158,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           {videoMedia.map(item=><PrivatePlayer key={item.assetId} item={item}
             session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
         </div>}
-        {youtubeResources.length>0&&<div className={styles.youtubeLessonList}>
-          {youtubeResources.map((item,index)=><SessionYouTubePlayer
+        {topYoutubeResources.length>0&&<div className={styles.youtubeLessonList}>
+          {topYoutubeResources.map((item,index)=><SessionYouTubePlayer
             key={item.url+'-'+index} title={item.title} url={item.url}
             description={item.description} locale={locale}/>)}
         </div>}
@@ -256,29 +272,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
-    {(supplementary.length>0||linkedResources.length>0)&&<section id="session-resources" className={styles.clientSection}>
-      <header className={styles.sectionHeader}>
-        <span className={styles.sectionIcon}><FolderOpen size={20}/></span>
-        <div><span className={styles.sectionKicker}>{ru?'ЛИЧНАЯ БИБЛИОТЕКА СЕССИИ':'YOUR SESSION MATERIALS'}</span>
-          <h2>{ru?'Дополнительные материалы и медитации':'Additional materials & meditations'}</h2></div>
-      </header>
-      {supplementary.map(item=>item.kind==='pdf'
-        ?<article className={styles.attachmentCard} key={item.assetId}>
-          <FileDown size={21} aria-hidden="true"/><div><strong>{item.title||'PDF'}</strong>
-            <small>{ru?'Приватный документ':'Private document'}</small></div>
-          <a href={assetBase+item.assetId} target="_blank" rel="noopener noreferrer">
-            {ru?'Скачать PDF':'Download PDF'} <ExternalLink size={16}/>
-          </a>
-        </article>
-        :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
-      {linkedResources.map((item,index)=><a className={styles.attachmentCard} key={index}
-        href={item.url} target="_blank" rel="noopener noreferrer">
-        <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
-          {item.description&&<small>{item.description}</small>}</div>
-        <ExternalLink size={17} aria-hidden="true"/>
-      </a>)}
-    </section>}
-
     {hasHomeopathyRecommendation&&sharedGuideReady&&
       <section id="session-granules-guide" className={styles.clientSection+' '+styles.sharedEducationSection}
         aria-labelledby="session-granules-guide-title">
@@ -304,6 +297,96 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       </section>}
 
 
+    {(hasFullReport||hasMaterials)&&<section id="session-resources"
+      className={styles.clientSection+' '+styles.reportMaterialsSection}
+      aria-labelledby="session-materials-title">
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><FolderOpen size={20} aria-hidden="true"/></span>
+        <div>
+          <span className={styles.sectionKicker}>{ru?'К ВАШЕМУ ОТЧЁТУ':'WITH YOUR REPORT'}</span>
+          <h2 id="session-materials-title">{ru?'Материалы':'Materials'}</h2>
+          <p className={styles.reportMaterialsIntro}>{ru?
+            'Дополнительные видео, записи и материалы, выбранные специалистом для этой консультации.':
+            'Additional videos, recordings and resources selected for this consultation.'}</p>
+        </div>
+      </header>
+      {materialsYoutubeResources.length>0&&<div className={styles.youtubeLessonList}>
+        {materialsYoutubeResources.map((item,index)=><SessionYouTubePlayer
+          key={item.url+'-'+index} title={item.title} url={item.url}
+          description={item.description} locale={locale}/>)}
+      </div>}
+      {materialsVideos.length>0&&<div className={styles.mediaList}>
+        {materialsVideos.map(item=><PrivatePlayer key={item.assetId} item={item}
+          session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
+      </div>}
+      {supplementary.map(item=>item.kind==='pdf'
+        ?<article className={styles.attachmentCard} key={item.assetId}>
+          <FileDown size={21} aria-hidden="true"/><div><strong>{item.title||'PDF'}</strong>
+            <small>{ru?'Приватный документ':'Private document'}</small></div>
+          <a href={assetBase+encodeURIComponent(item.assetId)} target="_blank" rel="noopener noreferrer">
+            {ru?'Скачать PDF':'Download PDF'} <ExternalLink size={16}/></a>
+        </article>
+        :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector}
+          mode={mode} locale={locale} savedId={savedId}/>)}
+      {linkedResources.map((item,index)=><a className={styles.attachmentCard} key={index}
+        href={item.url} target="_blank" rel="noopener noreferrer">
+        <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
+          {item.description&&<small>{item.description}</small>}</div>
+        <ExternalLink size={17} aria-hidden="true"/>
+      </a>)}
+      {libraryMaterials.length>0&&<div className={styles.reportLibraryList}>
+        {libraryMaterials.map(item=>item.kind==='youtube'
+          ?<SessionYouTubePlayer key={item.id} title={item.title} description={item.description}
+            url={item.url} locale={locale}/>
+          :item.kind==='image'
+            ?<figure className={styles.sessionPhotoCard} key={item.id}>
+              <a href={assetBase+encodeURIComponent(item.id)} target="_blank"
+                rel="noopener noreferrer" aria-label={ru?'Открыть фотографию в полном размере':'Open full-size photo'}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={assetBase+encodeURIComponent(item.id)} alt={item.title}
+                  loading="lazy" decoding="async"/>
+              </a>
+              <figcaption>{item.title}</figcaption>
+              {item.description&&<p>{item.description}</p>}
+            </figure>
+            :<PrivatePlayer key={item.id}
+              item={{assetId:item.id,kind:'video',mime:item.mime,title:item.title,role:'library',transcript:''}}
+              session={session} mode={mode} selector={selector} locale={locale} savedId={savedId}/>)}
+      </div>}
+      {!hasMaterials&&<p className={styles.reportMaterialsEmpty}>
+        {ru?'Дополнительные материалы пока не выбраны.':'No additional materials have been selected yet.'}</p>}
+    </section>}
+
+    <nav className={styles.sessionBottomActions} data-hh-report-next-actions
+      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
+      <div className={styles.sessionBottomHeading}>
+        <span className={styles.sectionKicker}>{ru?'СОХРАНИТЕ И ПРОДОЛЖАЙТЕ':'SAVE & CONTINUE'}</span>
+        <h2>{ru?'Ваши следующие шаги':'Your next steps'}</h2>
+      </div>
+      {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
+        locale={locale} appAvailable={appAvailable} compact/>}
+      {mode==='owner'&&<button className={styles.sessionBottomPrimary} type="button" disabled>
+        <BookmarkCheck size={20} aria-hidden="true"/>
+        {ru?'Войти в мой кабинет и сохранить отчёт':'Sign in to my Cabinet and save report'}
+      </button>}
+      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
+        className={styles.sessionBottomPrimary}>
+        <BookmarkCheck size={20} aria-hidden="true"/>
+        {ru?'Открыть мой кабинет — отчёт сохранён':'Open my Cabinet — report saved'}
+      </a>}
+      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
+        <Gift size={21} aria-hidden="true"/>
+        {ru?'Пройти дополнительное тестирование (бонус)':'Take additional tests (bonus)'}
+      </a>
+      {mode==='owner'&&<p className={styles.sessionBottomHint} role="note">
+        {ru?'Предпросмотр специалиста: кнопка сохранения становится активной у клиента по защищённой ссылке.':
+          'Practitioner preview: the save button is enabled only for the client with an authorized report link.'}
+      </p>}
+      {!appAvailable&&mode!=='owner'&&mode!=='guest'&&<p className={styles.sessionBottomHint} role="status">
+        {ru?'Сохранение через Google временно недоступно. Этот отчёт остаётся доступным по защищённой ссылке.':
+          'Google saving is temporarily unavailable. This report remains accessible through its protected link.'}
+      </p>}
+    </nav>
 
     <footer className={styles.clientFooter}>
       <p><LockKeyhole size={14}/>{mode==='owner'?(ru?'Закрытый предпросмотр специалиста. Для клиента используйте отдельную ссылку на опубликованную сессию.':'Practitioner-only preview. Send clients only an approved session invitation.'):
@@ -313,22 +396,6 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         'Информация носит справочный характер и не заменяет медицинскую диагностику или необходимую помощь.':
         'This information does not replace appropriate medical assessment or care.'}</p>
     </footer>
-
-    {mode!=='owner'&&<nav className={styles.sessionBottomActions}
-      aria-label={ru?'Дальнейшие действия после отчёта':'After your report'}>
-      {mode!=='saved'&&mode!=='owner'&&<SaveClientSessionToAccount
-        locale={locale} appAvailable={appAvailable} compact/>}
-      {mode==='saved'&&<a href={'/'+locale+'/app/portrait#personal-reports'}
-        className={styles.sessionBottomPrimary}><FolderOpen size={20} aria-hidden="true"/>
-        {ru?'Открыть мои сохранённые отчёты':'Open my saved reports'}</a>}
-      <a href={'/'+locale+'/client'} className={styles.sessionBottomSecondary}>
-        <ListChecks size={20} aria-hidden="true"/>
-        {ru?'Пройти другие тесты':'Take more tests'}</a>
-      {!appAvailable&&mode!=='saved'&&<p className={styles.sessionBottomHint} role="status">
-        {ru?'Сохранение через Google сейчас недоступно. Отчёт остаётся доступным по защищённой ссылке.':
-          'Google saving is temporarily unavailable. This report remains accessible through its private link.'}
-      </p>}
-    </nav>}
   </main>
   const reportView=<div className={styles.sessionSiteShell} lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
