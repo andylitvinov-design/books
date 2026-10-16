@@ -25,7 +25,7 @@ test("public personal and reading CTAs use the compact blue topic selector, whil
   assert.match(component, /mode !== "training"/);
   assert.match(component, /<ConsultationChoiceCapture locale=\{locale\} variant=\{mode === "reading" \? "reading" : "personal"\} id=\{id\}/);
   assert.match(component, /trainingEnquiryUrl\(locale, pathname\)/);
-  assert.match(component, /AcquisitionEventLink prefetch=\{false\}/);
+  assert.match(component, /<ContactChannelChooser locale=\{locale\}/);
   assert.match(consultation, /data-consultation-cta=\{sitewide \? undefined : "true"\}/);
   assert.match(css, /background:#e66d50/);
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
