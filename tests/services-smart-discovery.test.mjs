@@ -156,3 +156,26 @@ test('service match results show full-width horizontal service and editorial row
   const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
   assert.ok(requestLink>0 && detailLink>requestLink)
 })
+
+
+test('Services first fold on mobile uses concise search copy, four action chips and safe 16px input',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ])
+  for(const marker of ['Find the right support','Подберите помощь под свой запрос','Encuentra el apoyo que buscas']) assert.ok(ui.includes(marker))
+  assert.equal((ui.match(/quickExamples:\[/g)||[]).length,3)
+  assert.equal((ui.match(/mobilePrivacy:/g)||[]).length,3)
+  assert.match(ui,/className=\{styles\.exampleShort\}/)
+  assert.match(ui,/className=\{styles\.privacyCompact\}/)
+  assert.match(ui,/aria-label=\{text\}/)
+  assert.match(ui,/onClick=\{\(\)=>runExample\(text\)\}/)
+  assert.match(ui,/maxLength=\{350\}/)
+  assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
+  const mobile=css.slice(css.indexOf('/* Services first screen:'))
+  assert.ok(mobile.includes('@media(max-width:620px)'))
+  assert.match(mobile,/\.textarea\{[^}]*font-size:16px/)
+  assert.match(mobile,/\.examples\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(mobile,/\.submit\{[^}]*min-height:44px/)
+  assert.ok(mobile.includes('.exampleLong,.privacyFull{display:none}'))
+})
