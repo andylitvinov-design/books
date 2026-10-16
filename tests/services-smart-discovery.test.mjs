@@ -128,33 +128,60 @@ test('Explore by area is compact on mobile without removing category selection o
 })
 
 
-test('service match results show full-width horizontal service and editorial rows, with accessible mobile actions',async()=>{
-  const [ui,css]=await Promise.all([
+test('service match results use full-width orderable cards with accessible details and real contact handoff',async()=>{
+  const [ui,css,en,es,matcher]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+    readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../lib/whatsapp-enquiry.js',import.meta.url),'utf8'),
   ])
-  assert.ok(ui.includes('resultTitle:"Your options"'))
-  assert.ok(ui.includes('resultTitle:"Ваши варианты"'))
-  assert.ok(ui.includes('resultTitle:"Tus opciones"'))
-  assert.ok(ui.includes('className={styles.suggestionActions}'))
-  assert.ok(ui.includes('className={styles.editorialList}'))
-  assert.ok(css.includes('/* Results: one full-width horizontal service row'))
-  assert.ok(css.includes('.suggestionGrid,.editorialList{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}'))
+  for(const key of ['resultTitle:"Your options"','resultTitle:"Ваши варианты"','resultTitle:"Tus opciones"']) assert.ok(ui.includes(key))
+  for(const key of [
+    'className={styles.suggestionActions}', 'className={styles.suggestionDetailsToggle}',
+    'className={styles.suggestionDetailPanel}', 'className={styles.editorialList}',
+    'className={styles.editorialCard}', 'className={styles.editorialOrderButton}',
+    'className={styles.editorialDetailsButton}', 'className={styles.editorialDetailsPanel}',
+    'className={styles.editorialOrderPanel}', 'className={styles.editorialWhatsapp}',
+    'className={styles.editorialTelegram}', 'className={styles.editorialFreeStart}',
+    'aria-expanded={expanded}', 'aria-expanded={ordering}', 'aria-controls={"hh-order-"+item.id}',
+    'data-discovery-editorial-offer={item.id}', 'hidden={!ordering}', 'hidden={!expanded}',
+  ]) assert.ok(ui.includes(key),key)
+  assert.ok(ui.includes('whatsappEnquiryUrl({locale, service:item.title, request, option:item.label, pagePath:item.href})'))
+  assert.ok(ui.includes('telegramEnquiryUrlFromWhatsApp(whatsappUrl)'))
+  assert.ok(ui.includes('event="service_request_start"'))
+  assert.ok(ui.includes('data-contact-channel":"whatsapp"'))
+  assert.ok(ui.includes('data-contact-channel":"telegram"'))
+  assert.ok(ui.includes('item.free?<Link className={styles.editorialFreeStart}'))
+  assert.ok(ui.includes('className={styles.editorialChannels}'))
+  assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
+  assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
+  assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
+  assert.ok(matcher.includes('safePublicWhatsAppPath(pagePath)'))
+  assert.ok(!ui.includes('<Link key={item.id} href={item.href}>'),"No plain editorial link tiles should remain")
+  assert.ok(!ui.includes('context:submitted'),"Personal search text must not be passed to messenger URL")
   assert.match(css,/\.suggestion\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) auto;/)
-  assert.ok(css.includes('.suggestionTop{grid-column:1/-1;grid-row:1;'))
-  assert.ok(css.includes('.suggestionActions{grid-column:2;grid-row:2/5;'))
-  assert.ok(css.includes('.editorialList a{box-sizing:border-box;display:flex;'))
-  assert.ok(css.includes('.results:focus-visible{outline:2px solid'))
-  const mobile=css.slice(css.lastIndexOf('@media(max-width:620px){'))
-  assert.ok(mobile.includes('.suggestionGrid,.editorialList{grid-template-columns:minmax(0,1fr);gap:8px}'))
-  assert.ok(mobile.includes('.suggestion{grid-template-columns:minmax(0,1fr) 100px;'))
-  assert.ok(mobile.includes('.suggestionActions a{width:100%;min-height:44px;'))
-  assert.ok(css.includes('@media(max-width:350px){'))
-  assert.ok(css.includes('.suggestionActions{grid-column:1;grid-row:5;'))
-  assert.doesNotMatch(css,/\.suggestionGrid,\.editorialList\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  const requestLink=ui.indexOf('<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>')
-  const detailLink=ui.indexOf('<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug}>{t.details}')
-  assert.ok(requestLink>0 && detailLink>requestLink)
+  assert.match(css,/\.editorialCard\{\s*box-sizing:border-box;display:grid;grid-template-columns:minmax\(0,1fr\) 158px;/)
+  assert.ok(css.includes('.editorialDetailsPanel[hidden],.editorialOrderPanel[hidden]'))
+  assert.ok(css.includes('.editorialChannels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
+  assert.ok(css.includes('.editorialCard{grid-template-columns:minmax(0,1fr) 111px;'))
+  assert.ok(css.includes('.editorialCard :is(button,a):focus-visible'))
+  assert.ok(en.includes('href:\`/\${locale}/services/systemic-constellations\`'))
+  assert.ok(en.includes('free:offer.id === "situation" || offer.id === "dao"'))
+  assert.ok(es.includes('details:detail,href,areaKey:areas[id]'))
+  assert.ok(en.includes('€50 / 30 min · €100 / 60 min'))
+})
+
+test('a relationship query such as Love shows relevant orderable services first, without unrelated free cards',()=>{
+  const editorial=[
+    {id:'situation',title:'Free Situation Review',promise:'Written review',href:'/en/services/free-situation-review',areaKey:'emotional_psychological'},
+    {id:'alchemy',title:'Alchemy of the Soul',promise:'Personal session',href:'/en/services/alchemy-of-soul',areaKey:'relationships'},
+    {id:'constellations',title:'Systemic constellations',promise:'Family patterns',href:'/en/services/systemic-constellations',areaKey:'relationships'},
+    {id:'dao',title:'Wu Xing',promise:'Symbolic resources',href:'/en/services/dao-health-profile',areaKey:'homeopathy_holistic'},
+  ]
+  const results=rankEditorialDiscovery('Love',editorial,{limit:4})
+  assert.deepEqual(results.map(x=>x.id),['alchemy','constellations'])
+  assert.deepEqual(rankEditorialDiscovery('amor',editorial,{limit:4}).map(x=>x.id),['alchemy','constellations'])
 })
 
 
