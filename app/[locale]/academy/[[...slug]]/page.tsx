@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import "@/app/academy.css";
+import "@/app/yggdrasil-basic-description.css";
+import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
