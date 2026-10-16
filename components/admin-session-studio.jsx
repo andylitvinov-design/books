@@ -146,6 +146,10 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         <a href="#session-publication" className={styles.jumpToPublication}>
           {ru?'Перейти к публикации ↓':'Go to publication ↓'}
         </a>
+        <button type="button" className={styles.secondaryButton} disabled={block||!changed}
+          onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
+          <Save size={17}/>{ru?'Сохранить черновик':'Save draft'}
+        </button>
         {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}
       </div>
     </section>
@@ -160,10 +164,6 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         <input value={draft.title} maxLength={160} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
       <label className={styles.field}>{ru?'Короткое пояснение и рекомендации':'Short explanation & key next steps'}
         <textarea rows={4} maxLength={6000} value={draft.summary} onChange={e=>setDraft({...draft,summary:e.target.value})}/></label>
-      <div className={styles.actions}><button className={styles.secondaryButton} disabled={block||!changed}
-        onClick={()=>{setBusy('save');setError('');save().catch(e=>setError(e.message)).finally(()=>setBusy(''))}}>
-          <Save size={17}/>{ru?'Сохранить изменения':'Save changes'}</button>
-        {changed&&<span className={styles.unsaved}>{ru?'Есть несохранённые изменения':'Unsaved changes'}</span>}</div>
       </div>
     </details>
     <details className={styles.optionalTextEditor}>
