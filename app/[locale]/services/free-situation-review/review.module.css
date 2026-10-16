@@ -240,7 +240,7 @@
 .outcomeGrid article span{font:750 11px/1 Arial,sans-serif;letter-spacing:.11em;color:#8f4359}
 .outcomeGrid h3{margin:14px 0 9px;color:#274751;font:400 27px/1.15 Georgia,serif}
 .outcomeGrid p{margin:0;color:#53666a;font:14px/1.65 Arial,sans-serif}
-.advancedIntake{margin-top:12px;color:#e4f2ec;font:600 12px/1.5 Arial,sans-serif}
+.advancedIntake{margin:20px 0 0;color:#294d50;font:600 12px/1.5 Arial,sans-serif}
 .advancedIntake summary{padding:12px 5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .advancedIntake[open] summary{margin-bottom:12px}
 .advancedIntake :global([data-free-drawing-intake]){background:#f6fcf8;color:#24443e;border:1px solid #d9ece5;border-radius:16px}
