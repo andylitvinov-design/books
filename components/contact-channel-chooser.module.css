@@ -2,7 +2,7 @@
 .trigger {
   box-sizing:border-box; appearance:none; border:0; cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:12px;
-  width:100%; min-height:56px; padding:12px 20px;
+  width:100%; min-width:min(100%, 180px); min-height:56px; padding:12px 20px;
   border-radius:14px; background:#762e4c; color:#fff;
   text-align:center; font:800 16px/1.35 Arial,Helvetica,sans-serif;
   box-shadow:0 8px 20px rgba(74,33,58,.16);
