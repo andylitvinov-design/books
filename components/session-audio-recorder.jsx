@@ -6,6 +6,7 @@ import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
 import { canProxyOwnerAudio } from '../lib/clients/owner-audio-upload'
 import { getRecorderReadiness } from '../lib/clients/recording-readiness'
 import { SessionPhotoUploader } from './session-photo-uploader'
+import { SessionYouTubeQuickAdd } from './session-youtube-quick-add'
 import styles from './client-session.module.css'
 
 const recordingTypes=['audio/mp4','audio/webm;codecs=opus','audio/webm']
@@ -34,7 +35,7 @@ function recordingError(error,ru) {
   }
   return messages[code]||code
 }
-export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved}) {
+export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,showYouTubeQuickAdd=true}) {
   const ru=locale==='ru'
   const mountedRef=useRef(true),busyRef=useRef(false),jobRef=useRef(null),failedRef=useRef(false)
   const xhrRef=useRef(null)
@@ -361,6 +362,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
+  {showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId} ensureSession={ensureSession}
+    locale={locale} onSaved={onSaved}/>}
   <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
     assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
   </>

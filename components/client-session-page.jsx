@@ -7,6 +7,7 @@ import { recommendationItemType } from '@/lib/documents/recommendation'
 import { GRANULES_GUIDE_ID, GRANULES_GUIDE_TRANSCRIPT_RU } from '@/lib/clients/shared-education-model'
 import { SaveClientSessionToAccount } from './save-client-session-to-account'
 import { SessionExitSaveGuard } from './session-exit-save-guard'
+import { SessionYouTubePlayer } from './session-youtube-player'
 import styles from './client-session.module.css'
 
 function PrivatePlayer({item,session,mode,selector,locale,savedId}) {
@@ -81,6 +82,8 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
   const takeaways=Array.isArray(plan.takeaways)?plan.takeaways:[]
   const practices=Array.isArray(plan.practices)?plan.practices:[]
   const resources=Array.isArray(plan.resources)?plan.resources:[]
+  const youtubeResources=resources.filter(resource=>resource.kind==='youtube')
+  const linkedResources=resources.filter(resource=>resource.kind!=='youtube')
   const media=session.media||[]
   const personalMedia=media.filter(item=>['audio','video'].includes(item.kind)&&(!item.role||item.role==='personal'))
     .sort((a,b)=>(a.kind==='video'?0:1)-(b.kind==='video'?0:1))
@@ -101,7 +104,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
     mode==='guest'?'/api/client-session-viewer/'+selector+'/media/':
     '/api/client/'+selector+'/sessions/'+session.id+'/media/'
   const nextAnchor=hasRecommendation?'#session-prescription':personalMedia.length?'#session-message':
-    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':(supplementary.length||resources.length)?'#session-resources':'#session-title'
+    session.report?'#session-report':photos.length?'#session-photos':guideMedia.length?'#session-guide':youtubeResources.length?'#session-youtube':(supplementary.length||linkedResources.length)?'#session-resources':'#session-title'
   // The approved HTML document is the only source of report narrative and prescriptions.
   // Keep independently authored session messages visible without repeating report text.
   const authoredMessage=typeof session.summary==='string'?session.summary.trim():''
@@ -214,6 +217,20 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}</div>
     </section>}
 
+    {youtubeResources.length>0&&<section id="session-youtube" className={styles.clientSection}
+      aria-label={ru?'Обучающие видео с YouTube':'Educational YouTube videos'}>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon}><Video size={21}/></span>
+        <div><span className={styles.sectionKicker}>{ru?'ВИДЕОМАТЕРИАЛЫ':'VIDEO MATERIALS'}</span>
+          <h2>{ru?'Видео к вашей консультации':'Videos for your consultation'}</h2></div>
+      </header>
+      <div className={styles.youtubeLessonList}>
+        {youtubeResources.map((item,index)=><SessionYouTubePlayer
+          key={item.url+'-'+index} title={item.title} url={item.url}
+          description={item.description} locale={locale}/>)}
+      </div>
+    </section>}
+
     {hasAdvice&&<section id="session-recommendations" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><ListChecks size={20}/></span>
@@ -243,7 +260,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
       {!hasFullReport&&hasRecommendation&&<SessionPrescriptionOverview recommendation={recommendation} locale={locale} part="extra"/>}
     </section>}
 
-    {(supplementary.length>0||resources.length>0)&&<section id="session-resources" className={styles.clientSection}>
+    {(supplementary.length>0||linkedResources.length>0)&&<section id="session-resources" className={styles.clientSection}>
       <header className={styles.sectionHeader}>
         <span className={styles.sectionIcon}><FolderOpen size={20}/></span>
         <div><span className={styles.sectionKicker}>{ru?'ЛИЧНАЯ БИБЛИОТЕКА СЕССИИ':'YOUR SESSION MATERIALS'}</span>
@@ -258,7 +275,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
           </a>
         </article>
         :<PrivatePlayer key={item.assetId} item={item} session={session} selector={selector} mode={mode} locale={locale} savedId={savedId}/>)}
-      {resources.map((item,index)=><a className={styles.attachmentCard} key={index}
+      {linkedResources.map((item,index)=><a className={styles.attachmentCard} key={index}
         href={item.url} target="_blank" rel="noopener noreferrer">
         <BookOpen size={20} aria-hidden="true"/><div><strong>{item.title}</strong>
           {item.description&&<small>{item.description}</small>}</div>
