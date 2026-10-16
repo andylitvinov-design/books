@@ -32,7 +32,7 @@ const UI = {
     moodTrendNote: 'Latest check-in for each local day. Mood is a state marker, not a score.',
     patterns: 'Your patterns',
     patternsNote:
-      'Shown only after at least three compatible measurements. These are observations, not causes or diagnoses.',
+      'Compares the first and last of at least three compatible measurements. Intermediate scores may differ. Numeric change alone does not establish improvement, deterioration or clinical significance.',
     allTests: 'Explore all tests',
     openCatalog: 'Open full test catalog',
     start: 'Start',
@@ -91,11 +91,11 @@ const UI = {
     points: 'points',
     improving: 'improving',
     declining: 'moving in a less favorable direction',
-    stable: 'stable',
+    stable: 'the same as the earlier measurement',
     unchanged: 'unchanged screening count',
     higher: 'higher than the earlier measurement',
     lower: 'lower than the earlier measurement',
-    changedAcross: 'across the last',
+    sampleCount: 'Measurements in this comparison:',
     measurements: 'measurements',
     lastMeasurement: 'Last measurement',
     plannedChecks: 'Planned checks',
@@ -117,7 +117,7 @@ const UI = {
     moodTrendNote: 'Последняя отметка каждого локального дня. Настроение — маркер состояния, а не балл.',
     patterns: 'Ваши паттерны',
     patternsNote:
-      'Показываются только после минимум трёх совместимых замеров. Это наблюдения, а не причины и не диагнозы.',
+      'Сравниваются первый и последний из минимум трёх совместимых замеров. Промежуточные баллы могут отличаться. Одно числовое изменение не доказывает улучшение, ухудшение или клиническую значимость.',
     allTests: 'Все тесты',
     openCatalog: 'Открыть полный каталог тестов',
     start: 'Начать',
@@ -176,11 +176,11 @@ const UI = {
     points: 'баллов',
     improving: 'улучшается',
     declining: 'двигается в менее благоприятную сторону',
-    stable: 'стабилен',
+    stable: 'такой же, как в раннем замере',
     unchanged: 'скрининговый подсчёт не изменился',
     higher: 'выше раннего замера',
     lower: 'ниже раннего замера',
-    changedAcross: 'за последние',
+    sampleCount: 'Замеров в этом сравнении:',
     measurements: 'замера',
     lastMeasurement: 'Последний замер',
     plannedChecks: 'Планируемые тесты',
@@ -574,7 +574,7 @@ function MonitoringDashboard({ data, locale, c, onStarted }) {
             {patterns.map((pattern) => (
               <li key={pattern.instrumentKey + ':' + pattern.dimensionKey}>
                 <strong>{labelFor(pattern.dimensionKey, locale)}</strong>{' '}
-                {c[pattern.state]} {c.changedAcross} {pattern.count} {c.measurements}.
+                {c[pattern.state]}. {c.sampleCount} {pattern.count}.
               </li>
             ))}
           </ul>

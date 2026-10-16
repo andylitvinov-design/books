@@ -99,3 +99,5 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db
+      - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
+        run: node scripts/verify-eight-v2-registry-proposal.mjs

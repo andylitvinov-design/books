@@ -3,12 +3,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
-import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
+import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import {
-  INTERPRETATION_PLANS,
   interpretationPlan,
   interpretationDimensionPlan,
   interpretationForDimension,
@@ -22,6 +21,24 @@ const runnable = ASSESSMENT_DEFINITIONS.filter(def => versionIds.has(def.key + '
 const answersFor = (def, extreme) => Object.fromEntries(def.questions.map(q => [
   q.id, extreme === 'max' ? (q.max ?? def.answerScale?.max) : (q.min ?? def.answerScale?.min),
 ]))
+
+// Create real source-keyed results instead of granting categories to a fixture
+// that happens to carry the instrument name and a plausible range.
+function scoreSumAt(definition, dimensionKey, target) {
+  const answers = answersFor(definition, 'min')
+  const spec = definition.scoring.dimensions.find(item => item.key === dimensionKey)
+  assert.equal(spec.method, 'sum')
+  assert.equal(spec.reverseItems?.length || 0, 0)
+  let remaining = target - spec.items.reduce((total, id) => total + answers[id], 0)
+  for (const id of spec.items) {
+    const question = definition.questions.find(item => item.id === id)
+    const increase = Math.min(remaining, (question.max ?? definition.answerScale.max) - answers[id])
+    answers[id] += increase
+    remaining -= increase
+  }
+  assert.equal(remaining, 0)
+  return scoreAssessment(definition, answers)
+}
 
 test('all 139 runnable tests have exact-version plans; unavailable licensed tests remain excluded', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
@@ -141,14 +158,24 @@ test('boundary cutoffs follow published values exactly and do not leak to change
   ]
   for (const [key,scale,min,max,boundaries] of cases) {
     for (const [value,code] of boundaries) {
-      const result = {definitionKey:key,definitionVersion:'v1'}
-      const d = {key:scale,value,min,max,direction:key==='brcs'?'higher-reported-resource':'lower-reported-difficulty'}
+      const definition = getAssessmentDefinition(key, 'v1', 'en')
+      const result = scoreSumAt(definition, scale, value)
+      const d = result.dimensions.find(item => item.key === scale)
+      assert.equal(d.value, value)
+      assert.equal(d.min, min)
+      assert.equal(d.max, max)
       const info = interpretationForDimension(result, d, 'en')
       assert.equal(info.code, code, key + '/' + scale + '/' + value)
       assert.notEqual(info.basis, 'descriptive')
       assert.ok(info.source?.startsWith('https://'))
       assert.match(info.meaning, /not diagnose|do not diagnose/)
-      assert.equal(interpretationForDimension({...result,definitionVersion:'v9'},d,'en').basis,'descriptive')
+      const unknownVersion = interpretationForDimension({...result,definitionVersion:'v9'},d,'en')
+      assert.equal(unknownVersion.basis,'unavailable')
+      assert.equal(unknownVersion.source,null)
+      assert.deepEqual(unknownVersion.actions,[])
+      const missingIdentity = interpretationForDimension({definitionKey:key,definitionVersion:'v1'},d,'en')
+      assert.equal(missingIdentity.basis,'unavailable')
+      assert.deepEqual(missingIdentity.actions,[])
     }
   }
 })
@@ -174,28 +201,44 @@ test('resource/symptom direction handling recognizes all original HH direction v
   assert.equal(classificationDirection({direction:'lower-reported-tension'}),'difficulty')
   assert.equal(classificationDirection({direction:'lower-reported-interference'}),'difficulty')
   assert.equal(classificationDirection({direction:'non-normative'}),'neutral')
-  const r = {definitionKey:'hh-weekly-pulse',definitionVersion:'v1'}
-  const tension = interpretationForDimension(r,{key:'weekly.tension',value:10,min:0,max:10,direction:'lower-reported-tension'},'ru')
-  const recovery = interpretationForDimension(r,{key:'weekly.recovery',value:10,min:0,max:10,direction:'higher-reported-recovery'},'ru')
-  assert.match(tension.meaning,/трудностей/)
-  assert.match(recovery.meaning,/ресурсов/)
+  const weekly = getAssessmentDefinition('hh-weekly-pulse','v1','ru')
+  const r = scoreAssessment(weekly,answersFor(weekly,'max'))
+  const tension = interpretationForDimension(r,r.dimensions.find(item => item.key === 'weekly.tension'),'ru')
+  const recovery = interpretationForDimension(r,r.dimensions.find(item => item.key === 'weekly.recovery'),'ru')
+  assert.equal(tension.basis,'descriptive')
+  assert.equal(recovery.basis,'descriptive')
+  assert.equal(tension.presentationDirection,'difficulty')
+  assert.equal(recovery.presentationDirection,'resource')
+  assert.match(tension.meaning,/Тревога и напряжение/)
+  assert.match(recovery.meaning,/Сон и восстановление/)
+  const mini = getAssessmentDefinition('mini-ipip-20','v1','en')
+  const traits = scoreAssessment(mini,answersFor(mini,'max'))
   for (const code of ['trait.extraversion','trait.neuroticism']) {
-    const info = interpretationForDimension({definitionKey:'mini-ipip-20',definitionVersion:'v1'},
-      {key:code,value:20,min:4,max:20,direction:'non-normative'},'en')
+    const dimension = traits.dimensions.find(item => item.key === code)
+    assert.ok(dimension)
+    const info = interpretationForDimension(traits,dimension,'en')
     assert.equal(info.basis,'descriptive')
-    assert.match(info.meaning,/descriptive/)
+    assert.equal(info.code,'continuous')
+    assert.equal(info.presentationDirection,'neutral')
+    assert.match(info.meaning,/continuous self-description/)
+    assert.ok(info.meaning.includes(String(dimension.value)))
   }
 })
 
 test('invalid and impossible scores never trigger interpretation or safety reassurance', () => {
-  const r = { definitionKey:'phq-4', definitionVersion:'v1' }
-  const valid = { key:'symptoms.phq4.total', value:4, min:0, max:12 }
+  const definition = getAssessmentDefinition('phq-4','v1','en')
+  const r = scoreSumAt(definition,'symptoms.phq4.total',4)
+  const valid = r.dimensions.find(item => item.key === 'symptoms.phq4.total')
+  assert.equal(interpretationForDimension(r,valid,'en').basis,'screening')
   for (const value of [undefined, null, NaN, Infinity, -1, 13, '4', 4.5]) {
     assert.equal(interpretationForDimension(r,{...valid,value},'en').basis,'unavailable',String(value))
   }
   assert.equal(interpretationForDimension(r,{...valid,min:10,max:0},'en').basis,'unavailable')
-  assert.equal(interpretationForDimension(r,{...valid,max:24},'en').basis,'descriptive')
-  const report = buildAssessmentResultReport({...r,dimensions:[{...valid,value:null}]},'en')
+  const alteredRange = interpretationForDimension(r,{...valid,max:24},'en')
+  assert.equal(alteredRange.basis,'unavailable')
+  assert.equal(alteredRange.source,null)
+  assert.deepEqual(alteredRange.actions,[])
+  const report = buildAssessmentResultReport({...r,dimensions:r.dimensions.map(item => item.key === valid.key ? {...item,value:null} : item)},'en')
   assert.deepEqual(report.sections[0].steps,[])
   assert.equal(report.sections[0].recommendedReview,false)
 })

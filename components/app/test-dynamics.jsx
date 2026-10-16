@@ -71,12 +71,12 @@ function TrendLine({ item }) {
   </svg>
 }
 
-function ScaleRow({ item, c, locale, hasRepeat }) {
+function ScaleRow({ item, result, c, locale, hasRepeat }) {
   const translated = labelFor(item.key, locale)
   const title = translated !== item.key ? translated : item.label
   return <div className={styles.scaleRow}>
     <div className={styles.scaleDial}>
-      <ScoreGauge dimension={item.gaugeDimension} locale={locale} compact />
+      <ScoreGauge dimension={item.gaugeDimension} locale={locale} compact result={result} />
     </div>
     <div className={styles.scaleContent}>
       <strong className={styles.scaleTitle}>{title}</strong>
@@ -148,10 +148,10 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
                 : <span>{c.latest}: ?</span>}
             </div>
             <div className={styles.scales}>
-              {group.scales.slice(0,3).map(item => <ScaleRow item={item} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
+              {group.scales.slice(0,3).map(item => <ScaleRow item={item} result={group.latest} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
               {group.scales.length > 3 && <details className={styles.more}>
                 <summary>{c.more} ({group.scales.length - 3})</summary>
-                {group.scales.slice(3).map(item => <ScaleRow item={item} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
+                {group.scales.slice(3).map(item => <ScaleRow item={item} result={group.latest} c={c} locale={locale} hasRepeat={group.count > 1} key={item.key} />)}
               </details>}
             </div>
             {group.count === 1 && <p className={styles.footnote}>{c.baseline}</p>}
