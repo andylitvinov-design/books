@@ -71,8 +71,8 @@ const WORDS = {
     newCourse: 'Start another course', activeCount: 'Active courses', courseLimit: 'Plan limit',
     limitReached: 'You have reached your active-course limit. Pause an active course before starting or resuming another.',
     overLimit: 'Your existing active courses and history are preserved after a plan change. New courses and resuming paused courses are limited until you are below your current allowance.',
-    multiUnavailable: 'Additional courses are not available yet. Your current course and history are preserved.',
-    historySafe: 'Pausing frees an active-course place. It never deletes your course history or saved progress.',
+    multiUnavailable: 'Only one course can run at a time. Close the current course to begin a new one.',
+    historySafe: 'Closing a course frees its place. Saved tests and completed lessons remain in your history.',
     courseStatuses: { draft: 'In setup', active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived' },
     interest: 'Based on your choices', notDiagnostic: 'Weekly Pulse is an original non-diagnostic self-report; these are not clinical thresholds.',
   },
@@ -127,8 +127,8 @@ const WORDS = {
     newCourse: 'Начать ещё один курс', activeCount: 'Активные курсы', courseLimit: 'Лимит тарифа',
     limitReached: 'Достигнут лимит активных курсов. Поставьте один курс на паузу, чтобы начать или возобновить другой.',
     overLimit: 'После смены тарифа текущие активные курсы и история сохраняются. Начать новый или возобновить приостановленный курс можно, когда число активных курсов станет меньше лимита тарифа.',
-    multiUnavailable: 'Дополнительные курсы пока недоступны. Текущий курс и история сохраняются.',
-    historySafe: 'Пауза освобождает место для активного курса. История и сохранённый прогресс не удаляются.',
+    multiUnavailable: 'Одновременно доступен один курс. Закройте текущий курс, чтобы начать новый.',
+    historySafe: 'Закрытие курса освобождает место. Пройденные тесты и занятия остаются в истории.',
     courseStatuses: { draft: 'Настройка', active: 'Активен', paused: 'На паузе', completed: 'Завершён', archived: 'В архиве' },
     interest: 'С учётом ваших тем', notDiagnostic: 'Weekly Pulse — авторский недиагностический самоотчёт; это не клинические пороги.',
   },
@@ -516,7 +516,7 @@ export function MyCourse({ data, locale = 'en' }) {
   return <div className={styles.root} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
-      locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} overLimit={access?.overLimit}
+      locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
@@ -533,7 +533,7 @@ export function MyCourse({ data, locale = 'en' }) {
       </select>
       {access && <p role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit} · {access.tier}</p>}
       {access?.overLimit ? <p className={styles.notice}>{t.overLimit}</p> : atLimit ? <p className={styles.notice}>{t.limitReached}</p> : null}
-      {!access?.multiCourseEnabled && <p className={styles.small}>{t.multiUnavailable}</p>}
+      {!access?.multiCourseEnabled && !legacyFreeSlot && <p className={styles.small}>{t.multiUnavailable}</p>}
       <p className={styles.small}>{t.historySafe}</p>
       <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
     </section>}
