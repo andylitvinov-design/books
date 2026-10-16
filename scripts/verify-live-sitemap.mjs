@@ -126,7 +126,7 @@ for (const path of spotlight) {
     if (lang !== expectedLocale) logError("Document lang " + lang + " should be " + expectedLocale + ": " + path);
     if (!desc || desc.length > 160) logError("Meta description length " + (desc?.length ?? "missing") + ": " + path);
     if (!og || !twitter) logError("Missing social meta: " + path);
-    if (!canonical || canonical !== origin + path) {
+    if (!canonical || new URL(canonical).origin !== origin || new URL(canonical).pathname !== path) {
       // Existing English canonical root is '/', not the legacy /en.
       logError("Incorrect/missing canonical " + canonical + ": " + path);
     }
