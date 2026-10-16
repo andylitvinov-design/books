@@ -42,14 +42,14 @@ function compile(name) {
   const compiled = ts.transpileModule(read('components/app/' + name + '.jsx'), { fileName: name + '.jsx', compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText
-  const module = { exports: {} }
-  vm.runInNewContext(compiled, { module, exports: module.exports, require: name => {
+  const compiledModule = { exports: {} }
+  vm.runInNewContext(compiled, { module: compiledModule, exports: compiledModule.exports, require: name => {
     if (name.endsWith('.module.css')) return { default: new Proxy({}, { get: (_, key) => String(key) }) }
     assert.ok(modules[name], 'Unexpected component dependency: ' + name)
     return modules[name]
   } })
-  modules['./' + name] = module.exports
-  return module.exports
+  modules['./' + name] = compiledModule.exports
+  return compiledModule.exports
 }
 compile('assessment-gauge')
 const { GuestScaleInterpretation } = compile('guest-scale-interpretation')
