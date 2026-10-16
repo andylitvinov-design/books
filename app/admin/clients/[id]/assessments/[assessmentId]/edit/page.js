@@ -42,7 +42,7 @@ export default async function EditAssessment({ params }) {
     }
   }
   return <main className="prescription-admin-shell"><PrescriptionAdminHeader title={t.title} description={client.fullName} /><Link prefetch={false} className="library-back-link" href={`/admin/clients/${id}`}>← {t.back}</Link><p>{t.status}: {t[record.status]}</p>{store.assessmentStorage === 'memory' && <p className="assessment-notice">{t.memory}</p>}
-    {deliveryEnabled() && ['draft','shared'].includes(record.status) && <SessionAudioRecorder key={assessmentId} clientId={id} assessmentId={assessmentId} locale={locale} />}
+    {deliveryEnabled() && ['draft','shared'].includes(record.status) && <SessionAudioRecorder key={assessmentId} clientId={id} assessmentId={assessmentId} locale={locale} showYouTubeQuickAdd={false} />}
     <AssessmentStateActions key={`${record.revision}-actions`} action={changeAssessmentStateAction.bind(null, id, assessmentId)} status={record.status} revision={record.revision} locale={locale} />
     {record.status === 'shared' && deliveryAvailable && <>
       <ReportDeliveryCreate action={issueReportLinkAction.bind(null, id, assessmentId)} locale={locale} />
