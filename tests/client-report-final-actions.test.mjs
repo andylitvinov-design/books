@@ -47,6 +47,9 @@ test('older private report links also end with a real save and bonus action, not
   assert.match(legacy,/operationId: crypto\.randomUUID\(\)/)
   assert.match(source('app/admin/documents/[id]/view/page.js'),/query\.print!=='1'/,
     'no action controls inside printed or PDF output')
+  assert.match(source('app/[locale]/prescriptions/[selector]/page.js'),
+    /viewPdfHref=\{record\.kind==='payment'\?/,
+    'legacy report invitation must open HTML with bottom CTAs, not jump directly to PDF')
 })
 
 test('owner preview stays read-only and never saves private client reports in the practitioner Google account',()=>{
