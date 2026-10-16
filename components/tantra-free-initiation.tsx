@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, Heart, PlayCircle, Sparkles, Sun, Check, Feather, ShieldCheck } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { TantraInitiationForm } from "@/components/tantra-initiation-form";
+import { TantraInitiationForm, tantraInitiationWhatsAppUrl } from "@/components/tantra-initiation-form";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import { formatReikiLevelPrice } from "@/lib/academy/reiki-level-pricing";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -36,10 +36,10 @@ const copy = {
     choiceLead: "Choose the introductory gift or a personal session with Andrey. Both begin with the same first level; the difference is the format and the amount of individual guidance.",
     freeFlag: "FREE INTRODUCTORY OFFER", freeTitle: "Your first step, free",
     freeText: "Read the materials, prepare short answers to the seven questions and ask about a teacher-guided introductory Level 1 initiation.",
-    freePrice: "€0", freeButton: "Request free Level 1",
+    freePrice: "€0", freeButton: "How to start for free",
     personalFlag: "ONE-TO-ONE WITH ANDREY", personalTitle: "Personal initiation",
     personalText: "A dedicated individual session to learn the first-level themes, discuss your questions and arrange the initiation directly with Andrey.",
-    personalButton: "Request a personal session",
+    personalButton: "Enquire in WhatsApp",
     availability: "Sessions and free introductory availability are confirmed personally. Reading or submitting answers does not itself grant an initiation.",
     guideEyebrow: "03 / YOUR PATH", guideTitle: "How to receive Level 1 for free",
     guideLead: "Three simple steps. Explore the practice, read the course and send your answers before agreeing a session with Andrey.",
@@ -59,7 +59,7 @@ const copy = {
       "At which levels do students learn to create mandalas and work with artifacts?",
       "After which level can someone become a Tantra Reiki Master and teach and initiate others?",
     ],
-    questionAction: "Share your seven answers", questionNote: "These are study questions, not a medical or psychological assessment.",
+    questionAction: "Send 7 answers in WhatsApp", questionNote: "These are study questions, not a medical or psychological assessment.",
     videoEyebrow: "04 / SEE THE PRACTICE", videoTitle: "Tantra Reiki, guided by Andrey",
     videoLead: "Watch Andrey's original Tantra Reiki Practice recording. This is the same recording already linked to the course, not an AI-generated or substitute video.",
     videoCaption: "Original recording · English · click to play", videoNote: "The video is an introduction to practice, not an automatic initiation.",
@@ -71,8 +71,8 @@ const copy = {
       { title: "Full teaching programme", subtitle: "Attunements, mandalas, artifacts and practice" },
       { title: "Download the Tantra Reiki PDF", subtitle: "Course overview and first-level study guide" },
     ],
-    formEyebrow: "07 / YOUR NEXT STEP", formTitle: "Ready to begin?",
-    formLead: "Choose a free introduction, a personal Level 1 session, a PDF download, or send your seven answers. Just one simple form.",
+    formEyebrow: "07 / WHATSAPP", formTitle: "Ready to begin?",
+    formLead: "Free introduction, personal initiation or your seven answers — all directly through WhatsApp.",
     disclaimer: "Tantra Reiki is presented here as a spiritual and reflective tradition. Its descriptions of energies or effects are not established medical facts. It does not replace healthcare or guarantee results.",
     footer: "Return to the full Tantra Reiki course",
   },
@@ -96,10 +96,10 @@ const copy = {
     choiceLead: "Выберите бесплатную вводную инициацию или индивидуальное занятие с Андреем. Оба варианта знакомят с первой ступенью, но различаются форматом сопровождения.",
     freeFlag: "БЕСПЛАТНОЕ ЗНАКОМСТВО", freeTitle: "Первая ступень в подарок",
     freeText: "Изучите материалы, подготовьте ответы на семь вопросов и запросите бесплатную вводную инициацию с преподавателем.",
-    freePrice: "0 €", freeButton: "Запросить бесплатную инициацию",
+    freePrice: "0 €", freeButton: "Как получить бесплатно",
     personalFlag: "ЛИЧНО С АНДРЕЕМ", personalTitle: "Личная инициация",
     personalText: "Индивидуальное занятие, чтобы познакомиться с темами первой ступени, задать вопросы и пройти инициацию с Андреем.",
-    personalButton: "Записаться на личную инициацию",
+    personalButton: "Записаться через WhatsApp",
     availability: "Возможность бесплатной встречи, даты и формат подтверждает Андрей. Чтение материалов и ответы на вопросы сами по себе не являются инициацией.",
     guideEyebrow: "03 / КАК ПОЛУЧИТЬ", guideTitle: "Как получить Тантра Рейки бесплатно",
     guideLead: "Всего три шага: познакомьтесь с практикой, прочитайте материалы и отправьте ответы, чтобы согласовать инициацию с Андреем.",
@@ -119,7 +119,7 @@ const copy = {
       "На каких ступенях Тантра Рейки мы учимся создавать мандалы и работать с артефактами?",
       "После какой ступени человек становится Мастером Тантра Рейки и получает право обучать и инициировать других?",
     ],
-    questionAction: "Отправить семь ответов", questionNote: "Это вопросы по учебному материалу, а не медицинский или психологический тест.",
+    questionAction: "Отправить 7 ответов в WhatsApp", questionNote: "Это вопросы по учебному материалу, а не медицинский или психологический тест.",
     videoEyebrow: "04 / ВИДЕО", videoTitle: "Практика Тантра Рейки с Андреем",
     videoLead: "Посмотрите оригинальную запись «Tantra Reiki Practice», которую Андрей разместил в материалах основного курса. Это его собственное видео, не новый ИИ-ролик.",
     videoCaption: "Оригинальное видео · на английском · запуск по нажатию", videoNote: "Видео знакомит с практикой, но не заменяет личную инициацию.",
@@ -131,8 +131,8 @@ const copy = {
       { title: "Полная программа обучения", subtitle: "Настройки, мандалы, артефакты и практика" },
       { title: "Скачать PDF по Тантра Рейки", subtitle: "Описание системы и материалы первой ступени" },
     ],
-    formEyebrow: "07 / ЗАЯВКА", formTitle: "Готовы начать?",
-    formLead: "Выберите бесплатную инициацию, личное занятие, скачайте PDF или отправьте семь ответов. Всё в одной форме.",
+    formEyebrow: "07 / WHATSAPP", formTitle: "Готовы начать?",
+    formLead: "Бесплатная инициация, личное занятие или отправка семи ответов — всё напрямую через WhatsApp.",
     disclaimer: "Тантра Рейки здесь представлена как духовная и созерцательная традиция. Описания потоков и эффектов относятся к учению, не являются доказанными медицинскими фактами и не заменяют медицинскую помощь.",
     footer: "Вернуться к полной программе Тантра Рейки",
   },
@@ -156,10 +156,10 @@ const copy = {
     choiceLead: "Elige la introducción gratuita o una sesión personal con Andrey. Las dos comienzan con el primer nivel.",
     freeFlag: "INTRODUCCIÓN GRATUITA", freeTitle: "Tu primer nivel, gratis",
     freeText: "Lee los materiales, prepara respuestas breves a siete preguntas y solicita una iniciación introductoria guiada.",
-    freePrice: "0 €", freeButton: "Solicitar el Nivel 1 gratis",
+    freePrice: "0 €", freeButton: "Cómo empezar gratis",
     personalFlag: "EN PERSONA CON ANDREY", personalTitle: "Iniciación personal",
     personalText: "Una sesión individual para conocer los temas del primer nivel, resolver dudas y acordar la iniciación con Andrey.",
-    personalButton: "Solicitar sesión personal",
+    personalButton: "Pedir por WhatsApp",
     availability: "La disponibilidad y la fecha se confirman personalmente. Leer o enviar respuestas no constituye una iniciación.",
     guideEyebrow: "03 / CÓMO EMPEZAR", guideTitle: "Cómo recibir Tantra Reiki gratis",
     guideLead: "Solo tres pasos: mira el vídeo, lee los materiales y comparte las siete respuestas para acordar una sesión con Andrey.",
@@ -179,7 +179,7 @@ const copy = {
       "¿En qué niveles se aprende a crear mandalas y trabajar con artefactos?",
       "¿Después de qué nivel se puede ser Maestro de Tantra Reiki e iniciar y enseñar a otros?",
     ],
-    questionAction: "Enviar mis siete respuestas", questionNote: "Preguntas de estudio, no una evaluación médica.",
+    questionAction: "Enviar 7 respuestas por WhatsApp", questionNote: "Preguntas de estudio, no una evaluación médica.",
     videoEyebrow: "04 / VÍDEO", videoTitle: "Tantra Reiki con Andrey",
     videoLead: "Mira la grabación original Tantra Reiki Practice incluida en los materiales del curso.",
     videoCaption: "Grabación original · inglés · pulsa para reproducir", videoNote: "El vídeo es una introducción, no una iniciación automática.",
@@ -191,8 +191,8 @@ const copy = {
       { title: "Programa de formación completo", subtitle: "Sintonizaciones, mandalas, artefactos y prácticas" },
       { title: "Descarga la guía PDF", subtitle: "Descripción del sistema y primer nivel" },
     ],
-    formEyebrow: "07 / SOLICITUD", formTitle: "¿Listo para comenzar?",
-    formLead: "Solicita la introducción gratuita, una sesión personal, descarga el PDF o envía tus siete respuestas.",
+    formEyebrow: "07 / WHATSAPP", formTitle: "¿Listo para comenzar?",
+    formLead: "Solicita la iniciación gratis, una sesión personal o envía tus siete respuestas directamente por WhatsApp.",
     disclaimer: "Tantra Reiki se presenta como tradición espiritual y reflexiva. Las afirmaciones sobre energía no son hechos médicos demostrados ni sustituyen la atención sanitaria.",
     footer: "Volver al curso completo Tantra Reiki",
   },
@@ -265,7 +265,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
             <div className={styles.choicePersonal}>
               <span className={styles.offerFlag}><Heart size={14} aria-hidden="true"/>{t.personalFlag}</span>
               <h3>{t.personalTitle}</h3><p>{t.personalText}</p>
-              <div className={styles.offerBottom}><strong>{formatReikiLevelPrice("tantra", locale)}</strong><a className={styles.buttonNavy} href="#apply-personal">{t.personalButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
+              <div className={styles.offerBottom}><strong>{formatReikiLevelPrice("tantra", locale)}</strong><a className={styles.buttonNavy} href={tantraInitiationWhatsAppUrl(locale, "personal")} target="_blank" rel="noopener noreferrer">{t.personalButton}<ArrowRight size={17} aria-hidden="true"/></a></div>
             </div>
           </div>
           <p className={styles.availability}><ShieldCheck size={17} aria-hidden="true"/>{t.availability}</p>
@@ -312,7 +312,7 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
           <ol className={styles.questionGrid}>
             {t.questions.map((q, index) => <li key={index}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{q}</p></li>)}
           </ol>
-          <div className={styles.questionFooter}><span>{t.questionNote}</span><a href="#apply-answers" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
+          <div className={styles.questionFooter}><span>{t.questionNote}</span><a href={tantraInitiationWhatsAppUrl(locale, "answers")} target="_blank" rel="noopener noreferrer" className={styles.buttonWine}>{t.questionAction}<ArrowRight size={17} aria-hidden="true"/></a></div>
         </section>
 
         <section id="tantra-apply" className={styles.application} aria-labelledby="tantra-apply-title">
