@@ -168,10 +168,17 @@ export function ServicesSmartDiscovery({
 
   const listed = useMemo(() => rankDiscoveryServices(submitted,services,{category:activeCategory,limit:4}),[submitted,services,activeCategory]);
   const suggestions = useMemo(() => {
-    if (!aiOrder || !aiOrder.length) return listed;
-    const order = new Map(aiOrder.map((id,index)=>[id,index]));
-    return [...listed].sort((a,b)=>(order.get(a.service.id) ?? 1000)-(order.get(b.service.id) ?? 1000));
-  },[listed,aiOrder]);
+    if (!aiOrder?.length) return listed;
+    // The model is permitted to select ONLY existing published service IDs.
+    // Its choices can differ from the lexical shortlist, so do not reduce
+    // AI results to merely reshuffling that shortlist.
+    const fromAi = aiOrder.flatMap((id) => {
+      const service = services.find((item) => item.id === id && item.practitionerSlug && item.slug && item.copy?.title);
+      return service ? [{ service, areaKey: service.areaKey, score: 50, reasonKey: "explore" }] : [];
+    });
+    const chosen = new Set(fromAi.map((entry) => entry.service.id));
+    return [...fromAi, ...listed.filter((entry) => !chosen.has(entry.service.id))].slice(0,4);
+  },[listed,aiOrder,services]);
   const editorial = useMemo(
     () => rankEditorialDiscovery(submitted,editorialOffers,{category:activeCategory,limit:suggestions.length?2:4}),
     [submitted,editorialOffers,activeCategory,suggestions.length]
