@@ -97,8 +97,33 @@ export function ConsultationDocumentActions({
       </form>}
     </div>
 
+
+    {shareUrl&&<div className="consultation-share-link-ready">
+      <label htmlFor={'consultation-link-'+recordId}>{ru?'Личная ссылка на этот отчёт':'Private link to this report'}</label>
+      <div className="consultation-share-link-controls">
+        <input id={'consultation-link-'+recordId} readOnly type="text" value={shareUrl}
+          onFocus={event=>event.target.select()}
+          aria-label={ru?'Ссылка на отчёт клиента':'Client report link'}/>
+        <button type="button" onClick={retryCopy}>{ru?'Копировать ещё раз':'Copy again'}</button>
+      </div>
+    </div>}
     <p className="consultation-copy-feedback" role="status" aria-live="polite">
-      {status ? (ru?'Сначала опубликуйте страницу консультации с материалами или проверьте авторизацию.':'Publish the client session first, or check your sign-in.') : copiedLocale === locale ? labels.copiedFeedback : !active ? labels.disabled : ''}
+      {status==='manual'?(ru?'Ссылка получена, но Safari запретил автокопирование. Нажмите «Копировать ещё раз» или выделите адрес в поле.':'Link ready, but Safari blocked automatic copying. Tap Copy again or select the URL.'):
+       status==='not-published'?(ru?'Отчёт сохранён, но страница клиента ещё не опубликована. Проверьте её и нажмите «Опубликовать клиенту».':'Report saved, but the client page is not yet published. Review it and explicitly publish.'):
+       status==='changed'?(ru?'Опубликованная версия отчёта устарела. Проверьте и опубликуйте обновлённую страницу.':'The published report is outdated. Review and republish the updated page.'):
+       status==='expired'?(ru?'Доступ к ссылке истёк или отозван. Обновите приглашение в редакторе сессии.':'Invitation expired or revoked. Renew it in the session editor.'):
+       status==='unavailable'?(ru?'Сервис защищённых ссылок недоступен либо требуется повторный вход в кабинет специалиста.':'Private session links unavailable or practitioner sign-in expired.'):
+       status==='prepare-failed'?(ru?'Не удалось открыть редактор клиентской сессии. Проверьте авторизацию и повторите.':'Could not open the session editor. Check your sign-in and retry.'):
+       status==='failed'?(ru?'Не удалось получить ссылку. Попробуйте ещё раз.':'Could not retrieve the link. Try again.'):
+       copiedLocale===locale?labels.copiedFeedback:!active?labels.disabled:''}
     </p>
+    {needsPublication&&kind!=='payment'&&active&&clientId&&
+      <button className="consultation-prepare-session" type="button" disabled={preparing} onClick={prepare}>
+        {preparing?(ru?'Открываем редактор…':'Opening editor…'):
+          (ru?'Проверить и опубликовать страницу клиента →':'Review and publish client page →')}
+      </button>}
+    {needsPublication&&kind!=='payment'&&!clientId&&<p className="consultation-copy-feedback">
+      {ru?'Отчёт не связан с клиентом. Сначала укажите клиента в редакторе.':'Assign the report to a client before private sharing.'}
+    </p>}
   </>
 }
