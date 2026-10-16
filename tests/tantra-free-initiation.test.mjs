@@ -58,7 +58,7 @@ test("Tantra Reiki price and source PDF remain available without a bottom PDF fo
 });
 
 test("bottom lead capture is three direct WhatsApp actions, no web form", () => {
-  assert.match(form, /type Intent = "free" \| "personal" \| "answers"/);
+  assert.match(form, /type Intent = "free" \| "personal" \| "answers" \| "feedback"/);
   assert.match(form, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
   assert.match(form, /return whatsappEnquiryUrl\(\{/);
   assert.match(form, /request: t\.requests\[intent\]/);
@@ -86,14 +86,25 @@ test("new visual system stays isolated to its page and works on mobile", () => {
   assert.match(style, /prefers-reduced-motion: reduce/);
 });
 
-test("learn first: simple three steps precede video, study materials and the questions", () => {
+test("five steps put the flow review after video and optional distance initiation fifth", () => {
   const markers = ['id="how-to"', 'id="tantra-practice-video"', 'id="course-materials"', 'id="study-questions"', 'id="tantra-apply"'];
   const positions = markers.map(marker => landing.indexOf(marker));
   assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])), "learning flow must be sequential");
   assert.match(landing, /guideTitle: "Как получить Тантра Рейки бесплатно"/);
-  assert.equal((landing.match(/    guideSteps: \[/g)||[]).length,3);
+  const groups = [...landing.matchAll(/    guideSteps: \[([\s\S]*?)\n    \],/g)];
+  assert.equal(groups.length, 3, "five translated steps in EN/RU/ES");
+  for (const group of groups) assert.equal((group[1].match(/title: "/g) || []).length, 5);
+  assert.match(landing, /title: "Напишите отзыв"/);
+  assert.match(landing, /title: "Запишитесь на личную дистанционную инициацию"/);
+  assert.match(landing, /дистанционная инициация — по желанию/);
+  assert.match(landing, /tantraInitiationWhatsAppUrl\(locale, "feedback"\)/);
+  assert.match(landing, /guideLinks\[index\]/);
+  assert.match(landing, /data-personal=\{index === 4\}/);
+  assert.match(landing, /target=\{index === 1 \|\| index === 4 \? "_blank" : undefined\}/);
+  assert.match(landing, /rel=\{index === 1 \|\| index === 4 \? "noopener noreferrer" : undefined\}/);
   assert.match(landing, /t\.guideSteps\.map/);
-  assert.match(style, /\.howGrid\s*\{/);
+  assert.match(style, /\.howGrid\s*\{ display: grid; grid-template-columns: repeat\(2,/);
+  assert.match(style, /\.howCard\[data-personal="true"\]\s*\{/);
 });
 
 test("WhatsApp capture is compact, responsive and requests no name or email", () => {
@@ -101,7 +112,7 @@ test("WhatsApp capture is compact, responsive and requests no name or email", ()
   assert.match(style, /\.whatsappCapture \{/);
   assert.match(style, /\.hero \{[\s\S]*?min-height: 440px/);
   assert.match(style, /\.choiceFree, \.choicePersonal \{[\s\S]*?min-height: 232px/);
-  assert.match(style, /\.howCard \{[\s\S]*?min-height: 159px/);
+  assert.match(style, /\.howCard \{[\s\S]*?min-height: 138px/);
   assert.match(style, /\.questionGrid li \{[\s\S]*?min-height: 76px/);
   assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.whatsappActions \{ grid-template-columns: 1fr/);
   assert.match(form, /Никаких анкет, имени, email или регистрации/);
