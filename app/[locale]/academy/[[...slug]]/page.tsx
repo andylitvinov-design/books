@@ -104,7 +104,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           : "Complete current Reiki Yggdrasil curriculum: 7 modules, 37 steps, 177 attunements, separate landing pages and the video archive."
       : academyCopy[locale].lead;
   const seoOverride = seoMetaForAcademyRoute(locale, routeKey(slug));
-  return { metadataBase: metadataBaseFor(), title: (seoOverride?.title ?? title) + " — Holistic House", description: seoOverride?.description ?? description, alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix } } };
+  const resolvedTitle = (seoOverride?.title ?? title) + " — Holistic House";
+  const resolvedDescription = seoOverride?.description ?? description;
+  const tantraFreeInitiation = routeKey(slug) === "reiki/tantra-reiki/free-initiation";
+  const sharingImage = "/images/holistic-house/andy-about.png";
+  return {
+    metadataBase: metadataBaseFor(),
+    title: resolvedTitle,
+    description: resolvedDescription,
+    alternates: {
+      canonical: path,
+      languages: {
+        en: "/en/academy" + languageSuffix,
+        ru: "/ru/academy" + languageSuffix,
+        es: "/es/academy" + languageSuffix,
+        ...(tantraFreeInitiation ? { "x-default": "/en/academy" + languageSuffix } : {}),
+      },
+    },
+    ...(tantraFreeInitiation ? {
+      openGraph: {
+        type: "website" as const,
+        url: path,
+        siteName: "Holistic House",
+        locale: locale === "ru" ? "ru_RU" : locale === "es" ? "es_ES" : "en_US",
+        title: resolvedTitle,
+        description: resolvedDescription,
+        images: [{ url: sharingImage, alt: "Andrey Litvinov — Tantra Reiki teacher" }],
+      },
+      twitter: {
+        card: "summary_large_image" as const,
+        title: resolvedTitle,
+        description: resolvedDescription,
+        images: [sharingImage],
+      },
+    } : {}),
+  };
 }
 
 export default async function AcademyPage({ params, searchParams }: Props) {
