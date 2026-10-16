@@ -1,4 +1,5 @@
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
+import { inspectSavedClientReportPublication } from '@/lib/clients/report-auto-publish'
 import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
 import { notFound, redirect } from 'next/navigation'
 
@@ -9,12 +10,12 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 
-import { updatePrescriptionAction } from '../actions'
+import { updatePrescriptionAction, retryPrescriptionPublicationAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false, follow: false }, title: 'Edit recommendation' }
 
-export default async function EditPrescriptionPage({ params }) {
+export default async function EditPrescriptionPage({ params,searchParams }) {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const { id } = await params
   const store = getPrescriptionStore()
@@ -22,8 +23,23 @@ export default async function EditPrescriptionPage({ params }) {
   if (!prescription || prescription.kind === 'payment') notFound()
   const candidate = prescription.paymentDocumentId ? await store.findById(prescription.paymentDocumentId) : undefined
   const payment = candidate?.kind === 'payment' ? candidate : undefined
-  const action = updatePrescriptionAction.bind(null, prescription.id)
-  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Consultation documents" description="Create and share the payment document and recommendation separately." />{deliveryEnabled() && prescription.clientId && prescription.kind !== 'report' && prescription.status === 'active' && <ReportVideoMaterialsEditor key={prescription.id} clientId={prescription.clientId}
+  const action = updatePrescriptionAction.bind(null,prescription.id)
+  const publication=await inspectSavedClientReportPublication(prescription,store)
+  const ru=prescription.languagePreference==='ru'
+  const retry=retryPrescriptionPublicationAction.bind(null,prescription.id)
+  return <main className="prescription-admin-shell"><PrescriptionAdminHeader title="Consultation documents" description="Create and share the payment document and recommendation separately." />
+  {publication!=='skipped'&&<section className={'report-save-publication-state '+(publication==='published'?'report-save-publication-state--success':'')}
+    role="status">
+    <strong>{publication==='published'?(ru?'Сохранённый отчёт опубликован для клиента':'Saved report published privately'):
+      publication==='unlinked'?(ru?'Отчёт не привязан к клиенту':'Report is not linked to a client'):
+      (ru?'Отчёт сохранён. Публикация пока не подтверждена':'Report saved. Private publication not yet confirmed')}</strong>
+    <p>{publication==='published'?(ru?'Личная страница обновлена, ссылку можно скопировать ниже.':'The private client page is current. Copy its link below.'):
+      publication==='unlinked'?(ru?'Для приватной страницы создайте консультацию с выбранным клиентом.':'Use a consultation linked to a client for private sharing.'):
+      (ru?'Повторное заполнение отчёта не требуется.':'No need to enter the report again.')}</p>
+    {publication!=='published'&&publication!=='unlinked'&&<form action={retry}>
+      <button type="submit">{ru?'Повторить публикацию':'Retry private publication'}</button>
+    </form>}
+  </section>}{deliveryEnabled() && prescription.clientId && prescription.kind !== 'report' && prescription.status === 'active' && <ReportVideoMaterialsEditor key={prescription.id} clientId={prescription.clientId}
   documentId={prescription.id} sourceConsultationId={prescription.consultationId||prescription.id}
   locale={prescription.languagePreference==='ru'?'ru':'en'} />}<AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getConsultationRemedyOptions()} /></section></main>
 }
