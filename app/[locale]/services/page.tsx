@@ -75,7 +75,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
-      <PublicSiteHeader locale={locale} />
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
 
       <ServicesConversionHero locale={locale as Locale} />
       <ServicesTestsIntro locale={locale as Locale} />
