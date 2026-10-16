@@ -3,9 +3,9 @@
 .hh-app .hh-result-hero{padding-bottom:11px!important;margin-bottom:2px!important}
 .hh-app .hh-result-hero h1{font-size:clamp(1.65rem,4vw,2.35rem)!important;line-height:1.12!important;margin:3px 0 8px!important}
 .hh-app .hh-result-hero .hh-result-intro{font-size:.93rem!important;line-height:1.4!important;margin:4px 0!important;color:#716960;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
-.hh-app .hh-result-repeat{margin:10px 0 14px}
-.hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{width:100%;min-height:62px!important;display:flex;align-items:center;justify-content:center;padding:13px 20px!important;border-radius:15px!important;text-decoration:none;font-size:1.16rem!important;font-weight:800!important;border:1px solid #1c6956!important;background:#206c58!important;color:#fff!important;box-shadow:0 5px 13px #1c695520}
-.hh-app .hh-result-repeat button:hover{background:#195943!important}
+.hh-app .hh-result-repeat{margin:7px 0 5px}
+.hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{width:auto;max-width:100%;min-height:46px!important;display:inline-flex;align-items:center;justify-content:center;padding:9px 16px!important;border-radius:12px!important;text-decoration:none;font-size:.9rem!important;font-weight:750!important;border:1px solid #a9ccc0!important;background:#edf6f1!important;color:#225e4e!important;box-shadow:none!important}
+.hh-app .hh-result-repeat button:hover{background:#d9efe5!important}
 .hh-app .hh-result-repeat button:focus-visible,.hh-app .hh-result-repeat a:focus-visible{outline:3px solid #bf6944;outline-offset:3px}
 .hh-app .hh-result-repeat p[role=alert]{font-size:.94rem;color:#9b3737;margin:9px 0}
 .hh-app .hh-result-raw-details{margin:8px 0!important}
@@ -47,7 +47,7 @@
  .hh-app .hh-insights-test-summary{font-size:.8rem!important}
  .hh-app .hh-result-hero h1{font-size:1.72rem!important}
  .hh-app .hh-result-hero .hh-result-intro{font-size:.9rem!important}
- .hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{min-height:58px!important;font-size:1.07rem!important}
+ .hh-app .hh-result-repeat button,.hh-app .hh-result-repeat a{min-height:45px!important;font-size:.87rem!important;width:100%}
  .hh-app .hh-insights-period{gap:6px}
  .hh-app .hh-insights-period button{font-size:.78rem!important;padding:6px 10px!important}
 }
