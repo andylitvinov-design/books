@@ -158,6 +158,38 @@ async function exerciseFreeJourneys(page, engine, width) {
   assert.deepEqual(unexpectedApiRequests, [], 'Entry navigation must not submit or request private app data');
 }
 
+async function verifyHomeTestimonialPosters(page) {
+  // The published compact Home shows the first two EN sources. The full six-source
+  // catalog, three-video Services selection and written story remain independent.
+  const expectedIds = ['Dk0LBmOivQo', 'aUJde6A-9p0'];
+  const testimonials = page.locator('[data-personal-testimonials="home"]');
+  await expect(testimonials).toHaveCount(1);
+  await expect(testimonials).toHaveAttribute('lang', 'en');
+  const cards = testimonials.locator('[data-testimonial-video-id]');
+  await expect(cards).toHaveCount(2);
+  assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.testimonialVideoId)), expectedIds);
+  const videoPosters = testimonials.locator('.site-video-fallback-poster');
+  await expect(videoPosters).toHaveCount(2);
+  await expect(testimonials.locator('blockquote')).toHaveCount(1);
+  await expect(testimonials.locator('blockquote')).toBeVisible();
+  for (const id of expectedIds) {
+    const review = testimonials.locator(`[data-testimonial-video-id="${id}"]`);
+    await expect(review).toHaveCount(1);
+    const poster = review.locator('.site-video-fallback-poster');
+    await expect(poster).toHaveCount(1);
+    await expect(poster).toHaveAttribute('src', `/images/holistic-house/testimonial-posters/${id}.webp`);
+    await poster.scrollIntoViewIfNeeded();
+    await expect(poster).toBeVisible();
+    await expect.poll(() => poster.evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
+    await expect(review.locator('.site-video-play')).toHaveCount(1);
+    await expect(review.locator('iframe')).toHaveCount(0);
+    const watch = review.locator('.site-video-watch-link');
+    await expect(watch).toHaveCount(1);
+    await expect(watch).toHaveAttribute('href', `https://www.youtube.com/watch?v=${id}`);
+  }
+  return testimonials.locator('[data-testimonial-video-id="Dk0LBmOivQo"]');
+}
+
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
@@ -240,15 +272,7 @@ async function exercise(engine, browserType, width) {
     await capture.locator('button[data-home-free-option="stress"]').click();
     await expect(capture.locator('a[data-home-free-action="stress"]')).toHaveAttribute('href', '/en/client#cabinet-tests');
     await capture.locator('button[data-home-free-option="situation"]').click();
-    const videoPosters = page.locator('[data-personal-testimonials="home"] .site-video-fallback-poster');
-    await expect(videoPosters).toHaveCount(6);
-    await videoPosters.first().scrollIntoViewIfNeeded();
-    await expect.poll(() => videoPosters.first().evaluate(image => image.complete && image.naturalWidth > 100), { timeout: 15000 }).toBe(true);
-    // The first review image must be a frame from that exact review, not the botanical placeholder.
-    await expect(videoPosters.first()).toHaveAttribute('src', /Dk0LBmOivQo\.webp/);
-    const firstReview = page.locator('[data-personal-testimonials="home"] [data-testimonial-video-id="Dk0LBmOivQo"]');
-    await expect(firstReview.locator('.site-video-play')).toHaveCount(1);
-    await expect(firstReview.locator('.site-video-watch-link')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=Dk0LBmOivQo');
+    const firstReview = await verifyHomeTestimonialPosters(page);
     const portrait = page.locator('.service-home-about__image');
     await portrait.scrollIntoViewIfNeeded();
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);

@@ -144,7 +144,7 @@ for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
   }
 }
 
-const journeys = extract('async function exerciseFreeJourneys(', 'async function exercise(');
+const journeys = extract('async function exerciseFreeJourneys(', 'async function verifyHomeTestimonialPosters(');
 async function journeyScenario({ wrongBack = false, wrongDestination = false, privateRequest = false } = {}) {
   let url, home, selected, routeHandler;
   const results = [], openedHomes = [];
@@ -191,7 +191,8 @@ test('real-browser matrices, privacy, no-discard, visuals and errors stay mandat
     'assert.deepEqual(unexpectedApiRequests, []', 'assert.deepEqual(errors, [])',
     "frame.evaluate(element => element.isConnected)", "await expect(next).toHaveCount(0)",
     'measurements.overflow <= 2', 'measurements.cardCount, 4', 'measurements.contactChoices, 3',
-    "await expect(videoPosters).toHaveCount(6)", "firstReview.locator('iframe')",
+    "await expect(videoPosters).toHaveCount(2)", "firstReview.locator('iframe')",
+    'const firstReview = await verifyHomeTestimonialPosters(page)',
     'await exerciseFreeJourneys(page, engine, width)',
   ]) assert.ok(source.includes(text), text);
   assert.match(source, /finally \{\s+delayedLocale = null;\s+releaseHeldRsc\(\)/);
