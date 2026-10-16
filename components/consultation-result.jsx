@@ -56,6 +56,7 @@ export function ConsultationResult({ clientId, patientName, dateIssued, language
         (ru?'Отчёт сохранён и опубликован для клиента':'Report saved and published privately'):
         publication==='unlinked'?(ru?'Отчёт сохранён. Не выбран клиент':'Report saved. No client linked'):
         publication==='stale'?(ru?'Отчёт изменён — обновление ещё не опубликовано':'Report updated — client page needs refreshing'):
+        publicationAttempt==='failed'?(ru?'Отчёт сохранён, но автоматическая публикация не удалась':'Report saved, but automatic publication failed'):
         (ru?'Отчёт сохранён. Публикация ещё не завершена':'Report saved. Private publication is not complete')}</strong>
       <p>{publication==='published'?
         (ru?'Клиентская страница обновлена автоматически. Используйте «Копировать ссылку», чтобы отправить её клиенту. Доступ остаётся приватным.':
