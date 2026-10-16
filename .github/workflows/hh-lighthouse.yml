@@ -7,6 +7,8 @@ on:
       - '.github/workflows/hh-lighthouse.yml'
       - 'scripts/report-hh-lighthouse.mjs'
       - 'app/layout.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'tests/homepage-server-rendering.test.mjs'
       - 'app/academy.css'
       - 'app/temple-studies.css'
       - 'app/yggdrasil-basic-description.css'
