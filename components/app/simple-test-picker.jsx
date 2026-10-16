@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, Search, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
@@ -101,9 +101,11 @@ const TEXT = {
 // These keys are mapped to existing test facets and shared with Insights.
 const TEST_KIND_ICONS = { professional: GraduationCap, monitoring: Activity, hobby: Sparkles }
 const TOPIC_ICONS = { stress: Zap, anxiety: Heart, mood: Smile, sleep: Moon,
-  body: Sun, relationships: Users, resources: Leaf, attention: Target, function: BriefcaseBusiness }
+  body: Sun, relationships: Users, resources: Leaf, attention: Target, function: BriefcaseBusiness, health: CirclePlus }
 // The ninth visible topic reuses the existing functioning/work discovery facet.
-const TOPICS = [...HOME_TEST_TOPICS, { key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' }]
+const TOPICS = [...HOME_TEST_TOPICS, { key: 'function', en: 'Work & daily life', ru: 'Работа и дела', es: 'Trabajo y vida' },
+  // Existing physical-wellbeing/recovery scales, not a new medical test or diagnosis.
+  { key: 'health', en: 'Health', ru: 'Здоровье', es: 'Salud' }]
   .map((topic) => ({ ...topic, Icon: TOPIC_ICONS[topic.key] }))
 const BROWSE_TABS = [
   { key: 'all', label: { en: 'All', ru: 'Все', es: 'Todas' } },
