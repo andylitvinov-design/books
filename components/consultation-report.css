@@ -3155,3 +3155,126 @@
     display:none;
   }
 }
+
+
+/* Client report appendix disclosure v1.
+   Only full remedy descriptions collapse; the consultation analysis, scores,
+   source recommendations, practitioner notes and signature remain fully visible. */
+@media screen {
+  .canonical-document--editorial .canonical-remedy-appendix-description {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    display:block;
+    margin:10px 0 0;
+    padding:0;
+    border:1px solid #e3d8d9;
+    border-radius:13px;
+    background:#fffdfa;
+    box-shadow:0 3px 12px rgba(88,51,65,.045);
+    overflow:hidden;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure::after {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    display:flex;
+    gap:15px;
+    align-items:center;
+    justify-content:space-between;
+    min-height:60px;
+    padding:13px 17px;
+    list-style:none;
+    cursor:pointer;
+    color:var(--report-plum,#643147);
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::-webkit-details-marker {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    min-width:0;
+    flex:1;
+    margin:0;
+    color:var(--report-plum,#643147);
+    font:600 clamp(17px,2.8vw,22px)/1.32 Georgia,'Times New Roman',serif;
+    overflow-wrap:anywhere;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    content:"";
+    display:block;
+    flex:0 0 10px;
+    width:10px;
+    height:10px;
+    margin-right:5px;
+    border-right:2px solid #6b4960;
+    border-bottom:2px solid #6b4960;
+    transform:rotate(45deg);
+    transition:transform .18s ease;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure[open] > summary {
+    background:#fbf7f4;
+    border-bottom:1px solid #e8dcdf;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure[open] > summary::after {
+    transform:rotate(225deg);
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary:focus-visible {
+    outline:3px solid #3f8d81;
+    outline-offset:-3px;
+    border-radius:12px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    display:flow-root;
+    padding:18px;
+    min-width:0;
+  }
+}
+@media screen and (max-width:600px) {
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    min-height:56px;
+    padding:12px 14px;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    padding:14px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    transition:none;
+  }
+}
+@media print {
+  /* The print expander opens all source descriptions before this CSS runs. */
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure {
+    display:flow-root;
+    padding:14px 0;
+    margin:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:visible;
+    break-inside:auto;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary {
+    display:block;
+    padding:0;
+    list-style:none;
+    border:0;
+    background:transparent;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary::after {
+    display:none;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3 {
+    margin:0 0 12px;
+    color:#603248;
+    font:400 23px/1.23 Georgia,'Times New Roman',serif;
+    break-after:avoid;
+  }
+  .canonical-document--editorial details.canonical-remedy-profile-disclosure > .canonical-remedy-profile-content {
+    display:flow-root!important;
+    padding:0;
+    border:0;
+  }
+}
