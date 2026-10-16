@@ -6,6 +6,7 @@ import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { consultationSavingAvailable } from '@/lib/consultations/availability'
 import { changeConsultationDocumentStatus as changeDocumentStatus } from '@/lib/consultations/lifecycle'
 import { createConsultation, updateConsultation } from '@/lib/consultations/service'
+import { autoPublishSavedClientReport } from '@/lib/clients/report-auto-publish'
 
 function input(formData) {
   const fields = ['patientName', 'languagePreference', 'amount', 'currency', 'service', 'paymentStatus', 'paymentMethod', 'documentNumber', 'recommendationNumber', 'generalInstructions', 'analysis', 'additionalNotes', 'followUp', 'followUpDate']
@@ -43,9 +44,11 @@ export async function createConsultationAction(previous, formData) {
     else { data.clientId = String(formData.get('clientId') ?? ''); if (!data.clientId) throw new Error('Choose a client') }
     pair = await createConsultation(data, { store, requestId: String(formData.get('requestId') ?? '') }) }
   catch (error) { return { error: safeConsultationError(error) } }
-  redirect(pair.recommendation
-    ? `/admin/consultations/${pair.recommendation.id}`
-    : `/admin/payments/${pair.payment.id}`)
+  if (pair.recommendation) {
+    const publication=await autoPublishSavedClientReport(pair.recommendation,store)
+    redirect(`/admin/consultations/${pair.recommendation.id}?publication=${publication.status}`)
+  }
+  redirect(`/admin/payments/${pair.payment.id}`)
 }
 
 export async function updateConsultationAction(id, previous, formData) {
@@ -59,9 +62,30 @@ export async function updateConsultationAction(id, previous, formData) {
     (payment && formData.get('includeInvoice') === 'on' && formData.get('paymentRevision') !== payment.updatedAt)) {
     return { error: 'This consultation changed in another window. Reload before saving.' }
   }
-  try { await updateConsultation(recommendation, payment, input(formData), { store }) }
-  catch (error) { return { error: safeConsultationError(error) } }
-  redirect(`/admin/consultations/${id}`)
+  let result,values
+  try {
+    values=input(formData)
+    result=await updateConsultation(recommendation,payment,values,{store})
+  }
+  catch (error) { return { error:safeConsultationError(error) } }
+  // Unchecked recommendation means "do not update"; never publish an old
+  // source as if its author just approved another version.
+  const publication=values.includeRecommendation
+    ? await autoPublishSavedClientReport(result.recommendation,store)
+    : {status:'skipped'}
+  redirect(`/admin/consultations/${id}?publication=${publication.status}`)
+}
+
+// Safe retry after a durable report save if private delivery was temporarily
+// unavailable. Never creates or edits a second consultation document.
+export async function retryConsultationPublicationAction(id) {
+  if(!await requireAdminRequest()) redirect('/admin/login')
+  const store=getPrescriptionStore()
+  const record=store?await store.findById(id):null
+  if(!record||record.kind==='payment'||record.kind==='report')
+    redirect('/admin')
+  const outcome=await autoPublishSavedClientReport(record,store)
+  redirect(`/admin/consultations/${id}?publication=${outcome.status}`)
 }
 
 async function changeConsultationDocumentStatus(consultationId, documentId, status) {
