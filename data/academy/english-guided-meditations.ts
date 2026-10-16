@@ -2,9 +2,10 @@
 // creator/channel and YouTube ID have been independently checked.
 // The owner supplied two source recordings on 2026-10-09:
 // Tantra Reiki Practice (w2BN-HYmHUk) and Meditation - Reiki Yggdrasil Class. (80xZ7jN6o2Y).
-// Titles were cross-checked against original YouTube page metadata; Flight to the Sun remains unverified.
+// The owner supplied Sun Flight (HqfixazXqRY) and Kundalini Reiki Meditation (_IOX0E8N-To) on 2026-10-16.
+// Original YouTube titles confirmed: "Sun Flight Meditation. Step 1" and "Kundalini Reiki Meditation. www.aata.pro".
 export type EnglishGuidedMeditation = {
-  key: "flight-to-sun" | "tantra-reiki" | "reiki-yggdrasil";
+  key: "flight-to-sun" | "tantra-reiki" | "reiki-yggdrasil" | "kundalini-reiki";
   title: string;
   description: string;
   image: string;
@@ -17,8 +18,8 @@ export const englishGuidedMeditations: readonly EnglishGuidedMeditation[] = [
     title: "Flight to the Sun",
     description: "An introductory shamanic flight: a guided visualisation exploring attention, imagination and the image of the sun.",
     image: "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
-    courseHref: "/en/academy/reiki",
-    youtubeId: null,
+    courseHref: "/en/academy/principles-of-energywork",
+    youtubeId: "HqfixazXqRY",
   },
   {
     key: "tantra-reiki",
@@ -35,5 +36,13 @@ export const englishGuidedMeditations: readonly EnglishGuidedMeditation[] = [
     image: "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
     courseHref: "/en/academy/reiki/yggdrasil",
     youtubeId: "80xZ7jN6o2Y",
+  },
+  {
+    key: "kundalini-reiki",
+    title: "Kundalini Reiki Meditation",
+    description: "Andrey’s original English-language Kundalini Reiki guided meditation, supplied by the teacher for this course.",
+    image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
+    courseHref: "/en/academy/reiki/kundalini-reiki",
+    youtubeId: "_IOX0E8N-To",
   },
 ];
