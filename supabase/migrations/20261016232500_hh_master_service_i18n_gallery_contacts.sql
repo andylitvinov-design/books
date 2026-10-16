@@ -31,7 +31,7 @@ for insert to authenticated
 with check (
   bucket_id='hh-service-photos'
   and (storage.foldername(name))[1] = (select auth.uid())::text
-  and storage.filename(name) ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.jpg$'
+  and storage.filename(name) ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}[.]jpg$'
   and exists (
     select 1 from app.practitioners p
     where p.trusted_auth_user_id=(select auth.uid())
