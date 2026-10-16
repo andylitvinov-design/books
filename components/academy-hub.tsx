@@ -251,7 +251,7 @@ export function AcademyDirection({ locale, direction }: { locale: PublicLocale; 
       const rank = (id: string) => id === "reiki/yggdrasil" ? 0 : id === "reiki/tantra-reiki" ? 1 : id === "reiki/kundalini-reiki" ? 2 : 3;
       return rank(a.logicalId) - rank(b.logicalId);
     });
-  const items = records.map((record, index) => ({
+  const items: AcademyItem[] = records.map((record, index) => ({
     key: record.logicalId,
     title: academyDisplayTitle(record, locale),
     href: "/" + locale + "/academy/" + record.routeKey,
