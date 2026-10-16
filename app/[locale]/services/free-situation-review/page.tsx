@@ -23,28 +23,29 @@ const copy = {
       "Я лично анализирую материалы и высылаю письменный отчёт по ситуации.",
     ],
     scopeLimit: "Это символическая интерпретация ситуации, не медицинская или психиатрическая диагностика, не назначение лечения и не гарантия результата. Платная консультация необязательна.",
-    title: "Бесплатная диагностика ситуации по рисунку",
+    title: "Бесплатная диагностика ситуации и личная консультация",
     description: "Бесплатно: коучинг-форма, рисунок от руки «Я, цель, проблема» и персональный письменный отчёт от Андрея Литвинова. Не звонок и не медицинская диагностика.",
-    eyebrow: "БЕСПЛАТНО · КОУЧИНГ-ФОРМА + РИСУНОК + ПИСЬМЕННЫЙ ОТЧЁТ",
-    heading: "Бесплатная диагностика вашей ситуации по рисунку",
-    lead: "Опишите вашу проблему в короткой анкете. Нарисуйте на бумаге ручкой себя, цель и проблему. Я проанализирую рисунок и ответы и пришлю персональный письменный отчёт — без обязательной личной сессии.",
+    eyebrow: "ЛИЧНЫЙ РАЗБОР · АНДРЕЙ ЛИТВИНОВ · Торонто и онлайн",
+    heading: "Разберём вашу ситуацию. Начните бесплатно.",
+    lead: "Расскажите, что вас беспокоит, и нарисуйте «Я — цель — проблема». Я лично изучу ваши ответы и рисунок и пришлю письменный разбор с темами для размышления и возможными следующими шагами.",
     bullets: ["Заполните коучинг-форму", "Нарисуйте «Я — цель — проблема» от руки", "Получите письменный отчёт"],
-    free: "Бесплатно · Онлайн · Письменный отчёт · Без звонка",
-    request: "Начать бесплатную диагностику",
+    free: "€0 · Лично от Андрея · Письменный отчёт · Без платной подписки",
+    request: "Получить бесплатный письменный разбор",
+    paidQuick: "Личная консультация · от €50",
     practitioner: "Андрей Литвинов",
     experience: "Личная и групповая практика с 2002 года",
     transparency: "Диагностика — в смысле символического анализа рисунка и ситуации. Не является медицинским диагнозом или гарантией результата.",
     stepsEyebrow: "КАК ЭТО РАБОТАЕТ",
     stepsHeading: "Три простых шага",
-    stepsLead: "Вместо бесплатной вводной беседы вы присылаете свои материалы, а я готовлю для вас письменный разбор.",
+    stepsLead: "Всего два простых действия от вас — и письменный ответ от меня.",
     steps: [
       { title: "Коучинг-форма", text: "Кратко опишите проблему, свою цель и то, что мешает двигаться." },
       { title: "Рисунок на бумаге", text: "Ручкой нарисуйте «Я», «Цель», «Проблема», сфотографируйте и отправьте вместе с анкетой." },
       { title: "Ваш письменный отчёт", text: "Я изучаю ответы и рисунок и лично высылаю интерпретацию ситуации." },
     ],
     paidEyebrow: "ОТДЕЛЬНАЯ ПЛАТНАЯ УСЛУГА",
-    paidTitle: "Хотите личную сессию?",
-    paidLead: "Личный разговор и работа в реальном времени оплачиваются отдельно. Бесплатная диагностика не обязывает записываться.",
+    paidTitle: "Хотите обсудить ситуацию лично?",
+    paidLead: "На встрече мы вместе исследуем вашу ситуацию, отношения или решение, а я предложу подходящий формат работы. Онлайн или в Торонто. Это отдельная платная услуга; бесплатный письменный разбор доступен без неё.",
     paidOptions: [
       { label: "Экспресс-консультация · 30 минут", price: "€50", message: "Услуга: Личная экспресс-консультация с Андреем Литвиновым\nЗапрос: хочу записаться на платную экспресс-сессию 30 минут за €50. Подскажите доступное время." },
       { label: "Полная личная сессия · 60 минут", price: "€100", message: "Услуга: Полная личная консультация с Андреем Литвиновым\nЗапрос: хочу записаться на платную личную сессию 60 минут за €100. Подскажите доступное время." },
@@ -57,7 +58,7 @@ const copy = {
       { title: "Работа с внутренними образами", text: "Исследование чувств, повторяющихся реакций и внутренней опоры.", href: "imagery-therapy" },
       { title: "Системные расстановки и архетипы", text: "Символическое исследование отношений, жизненных и деловых решений.", href: "systemic-constellations" },
     ],
-    aboutHeading: "Диагностику провожу я лично",
+    aboutHeading: "Давайте начнём с вашего вопроса",
     aboutText: "Я внимательно изучаю заполненную коучинг-форму и рисунок, чтобы подготовить письменное наблюдение за вашей ситуацией. Если вы пожелаете отдельный разговор, доступны платные личные сессии.",
     aboutLink: "Подробнее обо мне",
     faqTitle: "Частые вопросы",
@@ -81,28 +82,29 @@ const copy = {
       "I personally review the answers and drawing and send you a written situation report.",
     ],
     scopeLimit: "This is an interpretive, symbolic assessment, not a medical or psychiatric diagnosis, prescription or guaranteed outcome. Booking a paid session is optional.",
-    title: "Free situation & drawing assessment",
+    title: "Free Situation Review & Personal Consultation",
     description: "Free coaching questionnaire + hand-drawn ME / GOAL / PROBLEM drawing, with a personal written report from Andrey Litvinov. No free call or medical diagnosis.",
-    eyebrow: "FREE · COACHING FORM + HAND DRAWING + WRITTEN REPORT",
-    heading: "A free situation assessment based on your drawing",
-    lead: "Describe your concern in a short coaching form. Draw yourself, your goal and your problem by hand on paper. I'll review both and send a personal written report — no live consultation required.",
+    eyebrow: "PERSONAL GUIDANCE · ANDREY LITVINOV · TORONTO & ONLINE",
+    heading: "Understand your situation. Start with a free personal review.",
+    lead: "Tell me what is happening and draw ME · GOAL · PROBLEM on paper. I will personally review your answers and drawing and send a written reflection on your situation and possible next steps.",
     bullets: ["Complete the coaching questionnaire", "Draw ME · GOAL · PROBLEM by hand", "Receive your written report"],
-    free: "Free · Online · Written report · No call required",
-    request: "Start my free drawing assessment",
+    free: "€0 · Personally reviewed · Written report · No paid booking required",
+    request: "Get my free written review",
+    paidQuick: "Personal consultation · from €50",
     practitioner: "Andrey Litvinov",
     experience: "Facilitating personal and group development since 2002",
     transparency: "The word assessment refers to symbolic reflection on a drawing and situation, not a medical diagnosis or a promised result.",
     stepsEyebrow: "HOW IT WORKS",
     stepsHeading: "Three simple steps",
-    stepsLead: "Instead of a free introductory call, you send your materials and I prepare a written situation review.",
+    stepsLead: "Two simple actions from you, then a personal written response from me.",
     steps: [
       { title: "Coaching questionnaire", text: "Briefly describe your problem, goal and what feels difficult." },
       { title: "Pen-and-paper drawing", text: "Draw ME, GOAL and PROBLEM by hand, take a photo and send it with your answers." },
       { title: "Your written report", text: "I review your questionnaire and drawing and send my personal interpretation in writing." },
     ],
     paidEyebrow: "SEPARATE PAID SERVICE",
-    paidTitle: "Prefer a personal session?",
-    paidLead: "Live, one-to-one consultations are booked separately. You can receive the free written assessment without booking a session.",
+    paidTitle: "Prefer to explore your question together?",
+    paidLead: "In a one-to-one session we explore your situation, relationships or decisions together, using a method that fits your question. Online or in Toronto. This is optional; the free written review does not require a session.",
     paidOptions: [
       { label: "Express consultation · 30 minutes", price: "€50", message: "Service: Personal express consultation with Andrey Litvinov\nRequest: I'd like to book a paid 30-minute express session for €50. Please let me know availability." },
       { label: "Full personal session · 60 minutes", price: "€100", message: "Service: Full personal consultation with Andrey Litvinov\nRequest: I'd like to book a paid 60-minute personal session for €100. Please let me know availability." },
@@ -115,7 +117,7 @@ const copy = {
       { title: "Guided imagery & inner stability", text: "Explore emotional patterns, recurring reactions and inner support.", href: "imagery-therapy" },
       { title: "Systemic & archetypal constellations", text: "Explore relationships, life decisions and business situations symbolically.", href: "systemic-constellations" },
     ],
-    aboutHeading: "I personally review your drawing",
+    aboutHeading: "Let’s begin with your question",
     aboutText: "I read your coaching answers and study your handwritten drawing to prepare personal written observations about your situation. If you would prefer to talk, paid sessions are available separately.",
     aboutLink: "Read about my work",
     faqTitle: "Questions before you begin",
@@ -139,28 +141,29 @@ const copy = {
       "Reviso personalmente las respuestas y el dibujo y te envío un informe escrito.",
     ],
     scopeLimit: "Es una interpretación simbólica, no un diagnóstico médico o psiquiátrico, receta ni resultado garantizado. Una consulta de pago es opcional.",
-    title: "Evaluación gratuita mediante dibujo",
+    title: "Revisión gratuita y consulta personal",
     description: "Formulario de coaching y dibujo a mano (YO, META, PROBLEMA) con un informe personal escrito de Andrey Litvinov. Sin llamada gratuita ni diagnóstico médico.",
-    eyebrow: "GRATIS · FORMULARIO + DIBUJO A MANO + INFORME ESCRITO",
-    heading: "Evaluación gratuita de tu situación mediante un dibujo",
-    lead: "Describe tu problema en un formulario breve, dibuja a mano tu persona, meta y problema. Revisaré ambos materiales y te enviaré un informe personal escrito, sin llamada obligatoria.",
+    eyebrow: "ORIENTACIÓN PERSONAL · ANDREY LITVINOV · TORONTO Y ONLINE",
+    heading: "Comprende tu situación. Empieza con una revisión gratuita.",
+    lead: "Cuéntame qué sucede y dibuja YO · META · PROBLEMA en papel. Revisaré personalmente tu formulario y dibujo y te enviaré un informe escrito con posibles próximos pasos.",
     bullets: ["Completa el formulario de coaching", "Dibuja YO · META · PROBLEMA en papel", "Recibe tu informe escrito"],
-    free: "Gratis · Online · Informe escrito · Sin llamada",
-    request: "Iniciar evaluación gratuita",
+    free: "€0 · Revisión personal · Informe escrito · Sin reserva de pago",
+    request: "Recibir revisión escrita gratuita",
+    paidQuick: "Consulta personal · desde €50",
     practitioner: "Andrey Litvinov",
     experience: "Experiencia en desarrollo personal y trabajo grupal desde 2002",
     transparency: "La evaluación es un análisis simbólico, no un diagnóstico médico ni una promesa de resultados.",
     stepsEyebrow: "CÓMO FUNCIONA",
     stepsHeading: "Tres pasos sencillos",
-    stepsLead: "No hay una llamada introductoria gratuita: envías el formulario y dibujo, y preparo un informe personal escrito.",
+    stepsLead: "Dos pasos sencillos por tu parte y después una respuesta escrita de mi parte.",
     steps: [
       { title: "Formulario de coaching", text: "Describe tu problema, meta y aquello que te dificulta avanzar." },
       { title: "Dibujo con bolígrafo", text: "Dibuja YO, META y PROBLEMA en papel; toma una foto y envíala con tus respuestas." },
       { title: "Tu informe escrito", text: "Reviso ambos materiales y te envío una interpretación personal por escrito." },
     ],
     paidEyebrow: "SERVICIO DE PAGO APARTE",
-    paidTitle: "¿Prefieres una sesión personal?",
-    paidLead: "Las consultas individuales en directo se reservan por separado. La evaluación escrita gratuita no exige una sesión.",
+    paidTitle: "¿Prefieres conversar en una sesión personal?",
+    paidLead: "En una sesión individual exploramos juntos tu situación, relaciones o decisiones. Online o en Toronto. Es una opción de pago independiente; no necesitas reservarla para obtener la revisión escrita gratuita.",
     paidOptions: [
       { label: "Consulta exprés · 30 minutos", price: "€50", message: "Servicio: Consulta exprés personal con Andrey Litvinov\nSolicitud: quisiera reservar una consulta de pago de 30 minutos por €50. Indícame la disponibilidad." },
       { label: "Sesión personal completa · 60 minutos", price: "€100", message: "Servicio: Sesión personal completa con Andrey Litvinov\nSolicitud: quisiera reservar una sesión de pago de 60 minutos por €100. Indícame la disponibilidad." },
@@ -173,7 +176,7 @@ const copy = {
       { title: "Imágenes guiadas y apoyo interior", text: "Explorar emociones, reacciones y estabilidad interior.", href: "imagery-therapy" },
       { title: "Constelaciones sistémicas y arquetípicas", text: "Explorar de modo simbólico relaciones y decisiones personales o laborales.", href: "systemic-constellations" },
     ],
-    aboutHeading: "Reviso personalmente tu dibujo",
+    aboutHeading: "Empecemos por tu pregunta",
     aboutText: "Leo tu formulario de coaching y examino el dibujo a mano para enviarte observaciones escritas sobre tu situación. Las sesiones personales en directo son de pago por separado.",
     aboutLink: "Conoce mi trabajo",
     faqTitle: "Preguntas frecuentes",
@@ -257,7 +260,10 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             {t.bullets.map((point) => <li key={point}><CheckCircle2 size={21} aria-hidden="true"/><span>{point}</span></li>)}
           </ul>
           <p className={styles.freeLine}>{t.free}</p>
-          <a className={styles.mobileCta} href="#request-free-review">{t.request} <ArrowRight size={18} aria-hidden="true"/></a>
+          <div className={styles.heroActions}>
+            <a className={styles.heroPrimary} href="#request-free-review">{t.request} <ArrowRight size={18} aria-hidden="true" /></a>
+            <a className={styles.heroSecondary} href="#personal-consultation">{t.paidQuick} <ArrowRight size={17} aria-hidden="true" /></a>
+          </div>
           <div className={styles.introContact}>
             <div className={styles.photo}>
               <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="88px" />
@@ -268,6 +274,40 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         </div>
         <div className={styles.capturePanel} id="request-free-review">
           <FreeSituationReviewForm locale={locale} />
+        </div>
+      </section>
+
+      <section className={styles.details} id="how-it-works" aria-labelledby="review-steps-title">
+        <header className={styles.sectionIntro}>
+          <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
+          <h2 id="review-steps-title">{t.stepsHeading}</h2>
+          <p>{t.stepsLead}</p>
+        </header>
+        <ol className={styles.steps}>
+          {t.steps.map((step, index) => (
+            <li key={step.title}>
+              <span className={styles.stepNumber}>0{index + 1}</span>
+              <div><h3>{step.title}</h3><p>{step.text}</p></div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={styles.paid} id="personal-consultation" aria-labelledby="review-paid-title">
+        <div>
+          <p className={styles.eyebrow}>{t.paidEyebrow}</p>
+          <h2 id="review-paid-title">{t.paidTitle}</h2>
+          <p>{t.paidLead}</p>
+        </div>
+        <div className={styles.paidOptions}>
+          {t.paidOptions.map((option) => (
+            <a key={option.label}
+              href={"https://wa.me/14376066502?text=" + encodeURIComponent(option.message)}
+              target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp">
+              <span>{option.label}</span><strong>{option.price}</strong><MessageCircle size={18} aria-hidden="true" />
+            </a>
+          ))}
+          <p>{t.paidNote}</p>
         </div>
       </section>
 
@@ -288,53 +328,9 @@ export default async function FreeSituationReviewPage({ params }: Props) {
         <p>{sampleCopy[locale].note}</p>
       </details>
 
-      <section className={styles.details} id="how-it-works" aria-labelledby="review-steps-title">
-        <header className={styles.sectionIntro}>
-          <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
-          <h2 id="review-steps-title">{t.stepsHeading}</h2>
-          <p>{t.stepsLead}</p>
-        </header>
-        <ol className={styles.steps}>
-          {t.steps.map((step, index) => (
-            <li key={step.title}>
-              <span className={styles.stepNumber}>0{index + 1}</span>
-              <div><h3>{step.title}</h3><p>{step.text}</p></div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className={styles.scope} aria-labelledby="review-scope-title">
-        <p className={styles.eyebrow}>{t.stepsEyebrow}</p>
-        <h2 id="review-scope-title">{t.scopeTitle}</h2>
-        <p>{t.scopeIntro}</p>
-        <ul>{t.scopeItems.map(item => <li key={item}><CheckCircle2 size={19} aria-hidden="true"/><span>{item}</span></li>)}</ul>
-        <p className={styles.scopeLimit}>{t.scopeLimit}</p>
-      </section>
-
-      <section className={styles.paid} aria-labelledby="review-paid-title">
-        <div>
-          <p className={styles.eyebrow}>{t.paidEyebrow}</p>
-          <h2 id="review-paid-title">{t.paidTitle}</h2>
-          <p>{t.paidLead}</p>
-        </div>
-        <div className={styles.paidOptions}>
-          {t.paidOptions.map((option) => (
-            <a key={option.label}
-              href={"https://wa.me/14376066502?text=" + encodeURIComponent(option.message)}
-              target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp">
-              <span>{option.label}</span><strong>{option.price}</strong><MessageCircle size={18} aria-hidden="true" />
-            </a>
-          ))}
-          <p>{t.paidNote}</p>
-        </div>
-      </section>
-
-      <section className={styles.directions} aria-labelledby="review-directions-title">
-        <header className={styles.sectionIntro}>
-          <h2 id="review-directions-title">{t.directionsTitle}</h2>
-          <p>{t.directionsLead}</p>
-        </header>
+      <details className={styles.directions}>
+        <summary className={styles.directionsSummary}>{t.directionsTitle}</summary>
+        <p className={styles.directionsLead}>{t.directionsLead}</p>
         <div className={styles.directionList}>
           {t.directions.map((direction, index) => (
             <article key={direction.href}>
@@ -344,7 +340,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
             </article>
           ))}
         </div>
-      </section>
+      </details>
 
       <section className={styles.about} aria-labelledby="review-about-title">
         <div className={styles.aboutPhoto}><Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill sizes="(max-width: 767px) 100vw, 380px" /></div>

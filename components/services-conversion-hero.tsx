@@ -11,9 +11,10 @@ const copy = {
     lead: "Три бесплатных способа начать: мониторинг психологического состояния и внутренних ресурсов, личный разбор ситуации или профиль У-Син. Личная работа — по желанию.",
     mobileLead: "Начните бесплатно: тесты самочувствия, письменный разбор ситуации или профиль ресурсов У-Син.",
     benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
-    cta: "Бесплатный разбор ситуации",
+    cta: "Получить бесплатный письменный разбор",
+    paidCta: "Личная консультация · от €50",
     secondary: "Все три бесплатных варианта",
-    small: "Бесплатный разбор — письменный, без обязательного созвона",
+    small: "Бесплатно: ваша анкета и рисунок → персональный письменный разбор. Личная встреча — отдельно и по желанию.",
     workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
     solutions: "Личные форматы работы",
     imageLabel: "Лично с Андреем Литвиновым",
@@ -25,9 +26,10 @@ const copy = {
     lead: "Three free ways to begin: free mental wellbeing and inner resources monitoring, a personal situation review, or a Wu Xing resource profile. Personal sessions are optional.",
     mobileLead: "Start free with wellbeing tests, a written situation review or a Wu Xing resource profile.",
     benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
-    cta: "Get a free situation review",
+    cta: "Get a free written review",
+    paidCta: "Personal consultation · from €50",
     secondary: "See all three free options",
-    small: "The free situation review is written, not a free call",
+    small: "Free: your form and drawing → personal written feedback. A live one-to-one session is separate and optional.",
     workWith: "Personal work with Andrey Litvinov, in Toronto and online",
     solutions: "Explore personal work options",
     imageLabel: "Personal work with Andrey Litvinov",
@@ -39,9 +41,10 @@ const copy = {
     lead: "Tres formas gratuitas de empezar: cuestionarios de autoobservación, revisión escrita de tu situación o perfil simbólico Wu Xing. Las sesiones personales son opcionales.",
     mobileLead: "Empieza gratis: cuestionarios de bienestar, revisión escrita o perfil de recursos Wu Xing.",
     benefits: ["3 maneras de empezar gratis", "Sesiones individuales opcionales", "Toronto y en línea"],
-    cta: "Solicitar revisión escrita gratuita",
+    cta: "Recibir revisión escrita gratuita",
+    paidCta: "Consulta personal · desde €50",
     secondary: "Opciones gratuitas y cursos",
-    small: "La revisión gratuita es por escrito, no una llamada gratuita.",
+    small: "Gratis: formulario y dibujo → informe personal escrito. La sesión en directo es opcional y de pago.",
     workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
     solutions: "Explorar los servicios personales",
     imageLabel: "Personalmente con Andrey Litvinov",
@@ -61,6 +64,9 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         <div className={styles.actions}>
           <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
+          </Link>
+          <Link className={styles.paidLink} href={"/" + locale + "/services/free-situation-review#personal-consultation"}>
+            {t.paidCta}<ArrowRight size={17} aria-hidden="true" />
           </Link>
           <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
           <Link className={styles.secondary} href="#solutions">{t.solutions}<ArrowRight size={17} aria-hidden="true" /></Link>
