@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import styles from './client-session.module.css'
@@ -13,7 +14,7 @@ export function SessionPrivateVideoPoster({src}) {
     if(!box||!probe||!src)return
     let active=true,loaded=false,captured=false,observer=null
     function capture(){
-      if(!active||captured||probe.readyState<2||!probe.videoWidth||!probe.videoHeight)return
+      if(!active||captured||probe.seeking||probe.readyState<2||!probe.videoWidth||!probe.videoHeight)return
       try {
         const width=Math.min(640,probe.videoWidth)
         const height=Math.max(1,Math.round(width*probe.videoHeight/probe.videoWidth))
@@ -76,7 +77,6 @@ export function SessionPrivateVideoPoster({src}) {
   return <div className={styles.privateVideoStill} aria-hidden="true" ref={holder}>
     <video ref={video} className={styles.privateVideoStillFrame}
       muted playsInline preload="none" tabIndex={-1}/>
-    {frame&&/* eslint-disable-next-line @next/next/no-img-element */<img
-      className={styles.privateVideoStillFrame} src={frame} alt=""/>}
+    {frame&&<img className={styles.privateVideoStillFrame} src={frame} alt=""/>}
   </div>
 }
