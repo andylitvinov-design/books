@@ -180,7 +180,7 @@ async function chooseSinglePublicTestAfterCatalog(target,name){
  await expect(checked).toHaveAttribute('aria-label',name)
 }
 // Account writes must originate in the actual authenticated My Tests picker.
-async function chooseSingleAccountTest(target,name){
+async function chooseSingleAccountTest(target,name,{beforeSelection=null}={}){
  await target.goto(origin+'/en/app/tests')
  await expect(target).toHaveURL(origin+'/en/app/tests')
  await expect(target.locator('[data-my-tests-dashboard]')).toBeVisible()
@@ -207,6 +207,7 @@ async function chooseSingleAccountTest(target,name){
    .toEqual(names.slice(index+1).sort())
  }
  await expect(checked).toHaveCount(0)
+ if(beforeSelection)await beforeSelection(explorer)
  await chooseVisibleTest(explorer,name)
  await expect(checked).toHaveCount(1)
  await expect(checked).toHaveAttribute('aria-label',name)
@@ -1058,7 +1059,32 @@ try {
  const repeatSelectionPage=await other.newPage()
  const reuseWrites=[]
  repeatSelectionPage.on('response',response=>{if(new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST')reuseWrites.push(response.status())})
- const repeatExplorer=await chooseSingleAccountTest(repeatSelectionPage,'Personality Baseline')
+ // Reuse restores the saved Anxiety priority, which excludes this unselected test.
+ // Temporarily change that visible filter, then restore it before the only write.
+ let repeatAnxiety
+ const repeatExplorer=await chooseSingleAccountTest(repeatSelectionPage,'Personality Baseline',{
+  beforeSelection:async explorer=>{
+   const toggle=explorer.locator('button[aria-controls="hh-test-customizer"]')
+   await expect(toggle).toHaveCount(1)
+   if((await toggle.getAttribute('aria-expanded'))!=='true')await toggle.click()
+   await expect(toggle).toHaveAttribute('aria-expanded','true')
+   const guided=explorer.locator('#hh-test-customizer')
+   const topics=guided.getByRole('button',{name:/^Topics that matter/})
+   await expect(topics).toHaveCount(1)
+   await topics.click()
+   const group=guided.getByRole('group',{name:'Filter tests by your concerns',exact:true})
+   await expect(group).toHaveCount(1)
+   repeatAnxiety=group.getByRole('button',{name:'Anxiety & worry',exact:true})
+   await expect(repeatAnxiety).toHaveCount(1)
+   await expect(repeatAnxiety).toHaveAttribute('aria-pressed','true')
+   await repeatAnxiety.click()
+   await expect(repeatAnxiety).toHaveAttribute('aria-pressed','false')
+  },
+ })
+ await repeatAnxiety.click()
+ await expect(repeatAnxiety).toHaveAttribute('aria-pressed','true')
+ await expect(repeatExplorer.getByRole('checkbox',{name:'Personality Baseline',exact:true,checked:true})).toHaveCount(1)
+ assert.deepEqual(reuseWrites,[],'filter changes and exact selection do not write the account')
  const [reuseResponse]=await Promise.all([
   repeatSelectionPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/app/test-plans'&&response.request().method()==='POST'),
   repeatExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click(),
@@ -1070,6 +1096,8 @@ try {
  assert.equal(reusedPlan.id,selectedPlan.id)
  assert.deepEqual(reusedPlan.definitionIds,selectedPlan.definitionIds)
  assert.deepEqual(reusedPlan.completedRunIds,selectedPlan.completedRunIds)
+ assert.deepEqual(reusedPlan.selectionPreferences,selectedPlan.selectionPreferences,
+  'explicit repeat selection restores every saved preference before the idempotent write')
  assert.deepEqual(reuseWrites,[201],'reselecting the same set performs exactly one idempotent account save')
  await expect(repeatSelectionPage.locator('[data-pending-selection]')).toHaveCount(0)
  await repeatSelectionPage.close()

@@ -83,5 +83,5 @@ test('Russian Stress uses the unique accessible concern group, never positional 
 test('account exact/order/history and cross-user coverage remains in real browser acceptance',()=>{
  for(const text of ['[...savedBeforeSignout.definitionIds,newPublicTest.definition.id]','assert.deepEqual(selectedPlan.definitionIds,[personalityDefinition.id]','assert.deepEqual(selectionWrites,[201]','assert.equal(reusedPlan.id,selectedPlan.id)','assert.deepEqual(reusedPlan.completedRunIds,selectedPlan.completedRunIds)','assert.equal(afterRemove.results.length,beforeRemove.results.length','assert.equal(afterRemove.runs.length,beforeRemove.runs.length',"assert.equal((await api('results/'+first.id,null,other)).status,404)","assert.equal(beforeConsent.status,403)"])assert.ok(source.includes(text),text)
  assert.match(source,/const appendExplorer=await chooseSingleAccountTest\(page,newPublicTest.title\)/)
- assert.match(source,/const repeatExplorer=await chooseSingleAccountTest\(repeatSelectionPage,'Personality Baseline'\)/)
+ assert.match(source,/const repeatExplorer=await chooseSingleAccountTest\(repeatSelectionPage,'Personality Baseline',/)
 })
