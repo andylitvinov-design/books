@@ -46,7 +46,6 @@ import { SAFETY_COPY } from '@/lib/assessments/safety'
 import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
-import CrmManager from '@/components/app/crm-manager'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
 import { isNativePsiAlchemy } from '@/lib/native/client'
@@ -513,7 +512,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
-          {page === 'practice' && <><PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />{data.practitioner && <CrmManager key={data.account.id} accountId={data.account.id} locale={locale} />}</>}
+          {page === 'practice' && <PracticeWorkspace locale={locale} accountId={data.account.id} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
