@@ -17,12 +17,12 @@ const text = {
     personalHelp: "Request a personal 60-minute Level 1 initiation (€100 per level). Andrey will confirm the date and format.",
     pdfHelp: "Get the full study and pricing PDF immediately. No registration or contact details are required.",
     answersHelp: "Type your responses or attach a document from your phone. Share it directly with Andrey; no file is stored by this page.",
-    name: "Your name", contact: "Email or preferred contact", namePlaceholder: "Your name",
-    contactPlaceholder: "Email / Telegram / WhatsApp", answers: "Your seven answers (optional if you attach a file)",
+    name: "Your name (optional)", namePlaceholder: "Your name",
+    answers: "Your seven answers (optional if you attach a file)",
     answersPlaceholder: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "Attach a document with your answers", fileHint: "PDF, DOC, DOCX, TXT or images · up to 8 MB",
     download: "Download free PDF", submit: "Continue in WhatsApp", share: "Share answers / file",
-    note: "For requests, WhatsApp opens with your details. Nothing is submitted or booked until you send it yourself. With a file, your phone opens its sharing menu.",
+    note: "No email or account required. WhatsApp opens a ready-to-send message. Nothing is booked or submitted until you press Send. To share a file, use your phone’s Share menu.",
     required: "Please write your answers or select a file.", tooBig: "Please select a file smaller than 8 MB.",
     wrongType: "Use PDF, DOC, DOCX, TXT, RTF, JPG or PNG.", aborted: "File sharing was cancelled; nothing was sent.",
     shareFailure: "The share menu was unavailable. Please use the manual option below.",
@@ -47,12 +47,12 @@ const text = {
     personalHelp: "Записаться на личную инициацию первой ступени: €100 / 60 минут / ступень. Андрей подтвердит дату и формат.",
     pdfHelp: "Скачать описание системы и стоимость в PDF сразу, без регистрации и ввода контактов.",
     answersHelp: "Напишите ответы или прикрепите документ с телефона. Отправка непосредственно Андрею через мессенджер, файл на сайте не сохраняется.",
-    name: "Ваше имя", contact: "Email или контакт для ответа", namePlaceholder: "Как к вам обращаться",
+    name: "Ваше имя (необязательно)", namePlaceholder: "Как к вам обращаться",
     contactPlaceholder: "Email / Telegram / WhatsApp", answers: "Ваши семь ответов (необязательно при наличии файла)",
     answersPlaceholder: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "Прикрепить файл с ответами", fileHint: "PDF, DOC, DOCX, TXT или фото · до 8 МБ",
     download: "Скачать PDF бесплатно", submit: "Продолжить в WhatsApp", share: "Отправить ответы / файл",
-    note: "Заявка откроется в WhatsApp с вашими данными — она не отправится и не станет записью без вашего подтверждения. Для файла телефон откроет меню «Поделиться».",
+    note: "Email и регистрация не требуются. WhatsApp откроет готовое сообщение, но оно отправится только после вашего нажатия. Для документа используйте меню «Поделиться».",
     required: "Напишите ответы или выберите файл.", tooBig: "Выберите файл меньше 8 МБ.",
     wrongType: "Поддерживаются PDF, DOC, DOCX, TXT, RTF, JPG, PNG.", aborted: "Отправка файла отменена. Ничего не отправлено.",
     shareFailure: "Меню отправки недоступно. Используйте ручную отправку ниже.",
@@ -77,12 +77,12 @@ const text = {
     personalHelp: "Solicita una sesión individual de 60 minutos (€100 por nivel). Andrey confirma disponibilidad y fecha.",
     pdfHelp: "Descarga el PDF con el programa y los precios sin registrarte.",
     answersHelp: "Escribe tus respuestas o adjunta un archivo del teléfono. Compártelo con Andrey; la página no guarda archivos.",
-    name: "Tu nombre", contact: "Correo o contacto", namePlaceholder: "Tu nombre",
-    contactPlaceholder: "Correo / Telegram / WhatsApp", answers: "Tus siete respuestas (opcional si adjuntas un archivo)",
+    name: "Tu nombre (opcional)", namePlaceholder: "Tu nombre",
+    answers: "Tus siete respuestas (opcional si adjuntas un archivo)",
     answersPlaceholder: "1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n6. ...\n7. ...",
     file: "Adjuntar archivo con respuestas", fileHint: "PDF, DOC, DOCX, TXT o imágenes · máximo 8 MB",
     download: "Descargar PDF gratis", submit: "Continuar en WhatsApp", share: "Compartir respuestas / archivo",
-    note: "WhatsApp abre tu solicitud, pero no se envía ni reserva hasta que pulses Enviar. Con un archivo, el teléfono abre su menú Compartir.",
+    note: "No necesitas correo ni cuenta. WhatsApp prepara el mensaje, pero solo se envía si pulsas Enviar. Para compartir un archivo, usa el menú Compartir.",
     required: "Escribe tus respuestas o elige un archivo.", tooBig: "El archivo debe ocupar menos de 8 MB.",
     wrongType: "Formatos: PDF, DOC, DOCX, TXT, RTF, JPG, PNG.", aborted: "Se canceló el envío. No se compartió nada.",
     shareFailure: "No se pudo abrir Compartir. Usa la opción manual.",
@@ -110,7 +110,6 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
   const t = text[locale];
   const [mode, setMode] = useState<Intent>("free");
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
   const [answers, setAnswers] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -143,8 +142,7 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
     return [
       "Holistic House · Reiki Yggdrasil",
       topic,
-      t.name + ": " + name.trim(),
-      t.contact + ": " + contact.trim(),
+      name.trim() ? t.name + ": " + name.trim() : "",
       mode === "answers" && answers.trim() ? t.answers + ":\n" + answers.trim() : "",
       mode === "answers" && attachment ? t.attachmentLabel + ": " + attachment.name : "",
       t.page,
@@ -198,7 +196,7 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
         }
       }
       setNotice(t.longCopy);
-      window.open(whatsapp([t.senderAnswers, t.name + ": " + name.trim(), t.contact + ": " + contact.trim(), t.page].join("\n")), "_blank", "noopener,noreferrer");
+      window.open(whatsapp([t.senderAnswers, name.trim() ? t.name + ": " + name.trim() : "", t.page].filter(Boolean).join("\n")), "_blank", "noopener,noreferrer");
       return;
     }
     window.open(whatsapp(message), "_blank", "noopener,noreferrer");
@@ -228,7 +226,7 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
         {intents.map((intent, index) => (
           <button className={styles.formOption} type="button" key={intent} aria-pressed={mode === intent}
             data-selected={mode === intent} data-intent={intent} onClick={() => switchMode(intent)}>
-            <span className={styles.formOptionIndex}>{String(index + 1).padStart(2, "0")}</span>
+            <span className={styles.formOptionIndex} aria-hidden="true">{mode === intent ? "✓" : String(index + 1).padStart(2, "0")}</span>
             <span>{t.options[index]}</span>
           </button>
         ))}
@@ -238,11 +236,7 @@ export function YggdrasilInitiationForm({ locale }: { locale: PublicLocale }) {
         <div className={styles.formFields}>
           <label>{t.name}
             <input type="text" name="name" autoComplete="name" maxLength={90} value={name}
-              onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} required />
-          </label>
-          <label>{t.contact}
-            <input type="text" name="contact" autoComplete="email" maxLength={150} value={contact}
-              onChange={(e) => setContact(e.target.value)} placeholder={t.contactPlaceholder} required />
+              onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} />
           </label>
           {isAnswers ? (
             <>

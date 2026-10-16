@@ -201,14 +201,32 @@ const landing = {
     discover: "Choose how to begin", choiceNumber: "02 / 06 · YOUR FIRST STEP",
     choiceTitle: "Start for free, or learn one-to-one",
     choiceLead: "Both paths begin with Level 1. The free introduction is a gift for new students; personal initiation offers dedicated time with Andrey.",
+    choiceLeadMobile: "Two clear ways to begin Level 1.",
+    freeShort: "Watch, read and answer 7 questions. Introductory session with Andrey.",
+    personalShort: "One-to-one Level 1 initiation and guidance with Andrey.",
+    freeActionMobile: "Start free", personalActionMobile: "Book personal",
+    howNumber: "03 / 06 · YOUR FREE PATH",
+    howTitle: "How to receive Level 1 for free",
+    howLead: "Just three steps. After you submit your answers, Andrey personally confirms the free introductory session.",
+    howSteps: [
+      { title: "Watch the videos", description: "Two original recordings with Andrey." },
+      { title: "Read the materials", description: "The Basic Course and its study book." },
+      { title: "Answer 7 questions", description: "Send your own answers using the form." },
+    ],
+    howAction: "Watch both videos",
+    originalVideo: "Level 1 introduction", meditationVideo: "Reiki Yggdrasil meditation",
+    originalVideoNote: "Restored video from this free-initiation page",
+    meditationVideoNote: "Guided practice from the main course landing",
+    quickCourse: "Reiki Yggdrasil Basic Course", quickBook: "Reiki Yggdrasil book",
+    quickCourseNote: "Level 1 lessons and practices", quickBookNote: "Full course description",
     freeTag: "FREE INTRODUCTION", freeTitle: "Receive Level 1 for free",
     freeText: "Study the course, prepare seven short answers, and request the available teacher-led introductory initiation. No charge for the introductory offer.",
     freeAction: "Apply for the free initiation", personalTag: "PERSONAL · ONE-TO-ONE",
     personalTitle: "Personal Level 1 initiation", personalText: "An individual 60-minute session with Andrey, with time for questions and personal guidance. Availability is confirmed before booking.",
     personalAction: "Request a personal session", confirmation: "Initiations are teacher-led, subject to confirmation; reading alone does not grant an attunement.",
-    questionNumber: "03 / 06 · PREPARE", questionsIntro: "Read the seven questions and prepare your own answers to request the free introduction. This is a preparation exercise, not a clinical test.",
+    questionNumber: "05 / 06 · SEVEN QUESTIONS", questionsIntro: "Read the seven questions and prepare your own answers to request the free introduction. This is a preparation exercise, not a clinical test.",
     answersAction: "Send my answers", videoNumber: "04 / 06 · WATCH",
-    videoHeading: "Experience Reiki Yggdrasil with Andrey", videoText: "Andrey’s original “Reiki Yggdrasil Meditation” from the main course landing — an introduction to the practice, not a replacement for teacher-led initiation.",
+    videoHeading: "Two videos about Reiki Yggdrasil", videoText: "Watch the original Level 1 introduction and my Reiki Yggdrasil meditation. Continue with the two course links before answering.",
     videoLanguage: "Original video · English", materialsNumber: "05 / 06 · EXPLORE",
     materialsTitle: "Books, lessons & course levels", materialsLead: "Everything is available inside Holistic House. Explore the foundations now, or continue into the complete course.",
     materialNames: ["Basic Course book", "Level 1 lessons & practices", "All five basic levels", "Explore all 7 modules"],
@@ -224,14 +242,32 @@ const landing = {
     discover: "Выбрать формат начала", choiceNumber: "02 / 06 · ПЕРВЫЙ ШАГ",
     choiceTitle: "Начните бесплатно или индивидуально",
     choiceLead: "Оба варианта начинаются с первой ступени. Бесплатная вводная инициация — подарок новым ученикам, а личная — индивидуальное занятие с Андреем.",
+    choiceLeadMobile: "Два понятных варианта первой ступени.",
+    freeShort: "Посмотрите видео, прочитайте материалы и ответьте на 7 вопросов.",
+    personalShort: "Индивидуальная инициация первой ступени с Андреем.",
+    freeActionMobile: "Начать бесплатно", personalActionMobile: "Записаться",
+    howNumber: "03 / 06 · КАК НАЧАТЬ БЕСПЛАТНО",
+    howTitle: "Как получить Рейки Иггдрасиль бесплатно",
+    howLead: "Три простых шага. После отправки ответов Андрей лично подтверждает доступный формат и время бесплатной вводной инициации.",
+    howSteps: [
+      { title: "Посмотрите видео", description: "Два моих видео: вводное о первой ступени и медитация." },
+      { title: "Прочитайте материалы", description: "Базовый курс и книга по Рейки Иггдрасиль." },
+      { title: "Ответьте на 7 вопросов", description: "Подготовьте ответы и отправьте через форму ниже." },
+    ],
+    howAction: "Смотреть оба видео",
+    originalVideo: "Вводное видео 1-й ступени", meditationVideo: "Медитация Рейки Иггдрасиль",
+    originalVideoNote: "Прежнее видео со страницы бесплатной инициации",
+    meditationVideoNote: "Моё видео с основного лендинга курса",
+    quickCourse: "Базовый курс Рейки Иггдрасиль", quickBook: "Книга по Рейки Иггдрасиль",
+    quickCourseNote: "Уроки и практики первой ступени", quickBookNote: "Полное описание системы",
     freeTag: "БЕСПЛАТНО", freeTitle: "Получить 1-ю ступень бесплатно",
     freeText: "Прочитайте материалы, подготовьте ответы на семь вопросов и запросите доступную вводную инициацию с преподавателем. Вводный формат бесплатный.",
     freeAction: "Подать заявку бесплатно", personalTag: "ЛИЧНО · ИНДИВИДУАЛЬНО",
     personalTitle: "Личная инициация 1-й ступени", personalText: "60 минут с Андреем, ответы на вопросы и индивидуальное сопровождение. Дату и доступность нужно согласовать заранее.",
     personalAction: "Записаться на личную инициацию", confirmation: "Настройка передаётся преподавателем после подтверждения даты; одно чтение материалов не является инициацией.",
-    questionNumber: "03 / 06 · ПОДГОТОВКА", questionsIntro: "Подготовьте ответы на семь вопросов своими словами, чтобы запросить бесплатный вводный формат. Это учебная подготовка, а не медицинский тест.",
+    questionNumber: "05 / 06 · СЕМЬ ВОПРОСОВ", questionsIntro: "Подготовьте ответы на семь вопросов своими словами, чтобы запросить бесплатный вводный формат. Это учебная подготовка, а не медицинский тест.",
     answersAction: "Отправить ответы", videoNumber: "04 / 06 · ВИДЕО",
-    videoHeading: "Познакомьтесь с Рейки Иггдрасиль с Андреем", videoText: "Оригинальная медитация Андрея «Reiki Yggdrasil Meditation» с основного лендинга курса. Видео знакомит с практикой, но не заменяет личную инициацию.",
+    videoHeading: "Два моих видео по Рейки Иггдрасиль", videoText: "Посмотрите прежнее вводное видео по первой ступени и мою медитацию с основного лендинга. Затем откройте Базовый курс и книгу.",
     videoLanguage: "Оригинальное видео · английский", materialsNumber: "05 / 06 · МАТЕРИАЛЫ",
     materialsTitle: "Книги, уроки и ступени", materialsLead: "Учебные материалы находятся на Holistic House. Можно читать первый уровень или изучать всю программу.",
     materialNames: ["Книга Базового курса", "Уроки и практики 1-й ступени", "Все пять базовых ступеней", "Все 7 модулей системы"],
@@ -246,13 +282,31 @@ const landing = {
     benefits: ["Reiki, runas y Árbol del Mundo", "Meditación, atención e intuición", "Un camino claro de 7 módulos"],
     discover: "Elige cómo empezar", choiceNumber: "02 / 06 · TU PRIMER PASO",
     choiceTitle: "Empieza gratis o de forma personal", choiceLead: "Ambas opciones comienzan con el Nivel 1. La introducción gratuita es un regalo; la iniciación personal ofrece tiempo individual con Andrey.",
+    choiceLeadMobile: "Dos maneras de comenzar el Nivel 1.",
+    freeShort: "Mira los vídeos, lee el material y responde 7 preguntas.",
+    personalShort: "Iniciación individual de Nivel 1 con Andrey.",
+    freeActionMobile: "Empezar gratis", personalActionMobile: "Reservar sesión",
+    howNumber: "03 / 06 · CÓMO EMPEZAR",
+    howTitle: "Cómo recibir Reiki Yggdrasil gratis",
+    howLead: "Tres pasos. Tras recibir tus respuestas, Andrey confirmará personalmente la disponibilidad y el formato de iniciación gratuita.",
+    howSteps: [
+      { title: "Mira los vídeos", description: "Dos vídeos de Andrey: introducción y meditación." },
+      { title: "Lee los materiales", description: "El Curso Básico y su libro." },
+      { title: "Responde 7 preguntas", description: "Envía tus propias respuestas al final." },
+    ],
+    howAction: "Ver ambos vídeos",
+    originalVideo: "Introducción al Nivel 1", meditationVideo: "Meditación Reiki Yggdrasil",
+    originalVideoNote: "Vídeo original de esta página de iniciación gratuita",
+    meditationVideoNote: "Meditación de Andrey en la página principal",
+    quickCourse: "Curso Básico Reiki Yggdrasil", quickBook: "Libro Reiki Yggdrasil",
+    quickCourseNote: "Lecciones y prácticas del Nivel 1", quickBookNote: "Descripción completa del sistema",
     freeTag: "INTRODUCCIÓN GRATUITA", freeTitle: "Recibe gratis el Nivel 1", freeText: "Lee el material, prepara siete respuestas y solicita la iniciación introductoria guiada por el profesor según disponibilidad.",
     freeAction: "Solicitar iniciación gratuita", personalTag: "PERSONAL · INDIVIDUAL",
     personalTitle: "Iniciación personal de Nivel 1", personalText: "Sesión individual de 60 minutos con Andrey, preguntas y orientación personal. La disponibilidad se confirma antes de reservar.",
     personalAction: "Solicitar sesión personal", confirmation: "La iniciación requiere confirmación y acompañamiento del profesor; la lectura por sí sola no supone una iniciación.",
-    questionNumber: "03 / 06 · PREPARACIÓN", questionsIntro: "Prepara tus propias respuestas a las siete preguntas para solicitar la introducción gratuita. No es una evaluación médica.",
+    questionNumber: "05 / 06 · SIETE PREGUNTAS", questionsIntro: "Prepara tus propias respuestas a las siete preguntas para solicitar la introducción gratuita. No es una evaluación médica.",
     answersAction: "Enviar mis respuestas", videoNumber: "04 / 06 · VÍDEO",
-    videoHeading: "Descubre Reiki Yggdrasil con Andrey", videoText: "La meditación original de Andrey «Reiki Yggdrasil Meditation» de la página principal del curso. Una introducción, no una iniciación guiada.",
+    videoHeading: "Dos vídeos sobre Reiki Yggdrasil", videoText: "Mira la introducción original al Nivel 1 y mi meditación Reiki Yggdrasil. Después explora el curso y el libro.",
     videoLanguage: "Vídeo original · inglés", materialsNumber: "05 / 06 · MATERIALES",
     materialsTitle: "Libros, lecciones y niveles", materialsLead: "Materiales disponibles en Holistic House. Empieza por las bases o explora el curso completo.",
     materialNames: ["Libro del Curso Básico", "Lecciones y prácticas del Nivel 1", "Los cinco niveles básicos", "Los 7 módulos"],
@@ -268,12 +322,8 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
   const t = landing[locale];
   const root = "/" + locale + "/academy/reiki/yggdrasil";
   const recording = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
-  const resourceLinks = [
-    root + "/basic-course/description",
-    root + "/basic-course#ry-l01-s01",
-    root + "/basic-course#yggdrasil-basic-course-learning",
-    root + "#system-modules",
-  ];
+  // Preserved original video from the historic free-initiation landing.
+  const originalLevelOneVideoId = "DYo-fG-SyKw";
   return (
     <main className={"academy-reading-shell academy-reading-shell--wide " + styles.shell} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
@@ -283,9 +333,9 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
           <div className={styles.navSteps}>
             <a href="#why-yggdrasil">01</a>
             <a href="#choose-initiation">02</a>
-            <a href="#checklist">03</a>
-            <a href="#intro-video">04</a>
-            <a href="#preparation-readings">05</a>
+            <a href="#how-to-free" aria-label={t.howTitle}>03</a>
+            <a href="#intro-video" aria-label={t.videoHeading}>04</a>
+            <a href="#checklist" aria-label={c.checklistTitle}>05</a>
             <a href="#request-free-initiation">06</a>
           </div>
         </nav>
@@ -304,27 +354,91 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
 
-        <section className={styles.section} id="choose-initiation" aria-labelledby="choose-initiation-title">
+        <section className={styles.choiceSlide} id="choose-initiation" aria-labelledby="choose-initiation-title">
           <p className={styles.kicker}>{t.choiceNumber}</p>
           <h2 id="choose-initiation-title">{t.choiceTitle}</h2>
-          <p className={styles.sectionLead}>{t.choiceLead}</p>
+          <p className={styles.sectionLead + " " + styles.desktopLead}>{t.choiceLead}</p>
+          <p className={styles.mobileLead}>{t.choiceLeadMobile}</p>
           <div className={styles.offerGrid}>
             <div className={styles.freeOffer}>
               <span className={styles.offerTag}>{t.freeTag}</span>
               <h3>{t.freeTitle}</h3>
-              <p>{t.freeText}</p>
-              <strong className={styles.offerPrice}>{locale === "ru" ? "0 € · 1-я ступень" : locale === "es" ? "0 € · Nivel 1" : "€0 · Level 1"}</strong>
-              <a href="#apply-free" className={styles.primaryAction}>{t.freeAction} <span aria-hidden="true">→</span></a>
+              <p className={styles.offerDescriptionWide}>{t.freeText}</p>
+              <p className={styles.offerDescriptionSmall}>{t.freeShort}</p>
+              <strong className={styles.offerPrice}>{locale === "ru" ? "Бесплатно" : locale === "es" ? "Gratis" : "Free · €0"}</strong>
+              <a href="#how-to-free" className={styles.primaryAction}>
+                <span className={styles.desktopAction}>{t.freeAction}</span>
+                <span className={styles.mobileAction}>{t.freeActionMobile}</span>
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
             <div className={styles.personalOffer}>
               <span className={styles.offerTag}>{t.personalTag}</span>
               <h3>{t.personalTitle}</h3>
-              <p>{t.personalText}</p>
+              <p className={styles.offerDescriptionWide}>{t.personalText}</p>
+              <p className={styles.offerDescriptionSmall}>{t.personalShort}</p>
               <strong className={styles.offerPrice}>{formatReikiLevelPrice("yggdrasil", locale)}</strong>
-              <a href="#apply-personal" className={styles.secondaryAction}>{t.personalAction} <span aria-hidden="true">→</span></a>
+              <a href="#apply-personal" className={styles.secondaryAction}>
+                <span className={styles.desktopAction}>{t.personalAction}</span>
+                <span className={styles.mobileAction}>{t.personalActionMobile}</span>
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
           <p className={styles.miniNote}>{t.confirmation}</p>
+        </section>
+
+        <section className={styles.howSlide} id="how-to-free" aria-labelledby="yggdrasil-free-steps">
+          <p className={styles.kicker}>{t.howNumber}</p>
+          <h2 id="yggdrasil-free-steps">{t.howTitle}</h2>
+          <p className={styles.sectionLead}>{t.howLead}</p>
+          <div className={styles.stepsGrid}>
+            {t.howSteps.map((step, index) => (
+              <a className={styles.stepCard} href={["#intro-video", "#preparation-readings", "#checklist"][index]} key={step.title}>
+                <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{step.title}</strong>
+                <small>{step.description}</small>
+                <span className={styles.stepArrow} aria-hidden="true">↗</span>
+              </a>
+            ))}
+          </div>
+          <a className={styles.howAction} href="#intro-video">{t.howAction}<span aria-hidden="true"> →</span></a>
+        </section>
+
+        <section className={styles.mediaSlide} id="intro-video" aria-labelledby="yggdrasil-original-video">
+          <p className={styles.kicker}>{t.videoNumber}</p>
+          <h2 id="yggdrasil-original-video">{t.videoHeading}</h2>
+          <p className={styles.sectionLead}>{t.videoText}</p>
+          <div className={styles.videoGrid}>
+            <div className={styles.videoTile}>
+              <div className={styles.videoFrame}>
+                <AcademyVideoPlayer youtubeId={originalLevelOneVideoId} title={c.videoTitle} />
+              </div>
+              <strong>{t.originalVideo}</strong>
+              <small>{t.originalVideoNote}</small>
+            </div>
+            {recording?.youtubeId ? (
+              <div className={styles.videoTile}>
+                <div className={styles.videoFrame}>
+                  <AcademyVideoPlayer youtubeId={recording.youtubeId} title={recording.title} />
+                </div>
+                <strong>{t.meditationVideo}</strong>
+                <small>{t.meditationVideoNote}</small>
+              </div>
+            ) : null}
+          </div>
+          <div className={styles.quickLinks} id="preparation-readings">
+            <Link href={root + "/basic-course"} className={styles.quickLink}>
+              <span className={styles.quickLinkIcon} aria-hidden="true">Ⅰ–Ⅴ</span>
+              <span><strong>{t.quickCourse}</strong><small>{t.quickCourseNote}</small></span>
+              <span aria-hidden="true">↗</span>
+            </Link>
+            <Link href={root + "/basic-course/description"} className={styles.quickLink}>
+              <span className={styles.quickLinkIcon} aria-hidden="true">✦</span>
+              <span><strong>{t.quickBook}</strong><small>{t.quickBookNote}</small></span>
+              <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
         </section>
 
         <section className={styles.questionsSlide} id="checklist" aria-labelledby="yggdrasil-free-checklist">
@@ -332,35 +446,7 @@ export function YggdrasilFreeInitiation({ locale }: { locale: PublicLocale }) {
           <h2 id="yggdrasil-free-checklist">{c.checklistTitle}</h2>
           <p className={styles.sectionLead}>{t.questionsIntro}</p>
           <ol className={styles.questions}>{c.questions.map((question) => <li key={question}>{question}</li>)}</ol>
-          <a className={styles.primaryAction} href="#apply-answers">{t.answersAction}<span aria-hidden="true"> →</span></a>
-        </section>
-
-        <section className={styles.section} id="intro-video" aria-labelledby="yggdrasil-original-video">
-          <p className={styles.kicker}>{t.videoNumber}</p>
-          <h2 id="yggdrasil-original-video">{t.videoHeading}</h2>
-          <p className={styles.sectionLead}>{t.videoText}</p>
-          <div className={styles.videoCard}>
-            <div className={styles.videoFrame}>
-              {recording?.youtubeId ? <AcademyVideoPlayer youtubeId={recording.youtubeId} title={recording.title} /> : null}
-            </div>
-            <div className={styles.videoCaption}>{t.videoLanguage}<span>{recording?.title}</span></div>
-          </div>
-        </section>
-
-        <section className={styles.section} id="preparation-readings" aria-labelledby="reading-title">
-          <p className={styles.kicker}>{t.materialsNumber}</p>
-          <h2 id="reading-title">{t.materialsTitle}</h2>
-          <p className={styles.sectionLead}>{t.materialsLead}</p>
-          <div className={styles.materialGrid}>
-            {resourceLinks.map((href, index) => (
-              <Link href={href} key={href} className={styles.materialCard}>
-                <span className={styles.materialIndex}>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{t.materialNames[index]}</strong>
-                <small>{t.materialDetails[index]}</small>
-                <span className={styles.materialArrow} aria-hidden="true">↗</span>
-              </Link>
-            ))}
-          </div>
+          <a className={styles.questionsAction} href="#apply-answers">{t.answersAction}<span aria-hidden="true"> →</span></a>
           <details className={styles.faqDisclosure} id="learning-faq">
             <summary>{t.faqLabel} <span aria-hidden="true">＋</span></summary>
             <div className={styles.faqAnswers}>
