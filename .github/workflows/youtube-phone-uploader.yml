@@ -43,7 +43,7 @@ jobs:
         timeout-minutes: 12
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then
-            printf '%s\\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
           fi
           npm install --prefix /tmp/youtube-ux-playwright --no-package-lock --ignore-scripts @playwright/test@1.63.0
           ln -s /tmp/youtube-ux-playwright/node_modules/@playwright node_modules/@playwright
