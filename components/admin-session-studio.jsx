@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { SessionAudioRecorder } from './session-audio-recorder'
 import { SessionYouTubePlayer } from './session-youtube-player'
 import { parseSessionYouTubeUrl } from '@/lib/clients/youtube-resource'
+import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
 
@@ -79,8 +80,10 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
       if(['copy','rotate'].includes(action)&&result.secret) {
         const url=window.location.origin+'/'+locale+'/client/session/'+result.selector+'#'+result.secret
         setLink(url)
-        try {await navigator.clipboard.writeText(url);setMessage(ru?'Ссылка на одну сессию скопирована':'Session-only link copied')}
-        catch {setMessage(ru?'Ссылка готова — выделите и скопируйте её ниже':'Select and copy the link below')}
+        if(await tryCopyOwnerLink(url,navigator.clipboard))
+          setMessage(ru?'Ссылка на одну сессию скопирована':'Session-only link copied')
+        else setMessage(ru?'Ссылка готова. Нажмите «Копировать ещё раз» или выделите адрес ниже.':
+          'Link ready. Tap Copy again or select the URL below.')
       } else {
         setMessage(action==='publish'?(ru?'Сессия опубликована. Теперь можно скопировать отдельную ссылку.':'Session published. Copy its individual link now.'):
           action==='revoke'?(ru?'Доступ по этой ссылке отозван':'This session link was revoked'):
@@ -342,8 +345,15 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         <button className={styles.secondaryButton} disabled={block||session.status!=='published'}
           onClick={()=>act('copy')}><Copy size={18}/>{ru?'Скопировать ссылку сессии':'Copy session-only link'}</button>
       </div>
-      {link&&<label className={styles.field}>{ru?'Личная ссылка (только на эту сессию)':'Private link (this session only)'}
-        <input readOnly value={link} onFocus={e=>e.target.select()} aria-label="Session share link"/></label>}
+      {link&&<div className="consultation-share-link-ready">
+        <label className={styles.field}>{ru?'Личная ссылка (только на эту сессию)':'Private link (this session only)'}
+          <input readOnly value={link} onFocus={e=>e.target.select()} aria-label="Session share link"/></label>
+        <button type="button" className={styles.secondaryButton} onClick={async()=>{
+          if(await tryCopyOwnerLink(link,navigator.clipboard))
+            setMessage(ru?'Ссылка скопирована':'Link copied')
+          else setMessage(ru?'Выделите адрес в поле и скопируйте вручную.':'Select and copy the URL manually.')
+        }}>{ru?'Копировать ещё раз':'Copy again'}</button>
+      </div>}
       {session.status==='published'&&<details className={styles.accessDetails}>
         <summary><LockKeyhole size={17}/>{ru?'Управление доступом':'Access controls'}</summary>
         <p>{ru?'Ссылка не открывает общий кабинет или другие консультации. Владелец ссылки сможет видеть эту сессию до её истечения.':
