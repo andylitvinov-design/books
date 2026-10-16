@@ -52,7 +52,7 @@ function harness({ row = courseRow(), otherRows = [], multiCourseEnabled = true,
   accountActive = true, encryptedConcern = false } = {}) {
   const config = { multiCourseEnabled, billingEnvironment: 'sandbox',
     encryptionKey: Buffer.alloc(32, 17), encryptionKeyId: 'synthetic-close-only' }
-  let state = { courses: [clone(row), ...clone(otherRows)], cycles: cycleRows(),
+  let state = { courses: [...(row ? [clone(row)] : []), ...clone(otherRows)], cycles: row ? cycleRows() : [],
     results: [{ id: 'result-preserved', account_id: OWNER, provenance: { definitionKey: 'hh-weekly-pulse',
       definitionVersion: 'v1', instrumentLocale: 'en' }, measurement_at: oldAt, dimensions: [] }],
     sessions: [{ id: 'session-preserved', account_id: OWNER, cycle_id: 'cycle-active', day_number: 1 }],
@@ -148,6 +148,19 @@ function harness({ row = courseRow(), otherRows = [], multiCourseEnabled = true,
       if (setters.includes('revision=revision+1')) current.revision++
       return { rows: [clone(current)] }
     }
+    if (q.startsWith('insert into app_private.growth_courses(')) {
+      assert.equal(ownerLocked, true, 'owner lock precedes enrollment')
+      assert.equal(multiCourseEnabled, false, 'fixture covers the free single-course schema')
+      assert.match(q, /on conflict\(account_id\) do nothing returning \*/)
+      assert.deepEqual(args, [COURSE, ownerId])
+      if (state.courses.some(course => course.account_id === ownerId)) return { rows: [] }
+      const inserted = { id: args[0], account_id: args[1], status: 'active', stage: 1, revision: 1,
+        concerns_ciphertext: null, focus_tags: [], goals: [], test_keys: [], scale_keys: [],
+        duration_days: 14, day_completions: {}, chosen_at: null, started_at: null,
+        consented_at: newAt, updated_at: newAt }
+      state.courses.push(inserted)
+      return { rows: [clone(inserted)] }
+    }
     assert.fail('Unexpected SQL; no live fallback or unreviewed mutation: ' + q)
   } }
   const runTransaction = async (receivedConfig, receivedActor, fn) => {
@@ -210,6 +223,45 @@ test('close rejects wrong owner/course, stale revision, and missing explicit mul
   const h = harness({ otherRows: [courseRow({ id: SIBLING })] })
   await assert.rejects(h.repo.command(actor, { action: 'close', expectedRevision: 7 }), { code: 'COURSE_SELECTION_REQUIRED' })
   assert.equal(writes(h).length, 0)
+})
+
+test('a first free course can be created with a stable client UUID and cannot accidentally create a second course', async () => {
+  const h = harness({ row: null, multiCourseEnabled: false })
+  const payload = { action: 'start', courseId: COURSE, newCourse: false, consent: true }
+  const first = await h.repo.command(actor, payload)
+  assert.equal(first.course.id, COURSE)
+  assert.equal(first.course.status, 'active')
+  assert.equal(first.course.stage, 1)
+  assert.equal(first.access.activeCourseCount, 1)
+  assert.equal(writes(h).length, 1)
+  assert.match(writes(h)[0].sql, /^insert into app_private.growth_courses/)
+
+  const repeat = await h.repo.command(actor, payload)
+  assert.equal(repeat.course.id, COURSE, 'a retry reuses the same enrollment')
+  assert.equal(writes(h).length, 1, 'retries never create another enrollment')
+  await assert.rejects(
+    h.repo.command(actor, { ...payload, courseId: MISSING_COURSE }),
+    { code: 'COURSE_NOT_STARTED', status: 404 },
+  )
+  assert.equal(h.state.courses.length, 1)
+  assert.equal(writes(h).length, 1)
+})
+
+test('first free enrollment respects owner consent and capacity checks before insertion', async () => {
+  for (const [params, expected] of [
+    [{ consent: false }, 'CONSENT_REQUIRED'],
+    [{ consent: undefined }, 'CONSENT_REQUIRED'],
+    [{ capacityCount: 1 }, 'COURSE_ACTIVE_LIMIT'],
+  ]) {
+    const { capacityCount, ...overrides } = params
+    const h = harness({ row: null, multiCourseEnabled: false, capacityCount })
+    await assert.rejects(
+      h.repo.command(actor, { action: 'start', courseId: COURSE, newCourse: false, consent: true, ...overrides }),
+      { code: expected },
+    )
+    assert.equal(writes(h).length, 0)
+    assert.deepEqual(h.state, h.initial)
+  }
 })
 
 test('legacy re-enrollment resets only its closed course after fresh consent, revision and capacity checks', async () => {
