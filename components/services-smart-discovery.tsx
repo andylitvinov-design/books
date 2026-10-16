@@ -40,7 +40,7 @@ const COPY = {
     practitioner:"Practitioner",
     details:"Explore service",
     request:"Request service",
-    browse:"See all practitioners",
+    browse:"All practitioners",
     clear:"Clear selection",
     personal:"Prefer personal guidance?",
     personalAction:"Explore Andrey's personal services below",
@@ -80,7 +80,7 @@ const COPY = {
     practitioner:"Мастер",
     details:"Подробнее",
     request:"Отправить запрос",
-    browse:"Посмотреть всех мастеров",
+    browse:"Все мастера",
     clear:"Сбросить",
     personal:"Хотите личную консультацию?",
     personalAction:"Ниже — личные услуги Андрея",
@@ -120,7 +120,7 @@ const COPY = {
     practitioner:"Profesional",
     details:"Ver detalles",
     request:"Solicitar servicio",
-    browse:"Ver profesionales",
+    browse:"Profesionales",
     clear:"Limpiar",
     personal:"¿Prefieres orientación personal?",
     personalAction:"Más abajo: servicios personales de Andrey",
@@ -257,8 +257,7 @@ export function ServicesSmartDiscovery({
 
       <div className={styles.categorySection} id="browse-service-categories">
         <div className={styles.categoryHead}>
-          <div><p className={styles.eyebrow}>{locale==="ru"?"НАПРАВЛЕНИЯ":locale==="es"?"ÁREAS":"AREAS"}</p>
-            <h2>{t.categories}</h2><p>{t.categoriesIntro}</p></div>
+          <div><h2>{t.categories}</h2></div>
           <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
         </div>
         <div className={styles.categoryGrid}>
@@ -271,8 +270,9 @@ export function ServicesSmartDiscovery({
               aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
               <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
               <span className={styles.categoryName}>{area.label[locale]}</span>
-              <span className={styles.categoryDescription}>{area.short[locale]}</span>
-              {count>0?<small>{count} {t.categoryCount}</small>:<small aria-hidden="true">↗</small>}
+              {count>0
+                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
+                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
             </button>;
           })}
         </div>
