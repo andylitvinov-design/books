@@ -7,7 +7,7 @@ import { metadataBaseFor } from '@/data/site-metadata';
 import { getSpanishRemedySlugs } from '@/data/remedies-es';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
-const academyDirectoryPaths = ["", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties"];
+const academyDirectoryPaths = ["", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = metadataBaseFor().toString().replace(/\/$/, '');
