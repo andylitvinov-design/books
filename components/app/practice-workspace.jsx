@@ -509,7 +509,7 @@ function Services({items,t,locale,busy,createRequest=0,onSave,onPublish,onPause}
         <span className="hh-practice-service-row-main">
           <span className="hh-practice-service-symbol" aria-hidden="true">{item.photos?.[0]?<img src={item.photos[0]} alt="" loading="lazy"/>:<Leaf />}</span>
           <span className="hh-practice-service-row-description">
-            <strong>{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
+            <strong>{item.localizedCopy?.[locale]?.title||item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
             <small>{item.deliveryFormat==='in_person'?(ru?'Лично':'In person'):item.deliveryFormat==='hybrid'?(ru?'Онлайн или лично':'Online or in person'):(ru?'Онлайн':'Online')}{item.durationMinutes?' · '+item.durationMinutes+' min':''}</small>
             <small className="hh-practice-service-price">{priceLabel(item)}</small>
           </span>
@@ -654,7 +654,10 @@ function ServiceEditor({item,t,locale,busy,onSave,onPublish,onPause}){
       </div>
     </section>
     <div className="hh-listing-field-grid">
-      <label>{t.pricing}<select value={v.pricingMode} onChange={event=>set('pricingMode',event.target.value)}>
+      <label>{t.pricing}<select value={v.pricingMode} onChange={event=>setV(previous=>({
+        ...previous,pricingMode:event.target.value,
+        currency:['fixed','from'].includes(event.target.value)?(previous.currency||'CAD'):previous.currency
+      }))}>
         <option value="free">{t.freePricing}</option><option value="contact">{ru?'Цена по запросу':'Price on request'}</option>
         <option value="fixed">{ru?'Фиксированная цена':'Fixed price'}</option><option value="from">{ru?'Цена от':'Starting from'}</option>
       </select></label>
