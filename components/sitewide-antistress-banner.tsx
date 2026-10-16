@@ -58,7 +58,7 @@ export function TestSelectionCourseBanner({ locale }: { locale: Locale }) {
           <Sparkles size={15} aria-hidden="true" />{t.eyebrow}<ArrowRight size={14} aria-hidden="true" />
         </Link>
         <span className={styles.detail}>{t.detail}</span>
-        <Link className={styles.cta} href={`/${courseLocale}/app/course?program=stress`} prefetch={false}>
+        <Link className={styles.cta} href={`/${courseLocale}/app/course?program=stress&entry=quick`} prefetch={false}>
           {t.cta}<ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
