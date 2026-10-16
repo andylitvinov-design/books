@@ -20,20 +20,29 @@ test('public course enrollments focus on Anti-Stress without deleting old progra
   assert.match(ui, /applyProgramIntake\(started,programme,epoch,entryConcerns\)/)
 })
 
-test('one localized, unobtrusive top ribbon shares a stress CTA and excludes sensitive work', () => {
+test('top ribbon is a personal written review; a separate course ribbon follows the test chooser', () => {
   const bar = read('components/sitewide-antistress-banner.tsx')
   const style = read('components/sitewide-antistress-banner.module.css')
   const layout = read('app/layout.tsx')
-  assert.match(layout, /<SitewideAntistressBanner initialLocale=\{lang\} \/>/)
-  assert.match(bar, /data-sitewide-antistress-banner/)
-  assert.match(bar, /app\/course\?program=stress/)
-  assert.match(bar, /locale === "es" \? "en" : locale/)
+  const home = read('components/holistic-house-home.tsx')
+  const picker = read('app/[locale]/client/tests/page.tsx')
+  const top = bar.slice(0, bar.indexOf('export function TestSelectionCourseBanner'))
+  const course = bar.slice(bar.indexOf('export function TestSelectionCourseBanner'))
+  assert.match(layout, /<SitewideAntistressBanner initialLocale=\\{lang\\} \\/>/)
+  assert.match(top, /data-sitewide-personal-review-banner/)
+  assert.match(top, /services\\/free-situation-review/)
+  assert.doesNotMatch(top, /app\\/course\\?program=stress/)
+  assert.match(course, /data-tests-course-banner/)
+  assert.match(course, /app\\/course\\?program=stress/)
+  assert.match(course, /locale === "es" \\? "en" : locale/)
+  assert.match(home, /<HomepageTopicJourneys locale=\\{locale\\} \\/>\\s*<TestSelectionCourseBanner locale=\\{locale\\} \\/>/)
+  assert.match(picker, /<PublicTestExplorer[\\s\\S]*<TestSelectionCourseBanner locale=\\{locale as Locale\\} \\/>/)
   for (const route of ['admin', 'course', 'runs', 'results', 'report', 'settings']) {
     assert.ok(bar.includes(route), route + ' excludes a sensitive route')
   }
   assert.match(style, /@media print/)
   assert.match(style, /max-width:680px/)
-  assert.doesNotMatch(bar, /localStorage|sessionStorage|fetch\(/)
+  assert.doesNotMatch(bar, /localStorage|sessionStorage|fetch\\(/)
 })
 
 test('all public course banners and landing pages lead to the Anti-Stress option', () => {
