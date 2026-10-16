@@ -82,20 +82,27 @@ test("mobile two-column compact initiation offers fit together, and capture matc
   assert.match(layout, /\.formSlide \.formSubmit \{ background:#8c3f51/);
 });
 
-test("the final form requires no email or account but retains the four routes and answer sharing", () => {
-  assert.match(form, /type Intent = "free" \| "personal" \| "pdf" \| "answers"/);
-  assert.match(form, /const intents: Intent\[\] = \["free", "personal", "pdf", "answers"\]/);
+test("the final form offers three compact choices without name, email or answer uploads", () => {
+  assert.match(form, /type Intent = "free" \| "personal" \| "pdf"/);
+  assert.match(form, /const intents: readonly Intent\[\] = \["free", "personal", "pdf"\]/);
   assert.match(form, /data-yggdrasil-form/);
-  for(const intent of ["free","personal","pdf","answers"]) assert.ok(form.includes('id="apply-' + intent + '"'));
-  assert.match(form, /Ваше имя \(необязательно\)/);
-  assert.doesNotMatch(form, /autoComplete="email"|name="contact"|setContact|placeholder=\{t\.namePlaceholder\} required/);
+  for (const intent of ["free", "personal", "pdf"]) assert.ok(form.includes('id="apply-' + intent + '"'));
+  // A hidden legacy anchor still redirects older links to the free-request choice.
+  assert.match(form, /id="apply-answers"/);
+  assert.match(form, /hash === "#apply-answers"[\s\S]*?switchMode\("free"\)/);
   assert.match(form, /reiki-guide\?course=yggdrasil/);
-  assert.match(form, /navigator\.canShare\(\{ files: \[attachment\] \}\)/);
-  assert.match(form, /navigator\.share\(\{ title: "Reiki Yggdrasil", text: message, files: \[attachment\] \}\)/);
-  assert.match(form, /WHATSAPP_NUMBER/);
+  assert.match(form, /whatsappEnquiryUrl\(\{/);
+  assert.match(form, /data-reiki-initiation-handoff=\{mode\}/);
+  assert.match(form, /aria-pressed=\{mode === intent\}/);
   assert.match(form, /https:\/\/t\.me\/AndyTherapist/);
-  assert.doesNotMatch(form, /localStorage|fetch\("/);
+  assert.doesNotMatch(form, /<input|<textarea|type="file"|navigator\.canShare|navigator\.share|FormData|localStorage|fetch\("/);
+  assert.doesNotMatch(form, /setName|setAttachment|setAnswers/);
+  assert.match(page, /href="#apply-free">\{t\.answersAction\}/);
+  assert.match(page, /No name, email or uploaded answers are required/);
+  assert.match(layout, /\.formSlide \.formOptions \{ grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(layout, /\.formSlide \.formSubmit \{[\s\S]*?background: #8c3f51/);
 });
+
 
 test("the single landing is not interrupted by unrelated sitewide promotions", () => {
   assert.match(read("lib/public-lead-capture.js"), /free-initiation/);
