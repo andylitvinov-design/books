@@ -118,3 +118,38 @@ test('private server issues scoped invitation only after verifying published ses
   assert.doesNotMatch(prepare,/publishClientSession/)
   assert.match(service,/if\(found\) return \{id:found\.id,existing:true\}/)
 })
+
+
+test('old iPhone owner session upgrades API cookie only through trusted same-origin bridge',async()=>{
+  const calls=[]
+  let count=0
+  const fetcher=async(path,options)=>{
+    calls.push({path,options})
+    if(path==='/admin/api/recorder-auth') return {ok:true,status:200}
+    count++
+    if(count===1)return {ok:false,status:404,json:async()=>({error:'SESSION_UNAVAILABLE'})}
+    return {ok:true,status:201,json:async()=>({id:SESSION,existing:true})}
+  }
+  const editor=await prepareReportSession(CLIENT,DOCUMENT,fetcher)
+  assert.equal(editor,'/admin/clients/'+CLIENT+'/sessions/'+SESSION)
+  assert.deepEqual(calls.map(call=>call.path),[
+    '/api/admin/clients/'+CLIENT+'/sessions',
+    '/admin/api/recorder-auth',
+    '/api/admin/clients/'+CLIENT+'/sessions',
+  ])
+  assert.equal(calls[1].options.credentials,'same-origin')
+  assert.equal(calls[1].options.method,'POST')
+  assert.deepEqual(JSON.parse(calls[2].options.body),{documentId:DOCUMENT})
+  assert.equal(calls.filter(call=>/publish|rotate|grant/.test(call.path)).length,0)
+})
+
+test('expired owner cookie cannot be upgraded through a failed bridge',async()=>{
+  const calls=[]
+  const fetcher=async(path,options)=>{
+    calls.push(path)
+    if(path==='/admin/api/recorder-auth')return {ok:false,status:401}
+    return {ok:false,status:404,json:async()=>({error:'SESSION_UNAVAILABLE'})}
+  }
+  await assert.rejects(prepareReportSession(CLIENT,DOCUMENT,fetcher),/SESSION_UNAVAILABLE/)
+  assert.equal(calls.length,2)
+})
