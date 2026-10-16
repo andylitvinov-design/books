@@ -4,6 +4,8 @@ import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Download, FileText, Messa
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import {
   kundaliniEveryday,
   kundaliniExtensions,
@@ -18,6 +20,27 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./kundalini-reiki-course.module.css";
 
 const whatsapp = "https://wa.me/14376066502?text=";
+
+const meditationCopy = {
+  en: {
+    eyebrow: "ORIGINAL VIDEO · ENGLISH AUDIO",
+    title: "Kundalini Reiki meditation",
+    lead: "Watch Andrey's original English-language guided meditation before exploring the three course levels.",
+    watch: "Watch on YouTube",
+  },
+  ru: {
+    eyebrow: "АВТОРСКОЕ ВИДЕО · ЗВУК НА АНГЛИЙСКОМ",
+    title: "Медитация Кундалини Рейки",
+    lead: "Посмотрите оригинальную медитацию Андрея на английском языке перед знакомством с тремя ступенями курса.",
+    watch: "Смотреть на YouTube",
+  },
+  es: {
+    eyebrow: "VÍDEO ORIGINAL · AUDIO EN INGLÉS",
+    title: "Meditación Kundalini Reiki",
+    lead: "Mira la meditación original de Andrey en inglés antes de explorar los tres niveles del curso.",
+    watch: "Ver en YouTube",
+  },
+} as const;
 // Original diagrams are stored in /public, extracted without replacing the user PDF.
 
 function enquiryUrl(locale: PublicLocale, kind: "training" | "initiation") {
@@ -42,6 +65,8 @@ function enquiryUrl(locale: PublicLocale, kind: "training" | "initiation") {
 export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
   const t = kundaliniInterface[locale];
   const pdf = kundaliniOriginalManual.path;
+  const meditation = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
+  const videoCopy = meditationCopy[locale];
 
   return (
     <main className={styles.page} lang={locale}>
@@ -92,6 +117,20 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
             <span className={styles.photoCaption}>Paul Crick · Kundalini Reiki Manual</span>
           </div>
         </section>
+
+        {meditation?.youtubeId ? (
+          <section className={styles.meditationFeature} aria-labelledby="kundalini-meditation-title">
+            <div className={styles.meditationText}>
+              <p className={styles.eyebrow}>{videoCopy.eyebrow}</p>
+              <h2 id="kundalini-meditation-title">{videoCopy.title}</h2>
+              <p>{videoCopy.lead}</p>
+              <a className={styles.meditationLink} href={"https://www.youtube.com/watch?v=" + meditation.youtubeId} target="_blank" rel="noopener noreferrer">{videoCopy.watch}<ArrowRight size={16} aria-hidden="true" /></a>
+            </div>
+            <div className={styles.meditationFrame}>
+              <AcademyVideoPlayer youtubeId={meditation.youtubeId} title={meditation.title} />
+            </div>
+          </section>
+        ) : null}
 
         <section className={styles.section} id="kundalini-levels" aria-labelledby="kundalini-levels-title">
           <header className={styles.sectionHead}>
