@@ -10,7 +10,7 @@ function plainText(input: string) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/^[#>*\s-]+/gm, "")
-    .replace(/[\`*_~|]/g, "")
+    .replace(/[`*_~|]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
