@@ -59,11 +59,6 @@ const UI = {
     traitText: '20 questions · ~3 min',
     traitNotice: 'This questionnaire uses the English original. It is a brief self-report, not an IQ test or diagnosis.',
     start: 'Start test',
-    consentTitle: 'Before you start',
-    consentText: 'Your answers will be stored temporarily so this browser can resume the test. No name or email is required.',
-    adult: 'I am 18 or older.',
-    necessary: 'I agree to temporary private processing of my answers and result for this self-observation test.',
-    continue: 'Continue',
     back: 'Back',
     next: 'Next',
     modeTitle: 'Choose your test experience',
@@ -148,11 +143,6 @@ const UI = {
     traitText: '20 вопросов · ~3 мин',
     traitNotice: 'Опрос использует английский оригинал. Это краткий самоотчёт, а не IQ-тест и не диагноз.',
     start: 'Начать тест',
-    consentTitle: 'Перед началом',
-    consentText: 'Ответы временно сохраняются, чтобы этот браузер мог продолжить тест. Имя и email не нужны.',
-    adult: 'Мне 18 лет или больше.',
-    necessary: 'Я согласен на временную приватную обработку ответов и результата для этого теста самонаблюдения.',
-    continue: 'Продолжить',
     back: 'Назад',
     next: 'Далее',
     modeTitle: 'Как вы хотите пройти тест?',
@@ -328,13 +318,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
   const [guestResult, setGuestResult] = useState(null)
   const [activePlan, setActivePlan] = useState(null)
   const [planResults, setPlanResults] = useState([])
-  const [pendingGuestDefinitions, setPendingGuestDefinitions] = useState([])
   const initialLaunchRef = useRef(null)
   const [sessionExpires, setSessionExpires] = useState(null)
   const [pendingMood, setPendingMood] = useState(null)
   const [latestGuestMood, setLatestGuestMood] = useState(null)
-  const [adult, setAdult] = useState(false)
-  const [necessary, setNecessary] = useState(false)
   const [busy, setBusy] = useState(false)
   const [saveState, setSaveState] = useState('')
   const [error, setError] = useState('')
@@ -399,7 +386,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setGuestResult(null)
     setActivePlan(null)
     setPlanResults([])
-    setPendingGuestDefinitions([])
     setSaveState('')
     setError('')
     setPhase('catalog')
@@ -586,6 +572,24 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     replaceGuestRoute({ planId: owningPlanId, runId: created.id })
   }
 
+  async function bootstrapForStartedTest() {
+    // Only a deliberate test-start action can create a temporary guest session.
+    // Do not create accounts/cookies simply when somebody opens the page.
+    try {
+      return await guestFetch('guest/bootstrap')
+    } catch (error) {
+      if (error.status !== 401 || error.code !== 'GUEST_SESSION_REQUIRED') throw error
+      const session = await guestFetch('guest/session', {
+        adult: true,
+        necessary: true,
+        uiLocale: locale === 'ru' ? 'ru' : 'en',
+        timezone: localZone(),
+      })
+      setSessionExpires(session.expiresAt)
+      return guestFetch('guest/bootstrap')
+    }
+  }
+
   async function begin(id, moodPayload = pendingMood, pinnedDefinition = null) {
     const def = pinnedDefinition || definitionFor(id, locale)
     if (!def) {
@@ -605,7 +609,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setSaveState('')
     setBusy(true)
     try {
-      const bootstrap = await guestFetch('guest/bootstrap')
+      const bootstrap = await bootstrapForStartedTest()
       if (runLifetime.current !== epoch) return
       setSessionExpires(bootstrap.expiresAt)
       setLatestGuestMood(bootstrap.moodCheckins?.[0] || null)
@@ -629,13 +633,9 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       } else {
         await startRun(def, currentPlan?.id)
       }
-    } catch (e) {
+    } catch {
       if (runLifetime.current !== epoch) return
-      if (e.status === 401 || e.code === 'GUEST_SESSION_REQUIRED') {
-        setPhase('consent')
-      } else {
-        setError(c.error)
-      }
+      setError(c.error)
     } finally {
       if (runLifetime.current === epoch) setBusy(false)
     }
@@ -656,7 +656,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       } catch { setError(c.error); return }
     }
     if (definitions.length === 1) {
-      setPendingGuestDefinitions([])
       setActivePlan(null)
       return begin(definitions[0].key, null)
     }
@@ -670,7 +669,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setActivePlan(null)
     setAnswers({})
     setMode(null)
-    setPendingGuestDefinitions(definitions)
     setActive(definitions[0].key)
     setGuestResult(null)
     setPlanResults([])
@@ -678,7 +676,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setError('')
     setBusy(true)
     try {
-      const bootstrap = await guestFetch('guest/bootstrap')
+      const bootstrap = await bootstrapForStartedTest()
       if (runLifetime.current !== epoch) return
       setSessionExpires(bootstrap.expiresAt)
       const plan = await guestFetch('guest/test-plans', {
@@ -690,7 +688,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
       })
       if (runLifetime.current !== epoch) return
       setActivePlan(plan)
-      setPendingGuestDefinitions([])
       if (plan.status === 'completed') {
         const latest = await guestFetch('guest/bootstrap')
         if (runLifetime.current !== epoch) return
@@ -704,62 +701,10 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
         setActive(next.key)
         await startRun(next, plan.id)
       }
-    } catch (cause) {
-      if (runLifetime.current !== epoch) return
-      if (cause.status === 401 || cause.code === 'GUEST_SESSION_REQUIRED') setPhase('consent')
-      else { setError(c.error); setPendingGuestDefinitions([]) }
-    } finally { if (runLifetime.current === epoch) setBusy(false) }
-  }
-
-  async function createGuestSession() {
-    if (!adult || !necessary || !definition) return
-    const epoch = ++runLifetime.current
-    setBusy(true)
-    setError('')
-    try {
-      const session = await guestFetch('guest/session', {
-        adult: true,
-        necessary: true,
-        uiLocale: locale === 'ru' ? 'ru' : 'en',
-        timezone: localZone(),
-      })
-      if (runLifetime.current !== epoch) return
-      setSessionExpires(session.expiresAt)
-      if (pendingMood) await persistGuestMood(pendingMood)
-      if (runLifetime.current !== epoch) return
-      let nextDefinition = definition
-      let owningPlanId = null
-      if (pendingGuestDefinitions.length > 1) {
-        const plan = await guestFetch('guest/test-plans', {
-          items: pendingGuestDefinitions.map(item => ({
-            definitionKey: item.key, definitionVersion: item.version, instrumentLocale: item.instrumentLocale,
-          })),
-          replaceActive: true,
-          operationId: crypto.randomUUID(),
-        })
-        if (runLifetime.current !== epoch) return
-        setActivePlan(plan)
-        setPlanResults([])
-        setPendingGuestDefinitions([])
-        owningPlanId = plan.id
-        if (plan.status === 'completed') {
-          const latest = await guestFetch('guest/bootstrap')
-          if (runLifetime.current !== epoch) return
-          setPlanResults((latest.results || []).filter(row => plan.completedRunIds?.includes(row.runId)))
-          replaceGuestRoute({planId: plan.id})
-          setPhase('summary')
-          return
-        }
-        nextDefinition = getDefinitionById(plan.definitionIds[plan.currentIndex])
-        setActive(nextDefinition.key)
-      }
-      await startRun(nextDefinition, owningPlanId)
     } catch {
       if (runLifetime.current !== epoch) return
       setError(c.error)
-    } finally {
-      if (runLifetime.current === epoch) setBusy(false)
-    }
+    } finally { if (runLifetime.current === epoch) setBusy(false) }
   }
 
   async function saveGuestRun(body) {
@@ -1060,7 +1005,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
     setGuestResult(null)
     setActivePlan(null)
     setPlanResults([])
-    setPendingGuestDefinitions([])
     setSaveState('')
     setError('')
   }
@@ -1118,28 +1062,6 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             <h2 id="guest-tests-title">{c.tryTitle}</h2>
             <p>{c.tryText}</p>
           </header>
-        )}
-
-        {phase === 'consent' && (
-          <div className="cabinet-guest-runner">
-            <h3>{c.consentTitle}</h3>
-            <p>{c.consentText}</p>
-            {definition?.key === 'mini-ipip-20' && <p className="cabinet-test-note">{c.traitNotice}</p>}
-            <label className="hh-check">
-              <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
-              {c.adult}
-            </label>
-            <label className="hh-check">
-              <input type="checkbox" checked={necessary} onChange={(e) => setNecessary(e.target.checked)} />
-              {c.necessary}
-            </label>
-            <div className="cabinet-test-actions">
-              <button type="button" onClick={resetToCatalog}>{c.back}</button>
-              <button type="button" disabled={busy || !adult || !necessary} onClick={createGuestSession}>
-                {c.continue}
-              </button>
-            </div>
-          </div>
         )}
 
         {run && !definition && <div className="cabinet-guest-runner" role="alert">
