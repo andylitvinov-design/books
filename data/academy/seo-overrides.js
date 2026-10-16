@@ -11,6 +11,11 @@ const courses = {
     ru: { title: "Обучение Рейки Иггдрасиль — 7 модулей и инициации", description: "Семь модулей Рейки Иггдрасиль, базовый курс из пяти ступеней, практики, настройки, авторские материалы и возможность запросить инициацию." },
     es: { title: "Reiki Yggdrasil — 7 módulos y cursos de iniciación", description: "Explora siete módulos de Reiki Yggdrasil, cinco niveles del curso básico, prácticas, materiales originales y opciones para comenzar el nivel 1." },
   },
+  "reiki/yggdrasil/basic-course": {
+    en: { title: "Basic Course of Reiki Yggdrasil", description: "Explore all five levels of the Reiki Yggdrasil Basic Course, original study materials, practices and ways to begin Level 1 with Andrey." },
+    ru: { title: "Базовый курс Рейки Иггдрасиль", description: "Изучите пять ступеней базового курса Рейки Иггдрасиль: темы обучения, оригинальные материалы, практики и варианты начала первой ступени." },
+    es: { title: "Curso básico de Reiki Yggdrasil", description: "Explora los cinco niveles del Curso Básico de Reiki Yggdrasil: temas, materiales originales, prácticas y opciones para comenzar el Nivel 1." },
+  },
   "reiki/tantra-reiki/free-initiation": {
     en: { title: "Free Tantra Reiki Initiation Online | Level 1", description: "Explore free Tantra Reiki Level 1 with Andrey Litvinov. Watch the original guided video, read study materials and request a teacher-guided introduction online." },
     ru: { title: "Бесплатная инициация Тантра Рейки онлайн — 1-я ступень", description: "Бесплатное знакомство с 1-й ступенью Тантра Рейки: видео Андрея Литвинова, PDF-материалы, 7 вопросов и запрос инициации онлайн без регистрации." },
