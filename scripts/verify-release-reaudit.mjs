@@ -459,7 +459,8 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          const publicAbout = cspPage.locator('a[href="/en/about"]');
+          const publicAbout = cspPage.locator('.service-home-about a[href="/en/about"]');
+          await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
           await publicAbout.click();
           await expect(cspPage).toHaveURL(origin + '/en/about');

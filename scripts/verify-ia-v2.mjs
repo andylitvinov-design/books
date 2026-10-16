@@ -52,6 +52,36 @@ async function go(page, path) {
   return response
 }
 
+async function verifySiteMenu(page, header, { locale, surface, label, expectedHeader, inViewport }) {
+  const menu = header.locator('details.site-main-menu')
+  const trigger = menu.locator('summary')
+  const links = menu.locator('.site-main-menu-panel > a')
+  await expect(menu).toHaveCount(1)
+  await expect(menu).toHaveJSProperty('open', false)
+  await inViewport(trigger, label + '/site-menu')
+  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [...expectedHeader.map(item => item.href), '/' + locale + '/about'], label + ': exact site-menu destinations')
+  await trigger.focus()
+  await trigger.press('Enter')
+  await expect(menu).toHaveJSProperty('open', true)
+  for (const link of await links.all()) await inViewport(link, label + '/site-menu-link')
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Open site menu overflow: ' + label)
+  await trigger.press('Tab')
+  await expect(links.first()).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveJSProperty('open', false)
+  await expect(trigger).toBeFocused()
+  // Exercise a real menu navigation to another public surface after the matrix's
+  // current-page checks, so its bottom-navigation active state stays meaningful.
+  await trigger.press('Enter')
+  await expect(menu).toHaveJSProperty('open', true)
+  const destination = '/' + locale + '/' + (surface === 'library' ? 'services' : 'library')
+  const target = menu.locator('a[href="' + destination + '"]')
+  await expect(target).toHaveCount(1)
+  await target.click()
+  await expect(page).toHaveURL(origin + destination)
+  await expect(header.locator('details.site-main-menu')).toHaveJSProperty('open', false)
+}
+
 async function verifyPublicHeaderMatrix(page, engine) {
   const diagnostic = await observePublicNavigation(page, { engine, origin, record: event => publicNavigationDiagnostics.push(event) })
   try {
@@ -82,12 +112,14 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await expect(menu).toHaveJSProperty('open', false)
         await inViewport(cabinet, label + '/cabinet')
         await inViewport(trigger, label + '/language')
-        if (width >= 768) {
+        if (width > 1140) {
           for (const link of await header.locator('[data-nav-item]').all()) {
             await expect(link).toBeVisible()
             const box = await link.boundingBox()
-            assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ': tablet navigation link must remain in bounds')
+            assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ': desktop navigation link must remain in bounds')
           }
+        } else {
+          for (const link of await header.locator('[data-nav-item]:not(.site-cabinet-entry)').all()) await expect(link).toBeHidden()
         }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Closed menu overflow: ' + label)
         // Use the real keyboard sequence; opening details alone does not test
@@ -134,6 +166,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         } else {
           await expect(bottom).toBeHidden()
         }
+        await verifySiteMenu(page, header, { locale, surface, label, expectedHeader, inViewport })
         pass('Public navigation: ' + label)
       }
     }
