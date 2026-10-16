@@ -155,7 +155,11 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /Заказать консультацию специалиста/)
   assert.match(workspace, /Your result stays private and is not shared automatically/)
   assert.match(catalog, /cabinet-result-page/)
-  assert.match(catalog, /cabinet-result-actions-grid/)
+  assert.match(catalog, /<GuestScaleInterpretation result=\{guestResult\} locale=\{locale\} \/>\s*<section className=\{guestActions\.capture\} data-guest-analysis-gate/,
+    'guest scores must be followed immediately by the explicit Cabinet explanations gate')
+  assert.match(catalog, /className=\{guestActions\.googleButton\} type="button" onClick=\{saveToCabinet\} disabled=\{busy\}/)
+  assert.match(catalog, /This test is saved to your account only after you confirm\./)
+  assert.match(catalog, /<nav className=\{guestActions\.nextActions\}/)
   assert.match(catalog, /cabinet-result-footer/)
   assert.match(workspace, /c\.contextAtCheckIn/)
   assert.match(workspace, /\['trigger', c\.trigger\]/)

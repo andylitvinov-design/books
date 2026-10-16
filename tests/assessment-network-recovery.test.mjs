@@ -97,16 +97,34 @@ test('guest missing-version recovery guards question header and context form',()
  assert.match(guest,/phase === 'context' && definition\?\.optionalContext\?\.length > 0/)
 })
 
+test('guest bootstrap returns the verified session expiry even before any runs exist',async()=>{
+ const repository=fs.readFileSync(new URL('../lib/app/guest-repository.js',import.meta.url),'utf8')
+ const credential={id:'synthetic-session',secretHash:'synthetic-hash'},config={},calls=[]
+ const expiresAt=new Date('2026-10-23T12:00:00.000Z')
+ const db={async query(sql,params){calls.push(sql);assert.deepEqual(Array.from(params),[credential.id]);return{rows:[]}}}
+ const ctx={config,iso:value=>value.toISOString(),
+  async sessionRow(actualDb,actualCredential){assert.equal(actualDb,db);assert.equal(actualCredential,credential);return{id:credential.id,expires_at:expiresAt}},
+  async transaction(actualConfig,accountId,read,options){assert.equal(actualConfig,config);assert.equal(accountId,null);assert.equal(options.server,true);return read(db)},
+  guestRunView(){assert.fail('No synthetic run exists')},guestResultView(){assert.fail('No synthetic result exists')},moodView(){assert.fail('No synthetic mood exists')},testPlanView(){assert.fail('No synthetic plan exists')},
+ }
+ const methods=vm.runInNewContext('({'+extract(repository,'    async bootstrap(credential)','    async createTestPlan(')+'})',ctx)
+ const result=await methods.bootstrap(credential)
+ assert.deepEqual(JSON.parse(JSON.stringify(result)),{expiresAt:'2026-10-23T12:00:00.000Z',runs:[],results:[],moodCheckins:[],activeTestPlan:null})
+ assert.equal(calls.length,4)
+ for(const sql of calls){assert.match(sql,/^select /);assert.match(sql,/guest_session_id=\$1/)}
+})
+
 function batteryContext() {
  const first={id:'first-en-v1',key:'first',version:'v1',instrumentLocale:'en',questions:[{id:'q'}]}
  const second={id:'second-en-v1',key:'second',version:'v1',instrumentLocale:'en',questions:[{id:'q'}]}
+ const expiresAt='2026-10-23T12:00:00.000Z'
  const ctx={runLifetime:{current:0},replaceGuestRoute(){},saving:{current:false},submitting:{current:false},saveOperation:{current:{old:true}},completion:{current:{old:true}},run:{id:'old'},locale:'ru',pendingMood:null,pendingGuestDefinitions:[],definition:first,adult:true,necessary:true,c:{error:'failed'},crypto:{randomUUID},localZone:()=> 'UTC',calls:[],definitions:[first,second],
  definitionFor:key=>[first,second].find(d=>d.key===key),getDefinitionById:id=>{const d=[first,second].find(d=>d.id===id);if(!d)throw Error('unknown');return d},
  async guestFetch(path,body){ctx.calls.push({path,body});if(path==='guest/bootstrap'){
     if(ctx.guestSessionMissing)throw Object.assign(new Error('GUEST_SESSION_REQUIRED'),{status:401,code:'GUEST_SESSION_REQUIRED'});
-    return {runs:[],results:[]}
+    return {expiresAt,runs:[],results:[],moodCheckins:[],activeTestPlan:null}
   }
-  if(path==='guest/session'){ctx.guestSessionMissing=false;return{expiresAt:'2026-10-23T12:00:00.000Z'}};if(path==='guest/test-plans')return{id:'plan',status:'active',currentIndex:1,definitionIds:[first.id,second.id]};if(path==='guest/runs')return{id:'new-'+body.definitionKey,definitionId:[first,second].find(d=>d.key===body.definitionKey).id};throw Error(path)}}
+  if(path==='guest/session'){ctx.guestSessionMissing=false;return{expiresAt}};if(path==='guest/test-plans')return{id:'plan',status:'active',currentIndex:1,definitionIds:[first.id,second.id]};if(path==='guest/runs')return{id:'new-'+body.definitionKey,definitionId:[first,second].find(d=>d.key===body.definitionKey).id};throw Error(path)}}
  for(const name of ['Busy','Run','Active','GuestResult','Error','SaveState','SessionExpires','LatestGuestMood','Answers','Context','Index','Mode','Phase','ActivePlan','PlanResults','PendingGuestDefinitions'])ctx['set'+name]=value=>{ctx[name[0].toLowerCase()+name.slice(1)]=value}
  vm.createContext(ctx)
  vm.runInContext(extract(guest,'  async function startRun(','  async function saveGuestRun(')+extract(guest,'  function resetToCatalog()','  return (\n    <>'),ctx)
@@ -119,9 +137,9 @@ for(const stage of ['guest/bootstrap','guest/test-plans','guest/runs'])for(const
  const old=ctx.beginGuestBattery([{key:'first'},{key:'second'}]);await tick();assert.equal(typeof release,'function')
  assert.equal(ctx.saveOperation.current,null);assert.equal(ctx.completion.current,null);assert.equal(ctx.run,null)
  if(transition==='reset')ctx.resetToCatalog();else await ctx.beginGuestBattery([{key:'first'}])
- const expected={run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error}
+ const expected={run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error,expiresAt:ctx.sessionExpires}
  release();await old
- assert.deepEqual({run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error},expected)
+ assert.deepEqual({run:ctx.run,active:ctx.active,phase:ctx.phase,busy:ctx.busy,plan:ctx.activePlan,error:ctx.error,expiresAt:ctx.sessionExpires},expected)
 })
 test('guest CTA creates one session automatically and honors pinned plan instrument',async()=>{
  const ctx=batteryContext();ctx.guestSessionMissing=true
@@ -138,6 +156,7 @@ test('existing guest starts directly without creating another temporary session'
  const ctx=batteryContext()
  await ctx.beginGuestBattery([{key:'first'},{key:'second'}])
  assert.equal(ctx.calls.filter(c=>c.path==='guest/session').length,0)
+ assert.equal(ctx.sessionExpires,'2026-10-23T12:00:00.000Z')
  assert.equal(ctx.phase,'questions')
 })
 test('guest completed battery goes to saved summary with no extra run',async()=>{
@@ -151,8 +170,9 @@ for(const stage of ['guest/session','guest/test-plans','guest/runs'])test(`guest
  const fetch=ctx.guestFetch;let release
  ctx.guestFetch=(path,body)=>path===stage?new Promise(resolve=>{release=()=>resolve(fetch(path,body))}):fetch(path,body)
  const pending=ctx.beginGuestBattery([{key:'first'},{key:'second'}])
- await tick();assert.equal(typeof release,'function');ctx.resetToCatalog();release();await pending
+ await tick();assert.equal(typeof release,'function');ctx.resetToCatalog();const expiresAt=ctx.sessionExpires;release();await pending
  assert.equal(ctx.phase,'catalog');assert.equal(ctx.run,null);assert.equal(ctx.activePlan,null);assert.equal(ctx.busy,false)
+ assert.equal(ctx.sessionExpires,expiresAt,'A stale launch must not replace the current session expiry')
 })
 test('failed guest bootstrap does not silently create a guest session',async()=>{
  const ctx=batteryContext(),fetch=ctx.guestFetch

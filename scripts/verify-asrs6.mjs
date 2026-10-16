@@ -1,4 +1,5 @@
-import { guestFinishLabel, assertGuestScaleResult } from './helpers/guest-scale-verifier.mjs'
+import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
+import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
 // Requires the approved isolated database, app and provider protocol double.
 import { chromium, webkit, expect } from '@playwright/test'
@@ -59,11 +60,6 @@ async function api(context, path, body) {
   const value = await response.json()
   assert.ok(response.ok(), path + ': ' + JSON.stringify(value))
   return value
-}
-async function selectMode(target, mode) {
-  const choices = target.locator('.hh-test-mode-grid button')
-  await expect(choices).toHaveCount(2)
-  await choices.nth(mode === 'quick' ? 0 : 1).click()
 }
 async function sourceNotice(target, definition, guest, locale) {
   const instructions = target.locator((guest ? '.cabinet-test-note' : '.hh-runner-instructions') + '[lang="' + definition.instrumentLocale + '"]')
@@ -171,7 +167,7 @@ async function fill(target, definition, mode, guest, locale, values) {
     if (mode === 'quick' && index === 2) {
       await target.waitForLoadState('networkidle')
       await target.reload()
-      if (guest) await selectMode(target, 'quick')
+      await assertQuestionnaireMode(target, expect, { mode: 'quick', guest, definition })
       assert.equal(await sourceNotice(target, definition, guest, locale), initialDate)
       for (let prior = 0; prior <= index; prior++) await expect(target.locator(quick).nth(prior).locator(guest ? '.cabinet-answer-list button' : '.hh-scale button').nth(values[prior])).toHaveAttribute('aria-pressed', 'true')
       await expect(target.locator(quick).nth(3).locator('[aria-pressed="true"]')).toHaveCount(0)
@@ -227,15 +223,17 @@ try {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
     const run = await api(account, 'runs', { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale, operationId: randomUUID() })
     await navigate(page, origin + '/' + locale + '/app/runs/' + run.id + '?mode=' + mode)
-    if (mode === 'guided') await selectMode(page, mode)
+    await assertQuestionnaireMode(page, expect, { mode, guest: false, definition })
     await fill(page, definition, mode, false, locale, values)
     await assertReport(page, definition, locale, expected)
     const stored = (await api(account, 'bootstrap')).results.find(result => result.runId === run.id)
     assertStored(stored, definition, expected)
+    await assertAccountScaleReport(page, expect, stored, locale)
     // Check a persisted RU result with an EN report too; validation must follow its source language.
     const reportLocale = locale === 'ru' ? 'en' : locale
     await navigate(page, origin + '/' + reportLocale + '/app/results/' + stored.id)
     await assertReport(page, definition, reportLocale, expected)
+    await assertAccountScaleReport(page, expect, stored, reportLocale)
     await page.screenshot({ path: output + '/account-' + locale + '-' + mode + '.png', fullPage: true })
     passed('account ' + locale + ' ' + mode + ': exact source, five anchors, shading, saved count, provenance and reopened report')
   }
@@ -256,7 +254,7 @@ try {
     const plan = await api(guest, 'guest/test-plans', { items: [{ definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale }], operationId: randomUUID() })
     page = await guest.newPage(); observe(page)
     await navigate(page, origin + '/' + locale + '/client?plan=' + plan.id)
-    await selectMode(page, mode)
+    await enterGuestQuestionnaireMode(page, expect, { mode, definition })
     await fill(page, definition, mode, true, locale, values)
     await expect(page.locator('[data-guest-scale-interpretation]')).toBeVisible({ timeout: 20000 })
     const stored = (await api(guest, 'guest/bootstrap')).results.find(result => result.definitionId === definition.id && !resultIds.has(result.id))

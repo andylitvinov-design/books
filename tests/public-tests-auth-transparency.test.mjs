@@ -13,7 +13,7 @@ test('public picker transparently offers tests without registration and advertis
   assert.match(source, /наборы проходятся без регистрации/)
   assert.match(source, /conjuntos disponibles sin registrarte/)
   assert.match(source, /free personal analysis/)
-  assert.match(source, /бесплатный анализ/)
+  assert.match(source, /бесплатные пояснения и анализ/)
 })
 
 test('homepage accurately advertises registration-free starts and free Cabinet analysis', () => {

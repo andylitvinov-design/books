@@ -15,7 +15,7 @@ const saveSource=extract('saveAccountRelationshipSelection','launchPublicRelatio
 const publicSource=extract('launchPublicRelationshipGuest','fill')
 const load=(text,name,dependencies)=>new Function(...Object.keys(dependencies),text+';return '+name)(...Object.values(dependencies))
 const clone=value=>structuredClone(value)
-const definitions=[{key:'hh-love-affection',id:'love-en',version:'v1',instrumentLocale:'en',contentHash:'love-content-hash'},{key:'hh-trust-openness',id:'trust-en',version:'v1',instrumentLocale:'en'}]
+const definitions=[{key:'hh-love-affection',id:'love-en',version:'v1',instrumentLocale:'en',contentHash:'love-content-hash',questions:[{text:'First exact relationship item'},{text:'Second exact relationship item'}]},{key:'hh-trust-openness',id:'trust-en',version:'v1',instrumentLocale:'en'}]
 const preferences={focus:['resources'],problems:[],details:[],axes:[],areas:[],styles:[],kinds:[],lengths:[],depth:'balanced',maxMinutes:0,language:'any',tracking:'any',freeOnly:false}
 
 async function openScenario({openCount=1,wrongAudience=false,wrongRemoval=false,unchanged=false,duplicateChoice=false,duplicatePicker=false}={}){
@@ -116,17 +116,24 @@ for(const option of ['wrongAudience','wrongSelection','selectedOrder','extraSele
 
 async function publicScenario(options={}){
  const definition=definitions[0],before={account:{id:'owner'},activeTestPlan:{id:'saved',definitionIds:['existing']},latestTestPlan:{id:'previous'},runs:[{id:'run'}],results:[{id:'result'}]}
- let callback,removed=false,clicked=false,consented=false,url,reads=0
- const mode={visible:false},consent={visible:true,or:()=>({visible:true}),isVisible:async()=>consent.visible}
- const guest={visible:true,locator:selector=>{assert.equal(selector,'.hh-test-mode-picker');return mode},getByRole(role,{name,exact}){
-  assert.equal(exact,true)
-  if(role==='heading'){assert.equal(name,'Before you start');return consent}
-  assert.equal(role,'button');assert.equal(name,'Continue')
-  return {click:async()=>{consented=true;mode.visible=true;consent.visible=false;url=origin+'/en/client?run=guest-run';callback({url:()=>origin+'/api/app/guest/runs',method:()=> 'POST'});if(options.guestPlanWrite)callback({url:()=>origin+'/api/app/guest/test-plans',method:()=> 'POST'});if(options.write)callback({url:()=>origin+'/api/app/test-plans',method:()=> 'POST'})}}
- },getByLabel(name,{exact}){assert.equal(exact,true);assert.ok(['I am 18 or older.','I agree to temporary private processing of my answers and result for this self-observation test.'].includes(name));return {check:async()=>{}}}}
- const picker={count:1,visible:true,locator:selector=>{assert.equal(selector,'[data-public-selected-tests] [data-selected-test-key]');return {count:options.extraSelection?2:1,key:options.wrongSelection?'other-test':definition.key}},getByRole(role,copy){assert.equal(role,'button');assert.deepEqual(copy,{name:'Start free monitoring No registration required to start',exact:true});return {count:1,click:async()=>{clicked=true;url=origin+(options.wrongAudience?'/en/app/tests?plan=bad':'/en/client?startTests='+definition.key)}}}}
+ let callback,removed=false,clicked=false,url,reads=0
+ const quick={visible:!options.missingQuick,locator:selector=>{assert.equal(selector,'.cabinet-quick-question');return {count:options.wrongQuestionCount?1:definition.questions.length}},getByRole(role,options_){
+  assert.equal(role,'heading')
+  if(options_.level===3)return {texts:options.wrongQuestions?['Wrong item','Second exact relationship item']:definition.questions.map(item=>item.text)}
+  assert.deepEqual(options_,{name:definition.questions[0].text,exact:true});return {visible:!options.hiddenQuestion}
+ }}
+ const guest={visible:true,locator:selector=>{
+  if(selector==='.hh-test-mode-picker')return {count:options.staleMode?1:0}
+  assert.equal(selector,'.cabinet-quick-form');return quick
+ },getByRole(role,options_){assert.equal(role,'heading');assert.deepEqual(options_,{name:'Before you start',exact:true});return {count:options.staleConsent?1:0}}}
+ const picker={count:1,visible:true,locator:selector=>{assert.equal(selector,'[data-public-selected-tests] [data-selected-test-key]');return {count:options.extraSelection?2:1,key:options.wrongSelection?'other-test':definition.key}},getByRole(role,copy){assert.equal(role,'button');assert.deepEqual(copy,{name:'Start free monitoring No registration required to start',exact:true});return {count:1,click:async()=>{
+  clicked=true;url=origin+(options.wrongAudience?'/en/app/tests?plan=bad':options.transientURL?'/en/client?startTests='+definition.key:'/en/client?run=guest-run')
+  callback({url:()=>origin+'/api/app/guest/runs',method:()=> 'POST'})
+  if(options.guestPlanWrite)callback({url:()=>origin+'/api/app/guest/test-plans',method:()=> 'POST'})
+  if(options.write)callback({url:()=>origin+'/api/app/test-plans',method:()=> 'POST'})
+ }}}}
  const target={on:(event,fn)=>{assert.equal(event,'request');callback=fn},off:(event,fn)=>{assert.equal(event,'request');assert.equal(fn,callback);removed=true},locator:selector=>selector==='[data-prelogin-test-picker]'?picker:(assert.equal(selector,'#cabinet-tests'),guest),waitForLoadState:async state=>assert.equal(state,'networkidle')}
- const expect=locator=>({toHaveURL:async expected=>assert.equal(url,expected),toHaveCount:async count=>assert.equal(locator.count,count),toBeVisible:async()=>assert.equal(locator.visible,true),toHaveAttribute:async(key,value)=>{assert.equal(key,'data-selected-test-key');assert.equal(locator.key,value)}})
+ const expect=locator=>({toHaveURL:async expected=>assert.equal(url,expected),toHaveText:async texts=>assert.deepEqual(locator.texts,texts),toHaveCount:async count=>assert.equal(locator.count,count),toBeVisible:async()=>assert.equal(locator.visible,true),toHaveAttribute:async(key,value)=>{assert.equal(key,'data-selected-test-key');assert.equal(locator.key,value)}})
  const navigate=async(page,destination)=>{assert.equal(page,target);assert.equal(destination,origin+'/en/client/tests?test='+definition.key);url=destination}
  const api=async(ctx,path)=>{
   assert.equal(ctx,'context')
@@ -148,10 +155,10 @@ async function publicScenario(options={}){
   return state
  }
  try{await load(publicSource,'launchPublicRelationshipGuest',{assert,expect,navigate,origin,api})(target,'context',definition)}finally{assert.equal(removed,true)}
- assert.equal(clicked&&consented,true)
+ assert.equal(clicked,true)
 }
 test('actual signed-in public relationship launch starts the exact fresh guest run without a guest plan or account mutations',()=>publicScenario())
-for(const option of ['write','wrongAudience','wrongSelection','extraSelection','extraGuestPlan','guestPlanWrite','wrongGuestRun','extraGuestRun','wrongKey','wrongVersion','wrongLocale','wrongHash','nonemptyAnswers','startedProgress','wrongStatus','wrongRunURL','extraGuestResult','changedOwner','changed_activeTestPlan','changed_latestTestPlan','changed_runs','changed_results'])test('public relationship proof rejects '+option,async()=>{await assert.rejects(publicScenario({[option]:true}))})
+for(const option of ['write','wrongAudience','wrongSelection','extraSelection','missingQuick','wrongQuestionCount','wrongQuestions','hiddenQuestion','staleMode','staleConsent','transientURL','extraGuestPlan','guestPlanWrite','wrongGuestRun','extraGuestRun','wrongKey','wrongVersion','wrongLocale','wrongHash','nonemptyAnswers','startedProgress','wrongStatus','wrongRunURL','extraGuestResult','changedOwner','changed_activeTestPlan','changed_latestTestPlan','changed_runs','changed_results'])test('public relationship proof rejects '+option,async()=>{await assert.rejects(publicScenario({[option]:true}))})
 
 test('real scenario calls the tested helpers and retains opt-in, filters, scoring, bilingual PDF and boundary gates',()=>{
  for(const text of ["const picker=await openAccountRelationshipPicker(page)","await expect(voluntary).not.toBeChecked()","await voluntary.check()","await expect(await publicTopicButton(picker,'en','Relationships')).toHaveAttribute('aria-pressed','false')","await expect(await publicTopicButton(picker,'en','Self-support')).toHaveAttribute('aria-pressed','true')","await expect(await relationshipChoice(picker,'hh-love-affection')).toBeChecked()","saveAccountRelationshipSelection(page,account,picker,[localized('hh-love-affection','en')],selectionPreferences)","launchPublicRelationshipGuest(page,account,localized('hh-love-affection','en'))","!voluntaryPlan.definitionIds.includes(localized('hh-sexual-self-kindness','en').id)","assert.deepEqual(result.dimensions.map(x=>x.value),[1.67,2])","assertGuestScaleResult(page,expect,result,locale)","'%PDF-1.4'","data-problem-key=\"boundaries\"","data-problem-key=\"consent-pressure\"","assert.deepEqual(errors,[])"])assert.ok(source.includes(text),text)
@@ -183,9 +190,12 @@ test('the real Cabinet single-definition branch starts a run directly and clears
  const end=cabinet.indexOf('    const epoch =',start)
  assert.ok(start>0&&end>start)
  const calls=[]
- const invoke=new Function('definitions','setPendingGuestDefinitions','setActivePlan','begin',cabinet.slice(start,end))
- const result=invoke([{key:'hh-love-affection'}],value=>calls.push(['pending',value]),value=>calls.push(['plan',value]),(...args)=>{calls.push(['begin',...args]);return 'direct-run'})
+ const invoke=new Function('definitions','setActivePlan','begin',cabinet.slice(start,end))
+ const result=invoke([{key:'hh-love-affection'}],value=>calls.push(['plan',value]),(...args)=>{calls.push(['begin',...args]);return 'direct-run'})
  assert.equal(result,'direct-run')
- assert.deepEqual(calls,[['pending',[]],['plan',null],['begin','hh-love-affection',null]])
- assert.match(cabinet,/if \(pendingGuestDefinitions.length > 1\) \{\s*const plan = await guestFetch\('guest\/test-plans'/)
+ assert.deepEqual(calls,[['plan',null],['begin','hh-love-affection',null]])
+ assert.doesNotMatch(cabinet,/pendingGuestDefinitions|phase === 'consent'/)
+ const multiple=cabinet.slice(end,cabinet.indexOf('  async function saveGuestRun(',end))
+ assert.match(multiple,/const plan = await guestFetch\('guest\/test-plans'/)
+ assert.match(multiple,/items: definitions\.map/)
 })
