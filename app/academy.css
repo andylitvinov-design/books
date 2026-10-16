@@ -3722,3 +3722,12 @@
     font-size: 11px;
   }
 }
+
+/* One prominent action fills each consultation capture; the two messenger
+   destinations live inside its own compact disclosure, not as half-width cards. */
+.reiki-offer-card__actions:has([data-contact-channel-chooser]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.reiki-standalone-consultation .reiki-offer-card__actions:has([data-contact-channel-chooser]) {
+  max-width: 520px;
+}
