@@ -51,7 +51,10 @@ test('global optimizer remains enabled for existing book redirects', () => {
   const catalog = readFileSync('components/book-catalog.tsx','utf8');
   assert.match(catalog, /<Image\s+unoptimized\s+alt=[\s\S]*?src="\/images\/holistic-house\/books-library\.webp"/);
   // The optimized dynamic book covers remain separate and never inherit the hero opt-out.
-  assert.match(catalog, /<Image\s+alt=\{book\.title\}/);
+  const coverSection = catalog.split('visibleBooks.map((book, index) =>')[1];
+  assert.ok(coverSection, 'Book cover loop is retained');
+  assert.match(coverSection, /<Image\\s+alt=\\{locale === "ru"/);
+  assert.doesNotMatch(coverSection, /<Image\\s+unoptimized/);
   assert.match(catalog, /src=\{"\/media\/" \+ book\.mediaSeries/);
   assert.match(config,/hostname: "psitrends.com", pathname: "\/images\/\*\*"/);
   assert.match(config,/outputFileTracingIncludes/);
