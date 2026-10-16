@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     metadataBase: metadataBaseFor(),
     title: `${libraryCopy[locale].title} — Holistic House`,
-    description: libraryCopy[locale].lead,
+    description: { en: "Explore Holistic House books, educational videos, remedy references and practical guides in one library. Find original materials and start reading.", ru: "Книги, обучающие видео, справочник препаратов и практические материалы Holistic House собраны в одной библиотеке. Выберите подходящий раздел.", es: "Explora libros, vídeos educativos, el catálogo de remedios y guías prácticas de Holistic House. Encuentra materiales originales en una biblioteca." }[locale],
     alternates: {
       canonical: `/${locale}/library`,
       languages: { en: "/en/library", ru: "/ru/library", es: "/es/library", "x-default": "/en/library" },
