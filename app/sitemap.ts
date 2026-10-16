@@ -57,7 +57,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const pathname = new URL(entry.url).pathname;
     const match = pathname.match(/^\/(en|ru|es)(\/.*)?$/);
     const suffix = match ? (match[2] || '') : pathname === '/' ? '' : null;
-    if (suffix === null) return { ...entry, lastModified: entry.lastModified ?? releaseDate };
+    const lastModified = 'lastModified' in entry ? entry.lastModified : undefined;
+    if (suffix === null) return { ...entry, lastModified: lastModified ?? releaseDate };
     const pairs = (['en', 'ru', 'es'] as const).map(locale => {
       const path = locale === 'en' && suffix === '' ? '/' : '/' + locale + suffix;
       return [locale, base + path] as const;
@@ -67,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : undefined;
     return {
       ...entry,
-      lastModified: entry.lastModified ?? releaseDate,
+      lastModified: lastModified ?? releaseDate,
       alternates: languageAlternates ? { languages: languageAlternates } : undefined,
     };
   });
