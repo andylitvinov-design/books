@@ -293,15 +293,18 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
         {activePanel==='services'&&<>
-          <aside className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
-            <strong>{ru?'Заказы через сайт: комиссия 20%':'Website orders: 20% platform commission'}</strong>
-            <p>{ru?'Для оплаченных услуг, заказанных и оплаченных через Holistic House, доля мастера — 80% до применимых платёжных сборов и налогов. Бесплатные услуги без комиссии. Приём и распределение платежей мастерам пока не активированы.':'For paid services ordered and paid through Holistic House, the practitioner share is 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
-          </aside>
+          <details className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
+            <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
+            <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
+          </details>
           <Services items={services} t={t} locale={locale} busy={busy}
             onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
             onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
             onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
         </>}
+        {activePanel==='clients'&&(isOwner&&accountId
+          ?<CrmManager key={accountId} locale={locale} accountId={accountId} />
+          :<ClientLeads items={requests} locale={locale} onOpenRequests={()=>choosePanel('requests')} />)}
         {activePanel==='profile'&&<>
           <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
             onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
@@ -513,4 +516,31 @@ function Requests({items,t,busy,onStatus}){
     {!visible.length&&<p>{t.none}</p>}
     {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{x.contact}</p>{x.message&&<p>{x.message}</p>}{x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
   </section>
+}
+
+function ClientLeads({items,locale,onOpenRequests}){
+  const ru=locale==='ru'
+  const [search,setSearch]=useState('')
+  const seen=new Set()
+  const contacts=items.filter(item=>{
+    const contact=String(item.contact||'').trim()
+    if(!contact)return false
+    const key=contact.toLowerCase()
+    if(seen.has(key))return false
+    seen.add(key)
+    return true
+  })
+  const filtered=contacts.filter(item=>String(item.contact||'').toLowerCase().includes(search.trim().toLowerCase()))
+  return <div className="hh-practice-clients">
+    <p className="hh-practice-clients-notice">{ru?'Здесь только контакты из заявок на ваши услуги. Личные тесты и медицинские данные недоступны.':'Only contacts from enquiries about your services appear here. Private tests and health records are not shared.'}</p>
+    <div className="hh-practice-clients-head"><h3>{ru?'Клиентские обращения':'Client enquiries'} ({contacts.length})</h3>
+      <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+        aria-label={ru?'Поиск контакта':'Search contacts'} placeholder={ru?'Поиск контакта…':'Search contacts…'} />
+    </div>
+    {filtered.length?<ul className="hh-practice-leads-list">{filtered.map(item=><li key={item.id}>
+      <span className="hh-practice-lead-icon"><UsersRound aria-hidden="true" /></span>
+      <span><strong>{item.contact}</strong><small>{item.status==='requested'?(ru?'Новая заявка':'New enquiry'):item.status==='contacted'?(ru?'Связались':'Contacted'):(ru?'Обращение':'Enquiry')}</small></span>
+    </li>)}</ul>:<div className="hh-practice-empty-state"><p>{search?(ru?'Совпадений нет.':'No matching contacts.'):(ru?'Когда появятся заявки, контакты будут здесь.':'Contact details will appear when someone enquires.')}</p></div>}
+    <button type="button" className="hh-practice-client-open" onClick={onOpenRequests}>{ru?'Открыть заявки':'Open enquiries'} <ChevronRight aria-hidden="true" /></button>
+  </div>
 }
