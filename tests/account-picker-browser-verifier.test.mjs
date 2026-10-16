@@ -18,10 +18,10 @@ for (const initial of ['compact', 'collapsed', 'full']) test(`browser verifier s
       else { assert.equal(state, 'full'); open = true }
     },
   })
-  const card = { filter() { return this }, first() { return this }, isVisible: async () => state === 'full' && open,
-    getByRole(role, { name }) { assert.equal(role, 'checkbox'); assert.equal(name, 'Current State Check'); return { check: async () => { assert.equal(state, 'full'); assert.equal(open, true); checked = true } } } }
-  const page = { getByRole: (_, { name }) => control(name), locator: () => card }
-  const expect = locator => ({ toBeVisible: async () => assert.equal(await locator.isVisible(), true) })
+  const card = { count: async () => Number(state === 'full' && open), filter() { return this }, first() { return this }, isVisible: async () => state === 'full' && open,
+    getByRole(role, { name, exact }) { assert.ok(['heading','checkbox'].includes(role)); assert.equal(exact,true); assert.equal(name, 'Current State Check'); return { count: async () => 1, check: async () => { assert.equal(state, 'full'); assert.equal(open, true); checked = true } } } }
+  const page = { getByRole: (_, { name }) => control(name), locator: selector => selector.startsWith('button[')?control(/customizer/):card }
+  const expect = locator => ({ toBeVisible: async () => assert.equal(await locator.isVisible(), true), toHaveCount: async count => assert.equal(await locator.count(),count), toBeChecked: async () => assert.equal(checked,true), toHaveAttribute: async (key,value) => {assert.equal(key,'aria-expanded');assert.equal(await locator.getAttribute(key),value)} })
   await new Function('expect', `${helper}; return chooseVisibleTest`)(expect)(page, 'Current State Check')
   assert.equal(checked, true)
   assert.equal(actions.filter(x => x === 'Browse full database').length, initial === 'full' ? 0 : 1)

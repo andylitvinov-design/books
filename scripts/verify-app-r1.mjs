@@ -101,7 +101,7 @@ function unsavedPublicTest(savedPlan){
  return entry
 }
 async function chooseVisibleTest(testPage,name){
- const customizer=testPage.getByRole('button',{name:/Choose my own tests and filters/})
+ const customizer=testPage.locator('button[aria-controls="hh-test-customizer"]')
  if(!(await customizer.count())){
   const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
   if(await toggle.count())await toggle.click()
@@ -113,22 +113,31 @@ async function chooseVisibleTest(testPage,name){
   await browseFull.click()
   await expect(testPage.getByRole('button',{name:'Back to easy selection',exact:false})).toBeVisible()
  }
+ await expect(customizer).toHaveCount(1)
  await expect(customizer).toBeVisible({timeout:15000})
  if((await customizer.getAttribute('aria-expanded'))!=='true')await customizer.click()
- const card=()=>testPage.locator('article').filter({has:testPage.getByRole('heading',{name,exact:true})})
-  .filter({has:testPage.getByRole('checkbox',{name,exact:true})}).first()
+ await expect(customizer).toHaveAttribute('aria-expanded','true')
+ // filter(has) evaluates from each article; do not embed an outer Locator root.
+ const pageRoot=typeof testPage.page==='function'?testPage.page():testPage
+ const card=()=>testPage.locator('article').filter({has:pageRoot.getByRole('heading',{name,exact:true})})
+  .filter({has:pageRoot.getByRole('checkbox',{name,exact:true})})
  if(!(await card().isVisible().catch(()=>false))){
-  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
-  if(await more.count())await more.click()
+  const more=testPage.getByRole('button',{name:/^Show all matching tests \(\d+\)$/})
+  if(await more.count()){await expect(more).toHaveCount(1);await more.click()}
  }
  if(!(await card().isVisible().catch(()=>false))){
   const all=testPage.getByRole('button',{name:'Full database',exact:true})
   if(await all.count())await all.click()
-  const more=testPage.getByRole('button',{name:/^Show all matching tests/}).first()
-  if(await more.count())await more.click()
+  const more=testPage.getByRole('button',{name:/^Show all matching tests \(\d+\)$/})
+  if(await more.count()){await expect(more).toHaveCount(1);await more.click()}
  }
+ await expect(card()).toHaveCount(1)
+ await expect(card().getByRole('heading',{name,exact:true})).toHaveCount(1)
  await expect(card()).toBeVisible({timeout:15000})
- await card().getByRole('checkbox',{name,exact:true}).check()
+ const choice=card().getByRole('checkbox',{name,exact:true})
+ await expect(choice).toHaveCount(1)
+ await choice.check()
+ await expect(choice).toBeChecked()
 }
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
