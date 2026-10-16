@@ -450,8 +450,12 @@ async function verifyPublicServiceConversionJourneys(){
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
    await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
+   const quick=publicPage.locator('[data-free-quick-request]').first()
+   await expect(quick).toBeVisible({timeout:30000})
    const intake=publicPage.locator('[data-free-drawing-intake]')
-   await expect(intake).toBeVisible({timeout:30000})
+   await expect(intake).toBeHidden()
+   const advanced=publicPage.locator('details').filter({has:intake})
+   assert.equal(await advanced.evaluate(element=>element.open),false,'Detailed drawing form must start collapsed')
    await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
@@ -463,7 +467,13 @@ async function verifyPublicServiceConversionJourneys(){
    window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
   })
   await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
+  const quick=publicPage.locator('[data-free-quick-request]').first()
+  await expect(quick).toBeVisible()
   const intake=publicPage.locator('[data-free-drawing-intake]')
+  const advanced=publicPage.locator('details').filter({has:intake})
+  await expect(intake).toBeHidden()
+  await advanced.locator('summary').click()
+  await expect(intake).toBeVisible()
   const uniqueProblem='Synthetic public form value — '+locale
   const uniqueGoal='Synthetic public goal value — '+locale
   await intake.locator('textarea').nth(0).fill(uniqueProblem)
