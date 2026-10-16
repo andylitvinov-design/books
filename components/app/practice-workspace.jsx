@@ -422,11 +422,35 @@ function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
   return <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onSave(item?.id||null,{...v,languages:Array.isArray(v.languages)?v.languages:list(v.languages),confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),currency:['free','contact'].includes(v.pricingMode)?'':v.currency,durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)},item?.revision)}}><div className="hh-actions"><h3>{item?(item.copy?.title||t.services):t.add}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>{item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
     <label>{t.serviceTitleEn}<input required value={v.copy.en.title} onChange={e=>setCopy('en','title',e.target.value)}/></label><label>{t.serviceTitleRu}<input required value={v.copy.ru.title} onChange={e=>setCopy('ru','title',e.target.value)}/></label>
     <label>{t.shortEn}<textarea required value={v.copy.en.shortDescription||v.copy.en.description} onChange={e=>setCopy('en','shortDescription',e.target.value)}/></label><label>{t.shortRu}<textarea required value={v.copy.ru.shortDescription||v.copy.ru.description} onChange={e=>setCopy('ru','shortDescription',e.target.value)}/></label>
-    <label>{t.descEn}<textarea value={v.copy.en.description} onChange={e=>setCopy('en','description',e.target.value)}/></label><label>{t.descRu}<textarea value={v.copy.ru.description} onChange={e=>setCopy('ru','description',e.target.value)}/></label>
+    <details className="hh-practice-advanced-copy">
+      <summary>{locale==='ru'?'Подробные описания · необязательно':'Full descriptions · optional'}</summary>
+      <label>{t.descEn}<textarea value={v.copy.en.description} onChange={e=>setCopy('en','description',e.target.value)}/></label>
+      <label>{t.descRu}<textarea value={v.copy.ru.description} onChange={e=>setCopy('ru','description',e.target.value)}/></label>
+    </details>
     <label>{t.area}<select value={v.areaKey} onChange={e=>set('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
+    <label>{t.offeringType}<select value={v.offeringType||'session'} onChange={e=>set('offeringType',e.target.value)}>
+      {[
+        ['session',locale==='ru'?'Личная консультация':'Personal session'],
+        ['intro',locale==='ru'?'Знакомство / вводная встреча':'Intro session'],
+        ['assessment',locale==='ru'?'Обзор / диагностика ресурсов':'Assessment / review'],
+        ['group',locale==='ru'?'Групповая сессия':'Group session'],
+        ['workshop',locale==='ru'?'Практикум / мастер-класс':'Workshop'],
+        ['course',locale==='ru'?'Курс':'Course'],
+        ['package',locale==='ru'?'Пакет консультаций':'Session package'],
+        ['event',locale==='ru'?'Мероприятие':'Event'],
+      ].map(([key,label])=><option key={key} value={key}>{label}</option>)}
+    </select></label>
     <label>{t.delivery}<select value={v.deliveryFormat} onChange={e=>set('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
     <label>{t.location}<input value={v.locationLabel||''} onChange={e=>set('locationLabel',e.target.value)}/></label><label>{t.languages}<input value={arr(v.languages)} onChange={e=>set('languages',list(e.target.value))}/></label><label>{t.duration}<input type="number" min="5" max="1440" value={v.durationMinutes??''} onChange={e=>set('durationMinutes',e.target.value)}/></label>
-    <label>{t.pricing}<select value={v.pricingMode} onChange={e=>set('pricingMode',e.target.value)}><option value="free">{t.freePricing}</option><option value="contact">Contact</option><option value="fixed">Fixed</option><option value="from">From</option></select></label>{!['free','contact'].includes(v.pricingMode)&&<><input type="number" min="0" step="0.01" value={v.confirmedPrice??''} onChange={e=>set('confirmedPrice',e.target.value)}/><label>{t.currency}<input maxLength="3" value={v.currency||'CAD'} onChange={e=>set('currency',e.target.value.toUpperCase())}/></label></>}
+    <label>{t.pricing}<select value={v.pricingMode} onChange={e=>set('pricingMode',e.target.value)}><option value="free">{t.freePricing}</option><option value="contact">{locale==='ru'?'Стоимость по запросу':'Price on request'}</option><option value="fixed">{locale==='ru'?'Точная стоимость':'Fixed price'}</option><option value="from">{locale==='ru'?'Цена от':'Starting from'}</option></select></label>
+    {!['free','contact'].includes(v.pricingMode)&&<>
+      <label>{locale==='ru'?'Стоимость услуги':'Service price'}
+        <input type="number" min="0" step="0.01" required value={v.confirmedPrice??''} onChange={e=>set('confirmedPrice',e.target.value)}/>
+      </label>
+      <label>{t.currency}<select value={v.currency||'CAD'} onChange={e=>set('currency',e.target.value)}>
+        <option value="CAD">CAD</option><option value="EUR">EUR</option><option value="USD">USD</option>
+      </select></label>
+    </>}
     <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.save}</button>{item&&<button type="button" disabled={busy} onClick={()=>onSubmit(item)}>{t.submit}</button>}{item&&['published','submitted','changes_requested'].includes(item.status)&&<button type="button" disabled={busy} onClick={()=>onPause(item)}>{t.pause}</button>}</div><p className="hh-fine">{t.moderation}</p>
   </form>
 }
