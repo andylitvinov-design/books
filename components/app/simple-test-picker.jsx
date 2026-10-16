@@ -22,12 +22,12 @@ const TEXT = {
     promoText:'Explore stress, mood and inner resources, with gentle next steps.', promoAction:'Choose my topics',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
-    detail:'Detailed selection (optional)', detailHelp:'Fine-tune depth, time and test types.',
+    detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
     activeFilters:'Active filters', kindsTitle:'Test types', kindsHelp:'Select one or several. If none are selected, all types are included.',
-    depth:'How deep do you want to go?', depthHelp:'This helps prioritize recommendations. It does not limit your options.',
-    quick:'Quick check-in', quickNote:'Short introductory tests',
-    balanced:'Core set', balancedNote:'A balanced overview',
-    deep:'In-depth battery', deepNote:'More detailed questionnaires',
+    depth:'Which tests would you like to see first?', depthHelp:'Changes recommendation order only. No tests are hidden; set a time limit below to narrow results.',
+    quick:'Shorter tests', quickNote:'Prioritize shorter questionnaires',
+    balanced:'Balanced', balancedNote:'Prioritize medium-length questionnaires',
+    deep:'Longer tests', deepNote:'Prioritize longer questionnaires',
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
@@ -51,12 +51,12 @@ const TEXT = {
     promoText:'Узнайте больше о стрессе, настроении и ресурсах, а затем получите рекомендации.', promoAction:'Выбрать темы',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
-    detail:'Подробный подбор (необязательно)', detailHelp:'Настройте глубину, время и типы тестов.',
+    detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
     activeFilters:'Активные фильтры', kindsTitle:'Типы тестов', kindsHelp:'Можно выбрать несколько. Без выбора доступны все типы.',
-    depth:'Насколько глубоко хотите исследовать?', depthHelp:'Меняет порядок рекомендаций, не закрывая другие тесты.',
-    quick:'Быстрый обзор', quickNote:'Короткие вводные тесты',
-    balanced:'Основной набор', balancedNote:'Сбалансированная подборка',
-    deep:'Глубокий анализ', deepNote:'Более подробные опросники',
+    depth:'Какие тесты показывать первыми?', depthHelp:'Меняется только порядок рекомендаций. Все тесты остаются доступны; ниже можно ограничить время.',
+    quick:'Короткие', quickNote:'Сначала короткие анкеты',
+    balanced:'Баланс', balancedNote:'Сначала тесты средней длины',
+    deep:'Длинные', deepNote:'Сначала более длинные анкеты',
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
@@ -80,12 +80,12 @@ const TEXT = {
     promoText:'Explora tu estrés, tu ánimo y tus recursos para dar el siguiente paso.', promoAction:'Elegir temas',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
-    detail:'Selección detallada (opcional)', detailHelp:'Ajusta profundidad, tiempo y tipo de prueba.',
+    detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
     activeFilters:'Filtros activos', kindsTitle:'Tipos de pruebas', kindsHelp:'Elige uno o varios. Sin seleccionar, se incluyen todos.',
-    depth:'¿Cuánto quieres profundizar?', depthHelp:'Ajusta la prioridad, sin excluir los demás tests.',
-    quick:'Revisión rápida', quickNote:'Pruebas introductorias',
-    balanced:'Conjunto básico', balancedNote:'Selección equilibrada',
-    deep:'Análisis profundo', deepNote:'Cuestionarios más completos',
+    depth:'¿Qué pruebas quieres ver primero?', depthHelp:'Solo cambia el orden. No oculta pruebas; utiliza el límite de tiempo para filtrar.',
+    quick:'Cortas', quickNote:'Priorizar cuestionarios cortos',
+    balanced:'Equilibrado', balancedNote:'Priorizar duración media',
+    deep:'Largas', deepNote:'Priorizar cuestionarios más largos',
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
@@ -323,14 +323,14 @@ export function SimpleTestPicker({
         <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
           <h3 id="hh-test-depth-title">{c.depth}</h3>
           <p>{c.depthHelp}</p>
-          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid">
+          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
             {[
               {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
               {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
               {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
             ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
-              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key}>
-              <Icon size={21} aria-hidden="true"/><span><strong>{name}</strong><small>{desc}</small></span>
+              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
+              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
               {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
             </button>)}
           </div>
