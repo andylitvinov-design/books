@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
+import { availableTestCollections } from '@/lib/assessments/test-collections'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
@@ -116,6 +117,27 @@ const BROWSE_TABS = Object.freeze([
   { key: 'hobby' },
 ])
 
+// The collection cards browse the same real test catalog; they never auto-start a test.
+const COLLECTION_ICONS = {
+  stress: Zap, relationships: Heart, tantra: Sparkles, sexuality: ShieldCheck,
+  sleep: Moon, resources: Leaf, personality: Compass, mood: Smile,
+  attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
+}
+const COLLECTION_COPY = {
+  en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
+    intro: 'Explore available tests in each collection. Select the tests you want below.',
+    test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
+    open: 'Browse collection' },
+  ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
+    intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
+    test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
+    open: 'Открыть подборку' },
+  es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
+    intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
+    test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
+    open: 'Explorar colección' },
+}
+
 // Always display the explicit assessment type, including on narrow phones.
 function KindBadge({ entry, locale }) {
   const kind = TEST_KINDS.find((type) => type.key === entry?.testKind)
@@ -153,7 +175,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
@@ -165,6 +187,9 @@ export function SimpleTestPicker({
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
+  const [collectionsOpen, setCollectionsOpen] = useState(false)
+  const collections = useMemo(() => availableTestCollections(catalogEntries), [catalogEntries])
+  const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
@@ -272,6 +297,52 @@ export function SimpleTestPicker({
       </div>
       {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
+
+    {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
+      data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
+      <div className={styles.curatedHeader}>
+        <p className={styles.curatedEyebrow}>{collectionCopy.eyebrow}</p>
+        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
+        <p className={styles.curatedIntro}>{collectionCopy.intro}</p>
+      </div>
+      <div className={styles.curatedGrid} id="hh-test-curated-grid">
+        {collections.map((collection) => {
+          const Icon = COLLECTION_ICONS[collection.id]
+          const active = focus.length === collection.focus.length && collection.focus.every((key) => focus.includes(key))
+          const title = collection.title[locale] || collection.title.en
+          const countLabel = locale === 'ru'
+            ? (collection.count % 10 === 1 && collection.count % 100 !== 11 ? 'тест' :
+               collection.count % 10 >= 2 && collection.count % 10 <= 4 && (collection.count % 100 < 12 || collection.count % 100 > 14) ? 'теста' : 'тестов')
+            : collection.count === 1 ? collectionCopy.test : collectionCopy.tests
+          return <button key={collection.id} type="button" className={styles.curatedCard}
+            data-test-collection={collection.id} data-tone={collection.tone} aria-pressed={active}
+            aria-label={title + '. ' + collection.count + ' ' + countLabel + '. ' + collectionCopy.open}
+            onClick={() => {
+              onChooseCollection?.(active ? [] : collection.focus)
+              setHeroSearch('')
+              setSubmittedHeroSearch('')
+              setVisibleCount(5)
+              document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}>
+            <span className={styles.curatedIcon}><Icon size={21} strokeWidth={1.8} aria-hidden="true" /></span>
+            <span className={styles.curatedCardText}>
+              <strong>{title}</strong>
+              <small>{collection.detail[locale] || collection.detail.en}</small>
+            </span>
+            <span className={styles.curatedCardBottom}>
+              <span>{collection.count} {countLabel}</span>
+              {active ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+            </span>
+          </button>
+        })}
+      </div>
+      {collections.length > 4 && <button type="button" className={styles.curatedMore}
+        aria-expanded={collectionsOpen} aria-controls="hh-test-curated-grid"
+        onClick={() => setCollectionsOpen((value) => !value)}>
+        {collectionsOpen ? collectionCopy.less : collectionCopy.more}
+        <ChevronDown size={17} aria-hidden="true" />
+      </button>}
+    </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.topicHeading}>
