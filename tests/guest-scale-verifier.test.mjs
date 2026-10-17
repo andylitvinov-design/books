@@ -127,7 +127,9 @@ function accountFixture(result, locale, component = CompactAssessmentReport) {
       activeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-active-scale')).length,
       pressedKeys: scaleTriggers(tree).filter(node => node.props['aria-pressed'] === true).map(node => node.props['data-assessment-scale-trigger']),
       rootGaugeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
-      sources: elements(card).filter(node => node.type === 'a' && node.props.href).map(node => node.props.href),
+      primaryCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-primary-support')).length,
+      primaryText: textOf(marked(card, 'data-primary-support')),
+      sources: elements(marked(tree, 'data-assessment-methodology')).filter(node => node.type === 'a' && node.props.href).map(node => node.props.href),
     })
   }
   hookValues = []
@@ -220,6 +222,9 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].segments.push({ code: 'fabricated-third', path: '', width: '16' }) },
       s => { s.scales[0].endpoints = '999999' },
       s => { s.scales[0].sources = ['https://example.invalid/invented-source'] },
+      s => { s.scales[0].primaryCount = 0 },
+      s => { s.scales[0].primaryCount = 2 },
+      s => { s.scales[0].primaryText = 'Unrelated advice' },
       s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
       s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
       s => { s.methodology = '' },

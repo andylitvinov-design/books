@@ -9,7 +9,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
-import { assessmentResultOverview } from '../lib/assessments/result-overview.js'
+import { assessmentResultOverview, initialAssessmentSection } from '../lib/assessments/result-overview.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 
 const compile = path => ts.transpileModule(readFileSync(new URL('../' + path, import.meta.url), 'utf8'), {
@@ -105,7 +105,7 @@ function assertSelected(h, result, report, section, locale) {
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
   for (const limit of section.limitations || []) assert.ok(visibleText(panel).includes(limit), 'Source limitations must not require expansion')
   if (section.followUp) assert.ok(text(panel).includes(section.followUp))
-  if (section.source) assert.ok(nodes(panel).some(node => node.type === 'a' && node.props.href === section.source))
+  if (section.source) assert.ok(nodes(h.tree).some(node => node.type === 'a' && node.props.href === section.source))
   assert.ok(text(h.tree).includes(report.methodology || ''))
   assert.ok(text(h.tree).includes(report.note || ''))
   const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions.find(item => item.key === section.key)
@@ -261,4 +261,115 @@ test('empty legacy reports keep the optional banner without a selector or fabric
   assert.equal(nodes(h.tree).filter(node => own(node, 'data-assessment-gauge')).length, 0)
   assert.equal(nodes(h.tree).filter(node => own(node, 'data-optional-course')).length, 1)
   assert.ok(text(h.tree).includes('legacy'))
+})
+
+test('one source-specific primary option is visible and the complete guidance remains accessible', () => {
+  for (const key of ['cbi-personal', 'hh-money-pressure', 'ipip-big-five-50', 'asrs-6', 'pcl-5', 'itq-adult', 'hh-bach-flower-profile']) {
+    const result = fixture(key, 'en', key === 'hh-bach-flower-profile' ? 'v2' : 'v1')
+    for (const locale of ['en', 'ru']) {
+      const report = buildAssessmentResultReport(result, locale)
+      const h = mount({ result, report, locale })
+      for (const section of report.sections) {
+        h.click(section.key)
+        const panel = active(h.tree)[0]
+        const primary = nodes(panel).filter(node => own(node, 'data-primary-support'))
+        assert.equal(primary.length, 1, key + ': exactly one visible option')
+        const expected = section.recommendedReview && section.followUp || section.primarySupport || section.steps[0] || section.followUp
+        assert.equal(text(primary[0]), expected)
+        assert.ok(visibleText(panel).includes(expected))
+        const details = nodes(panel).find(node => node.type === 'details')
+        assert.ok(!text(details).includes(expected), 'Do not repeat the identical primary suggestion')
+        for (const step of section.steps) assert.ok(text(panel).includes(step))
+        if (section.primarySupport && !section.recommendedReview) {
+          assert.notEqual(section.primarySupport, section.steps[0], 'Numeric observation must not replace the useful action')
+          assert.ok(!visibleText(panel).includes(section.steps[0]))
+        }
+        assert.equal(nodes(h.tree).filter(node => own(node, 'data-assessment-methodology')).length, 1)
+        if (section.source) assert.ok(nodes(h.tree).find(node => own(node, 'data-assessment-methodology')).props.children)
+      }
+    }
+  }
+})
+
+test('review and unverified reports preserve safety precedence over ordinary primary suggestions', () => {
+  for (const key of ['phq-9', 'gad-7', 'asrs-6']) for (const locale of ['en', 'ru']) {
+    const result = scored(getAssessmentDefinition(key), 'max')
+    const report = buildAssessmentResultReport(result, locale)
+    const h = mount({ result, report, locale })
+    const section = report.sections.find(item => item.recommendedReview)
+    assert.ok(section)
+    const panel = active(h.tree)[0]
+    assert.equal(text(nodes(panel).find(node => own(node, 'data-primary-support'))), section.followUp)
+    for (const step of section.steps) assert.ok(text(panel).includes(step))
+    const rejected = { ...result, contentHash: 'synthetic-invalid' }
+    const rejectedReport = buildAssessmentResultReport(rejected, locale)
+    h.rerender({ result: rejected, report: rejectedReport, locale })
+    assert.equal(nodes(h.tree).filter(node => own(node, 'data-primary-support')).length, 0)
+    assert.ok(visibleText(h.tree).includes(rejectedReport.intro))
+  }
+})
+
+test('initial scale uses valid within-range position, stable ties, and unchanged safety/Bach precedence', () => {
+  const section = (value, min, max, extra = {}) => ({ value, min, max, bandBasis: 'descriptive', ...extra })
+  const choose = sections => initialAssessmentSection({ verified: true, sections })
+  assert.equal(choose([section(30, 10, 50), section(25, 20, 100)]), 1)
+  assert.equal(choose([section(5, 0, 10), section(10, 0, 20)]), 0)
+  assert.equal(choose([section(0, 0, 100, { direction: 'difficulty' }), section(8, 0, 10, { direction: 'resource' })]), 0)
+  for (const invalid of [section(null, 0, 1), section(NaN, 0, 1), section(Infinity, 0, 1), section(0, 0, 0), section(1, 2, 0), section(-1, 0, 1), section(2, 0, 1), section(0, NaN, 1), section(0, 0, Infinity), section('0', 0, 1), section(0, 0, 1, { bandBasis: 'unavailable' })]) {
+    assert.equal(choose([invalid, section(8, 0, 10)]), 1)
+    assert.equal(choose([invalid]), 0)
+  }
+  const sections = [section(9, 0, 10), section(1, 0, 10)]
+  assert.equal(initialAssessmentSection({ verified: false, sections }), 0)
+  assert.equal(initialAssessmentSection({ reportKind: 'bach', verified: true, sections }), 0)
+  assert.equal(choose([section(0, 0, 10), section(9, 0, 10, { recommendedReview: true })]), 1)
+  assert.equal(choose([]), 0)
+  assert.equal(choose([null, undefined, section(1, 0, 10)]), 2)
+  assert.equal(choose(Array(2)), 0)
+  assert.equal(assessmentResultOverview({ sections: [null, undefined] }, null).initialIndex, 0)
+})
+
+test('initial selection reaches the rendered panel and resets on return after a result switch', () => {
+  const result = fixture('ipip-big-five-50')
+  const base = buildAssessmentResultReport(result)
+  const report = { ...base, sections: base.sections.map((section, index) => ({ ...section, value: index === 2 ? section.min : section.max, recommendedReview: false })) }
+  const first = { ...result, id: 'first-selection-fixture' }
+  const second = { ...result, id: 'second-selection-fixture' }
+  const h = mount({ result: first, report })
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  h.click(report.sections[3].key)
+  h.rerender({ result: { ...first }, report: { ...report }, locale: 'ru' })
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[3].key)
+  h.rerender({ result: second, report })
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  h.rerender({ result: first, report })
+  assert.equal(active(h.tree)[0].props['data-active-scale'], report.sections[2].key)
+  const guest = mount({ result, report })
+  guest.click(report.sections[4].key)
+  guest.rerender({ result: structuredClone(result), report: { ...report } })
+  assert.equal(active(guest.tree)[0].props['data-active-scale'], report.sections[4].key)
+})
+
+test('identical footer support is omitted only while the selected primary visibly preserves it', () => {
+  const result = fixture('phq-4')
+  for (const locale of ['en', 'ru']) {
+    const base = buildAssessmentResultReport(result, locale)
+    const warning = locale === 'ru' ? 'Обсудите симптомы со специалистом.' : 'Discuss symptoms with a professional.'
+    const distinct = locale === 'ru' ? 'Важное отдельное ограничение.' : 'An important distinct limitation.'
+    const report = { ...base, seekSupport: warning, note: distinct, sections: base.sections.map((section, index) => ({
+      ...section, recommendedReview: index === 0, followUp: index === 0 ? warning : section.followUp,
+    })) }
+    const h = mount({ result, report, locale })
+    const footer = () => nodes(h.tree).find(node => own(node, 'data-assessment-methodology'))
+    assert.equal(text(nodes(h.tree).find(node => own(node, 'data-primary-support'))), warning)
+    assert.ok(!text(footer()).includes(warning))
+    assert.ok(text(footer()).includes(distinct))
+    h.click(report.sections[1].key)
+    assert.ok(text(footer()).includes(warning), 'Warning returns when another scale is selected')
+    h.rerender({ result, report: { ...report, verified: false }, locale })
+    assert.equal(nodes(h.tree).filter(node => own(node, 'data-primary-support')).length, 0)
+    assert.ok(text(footer()).includes(warning), 'No-primary paths retain footer support')
+    h.click(report.sections[0].key)
+    assert.ok(text(footer()).includes(warning))
+  }
 })

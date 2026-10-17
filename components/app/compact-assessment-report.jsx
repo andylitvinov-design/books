@@ -13,12 +13,13 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const sections = Array.isArray(report?.sections) ? report.sections : []
   const guideByScale = new Map((getTestScaleGuide(result.definitionKey, locale)?.scales || []).map(scale => [scale.key, scale]))
   const overview = assessmentResultOverview(report, result, locale)
-  const initialIndex = Math.max(0, sections.findIndex(item => item.recommendedReview))
-  const resultKey = result.id || result
+  const initialIndex = overview.initialIndex ?? 0
+  const resultKey = result.id || JSON.stringify(result)
   const [selection, setSelection] = useState(() => ({ resultKey, index: initialIndex }))
   // Navigating to another saved result must surface its own review notice,
   // while ordinary rerenders of the same result retain the chosen scale.
   const activeIndex = selection.resultKey === resultKey ? selection.index : initialIndex
+  if (selection.resultKey !== resultKey) setSelection({ resultKey, index: initialIndex })
   const setActiveIndex = index => setSelection({ resultKey, index })
   // Empty/incompatible reports have no score to select; keep the optional course
   // boundary stable for legacy records without fabricating an instrument value.
@@ -42,7 +43,9 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   // score prefix. Legacy/specialised reports retain their complete explanation.
   const conciseMeaning = section.summary || section.meaning
   const canShowScore = typeof section.value === 'number' && Number.isFinite(section.value)
-  const isAsrs = result.definitionKey === 'asrs-6'
+  const primarySupport = report.verified === false || section.bandBasis === 'unavailable'
+    ? null : section.recommendedReview && section.followUp
+      ? section.followUp : section.primarySupport || section.steps?.[0] || section.followUp
 
   return <section className={styles.report} data-personal-result-report data-compact-assessment-report
     aria-label={ru ? 'Мои результаты и рекомендации' : 'Results and recommendations'}>
@@ -96,21 +99,18 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </div>
       {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
       {section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
-      {section.recommendedReview && section.followUp && <p className={styles.care} role="note">{section.followUp}</p>}
-      {section.steps?.length > 0 && <div className={styles.recommendations}>
-        <h4>{isAsrs
-          ? (ru ? 'Пояснение к результату' : 'About your result')
-          : (ru ? 'Что можно сделать дальше' : 'What you can do next')}</h4>
-        <ol>{section.steps.slice(0, 2).map((step, index) => <li key={index}>{step}</li>)}</ol>
+      {primarySupport && <div className={styles.recommendations}>
+        <h4>{ru ? 'Поддержка в вашем темпе' : 'Support at your own pace'}</h4>
+        <p className={section.recommendedReview ? styles.care : styles.explanation}
+          role={section.recommendedReview ? 'note' : undefined} data-primary-support>{primarySupport}</p>
       </div>}
       <details className={styles.details}>
-        <summary>{ru ? 'Подробнее о шкале и источники' : 'More about this score & sources'}</summary>
+        <summary>{ru ? 'Подробнее об этой шкале' : 'More about this scale'}</summary>
         {section.meaning && section.meaning !== conciseMeaning && <p>{section.meaning}</p>}
         {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
         {guide?.skill && <p><strong>{ru ? 'Навык по желанию:' : 'Optional skill:'}</strong> {guide.skill}</p>}
-        {!section.recommendedReview && section.followUp && <p>{section.followUp}</p>}
-        {section.steps?.length > 2 && <ol>{section.steps.slice(2).map((step, index) => <li key={index}>{step}</li>)}</ol>}
-        {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
+        {section.followUp && section.followUp !== primarySupport && <p>{section.followUp}</p>}
+        {section.steps?.length > 0 && <ol>{section.steps.filter(step => step !== primarySupport).map((step, index) => <li key={index}>{step}</li>)}</ol>}
         {section.bandBasis === 'screening' && <p>{ru ? 'Скрининг не устанавливает диагноз.' : 'Screening is not a diagnosis.'}</p>}
       </details>
     </article>
@@ -142,8 +142,9 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         {overview.measurementDateIso && <p><time dateTime={overview.measurementDateIso}>{overview.measurementDateLabel}</time></p>}
         {report.purpose && <p>{report.purpose}</p>}
         {report.methodology && <p>{report.methodology}</p>}
+        {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
         {report.note && <p>{report.note}</p>}
-        {report.seekSupport && <p>{report.seekSupport}</p>}
+        {report.seekSupport && report.seekSupport !== primarySupport && <p>{report.seekSupport}</p>}
         <small>{ru ? 'Версия интерпретации' : 'Interpretation version'}: {report.rulesVersion}</small>
       </details>
     </div>

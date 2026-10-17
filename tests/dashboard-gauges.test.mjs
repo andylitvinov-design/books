@@ -94,7 +94,7 @@ test('account reports and Insights share measured dials; date ranges live under 
  assert.match(account,/<ScoreTrend current=\{latest\}/)
  assert.match(account,/<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\}/)
  assert.match(account,/onClick=\{repeatTest\}/)
- assert.match(report,/section\.steps\.slice\(0,\s*2\)/)
+ assert.match(report,/data-primary-support/)
  assert.match(css,/\.hh-insights-test-list/)
  assert.match(css,/grid-template-columns:repeat\(auto-fit/)
 })
