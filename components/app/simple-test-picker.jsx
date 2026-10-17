@@ -161,7 +161,7 @@ export function SimpleTestPicker({
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
-  const [expandedTests, setExpandedTests] = useState(() => new Set())
+  const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
   const [problemQuery, setProblemQuery] = useState('')
