@@ -7,6 +7,7 @@ import PractitionerArticles from './practitioner-articles'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
 import MyServicesDashboard from './my-services-dashboard'
+import SimpleServiceEditor from './simple-service-editor'
 import PracticePhotoUpload from './practice-photo-upload'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import './practice-dashboard.css'
@@ -224,7 +225,16 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     <div id="hh-practice-services-view">
       <Services items={services} t={t} locale={locale} busy={busy} quota={serviceQuota} createRequest={newServiceRequest}
         onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
-        onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+        onSaveAndSubmit={(id,draft,expectedRevision)=>act(async()=>{
+          const saved=await practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision})
+          try {
+            return await practiceFetch('/services/'+saved.id,{action:'submit',expectedRevision:saved.revision})
+          } catch (error) {
+            // Keep the newly saved draft visible if moderation validation fails.
+            await load()
+            throw error
+          }
+        })}
         onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
       <details className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
         <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
@@ -472,69 +482,15 @@ function Credentials({items,t,busy,onCreate,onDelete}){
   <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onCreate({...v,expiresOn:v.expiresOn||null});setV({title:'',issuer:'',jurisdiction:'',reference:'',public:true,expiresOn:''})}}><h3>{t.add}</h3>
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
-function Services({items,t,locale,busy,quota,createRequest=0,onSave,onSubmit,onPause}){
+function Services({items,locale,busy,quota,createRequest=0,onSave,onSaveAndSubmit,onPause}){
   const canAdd=quota?.canAdd!==false
   const ru=locale==='ru'
   return <>
     {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':locale==='es'?'Hobby gratis: has alcanzado el límite de 10 servicios. Puedes editar los existentes.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
     <MyServicesDashboard items={items} locale={locale} quota={quota} createRequest={createRequest}
-      renderEditor={item=><ServiceEditor key={item?.id||'new'} item={item} t={t} locale={locale} busy={busy}
-        onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>} />
+      renderEditor={item=><SimpleServiceEditor key={item?.id||'new'} item={item} locale={locale} busy={busy}
+        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause}/>} />
   </>
-}
-function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
-  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})},es:{...emptyService.copy.es,...(item.localizedCopy?.es||{})}},goals:item.goals||[],methods:item.methods||[],benefits:item.benefits||[],faq:item.faq||[],displayLocales:item.displayLocales||['en','ru'],whatsapp:item.whatsapp||'',telegram:item.telegram||'',areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||'',photos:item.photos||[]}:emptyService
-  const [v,setV]=useState({...emptyService,...base,copy:{...emptyService.copy,...base.copy}}),set=(k,x)=>setV(s=>({...s,[k]:x})),setCopy=(lang,k,x)=>setV(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
-  return <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onSave(item?.id||null,{...v,languages:Array.isArray(v.languages)?v.languages:list(v.languages),confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),currency:['free','contact'].includes(v.pricingMode)?'':v.currency,durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)},item?.revision)}}><div className="hh-actions"><h3>{item?(item.copy?.title||t.services):t.add}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>{item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
-    <PracticePhotoUpload mode="service" value={v.photos||[]} onChange={value=>set('photos',value)} locale={locale} disabled={busy}/>
-    <label>{t.serviceTitleEn}<input required value={v.copy.en.title} onChange={e=>setCopy('en','title',e.target.value)}/></label><label>{t.serviceTitleRu}<input required value={v.copy.ru.title} onChange={e=>setCopy('ru','title',e.target.value)}/></label>
-    <label>{t.shortEn}<textarea required value={v.copy.en.shortDescription||v.copy.en.description} onChange={e=>setCopy('en','shortDescription',e.target.value)}/></label><label>{t.shortRu}<textarea required value={v.copy.ru.shortDescription||v.copy.ru.description} onChange={e=>setCopy('ru','shortDescription',e.target.value)}/></label>
-    <details className="hh-practice-advanced-copy" open><summary>{locale==='ru'?'Цели, методы, польза и контакты':'Goals, methods, benefits & contact'}</summary>
-      <label>{locale==='ru'?'Цели клиента':'Client goals'}<select multiple size="5" value={v.goals||[]} onChange={e=>set('goals',[...e.target.selectedOptions].map(o=>o.value))}>
-        {[['confidence','Confidence','Уверенность'],['relationships','Relationships','Отношения'],['relaxation','Relaxation','Расслабление'],['learning','Learning','Обучение'],['clarity','Clarity','Ясность'],['purpose','Purpose','Предназначение'],['energy','Energy','Энергия'],['self_awareness','Self-awareness','Самопознание']].map(([id,en,ru])=><option key={id} value={id}>{locale==='ru'?ru:en}</option>)}
-      </select></label>
-      <label>{locale==='ru'?'Методы через запятую':'Methods, comma separated'}<input value={arr(v.methods)} onChange={e=>set('methods',list(e.target.value))}/></label>
-      <label>{locale==='ru'?'Возможные результаты, по строкам':'Potential benefits, one per line'}<textarea value={(v.benefits||[]).join('\n')} onChange={e=>set('benefits',e.target.value.split('\n').filter(Boolean).slice(0,5))}/></label>
-      <label>FAQ<textarea value={(v.faq||[]).join('\n')} onChange={e=>set('faq',e.target.value.split('\n').filter(Boolean).slice(0,6))}/></label>
-      <label>WhatsApp (+country code)<input value={v.whatsapp||''} onChange={e=>set('whatsapp',e.target.value)}/></label>
-      <label>Telegram (@username)<input value={v.telegram||''} onChange={e=>set('telegram',e.target.value)}/></label>
-    </details>
-    <details className="hh-practice-advanced-copy"><summary>{locale==='ru'?'Испанский перевод':'Spanish translation'}</summary>
-      <label>Title ES<input value={v.copy.es?.title||''} onChange={e=>setCopy('es','title',e.target.value)}/></label>
-      <label>Description ES<textarea value={v.copy.es?.shortDescription||''} onChange={e=>setCopy('es','shortDescription',e.target.value)}/></label>
-      <label><input type="checkbox" checked={(v.displayLocales||[]).includes('es')} onChange={e=>set('displayLocales',e.target.checked?['en','ru','es']:['en','ru'])}/> {locale==='ru'?'Публиковать испанскую версию после проверки':'Publish ES only after review'}</label>
-    </details>
-    <details className="hh-practice-advanced-copy">
-      <summary>{locale==='ru'?'Подробные описания · необязательно':'Full descriptions · optional'}</summary>
-      <label>{t.descEn}<textarea value={v.copy.en.description} onChange={e=>setCopy('en','description',e.target.value)}/></label>
-      <label>{t.descRu}<textarea value={v.copy.ru.description} onChange={e=>setCopy('ru','description',e.target.value)}/></label>
-    </details>
-    <label>{t.area}<select value={v.areaKey} onChange={e=>set('areaKey',e.target.value)}>{Object.entries(AREAS).map(([k,l])=><option value={k} key={k}>{l[locale==='ru'?1:0]}</option>)}</select></label>
-    <label>{t.offeringType}<select value={v.offeringType||'session'} onChange={e=>set('offeringType',e.target.value)}>
-      {[
-        ['session',locale==='ru'?'Личная консультация':'Personal session'],
-        ['intro',locale==='ru'?'Знакомство / вводная встреча':'Intro session'],
-        ['assessment',locale==='ru'?'Обзор / диагностика ресурсов':'Assessment / review'],
-        ['group',locale==='ru'?'Групповая сессия':'Group session'],
-        ['workshop',locale==='ru'?'Практикум / мастер-класс':'Workshop'],
-        ['course',locale==='ru'?'Курс':'Course'],
-        ['package',locale==='ru'?'Пакет консультаций':'Session package'],
-        ['event',locale==='ru'?'Мероприятие':'Event'],
-      ].map(([key,label])=><option key={key} value={key}>{label}</option>)}
-    </select></label>
-    <label>{t.delivery}<select value={v.deliveryFormat} onChange={e=>set('deliveryFormat',e.target.value)}><option value="online">Online</option><option value="in_person">In person</option><option value="hybrid">Hybrid</option></select></label>
-    <label>{t.location}<input value={v.locationLabel||''} onChange={e=>set('locationLabel',e.target.value)}/></label><label>{t.languages}<input value={arr(v.languages)} onChange={e=>set('languages',list(e.target.value))}/></label><label>{t.duration}<input type="number" min="5" max="1440" value={v.durationMinutes??''} onChange={e=>set('durationMinutes',e.target.value)}/></label>
-    <label>{t.pricing}<select value={v.pricingMode} onChange={e=>set('pricingMode',e.target.value)}><option value="free">{t.freePricing}</option><option value="contact">{locale==='ru'?'Стоимость по запросу':'Price on request'}</option><option value="fixed">{locale==='ru'?'Точная стоимость':'Fixed price'}</option><option value="from">{locale==='ru'?'Цена от':'Starting from'}</option></select></label>
-    {!['free','contact'].includes(v.pricingMode)&&<>
-      <label>{locale==='ru'?'Стоимость услуги':'Service price'}
-        <input type="number" min="0" step="0.01" required value={v.confirmedPrice??''} onChange={e=>set('confirmedPrice',e.target.value)}/>
-      </label>
-      <label>{t.currency}<select value={v.currency||'CAD'} onChange={e=>set('currency',e.target.value)}>
-        <option value="CAD">CAD</option><option value="EUR">EUR</option><option value="USD">USD</option>
-      </select></label>
-    </>}
-    <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.save}</button>{item&&<button type="button" disabled={busy} onClick={()=>onSubmit(item)}>{t.submit}</button>}{item&&['published','submitted','changes_requested'].includes(item.status)&&<button type="button" disabled={busy} onClick={()=>onPause(item)}>{t.pause}</button>}</div><p className="hh-fine">{t.moderation}</p>
-  </form>
 }
 function Requests({items,t,busy,onStatus}){
   const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted'].includes(item.status))?'open':'all')
