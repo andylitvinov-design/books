@@ -50,7 +50,7 @@ function BandLegend({ model, locale }) {
   </ol>
 }
 
-export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false, showLegend = true, showScaleNote = true }) {
+export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false, showLegend = true, showScaleNote = true, showAnswerAnchors = true }) {
   const model = gaugeModel(dimension, result, locale)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет достоверной числовой шкалы' : 'No verified numeric scale'}</span>
@@ -67,7 +67,7 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   </figure>
   // One continuous color transition is illustrative, not invented diagnosis cutoffs.
   // Neutral/trait scales retain the uncolored dial.
-  const hasAnswerBands = Boolean(model.answerBands?.length)
+  const hasAnswerBands = showAnswerAnchors && Boolean(model.answerBands?.length)
   const graded = model.continuous && !hasAnswerBands &&
     (model.orientation === 'difficulty' || model.orientation === 'resource')
   const gradientId = continuousGradientId(dimension, result)
@@ -86,10 +86,10 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   const left = model.orientation === 'difficulty' ? dimension.max : dimension.min
   const right = model.orientation === 'difficulty' ? dimension.min : dimension.max
   return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
-    data-assessment-gauge={model.orientation} data-gauge-scale={hasAnswerBands ? 'answer-anchors' : model.continuous ? 'continuous' : 'published-bands'}
+    data-assessment-gauge={model.orientation} data-gauge-scale={model.continuous ? 'continuous' : 'published-bands'} data-answer-anchor-scale={hasAnswerBands ? 'source-responses' : undefined}
     aria-label={(ru ? 'Баллы: ' : 'Score: ') + numeral(dimension.value, locale) +
       '. ' + (ru ? 'Диапазон ' : 'Range ') + numeral(dimension.min, locale) + '–' + numeral(dimension.max, locale) +
-      '. ' + scaleType + '. ' + (model.currentAnswerBand?.label || model.currentBand?.label || direction)}>
+      '. ' + scaleType + '. ' + (hasAnswerBands ? model.currentAnswerBand?.label : model.currentBand?.label || direction)}>
     <svg viewBox="0 0 200 112" aria-hidden="true" focusable="false">
       {graded && <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -111,7 +111,7 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
           fill="none" stroke={bandColor(band, index, model)}
           strokeWidth={band.current ? '16' : '12'} strokeLinecap="butt" />
       })}
-      {model.answerBands?.map((band, index) => {
+      {hasAnswerBands && model.answerBands?.map((band, index) => {
         const from = coordinate(Math.PI * (1 - band.startFraction))
         const to = coordinate(Math.PI * (1 - band.endFraction))
         return <path key={band.code} data-answer-anchor={band.code}
