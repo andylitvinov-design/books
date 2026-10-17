@@ -97,6 +97,7 @@ test('reports UI uses the authenticated account and an owner-checked encrypted A
   const migration=file('supabase/migrations/20261017165000_hh_reports_development_goals.sql')
   assert.match(view,/!external && accountId && <DevelopmentProgram/)
   assert.match(workspace,/accountId={data.account.id}/)
+  assert.ok(workspace.includes('<DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />'))
   assert.match(api,/joined === 'development-goals'/)
   assert.match(api,/x-hh-account-id/)
   assert.match(server,/openSealed/)
