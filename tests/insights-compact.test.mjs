@@ -46,5 +46,6 @@ test('psychological portrait is the expanded first Insights block and no longer 
   assert.doesNotMatch(tests, /portraitDetails|buildPsychPortrait|<TestExplorerVisual/)
   assert.match(styles, /\.hh-insights-portrait>section\{/)
   const portraitStyles = readFileSync(new URL('../components/app/test-explorer.module.css', import.meta.url), 'utf8')
-  assert.match(portraitStyles, /@media\(max-width:440px\)\{\.portraitRayOptions\{grid-template-columns:1fr\}\}/)
+  assert.match(portraitStyles, /@media\(max-width:440px\)\{[\s\S]*?\.portraitRayOptions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(portraitStyles, /\.portraitControls \.portraitShowMore\{display:flex/)
 })

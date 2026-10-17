@@ -162,7 +162,7 @@
   .portraitRayOption{grid-template-columns:16px minmax(0,1fr) auto;column-gap:5px;padding:7px 6px;min-height:48px;font-size:.7rem}
   .portraitRayOption input{width:16px;height:16px}
   .portraitRayOption strong{font-size:.72rem}
-  .portraitDelta{font-size:.61rem}
+  .portraitRayOption .portraitDelta{font-size:.61rem}
 }
 @media(max-width:340px){.portraitRayOption{column-gap:4px;padding:6px 5px;font-size:.66rem}}
 @media(prefers-reduced-motion:reduce){.portraitRadar{transition:none}}
