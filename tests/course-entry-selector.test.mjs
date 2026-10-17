@@ -67,7 +67,7 @@ test('dialog is accessible and does not hide existing course navigation', () => 
 import { mount, nodes, textOf, findPart, findButton, account, course, courseView, access, deferred } from './helpers/course-ui-harness.mjs'
 
 test('canonical landing passes authoritative scope and opens an additional course without mutating before consent', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, fetcher: () => courseView(course('course-a', 4), { courses: [course('course-a', 4), course('course-b', 2)] }) })
+  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, fetcher: () => courseView(course('course-a', 2), { courses: [course('course-a', 2), course('course-b', 2)] }) })
   await h.settle()
   const entry = findPart(h.tree, 'CourseEntrySelector')
   assert.ok(entry, 'ordinary entry retains the canonical selector')
@@ -93,7 +93,7 @@ test('free 1/1 single saved course resumes its actual setup instead of showing a
   assert.equal(findPart(h.tree, 'MyCoursesDashboard'), undefined)
   assert.equal(findPart(h.tree, 'CourseR3Steps')?.props.state.course.id, 'course-a')
   assert.ok(!textOf(h.tree).includes('You have reached your active-course limit'))
-  assert.ok(!nodes(h.tree).some(node => node.props.className === 'courseSelector'),
+  assert.ok(!nodes(h.tree).some(node => node.props?.className === 'courseSelector'),
     'a sole ongoing course should not display a course-selection gate')
   assert.match(h.navigations.at(-1), /courseId=course-a/)
   assert.equal(h.calls.filter(call => call.body).length, 0, 'continuing must not create another course')
