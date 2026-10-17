@@ -6,6 +6,7 @@ import CrmManager from './crm-manager'
 import PractitionerArticles from './practitioner-articles'
 import PracticeServiceStatistics from './practice-service-statistics'
 import MyServicesDashboard from './my-services-dashboard'
+import PracticePhotoUpload from './practice-photo-upload'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import './practice-dashboard.css'
 
@@ -26,7 +27,7 @@ const AREAS={
   personal_development:['Personal development','Личностное развитие'],
 }
 const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
-const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:''}
+const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:''}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
   "en": {
@@ -375,7 +376,7 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
   const serviceBase=service?.draftCopy&&Object.keys(service.draftCopy).length
     ? {...emptyFreeService,...service.draftCopy,pricingMode:'free',confirmedPrice:null,currency:''}
     : service
-      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??''}
+      ? {...emptyFreeService,copy:{en:{...emptyFreeService.copy.en,...(service.localizedCopy?.en||{})},ru:{...emptyFreeService.copy.ru,...(service.localizedCopy?.ru||{})}},areaKey:service.areaKey,offeringType:service.offeringType,deliveryFormat:service.deliveryFormat,locationLabel:service.locationLabel,languages:service.languages,durationMinutes:service.durationMinutes??'',photos:service.photos||[],imagePath:service.imagePath||''}
       : emptyFreeService
   const [offer,setOffer]=useState(serviceBase)
   const setProfileValue=(k,x)=>setProfile(s=>({...s,[k]:x}))
@@ -396,6 +397,7 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
     {step===1?
       <form className="hh-form hh-panel" onSubmit={continueToService}>
         <h2>{t.stepAbout}</h2>
+        <PracticePhotoUpload mode="profile" value={profile.photoPath||''} onChange={value=>setProfileValue('photoPath',value)} locale={locale} disabled={busy||!practitioner}/>
         <label>{t.displayName}<input required maxLength="120" value={profile.displayName||''} onChange={e=>setProfileValue('displayName',e.target.value)}/></label>
         <label>{t.professionalTitle}<input required maxLength="160" value={profile.professionalTitle||''} onChange={e=>setProfileValue('professionalTitle',e.target.value)}/></label>
         <label>{t.shortBio}<textarea required maxLength="600" value={profile.shortBio||''} onChange={e=>setProfileValue('shortBio',e.target.value)}/></label>
@@ -414,8 +416,10 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
       </form>:
       <form className="hh-form hh-panel" onSubmit={submit}>
         <div><span className="hh-badge">{t.freePricing}</span><h2>{t.freeTitle}</h2><p>{t.freeLead}</p></div>
+        <PracticePhotoUpload mode="profile" value={profile.photoPath||''} onChange={value=>setProfileValue('photoPath',value)} locale={locale} disabled={busy||!practitioner}/>
         <label className="hh-check"><input type="checkbox" checked={includeService} onChange={e=>setIncludeService(e.target.checked)}/>{t.includeFree}</label>
         {includeService&&<>
+          <PracticePhotoUpload mode="service" value={offer.photos||[]} onChange={value=>setOfferValue('photos',value)} locale={locale} disabled={busy||!practitioner}/>
           <label>{t.serviceTitleEn}<input required value={offer.copy.en.title} onChange={e=>setOfferCopy('en','title',e.target.value)}/></label>
           <label>{t.serviceTitleRu}<input required value={offer.copy.ru.title} onChange={e=>setOfferCopy('ru','title',e.target.value)}/></label>
           <label>{t.shortEn}<textarea required value={offer.copy.en.shortDescription||''} onChange={e=>setOfferCopy('en','shortDescription',e.target.value)}/></label>
@@ -440,6 +444,7 @@ function ProfileEditor({practitioner,locale,t,busy,onSave,onSubmit}){
   const [v,setV]=useState({...emptyProfile,...(practitioner?.draftProfile||{})})
   const set=(k,x)=>setV(s=>({...s,[k]:x}))
   return <section className="hh-panel hh-section"><h2>{t.profile}</h2>{practitioner?.reviewNote&&<p className="hh-notice">{practitioner.reviewNote}</p>}<form className="hh-form" onSubmit={e=>{e.preventDefault();onSave({...v,languages:list(v.languages),methods:list(v.methods),socialUrls:Array.isArray(v.socialUrls)?v.socialUrls:list(v.socialUrls)},practitioner?.revision)}}>
+    <PracticePhotoUpload mode="profile" value={v.photoPath||''} onChange={value=>set('photoPath',value)} locale={locale} disabled={busy}/>
     <label>{t.displayName}<input required maxLength="120" value={v.displayName||''} onChange={e=>set('displayName',e.target.value)}/></label>
     <label>{t.professionalTitle}<input required maxLength="160" value={v.professionalTitle||''} onChange={e=>set('professionalTitle',e.target.value)}/></label>
     <label>{t.shortBio}<textarea required maxLength="600" value={v.shortBio||''} onChange={e=>set('shortBio',e.target.value)}/></label>
@@ -471,9 +476,10 @@ function Services({items,t,locale,busy,quota,createRequest=0,onSave,onSubmit,onP
   </>
 }
 function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
-  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})},es:{...emptyService.copy.es,...(item.localizedCopy?.es||{})}},goals:item.goals||[],methods:item.methods||[],benefits:item.benefits||[],faq:item.faq||[],displayLocales:item.displayLocales||['en','ru'],whatsapp:item.whatsapp||'',telegram:item.telegram||'',areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||''}:emptyService
+  const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})},es:{...emptyService.copy.es,...(item.localizedCopy?.es||{})}},goals:item.goals||[],methods:item.methods||[],benefits:item.benefits||[],faq:item.faq||[],displayLocales:item.displayLocales||['en','ru'],whatsapp:item.whatsapp||'',telegram:item.telegram||'',areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||'',photos:item.photos||[]}:emptyService
   const [v,setV]=useState({...emptyService,...base,copy:{...emptyService.copy,...base.copy}}),set=(k,x)=>setV(s=>({...s,[k]:x})),setCopy=(lang,k,x)=>setV(s=>({...s,copy:{...s.copy,[lang]:{...s.copy[lang],[k]:x}}}))
   return <form className="hh-form hh-panel" onSubmit={e=>{e.preventDefault();onSave(item?.id||null,{...v,languages:Array.isArray(v.languages)?v.languages:list(v.languages),confirmedPrice:['free','contact'].includes(v.pricingMode)?null:(v.confirmedPrice===''?null:Number(v.confirmedPrice)),currency:['free','contact'].includes(v.pricingMode)?'':v.currency,durationMinutes:v.durationMinutes===''?null:Number(v.durationMinutes)},item?.revision)}}><div className="hh-actions"><h3>{item?(item.copy?.title||t.services):t.add}</h3>{item&&<span className="hh-badge">{item.status}</span>}</div>{item?.reviewNote&&<p className="hh-notice">{item.reviewNote}</p>}
+    <PracticePhotoUpload mode="service" value={v.photos||[]} onChange={value=>set('photos',value)} locale={locale} disabled={busy}/>
     <label>{t.serviceTitleEn}<input required value={v.copy.en.title} onChange={e=>setCopy('en','title',e.target.value)}/></label><label>{t.serviceTitleRu}<input required value={v.copy.ru.title} onChange={e=>setCopy('ru','title',e.target.value)}/></label>
     <label>{t.shortEn}<textarea required value={v.copy.en.shortDescription||v.copy.en.description} onChange={e=>setCopy('en','shortDescription',e.target.value)}/></label><label>{t.shortRu}<textarea required value={v.copy.ru.shortDescription||v.copy.ru.description} onChange={e=>setCopy('ru','shortDescription',e.target.value)}/></label>
     <details className="hh-practice-advanced-copy" open><summary>{locale==='ru'?'Цели, методы, польза и контакты':'Goals, methods, benefits & contact'}</summary>
