@@ -83,7 +83,7 @@ export default async function ServicesPage({ params }: PageProps) {
   // links. Their inline request actions use the existing channel handoff.
   const editorialOffers = [
     ...coreServiceOffers(locale as Locale).map((offer) => ({
-      id:offer.id, title:offer.title, promise:offer.promise, benefit:offer.benefit,
+      id:offer.id, title:offer.title, promise:offer.promise, benefit:offer.benefit, image:offer.image,
       details: offer.id === "situation"
         ? (locale === "ru"
           ? "Заполните коучинг-анкету и нарисуйте схему «Я — цель — проблема». Бесплатный результат — личный письменный разбор, а не живая консультация."
@@ -115,7 +115,7 @@ export default async function ServicesPage({ params }: PageProps) {
       href:offer.href, areaKey:editorialAreas[offer.id],
     })),
     {
-      id:"constellations",
+      id:"constellations",image:"/images/holistic-house/video-posters/constellations-en-v1.webp",
       title:locale==="ru"?"Системные расстановки и архетипическая поддержка":"Systemic constellations & archetypal support",
       promise:locale==="ru"?"Исследуем отношения, семейные и личные сценарии через символическую расстановку.":"Explore relationship, family and life patterns through a personal symbolic constellation.",
       details:locale==="ru"?"Проясним запрос, рассмотрим роли и динамику ситуации, затем отделим впечатления от фактов и определим возможные шаги.":"Clarify your question, map the roles and dynamics symbolically, then distinguish impressions from facts and consider practical next steps.",
@@ -126,7 +126,7 @@ export default async function ServicesPage({ params }: PageProps) {
       href:`/${locale}/services/systemic-constellations`,areaKey:"relationships",
     },
     {
-      id:"yggdrasil",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
+      id:"yggdrasil",image:"/academy/reiki-yggdrasil/source/basic-program.jpg",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
       promise:locale==="ru"?"Знакомство с системой Рейки, видео и материалы.":"Reiki practice, original video and study resources.",
       details:locale==="ru"?"Посмотрите вводное видео и учебные материалы, затем выберите бесплатную вводную ступень или индивидуальную инициацию.":"Watch the introductory video and study materials, then choose the free introductory level or a personal initiation.",
       label:locale==="ru"?"Рейки · Первая ступень":"Reiki · Level 1",
@@ -135,7 +135,7 @@ export default async function ServicesPage({ params }: PageProps) {
       href:`/${locale}/academy/reiki/yggdrasil/free-initiation`,areaKey:"energy_spiritual",
     },
     {
-      id:"tantra",title:locale==="ru"?"Тантра Рейки — бесплатная инициация":"Tantra Reiki — free introduction",
+      id:"tantra",image:"/images/tantra-reiki/participant-1-poster.png",title:locale==="ru"?"Тантра Рейки — бесплатная инициация":"Tantra Reiki — free introduction",
       promise:locale==="ru"?"Изучите практику и варианты личной инициации.":"Explore the training and teacher-guided initiation.",
       details:locale==="ru"?"На странице курса есть вводные материалы, бесплатный запрос первой ступени и вариант индивидуальной инициации.":"The course page provides introductory materials, a free Level 1 request and the option of a personal initiation.",
       label:locale==="ru"?"Тантра Рейки · Первая ступень":"Tantra Reiki · Level 1",
