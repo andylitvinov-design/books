@@ -497,7 +497,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
           {page === 'portrait' && (
-            <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+            <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
               reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
