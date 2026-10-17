@@ -1,59 +1,73 @@
-/* Premium reports-first profile, scoped to the signed-in account.
-   Legacy private-link cabinets and report readers keep their own presentation. */
+/* Signed-in Profile only. The legacy shared-link cabinet and report readers
+   keep their existing styles, access rules and document components. */
 .hh-profile-domains[data-profile-mode="account"] {
-  --domain-accent: #0f7f87;
-  --domain-accent-dark: #0b6470;
-  --domain-ink: #103e49;
-  --domain-muted: #647b78;
-  --domain-line: #d1e5df;
+  --domain-ink: #153c49;
+  --domain-muted: #637775;
+  --domain-accent: #08798a;
+  --domain-accent-dark: #075564;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  padding: clamp(5px, 1vw, 12px);
+  border-radius: 20px;
   color: var(--domain-ink);
-  background: linear-gradient(160deg, #f4eee3 0%, #f9f4ea 45%, #f5efe5 100%);
-  border-radius: 27px;
-  padding: clamp(10px, 1.8vw, 20px);
+  background: #f4eee3;
 }
+
+/* A purposeful, short navy introduction, matching the public ribbon. */
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero {
-  min-height: 139px;
-  margin: 0 0 16px;
-  padding: clamp(17px, 2.6vw, 27px);
-  background: radial-gradient(circle at 90% 35%, #efe4d2 0 12%, transparent 32%), linear-gradient(110deg, #fbf6ee, #f6edde);
-  border: 1px solid #f0e8dd;
-  border-radius: 23px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 0;
+  margin: 0 0 10px;
+  padding: 17px clamp(16px, 2.5vw, 24px);
+  border: 1px solid #224259;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 93% 12%, rgba(146,47,81,.49), transparent 43%),
+    linear-gradient(112deg, #102849 0%, #163b55 100%);
   box-shadow: none;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after {
-  width: 29%;
-  top: -38%;
-  right: -1%;
-  bottom: -28%;
-  opacity: .38;
+  top: -35%;
+  right: -2%;
+  bottom: -40%;
+  width: 24%;
+  opacity: .12;
+  filter: brightness(0) invert(1);
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 78%; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-eyebrow { color: #397c6c; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero .hh-domain-eyebrow { display: none; }
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-title {
+  max-width: min(92%, 620px);
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero .hh-domain-eyebrow,
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-actions {
+  display: none;
+}
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 {
-  margin: 0 0 11px!important;
-  font: 400 clamp(33px, 4.4vw, 48px)/1.11 Georgia,serif!important;
-  letter-spacing: -.035em;
-  color: #123b47!important;
+  margin: 0 0 4px !important;
+  color: #fff9f4 !important;
+  font: 400 clamp(27px, 3.3vw, 36px)/1.12 Georgia, serif !important;
+  letter-spacing: -.026em;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-subtitle {
-  color: #738079!important;
-  max-width: 46ch;
-  font: 400 clamp(14px, 1.6vw, 16px)/1.52 system-ui,sans-serif!important;
+  max-width: 58ch;
+  color: #dae4e6 !important;
+  font: 450 13px/1.35 system-ui, sans-serif !important;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-actions { display: none; }
 
-/* The original secure report reader stays mounted; the archive is its visual card. */
+/* One archive card, with a genuinely compact empty state. */
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-report-archive {
   scroll-margin-top: 82px;
-  margin: 0 0 16px;
-  padding: clamp(16px,2.5vw,26px);
-  border: 1px solid #d7e5df;
-  border-radius: 25px;
+  margin: 0 0 10px;
+  padding: clamp(13px, 1.75vw, 20px);
+  border: 1px solid #d8e5e0;
+  border-radius: 18px;
   background: #fffefb;
-  box-shadow: 0 8px 25px rgba(37,73,62,.065);
+  box-shadow: 0 5px 18px rgba(18,65,60,.045);
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports {
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -61,478 +75,377 @@
   box-shadow: none;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head {
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head > div {
+  flex: 1;
+  min-width: 0;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin {
-  width: 55px;
-  height: 55px;
-  flex-basis: 55px;
-  border-radius: 17px;
-  color: #197c70;
-  background: #e4f1eb;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin svg { width: 26px; height: 26px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 {
-  font: 400 clamp(27px,3.3vw,35px)/1.13 Georgia,serif!important;
-  letter-spacing: -.022em;
-  color: #174c47!important;
-  margin: 0 0 5px!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head p {
-  font: 400 14px/1.5 system-ui,sans-serif!important;
-  color: #806f63;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-count {
-  border: 1px solid #bfddcf;
-  border-radius: 100px;
-  background: #e6f3ed;
-  color: #266f5d;
-  font: 750 11px/1.3 system-ui,sans-serif;
-  letter-spacing: .045em;
-  padding: 8px 11px;
-}
-/* Empty-state illustration uses an existing lightweight botanical asset and
-   a real lucide document icon; no screenshot images or private data are embedded. */
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 242px;
-  gap: 0;
-  padding: 47px 15px 21px;
-  border: 0;
-  border-radius: 19px;
-  background: radial-gradient(ellipse 180px 90px at 50% 28%, #f7f4ea 0%, transparent 100%);
-  text-align: center;
-  color: #577066;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty:before {
-  content: "";
-  position: absolute;
-  top: 6px;
-  left: calc(50% - 111px);
-  width: 222px;
-  height: 145px;
-  pointer-events: none;
-  background: url('/images/holistic-house/homepage-botanical.svg') center / contain no-repeat;
-  opacity: .31;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg {
-  position: relative;
-  z-index: 1;
-  width: 80px;
-  height: 80px;
-  flex: none;
-  margin: 6px 0 23px;
-  padding: 19px;
-  border: 1px solid #e0e5d9;
-  border-radius: 19px;
-  color: #6a8f7f;
-  background: #fffdf7;
-  box-shadow: 0 8px 25px rgba(47,83,65,.08);
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty strong {
-  position: relative;
-  margin: 0 0 9px;
-  color: #143d49;
-  font: 400 clamp(24px,3vw,32px)/1.2 Georgia,serif!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty p {
-  position: relative;
-  max-width: 50ch;
-  margin: 0!important;
-  color: #756f66;
-  font: 400 13.5px/1.55 system-ui,sans-serif!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-privacy { display: none; }
-
-/* Visible sales action is deliberately present ONLY for an empty report archive. */
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-when-empty { margin-top: 9px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer {
-  padding: clamp(16px,2vw,22px);
-  border-radius: 21px;
-  border: 1px solid #d5e9e2;
-  background: linear-gradient(126deg,#eff8f3 0%,#e9f7f1 48%,#f5fbf7 100%);
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer-heading {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 17px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 59px;
-  width: 59px;
-  height: 59px;
-  border-radius: 18px;
-  background: #dcefe7;
-  color: #166c65;
+  flex: 0 0 39px;
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  color: #11766e;
+  background: #e6f2ed;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer-heading > div { min-width: 0; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer h3 {
-  margin: 0 0 7px!important;
-  color: #173e48!important;
-  font: 400 clamp(21px,2.65vw,29px)/1.2 Georgia,serif!important;
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin svg {
+  width: 20px;
+  height: 20px;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer p {
-  margin: 0!important;
-  color: #547b7c;
-  font: 400 14px/1.53 system-ui,sans-serif!important;
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 {
+  margin: 0 0 2px !important;
+  color: #154652 !important;
+  font: 400 clamp(24px, 2.7vw, 30px)/1.15 Georgia, serif !important;
+  letter-spacing: -.025em;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head p {
+  margin: 0 !important;
+  color: #687d78;
+  font: 400 12px/1.35 system-ui, sans-serif !important;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-count {
+  flex: none;
+  margin: 0 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid #c6e3d8;
+  border-radius: 99px;
+  background: #ebf7f1;
+  color: #25695c;
+  font: 750 10px/1.2 system-ui, sans-serif;
+  letter-spacing: .04em;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: start;
+  column-gap: 11px;
+  row-gap: 1px;
+  min-height: 0;
+  margin: 0;
+  padding: 11px 3px;
+  border: 0;
+  border-top: 1px solid #e9eee9;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty:before {
+  display: none;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #dbe9e2;
+  border-radius: 10px;
+  background: #f4faf5;
+  color: #45837a;
+  box-shadow: none;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty strong {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  color: #174652;
+  font: 650 15px/1.3 system-ui, sans-serif !important;
+  letter-spacing: normal;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty p {
+  grid-column: 2;
+  grid-row: 2;
+  max-width: 58ch;
+  margin: 1px 0 0 !important;
+  color: #70817a;
+  font: 400 11.5px/1.35 system-ui, sans-serif !important;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-privacy {
+  display: none;
+}
+
+/* The only prominent conversion action in the archive. It is a request,
+   not an instant booking, and no test data is sent to WhatsApp. */
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-when-empty {
+  margin: 2px 0 0;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 13px;
-  width: 100%;
-  min-height: 54px;
-  padding: 12px 17px;
-  border-radius: 15px;
-  color: #fff!important;
-  text-decoration: none!important;
-  text-align: center;
-  background: linear-gradient(105deg,#117b86,#1695a1);
-  box-shadow: 0 8px 19px rgba(16,117,126,.15);
-  font: 750 16px/1.28 system-ui,sans-serif;
-  transition: filter .15s,transform .15s;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button:hover { filter: brightness(.94);transform: translateY(-1px); }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 0;
-  margin: 18px 0 2px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row > div {
-  display: flex;
+  justify-content: space-between;
   gap: 10px;
-  align-items: center;
-  min-width: 0;
-  padding: 7px 12px;
-  border-right: 1px solid #d6e3df;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  background: linear-gradient(108deg, #085263, #0d7580);
+  box-shadow: none;
+  color: #fff !important;
+  text-decoration: none !important;
+  font: 750 14px/1.3 system-ui, sans-serif;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row > div:last-child { border-right: 0; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-icon {
-  display: grid;place-items: center;
-  flex: 0 0 39px;
-  width: 39px;height: 39px;
-  border-radius: 50%;
-  background: #e7f3ec;
-  color: #257a6a;
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button > span {
+  flex: 1;
+  text-align: center;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row strong,
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row small { display: block; overflow-wrap: normal; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row strong { color: #183e47;font: 650 12px/1.35 system-ui,sans-serif; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row small { color: #72847b;font: 400 11px/1.4 system-ui,sans-serif;margin-top: 2px; }
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button:hover {
+  filter: brightness(.95);
+  transform: none;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-consultation-disclaimer {
+  margin: 6px 2px 0 !important;
+  text-align: center;
+  color: #6b7d78;
+  font: 400 11px/1.32 system-ui, sans-serif !important;
+}
 
-/* Clear, lightweight accordion for the four report areas. */
+/* A real disclosure: closed summary is concise; actual four tabs appear
+   only when opened, never as fake clickable pills. */
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-more {
-  margin: 0 0 16px;
-  border: 1px solid #d7e5df;
-  border-radius: 23px;
-  background: #fffefa;
-  box-shadow: 0 7px 20px rgba(34,74,61,.04);
+  margin: 0 0 8px;
+  border: 1px solid #d6e5e0;
+  border-radius: 16px;
+  background: #fffefb;
+  box-shadow: none;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle {
-  min-height: 94px;
-  padding: 18px 21px;
-  align-items: flex-start;
+  align-items: center;
+  min-height: 62px;
+  gap: 10px;
+  padding: 11px 15px;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary { gap: 5px; width: 100%; }
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary {
+  width: 100%;
+  gap: 3px;
+}
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > strong {
-  color: #153f49;
-  font: 400 clamp(24px,3vw,31px)/1.2 Georgia,serif;
+  color: #184a51;
+  font: 400 clamp(20px, 2.45vw, 25px)/1.15 Georgia, serif;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > small {
-  color: #71857f;font: 400 13px/1.4 system-ui,sans-serif;
+  color: #67817b;
+  font: 400 11.5px/1.4 system-ui, sans-serif;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills {
-  display: flex!important;
-  flex-direction: row!important;
-  flex-wrap: wrap;
-  gap: 7px!important;
-  margin: 9px 0 0;
+  display: none !important;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills > span {
-  display: inline-flex;flex-direction: row;
-  width: auto;align-items: center;
-  padding: 7px 13px;
-  border-radius: 100px;
-  background: #eaf4ef;
-  color: #346a67;
-  font: 500 12px/1.25 system-ui,sans-serif;
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle > svg {
+  margin: 0;
+  color: #0d7580;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle > svg { margin-top: 9px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-body { background: #fffefa; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-private {
-  align-items: flex-start;
-  padding: 7px 9px;
-  margin: 5px 0 16px;
-  color: #857f79;
-  font: 400 12px/1.58 system-ui,sans-serif;
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-body {
+  padding: 12px;
+  background: #fffefb;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-private svg { color: #746d63; }
+
+/* Details rather than a multi-line legal paragraph taking up the viewport. */
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy {
+  margin: 0 2px 8px;
+  border: 0;
+  color: #6e7b77;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 4px;
+  border-radius: 7px;
+  list-style: none;
+  cursor: pointer;
+  font: 500 11.5px/1.35 system-ui, sans-serif;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary::-webkit-details-marker {
+  display: none;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary::marker {
+  content: "";
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary > svg {
+  flex: none;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary > svg:last-child {
+  transition: transform .16s;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy[open] summary > svg:last-child {
+  transform: rotate(180deg);
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy p {
+  max-width: 72ch;
+  margin: 4px 4px 8px !important;
+  padding: 10px 12px;
+  border-left: 2px solid #bbd8d2;
+  color: #667873;
+  background: #f9fcf9;
+  font: 400 11.5px/1.5 system-ui, sans-serif !important;
+}
+
+/* Two clearly secondary ways to continue; no giant stacked banners. */
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions {
   display: grid;
-  grid-template-columns: 1.35fr .9fr;
-  gap: 12px;
-  margin-top: 5px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
+  gap: 8px;
+  margin: 0;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a {
-  display: flex;align-items: center;justify-content: center;gap: 10px;
-  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 45px;
   margin: 0;
-  padding: 12px 15px;
-  border: 1px solid #b2dce2;
-  border-radius: 15px;
-  background: #eaf8f8;
-  color: #087284!important;
-  text-decoration: none!important;
-  text-align: center;
-  font: 750 14px/1.3 system-ui,sans-serif;
+  padding: 9px 12px;
+  border: 1px solid #bcdad7;
+  border-radius: 11px;
+  background: #f5fbf8;
+  color: #126979 !important;
+  text-decoration: none !important;
+  text-align: left;
+  font: 700 12.5px/1.3 system-ui, sans-serif;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a svg:last-child {
+  margin-left: auto;
 }
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions .hh-domain-services-link {
   width: 100%;
-  border-color: #c1e2d0;
-  background: #ebf7ee;
-  color: #166f61!important;
+  background: #faf9f5;
+  border-color: #dfdbd3;
+  color: #586d68 !important;
 }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a svg:last-child { margin-left: auto;flex: none; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a:hover { background: #d9f2f1; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions .hh-domain-services-link:hover { background: #def0e4; }
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a:hover {
+  background: #e7f5f1;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions .hh-domain-services-link:hover {
+  background: #f1f3ec;
+}
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary:focus-visible,
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle:focus-visible,
 .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a:focus-visible,
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button:focus-visible { outline: 3px solid #0a9ca6;outline-offset: 3px; }
+.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button:focus-visible {
+  outline: 3px solid #15a6ad;
+  outline-offset: 3px;
+}
 
 @media(max-width:760px) {
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after { width: 38%;opacity: .24; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 88%; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row > div { padding: 7px 8px;gap: 7px; }
-}
-@media(max-width:560px) {
-  .hh-profile-domains[data-profile-mode="account"] { padding: 8px;border-radius: 20px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero {
-    min-height: 122px;
-    margin-bottom: 12px;
-    padding: 19px 13px 18px;
-    border-radius: 16px;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 92%; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 { font-size: 31px!important;line-height: 1.11!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-subtitle { font-size: 13.5px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-report-archive { padding: 15px 13px;border-radius: 19px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports { padding: 0; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head { gap: 10px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin {
-    width: 46px;height: 46px;flex-basis: 46px;border-radius: 14px;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 { font-size: 26px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head p { font-size: 12px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-count { padding: 6px 8px;font-size: 10px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty { min-height: 230px;padding-inline: 5px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer { padding: 14px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer-heading { gap: 10px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer-icon { flex-basis: 46px;width: 46px;height: 46px;border-radius: 14px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer h3 { font-size: 21px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-empty-offer p { font-size: 12.5px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button { min-height: 50px;font-size: 14px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row { margin-top: 12px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row > div { flex-direction: column;text-align: center;align-items: center;gap: 6px;padding: 8px 4px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-icon { width: 34px;height: 34px;flex-basis: 34px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row strong { font-size: 11px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row small { font-size: 10px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more { border-radius: 18px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle { padding: 15px 13px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > strong { font-size: 25px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills > span { padding: 6px 9px;font-size: 11px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions { grid-template-columns: 1fr;gap: 9px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a { min-height: 49px;font-size: 13px; }
-}
-@media(max-width:355px) {
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 100%; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after { opacity: .1; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 { font-size: 28px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-benefit-row strong { font-size: 10.5px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 { font-size: 23px!important; }
-}
-@media(prefers-reduced-motion:reduce) {
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button { transition: none; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button:hover { transform: none; }
-}
-
-/* 2026-10-17 production polish: reports-first mobile fit. */
-/* Preserve the global navy/burgundy promotion untouched; only style Profile. */
-.hh-profile-domains[data-profile-mode="account"] {
-  width: 100%;
-  max-width: 1100px;
-  padding: clamp(5px,.75vw,10px);
-  border-radius: 20px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero {
-  min-height: 0;
-  margin-bottom: 11px;
-  padding: 14px 18px;
-  border-radius: 18px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 {
-  margin: 0 0 5px!important;
-  font-size: clamp(27px,3.1vw,35px)!important;
-  line-height: 1.09!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 90%; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-subtitle {
-  font-size: 13px!important;
-  line-height: 1.39!important;
-  max-width: 50ch;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after { opacity:.26; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-report-archive {
-  padding: 15px;
-  border-radius: 20px;
-  margin-bottom: 12px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head { margin-bottom: 8px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty {
-  min-height: 0;
-  padding: 8px 10px 9px;
-  margin: 0;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty:before {
-  top: 0;
-  height: 97px;
-  opacity: .23;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg {
-  width: 54px;
-  height: 54px;
-  padding: 13px;
-  margin: 3px 0 7px;
-  border-radius: 15px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty strong {
-  margin-bottom: 5px;
-  font-size: clamp(23px,2.65vw,28px)!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty p {
-  max-width: 44ch;
-  font-size: 12.5px!important;
-  line-height: 1.42!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-when-empty {
-  margin: 6px 0 0;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button {
-  width: 100%;
-  min-height: 50px;
-  padding: 10px 15px;
-  background: linear-gradient(105deg,#064b5b,#106d79);
-  border-radius: 13px;
-  font-size: 15px;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button > span { flex: 1;text-align: center; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button svg { flex-shrink: 0; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-consultation-disclaimer {
-  margin: 7px 2px 0!important;
-  color: #6d7876;
-  text-align: center;
-  font: 400 11px/1.4 system-ui,sans-serif!important;
-}
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle { min-height: 0; padding: 13px 15px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills { margin-top: 6px; }
-.hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills > span { padding: 5px 9px; }
-
-@media(max-width:760px) {
-  /* Widen only this private page, not public site or other Cabinet tabs. */
+  /* Bottom navigation already has Practice, so avoid a redundant top pill. */
   .hh-app:has(.hh-profile-domains[data-profile-mode="account"]) {
-    width: calc(100% - 12px)!important;
+    width: calc(100% - 12px) !important;
     padding-top: 8px;
   }
+  .hh-app:has(.hh-profile-domains[data-profile-mode="account"]) .hh-master-header-link {
+    display: none;
+  }
 }
 @media(max-width:560px) {
-  .hh-profile-domains[data-profile-mode="account"] { padding: 4px; border-radius: 14px; }
+  .hh-profile-domains[data-profile-mode="account"] {
+    padding: 4px;
+    border-radius: 14px;
+  }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero {
-    min-height: 0;
-    padding: 11px 13px;
-    margin-bottom: 9px;
-    border-radius: 15px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
+    border-radius: 13px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-title {
+    max-width: 95%;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after {
+    right: -7%;
+    width: 34%;
+    opacity: .09;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 {
-    font-size: clamp(25px,6.6vw,30px)!important;
-    margin: 0 0 5px!important;
+    font-size: clamp(25px, 6.5vw, 30px) !important;
+    line-height: 1.12 !important;
   }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-title { max-width: 95%; }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero-subtitle {
-    font-size: 12.1px!important;
-    line-height: 1.33!important;
-    max-width: 39ch;
+    font-size: 12px !important;
   }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero:after { opacity: .19;right:-10%; }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-report-archive {
     padding: 12px;
-    margin-bottom: 10px;
-    border-radius: 17px;
+    margin-bottom: 8px;
+    border-radius: 14px;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head {
-    align-items: flex-start;
     gap: 9px;
     margin-bottom: 5px;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin {
-    width: 42px;height: 42px;flex-basis: 42px;border-radius: 12px;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-pin svg {
-    width: 23px;height: 23px;
+    flex-basis: 35px;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 {
-    font-size: clamp(23px,6.2vw,27px)!important;
-    margin-bottom: 2px!important;
+    font-size: 24px !important;
+    margin: 0 !important;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head p {
-    font-size: 11.5px!important;line-height: 1.35!important;
+    display: none;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-count {
-    font-size: 9px; padding: 5px 8px;
+    font-size: 9px;
+    padding: 5px 7px;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty {
-    min-height: 0;
-    padding: 5px 4px 8px;
+    padding: 10px 1px;
   }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty:before {
-    width: 160px;left:calc(50% - 80px);height: 65px;opacity:.22;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg {
-    width: 45px;height: 45px; padding: 10px;
-    border-radius: 13px;margin: 2px 0 5px;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty strong {
-    font-size: 22px!important; margin: 0 0 5px;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty p {
-    max-width: 37ch;font-size: 11.7px!important;line-height: 1.35!important;
-  }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-when-empty { margin-top: 5px; }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button {
-    min-height: 46px; padding: 9px 11px;font-size: 13.5px;border-radius: 11px;
+    min-height: 44px;
+    padding: 9px 11px;
+    font-size: 13.5px;
   }
   .hh-profile-domains[data-profile-mode="account"] .hh-domain-consultation-disclaimer {
-    margin-top: 5px!important;font-size: 10px!important;line-height: 1.3!important;
+    font-size: 10.5px !important;
   }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle { padding: 12px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > strong { font-size: 22px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-topic-pills > span { padding: 5px 8px;font-size: 10px; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle {
+    padding: 10px 12px;
+    min-height: 58px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > strong {
+    font-size: 21px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-more-toggle .hh-domain-more-summary > small {
+    font-size: 11px;
+  }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions a {
+    min-height: 44px;
+    padding: 8px 9px;
+    gap: 6px;
+    font-size: 11.5px;
+  }
 }
 @media(max-width:350px) {
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 { font-size: 23px!important; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-appointment-button { font-size: 12.5px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-head h2 { font-size: 21px!important; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero h1 { font-size: 24px !important; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-footer-actions { grid-template-columns: 1fr; }
 }
-@media (max-height:720px) and (max-width:560px) {
-  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero { padding-block: 8px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty { padding-block: 2px; }
-  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg { width: 38px;height: 38px;margin-bottom: 4px; }
+@media(max-height:720px) and (max-width:560px) {
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-hero { padding-block: 10px; }
+  .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty { padding-block: 7px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .hh-profile-domains[data-profile-mode="account"] .hh-domain-privacy summary > svg:last-child {
+    transition: none;
+  }
 }
