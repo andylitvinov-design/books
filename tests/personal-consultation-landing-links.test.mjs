@@ -15,11 +15,12 @@ test("free written review and optional paid consultation are distinct choices on
   assert.match(landing, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
   assert.match(landing, /variant="all"/);
   assert.match(landing, /href="#request-free-review"/);
-  assert.match(landing, /href="#personal-consultation"/);
+  assert.match(landing, /href="#situations"/);
   assert.match(landing, /<ServiceVideoShowcase topic="overview"/);
-  assert.ok(landing.indexOf('id="personal-consultation"') < landing.indexOf('<ServiceVideoShowcase'), "optional personal sessions should be visible before the generic video");
+  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('<ServiceVideoShowcase'), "consultation format selection belongs after the value explanation and video");
   assert.match(landing, /<details className=\{styles\.directions\}>/);
-  assert.match(landing, /href=\{"https:\/\/wa\.me\/14376066502\?text=" \+ encodeURIComponent\(option\.message\)\}/);
+  assert.match(landing, /className=\{styles\.finalRequest\} id="request-free-review"/);
+  assert.match(landing, /href=\{locale === "es" \? "\/en\/services\/alchemy-of-soul"/);
 });
 
 test("three languages preserve a genuinely free written report and transparent live consultation prices", () => {
@@ -27,11 +28,11 @@ test("three languages preserve a genuinely free written report and transparent l
     "Начать бесплатный разбор",
     "Get my free written review",
     "Recibir revisión escrita gratuita",
-    "Личная консультация · от €50",
-    "Personal consultation · from €50",
-    "Consulta personal · desde €50",
-    "€50", "€100", "written", "письмен", "escrito",
+    "written", "письмен", "escrito",
   ]) assert.ok(landing.includes(phrase), "missing localised consultation detail: " + phrase);
+  assert.doesNotMatch(landing, /€50|€100/, "Monetary amounts appear only in the final request component");
+  const selector = read("components/free-review-quick-request.tsx");
+  for (const phrase of ["€50", "€100", "Free", "Бесплатно", "Gratis"]) assert.ok(selector.includes(phrase), phrase);
   assert.match(landing, /медицинским диагнозом/i);
   assert.match(landing, /medical diagnosis/i);
 });
@@ -44,7 +45,7 @@ test("home and services offer direct and clear free and paid landing actions", (
   assert.match(homepage, /service-home-button--primary/);
   assert.match(services, /paidCta:/);
   assert.match(styles, /\.heroActions\{/);
-  assert.match(styles, /\.paidOptions a/);
+  assert.match(styles, /\.finalRequest\{/);
   assert.match(styles, /@media\(max-width:767px\)/);
 });
 
