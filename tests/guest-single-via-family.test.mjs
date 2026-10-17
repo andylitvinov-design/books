@@ -64,6 +64,7 @@ function publicHarness({ withGuestCallback = true, guestHandler = async () => {}
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' }
       if (name === 'next/navigation') return { useRouter() { return { push(route) { navigation.push(route) } } } }
       if (name === './test-explorer') return { TestExplorer: 'TestExplorer' }
+      if (name === '@/components/sitewide-antistress-banner') return { TestSelectionCourseBanner: 'TestSelectionCourseBanner' }
       if (name === '@/lib/inner-growth/course-entry-intent') return {
         COURSE_ENTRY_INTENT_KEY: 'course',
         makeCourseEntryIntent() { return 'draft' },

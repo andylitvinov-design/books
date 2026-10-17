@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TestExplorer } from './test-explorer'
+import { TestSelectionCourseBanner } from '@/components/sitewide-antistress-banner'
 import { COURSE_ENTRY_INTENT_KEY, makeCourseEntryIntent } from '@/lib/inner-growth/course-entry-intent'
 
 // An entire selected battery can start as a temporary guest session.
@@ -55,5 +56,6 @@ export function PublicTestExplorer({ locale, embedded = false, initialPreference
       key={effectiveLocale + ':' + (initialPreferences?.focus || []).join(',') + ':' + (initialPreferences?.problems || []).join(',') + ':' + initialMode + ':' + String(initialBrowseFull)}
       initialPreferences={initialPreferences} initialMode={initialMode} initialBrowseFull={initialBrowseFull} onStart={submit} onStartCourse={launchCourse} />
     {error && <p role="alert" className="cabinet-test-error">{error}</p>}
+    <TestSelectionCourseBanner locale={locale} />
   </>
 }

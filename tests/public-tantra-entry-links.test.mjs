@@ -113,7 +113,7 @@ for (const locale of ['en', 'ru', 'es']) {
     const target = locale === 'es' ? 'en' : locale;
     const cta = pageLinks.find((link) => link.href === `/${target}/app/course?program=stress&amp;entry=quick`);
     assert.ok(cta);
-    assert.equal(cta.text, { en: 'Start free course', ru: 'Начать курс', es: 'Empezar el curso en inglés' }[locale]);
+    assert.equal(cta.text, { en: 'Start the free course', ru: 'Пройти курс бесплатно', es: 'Empezar el curso en inglés' }[locale]);
     assert.ok(pageLinks.some((link) => link.href === `/${locale}/courses/antistress`));
   });
 }
