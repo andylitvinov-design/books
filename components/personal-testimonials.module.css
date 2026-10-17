@@ -165,3 +165,33 @@
   }
   .section[data-personal-testimonials="all"] .videoItem{scroll-snap-align:start}
 }
+
+/* Full archive: twelve source-backed videos stay reachable in one horizontally browsable row. */
+.section[data-personal-testimonials="all"] .videoGrid{
+  display:flex;grid-template-columns:none;gap:13px;overflow-x:auto;scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;scrollbar-width:thin;padding:3px 2px 13px;
+}
+.section[data-personal-testimonials="all"] .videoItem{flex:0 0 clamp(230px,28%,330px);scroll-snap-align:start}
+.section[data-personal-testimonials="all"] .videoGrid:focus-visible{outline:3px solid #98634e;outline-offset:3px;border-radius:10px}
+.storyDisclosure{margin:13px 0 18px;border:1px solid #dccfc0;background:#f1ebe2;border-radius:12px}
+.storyDisclosure>summary{min-height:44px;padding:11px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:9px;list-style:none;color:#624839;font:700 13px/1.4 Arial,sans-serif}
+.storyDisclosure>summary::-webkit-details-marker{display:none}
+.storyDisclosure>summary::after{content:"+";font:400 24px/1 Georgia,serif}
+.storyDisclosure[open]>summary::after{content:"−"}
+.storyDisclosure .quoteCard{margin:0 10px 10px}
+.storyDisclosure>summary:focus-visible{outline:3px solid #9b694a;outline-offset:2px}
+.swipeHint{font:700 11px/1.4 Arial,sans-serif;color:#87554a;margin:0 0 9px}
+@media(max-width:767px){
+  .section[data-personal-testimonials="all"]{margin:22px 10px 26px;padding:16px 14px}
+  .section[data-personal-testimonials="all"] .intro h2{font-size:26px;line-height:1.12}
+  .section[data-personal-testimonials="all"] .intro>p:last-child{font-size:12px;line-height:1.42;margin-top:7px}
+  .section[data-personal-testimonials="all"] .videoHeader{margin-bottom:6px}
+  .section[data-personal-testimonials="all"] .videoHeader h3{font-size:20px}
+  .section[data-personal-testimonials="all"] .videoGrid{display:flex;grid-auto-flow:initial;grid-auto-columns:initial;padding-bottom:10px}
+  .section[data-personal-testimonials="all"] .videoItem{flex:0 0 83%;max-width:295px}
+  .section[data-personal-testimonials="all"] .videoItem :global(.site-video-title){font-size:16px}
+  .section[data-personal-testimonials="all"] .videoItem :global(.site-video-caption){padding:9px 11px}
+  .section[data-personal-testimonials="all"] .disclaimer{font-size:10px;line-height:1.4;margin-top:8px}
+  .section[data-personal-testimonials="all"] .actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .section[data-personal-testimonials="all"] .more,.section[data-personal-testimonials="all"] .contact{font-size:11px;line-height:1.25;padding:8px 10px;min-height:44px}
+}
