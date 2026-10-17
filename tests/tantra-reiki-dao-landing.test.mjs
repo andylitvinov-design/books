@@ -37,7 +37,7 @@ test("real festival photos are restored to levels and visual gallery, not mislab
 test("first level story and attunements are visible, later levels need an explicit click", async () => {
   const journey = await read("components/tantra-reiki-journey.tsx");
   const author = journey.indexOf('<div className="tantra-journey__author-text"');
-  const expandable = journey.indexOf('<details className="tantra-journey__extras">');
+  const expandable = journey.indexOf('<details className="tantra-journey__extras" open={i === 0}>');
   const actions = journey.indexOf('<div className="tantra-journey__actions">');
   assert.ok(author > 0 && author < expandable && expandable < actions);
   const end = journey.indexOf("</details>", expandable);
