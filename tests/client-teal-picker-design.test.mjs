@@ -31,13 +31,13 @@ test('the new entrance leads to the functioning first step, not a fake action', 
   assert.ok(picker.includes('<details className={styles.advanced} id="hh-more-test-filters">'))
 })
 
-test('test recommendations, scale guide, course switch and sign in remain wired to data', () => {
+test('test recommendations and start action remain wired without the unwanted controls', () => {
   assert.ok(picker.includes('browseRecommendations.slice(0, visibleCount)'))
   assert.match(picker, /entry\.matchPercent/)
   assert.match(picker, /entry\.durationMinutes/)
   assert.match(picker, /<TestScaleGuide guide=\{entry\.scaleGuide\}/)
   assert.match(picker, /onToggleTest\(entry\.key\)/)
-  assert.match(picker, /data-test-course-switch/)
+  assert.doesNotMatch(picker, /data-test-course-switch|data-guest-start-notice/)
   assert.match(picker, /onClick=\{journeyMode === 'course' \? onStartCourse : onStart\}/)
 })
 
