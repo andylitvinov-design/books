@@ -9,6 +9,21 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 const registry = JSON.parse(read("data/public-card-artwork.json"));
 const entries = [...Object.values(registry.books), ...Object.values(registry.images)];
 
+const browserUrls = JSON.parse(read("data/public-card-artwork-urls.json"));
+
+test("browser-only artwork URL map matches pinned source manifest without leaking heavy source metadata", () => {
+  assert.deepEqual(browserUrls.books,
+    Object.fromEntries(Object.entries(registry.books).map(([key, value]) => [key, value.url])));
+  assert.deepEqual(browserUrls.images,
+    Object.fromEntries(Object.entries(registry.images).map(([key, value]) => [
+      key, { thumb: value.thumb, feature: value.feature },
+    ])));
+  assert.ok(JSON.stringify(browserUrls).length < JSON.stringify(registry).length * 0.6);
+  const helper = read("lib/public-card-artwork.ts");
+  assert.match(helper, /public-card-artwork-urls\.json/);
+  assert.doesNotMatch(helper, /import registry from "@\/data\/public-card-artwork\.json"/);
+});
+
 const sourceGitHash = source => {
   const bytes = readFileSync(new URL("../" + source, import.meta.url));
   return {
