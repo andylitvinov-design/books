@@ -23,30 +23,30 @@ test('private client routes are not mistaken for public test discovery', () => {
   ]) assert.equal(isPublicTestDiscoveryPath(route), false, route)
 })
 
-test('Academy and My Tests use the same sitewide banner and bottom navigation', () => {
+test('Academy and My Tests keep navigation without an obsolete global review banner', () => {
   const root = source('app/layout.tsx')
   const ribbon = source('components/sitewide-antistress-banner.tsx')
   const bottom = source('components/mobile-bottom-navigation.tsx')
   const landing = source('app/[locale]/client/page.tsx')
   const explorer = source('app/[locale]/client/tests/page.tsx')
-  assert.match(root, /<SitewideAntistressBanner initialLocale=\{lang\}/)
+  assert.doesNotMatch(root, /SitewideAntistressBanner/)
   assert.match(root, /<MobileBottomNavigation initialLocale=\{lang\}/)
-  assert.ok(ribbon.includes('client(?:\\/tests)?'))
+  assert.doesNotMatch(ribbon, /export function SitewideAntistressBanner/)
   assert.match(bottom, /!isPublicTestDiscoveryPath\(pathname\)/)
-  assert.match(ribbon, /data-sitewide-personal-review-banner/)
+  assert.doesNotMatch(ribbon, /data-sitewide-personal-review-banner/)
   assert.match(bottom, /getSiteNavigation\(locale\)\.filter\(item => item.id !== 'relationships'\)/)
   assert.match(landing, /<PublicSiteHeader locale=\{typedLocale\}/)
   assert.match(explorer, /<PublicSiteHeader locale=\{locale as Locale\}/)
   assert.match(bottom, /aria-current=\{current === item.id \? 'page'/)
 })
 
-test('guest questionnaires and results hide promotional chrome without hiding the catalog', () => {
+test('guest questionnaires and results hide mobile navigation without hiding the catalog', () => {
   const landing = source('components/app/cabinet-landing.jsx')
   const styles = source('app/ia-v2.css')
   assert.match(landing, /phase === 'catalog' && <div id="cabinet-tests">/)
   assert.match(landing, /phase !== 'catalog' && <section className="cabinet-guest-tests"/)
   assert.match(styles, /body:has\(\.client-entry-shell \.cabinet-guest-tests\)/)
-  assert.match(styles, /\[data-sitewide-personal-review-banner\]/)
+  assert.doesNotMatch(styles, /\[data-sitewide-personal-review-banner\]/)
   assert.match(styles, /\.ia222-bottom-navigation/)
   assert.match(styles, /padding-bottom: 0 !important/)
 })
