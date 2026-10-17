@@ -135,3 +135,11 @@
   .final { border: 0; padding: 0; }
   .notes { max-height: none; overflow: visible; border: 0; white-space: pre-wrap; }
 }
+
+.practiceTimer { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 13px; margin: 20px 0 3px; padding: 15px; background: #eef8f5; border-radius: 14px; border: 1px solid #c0e4db; color: #256268; }
+.practiceTimer > span { display: inline-flex; align-items: center; gap: 7px; font-weight: 750; font-size: 13px; width: 100%; }
+.practiceTimer > strong { font-size: 22px; letter-spacing: .035em; min-width: 68px; font-variant-numeric: tabular-nums; }
+.practiceTimer > button { cursor: pointer; min-height: 44px; border-radius: 9px; border: 1px solid #abcbc8; padding: 8px 11px; background: #fff; color: #1e6665; font-size: 13px; font-weight: 750; }
+.practiceTimer > button:first-of-type { color: #fff; background: #087f7e; border-color: #087f7e; }
+.practiceTimer > button:focus-visible { outline: 3px solid #27ada7; outline-offset: 2px; }
+@media print { .practiceTimer { display: none !important; } }
