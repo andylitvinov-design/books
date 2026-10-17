@@ -190,7 +190,7 @@ try {
     const quick = page.locator("[data-free-quick-request]").first();
     await visible(quick);
     assert.equal(await page.locator("#personal-consultation").count(), 1, "Existing service consultation links still target the final selector");
-    assert.equal(await page.locator("#situations .situationGrid article").count(), 4, "Four grounded question categories are displayed");
+    assert.equal(await page.locator("#situations article").count(), 4, "Four grounded question categories are displayed");
     const heroText = await page.locator('section[aria-labelledby="review-hero-title"]').innerText();
     assert.ok(!heroText.includes("€50") && !heroText.includes("€100"), "First screen focuses on benefits, not pricing");
     const quickChooser = await openContactChannelChooser(quick, expect);
