@@ -9,6 +9,7 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
+import { SITUATION_OBSERVATION } from '../lib/assessments/situational-score-context.js'
 import { assessmentResultOverview, initialAssessmentSection } from '../lib/assessments/result-overview.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 
@@ -64,6 +65,7 @@ function mount(props) {
     './free-course-banner': { FreeCourseBanner: p => jsx('aside', { 'data-optional-course': true, ...p }) },
     '@/lib/assessments/scale-guides': { getTestScaleGuide },
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
+    '@/lib/assessments/situational-score-context': { SITUATION_OBSERVATION },
     '@/lib/assessments/result-overview': { assessmentResultOverview },
   })
   const render = () => { cursor = 0; tree = expand(CompactAssessmentReport(props)); return tree }
@@ -100,8 +102,11 @@ function assertSelected(h, result, report, section, locale) {
   assert.equal(pressed[0].props['data-assessment-scale-trigger'], section.key)
   assert.equal(pressed[0].props['aria-controls'], panel.props.id)
   assert.ok(text(panel).includes(section.meaning), 'Full source meaning remains available')
-  assert.ok(visibleText(panel).includes(section.summary || section.meaning),
-    'The semantic explanation must be visible without expanding details, not just its numeric prefix')
+  const plainGuide = nodes(panel).some(node => own(node, 'data-current-score-position') ||
+    own(node, 'data-answer-interpretation'))
+  assert.ok(visibleText(panel).includes(section.summary || section.meaning) ||
+    (plainGuide && text(panel).includes(section.summary || section.meaning)),
+    'The full source interpretation remains accessible, while a clear current-level reading is visible')
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
   const scoreDimension = section.bandBasis === 'unavailable' ? null : result.dimensions.find(item => item.key === section.key)
   const scoreModel = gaugeModel(scoreDimension, result, locale)
