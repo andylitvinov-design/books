@@ -8,7 +8,7 @@ const path='docs/myspace/HOLISTIC_HOUSE_OPORA_ANTISTRESS_AS5_2_ALL_210_SCREENS_M
 const body=read(path)
 const expectedRoles=[
   'Приветствие','Моментная оценка','Темп и право выбора','Личный фокус',
-  'Одна рабочая модель','Показ готового примера','Подготовка',
+  'Афоризм и голосование','Показ готового примера','Подготовка',
   'Практика A — заметить','Практика B — сделать','Практика C — повторить',
   'Перенос на новую сцену','Если — то — иначе','Честная обратная связь',
   'Сохранённая карточка','Мой прогресс',
@@ -40,12 +40,14 @@ test('AS5.2 contains exactly 14 lessons and 15 physical screens each (210 total)
 })
 test('first five kept distinct; 8–11 train four separate operations; result only after save',()=>{
   assert.deepEqual(expectedRoles.slice(0,5),[
-    'Приветствие','Моментная оценка','Темп и право выбора','Личный фокус','Одна рабочая модель'])
+    'Приветствие','Моментная оценка','Темп и право выбора','Личный фокус','Афоризм и голосование'])
   assert.deepEqual(expectedRoles.slice(7,11),[
     'Практика A — заметить','Практика B — сделать','Практика C — повторить','Перенос на новую сцену'])
   assert.deepEqual(expectedRoles.slice(-2),['Сохранённая карточка','Мой прогресс'])
   assert.match(body,/Экран 15 может открыться \*\*только после\*\* серверного подтверждения/)
   assert.match(body,/его нельзя ошибочно требовать в `visitedSlideKeys` до сохранения/)
+  assert.match(body,/aphorismResponse:agree\|unsure\|disagree\|skip/)
+  assert.equal((body.match(/^#### Экран 05 — Афоризм и голосование/gm)||[]).length,14)
   assert.match(body,/не \*\*\s*выдавать\s*\*\*|не выдавать XP/)
 })
 test('target time 8–12 minutes is editorial, with ~5m50 of genuine exercise',()=>{
