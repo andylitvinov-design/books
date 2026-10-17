@@ -419,6 +419,7 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
         <PracticePhotoUpload mode="profile" value={profile.photoPath||''} onChange={value=>setProfileValue('photoPath',value)} locale={locale} disabled={busy||!practitioner}/>
         <label className="hh-check"><input type="checkbox" checked={includeService} onChange={e=>setIncludeService(e.target.checked)}/>{t.includeFree}</label>
         {includeService&&<>
+          <PracticePhotoUpload mode="service" value={offer.photos||[]} onChange={value=>setOfferValue('photos',value)} locale={locale} disabled={busy||!practitioner}/>
           <label>{t.serviceTitleEn}<input required value={offer.copy.en.title} onChange={e=>setOfferCopy('en','title',e.target.value)}/></label>
           <label>{t.serviceTitleRu}<input required value={offer.copy.ru.title} onChange={e=>setOfferCopy('ru','title',e.target.value)}/></label>
           <label>{t.shortEn}<textarea required value={offer.copy.en.shortDescription||''} onChange={e=>setOfferCopy('en','shortDescription',e.target.value)}/></label>
