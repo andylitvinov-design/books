@@ -412,7 +412,7 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
   }, [practitioners, state, pageLocale]);
   const t = COPY[locale];
   return (
-    <div className={styles.explorer}>
+    <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
       <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} methods={[]} />
       {visible.length ? <div className={styles.cardGrid}>
         {visible.map((master) => {
