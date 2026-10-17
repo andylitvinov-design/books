@@ -4,6 +4,7 @@ import { TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
   portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors,
+  portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
 test('portrait grouping partitions all 17 directional axes exactly once and excludes personality', () => {
@@ -70,4 +71,25 @@ test('No result: four sectors remain unmeasured, not percentages or health norms
   assert.equal(invalid[1].percent,50)
   assert.equal(invalid[1].measured,2)
   assert.deepEqual(PORTRAIT_SECTOR_KEYS, ['body','work','relationships','growth'])
+})
+
+test('selected category scales occupy full 360°, not their old quarter',()=>{
+  for(const sector of PORTRAIT_SECTORS){
+    const angles=sector.axes.map(axis=>portraitFullCircleAngleForAxis(axis,sector.key))
+    assert.equal(angles.length,sector.axes.length)
+    assert.ok(angles.every(Number.isFinite))
+    assert.equal(angles[0],-Math.PI/2)
+    for(let i=1;i<angles.length;i++){
+      assert.ok(Math.abs((angles[i]-angles[i-1])-(2*Math.PI/angles.length))<1e-10)
+    }
+    // The last and first axes are equally spaced around the wrap.
+    assert.ok(Math.abs((angles[0]+Math.PI*2-angles.at(-1))-(2*Math.PI/angles.length))<1e-10)
+    assert.equal(portraitFullCircleAngleForAxis('personality',sector.key),null)
+    assert.equal(portraitFullCircleAngleForAxis('unrelated',sector.key),null)
+  }
+  assert.equal(portraitFullCircleAngleForAxis('stress','not-a-sector'),null)
+  assert.equal(portraitFullCircleAngleForAxis('stress','growth'),null)
+  // Existing domain membership remains unchanged, so no test scoring or
+  // report/result storage migration is needed for the new presentation.
+  assert.deepEqual(PORTRAIT_SECTOR_KEYS,['body','work','relationships','growth'])
 })

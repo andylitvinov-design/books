@@ -1074,3 +1074,141 @@
   .visual:not(.visualCompact) .portraitSectorAll,
   .visual:not(.visualCompact) .portraitSectorChip{transition:none}
 }
+
+/* Portrait v3: four compact tabs and full-circle category scales, 17 Oct 2026. */
+/* Keep the photo, public explorer and compact test illustrations unchanged. */
+.visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+  display:block;
+  margin:2px 0 6px;
+  padding:6px;
+  min-width:0;
+  border:1px solid #c0ded5;
+  border-radius:12px;
+  background:rgba(242,250,245,.9);
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  min-width:0;
+}
+.visual:not(.visualCompact) .portraitSectorChip{
+  width:100%;
+  min-width:0;
+  min-height:51px;
+  margin:0;
+  padding:8px 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #b4d7cd;
+  border-radius:10px;
+  background:#e9f5ef;
+  color:#235f56;
+  box-shadow:none;
+  font:750 clamp(10px,1.3vw,13px)/1.2 system-ui,sans-serif;
+  text-align:center;
+  white-space:normal;
+  word-break:normal;
+  cursor:pointer;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  flex:none;
+  display:block;
+  font:inherit;
+  line-height:inherit;
+  min-width:0;
+  overflow-wrap:break-word;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed="true"]{
+  background:#23796f;
+  border-color:#23796f;
+  color:#fff;
+  box-shadow:0 3px 10px rgba(20,89,83,.18);
+}
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed="true"]){
+  background:#daefe7;
+  border-color:#7cb6aa;
+}
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #115e61;
+  outline-offset:2px;
+}
+/* Five or fewer true scales distributed evenly around 360°, with ring
+   markers distinct from actual measured radial values. */
+.radarContourPolygon{
+  fill:rgba(35,121,111,.035);
+  stroke:#257c75;
+  stroke-width:1.75;
+  stroke-linejoin:round;
+  opacity:.74;
+}
+.radarContourMeasured{
+  fill:#fffdf4;
+  stroke:#1d776b;
+  stroke-width:2.6;
+}
+.radarContourUnmeasured{
+  fill:#f9f7ee;
+  stroke:#929f96;
+  stroke-width:1.8;
+  stroke-dasharray:2.4 2.4;
+}
+.visual:not(.visualCompact) .portraitRadar .radarGuide{
+  stroke:#517d70;
+  stroke-width:1.6;
+  stroke-dasharray:2 5;
+  opacity:.52;
+}
+.visual:not(.visualCompact) .portraitRadar .radarInlineLabel{
+  font-size:13px;
+  letter-spacing:-.2px;
+  stroke:rgba(255,253,248,.98);
+  stroke-width:3.8px;
+}
+.visual:not(.visualCompact) .portraitRadar .radarLabelUnmeasured .radarInlineLabel{
+  fill:#636f68;
+}
+.visual:not(.visualCompact) .portraitRadar .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .portraitRadar .radarPoint{
+  fill:#fffdf4;
+  stroke:#1a776d;
+  stroke-width:2.7;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:48px;
+    font-size:clamp(9.5px,2.7vw,12px);
+    padding:7px 3px;
+    line-height:1.16;
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:5px}
+  .visual:not(.visualCompact):has(.portraitRadar) .portraitSectorPicker{
+    padding:5px;
+    margin-bottom:5px;
+  }
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip{
+    min-height:47px;
+    font-size:clamp(9.3px,2.6vw,11.5px);
+    padding:6px 3px;
+    border-radius:9px;
+  }
+  .visual:not(.visualCompact) .portraitRadar .radarInlineLabel{font-size:12.5px}
+}
+@media(max-width:340px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:9px;padding-inline:2px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
