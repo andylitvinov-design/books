@@ -114,8 +114,8 @@ test('legacy public header banner stays removed on every locale', async () => {
   const header = await readFile('components/public-site-header.tsx', 'utf8')
 
   assert.doesNotMatch(header, /MindBodyMonitorStrip|mind-body-monitor-strip|data-monitor-strip/)
-  assert.match(header, /<SiteNavigation locale=\\{locale\\}/)
+  assert.ok(header.includes('<SiteNavigation locale={locale} />'))
   for (const locale of ['en', 'ru', 'es']) {
-    assert.match(header, new RegExp(`\\b${locale}: \\{ home:`))
+    assert.ok(header.includes(`${locale}: { home:`))
   }
 })
