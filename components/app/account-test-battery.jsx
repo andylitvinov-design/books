@@ -503,9 +503,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     }
   }
   // Keep unsaved filter choices mounted when collapsed, just as before.
-  const explorerPanel = (explorerVisible || explorerMounted) && (
+  const explorerPanel = (
       <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}
         hidden={!explorerVisible} style={explorerVisible ? undefined : { display: 'none' }}>
+        {(explorerVisible || explorerMounted) && <>
         {conflict && <aside className={styles.reviewSelection} data-pending-selection>
           <div>
             <strong>{c.pendingReview}</strong>
@@ -523,6 +524,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+        </>}
       </section>
   )
 
