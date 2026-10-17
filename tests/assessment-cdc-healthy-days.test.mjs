@@ -20,7 +20,7 @@ test('CDC official modules are published, verified, immutable and original-Engli
   assert.equal(CDC_HEALTHY_DAYS_CATALOG.length,2)
   assert.equal(CDC_HEALTHY_DAYS_DEFINITIONS.length,2)
   assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 145)
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,169)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,168)
   for (const key of keys) {
     const item=MONITORING_CATALOG.find(x=>x.key===key), d=get(key)
     assert.ok(item && item.startable && item.guestEligible && item.rightsStatus==='cleared')

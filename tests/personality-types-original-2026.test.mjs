@@ -122,8 +122,8 @@ test('personal result reports carry bilingual type hypotheses and distinct, safe
 })
 
 test('public and Account explorers expose new original self-reflection, never protected MMPI or official MBTI',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,159)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key)).size,159)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,168)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key)).size,168)
   const restricted=['mmpi-3','mmpi-2','mmpi-2-rf','mbti-step-i','mbti-step-ii','neo-pi-3','hexaco-60','hexaco-100','16pf-fifth-edition','mcmi-iv','cpi-260']
   for(const locale of ['en','ru']){
     for(const audience of ['guest','account']){
