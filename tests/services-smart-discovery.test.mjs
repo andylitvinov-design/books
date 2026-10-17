@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { parse } from 'postcss'
 import {
   classifyDiscoveryIntent, DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery,
-  normalizeDiscoveryInput,
+  normalizeDiscoveryInput, serviceMatchesDiscoveryFacets,
 } from '../lib/practitioners/discovery-intent.js'
 
 const mobileResultCss=(css)=>{
@@ -108,7 +108,7 @@ test('Services: booking-style search and category selector appear above untouche
   assert.match(ui,/!aiAvailable \|\| !useExternalAi/)
   assert.match(ui,/No.*medical|not a diagnosis/i)
   assert.match(css,/@media\(max-width:620px\)/)
-  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(css,/\\.quickFacets\\{display:flex;flex-wrap:nowrap;/)
   assert.match(api,/HH_MARKETPLACE_AI_ENABLED/)
   assert.match(api,/EXPLICIT_AI_CONSENT_REQUIRED/)
   assert.match(api,/candidates\.has\(id\)/)
@@ -284,3 +284,40 @@ test('Services first fold on mobile uses concise search copy, four action chips 
   assert.match(mobile,/\.submit\{[^}]*min-height:44px/)
   assert.ok(mobile.includes('.exampleLong,.privacyFull{display:none}'))
 })
+
+test('compact discovery facets filter online, Toronto in-person, free and language',()=>{
+  const base={ deliveryFormat:'online', locationLabel:'', languages:['en'],
+    pricingMode:'fixed',confirmedPrice:100,currency:'EUR' };
+  const defaults={format:'online',city:'toronto',language:'en',price:''};
+  assert.equal(serviceMatchesDiscoveryFacets(base,defaults),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'in_person',locationLabel:'Toronto, ON'},defaults),false);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,languages:['ru']},defaults),false);
+  const toronto={...defaults,format:'in_person'};
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'in_person',locationLabel:'Toronto, ON'},toronto),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'hybrid',locationLabel:'Toronto'},toronto),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'in_person',locationLabel:'Ottawa'},toronto),false);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'in_person',locationLabel:''},toronto),false);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,deliveryFormat:'in_person',locationLabel:'Ottawa'}, {...toronto,city:''}),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,pricingMode:'free',confirmedPrice:null,currency:'CAD'}, {...defaults,price:'free'}),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,confirmedPrice:0,currency:'CAD'}, {...defaults,price:'free'}),true);
+  assert.equal(serviceMatchesDiscoveryFacets(base,{...defaults,price:'free'}),false);
+  assert.equal(serviceMatchesDiscoveryFacets(base,{...defaults,price:'50'}),false);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,confirmedPrice:50},{...defaults,price:'50'}),true);
+  assert.equal(serviceMatchesDiscoveryFacets({...base,confirmedPrice:10,currency:'CAD'}, {...defaults,price:'50'}),false);
+});
+
+test('mobile service filters stay on one row; format and page language have visible defaults',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ]);
+  assert.match(ui,/\[format,setFormat\] = useState\("online"\)/);
+  assert.match(ui,/\[city,setCity\] = useState\("toronto"\)/);
+  assert.match(ui,/\[language,setLanguage\] = useState<Locale \| "">\(locale\)/);
+  assert.match(ui,/<option value="free">\{t\.free\}<\/option>/);
+  assert.match(ui,/format==="in_person"&&<label>/);
+  assert.match(ui,/<option value="toronto">Toronto<\/option>/);
+  assert.match(css,/\.quickFacets\{display:flex;flex-wrap:nowrap;/);
+  assert.match(css,/\.quickFacets\{gap:5px;margin:10px 0 7px\}/);
+  assert.doesNotMatch(css,/\.quickFacets\{grid-template-columns:repeat\(2,/);
+});
