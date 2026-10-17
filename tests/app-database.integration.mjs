@@ -641,6 +641,36 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('public service funnel stores daily clicks and keeps practitioner report private', async () => {
+  const owned=(await practiceRepo.getMyPractice(a)).services.find(s=>s.status==='published')
+  assert.ok(owned,'Fixture must contain published service for Practitioner A')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'impression')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'order')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'whatsapp')
+  await practiceRepo.recordPublicServiceEvent(owned.id,'telegram')
+  await assert.rejects(
+    () => practiceRepo.recordPublicServiceEvent(randomUUID(),'order'),
+    error => error?.code === 'NOT_FOUND',
+  )
+
+  const admin=await adminClient()
+  try {
+    await admin.query(`
+      insert into app_private.service_funnel_daily (service_id,day,impressions,order_clicks,whatsapp_clicks,telegram_clicks)
+      values ($1,(now() at time zone 'America/Toronto')::date-1,9,4,2,1)
+    `,[owned.id])
+  } finally { await admin.end() }
+  const own=(await practiceRepo.getMyPractice(a)).serviceAnalytics
+  const item=own.services.find(s=>s.id===owned.id)
+  assert.deepEqual(item.yesterday,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.deepEqual(item.week,{impressions:9,orders:4,whatsapp:2,telegram:1})
+  assert.equal((await practiceRepo.getMyPractice(b)).serviceAnalytics.services.some(s=>s.id===owned.id),false)
+  await assert.rejects(
+    () => rawAs(a,'authenticated',db=>db.query('select * from app_private.service_funnel_daily')),
+    error => error?.code === '42501',
+  )
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,
