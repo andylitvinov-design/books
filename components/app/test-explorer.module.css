@@ -137,6 +137,15 @@
 .radarOutline{fill:none;stroke:#155f58;stroke-width:2.4;stroke-linejoin:round}
 .radarPoint{fill:#fffcf4;stroke:#1d716a;stroke-width:2.8}
 .radarCenter{fill:#2d6760;stroke:#fff7eb;stroke-width:2}
+/* Each ray has its own clear, localized caption. Leaders and pill columns
+   keep all labels readable on narrow screens without hiding the center. */
+.radarLabel{pointer-events:none}
+.radarLabelLeader{stroke:#5e897e;stroke-width:1.25;stroke-dasharray:3 4;opacity:.86}
+.radarLabelPill{fill:rgba(252,251,246,.96);stroke:#99bfb0;stroke-width:1.15}
+.radarLabelText{fill:#225c53;font:700 12.5px/1.2 system-ui,sans-serif;letter-spacing:-.16px}
+.radarLabelUnmeasured .radarLabelPill{fill:rgba(251,249,244,.9);stroke:#b7afa4;stroke-dasharray:3 3}
+.radarLabelUnmeasured .radarLabelText{fill:#726f66}
+.radarLabelUnmeasured .radarLabelLeader{opacity:.48}
 .portraitControls{margin-top:15px;padding:13px 14px;border:1px solid #d9cab4;border-radius:15px;background:rgba(255,253,248,.84)}
 .portraitControlsHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:.93rem}
 .portraitControlsHeading span{color:#6e6558;font-size:.79rem}
@@ -154,6 +163,7 @@
 .portraitControls>p{margin:11px 0 0;font-size:.75rem;color:#78675b;line-height:1.5}
 @media(max-width:760px){
   .portraitRadar{height:320px}
+  .radarLabelText{font-size:13px}
   .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:440px){
