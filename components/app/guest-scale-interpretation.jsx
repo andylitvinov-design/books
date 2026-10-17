@@ -34,7 +34,7 @@ export function GuestScaleInterpretation({ result, locale = 'en' }) {
           <h5>{section.construct || section.title || section.key}</h5>
           <div className={styles.gaugeSlot}>
             {dimension
-              ? <ScoreGauge dimension={dimension} locale={locale} compact result={result} />
+              ? <ScoreGauge dimension={dimension} locale={locale} compact result={result} showAnswerAnchors={false} />
               : <strong className={styles.fallbackScore}>{section.value} <span>/ {section.max}</span></strong>}
           </div>
           {section.band && section.bandBasis === 'screening' && <p className={styles.band}>{section.band}</p>}
