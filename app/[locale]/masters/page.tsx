@@ -8,18 +8,62 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
+import styles from "./masters-page.module.css";
 
-type PageProps={params:Promise<{locale:string}>};
-export const dynamic="force-dynamic";export const revalidate=0;
-export async function generateMetadata({params}:PageProps):Promise<Metadata>{
- const {locale}=await params;if(!isPublicLocale(locale))return{title:"Not found"};
- return{metadataBase:metadataBaseFor(),title:(locale==="ru"?"Практики":locale==="es"?"Profesionales":"Practitioners")+" | Holistic House",description:locale==="ru"?"Публичные профили практиков Holistic House.":locale==="es"?"Perfiles públicos de los profesionales de Holistic House.":"Public Holistic House practitioner profiles.",alternates:{canonical:`/${locale}/masters`,languages:{en:"/en/masters",ru:"/ru/masters",es:"/es/masters"}}};
+type PageProps = { params: Promise<{ locale: string }> };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isPublicLocale(locale)) return { title: "Not found" };
+  return {
+    metadataBase: metadataBaseFor(),
+    title: (locale === "ru" ? "Практики" : locale === "es" ? "Profesionales" : "Practitioners") + " | Holistic House",
+    description: locale === "ru"
+      ? "Найдите практику и отправьте запрос на дистанционную энергетическую поддержку."
+      : locale === "es"
+        ? "Encuentra profesionales y solicita apoyo energético a distancia."
+        : "Find a practitioner and request remote energy support.",
+    alternates: {
+      canonical: `/${locale}/masters`,
+      languages: { en: "/en/masters", ru: "/ru/masters", es: "/es/masters" },
+    },
+  };
 }
-export default async function MastersPage({params}:PageProps){
- const {locale}=await params;if(!isPublicLocale(locale))notFound();const ru=locale==="ru",es=locale==="es";
- let practitioners: PublicPractitioner[]=[];try{practitioners=await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale)}catch{}
- return <main className="services-shell services-shell--studio" lang={locale}><PublicSiteHeader locale={locale}/>
-  <section className="services-studio-hero"><div className="services-studio-hero-copy"><p className="homeopathy-kicker">{ru?"Сеть Holistic House":es?"Red de Holistic House":"Holistic House network"}</p><h1>{ru?"Практики":es?"Profesionales":"Practitioners"}</h1><p>{ru?"Публичные профили специалистов и ведущих, чьи услуги доступны через Holistic House.":es?"Conoce a los profesionales y facilitadores que ofrecen sesiones a través de Holistic House.":"Public profiles of practitioners whose services are available through Holistic House."}</p><Link className="services-studio-primary" href={`/${locale}/services`}>{ru?"Смотреть услуги":es?"Explorar servicios":"Explore services"}<span aria-hidden="true">→</span></Link></div></section>
-  <MarketplaceMasterFinder practitioners={practitioners} locale={locale} />
- </main>
+
+export default async function MastersPage({ params }: PageProps) {
+  const { locale } = await params;
+  if (!isPublicLocale(locale)) notFound();
+  const ru = locale === "ru", es = locale === "es";
+  let practitioners: PublicPractitioner[] = [];
+  try {
+    practitioners = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
+  } catch {
+    // The finder has an explicit empty state; never invent or hard-code practitioners.
+  }
+
+  return (
+    <main className="services-shell services-shell--studio" lang={locale}>
+      <PublicSiteHeader locale={locale} />
+      <section className={styles.hero} aria-labelledby="practitioners-title">
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>{ru ? "HOLISTIC HOUSE · МАСТЕРА" : es ? "HOLISTIC HOUSE · PROFESIONALES" : "HOLISTIC HOUSE · PRACTITIONERS"}</p>
+          <h1 id="practitioners-title">{ru ? "Найдите своего мастера" : es ? "Encuentra tu profesional" : "Find your practitioner"}</h1>
+          <p>{ru ? "Практики, личные сеансы и дистанционная поддержка." : es ? "Sesiones personales y apoyo a distancia, en un solo lugar." : "Personal sessions and remote support, all in one place."}</p>
+        </div>
+        <div className={styles.heroActions}>
+          <Link className={styles.supportAction} href={`/${locale}/services/remote-energy-support`}>
+            <span aria-hidden="true">✦</span>
+            {ru ? "Заказать энергоподдержку" : es ? "Solicitar apoyo energético" : "Request energy support"}
+            <span aria-hidden="true">→</span>
+          </Link>
+          <Link className={styles.servicesAction} href={`/${locale}/services`}>
+            {ru ? "Все услуги" : es ? "Todos los servicios" : "All services"} <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
+      <MarketplaceMasterFinder practitioners={practitioners} locale={locale} />
+    </main>
+  );
 }
