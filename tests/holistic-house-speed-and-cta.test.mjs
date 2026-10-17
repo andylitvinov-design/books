@@ -52,7 +52,9 @@ test("homepage prioritizes free written review and tests while preserving access
   assert.match(home, /звонок не входит\. Личные сессии оплачиваются отдельно/);
   assert.match(home, /not a live call\. One-to-one sessions are separate/);
   const landing = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(landing, /<section className=\{styles\.paid\} id="personal-consultation"/);
+  assert.match(landing, /<section className=\{styles\.finalCapture\} id="personal-consultation"/);
+  assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('className={styles.alchemy}'),
+    "Optional paid format choice is deferred until after the free review's benefits and optional deeper-work link");
   assert.doesNotMatch(home, /<FreeInsightsPaths/);
   const firstScreen = home.indexOf('className="service-home-hero"');
   const free = home.indexOf('className="service-home-button service-home-button--primary"');

@@ -67,7 +67,7 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
   for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
-    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "paidOptions"]) {
+    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "topic.cards.map", "deeper.title"]) {
     assert.ok(free.includes(phrase), phrase);
   }
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);

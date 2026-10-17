@@ -342,3 +342,43 @@
   .bottomServices{width:calc(100% - 24px);margin:5px auto 20px}
   .bottomServices a{min-height:38px;font-size:12px}
 }
+
+
+/* Value-first situation analysis: what Andrey can look at, before any pricing. */
+.situations{width:min(1140px,calc(100% - 40px));margin:clamp(35px,5vw,62px) auto 0;scroll-margin-top:82px}
+.situations h2{margin:0 0 10px;max-width:800px;color:#1e3849;font:400 clamp(30px,3.4vw,44px)/1.14 Georgia,serif;letter-spacing:-.028em;text-wrap:balance}
+.situationsLead{max-width:780px;margin:0;color:#53666a;font:15px/1.6 Arial,Helvetica,sans-serif}
+.situationGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:22px}
+.situationGrid article{min-width:0;border:1px solid #d5e3df;border-radius:17px;background:#fff;padding:21px 18px;box-shadow:0 7px 24px rgba(21,58,68,.035)}
+.situationGrid h3{margin:0 0 9px;font:400 clamp(20px,2vw,25px)/1.16 Georgia,serif;color:#224753}
+.situationGrid p{margin:0;font:13px/1.58 Arial,Helvetica,sans-serif;color:#53646a}
+.alchemy{width:min(1140px,calc(100% - 40px));margin:clamp(35px,5vw,66px) auto 0;border:1px solid rgba(170,217,209,.46);border-radius:23px;background:radial-gradient(circle at 95% 15%,rgba(60,137,132,.35),transparent 60%),linear-gradient(125deg,#1a354e,#214e50);padding:clamp(24px,4vw,43px);color:#eaf6f3;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.alchemy .eyebrow{color:#aad6cd;margin-bottom:11px}
+.alchemy h2{max-width:640px;margin:0 0 12px;color:#fff;font:400 clamp(28px,3.3vw,41px)/1.13 Georgia,serif;letter-spacing:-.02em;text-wrap:balance}
+.alchemy p:not(.eyebrow){max-width:740px;margin:0;font:14px/1.65 Arial,Helvetica,sans-serif;color:#d6e7e2}
+.alchemyLink{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:10px;padding:12px 17px;min-height:48px;max-width:290px;border-radius:12px;text-decoration:none;text-align:center;font:700 13px/1.4 Arial,Helvetica,sans-serif;background:#983d55;color:#fff}
+.alchemyLink:hover{background:#af4a63}
+.alchemyLink:focus-visible{outline:3px solid #f7d8ac;outline-offset:3px}
+.finalRequest{min-width:0;width:100%;scroll-margin-top:82px}
+@media(max-width:900px){.situationGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.alchemy{flex-direction:column;align-items:flex-start}.alchemyLink{max-width:none}}
+@media(max-width:767px){
+  .situations{width:calc(100% - 24px);margin-top:24px;scroll-margin-top:55px}
+  .situations .eyebrow{font-size:10px;margin-bottom:7px}
+  .situations h2{font-size:clamp(24px,7vw,29px);line-height:1.12;margin-bottom:7px}
+  .situationsLead{font-size:12px;line-height:1.42}
+  .situationGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+  .situationGrid article{padding:13px 11px;border-radius:13px}
+  .situationGrid h3{font-size:17px;line-height:1.14;margin-bottom:6px}
+  .situationGrid p{font-size:11.5px;line-height:1.4}
+  .alchemy{width:calc(100% - 24px);margin-top:27px;padding:19px 17px;gap:14px;border-radius:17px}
+  .alchemy .eyebrow{font-size:10px;margin-bottom:6px}
+  .alchemy h2{font-size:26px;margin-bottom:9px}
+  .alchemy p:not(.eyebrow){font-size:12px;line-height:1.48}
+  .alchemyLink{width:100%;font-size:12px;min-height:47px}
+  .finalRequest{scroll-margin-top:45px}
+}
+@media(max-width:350px){
+  .situationGrid article{padding:11px 9px}
+  .situationGrid h3{font-size:16px}
+  .situationGrid p{font-size:11px}
+}
