@@ -7,6 +7,7 @@ import { COURSE_PLANS } from '@/lib/inner-growth/course-plans'
 import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-plan'
 import { useSubscription } from './subscription-access'
 import { getCoursePreset } from '@/lib/inner-growth/course-presets'
+import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import styles from './my-courses-dashboard.module.css'
 
 const copy={
@@ -135,6 +136,7 @@ export default function MyCoursesDashboard({
       <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
       <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
     </header>
+    <CabinetFreeCourseBanners locale={locale}/>
     {main&&<CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing} onMakePrimary={onPrimary} busy={busy} canManageCourses={canManageCourses}/>}
     {others.length>0&&<section aria-label={t.other} className={styles.additional}>
       <h3>{t.other}</h3>
