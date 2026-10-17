@@ -1697,3 +1697,49 @@
   .hh-app .hh-mobile-app-nav a[aria-current='page']{background:#e8f2eb;color:#236d5e}
   .hh-app .hh-mobile-app-nav a svg{color:inherit}
 }
+
+
+/* Cabinet Account: the five primary links mirror both horizontal navigation bars. */
+.hh-app .hh-account-menu > div {
+  max-height: min(66dvh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.hh-app .hh-account-menu > div > a[aria-current='page'] {
+  background: #f0e9df;
+  border-radius: 9px;
+  color: #5c352a;
+  font-weight: 750;
+}
+.hh-app .hh-account-menu-secondary {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid #e6dbcc;
+}
+.hh-app .hh-account-menu .hh-account-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  min-height: 44px;
+  color: #756357;
+  font-weight: 600;
+}
+.hh-app .hh-account-menu .hh-account-more > summary::after {
+  content: '⌄';
+  margin-left: 12px;
+  color: #9a7965;
+}
+.hh-app .hh-account-menu .hh-account-more[open] > summary::after {
+  content: '⌃';
+}
+.hh-app .hh-account-menu .hh-account-more > a {
+  padding-left: 20px;
+  color: #68574c;
+}
+.hh-app .hh-account-menu > div a:focus-visible,
+.hh-app .hh-account-menu > div summary:focus-visible {
+  outline: 2px solid #a17352;
+  outline-offset: -2px;
+  border-radius: 9px;
+}
