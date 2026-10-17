@@ -131,12 +131,12 @@ test('six external research questionnaires are reference-only and rights-gated',
 
 test('tantric library exposes eight explicit EN/RU paths without protected or automatic tests', async () => {
   const { TANTRA_TEST_PATHS, availableTantraTestPaths } = await import('../lib/assessments/test-collections.js')
-  assert.equal(TANTRA_TEST_PATHS.length, 8)
+  assert.equal(TANTRA_TEST_PATHS.length, 9)
   assert.equal(new Set(TANTRA_TEST_PATHS.map(path => path.id)).size, 8)
   for (const locale of ['en','ru']) {
     const entries = buildExplorerEntries({locale, audience:'guest'})
     const routes = availableTantraTestPaths(entries)
-    assert.equal(routes.length, 8, locale)
+    assert.equal(routes.length, 9, locale)
     for (const route of routes) {
       assert.equal(route.testCount, route.keys.length, route.id)
       assert.ok(route.questionCount >= 6 && route.scaleCount >= 2, route.id)
