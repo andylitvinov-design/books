@@ -155,8 +155,8 @@ test('portrait SVG captions are plain near-dot words without pill rectangles, lo
     assert.ok(!descendants(tree).some(node => node.type === 'rect' && String(node.props.className).includes('radarLabelPill')), locale)
   }
   const css = read('components/app/test-explorer.module.css')
-  assert.match(css, /\\.radarInlineLabel\\{/)
-  assert.match(css, /\\.portraitSectorGrid\\{display:grid;grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/)
-  assert.match(css, /\\.radarSectorArc\\[/)
-  assert.doesNotMatch(css, /\\.radarLabelPill\\{/)
+  assert.ok(css.includes('.radarInlineLabel{'))
+  assert.ok(css.includes('.portraitSectorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
+  assert.ok(css.includes('.radarSectorArc[data-radar-sector=body]'))
+  assert.equal(css.includes('.radarLabelPill{'), false)
 })
