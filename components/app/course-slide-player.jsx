@@ -20,6 +20,8 @@ import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-mo
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { withFinalFreeOffer, buildCourseSlides } from '@/lib/inner-growth/course-slide-sequence'
 import { OPORA_SKILL_SLIDE_MODEL, oporaSkillCards } from '@/lib/inner-growth/anti-stress-skills-v5'
+import { OPORA54_SLIDE_MODEL } from '@/lib/inner-growth/anti-stress-skills-v6'
+import OporaV6SlidePlayer from './opora-v6-slide-player'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
@@ -341,7 +343,15 @@ function RoutePracticeLab({plan,...props}) {
     : <AntiStressPracticeLab {...props}/>
 }
 
-export default function CourseSlidePlayer({
+export default function CourseSlidePlayer(props){
+  if(props?.data?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && props?.data?.programme?.id==='stress')
+    return <OporaV6SlidePlayer {...props}/>
+  return <LegacyCourseSlidePlayer {...props}/>
+}
+
+// The historical seven- and fifteen-screen routes use the original player
+// unchanged. A started course is locked to its saved content version.
+function LegacyCourseSlidePlayer({
   locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
 }) {
   const words = WORDS[locale] || WORDS.en
