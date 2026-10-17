@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -140,6 +140,43 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
     }),
   ];
   return lines.filter((value) => value !== undefined).join("\n").trim();
+}
+
+function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
+  const [remaining, setRemaining] = useState(120);
+  const [running, setRunning] = useState(false);
+  const deadline = useRef(0);
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => {
+      const time = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
+      setRemaining(time);
+      if (time === 0) setRunning(false);
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  function toggle() {
+    if (running) {
+      setRemaining(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+      setRunning(false);
+    } else {
+      deadline.current = Date.now() + (remaining || 120) * 1000;
+      if (remaining === 0) setRemaining(120);
+      setRunning(true);
+    }
+  }
+  return <div className={styles.practiceTimer} role="group" aria-label={locale === "ru" ? "Таймер необязательной практики" : "Optional practice timer"}>
+    <span><Clock3 size={17} aria-hidden="true" />{locale === "ru" ? "Мягкая практика · по желанию" : "Gentle practice · optional"}</span>
+    <strong aria-label={locale === "ru" ? "Осталось секунд" : "Seconds remaining"}>
+      {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+    </strong>
+    <button type="button" onClick={toggle}>{running ? (locale === "ru" ? "Пауза" : "Pause") :
+      (remaining < 120 && remaining > 0 ? (locale === "ru" ? "Продолжить" : "Resume") :
+        (locale === "ru" ? "Начать 2 минуты" : "Start 2 minutes"))}</button>
+    <button type="button" onClick={() => { setRunning(false); setRemaining(120); }}>
+      {locale === "ru" ? "Сбросить" : "Reset"}
+    </button>
+  </div>;
 }
 
 export function EnergyworkAiLearner({ locale }: Props) {
@@ -385,6 +422,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.kind === "path-choice" ? (
                 <div className={styles.pathGrid} role="group" aria-label={t.pathway}>
