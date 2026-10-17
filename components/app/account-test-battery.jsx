@@ -151,6 +151,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     if (!isCurrent() || (isCourse && target && result.course?.id !== target)) throw new Error('COURSE_SELECTION_CHANGED')
     return result
   }
+  // A rapid double tap must not create two plans or two runner requests.
+  const singleStartInFlight = useRef(false)
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const [exploring, setExploring] = useState(openFromInsights || fromCourse || Boolean(recommendedKey))
@@ -355,6 +357,83 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   async function choose(entriesToStart, selectionPreferences) {
     await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
+
+  // One signed-in "Start test" is an append-then-launch operation, not
+  // the multi-test Save Selection flow. Both server methods are idempotent:
+  // appendActive deduplicates the selected instrument, and runs reuses its draft.
+  async function chooseAndStart(entry) {
+    if (singleStartInFlight.current || busy) return
+    if (!entry?.selectable || !entry.definition ||
+        !entries.some((item) => item.key === entry.key && item.selectable &&
+          item.definition?.id === entry.definition.id)) {
+      throw new Error(c.error)
+    }
+    singleStartInFlight.current = true
+    setBusy(true)
+    setError('')
+    let savedPlan = null
+    try {
+      const definition = entry.definition
+      savedPlan = await api('test-plans', {
+        items: [{
+          definitionKey: definition.key,
+          definitionVersion: definition.version,
+          instrumentLocale: definition.instrumentLocale,
+        }],
+        operationId: crypto.randomUUID(),
+        appendActive: true,
+        // Do not overwrite the saved topics/preferences from a one-card start.
+      })
+      if (!isCurrent()) return
+
+      let run = null
+      let courseId = null
+      // A course-assigned questionnaire still belongs to its course journey.
+      // Keep its special assignment/progression rules from the regular test list.
+      if (isCourseTest(courseState, entry.key) &&
+          !courseStatusByKey.get(entry.key)?.completed) {
+        const fresh = await api('course')
+        if (isCourseTest(fresh, entry.key) &&
+            coursePendingKeys(fresh).includes(entry.key)) {
+          run = await startOrResumeCourseTest({
+            courseState: fresh, key: entry.key, locale, request: api,
+          })
+          courseId = fresh.course.id
+        }
+      }
+      if (!run) run = await api('runs', {
+        definitionKey: definition.key,
+        definitionVersion: definition.version,
+        instrumentLocale: definition.instrumentLocale,
+        operationId: crypto.randomUUID(),
+      })
+      if (!run?.id) throw new Error('RUN_UNAVAILABLE')
+      if (!isCurrent()) return
+
+      const query = courseId
+        ? '&course=1&courseId=' + encodeURIComponent(courseId)
+        // A completed historic plan can still be retaken, but must not
+        // receive /advance from the runner unless the plan is active.
+        : savedPlan.status === 'active' ? '&plan=' + encodeURIComponent(savedPlan.id) : ''
+      setPlan(savedPlan)
+      router.push(root + '/runs/' + encodeURIComponent(run.id) + '?mode=quick' + query)
+    } catch (cause) {
+      if (!isCurrent()) return
+      if (savedPlan) setPlan(savedPlan)
+      const message = savedPlan
+        ? (locale === 'ru'
+          ? 'Тест добавлен в «Мои тесты», но не открылся. Нажмите «Начать тест» ещё раз.'
+          : 'Test saved to My tests, but could not open. Tap Start test again.')
+        : cause.code === 'TEST_PLAN_CAPACITY' ? c.capacity
+          : (locale === 'ru' ? 'Не удалось добавить тест. Попробуйте ещё раз.' : 'Could not add the test. Please try again.')
+      setError(message)
+      // The picker displays a user-readable error, instead of a raw API code.
+      throw new Error(message)
+    } finally {
+      singleStartInFlight.current = false
+      if (isCurrent()) setBusy(false)
+    }
+  }
   function openFilters() {
     const opening = !exploring
     setExploring(opening)
@@ -518,7 +597,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           </div>
         </aside>}
         <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
-          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
+          audience="account" onStart={choose} onStartSingle={!fromCourse ? chooseAndStart : null} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
           openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
