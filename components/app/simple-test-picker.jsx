@@ -12,6 +12,7 @@ import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
 import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
+import { searchPublicTestEntries } from '@/lib/assessments/test-explorer'
 
 const TEXT = {
   en: {
@@ -175,7 +176,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
   starting = false, actionError = null,
 }) {
@@ -221,14 +222,9 @@ export function SimpleTestPicker({
   // Search is local to this page and never sends personal queries to the server.
   const heroSearchTerm = submittedHeroSearch.trim().toLocaleLowerCase(locale)
   const browseRecommendations = heroSearchTerm
-    ? groupedRecommendations.filter((entry) => {
-        const topicLabels = (entry.topics || []).map((key) => {
-          const topic = TOPICS.find((item) => item.key === key)
-          return topic?.[locale] || topic?.en || key
-        })
-        return [entry.title, entry.description, entry.category, ...topicLabels].some((value) =>
-          String(value || '').toLocaleLowerCase(locale).includes(heroSearchTerm))
-      })
+    ? searchPublicTestEntries(
+        groupViaRecommendations(searchRecommendations, selectedKeys, showIndividualVia).visible,
+        heroSearchTerm)
     : groupedRecommendations
   const visibleRecommendations = browseRecommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, browseRecommendations.length - visibleCount)
@@ -573,7 +569,7 @@ export function SimpleTestPicker({
           {format(c.more, { count: nextBatch })} <ArrowRight size={18} aria-hidden="true" />
         </button>}
       </div>}
-      {(testKinds.length === 0 || testKinds.includes('professional')) && (fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
+      {!heroSearchTerm && (testKinds.length === 0 || testKinds.includes('professional')) && (fullVia || via.individualCount > 0) && <section className={styles.viaFamily} aria-label={viaCopy.title} data-via-family data-via-collapsed={via.collapsedCount}>
         <div className={styles.viaFamilyIntro}>
           <strong>{viaCopy.title}</strong>
           {fullVia && <div className={styles.viaTypeLine} data-test-type-line><KindBadge entry={fullVia} locale={locale} /></div>}

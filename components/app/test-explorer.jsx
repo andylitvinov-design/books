@@ -274,6 +274,12 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     matching.filter((entry) => entry.selectable),
     { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
   ), [matching, focus, problems, details, axes, depth, stylesFilter, lengths])
+  // Only explicit duration/type options restrict catalog search.
+  // Topic and concern selections still drive recommendations, not searches.
+  const searchRecommendations = useMemo(() => rankPublicTestMatches(
+    filterExplorerEntries(entries, { availability: 'available', kinds, maxMinutes }),
+    { depth },
+  ), [entries, kinds, maxMinutes, depth])
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -379,6 +385,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onClearTestKinds={() => setKinds([])}
       onSelectTestKind={(kind) => setKinds(kind ? [kind] : [])}
       recommendations={simpleRecommendations}
+      searchRecommendations={searchRecommendations}
       catalogEntries={entries}
       onChooseCollection={(keys) => {
         // Switching collections resets stale facets but never discards manually selected tests.
