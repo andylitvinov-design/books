@@ -6,7 +6,9 @@ import { CompactAssessmentReport } from './compact-assessment-report'
 
 export function PersonalResultReport({ result, locale = 'en', previous = null }) {
   const report = buildAssessmentResultReport(result, locale)
-  if (!report.sections.length) return null
+  if (!report.sections.length) return <section data-personal-result-report data-unverified-assessment-result>
+    <p role="note">{report.intro}</p>
+  </section>
   const ru = locale === 'ru'
   const bach = report.reportKind === 'bach'
   const verified = report.verified !== false

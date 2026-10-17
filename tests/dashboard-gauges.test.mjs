@@ -34,7 +34,7 @@ test('change arrows depend on direction, never raw sign alone',()=>{
   const improved=result('2',45.83,'2026-10-11T12:00:00Z')
   assert.deepEqual(gaugeChange(improved,old,metric(0).key),{state:'improved',delta:-29.17})
   assert.equal(gaugeChange(old,improved,metric(0).key).state,'baseline')
-  assert.equal(gaugeChange(result('3',95,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'worsened')
+  assert.equal(gaugeChange(result('3',95.83,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'worsened')
   assert.equal(gaugeChange(result('4',75,'2026-10-11T12:00:00Z'),old,metric(0).key).state,'unchanged')
   const resources=(value,date)=>resultFor('brcs','x',value,date)
   assert.equal(gaugeChange(resources(18,'2026-10-11T12:00:00Z'),resources(8,'2026-09-11T12:00:00Z'),'resources.brcs.total').state,'improved')
@@ -67,9 +67,10 @@ test('custom dates are inclusive, strictly validated, and never silently behave 
 })
 
 test('period comparison picks earliest compatible baseline, not a different scoring revision',()=>{
- const a=result('one',80,'2026-09-01T12:00:00Z')
- const b={...result('other',20,'2026-09-21T12:00:00Z'),contentHash:'other'}
- const c=result('new',40,'2026-10-10T12:00:00Z')
+ // Real CBI six-item means: raw totals 19, 5 and 10, multiplied by 25.
+ const a=result('one',79.17,'2026-09-01T12:00:00Z')
+ const b={...result('other',20.83,'2026-09-21T12:00:00Z'),contentHash:'other'}
+ const c=result('new',41.67,'2026-10-10T12:00:00Z')
  assert.equal(periodComparison([c,b,a]).previous.id,'one')
  assert.equal(periodComparison([b,c]).previous,null)
  assert.equal(periodComparison([]).current,null)

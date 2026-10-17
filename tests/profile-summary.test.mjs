@@ -85,7 +85,7 @@ test('completion ranking chooses the fewest startable tests that fill missing la
   assert.deepEqual(profile.recommendations[1].covers, ['trait'])
 })
 
-test('completed five-layer profile does not invent additional required tests', () => {
+test('snapshot-only rows without verifiable source records do not assert profile coverage', () => {
   const snapshot = {
     dimensions: ['state', 'symptoms', 'function', 'resources', 'trait'].map((dimensionClass, index) => ({
       key: 'example.' + dimensionClass,
@@ -105,8 +105,10 @@ test('completed five-layer profile does not invent additional required tests', (
     })),
   }
   const profile = profileCompletionRecommendations({ snapshot, results: [], locale: 'en' })
-  assert.equal(profile.coveragePercent, 100)
-  assert.equal(profile.complete, true)
-  assert.deepEqual(profile.missingAxes, [])
+  assert.equal(profile.coveragePercent, 0)
+  assert.equal(profile.complete, false)
+  assert.equal(profile.missingAxes.length, 5)
+  assert.equal(profile.withheldRows, 5)
+  assert.equal(profile.verificationRequired, true)
   assert.deepEqual(profile.recommendations, [])
 })
