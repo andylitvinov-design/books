@@ -323,6 +323,33 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     rightsNote: 'Publisher controlled CPI 260 forms, scoring and reports; qualification/licence required.',
   }),
 
+  // Tantra-adjacent external research references: NEVER expose protected original items
+  // as Holistic House runnable questionnaires without verified digital/commercial rights.
+  row('tantric-sex-scale-25', 'relationships_support', 'relationships', 'B', 'Tantric Sex Scale (Gordon, 2018)', 'TSS-25', 25, '5–7 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'research', {
+    sourceUrl: 'https://etd.ohiolink.edu/acprod/odb_etd/r/etd/search/10?clear=10&p10_accession_num=bgsu154203013060414',
+    rightsNote: '2018 Bowling Green thesis is CC BY-NC-ND 3.0; non-commercial, no derivatives. Electronic commercial questionnaire reuse NOT cleared. Reference only.',
+  }),
+  row('sexual-mindfulness-measure-7', 'relationships_support', 'relationships', 'B', 'Sexual Mindfulness Measure', 'SMM-7', 7, '2–3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6640099/',
+    rightsNote: 'Original wording and online/commercial administration require verification; reference only.',
+  }),
+  row('maia-2-37', 'body_fatigue_cognition', 'body', 'B', 'Multidimensional Assessment of Interoceptive Awareness 2', 'MAIA-2', 37, '7–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://osher.ucsf.edu/research/maia',
+    rightsNote: 'UCSF describes MAIA-2 as public domain with permission/copyright conditions on questionnaire page 2; confirm version and agreement first.',
+  }),
+  row('scale-body-connection-20', 'body_fatigue_cognition', 'body', 'B', 'Scale of Body Connection', 'SBC-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18047441/',
+    rightsNote: 'Price and Thompson research measure, 20 items; original electronic item rights and reproduction not yet cleared.',
+  }),
+  row('ecr-r-36', 'relationships_support', 'relationships', 'B', 'Experiences in Close Relationships — Revised', 'ECR-R', 36, '7–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://labs.psychology.illinois.edu/~rcfraley/measures/ecrr.htm',
+    rightsNote: 'Fraley, Waller and Brennan 2000; 36 attachment items. Commercial/online reproduction permission and scoring not independently cleared.',
+  }),
+  row('new-sexual-satisfaction-scale-20', 'relationships_support', 'relationships', 'B', 'New Sexual Satisfaction Scale', 'NSSS-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/19629836/',
+    rightsNote: 'Stulhofer, Busko and Brouillard 2010; 20 items. Publisher/author electronic reproduction permission not established.',
+  }),
+
   // Additional curated research references; questionnaire access stays gated.
   ...NEW_PSYCHOTHERAPY_REFERENCES.map((item) => row(
     item.key, item.category, item.area, item.priority, item.instrument,
