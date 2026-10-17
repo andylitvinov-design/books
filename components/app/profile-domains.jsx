@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
@@ -185,7 +185,6 @@ export function ProfileDomains({
   }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
-  const recentResults = useMemo(() => ordered(results.map(result => ({ ...result, occurredOn: String(result.measurementAt || '').slice(0, 10) }))), [results])
   const reports = external ? assessments : fetchedReports
   const updates = external ? homeopathyUpdates : fetchedDocuments
   const byArea = area => ordered(reports.filter(report => report.profileArea === area && report.available !== false))
