@@ -9,8 +9,6 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "@/components/alchemy-soul-landing.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
-const kind = "alchemy" as const;
-
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }]; }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

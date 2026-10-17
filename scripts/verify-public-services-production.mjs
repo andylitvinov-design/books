@@ -165,18 +165,38 @@ try {
         if (width === 390 || width === 1188) {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
+        if (kind === "alchemy" && width <= 390) {
+          const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
+            nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
+          assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
+          assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+            "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
+          assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Long guide is initially collapsed");
+          assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
+          assert.equal(await page.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one enquiry form");
+        }
         if (width === 390) {
-          const capture = main.locator('section:has(> details)');
-          assert.equal(await capture.count(), 1, "Exactly one core-service footer");
-          await capture.scrollIntoViewIfNeeded();
-          const chooser = await openContactChannelChooser(capture, expect);
-          const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-          assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
-          const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
-          assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
-          await alternative.locator("summary").click();
-          await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
-          await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false });
+          if (kind === "alchemy") {
+            const form = main.locator('[data-alchemy-lead-form="single"]');
+            await form.scrollIntoViewIfNeeded();
+            await visible(form.locator('button[type="submit"]'));
+            await expect(form.locator('select')).toHaveCount(2);
+            const testimonialRail = main.locator('[role="region"]').filter({has: main.locator('[data-testimonial-video-id]')});
+            assert.ok(await testimonialRail.evaluate(node => node.scrollWidth > node.clientWidth), "All reviews available with swipe");
+            await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
+          } else {
+            const capture = main.locator('section:has(> details)');
+            assert.equal(await capture.count(), 1, "Exactly one core-service footer");
+            await capture.scrollIntoViewIfNeeded();
+            const chooser = await openContactChannelChooser(capture, expect);
+            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
+            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            const alternative = main.locator("details").filter({ hasText: locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : "Prefer to start with a free written situation review?" });
+            assert.equal(await alternative.evaluate((element) => element.open), false, "alternative starts collapsed");
+            await alternative.locator("summary").click();
+            await visible(alternative.locator('a[href="/' + locale + '/services/free-situation-review"]'));
+            await page.screenshot({path: output + "/core-" + locale + "-" + slug + "-footer-expanded-390.png", fullPage: false});
+          }
         }
         await page.close();
       }

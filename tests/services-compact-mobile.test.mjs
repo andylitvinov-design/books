@@ -42,8 +42,8 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
   assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
   assert.doesNotMatch(offers, /€50|€100/);
-  assert.match(hero, /paidCta: "Personal consultation · from €50"/);
-  assert.match(hero, /free-situation-review#personal-consultation/);
+  assert.match(hero, /paidCta: "Alchemy of the Soul · Psycho-homeopathy"/);
+  assert.match(hero, /\/services\/alchemy-of-soul/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:44px/);
@@ -71,8 +71,13 @@ test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and hav
     assert.match(route, /generateMetadata/);
     assert.match(route, /generateStaticParams/);
     assert.match(route, /isSupportedLocale/);
-    assert.match(route, /<CoreServiceDetail locale=/);
-    assert.ok(route.includes('kind = "' + kind + '"'));
+    if(kind === "alchemy") {
+      assert.match(route, /<AlchemySoulLanding locale=/);
+      assert.match(route, /data-alchemy-extended-guide/);
+    } else {
+      assert.match(route, /<CoreServiceDetail locale=/);
+      assert.ok(route.includes('kind = "' + kind + '"'));
+    }
     for(const lang of ["en","ru"]) assert.ok(route.includes("/" + lang + "/services/" + slug));
   }
   for (const method of ["Situation analysis","Systemic constellations","homeopathic selection","Анализ ситуации","Системная расстановка","гомеопатический подбор"])

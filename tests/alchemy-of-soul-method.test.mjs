@@ -14,7 +14,7 @@ test("Alchemy of the Soul and Psycho-homeopathy are one canonical offer with fou
   assert.match(offers, /Alchemy of the Soul · Psycho-homeopathy/);
   assert.match(offers, /Алхимия души · Психогомеопатия/);
   assert.match(hero, /\/services\/alchemy-of-soul/);
-  assert.match(route, /CoreServiceDetail/);
+  assert.match(route, /AlchemySoulLanding/);
   assert.match(route, /DistanceHomeopathyGuide/);
   assert.match(detail, /2 sessions \+ 4 weeks/);
   assert.match(detail, /2 сессии \+ 4 недели/);
