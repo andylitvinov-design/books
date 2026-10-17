@@ -327,11 +327,11 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
       <p className={styles.description}>{service.copy.shortDescription}</p>
       <div className={styles.meta}><span>{format}</span>{service.locationLabel && service.deliveryFormat !== "online" ? <span>{service.locationLabel}</span> : null}{service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}</div>
       <div className={styles.actions}>
+        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
+        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#reviews"}>{locale==="ru"?"Отзывы":locale==="es"?"Opiniones":"Reviews"} ★</Link>
         <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
           {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#reviews"}>{locale==="ru"?"Отзывы":locale==="es"?"Opiniones":"Reviews"} ★</Link>
       </div>
     </article>
   );
@@ -395,8 +395,8 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
               <div className={styles.actions}>
-                <Link className={styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
                 {(master.services || []).length ? <Link className={styles.secondary} href={"/" + locale + "/services/" + master.slug + "/" + master.services[0].slug}>{t.viewService}</Link> : null}
+                <Link className={styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
               </div>
             </article>
           );

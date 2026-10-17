@@ -249,18 +249,18 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
                 <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
               </div>
               <div className="services-marketplace-actions">
-                <TrackedServiceLink serviceId={featuredService.id} event="order"
-                  className="services-marketplace-request services-marketplace-request--featured"
-                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
-                >
-                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </TrackedServiceLink>
                 <Link
                   className="services-marketplace-details"
                   href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
                 >
                   {locale === "ru" ? "Подробнее" : "Details"}
                 </Link>
+                <TrackedServiceLink serviceId={featuredService.id} event="order"
+                  className="services-marketplace-request services-marketplace-request--featured"
+                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
+                >
+                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
+                </TrackedServiceLink>
               </div>
             </div>
           </article>
