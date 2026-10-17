@@ -273,10 +273,12 @@ test('iPhone My Courses layout puts scales below both columns and keeps Plan ful
   assert.match(css, /\.addTile\{grid-template-columns:43px minmax\(0,1fr\) 17px;min-height:79px/)
 })
 
-test('course page brand and bottom nav agree on My Courses while keeping the original course backend', () => {
+test('course page brand, Account menu and both tabs share the Courses destination', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const theme = read('components/app/my-course-theme.css')
-  assert.match(workspace, /'Мои курсы' : 'My courses'/)
+  assert.match(workspace, /id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses', href: root \+ '\/course'/)
+  assert.match(workspace, /nav\.find\(item => navIsActive\(item\.id\)\)\?\.label/)
+  assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(workspace, /page === 'course'/)
   assert.match(theme, /:has\(\[data-course-selector\]\) \.hh-header/)
   assert.match(theme, /@media\(max-width:620px\)/)
