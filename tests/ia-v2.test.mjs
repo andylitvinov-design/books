@@ -18,15 +18,16 @@ const errorCode = code => error => error.code === code
 
 test('extended primary navigation and precise active families', () => {
   for (const locale of ['en', 'ru', 'es']) {
-    assert.deepEqual(getSiteNavigation(locale).map(x => x.id), locale === 'es' ? ['home','library','services','academy','courses','cabinet'] : ['home','library','services','relationships','academy','courses','cabinet'])
+    assert.deepEqual(getSiteNavigation(locale).map(x => x.id), locale === 'es' ? ['home','library','services','academy','tests','house'] : ['home','library','services','relationships','academy','tests','house'])
     for (const suffix of ['library', 'books', 'homeopathy', 'homeopathy/remedies/aconitum']) assert.equal(activeNavigationId(`/${locale}/${suffix}`), 'library')
-    assert.equal(activeNavigationId(`/${locale}/client/opaque`), 'cabinet')
+    assert.equal(activeNavigationId(`/${locale}/client/tests`), 'tests')
+    if (locale !== 'es') assert.equal(activeNavigationId(`/${locale}/app`), 'house')
   }
   assert.equal(activeNavigationId('/books/a/chapter'), 'library')
   assert.equal(activeNavigationId('/admin/clients'), undefined)
   assert.equal(activeNavigationId('/es'), 'home')
   assert.equal(activeNavigationId('/en/about'), 'services')
-  assert.equal(activeNavigationId('/ru/courses'), 'courses')
+  assert.equal(activeNavigationId('/ru/courses'), 'academy')
   assert.equal(activeNavigationId('/ru/relationships'), 'relationships')
 })
 
