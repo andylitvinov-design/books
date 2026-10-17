@@ -55,7 +55,7 @@ test('preview and selected time are derived from live executable test definition
   assert.match(explorer, /const simpleRecommendations = useMemo/)
   assert.match(explorer, /buildPublicStarterBattery\(simpleRecommendations\)/)
   assert.match(explorer, /recommendations=\{simpleRecommendations\}/)
-  assert.match(explorer, /matching\.filter\(\(entry\) => entry\.selectable\)/)
+  assert.match(explorer, /filtered\.filter\(\(entry\) => entry\.selectable\)/)
   assert.match(explorer, /onToggleTest=\{toggleSimpleSelected\}/)
   assert.match(explorer, /onResetSuggested=\{\(\) => \{ setSelectedKeys\(\[\]\); setSimpleSelectionChanged\(false\) \}\}/)
   assert.match(picker, /activeBattery\.reduce\(\(total, item\) => total \+ \(item\.durationMinutes \|\| 0\), 0\)/)
