@@ -39,7 +39,7 @@ test('videos share profile editorial review; public page uses only approved auth
  assert.match(repo,/draft_profile=\$2/)
  assert.match(publicPage,/profile\.videoMaterials/)
  assert.match(publicPage,/PractitionerVideoGallery/)
- assert.match(publicPage,/publicByPractitioner\(p\.slug\)/)
+ assert.match(publicPage,/publicByPractitioner\((?:p|practitioner)\.slug\)/)
  assert.match(articlesRepo,/a\.published->>'locale' in \('en','ru','es'\)/)
  assert.match(articlesRepo,/publicSql/)
  assert.match(cabinet,/onSaveVideos/)
