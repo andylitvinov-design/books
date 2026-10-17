@@ -118,9 +118,10 @@ try {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
-        // Do not abort in-flight Next link prefetches with the next hard goto.
-        // All page errors still fail; no CORS or JavaScript errors are filtered.
-        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
+        // The Next.js client may keep analytics and prefetch requests active.
+        // Waiting for networkidle can deadlock even after the document loaded.
+        // Wait for document load, then verify real routes and page errors below.
+        const settle = () => page.waitForLoadState('load', {timeout:30000});
         async function navigate(path) {
           await settle();
           const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:60000});
