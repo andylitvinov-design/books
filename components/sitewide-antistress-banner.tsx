@@ -18,32 +18,62 @@ const courseCopy = {
   ru: {
     eyebrow: "ОПОРА · 14 ДНЕЙ · БЕСПЛАТНО",
     title: "Пройдите курс «Антистресс»",
-    intro: "Короткие ежедневные практики, чтобы лучше замечать напряжение, тренировать саморегуляцию и находить внутреннюю опору. В своём темпе.",
-    benefits: ["14 дней", "Короткие упражнения", "В своём темпе"],
+    intro: "14 дней коротких практик, чтобы замечать напряжение и постепенно находить внутреннюю опору.",
     cta: "Пройти курс бесплатно",
     more: "Подробнее о курсе",
-    note: "Самостоятельная практика, не замена профессиональной помощи.",
+    note: "Самостоятельная образовательная практика, не замена профессиональной помощи.",
     languageNote: "",
+    photoAlt: "Горный пейзаж — обложка курса «Антистресс»",
   },
   en: {
     eyebrow: "OPORA · 14 DAYS · FREE",
     title: "Take the free Anti-Stress course",
-    intro: "Short daily practices to notice tension, build self-regulation skills and find a steadier footing in everyday life. Go at your own pace.",
-    benefits: ["14 days", "Short daily exercises", "At your own pace"],
+    intro: "14 days of short practices to notice tension and find more steadiness in daily life.",
     cta: "Start the free course",
     more: "About the course",
-    note: "Self-guided learning, not a substitute for professional care.",
+    note: "Self-guided education, not a substitute for professional care.",
     languageNote: "",
+    photoAlt: "Quiet mountain scene from the Anti-Stress course",
   },
   es: {
     eyebrow: "OPORA · 14 DÍAS · GRATIS",
     title: "Haz el curso gratuito «Antiestrés»",
-    intro: "Prácticas breves para reconocer la tensión, ejercitar la autorregulación y encontrar más estabilidad en la vida diaria. A tu ritmo.",
-    benefits: ["14 días", "Ejercicios breves", "A tu ritmo"],
+    intro: "14 días de prácticas breves para reconocer la tensión y encontrar más estabilidad.",
     cta: "Empezar el curso en inglés",
     more: "Conoce el curso",
     note: "Aprendizaje autoguiado; no sustituye la atención profesional.",
     languageNote: "Las actividades interactivas están disponibles en inglés.",
+    photoAlt: "Paisaje de montaña de la portada del curso Antiestrés",
+  },
+} as const;
+
+const reviewCopy = {
+  ru: {
+    eyebrow: "БЕСПЛАТНАЯ ДИАГНОСТИКА СИТУАЦИИ",
+    title: "Личный разбор вашей ситуации",
+    intro: "Анкета и рисунок «Я — цель — проблема». Я лично подготовлю письменный анализ и рекомендации.",
+    cta: "Получить бесплатный разбор",
+    more: "Как проходит разбор",
+    note: "Символический анализ, не медицинская диагностика. Бесплатный формат — письменный отчёт.",
+    photoAlt: "Андрей Литвинов — автор личного разбора",
+  },
+  en: {
+    eyebrow: "FREE PERSONAL SITUATION REVIEW",
+    title: "A personal review of your situation",
+    intro: "Share a short form and a drawing of you, your goal and your challenge. I personally prepare written insights and recommendations.",
+    cta: "Get my free review",
+    more: "How it works",
+    note: "Symbolic self-reflection, not medical diagnosis. The free format is a written report.",
+    photoAlt: "Andrey Litvinov, your personal review practitioner",
+  },
+  es: {
+    eyebrow: "ANÁLISIS PERSONAL GRATUITO",
+    title: "Revisemos tu situación",
+    intro: "Completa un formulario y dibuja tu situación, meta y dificultad. Prepararé personalmente un análisis escrito y recomendaciones.",
+    cta: "Solicitar análisis gratuito",
+    more: "Cómo funciona",
+    note: "Reflexión simbólica, no diagnóstico médico. El formato gratuito es un informe escrito.",
+    photoAlt: "Andrey Litvinov, responsable del análisis personal",
   },
 } as const;
 
@@ -75,35 +105,59 @@ export function SitewideAntistressBanner({ initialLocale = "en" }: { initialLoca
   );
 }
 
-/** An optional Anti-Stress invitation after test selection; never inside a live questionnaire. */
-export function TestSelectionCourseBanner({ locale }: { locale: Locale }) {
+/** Compact, photo-left course invitation; the free personal review is shown in the public test picker only. */
+export function TestSelectionCourseBanner({ locale, showReview = false }: { locale: Locale; showReview?: boolean }) {
   const t = courseCopy[locale] || courseCopy.en;
+  const review = reviewCopy[locale] || reviewCopy.en;
   const courseLocale = locale === "es" ? "en" : locale;
+
   return (
-    <aside className={styles.courseCard} data-tests-course-banner aria-label={t.eyebrow}>
-      <div className={styles.courseCardInner}>
-        <div className={styles.courseContent}>
-          <p className={styles.courseEyebrow}><Sparkles size={17} aria-hidden="true" />{t.eyebrow}</p>
-          <h2 className={styles.courseTitle}>{t.title}</h2>
-          <p className={styles.courseIntro}>{t.intro}</p>
-          <ul className={styles.courseBenefits}>
-            {t.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
-          </ul>
-          <div className={styles.courseActions}>
-            <Link className={styles.coursePrimary} href={`/${courseLocale}/app/course?program=stress&entry=quick`} prefetch={false}>
-              {t.cta}<ArrowRight size={19} aria-hidden="true" />
-            </Link>
-            <Link className={styles.courseSecondary} href={`/${locale}/courses/antistress`} prefetch={false}>
-              {t.more}
-            </Link>
+    <section className={styles.testOffers + (showReview ? " " + styles.testOffersPair : "")} data-test-selection-offers aria-label={locale === "ru" ? "Что можно сделать дальше" : locale === "es" ? "Siguientes pasos" : "Your next steps"}>
+      <aside className={styles.courseCard} data-tests-course-banner aria-label={t.eyebrow}>
+        <div className={styles.courseCardInner}>
+          <div className={styles.courseVisual}>
+            <Image src="/images/holistic-house/course-focus-mountain-boy.webp" alt={t.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
           </div>
-          {t.languageNote && <p className={styles.courseLanguageNote}>{t.languageNote}</p>}
-          <p className={styles.courseNote}>{t.note}</p>
+          <div className={styles.courseContent}>
+            <p className={styles.courseEyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
+            <h2 className={styles.courseTitle}>{t.title}</h2>
+            <p className={styles.courseIntro}>{t.intro}</p>
+            <div className={styles.courseActions}>
+              <Link className={styles.coursePrimary} href={ "/" + courseLocale + "/app/course?program=stress&entry=quick" } prefetch={false}>
+                {t.cta}<ArrowRight size={16} aria-hidden="true" />
+              </Link>
+              <Link className={styles.courseSecondary} href={"/" + locale + "/courses/antistress"} prefetch={false}>
+                {t.more}<ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
+            {t.languageNote && <p className={styles.courseLanguageNote}>{t.languageNote}</p>}
+            <p className={styles.courseNote}>{t.note}</p>
+          </div>
         </div>
-        <div className={styles.courseVisual} aria-hidden="true">
-          <Image src="/images/holistic-house/course-hero-mindful.svg" alt="" width={460} height={560} unoptimized loading="lazy" />
-        </div>
-      </div>
-    </aside>
+      </aside>
+      {showReview && (
+        <aside className={styles.reviewCard} data-tests-review-banner aria-label={review.eyebrow}>
+          <div className={styles.courseCardInner}>
+            <div className={styles.courseVisual}>
+              <Image src="/images/holistic-house/andy-about.png" alt={review.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
+            </div>
+            <div className={styles.courseContent}>
+              <p className={styles.courseEyebrow}><Sparkles size={15} aria-hidden="true" />{review.eyebrow}</p>
+              <h2 className={styles.courseTitle}>{review.title}</h2>
+              <p className={styles.courseIntro}>{review.intro}</p>
+              <div className={styles.courseActions}>
+                <Link className={styles.coursePrimary} href={"/" + locale + "/services/free-situation-review"} prefetch={false}>
+                  {review.cta}<ArrowRight size={16} aria-hidden="true" />
+                </Link>
+                <Link className={styles.courseSecondary} href={"/" + locale + "/services/free-situation-review#review-steps-title"} prefetch={false}>
+                  {review.more}<ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+              <p className={styles.courseNote}>{review.note}</p>
+            </div>
+          </div>
+        </aside>
+      )}
+    </section>
   );
 }

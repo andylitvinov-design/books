@@ -11,11 +11,12 @@ import {compactInterpretationInsert} from '../scripts/compact-interpretation-sql
 import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
+import { interpretationBandModel, INTERPRETATION_RULES_VERSION } from '../lib/assessments/interpretation-registry.js'
 import { APPROVED_INTERPRETATION_DIGESTS } from '../lib/assessments/interpretation-approved-digests.js'
 import { loadInterpretationRecord, validInterpretationRecord, interpretationRecordApprovalKey } from '../lib/assessments/interpretation-record-integrity.js'
 import { withResultInterpretations } from '../lib/app/result-interpretations.js'
 import { storedResultInterpretation, STORED_INTERPRETATION_VERSION } from '../lib/assessments/interpretation-resolution.js'
+import { storedInterpretationForDimension } from '../lib/assessments/interpretation-storage.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { interpretationDatabaseOptions, validateInterpretationRelease, assertFreshInterpretationDatabase, INTERPRETATION_SEED_PATH } from './helpers/interpretation-db-isolation.mjs'
 
@@ -73,7 +74,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
  timeout:240000,skip:gate.pending?gate.reason:false
 },async t=>{
  let db
- const proof={status:'running',engine:'native PostgreSQL 17',sourceCommit:release.sourceCommit,interpretationVersion:release.interpretationVersion,recordCount:release.recordCount,seedSha256:release.seedSha256,checks:[]}
+ const proof={status:'running',engine:'native PostgreSQL 17',sourceCommit:release.sourceCommit,interpretationVersion:release.interpretationVersion,recordCount:release.recordCount,seedSha256:release.seedSha256,runtimeInterpretationVersion:STORED_INTERPRETATION_VERSION,runtimeRulesVersion:INTERPRETATION_RULES_VERSION,runtimeRegistryMode:'verified-code-fallback',databaseParityForRuntimeVersion:false,checks:[]}
  async function check(name,fn){await t.test(name,async()=>{await fn();proof.checks.push(name)})}
  async function transaction(fn,role){
   await db.query('BEGIN')
@@ -100,7 +101,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
    for(const row of stored){
     const identity={definitionId:row.assessment_version_id,contentHash:row.definition_content_hash,interpretationVersion:row.interpretation_version,reportLocale:row.report_locale}
     const key=interpretationRecordApprovalKey(identity);assert.ok(!actual.has(key));actual.add(key)
-    assert.equal(row.source_commit,release.sourceCommit);assert.equal(row.interpretation_version,STORED_INTERPRETATION_VERSION)
+    assert.equal(row.source_commit,release.sourceCommit);assert.equal(row.interpretation_version,release.interpretationVersion)
     assert.equal(row.payload_sha256,APPROVED_INTERPRETATION_DIGESTS[key]);assert.equal(validInterpretationRecord(row,identity),true)
     assert.equal(row.payload_canonical,canonicalJSON(row.payload))
    }
@@ -132,19 +133,28 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
    for(const row of stored){const payload=await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:row.definition_content_hash,interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale});assert.deepEqual(payload,row.payload)}
    const row=stored[0];assert.equal(await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:'sha256:'+'0'.repeat(64),interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale}),null)
   },'hh_app_backend'))
-  await check('Real server enrichment and rendered meanings match compiled source for 230 synthetic results in both locales',()=>transaction(async()=>{
+  await check('Historical v1 receipts render explicitly; current v2 rejects stale prose and uses verified code for all 230 synthetic results',()=>transaction(async()=>{
+   assert.notEqual(STORED_INTERPRETATION_VERSION,release.interpretationVersion,'This seed proves historical v1 integrity, not native v2 parity')
    for(const definition of ASSESSMENT_DEFINITIONS){
     const answers=Object.fromEntries(definition.questions.map(question=>[question.id,question.min??definition.answerScale.min]))
     const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
     const [enriched]=await withResultInterpretations(db,[result])
-    assert.deepEqual(Object.keys(enriched.interpretationRecords).sort(),['en','ru'],definition.key)
-    for(const locale of ['en','ru'])for(const dimension of enriched.dimensions){
-     const actual=storedResultInterpretation(enriched,dimension,locale);assert.ok(actual,definition.key+' '+locale+' '+dimension.key)
-     const {registrySource,interpretationVersion,interpretationSourceCommit,...semantic}=actual
-     assert.equal(registrySource,'database');assert.equal(interpretationVersion,release.interpretationVersion);assert.equal(interpretationSourceCommit,release.sourceCommit)
-     const expectedSemantic={...interpretationBandModel(result,result.dimensions.find(part=>part.key===dimension.key),locale)}
-     for(const key of ['registrySource','interpretationVersion','interpretationSourceCommit'])delete expectedSemantic[key]
-     assert.deepEqual(semantic,expectedSemantic)
+    assert.deepEqual(enriched.interpretationRecords,{},definition.key+' has no approved v2 records')
+    for(const locale of ['en','ru']){
+     const row=stored.find(item=>item.assessment_version_id===definition.id&&item.report_locale===locale)
+     assert.ok(row)
+     for(const dimension of enriched.dimensions){
+      assert.ok(storedInterpretationForDimension(row.payload,enriched,dimension,locale,release.interpretationVersion),'Historical receipt remains readable by explicit version')
+      assert.equal(storedResultInterpretation(enriched,dimension,locale),null)
+      for(const payload of [row.payload,{...row.payload,interpretationVersion:STORED_INTERPRETATION_VERSION}]){
+       const stale={...enriched,interpretationRecords:{[locale]:payload}}
+       assert.equal(storedResultInterpretation(stale,dimension,locale),null,'Neither old version nor relabeled old rules may reach current reports')
+       assert.deepEqual(interpretationBandModel(stale,dimension,locale),interpretationBandModel(result,result.dimensions.find(part=>part.key===dimension.key),locale))
+      }
+      const current=interpretationBandModel(enriched,dimension,locale)
+      assert.equal(current.registrySource,'code')
+      assert.equal(current.interpretationVersion,INTERPRETATION_RULES_VERSION)
+     }
     }
    }
   },'hh_app_backend'))

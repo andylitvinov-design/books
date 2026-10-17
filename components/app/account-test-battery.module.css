@@ -115,3 +115,21 @@
 .viewTabs button:focus-visible{outline:3px solid #06acbc!important;outline-offset:3px}
 @media(max-width:480px){.viewTabs{gap:5px;padding:4px;margin:2px 0 10px;border-radius:13px}.viewTabs button{font-size:13px!important;min-height:45px!important;padding:9px!important;gap:7px!important}}
 @media(prefers-reduced-motion:reduce){.viewTabs button{transition:none}}
+
+/* Personal portrait -> complete only missing core profile layers. */
+.profileCompletion{max-width:1170px;margin:0 auto 15px;padding:clamp(13px,2vw,22px);border:1px solid #bbded9;border-radius:18px;background:linear-gradient(125deg,#e7f6f3,#fffdf7 85%);box-shadow:0 5px 16px #245b4b0b}
+.profileCompletionHeading p:first-child{margin:0 0 5px;color:#238478;font:800 10px/1.3 system-ui,sans-serif;letter-spacing:.13em}
+.profileCompletionHeading h1{margin:0 0 7px!important;color:#246354!important;font:800 clamp(20px,2.5vw,25px)/1.23 system-ui,sans-serif!important}
+.profileCompletionHeading p:last-child{max-width:80ch;margin:0!important;font:400 13px/1.55 system-ui,sans-serif!important;color:#60756b}
+.profileCompletionList{list-style:none;display:grid;gap:9px;margin:14px 0;padding:0}
+.profileCompletionItem{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0;padding:12px;border:1px solid #d5e6dc;border-radius:12px;background:#fff}
+.profileCompletionRank{display:grid;place-items:center;align-self:start;width:30px;height:30px;border-radius:50%;background:#e1f2ed;color:#217268;font:800 14px/1 system-ui,sans-serif}
+.profileCompletionItem h2{margin:0 0 4px!important;font:750 14px/1.35 system-ui,sans-serif!important;color:#2c5e51!important}
+.profileCompletionItem p{margin:0 0 4px!important;color:#5f7068;font:400 12px/1.45 system-ui,sans-serif!important}
+.profileCompletionItem small{color:#65796d;font:500 11px/1.45 system-ui,sans-serif}
+.profileCompletionStart{min-height:41px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border:1px solid #1f7062;border-radius:10px;background:#227c6d;color:white!important;text-decoration:none!important;font:750 12px/1.3 system-ui,sans-serif;white-space:nowrap}
+.profileCompletionStart:hover{background:#175f53}
+.profileCompletionBack{display:inline-flex;min-height:36px;align-items:center;margin-top:9px;color:#246d61!important;font:750 12px/1.35 system-ui,sans-serif;text-decoration:underline!important;text-underline-offset:3px}
+.profileCompletionEmpty{margin:12px 0!important;font:400 12px/1.5 system-ui,sans-serif!important;color:#687c70}
+.profileCompletion :is(a):focus-visible{outline:3px solid #13a08f;outline-offset:3px}
+@media(max-width:640px){.profileCompletion{margin:0 0 10px;padding:12px;border-radius:14px}.profileCompletionItem{grid-template-columns:27px minmax(0,1fr);gap:8px;padding:10px}.profileCompletionRank{width:26px;height:26px;font-size:12px}.profileCompletionStart{grid-column:2;justify-self:start;min-height:39px}.profileCompletionItem h2{font-size:13px!important}}

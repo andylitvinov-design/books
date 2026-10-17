@@ -11,6 +11,8 @@
 .benefit svg{flex:none;margin-top:2px}
 .primary{display:inline-flex;align-items:center;justify-content:space-between;gap:17px;margin-top:21px;padding:13px 20px;border-radius:999px;min-height:52px;background:#285846;color:#fff!important;text-decoration:none;font:750 14px/1.4 Arial,Helvetica,sans-serif}
 .primary:hover{background:#1d4234}
+.primary{scroll-margin-top:115px}
+.primary:target{outline:3px solid #b48554;outline-offset:3px}
 .primary svg{flex:none}
 .note{margin:11px 0 0;color:#797269;font:12px/1.5 Arial,Helvetica,sans-serif}
 .photo{position:relative;min-height:375px;border-radius:20px;overflow:hidden;background:#e1e5d7}

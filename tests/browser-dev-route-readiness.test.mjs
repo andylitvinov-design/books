@@ -11,16 +11,16 @@ const warmup = hydration.slice(start, end)
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
 const runWarmup = new AsyncFunction('browser', 'origin', 'assert', warmup)
 const origin = 'http://127.0.0.1:3100'
-const paths = ['/api/app/bootstrap', '/api/app/guest/bootstrap', '/en/app', '/ru/app', '/en/client', '/ru/client', '/es/client/tests', '/icon.svg']
+const paths = ['/api/app/bootstrap', '/api/app/guest/bootstrap', '/api/test-catalog/stats', '/en/app', '/ru/app', '/en/client', '/ru/client', '/es/client/tests', '/icon.svg']
 
-function harness(esResponse = () => ({ status: () => 200 })) {
+function harness(esResponse = () => ({ status: () => 200 }), statsResponse = () => ({ status: () => 200 })) {
   const events = []
   const browser = { newContext: async () => ({
     request: { get: async url => {
       assert.equal(new URL(url).origin, origin)
       const path = new URL(url).pathname
       events.push(path)
-      return path === '/es/client/tests' ? esResponse() : { status: () => path.startsWith('/api/') ? 401 : 200 }
+      return path === '/api/test-catalog/stats' ? statsResponse() : path === '/es/client/tests' ? esResponse() : { status: () => path.startsWith('/api/') ? 401 : 200 }
     } },
     close: async () => { events.push('closed') },
   }) }
@@ -65,4 +65,10 @@ test('core still requires the exact Spanish route and its own rendered language 
   assert.ok(core.includes("await expect(guestPickerPage.locator('main[lang=\"es\"]')).toBeVisible()"))
   assert.ok(core.includes("await assertPublicPickerEntrance(guestPickerPage,'es')"))
   assert.ok(core.includes("await exercisePublicCollections(guestPickerPage,expect,'es')"))
+})
+
+test('unavailable catalog statistics fail the isolated readiness gate before hydration', async () => {
+  const h = harness(undefined, () => ({ status: () => 503 }))
+  await assert.rejects(runWarmup(h.browser, origin, assert), /isolated route must compile before browser acceptance: \/api\/test-catalog\/stats/)
+  assert.deepEqual(h.events, [...paths.slice(0, 3), 'closed'])
 })

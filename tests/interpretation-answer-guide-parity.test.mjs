@@ -4,14 +4,14 @@ import {getAssessmentDefinition,provenance} from '../lib/assessments/definitions
 import {scoreAssessment} from '../lib/assessments/scoring.js'
 import {interpretationBandModel} from '../lib/assessments/interpretation-registry.js'
 import {storedInterpretationForDimension} from '../lib/assessments/interpretation-storage.js'
-import {STORED_INTERPRETATION_VERSION} from '../lib/assessments/interpretation-resolution.js'
+import {STORED_INTERPRETATION_VERSION,STORED_INTERPRETATION_RULES_VERSION} from '../lib/assessments/interpretation-resolution.js'
 const signature=['key','min','max','unit','timeframe','direction','dimensionClass','sourceConstruct','displayKind']
 const modelOnly=model=>Object.fromEntries(Object.entries(model).filter(([key])=>!['registrySource','interpretationVersion','interpretationSourceCommit'].includes(key)))
 function fixture(def,locale){
  const baseline=scoreAssessment(def,Object.fromEntries(def.questions.map(q=>[q.id,0])))
  const p=provenance(def)
  // Isolated runtime fixture, never an approved export or a DB row.
- const payload={schemaVersion:'hh-interpretation.v1',interpretationVersion:STORED_INTERPRETATION_VERSION,reportLocale:locale,sourceCommit:'0'.repeat(40),rendererStrategy:'finite-domain-template.v1',timeframe:def.timeframe,provenance:{assessmentVersionId:p.definitionId,definitionKey:p.definitionKey,definitionVersion:p.definitionVersion,instrumentLocale:p.instrumentLocale,translationVersion:p.translationVersion,scoringKey:p.scoringKey,scoringVersion:p.scoringVersion,resultVersion:p.resultVersion,contentHash:p.contentHash},dimensions:[]}
+ const payload={schemaVersion:'hh-interpretation.v1',interpretationVersion:STORED_INTERPRETATION_VERSION,rulesEngineVersion:STORED_INTERPRETATION_RULES_VERSION,reportLocale:locale,sourceCommit:'0'.repeat(40),rendererStrategy:'finite-domain-template.v1',timeframe:def.timeframe,provenance:{assessmentVersionId:p.definitionId,definitionKey:p.definitionKey,definitionVersion:p.definitionVersion,instrumentLocale:p.instrumentLocale,translationVersion:p.translationVersion,scoringKey:p.scoringKey,scoringVersion:p.scoringVersion,resultVersion:p.resultVersion,contentHash:p.contentHash},dimensions:[]}
  for(const dimension of baseline.dimensions){
   const count=def.scoring.dimensions.find(x=>x.key===dimension.key).items.length
   const allowedValues=Array.from({length:4*count+1},(_,i)=>Math.round(i/count*100)/100)

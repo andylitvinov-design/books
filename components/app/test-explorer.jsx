@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { startTestCatalogStatsRequest } from '@/lib/assessments/test-catalog-stats-client'
 import Link from 'next/link'
 import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap, GraduationCap, FileDown } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
@@ -15,12 +16,19 @@ import { SimpleTestPicker } from './simple-test-picker'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { compareTestSocialProof } from '@/lib/assessments/test-popularity'
 import styles from './test-explorer.module.css'
 
 const COPY = {
   en: { kicker: 'Mind–Body Monitor', title: 'Build your test set', intro: 'Choose the concerns you want to monitor. Matching tests and analysis areas update as you select them.', available: 'Available now', full: 'Full database', core100: '100 core tests', coreNote: 'Curated reference: only cleared questionnaires can be completed online.', themes: 'Filter tests by your concerns', style: 'Style', length: 'Length', depth: 'Preferred depth', area: 'Area', free: 'Free only', search: 'Search the database', sort: 'Sort', recommended: 'Recommended first', shortest: 'Shortest first', deepest: 'Deepest first', alphabetic: 'A–Z', suggested: 'Select suggested set', clear: 'Clear', selected: 'selected', questions: 'questions', minutes: 'min', axes: 'axes', focused: 'Focused', balanced: 'Balanced', broad: 'Broad', start: 'Start free monitoring', choose: 'Choose at least one test', availableStatus: 'Available', metadata: 'Research reference', details: 'Details', warning: 'More than 8 tests or 30 minutes may be hard to complete in one sitting.', privacy: 'Selections and filters stay only in this page until you explicitly consent to start.', relevance: 'Selection match', matchNote: 'This reflects fit with your selected topics and format, not a medical probability.', best: 'Best match', complements: 'Complements your set', filters: 'More filters', selectedThemes: 'topics selected', filterClear: 'Reset filters', matching: 'matching tests', of: 'out of', kept: 'selected tests kept visible', noMatches: 'No tests match these filters. Remove a topic or filter to see more.', topicHint: 'These topics filter the list immediately; select tests below to build your monitoring battery.', topicPreview: 'Axes related to your chosen topics', testCoverage: 'Coverage of selected tests', totalAvailable: 'available to start' },
   ru: { kicker: 'Монитор состояния', title: 'Соберите свой набор тестов', intro: 'Выберите проблемы, которые хотите отслеживать. Список тестов и оси анализа меняются сразу.', available: 'Доступно сейчас', full: 'Вся база', core100: '100 тестов', coreNote: 'Профессиональная подборка: онлайн доступны только тесты с разрешённым использованием.', themes: 'Фильтр тестов по проблемам', style: 'Стиль', length: 'Длина', depth: 'Желаемая глубина', area: 'Область', free: 'Только бесплатные', search: 'Поиск по базе', sort: 'Сортировка', recommended: 'Сначала рекомендуемые', shortest: 'Сначала короткие', deepest: 'Сначала глубокие', alphabetic: 'А–Я', suggested: 'Выбрать оптимальный набор', clear: 'Очистить', selected: 'выбрано', questions: 'вопросов', minutes: 'мин', axes: 'осей', focused: 'Фокусный', balanced: 'Сбалансированный', broad: 'Широкий', start: 'Начать бесплатный мониторинг', choose: 'Выберите хотя бы один тест', availableStatus: 'Доступен', metadata: 'Исследовательская карточка', details: 'Подробнее', warning: 'Больше 8 тестов или 30 минут может быть сложно пройти за один раз.', privacy: 'Выбор и фильтры остаются только на этой странице, пока вы явно не согласитесь начать.', relevance: 'Релевантность подбора', matchNote: 'Это соответствие выбранным темам и формату, а не медицинская вероятность.', best: 'Лучшее совпадение', complements: 'Дополняет набор', filters: 'Дополнительные фильтры', selectedThemes: 'тем выбрано', filterClear: 'Сбросить фильтры', matching: 'подходящих тестов', of: 'из', kept: 'выбранных тестов остаются видны', noMatches: 'По этим фильтрам тестов нет. Уберите тему или другой фильтр.', topicHint: 'Темы сразу отбирают тесты. Отметьте нужные тесты ниже, чтобы создать набор для мониторинга.', topicPreview: 'Оси по выбранным темам', testCoverage: 'Покрытие выбранных тестов', totalAvailable: 'доступно для прохождения' },
   es: { kicker: 'Monitor mente–cuerpo', title: 'Prepara tu selección de pruebas', intro: 'Elige los temas y el formato que más te interesen. Los cuestionarios se realizan en su idioma disponible y los resultados se muestran en la aplicación en inglés.', available: 'Disponibles ahora', full: 'Base completa', core100: '100 pruebas', coreNote: 'Selección profesional: solo las pruebas autorizadas están disponibles en línea.', themes: 'Filtrar pruebas por temas', style: 'Tipo', length: 'Duración', depth: 'Profundidad deseada', area: 'Área', free: 'Solo gratuitas', search: 'Buscar pruebas', sort: 'Ordenar', recommended: 'Recomendadas primero', shortest: 'Más breves primero', deepest: 'Más detalladas primero', alphabetic: 'A–Z', suggested: 'Elegir una selección recomendada', clear: 'Limpiar', selected: 'seleccionadas', questions: 'preguntas', minutes: 'min', axes: 'ejes', focused: 'Enfocada', balanced: 'Equilibrada', broad: 'Amplia', start: 'Iniciar monitoreo gratuito', choose: 'Elige al menos una prueba', availableStatus: 'Disponible', metadata: 'Referencia de investigación', details: 'Detalles', warning: 'Más de 8 pruebas o 30 minutos pueden resultar difíciles de completar en una sola sesión.', privacy: 'Tus selecciones no se guardan hasta que aceptas expresamente iniciar las pruebas.', relevance: 'Coincidencia', matchNote: 'Muestra la afinidad con los temas elegidos, no una probabilidad médica.', best: 'Mejor coincidencia', complements: 'Complementa tu selección', filters: 'Más filtros', selectedThemes: 'temas elegidos', filterClear: 'Limpiar filtros', matching: 'pruebas encontradas', of: 'de', kept: 'pruebas elegidas visibles', noMatches: 'No hay pruebas para estos filtros. Cambia un tema o filtro.', topicHint: 'Los temas filtran al instante; elige las pruebas para construir tu seguimiento.', topicPreview: 'Ejes de los temas elegidos', testCoverage: 'Cobertura de pruebas elegidas', totalAvailable: 'disponibles para empezar' },
+}
+
+const SOCIAL_COPY = {
+  en: { popular: 'Most popular', rating: 'Top rated', launches: 'started', completed: 'completed', userScore: 'User usefulness rating', votes: 'ratings' },
+  ru: { popular: 'По популярности', rating: 'По оценкам', launches: 'запусков', completed: 'пройдено', userScore: 'Оценка полезности', votes: 'оценок' },
+  es: { popular: 'Más populares', rating: 'Mejor valoradas', launches: 'inicios', completed: 'completadas', userScore: 'Valoración de utilidad', votes: 'valoraciones' },
 }
 
 const ADVANCED_COPY = {
@@ -145,6 +153,7 @@ const GUEST_START_NOTICE = {
 
 export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartSingle = null, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
+  const socialCopy = SOCIAL_COPY[locale] || SOCIAL_COPY.en
   const guestStartNotice = GUEST_START_NOTICE[locale] || GUEST_START_NOTICE.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
   const quick = QUICK_COPY[locale] || QUICK_COPY.en
@@ -211,6 +220,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [freeOnly, setFreeOnly] = useState(() => initialPreferences?.freeOnly ?? false)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recommended')
+  const [socialStats, setSocialStats] = useState({})
+  useEffect(() => {
+    const request = startTestCatalogStatsRequest(stats => {
+      setSocialStats(Object.fromEntries(stats.map(item => [item.key, item])))
+    })
+    return request.cancel
+  }, [])
   const [selectedKeys, setSelectedKeys] = useState(() => recommendedKey ? [recommendedKey] : [])
   const [axisFilter, setAxisFilter] = useState(null)
   const [actionError, setActionError] = useState(null)
@@ -256,12 +272,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.measurementAxes?.includes(axisFilter)).sort((a, b) => {
     const aSelected = selectedKeys.includes(a.key), bSelected = selectedKeys.includes(b.key)
     if (aSelected !== bSelected) return aSelected ? -1 : 1
+    if (sort === 'popular' || sort === 'rating') return compareTestSocialProof(a, b, sort, socialStats)
     if (sort === 'shortest') return (a.durationMinutes ?? Infinity) - (b.durationMinutes ?? Infinity)
     if (sort === 'deepest') return (b.durationMinutes ?? 0) - (a.durationMinutes ?? 0)
     if (sort === 'alphabetic') return a.title.localeCompare(b.title, locale)
     if (sort === 'type') return (TEST_KIND_ORDER[a.testKind] ?? 9) - (TEST_KIND_ORDER[b.testKind] ?? 9) || a.title.localeCompare(b.title, locale)
     return 0
-  }), [ranked, sort, locale, axisFilter, selectedKeys])
+  }), [ranked, sort, locale, axisFilter, selectedKeys, socialStats])
   // Preserve all 27 source-clear individual VIA strengths/core scales, but show one complete
   // 96-item card by default. Explicit selections, search and already-saved results remain visible.
   const isStandaloneVia = (key) => /^ipip-via-r-(?!strengths-96$).+-(4|6)$/.test(key)
@@ -373,6 +390,44 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
+  // Start the exact cleared tests from the chosen themed collection. Do not
+  // wait for React selection state or silently add unrelated recommendations.
+  const startTantraPath = async (keys) => {
+    if (!Array.isArray(keys) || !keys.length || keys.length > 12 || starting ||
+      !(onStart || (audience === 'account' && onStartSingle))) return
+    const unique = [...new Set(keys)]
+    if (unique.length !== keys.length) return
+    const batch = unique.map((key) => entries.find((entry) =>
+      entry.key === key && entry.selectable && entry.startable &&
+      entry.rightsStatus === 'cleared' && entry.definition &&
+      (audience !== 'guest' || entry.guestEligible === true)))
+    if (batch.some((entry) => !entry)) {
+      setActionError({ code: 'GUEST_TEST_UNAVAILABLE' })
+      return
+    }
+    const preferences = {
+      focus: ['tantra'], problems: [], details: [], axes: [], areas: [],
+      styles: [], kinds: [], lengths: [], depth: 'balanced',
+      maxMinutes: 0, language: 'any', tracking: 'any', freeOnly: false,
+    }
+    setStarting(true)
+    setActionError(null)
+    try {
+      if (audience === 'account' && onStartSingle) {
+        // The draft selection contains the whole collection; launch its first
+        // test directly in the existing authenticated single-test flow.
+        await onStartSingle(batch[0], preferences)
+      } else {
+        // Guests enter the existing sequential battery/consent journey.
+        await onStart(batch, preferences)
+      }
+    } catch (error) {
+      setActionError(error)
+    } finally {
+      setStarting(false)
+    }
+  }
+
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
@@ -399,6 +454,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recommendations={simpleRecommendations}
       searchRecommendations={searchRecommendations}
       catalogEntries={entries}
+      onStartTantraPath={startTantraPath}
       onChooseTantraPath={(keys) => {
         // A named path is an explicit replacement of the unsaved local draft.
         // No automatic runner, subscription, course or account write occurs.
@@ -618,7 +674,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <span>{locale === 'ru' ? 'Найти тест' : locale === 'es' ? 'Buscar pruebas' : 'Search tests'}</span>
       <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={c.search} aria-label={c.search} />
         </label>
-      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option><option value="type">{locale === "ru" ? "По типу теста" : locale === "es" ? "Por tipo" : "By type"}</option></select></label>
+      <label className={styles.sort}>{c.sort}<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="recommended">{c.recommended}</option><option value="shortest">{c.shortest}</option><option value="deepest">{c.deepest}</option><option value="alphabetic">{c.alphabetic}</option><option value="type">{locale === "ru" ? "По типу теста" : locale === "es" ? "Por tipo" : "By type"}</option><option value="popular">{socialCopy.popular}</option><option value="rating">{socialCopy.rating}</option></select></label>
       </div>
     </section>
     {availability === 'full' && <PriorityMethodsReview locale={locale} runnableKeys={entries.filter((entry) => entry.selectable).map((entry) => entry.key)} onOpenCfpbShort={() => { setAvailability('available'); setQuery('CFPB'); document.getElementById('hh-test-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }} />}
@@ -639,7 +695,11 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           </div>
           <small>{locale === 'ru' ? 'Содержит названия и назначение шкал, ограничения использования и ссылку на источник. Не содержит закрытых вопросов и не заменяет тест.' : locale === 'es' ? 'Incluye nombres de escalas y condiciones de uso, sin preguntas protegidas. No sustituye la prueba.' : 'Contains scale names, measurement context, rights notes and sources - no restricted test items. Not a substitute for the assessment.'}</small>
         </div>}
-        {audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div></div>
+        {audience === 'account' && historyByKey.has(entry.key) && (() => { const h = historyByKey.get(entry.key); return <div className={styles.historyStatus}><strong>{h.count ? (locale === 'ru' ? `Пройдено: ${h.count}` : `Completed: ${h.count}`) : (locale === 'ru' ? 'Не завершён' : 'Not completed')}</strong>{h.latest && <span> · {locale === 'ru' ? 'Последний' : 'Last'}: {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(h.latest.measurementAt))}</span>}{h.draft && <button type="button" onClick={() => onResumeRun?.(h.draft)}>{locale === 'ru' ? `Продолжить (${Math.min(100, Math.round(100 * (h.draft.progress || 0) / Math.max(1, entry.questionCount || 1)))}%)` : `Resume (${Math.max(0, h.draft.progress || 0)}%)`}</button>}{h.latest && <Link href={`/${locale}/app/results/${h.latest.id}`}>{locale === 'ru' ? 'Результат' : 'View result'}</Link>}</div> })()}<div className={styles.meta}><span>{entry.questionCount ?? '—'} {c.questions}</span><span>~{entry.durationMinutes ?? '—'} {c.minutes}</span><span>{entry.testStyle}</span><span>{entry.testLength}</span>{entry.acronym && <span>{entry.acronym}</span>}</div>
+        {entry.selectable && socialStats[entry.key] && (socialStats[entry.key].starts > 0 || socialStats[entry.key].ratingCount > 0) && <div className={styles.socialProof} data-test-social-proof={entry.key}>
+          {socialStats[entry.key].ratingCount > 0 && <strong aria-label={socialCopy.userScore}>{'★ ' + Number(socialStats[entry.key].averageRating).toFixed(1)} <small>({socialStats[entry.key].ratingCount} {socialCopy.votes})</small></strong>}
+          <span>{socialStats[entry.key].starts} {socialCopy.launches} · {socialStats[entry.key].completions} {socialCopy.completed}</span>
+        </div>}</div>
 
       </article>)}</div>
         {visibleCatalog.length > 8 && <button className={styles.showMore} type="button" onClick={() => setShowAll((value) => !value)}>{showAll ? quick.showLess : `${quick.showAll} (${visibleCatalog.length})`}</button>}

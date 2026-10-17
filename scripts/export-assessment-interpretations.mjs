@@ -7,7 +7,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url'
 import { parse, version as acornVersion } from 'acorn'
 if(acornVersion!=='8.16.0')throw Error('Pinned Acorn 8.16.0 is required')
 import { storedInterpretationForDimension } from '../lib/assessments/interpretation-storage.js'
-const [sourceRoot, dbPath, outputDir, sourceCommit, interpretationVersion = '2026-10-17.v1'] = process.argv.slice(2)
+const [sourceRoot, dbPath, outputDir, sourceCommit, requestedInterpretationVersion] = process.argv.slice(2)
 if (!sourceRoot || !dbPath || !outputDir || !/^[0-9a-f]{40}$/.test(sourceCommit || '')) throw Error('Usage: node export... <source-root> <technical-db-json> <output> <commit> [interpretation-version]')
 const root = path.resolve(sourceRoot)
 let sourceTreeVerified=false
@@ -21,6 +21,9 @@ const discoveryPolicyHash='sha256:'+crypto.createHash('sha256').update(await fs.
 const { scoreAssessment } = await load('lib/assessments/scoring.js')
 const { canonicalJSON } = await load('lib/assessments/contracts.js')
 const original = await load('lib/assessments/interpretation-registry.js')
+const { STORED_INTERPRETATION_VERSION } = await load('lib/assessments/interpretation-resolution.js')
+const interpretationVersion = requestedInterpretationVersion || STORED_INTERPRETATION_VERSION
+if (interpretationVersion !== STORED_INTERPRETATION_VERSION) throw Error('Export version must match the source runtime version; never rewrite historical interpretation identities')
 const { CFPB_SHORT_2017_LOOKUP } = await load('lib/assessments/cfpb-short-scoring.js')
 const db = JSON.parse(await fs.readFile(dbPath, 'utf8'))
 const sha = x => 'sha256:' + crypto.createHash('sha256').update(canonicalJSON(x)).digest('hex')
@@ -32,7 +35,7 @@ await fs.writeFile(path.join(scratch, 'package.json'), '{"type":"module"}')
 // This isolated build step generates data; consumers never execute source fetched from the database.
 const substitutions = [
  ['lib/assessments/interpretation-registry.js', new Map([['value', 2], ['dimension.value', 1]])],
- ['lib/assessments/interpretation-context.js', new Map([['n(dimension.value)', 4]])],
+ ['lib/assessments/interpretation-context.js', new Map([['n(dimension.value)', 8]])],
 ]
 const sourceHashes = await interpretationSourceHashes(root)
 for (const [file, expected] of substitutions) {

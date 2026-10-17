@@ -44,6 +44,13 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   // score prefix. Legacy/specialised reports retain their complete explanation.
   const conciseMeaning = section.summary || section.meaning
   const canShowScore = typeof section.value === 'number' && Number.isFinite(section.value)
+  // Keep material integrity, translation and mixed-polarity warnings visible.
+  // Only repetitive methodological boilerplate for safely identified original
+  // HH self-reflection scales belongs behind the method disclosure.
+  const materialCaveat = section.limitations?.some(note =>
+    /translation|unvalidated|russian form|without reversing|перевод|английск|русск|без разворота/i.test(note))
+  const showCaveatsInline = report.verified === false || section.bandBasis === 'unavailable' ||
+    !result?.definitionKey?.startsWith('hh-') || materialCaveat
   const primarySupport = report.verified === false || section.bandBasis === 'unavailable'
     ? null : section.recommendedReview && section.followUp
       ? section.followUp : section.primarySupport || section.steps?.[0] || section.followUp
@@ -86,11 +93,11 @@ export function CompactAssessmentReport({ result, previous = null, report, local
     <article id="hh-assessment-scale-panel" key={section.key + ':' + selectedIndex}
       className={styles.card} role="region" aria-label={section.construct || section.title}
       data-active-scale={section.key}>
-      <div className={styles.measure}>
+      <div className={styles.measure + (!showCaveatsInline && section.bandBasis === 'descriptive' ? ' ' + styles.quietGauge : '')}>
         <ScoreGauge dimension={dimension} locale={locale} result={result}/>
         <div className={styles.summary}>
           <h3>{section.construct || section.title}</h3>
-          {section.band && <p className={styles.band}>{section.band}</p>}
+          {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
@@ -103,7 +110,14 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
         <p>{anchor.note}</p>
       </section>}
-      {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
+      {section.responseAnchors && <div className={styles.responseEndpoints} data-questionnaire-anchors>
+        <span><strong>{section.min}</strong> {section.responseAnchors.low}</span>
+        <span><strong>{section.max}</strong> {section.responseAnchors.high}</span>
+      </div>}
+      {conciseMeaning && <section className={styles.interpretation} aria-label={ru ? 'Что показывают ваши ответы' : 'What your answers show'}>
+        <h4>{ru ? 'Что показывают ваши ответы' : 'What your answers show'}</h4>
+        <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>
+      </section>}
       {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
         <h4>{ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges'}</h4>
         <ol className={styles.rangeList}>
@@ -126,7 +140,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           ? 'Диапазоны показывают, к какому исходному варианту ответа ближе средний балл. Это ориентир для самонаблюдения, не медицинские нормы и не оценка «хорошо/плохо».'
           : 'These ranges show which original answer option is closest to your average. They guide self-reflection, not clinical norms or a pass/fail judgement.'}</p>
       </section>}
-      {!anchor && section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
+      {showCaveatsInline && section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
       {primarySupport && <div className={styles.recommendations}>
         <h4>{ru ? 'Поддержка в вашем темпе' : 'Support at your own pace'}</h4>
         <p className={section.recommendedReview ? styles.care : styles.explanation}
@@ -134,14 +148,15 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </div>}
       <details className={styles.details}>
         <summary>{ru ? 'Подробнее об этой шкале' : 'More about this scale'}</summary>
+        {section.bandBasis === 'descriptive' && section.band && <p className={styles.technicalBand}>{section.band}</p>}
         {section.meaning && section.meaning !== conciseMeaning && <p>{section.meaning}</p>}
+        {!showCaveatsInline && section.limitations?.map(limit => <p key={limit} data-scale-limitation>{limit}</p>)}
         {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
         {guide?.skill && <p><strong>{ru ? 'Навык по желанию:' : 'Optional skill:'}</strong> {guide.skill}</p>}
         {section.followUp && section.followUp !== primarySupport && <p>{section.followUp}</p>}
         {section.steps?.length > 0 && <ol>{section.steps.filter(step => step !== primarySupport).map((step, index) => <li key={index}>{step}</li>)}</ol>}
         {section.bandBasis === 'screening' && <p>{ru ? 'Скрининг не устанавливает диагноз.' : 'Screening is not a diagnosis.'}</p>}
-        {anchor && section.meaning && <p>{section.meaning}</p>}
-        {anchor && section.limitations?.map(limit => <p key={limit} data-scale-limitation>{limit}</p>)}
+
       </details>
     </article>
 

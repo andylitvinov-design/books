@@ -33,29 +33,16 @@ function ui(respond, { eligible = scales, snapshot = waiting } = {}) {
     },
     extraModules: modules(eligible), fetcher: () => assert.fail('Recovery must use the guarded parent callbacks'),
   })
-  // The module choice is only a draft. Simulate the user's required
-  // explicit acceptance of 3 measured scales, or their chosen generic skill
-  // when no directionally eligible measurement exists.
+  // The course welcome CTA explicitly confirms the recommended module and
+  // measured focus in one action, without an additional scale-review screen.
   const start = async () => {
     const finder = findPart(h.tree, 'AntiStressModuleFinder')
-    if (!finder) return
-    finder.props.onStart(selection)
-    await h.settle()
-    const review = findPart(h.tree, 'CourseCompletionReview')
-    if (!review) return // e.g. account/course lifetime retired
-    if (eligible.length) return review.props.onSuggested()
-    await review.props.onAlternative()
-    await h.settle()
-    const picker = findPart(h.tree, 'CourseFocusPicker')
-    picker.props.onToggleGoal(programs.getCourseProgram('stress').primaryGoals[0])
-    await h.settle()
-    return findPart(h.tree, 'CourseFocusPicker').props.onContinue()
+    return finder?.props.onStart(selection)
   }
   return { h, calls, accepted, errors, retire: () => { active = false }, start }
 }
 async function untilCalls(t, count) {
-  // An explicit scale-review screen now precedes the first POST. Allow
-  // state and guarded recovery microtasks to reach the test boundary.
+  // Allow guarded recovery microtasks to reach the relevant request boundary.
   for (let n = 0; n < 30 && t.calls.length < count; n++) await t.h.settle()
   assert.equal(t.calls.length, count, 'Expected recovery boundary before retirement')
 }
@@ -182,9 +169,7 @@ for (const change of ['owner', 'course', 'unmount']) test('real parent guards bi
     extraModules: modules(), fetcher: () => assert.fail('No raw fetch from the child'),
   })
   await child.settle()
-  findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
-  await child.settle()
-  const pending = findPart(child.tree, 'CourseCompletionReview').props.onSuggested()
+  const pending = findPart(child.tree, 'AntiStressModuleFinder').props.onStart(selection)
   await child.settle(); await parent.settle()
   assert.equal(posts, 1); assert.equal(recoveryReads, 1)
   const initialCalls = parent.calls.slice()

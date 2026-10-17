@@ -37,7 +37,14 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
     imageSizes: [32, 64, 96, 160, 256, 384],
     formats: ["image/webp"],
-    minimumCacheTTL: 86400,
+    // Prevent arbitrary quality parameters from multiplying billed variants.
+    // The site uses the Next.js default (75) for transformed book covers.
+    qualities: [75],
+    // This corpus is mostly immutable-by-path book/media assets. Cache resized
+    // originals for 31 days instead of regenerating billed MISS/STALE variants
+    // every 24 hours. For changed source bytes, change the image URL/path too.
+    // User-uploaded master/service photos already bypass Next's optimizer.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
     // The site owns the original course photographs; proxy them same-origin

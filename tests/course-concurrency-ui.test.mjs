@@ -44,7 +44,11 @@ test('additional-course start requires checked consent and keeps a stable course
   const h = mount('my-course', { enterCourse: true,  props: { data: account('owner-a') }, search: '?courseId=course-a', fetcher: (_path, _options, body) => body ? { error: 'SERVICE_UNAVAILABLE' } : courseView() })
   await h.settle()
   for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt === 0) { findButton(h.tree, 'Start another course').props.onClick(); await h.settle() }
+    if (attempt === 0) {
+      // Inside an existing course, manage additional enrollments from My courses.
+      findButton(h.tree, 'My courses').props.onClick(); await h.settle()
+      findPart(h.tree, 'MyCoursesDashboard').props.onNew(); await h.settle()
+    }
     findPart(h.tree, 'CoursePresetCatalog').props.onPersonal(); await h.settle()
     let consent = findButton(h.tree, 'Agree & start')
     assert.equal(consent.props.disabled, true)

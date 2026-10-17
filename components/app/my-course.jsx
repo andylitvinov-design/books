@@ -205,8 +205,17 @@ export function MyCourse({ data, locale = 'en' }) {
       if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
       selectedCourse.current = response.course?.id || null
       setSnapshot({ accountId, value: response })
-      if (openPrimaryToday && !courseId && response.course?.stage === 4 && ['active','paused'].includes(response.course.status)) {
-        setView('detail');replaceCourseUrl(selectedCourse.current)
+      // Opening "Courses" resumes the only saved in-progress course, even at
+      // the free 1/1 limit. A full plan only restricts creating a second course.
+      const ownedCourses = Array.isArray(response.courses) ? response.courses : response.course ? [response.course] : []
+      const resumable = ownedCourses.filter(item => item && Number(item.stage || 0) > 0 &&
+        !['closed', 'archived', 'completed'].includes(item.status))
+      const selectedIsOnlyCourse = resumable.length === 1 && resumable[0].id === response.course?.id
+      if (openPrimaryToday && !courseId && response.course?.stage > 0 &&
+          !['closed', 'archived', 'completed'].includes(response.course.status) &&
+          (selectedIsOnlyCourse || response.course.stage === 4)) {
+        setShowCourse(true)
+        setView('detail'); replaceCourseUrl(selectedCourse.current)
       } else if (updateUrl) replaceCourseUrl(selectedCourse.current)
       return response
     } catch (e) { if (isCurrent()) setError(e.message); return null }
@@ -260,6 +269,7 @@ export function MyCourse({ data, locale = 'en' }) {
   function selectCourse(courseId) {
     generation.current += 1; actionLock.current = null; setBusy(false)
     selectedCourse.current = courseId
+    setShowCourse(true)
     setView('detail')
     startDialogRef.current?.close()
     void refresh(courseId)
@@ -465,6 +475,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const showDashboard = courses.length > 0 && view === 'list'
   const isHistory = ['completed', 'archived'].includes(state?.course?.status)
   const stage = view === 'new' || view === 'switch' || state?.course?.status === 'closed' ? 0 : state?.course?.stage || 0
+  const stressWelcome = stage === 3 && !state?.course?.presetId &&
+    courseProgramFromTopics(state?.course?.focusTags || [])?.id === 'stress'
   const visibleStep = stage === 1 ? 2 : stage === 2
     ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
@@ -483,7 +495,21 @@ export function MyCourse({ data, locale = 'en' }) {
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
     onCloseCourse={closeCourse} closing={busy}
-    onOpen={() => setShowCourse(true)}/>
+    onOpen={() => {
+      if (state.course?.id && state.course.stage > 0 && !['closed', 'archived'].includes(state.course.status)) {
+        const activeChoices = courses.filter(item => item && item.stage > 0 &&
+          !['closed', 'archived', 'completed'].includes(item.status))
+        if (activeChoices.length === 1 && activeChoices[0].id === state.course.id) selectCourse(state.course.id)
+        else setShowCourse(true) // Multiple courses still offer the dashboard picker.
+      } else if (courses.length > 0) {
+        // A closed course belongs in history, not a new-course setup shortcut.
+        setShowCourse(true); changeView('list')
+      } else if (canAddCourse) {
+        setShowCourse(true); startAnother()
+      } else {
+        setShowCourse(true); changeView('list')
+      }
+    }}/>
 
   async function confirmFastStart() {
     const intent={accountId,courseId:selectedCourse.current,epoch:viewGeneration,programId:requestedProgram?.id||ACTIVE_COURSE_PROGRAM_ID}
@@ -520,10 +546,10 @@ export function MyCourse({ data, locale = 'en' }) {
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
-    {!showDashboard && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
+    {!showDashboard && !stressWelcome && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
       ← {ru ? 'Мои курсы' : 'My courses'}
     </button>}
-    {!showDashboard && stage !== 4 && view === 'detail' && courses.length > 0 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
+    {!showDashboard && !stressWelcome && stage !== 4 && view === 'detail' && courses.length > 1 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
       <h2 id={selectorId + '-heading'}>{t.courses}</h2>
       <label htmlFor={selectorId}>{t.chooseCourse}</label>
       <select id={selectorId} value={state.course?.id || ''} disabled={busy} onChange={event => selectCourse(event.target.value)}>
@@ -531,13 +557,9 @@ export function MyCourse({ data, locale = 'en' }) {
           {t.courseNumber} {index + 1} · {t.courseStatuses[course.status] || course.status} · {course.startedAt || course.updatedAt ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(course.startedAt || course.updatedAt)) : ''}
         </option>)}
       </select>
-      {access && <p role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit} · {access.tier}</p>}
-      {access?.overLimit ? <p className={styles.notice}>{t.overLimit}</p> : atLimit ? <p className={styles.notice}>{t.limitReached}</p> : null}
-      {!access?.multiCourseEnabled && !legacyFreeSlot && <p className={styles.small}>{t.multiUnavailable}</p>}
-      <p className={styles.small}>{t.historySafe}</p>
-      <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
+      {access && <p className={styles.courseSlotCount} role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit}</p>}
     </section>}
-    {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
+    {(showDashboard || courses.length === 0) && !stressWelcome ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
       changeView('list'); setShowCourse(false); setPersonalEntryDismissed(true); setCourseEntry(null)
       if (testReturn || programmeEntry || personalEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button> : null}
@@ -625,7 +647,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <button type="button" disabled={busy} onClick={()=>void retryProgramIntake()}>{ru?'Повторить настройку программы':'Retry programme setup'}</button>
     </section>}
 
-    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
+    {!showDashboard && !stressWelcome && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
       onClick={() => changeView('switch')}>
       {ru ? 'Изменить направление курса' : 'Change course direction'}
     </button>}
@@ -644,7 +666,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
 
-    {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
+    {stage !== 4 && !stressWelcome && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 

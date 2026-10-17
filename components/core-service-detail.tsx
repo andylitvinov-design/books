@@ -153,7 +153,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           <h1>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.primary} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
           <p className={styles.note}>{t.note}</p>
           <aside className={styles.andrey}>
             <strong>{locale === "ru" ? "С Андреем Литвиновым" : "With Andrey Litvinov"}</strong>

@@ -7,8 +7,10 @@ import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
+import { readAccountTestRating, saveAccountTestRating, readGuestTestRating, saveGuestTestRating } from '@/lib/app/test-catalog-social-proof'
 import {
   createGuestCredential,
   guestCookieName,
@@ -311,6 +313,12 @@ async function handle(request, { params }) {
       )
       if (joined === 'guest/bootstrap' && method === 'GET')
         return json(await guestRepo.bootstrap(credential))
+      if (joined === 'guest/test-ratings' && method === 'POST') {
+        await consumeRate(config, { op: 'guest-test-rating', guest: credential.id }, 10, 3600)
+        return json(await saveGuestTestRating(config, credential, await readBody(request)))
+      }
+      if (path[1] === 'test-ratings' && path.length === 3 && method === 'GET')
+        return json(await readGuestTestRating(config, credential, path[2]))
       if (joined === 'guest/test-plans' && method === 'POST')
         return json(await guestRepo.createTestPlan(credential, await readBody(request)), 201)
       if (path[1] === 'test-plans' && path.length === 3 && method === 'GET')
@@ -492,7 +500,17 @@ async function handle(request, { params }) {
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
-    if (joined === 'practice' && method === 'GET') return json(await practiceRepo.getMyPractice(actor))
+    if (joined === 'practice' && method === 'GET') {
+      const workspace = await practiceRepo.getMyPractice(actor)
+      let newServices = null
+      try {
+        newServices = await practiceRepo.getMarketplaceNewServices()
+      } catch {
+        // Keep private practitioner tools available if the marketplace view fails.
+        // The UI shows "unavailable" instead of a misleading zero.
+      }
+      return json({ ...workspace, newServices })
+    }
     if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
@@ -525,6 +543,8 @@ async function handle(request, { params }) {
       response.headers.set('Content-Disposition', 'attachment; filename="holistic-house-data.json"')
       return response
     }
+    if (path[0] === 'test-ratings' && path.length === 2 && method === 'GET')
+      return json(await readAccountTestRating(config, actor, path[1]))
     if (path[0] === 'runs' && path.length === 2 && method === 'GET')
       return json(await repo.getRun(actor, path[1]))
     if (path[0] === 'results' && path.length === 2 && method === 'GET')
@@ -580,6 +600,10 @@ async function handle(request, { params }) {
       return json(await removeSavedReport(config, actor, path[1]))
     if (path[0] === 'documents' && path.length === 3 && path[2] === 'remove')
       return json(await removeSavedDocument(config, actor, path[1]))
+    if (joined === 'test-ratings') {
+      await consumeRate(config, { op: 'account-test-rating', account: actor.id }, 20, 3600)
+      return json(await saveAccountTestRating(config, actor, body))
+    }
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
     if (joined === 'mood') return json(await repo.moodCheckin(actor, body), 201)
@@ -592,6 +616,8 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
+    if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))
     if (joined === 'practice/profile') {
       if (body.action === 'submit')

@@ -131,21 +131,33 @@ const TANTRA_PATH_ICONS = {
   'five-practice-themes': Compass, 'deep-portrait': BookOpen,
 }
 const TANTRA_PATH_COPY = {
-  en: { eyebrow:'EXPLORE TANTRA YOUR WAY', title:'Tantric test journeys',
-    intro:'Choose one focused set. Each scale has five descriptive response ranges and a practical reflection; no spiritual rank or diagnosis.',
-    select:'Use this set', chosen:'Selected', details:'See all paths', less:'Show four paths',
-    test:'test', tests:'tests', questions:'questions', scales:'scales', minute:'min',
-    note:'Selecting a path only changes the unsaved selection. Tests begin when you choose Start; saved results stay intact.' },
-  ru: { eyebrow:'ТАНТРИЧЕСКОЕ САМОПОЗНАНИЕ', title:'Подборка тантрических тестов',
-    intro:'Выберите маршрут: у каждой шкалы есть пять понятных описательных диапазонов и мягкий практический шаг. Это не диагноз и не духовный рейтинг.',
-    select:'Выбрать набор', chosen:'Выбрано', details:'Все маршруты', less:'Свернуть до четырёх',
-    test:'тест', tests:'тестов', questions:'вопросов', scales:'шкал', minute:'мин',
-    note:'Выбор набора меняет только несохранённый подбор. Тестирование начнётся после отдельного нажатия кнопки запуска; прошлые результаты сохранятся.' },
-  es: { eyebrow:'EXPLORACIÓN TÁNTRICA', title:'Colecciones de pruebas de tantra',
-    intro:'Elige una ruta: escalas descriptivas y reflexión, sin diagnóstico ni rangos espirituales. Los cuestionarios están disponibles en inglés.',
-    select:'Elegir selección', chosen:'Elegida', details:'Mostrar todas', less:'Mostrar cuatro',
-    test:'prueba', tests:'pruebas', questions:'preguntas', scales:'escalas', minute:'min',
-    note:'La selección no inicia ninguna prueba y no modifica tus resultados guardados.' },
+  en: {
+    eyebrow: 'THEMED TEST COLLECTIONS · TANTRA',
+    title: 'Tantra & intimacy: thematic test collections',
+    intro: 'Each card is a focused collection of real self-reflection tests. Explore what is included or begin straight away. These are not diagnoses or spiritual rankings.',
+    details: 'Details', start: 'Take test', included: 'Tests in this collection', scaleNames: 'Scales',
+    more: 'Show all collections', less: 'Show four collections',
+    test: 'test', tests: 'tests', questions: 'questions', scales: 'scales', minute: 'min',
+    note: 'For a multi-test collection, the questionnaires are taken in sequence. Answers and saved results are never changed by opening details.',
+  },
+  ru: {
+    eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ ТЕСТОВ · ТАНТРА',
+    title: 'Тантра и близость: тематические подборки тестов',
+    intro: 'Каждая карточка — тематическая подборка реальных тестов для самопознания. Посмотрите состав или сразу начните прохождение. Это не диагноз и не духовный рейтинг.',
+    details: 'Детали', start: 'Пройти тест', included: 'Тесты в подборке', scaleNames: 'Шкалы',
+    more: 'Все подборки', less: 'Показать четыре',
+    test: 'тест', tests: 'теста', questions: 'вопросов', scales: 'шкал', minute: 'мин',
+    note: 'Если в подборке несколько тестов, они проходятся по очереди. Просмотр деталей не меняет ваши ответы и сохранённые результаты.',
+  },
+  es: {
+    eyebrow: 'COLECCIONES TEMÁTICAS DE PRUEBAS · TANTRA',
+    title: 'Tantra e intimidad: colecciones temáticas de pruebas',
+    intro: 'Cada tarjeta reúne pruebas reales de reflexión personal. Consulta los detalles o comienza directamente. No son diagnósticos ni rangos espirituales. Cuestionarios en inglés.',
+    details: 'Detalles', start: 'Realizar prueba', included: 'Pruebas de la colección', scaleNames: 'Escalas',
+    more: 'Ver todas las colecciones', less: 'Mostrar cuatro',
+    test: 'prueba', tests: 'pruebas', questions: 'preguntas', scales: 'escalas', minute: 'min',
+    note: 'Si hay varias pruebas, se realizan en secuencia. Abrir los detalles no cambia los resultados guardados.',
+  },
 }
 const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
@@ -199,7 +211,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, onStartTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
@@ -213,6 +225,7 @@ export function SimpleTestPicker({
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
   const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
+  const [expandedTantraPaths, setExpandedTantraPaths] = useState(() => new Set())
   const collections = availableTestCollections(catalogEntries)
   const tantraPaths = availableTantraTestPaths(catalogEntries)
   const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
@@ -382,41 +395,66 @@ export function SimpleTestPicker({
         {tantraPaths.map((path) => {
           const Icon = TANTRA_PATH_ICONS[path.id] || Sparkles
           const chosen = activeBattery.length === path.keys.length &&
-            path.keys.every(key => selectedKeys.has(key))
-          return <button type="button" key={path.id} className={styles.tantraPath}
-            data-tantra-path={path.id} data-tone={path.tone}
-            aria-pressed={chosen} disabled={!onChooseTantraPath}
-            onClick={() => {
-              onChooseTantraPath?.(path.keys)
-              setHeroSearch('')
-              setSubmittedHeroSearch('')
-              setVisibleCount(5)
-              document.getElementById('hh-simple-recommendations')?.scrollIntoView({behavior:'smooth',block:'start'})
-            }}>
+            path.keys.every((key) => selectedKeys.has(key))
+          const detailId = `hh-tantra-path-${path.id}-details`
+          const expanded = expandedTantraPaths.has(path.id)
+          const includedTests = path.keys.map((key) => catalogEntries.find((entry) => entry.key === key)).filter(Boolean)
+          return <article key={path.id} className={styles.tantraPath}
+            data-tantra-path={path.id} data-tone={path.tone} data-selected={chosen}>
             <span className={styles.tantraPathIcon} aria-hidden="true"><Icon size={20} strokeWidth={1.8}/></span>
-            <span className={styles.tantraPathBody}>
+            <div className={styles.tantraPathBody}>
               <strong>{path.title[locale] || path.title.en}</strong>
               <small>{path.detail[locale] || path.detail.en}</small>
               <span className={styles.tantraPathMeta}>
-                {path.testCount} {path.testCount===1 ? tantraCopy.test : tantraCopy.tests}
+                {path.testCount} {path.testCount === 1 ? tantraCopy.test : tantraCopy.tests}
                 {' · '}{path.questionCount} {tantraCopy.questions}
                 {' · '}{path.scaleCount} {tantraCopy.scales}
                 {' · ~'}{path.durationMinutes} {tantraCopy.minute}
               </span>
-            </span>
-            <span className={styles.tantraPathAction}>
-              {chosen ? tantraCopy.chosen : tantraCopy.select}
-              {chosen ? <Check size={15} aria-hidden="true"/> : <ArrowRight size={15} aria-hidden="true"/>}
-            </span>
-          </button>
+            </div>
+            <div className={styles.tantraPathActions}>
+              <button type="button" className={styles.tantraPathDetailsButton}
+                data-tantra-action="details" aria-expanded={expanded} aria-controls={detailId}
+                onClick={() => setExpandedTantraPaths((current) => {
+                  const next = new Set(current)
+                  if (next.has(path.id)) next.delete(path.id)
+                  else next.add(path.id)
+                  return next
+                })}>
+                {tantraCopy.details} <ChevronDown size={15} aria-hidden="true"/>
+              </button>
+              <button type="button" className={styles.tantraPathStartButton}
+                data-tantra-action="start" disabled={starting || !onStartTantraPath}
+                aria-label={`${tantraCopy.start}: ${path.title[locale] || path.title.en}`}
+                onClick={() => {
+                  onChooseTantraPath?.(path.keys)
+                  onStartTantraPath?.(path.keys)
+                }}>
+                {tantraCopy.start} <ArrowRight size={16} aria-hidden="true"/>
+              </button>
+            </div>
+            <div id={detailId} className={styles.tantraPathDetailsBody} hidden={!expanded}>
+              <strong className={styles.tantraPathIncludedTitle}>{tantraCopy.included}</strong>
+              <ul className={styles.tantraPathIncludedTests}>
+                {includedTests.map((entry) => <li key={entry.key}>
+                  <div><strong>{entry.title}</strong>
+                    <span>{entry.questionCount} {tantraCopy.questions} · ~{entry.durationMinutes} {tantraCopy.minute}</span>
+                  </div>
+                  {entry.scaleGuide?.scales?.length > 0 && <p>
+                    {tantraCopy.scaleNames}: {entry.scaleGuide.scales.map((scale) => scale.label).join(' · ')}
+                  </p>}
+                </li>)}
+              </ul>
+              <p className={styles.tantraPathDetailsNote}>{tantraCopy.note}</p>
+            </div>
+          </article>
         })}
       </div>
       {tantraPaths.length > 4 && <button type="button" className={styles.tantraPathToggle}
         aria-expanded={tantraPathsOpen} onClick={() => setTantraPathsOpen(value => !value)}>
-        {tantraPathsOpen ? tantraCopy.less : tantraCopy.details}
+        {tantraPathsOpen ? tantraCopy.less : tantraCopy.more}
         <ChevronDown size={16} aria-hidden="true"/>
       </button>}
-      <p className={styles.tantraPathNote}>{tantraCopy.note}</p>
     </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">

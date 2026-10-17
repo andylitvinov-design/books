@@ -76,12 +76,12 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
         {visibleOffers.map((offer, index) => (
           <article className={styles.card} key={offer.id} id={isHome ? undefined : offer.id === "alchemy" ? "alchemy" : offer.id === "business" ? "business" : undefined} data-core-service-id={offer.id}>
             {!isHome && offer.id === "alchemy" ? <span id="archetypal" className={styles.anchor}/> : null}
-            <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true">
+            <Link className={styles.photo} href={offer.href} tabIndex={-1} aria-hidden="true" prefetch={false}>
               <Image src={isHome ? homepageMedia[offer.id] : offer.image} alt="" fill unoptimized={(isHome ? homepageMedia[offer.id] : offer.image).endsWith(".webp") || (isHome ? homepageMedia[offer.id] : offer.image) === "/academy/reiki-yggdrasil/source/eastern-tradition.png"} sizes="(max-width: 760px) 45vw, (max-width: 1080px) 30vw, 280px" loading={index === 0 ? "eager" : "lazy"} />
             </Link>
             <div className={styles.cardContent}>
               <span className={styles.cardLabel}>{offer.label}</span>
-              <h3><Link href={offer.href}>{offer.title}</Link></h3>
+              <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
               <p className={styles.cardSummary}>{offer.promise}</p>
               <p className={styles.cardBenefit}>{offer.benefit}</p>
               {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
@@ -92,7 +92,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
                   {locale === "ru" ? "Смотреть видео о подходе" : "Watch a short video"}
                 </a>
               )}
-              <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
+              <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"} prefetch={false}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
             </div>
           </article>
         ))}
@@ -103,7 +103,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
           <details className={styles.methodDisclosure} id="methods">
             <summary>{t.more}<ChevronDown size={18} aria-hidden="true" /></summary>
             <div><p>{t.moreText}</p>
-              <nav aria-label={t.more}>{t.methods.map(item => <Link key={item.href} href={"/" + locale + "/services/" + item.href}>{item.label}<ArrowUpRight size={15} aria-hidden="true"/></Link>)}</nav>
+              <nav aria-label={t.more}>{t.methods.map(item => <Link key={item.href} href={"/" + locale + "/services/" + item.href} prefetch={false}>{item.label}<ArrowUpRight size={15} aria-hidden="true"/></Link>)}</nav>
             </div>
           </details>
           <p className={styles.disclaimer}>{t.disclaimer}</p>

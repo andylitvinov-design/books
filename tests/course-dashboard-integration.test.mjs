@@ -99,10 +99,10 @@ test('close and primary management carry target revision and discard delayed res
     h.render({ data: account('owner-b') }); await h.settle()
     slow.resolve(courseView({ ...courseB, status: 'archived', revision: 2 }))
     await pending; await h.settle()
-    const nextEntry = findPart(h.tree, 'CourseEntrySelector')
-    assert.equal(nextEntry.props.accountId, 'owner-b')
-    nextEntry.props.onOpen(); await h.settle()
-    assert.equal(findPart(h.tree, 'MyCoursesDashboard').props.courses[0].id, 'owner-b-course')
+    assert.equal(findPart(h.tree, 'CourseEntrySelector'), undefined,
+      'the new owner’s only saved course resumes without an intermediate selector')
+    assert.equal(findPart(h.tree, 'CourseR3Steps')?.props.state.course.id, 'owner-b-course',
+      'the new owner resumes their own course, never the previous owner’s pending action')
     assert.equal(h.calls.at(-1).options.headers['X-HH-Account-ID'], 'owner-b')
     h.unmount()
   }

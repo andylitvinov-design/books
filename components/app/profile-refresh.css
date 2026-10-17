@@ -536,3 +536,8 @@
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty { padding-block: 2px; }
   .hh-profile-domains[data-profile-mode="account"] .hh-personal-analysis--embedded .hh-analysis-reports-empty > svg { width: 38px;height: 38px;margin-bottom: 4px; }
 }
+
+/* Quick actions now sit directly after My reports, before report areas. */
+.hh-profile-domains[data-profile-mode="account"] > .hh-domain-footer-actions {
+  margin: 0 0 12px;
+}

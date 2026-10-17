@@ -105,7 +105,7 @@ test('matching test cards and search remain visible while expert filters are col
   assert.match(css, /\.catalogControls\{/)
   assert.match(client, /showAssessmentStrip=\{false\}/)
   assert.match(client, /<ClientAssessmentInvite locale=\{typedLocale\} \/>/)
-  assert.match(header, /showAssessmentStrip = true/)
+  assert.doesNotMatch(header, /MindBodyMonitorStrip|showAssessmentStrip = true/)
 })
 
 

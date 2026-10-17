@@ -20,7 +20,7 @@ try{
  // Compile it here, before any hydrated page subscribes to dev Fast Refresh.
  const warmup=await browser.newContext()
  try{
-  for(const [path,status] of [['/api/app/bootstrap',401],['/api/app/guest/bootstrap',401],['/en/app',200],['/ru/app',200],['/en/client',200],['/ru/client',200],['/es/client/tests',200],['/icon.svg',200]]){
+  for(const [path,status] of [['/api/app/bootstrap',401],['/api/app/guest/bootstrap',401],['/api/test-catalog/stats',200],['/en/app',200],['/ru/app',200],['/en/client',200],['/ru/client',200],['/es/client/tests',200],['/icon.svg',200]]){
    const response=await warmup.request.get(origin+path)
    assert.equal(response.status(),status,'isolated route must compile before browser acceptance: '+path)
   }

@@ -150,6 +150,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
             >
               <figure className="catalog-cover">
                 <Image
+                  unoptimized
                   alt={locale === "ru" ? "Обложка: " + text.featuredTitle : "Cover: " + text.featuredTitle}
                   height={600}
                   priority

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { withResultInterpretations as enrichResults } from '../lib/app/result-interpretations.js'
-import { storedResultInterpretation, STORED_INTERPRETATION_VERSION } from '../lib/assessments/interpretation-resolution.js'
+import { storedResultInterpretation, STORED_INTERPRETATION_VERSION, STORED_INTERPRETATION_RULES_VERSION } from '../lib/assessments/interpretation-resolution.js'
 
 const approvedDigests = {}
 const withResultInterpretations = (db, results) => enrichResults(db, results, { approvedDigests })
@@ -12,7 +12,7 @@ function fixture(locale = 'en') {
   const signature = { key: 'synthetic.score', min: 0, max: 1, unit: 'points', timeframe: 'past-week', direction: 'non-normative', dimensionClass: 'state', sourceConstruct: 'Synthetic' }
   const provenance = { assessmentVersionId: 'synthetic-id', definitionKey: 'synthetic', definitionVersion: 'v1', instrumentLocale: 'en', translationVersion: 'en-v1', scoringKey: 'synthetic', scoringVersion: 'v1', resultVersion: 'v1', contentHash: 'sha256:synthetic' }
   const template = { verified: true, construct: 'Synthetic', meaning: 'Stored value {{value}}', summary: 'Stored explanation', basis: 'descriptive', code: 'continuous', label: 'Descriptive score', actions: [], limitations: [], source: null, recommendedReview: false, reliableDirection: false, presentationDirection: 'neutral', bands: [], currentBand: null, continuous: true }
-  const payload = { schemaVersion: 'hh-interpretation.v1', interpretationVersion: STORED_INTERPRETATION_VERSION, reportLocale: locale, provenance, timeframe: 'past-week', sourceCommit: 'synthetic-source', rulesEngineVersion: 'synthetic-rules', rendererStrategy: 'finite-domain-template.v1', dimensions: [{ signature, allowedValues: [0, 1], variants: [{ values: [0, 1], template }] }] }
+  const payload = { schemaVersion: 'hh-interpretation.v1', interpretationVersion: STORED_INTERPRETATION_VERSION, reportLocale: locale, provenance, timeframe: 'past-week', sourceCommit: 'synthetic-source', rulesEngineVersion: STORED_INTERPRETATION_RULES_VERSION, rendererStrategy: 'finite-domain-template.v1', dimensions: [{ signature, allowedValues: [0, 1], variants: [{ values: [0, 1], template }] }] }
   const result = { ...provenance, definitionId: provenance.assessmentVersionId, timeframe: payload.timeframe, dimensions: [{ ...signature, value: 1 }] }
   const bytes = canonical(payload)
   const row = { assessment_version_id: result.definitionId, definition_content_hash: result.contentHash, interpretation_version: STORED_INTERPRETATION_VERSION, report_locale: locale, provenance, source_commit: payload.sourceCommit, rules_engine_version: payload.rulesEngineVersion, payload, payload_canonical: bytes, payload_sha256: 'sha256:' + crypto.createHash('sha256').update(bytes).digest('hex') }
@@ -69,7 +69,7 @@ test('optional SQL failure rolls back savepoint and stops repeated reads', async
 test('projection rejects score, sibling signature, locale and version reuse', async () => {
   const { result, row } = fixture()
   const [value] = await withResultInterpretations(database([row]), [result])
-  for (const mutate of [v => { v.dimensions[0].value = 0 }, v => { v.dimensions[0].timeframe = 'other' }, v => { v.definitionVersion = 'v2' }, v => { v.contentHash = 'other' }, v => { v.interpretationRecords.en.interpretationVersion = 'other' }]) {
+  for (const mutate of [v => { v.dimensions[0].value = 0 }, v => { v.dimensions[0].timeframe = 'other' }, v => { v.definitionVersion = 'v2' }, v => { v.contentHash = 'other' }, v => { v.interpretationRecords.en.interpretationVersion = 'other' }, v => { v.interpretationRecords.en.rulesEngineVersion = '2026-10-16.v10' }, v => { delete v.interpretationRecords.en.rulesEngineVersion }]) {
     const changed = structuredClone(value)
     mutate(changed)
     assert.equal(storedResultInterpretation(changed, changed.dimensions[0], 'en'), null)

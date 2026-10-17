@@ -5,9 +5,10 @@ import { readFile } from 'node:fs/promises'
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 
 test('mobile practice v2 keeps first service, share link and moderation honest', async () => {
-  const [view, css] = await Promise.all([
+  const [view, css, serviceCards] = await Promise.all([
     read('components/app/practice-workspace.jsx'),
     read('components/app/practice-dashboard.css'),
+    read('components/app/my-services-dashboard.jsx'),
   ])
   assert.match(view, /Set up your practice/)
   assert.match(view, /readySteps<3/)
@@ -17,7 +18,10 @@ test('mobile practice v2 keeps first service, share link and moderation honest',
   assert.match(view, /navigator\.share/)
   assert.match(view, /navigator\.clipboard/)
   assert.match(view, /profileLive/)
-  assert.match(view, /hh-practice-service-row-meta/)
+  assert.match(view, /<MyServicesDashboard /)
+  assert.match(serviceCards, /className=\{styles.serviceCard\}/)
+  assert.match(serviceCards, /data-status=\{item.status\}/)
+  assert.match(serviceCards, /aria-expanded=\{finderOpen\}/)
   assert.match(view, /changes_requested/)
   assert.match(view, /hh-practice-fee-notice/)
   assert.match(view, /Marketplace checkout and payouts are not yet enabled/)

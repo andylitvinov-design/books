@@ -12,6 +12,7 @@ import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpret
 import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
+import { TestRatingCard } from '@/components/app/test-rating-card'
 import { CURRENT_STATE_EN_V2, CURRENT_STATE_RU_V2 } from '@/data/assessments/current-state-v2'
 import { MINI_IPIP_20_EN_V1 } from '@/data/assessments/mini-ipip-20-en-v1'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
@@ -1217,6 +1218,7 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
             </header>
 
             <GuestScaleInterpretation result={guestResult} locale={locale} />
+            <TestRatingCard locale={locale} definitionKey={guestResult.definitionKey} guest />
             <section className={guestActions.capture} data-guest-analysis-gate aria-label={locale === 'ru' ? 'Бесплатные пояснения к тесту' : 'Free test explanations'}>
               <p className={guestActions.kicker}>{locale === 'ru' ? 'БЕСПЛАТНО · ЧЕРЕЗ GOOGLE' : 'FREE · WITH GOOGLE'}</p>
               <h4 className={guestActions.heading}>{locale === 'ru' ? 'Что означают ваши результаты?' : 'What do your scores mean?'}</h4>

@@ -256,6 +256,17 @@ export function ProfileDomains({
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
 
+  const footerActions = (
+    <div className="hh-domain-footer-actions">
+      <Link className="hh-domain-free-review-link" href={'/' + locale + '/services/free-situation-review#request-free-review'} prefetch={false}>
+        <Sparkles size={19} aria-hidden="true" />{t.getReview}<ArrowRight size={18} aria-hidden="true" />
+      </Link>
+      <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
+        <Leaf size={19} aria-hidden="true" />{t.discover}<ArrowRight size={18} aria-hidden="true" />
+      </Link>
+    </div>
+  )
+
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
       <div className="hh-domain-title">
@@ -283,6 +294,7 @@ export function ProfileDomains({
         </div>
       )}
     </section>}
+    {!external && footerActions}
     <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
@@ -354,13 +366,6 @@ export function ProfileDomains({
       </div>
     </details>
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
-    <div className="hh-domain-footer-actions">
-      <Link className="hh-domain-free-review-link" href={'/' + locale + '/services/free-situation-review#request-free-review'} prefetch={false}>
-        <Sparkles size={19} aria-hidden="true" />{t.getReview}<ArrowRight size={18} aria-hidden="true" />
-      </Link>
-      <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
-        <Leaf size={19} aria-hidden="true" />{t.discover}<ArrowRight size={18} aria-hidden="true" />
-      </Link>
-    </div>
+    {external && footerActions}
   </section>
 }

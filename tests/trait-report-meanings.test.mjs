@@ -6,6 +6,7 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
+import { descriptiveScorePosition } from '../lib/assessments/descriptive-score-position.js'
 import { traitReportCopy } from '../lib/assessments/trait-report-locales.js'
 const identities=JSON.parse(fs.readFileSync(new URL('./fixtures/trait-meaning-identities.json',import.meta.url)))
 function response(def,dim,position) {
@@ -35,7 +36,14 @@ test('all 68 identities / 37 versions have distinct bilingual construct meanings
       const model=interpretationBandModel(result,dimension,locale)
       const copy=traitReportCopy(def,dimension,locale)
       assert.ok(copy)
-      assert.equal(model.summary,copy.explanation)
+      const positionText=def.key==='tipi-10'?' '+descriptiveScorePosition(dimension,locale,'trait-mean').text:''
+      if (def.key === 'tipi-10') assert.equal(model.summary,copy.explanation+positionText)
+      else {
+        assert.ok(model.summary.endsWith(copy.explanation))
+        assert.match(model.summary,locale==='ru'?/Ваш результат по шкале/:/Your score for/)
+        assert.ok(model.summary.includes(String(value)))
+        assert.equal(model.summary.split(copy.explanation).length,2)
+      }
       assert.ok(model.meaning.includes(copy.explanation))
       assert.ok(model.actions[1].includes(copy.reflection))
       assert.ok(model.actions[0].includes(String(value)))
@@ -86,7 +94,7 @@ test('trait hook preserves exporter numeric substitution contract; no dynamic va
  const source=fs.readFileSync(new URL('../lib/assessments/interpretation-context.js',import.meta.url),'utf8')
  const ast=parse(source,{ecmaVersion:'latest',sourceType:'module'});let count=0
  function walk(node){if(!node||typeof node!=='object')return;if(node.type==='TemplateLiteral')for(const e of node.expressions)if(source.slice(e.start,e.end)==='n(dimension.value)')count++;for(const v of Object.values(node))if(Array.isArray(v))v.forEach(walk);else if(v&&typeof v==='object')walk(v)}walk(ast)
- assert.equal(count,4)
+ assert.equal(count,8)
  const copy=fs.readFileSync(new URL('../lib/assessments/trait-report-locales.js',import.meta.url),'utf8')
  assert.doesNotMatch(copy,/dimension\.value|\{\{value\}\}/)
 })
