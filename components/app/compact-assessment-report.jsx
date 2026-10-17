@@ -49,6 +49,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const guide = section.bandBasis === 'unavailable' ? null : guideByScale.get(section.key)
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null
+  const scoreLevelGuide = model?.scoreLevelGuide || null
   const rawNote = !model ? null : model.displayKind === 'screening-count'
     ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
     : section.bandBasis === 'screening'
@@ -131,7 +132,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
-          {rawNote && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
+          {rawNote && !scoreLevelGuide && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
@@ -143,6 +144,34 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <b>{band.from}–{band.to}</b> {band.label}{band.current ? (ru ? ' · ваш' : ' · yours') : ''}
         </span>)}
       </div>}
+      {scoreLevelGuide && <section className={styles.levelGuide} data-descriptive-score-guide
+        aria-label={ru ? 'Пояснение вашего результата и уровней шкалы' : 'Explanation of your result and scale levels'}>
+        <p className={styles.levelEyebrow}>{ru ? 'ПОНЯТНЫЙ РАЗБОР РЕЗУЛЬТАТА' : 'YOUR SCORE EXPLAINED'}</p>
+        <h4 className={styles.levelTitle}>{scoreLevelGuide.title}: {scoreLevelGuide.current.label}</h4>
+        <p className={styles.levelLead} data-current-score-position>{scoreLevelGuide.current.note}</p>
+        <p className={styles.levelOverview}>{scoreLevelGuide.overview}</p>
+        <div className={styles.levelMeter} aria-hidden="true">
+          {scoreLevelGuide.bands.map(band => <span key={band.code}
+            data-current-position={band.current || undefined} />)}
+        </div>
+        <h5 className={styles.levelSubheading}>{scoreLevelGuide.heading}</h5>
+        <ol className={styles.levelList} data-score-level-descriptions>
+          {scoreLevelGuide.bands.map((band, index) => <li key={band.code}
+            data-current-position={band.current || undefined}
+            aria-current={band.current ? 'true' : undefined}>
+            <span className={styles.levelIndex}>{index + 1}</span>
+            <div className={styles.levelBody}>
+              <div className={styles.levelHeading}>
+                <strong>{band.label}</strong>
+                <span>{band.displayRange}</span>
+              </div>
+              <p>{band.note}</p>
+              {band.current && <small>{ru ? 'Ваш участок шкалы' : 'Your scale position'}</small>}
+            </div>
+          </li>)}
+        </ol>
+        <p className={styles.levelCaveat}>{scoreLevelGuide.caveat}</p>
+      </section>}
       {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
