@@ -10,6 +10,7 @@ import CourseGuidedTimer from './course-guided-timer'
 import CoursePracticeVoice from './course-practice-voice'
 import AntiStressMethodActivity from './anti-stress-method-activity'
 import DayOneExercise, { DayOneChoices, DayOneFocusPicker } from './anti-stress-day-one'
+import AntiStressSevenSkillsSlide from './anti-stress-seven-skills-lesson'
 import AntiStressPracticeLab from './anti-stress-practice-lab'
 import OporaModuleActivity from './opora-module-activity'
 import CourseLessonResult from './course-lesson-result'
@@ -18,7 +19,7 @@ import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inn
 import {validateOporaStateJourney} from '@/lib/inner-growth/opora-state-journey'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
-import { withFinalFreeOffer } from '@/lib/inner-growth/course-slide-sequence'
+import { buildCourseSlides, withFinalFreeOffer } from '@/lib/inner-growth/course-slide-sequence'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
@@ -264,27 +265,8 @@ const INTERACTIVE_STRESS = {
     imagined:'Imagine a safe step',phrase:'Prepare a phrase',real:'Tried in ordinary life',skip:'Not planning now',
   },
 }
-function buildSlides(lesson) {
-  const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
-  // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
-  const hasArrival = guided.some(section => section.kind === 'arrive')
-  return [
-    { key: 'welcome', kind: 'welcome' },
-    { key: 'baseline', kind: 'baseline' },
-    { key: 'checkin', kind: 'checkin' },
-    ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
-    { key: 'idea', kind: 'idea' },
-    ...(!hasArrival && (lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
-    ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
-    ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
-    { key: 'ritual', kind: 'ritual' },
-    ...(lesson.workbook?.microPractice ? [{ key: 'transfer', kind: 'transfer' }] : []),
-    ...(lesson.practiceV4 ? [{ key: 'symbol', kind: 'symbol' }] : []),
-    { key: 'reflection', kind: 'reflection' },
-    { key: 'moment', kind: 'moment' },
-    { key: 'feedback', kind: 'feedback' },
-  ]
-}
+// Compatibility wrapper: old recorded courses and the server still share one exact slide builder.
+function buildSlides(lesson) { return buildCourseSlides(lesson) }
 
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
   return <div>
@@ -337,7 +319,8 @@ export default function CourseSlidePlayer({
   const routePlan=lesson.antiStress?.routePlan
   const MethodActivityComponent=routePlan?RouteMethodActivity:AntiStressMethodActivity
   const PracticeLabComponent=routePlan?RoutePracticeLab:AntiStressPracticeLab
-  const isDayOne=Boolean(lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
+  const isSevenSkills=Boolean(lesson.antiStress?.sevenSkillsV1 && data.programme?.id==='stress')
+  const isDayOne=Boolean(!isSevenSkills&&lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
   // The pinned lesson body is immutable. This momentary prompt is only a
   // voluntary state-first UI observation, not an additional clinical scale.
   const baselinePrompt=isDayOne
@@ -345,13 +328,13 @@ export default function CourseSlidePlayer({
       ? 'Насколько сейчас доступна небольшая пауза, чтобы заметить себя и выбрать действие?'
       : 'How available is a small pause to notice yourself and choose a response right now?')
     : standardBaselinePrompt
-  const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
+  const isExtendedStress=Boolean(!isSevenSkills&&lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
     data.programme?.id === 'stress')
   const isOporaModule=Boolean(
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015']
       .includes(lesson.oporaModule?.version) && data.programme?.id==='stress'
   )
-  const isOporaStateJourney=Boolean(!isDayOne && data.programme?.id==='stress' && (
+  const isOporaStateJourney=Boolean(!isDayOne && !isSevenSkills && data.programme?.id==='stress' && (
     lesson.antiStress ||
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015'].includes(lesson.oporaModule?.version)
   ))
@@ -415,6 +398,8 @@ export default function CourseSlidePlayer({
   const [skillProbeChoice, setSkillProbeChoice] = useState(session?.signals?.skillProbeChoice || '')
   const [aphorismResponse,setAphorismResponse] = useState(session?.signals?.aphorismResponse || '')
   const [practiceAttempt,setPracticeAttempt] = useState(session?.signals?.practiceAttempt || '')
+  const [sevenSkillsChoice,setSevenSkillsChoice] = useState('')
+  const [sevenSkillsPreparation,setSevenSkillsPreparation] = useState('')
   const [moduleActivityChoice,setModuleActivityChoice] = useState(session?.signals?.moduleActivityChoice||'')
   const [dailyMethodChoice,setDailyMethodChoice] = useState(session?.signals?.dailyMethodChoice || '')
   const [dailyMethodHintUsed,setDailyMethodHintUsed] = useState(Boolean(session?.signals?.dailyMethodHintUsed))
@@ -558,7 +543,7 @@ export default function CourseSlidePlayer({
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
           data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
-        ...(lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
+        ...(!isSevenSkills&&lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
           : {}),
         ...(isExtendedStress ? {practiceLab} : {}),
@@ -588,6 +573,8 @@ export default function CourseSlidePlayer({
   }
   const title=finished?(cycle.day===14?words.courseFinished:words.finished)
     :slide?.kind==='course-offer'?words.promoTitle
+    :isSevenSkills&&slide.kind.startsWith('skill-')
+      ? (locale==='ru'?({ 'skill-intro':'Мой навык дня','skill-prepare':'Приготовимся','skill-practice':'Основная практика','skill-repeat':'Пробую сам(а)','skill-scenario':'Новый бытовой пример','skill-review':'Моё наблюдение','skill-result':'Результат урока' }[slide.kind]):({ 'skill-intro':'My skill today','skill-prepare':'Prepare','skill-practice':'Main practice','skill-repeat':'Try it myself','skill-scenario':'Everyday example','skill-review':'My observation','skill-result':'Lesson takeaway' }[slide.kind]))
     :isDayOne&&dayOneTitles[slide.kind]?dayOneTitles[slide.kind]
     :slide.kind==='guided'?(slide.section.kind==='arrive'?words.arrivalTitle:slide.section.title||words.guided)
     :words[slide.kind]
@@ -612,7 +599,8 @@ export default function CourseSlidePlayer({
     dayOne:isDayOne?(alreadyDone?session?.signals?.dayOne||null:dayOneAnswers):null,
     welcomeFeeling:alreadyDone?session?.signals?.welcomeFeeling||null:welcomeFeeling,
     stateJourney:isOporaStateJourney?(alreadyDone?session?.signals?.stateJourney||null:stateJourney):null}
-  const minutesEstimate=isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
+  const minutesEstimate=isSevenSkills?(cycle.preferences?.length==='quick'?'5–8':'8–12')
+    :isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
     :(cycle.preferences?.length==='quick'?'5–8':'9–13')
   const scenicBaseline = !finished && !discomfortOpen &&
     (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
@@ -620,6 +608,7 @@ export default function CourseSlidePlayer({
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
     data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined}
+     data-opora-seven-skills={isSevenSkills?'v1':undefined}
     data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
     data-opora-day={isOporaModule?cycle.day:undefined}
     data-opora-state-journey={isOporaStateJourney?"v1":undefined} data-course-one-screen="v1" ref={frame}>
@@ -734,7 +723,7 @@ export default function CourseSlidePlayer({
           {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
-          {slide.kind !== 'welcome' && <>
+          {slide.kind !== 'welcome' && !isSevenSkills && <>
             <div className={styles.slideIdentity}>
               <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
               <span className={styles.identityLabel}>{lesson.title}</span>
@@ -1102,6 +1091,14 @@ export default function CourseSlidePlayer({
             <p className={styles.helper}>{words.momentHint}</p>
           </>}
 
+          {isSevenSkills&&slide.kind.startsWith('skill-')&&<AntiStressSevenSkillsSlide
+            key={slide.key} kind={slide.kind} locale={locale} lesson={lesson} locked={locked}
+            attempt={practiceAttempt} onAttempt={setPracticeAttempt}
+            preparation={sevenSkillsPreparation} onPreparation={setSevenSkillsPreparation}
+            practiceChoice={sevenSkillsChoice} onPracticeChoice={setSevenSkillsChoice}
+            comfort={comfort} onComfort={setComfort}
+            transferStage={transferStage} onTransferStage={setTransferStage}
+            onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {isDayOne && slide.kind.startsWith('day1-') && <DayOneExercise
             kind={slide.kind} locale={locale} lesson={lesson} answers={dayOneAnswers}
             onAnswer={recordDayOne} locked={locked} associationWords={associationWords}
@@ -1177,7 +1174,8 @@ export default function CourseSlidePlayer({
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
           {(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
-            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
+            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)
+            || (isSevenSkills && index<slides.length-1)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
