@@ -50,7 +50,7 @@ const COPY={
 const OPTIONS=[['pause','choosePause'],['anchor','chooseAnchor'],['thought','chooseThought'],['rest','chooseRest'],['person','chooseHelp'],['later','chooseLater']]
 export default function AntiStressSevenSkillsSlide({
  kind,locale='en',lesson={},locked=false,attempt='',onAttempt,
- comfort='skip',onComfort,transferStage='skip',onTransferStage,
+ comfort='skip',onComfort,onTransferStage,
  practiceChoice='',onPracticeChoice,preparation='',onPreparation,
  onDiscomfort,
 }){
@@ -69,7 +69,7 @@ export default function AntiStressSevenSkillsSlide({
    <ShieldCheck size={15}/>{w.stopping}</button>
  if(kind==='skill-intro')return <section className={styles.root} data-seven-skills-intro>
    <div className={styles.week}>{data.depth==='learn'?w.first:w.second} · {data.day}/14</div>
-   <h3>{isFirst?w.mapTitle:data.skillTitle}</h3>
+   <h2>{isFirst?w.mapTitle:data.skillTitle}</h2>
    <p className={styles.lead}>{isFirst?w.mapIntro:data.skillDescription}</p>
    {isFirst&&<div className={styles.skillList} role="list">{skills.map((s,i)=><div role="listitem" className={styles.skillItem} key={s.id}>
      <span className={styles.skillIndex}>{i+1}</span><strong>{s.title}</strong><small>{i+1} / {i+8}</small>
@@ -80,7 +80,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-prepare')return <section className={styles.root} data-seven-skills-preparation>
    <div className={styles.week}><Eye size={17}/>{w.purpose} · {data.skillTitle}</div>
-   <h3>{w.prepare}</h3><p className={styles.lead}>{w.prepareText}</p>
+   <h2>{w.prepare}</h2><p className={styles.lead}>{w.prepareText}</p>
    <div className={styles.choices}>
      {btn('look',w.look,preparation==='look',()=>onPreparation('look'))}
      {btn('read',w.read,preparation==='read',()=>onPreparation('read'))}
@@ -89,7 +89,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-practice')return <section className={styles.root} data-seven-skills-practice>
    <div className={styles.week}><Compass size={17}/>{data.skillTitle}</div>
-   <h3>{w.practiceIntro}</h3><p className={styles.small}>{w.practiceNote}</p>
+   <h2>{w.practiceIntro}</h2><p className={styles.small}>{w.practiceNote}</p>
    <div className={styles.practice}>
      <div className={styles.stepMeta}>{w.step} {step+1} / 4
        <div className={styles.dots} aria-hidden="true">{data.steps.map((_,i)=><i key={i} data-active={i===step}/>)}</div>
@@ -108,7 +108,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-repeat')return <section className={styles.root} data-seven-skills-repeat>
    <div className={styles.week}><Compass size={17}/>{data.skillTitle}</div>
-   <h3>{w.try}</h3><p className={styles.lead}>{w.tryIntro}</p>
+   <h2>{w.try}</h2><p className={styles.lead}>{w.tryIntro}</p>
    <details className={styles.hints} open={hint} onToggle={event=>setHint(event.currentTarget.open)}>
      <summary><Lightbulb size={17}/>{w.hint}</summary>
      <p>{w.hintText}</p><ol>{data.steps.map((item,i)=><li key={i}>{item}</li>)}</ol>
@@ -122,7 +122,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-scenario')return <section className={styles.root} data-seven-skills-scenario>
    <div className={styles.week}><Compass size={17}/>{data.skillTitle}</div>
-   <h3>{w.scenario}</h3>
+   <h2>{w.scenario}</h2>
    <p className={styles.scenarioText}>{data.scenario}</p>
    <p className={styles.small}>{w.scenarioHelp}</p>
    <div className={styles.choices}>{OPTIONS.map(([id,name])=>
@@ -131,7 +131,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-review')return <section className={styles.root} data-seven-skills-review>
    <div className={styles.week}><PauseCircle size={17}/>{data.skillTitle}</div>
-   <h3>{w.reflect}</h3><p className={styles.small}>{w.reflectNote}</p>
+   <h2>{w.reflect}</h2><p className={styles.small}>{w.reflectNote}</p>
    <div className={styles.choices}>
      {btn('comfortable',w.fit,comfort==='comfortable',()=>onComfort('comfortable'))}
      {btn('neutral',w.neutral,comfort==='neutral',()=>onComfort('neutral'))}
@@ -141,7 +141,7 @@ export default function AntiStressSevenSkillsSlide({
  </section>
  if(kind==='skill-result')return <section className={styles.root} data-seven-skills-result>
    <div className={styles.week}><CheckCircle2 size={17}/>{data.skillTitle}</div>
-   <h3>{w.result}</h3>
+   <h2>{w.result}</h2>
    <div className={styles.takeaway}><CheckCircle2 size={24}/><span><b>{data.skillTitle}</b>
      <small>{data.outcome}</small></span></div>
    <p className={styles.lead}>{w.resultHelp}</p>
