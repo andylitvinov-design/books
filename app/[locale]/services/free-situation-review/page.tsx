@@ -422,13 +422,13 @@ export default async function FreeSituationReviewPage({ params }: Props) {
 
       <section className={styles.finalCapture} aria-labelledby="review-final-title">
         <div className={styles.finalIntro}>
-          <p className={styles.eyebrow}>{outcome.eyebrow}</p>
           <h2 id="review-final-title">{t.finalTitle}</h2>
-          <p>{outcome.finalLead}</p>
-          <Link href={"/" + locale + "/services"} className={styles.backToServices}>{t.back} <ArrowRight size={15} aria-hidden="true" /></Link>
         </div>
         <FreeReviewQuickRequest locale={locale} />
       </section>
+      <div className={styles.bottomServices}>
+        <Link href={"/" + locale + "/services"} className={styles.backToServices}>{t.back} <ArrowRight size={15} aria-hidden="true" /></Link>
+      </div>
 
     </main>
   );
