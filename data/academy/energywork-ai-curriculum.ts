@@ -86,8 +86,8 @@ const practiceQuestion: EnergyworkQuestion = {
 
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
-    title: l("Welcome to your energywork journey", "Добро пожаловать в путешествие"),
-    body: l("Learn at your pace through short lessons, Andrey's original recordings and gentle reflection. You can stop any practice at any time.", "Изучайте короткие уроки, оригинальные записи Андрея и бережные практики в своём темпе. Любое упражнение можно остановить.") },
+    title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
+    body: l("Explore three Reiki traditions and the opportunity to receive an introductory Level 1 initiation in each one.", "Познакомьтесь с тремя направлениями Рейки и возможностью получить инициацию первой ступени по каждому из них.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("What brings you here?", "Что привело вас сюда?"),
     body: l("There is no right answer. Notice what you hope to learn. This opening reflection is optional.", "Правильного ответа нет. Заметьте, что вы хотите изучить. Отвечать необязательно."),
