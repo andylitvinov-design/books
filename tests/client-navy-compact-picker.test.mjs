@@ -137,6 +137,7 @@ test('mobile cards show type and duration beneath the photo; Details precedes Ta
   assert.match(cardCss, /\.shell \.testEntry \.testActions>button\{[\s\S]*?min-height:44px/)
   assert.match(cardCss, /\.shell \.testEntry \.testActions>button\{[\s\S]*?grid-column:auto;grid-row:auto;grid-area:auto/)
   assert.match(cardCss, /\.shell \.testEntry \.testActions>\.takeTest\{[\s\S]*?grid-column:auto;grid-row:auto;grid-area:auto/)
+  assert.doesNotMatch(css, /\.shell \.takeTest\{\s*grid-column:3;grid-row:2;/)
   assert.match(cardCss, /\.shell \.testEntry \.testActions\{[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/)
   assert.match(cardCss, /\.shell \.testEntry>\.testDetailsBody\[hidden\]\{display:none!important\}/)
   const card = picker.slice(picker.indexOf('return <article className={styles.testEntry}'), picker.indexOf('           </article>', picker.indexOf('return <article className={styles.testEntry}')))
