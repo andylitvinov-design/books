@@ -13,8 +13,7 @@ import { courseProgramFromTopics, getCourseProgram, orderCourseProgramTests, sug
 import { readCourseEntryIntent, discardCourseEntryIntent } from '@/lib/inner-growth/course-entry-client'
 import CourseCompletionReview from './course-completion-review'
 import AntiStressModuleFinder from './antistress-module-finder'
-import {phaseOutcomeContext} from '@/lib/inner-growth/trauma-phase-outcomes'
-import { ANTISTRESS_MODULE_FINDER_ITEMS, ANTISTRESS_ROUTER_VERSION, ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
+import { ANTISTRESS_MODULE_GOALS } from '@/lib/inner-growth/antistress-module-router'
 import CourseFocusPicker from './course-focus-picker'
 import styles from './course-r3-steps.module.css'
 
@@ -177,7 +176,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   const [showAll,setShowAll]=useState(false)
   const [chosenScales,setChosenScales]=useState([])
   const [scaleView,setScaleView]=useState('recommended')
-  const [moduleSelection,setModuleSelection]=useState(null)
   const actionLock=useRef(false)
   const [fallbackGoals,setFallbackGoals]=useState([])
   const [problemLabel,setProblemLabel]=useState((current.concerns||'').trim().slice(0,160))
@@ -293,26 +291,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       }
     }
   }
-
-  function reviewModuleScales(selection) {
-    if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
-    if (!selection || !ANTISTRESS_MODULE_GOALS.some(item=>item.id===selection.moduleId&&!item.clinicalOnly) ||
-      !selection.answers || typeof selection.answers !== 'object') {
-      onError('COURSE_MODULE_FINDER_INVALID')
-      return
-    }
-    // This is only a draft in this component. No course is started and no
-    // goals are written until the user confirms suggested or edited scales.
-    setModuleSelection({moduleId:selection.moduleId,goal:selection.goal,answers:{...selection.answers}})
-    setChosenScales(suggestedScales.map(item=>item.id))
-    setFallbackGoals([])
-    setScaleView('recommended')
-    onError('')
-  }
-
-  useEffect(()=>{
-    if(stage!==3)setModuleSelection(null)
-  },[stage])
 
   async function openManualFocus() {
     if(actionLock.current || busy || localBusy) return
@@ -664,49 +642,22 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   }
 
   if(stage===3 && isAntistress) {
-    if(!moduleSelection) {
-      return <AntiStressModuleFinder locale={locale} profile={profile} busy={busy||localBusy}
-        nextIsScaleReview onStart={reviewModuleScales}/>
-    }
-    const chosenModule=ANTISTRESS_MODULE_GOALS.find(item=>item.id===moduleSelection.moduleId)
-    const phase=phaseOutcomeContext(moduleSelection.moduleId,ANTISTRESS_ROUTER_VERSION)
-    const primaryLabel=phase?.primaryTestKey==='hh-module-finder'
-      ?ANTISTRESS_MODULE_FINDER_ITEMS.find(item=>item.id===phase.primaryScaleKey)?.text[ru?'ru':'en']
-      :profile.scales.find(item=>item.id===phase?.primaryMetric)?.label||phase?.primaryScaleKey
-    const focusWords={...t,mainSkillTitle:ru?'Приоритет среди дополнительных фокусов':'Priority among supporting focus areas',mainSkillHelp:ru?'Этот порядок задаёт фокус практики и не меняет основной показатель курса.':'This order sets your practice focus and does not change the course primary measure.'}
-
-    return <div className={styles.scaleConfirmationJourney} data-course-scale-confirmation>
-      <section className={'hh-panel '+styles.selectedModuleBar} data-course-module-draft>
-        <div>
-          <small>{t.moduleChosen}: {moduleSelection.moduleId}</small>
-          <h2>{t.scaleGateTitle}</h2>
-          <p>{t.scaleGateHelp}</p>
-          {chosenModule&&<strong>{chosenModule.title[ru?'ru':'en']}</strong>}
-          <p data-course-module-primary>{ru?'Основной показатель самооценки курса':'Course primary self-rating measure'}: {primaryLabel}</p>
-        </div>
-        <button type="button" className={styles.whiteSecondary} disabled={busy||localBusy}
-          data-course-change-module onClick={()=>{setModuleSelection(null);setScaleView('recommended')}}>{t.changeModule}</button>
-      </section>
-      {scaleView==='manual'
-        ? <CourseFocusPicker
-          t={focusWords} locale={locale} profile={profile} suggested={suggestedScales}
-          chosenScales={chosenScales} chosenGoals={fallbackGoals}
-          onToggleScale={toggleScale}
-          onSetPrimaryScale={key=>setChosenScales(previous=>previous.includes(key)?[key,...previous.filter(item=>item!==key)]:previous)}
-          onToggleGoal={key=>setFallbackGoals(previous=>previous.includes(key)
-            ?previous.filter(x=>x!==key):previous.length<3?[...previous,key]:previous)}
-          problemLabel={problemLabel} onProblemLabel={setProblemLabel}
-          minScales={minScales} busy={busy||localBusy}
-          onContinue={()=>submitFocusSelection(chosenScales,profile.eligible.length>0,moduleSelection)}
-          onBack={()=>setScaleView('recommended')}/>
-        : <CourseCompletionReview
-          t={focusWords} root={root} moduleId={moduleSelection.moduleId} routerVersion={ANTISTRESS_ROUTER_VERSION} programId={programme?.id} locale={locale} confirmedStatuses={confirmedStatuses}
-          optionByKey={optionByKey} profile={profile} suggested={suggestedScales}
-          busy={busy||localBusy} compactResults
-          onSuggested={()=>submitFocusSelection(suggestedScales.map(scale=>scale.id),true,moduleSelection)}
-          onAlternative={openManualFocus}/>
+    // The post-test celebration is the sole consent/launch screen.
+    // Keep the saved measured scales and their primary outcome intact; no
+    // second forced scale-review step between "Let's go" and Day 1.
+    const startChosenModule = selection => {
+      if (actionLock.current || busy || localBusy || !isCourseCurrent()) return
+      if (!selection || !ANTISTRESS_MODULE_GOALS.some(item => item.id === selection.moduleId && !item.clinicalOnly) ||
+          !selection.answers || typeof selection.answers !== 'object') {
+        onError('COURSE_MODULE_FINDER_INVALID')
+        return
       }
-    </div>
+      const selected = suggestedScales.map(scale => scale.id)
+      const useMeasuredScales = profile.eligible.length > 0 && selected.length >= minScales
+      return submitFocusSelection(useMeasuredScales ? selected : [], useMeasuredScales, selection)
+    }
+    return <AntiStressModuleFinder locale={locale} profile={profile}
+      busy={busy||localBusy} onStart={startChosenModule}/>
   }
 
   if(stage===3) {
