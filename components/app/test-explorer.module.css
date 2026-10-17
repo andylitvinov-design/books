@@ -151,7 +151,7 @@
   .portraitRadar{height:320px}
   .portraitRayOptions{grid-template-columns:1fr 1fr}
 }
-@media(max-width:380px){.portraitRayOptions{grid-template-columns:1fr}}
+@media(max-width:440px){.portraitRayOptions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.portraitRadar{transition:none}}
 
 /* Prior comparison is shown only when the same scored instrument has a repeat. */
