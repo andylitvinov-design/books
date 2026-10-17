@@ -332,3 +332,13 @@
   .outcomeGrid article{padding:11px}
   .about{grid-template-columns:72px minmax(0,1fr);gap:10px;padding:12px}
 }
+
+/* Keep the closing offer as a single mobile screen: the enquiry itself supplies the detailed lead. */
+.bottomServices{width:min(1140px,calc(100% - 40px));margin:5px auto 25px;text-align:center}
+.bottomServices a{justify-content:center}
+@media(max-width:767px){
+  .finalCapture{gap:6px;padding:12px 11px;margin-top:23px}
+  .finalIntro h2{font-size:22px;line-height:1.12;margin:0}
+  .bottomServices{width:calc(100% - 24px);margin:5px auto 20px}
+  .bottomServices a{min-height:38px;font-size:12px}
+}
