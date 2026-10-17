@@ -111,17 +111,33 @@ test('each recommended test has a single visible test-kind badge, not a duplicat
 })
 
 
-test('the first screen is one compact photo hero; the original topic and catalog flow survives', () => {
-  assert.ok(css.includes('Home-aligned My Tests first screen'))
-  assert.ok(css.includes('andy-about.png'))
-  assert.ok(css.includes('.shell .heroActions'))
-  assert.ok(css.includes('@media(max-width:600px)'))
-  assert.ok(picker.includes('className={styles.heroContent}'))
-  assert.ok(picker.includes('className={styles.heroPrimary}'))
-  assert.ok(picker.includes('className={styles.heroSecondary}'))
+test('the public Tests first screen uses the Academy discovery hero and preserves the test journey', () => {
+  const academyCss = read('components/academy-discovery.module.css')
+  assert.match(picker, /import academyStyles from '\.\.\/academy-discovery\.module\.css'/)
+  assert.match(picker, /className=\{academyStyles\.hero\} data-client-tests-hero/)
+  assert.match(picker, /className=\{academyStyles\.topline\}/)
+  assert.match(picker, /className=\{academyStyles\.form\} role="search"/)
+  assert.match(picker, /className=\{academyStyles\.filters\}/)
+  assert.match(picker, /className=\{academyStyles\.tabs\}/)
+  assert.match(picker, /className=\{academyStyles\.submit\}/)
+  assert.match(academyCss, /linear-gradient\(121deg, #203450/)
+  assert.match(css, /\.shell\[data-public-test-picker="true"\]/)
+  assert.match(css, /@media\(max-width:620px\)/)
   assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo/)
   assert.ok(picker.includes('id="hh-simple-topic-title"'))
   assert.ok(picker.includes('id="hh-simple-recommendations"'))
+})
+
+test('Academy-style hero search and topic chips actually refine existing recommendations', () => {
+  assert.match(picker, /\[heroSearch, setHeroSearch\] = useState\(''\)/)
+  assert.match(picker, /const browseRecommendations = heroSearchTerm/)
+  assert.match(picker, /groupedRecommendations\.filter\(\(entry\) =>/)
+  assert.match(picker, /setSubmittedHeroSearch\(heroSearch\.trim\(\)\)/)
+  assert.match(picker, /onToggleFocus\(key\)/)
+  assert.match(picker, /onSelectTestKind\?\.\(event\.target\.value/)
+  assert.match(picker, /aria-pressed=\{focus\.includes\(key\)\}/)
+  assert.match(picker, /setSubmittedHeroSearch\(''\)/)
+  assert.match(picker, /scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/)
 })
 
 test('mobile cards show questions and time under the photo, Type by match, and aligned actions', () => {
@@ -187,7 +203,7 @@ test('the first mobile step follows the hero immediately, without redundant prom
   const topics = picker.indexOf('id="hh-simple-topic-title"')
   assert.ok(hero > 0 && topics > hero)
   assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo|data-prelogin-google-notice/)
-  assert.ok(picker.includes('!authenticated && <p className={styles.heroFootnote}'))
+  assert.ok(picker.includes('!authenticated && <p className={academyStyles.subnote}'))
   assert.ok(picker.includes('c.privacy'))
 })
 
@@ -204,7 +220,7 @@ test('problems search and optional skip use the existing topic-derived concerns'
 
 test('public test type tabs use the canonical kind facet and keep start actions unchanged', () => {
   assert.match(picker, /const BROWSE_TABS = Object\.freeze\(\[/)
-  assert.match(picker, /const browseRecommendations = groupedRecommendations/)
+  assert.match(picker, /const browseRecommendations = heroSearchTerm[\s\S]*?: groupedRecommendations/)
   assert.match(picker, /browseRecommendations\.slice\(0, visibleCount\)/)
   assert.match(picker, /className=\{styles\.browseTabs\}/)
   assert.match(picker, /onSelectTestKind\?\.\(tab\.key === 'all' \? null : tab\.key\)/)
