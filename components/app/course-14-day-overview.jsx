@@ -1,6 +1,7 @@
 import { BookOpen, ChevronDown, Clock3, Leaf } from 'lucide-react'
 import { coursePreEnrolmentPlan } from '@/lib/inner-growth/course-pre-enrolment'
 import { antiStressBlueprint } from '@/lib/inner-growth/anti-stress-blueprint'
+import { antiStressSevenSkillCards, antiStressSevenSkillDay } from '@/lib/inner-growth/anti-stress-seven-skills-v1'
 import { oporaRecoveryStages, OPORA_ENTRY_AND_EXIT } from '@/lib/inner-growth/antistress-recovery-pathway'
 import { moduleDayMeta } from '@/lib/inner-growth/antistress-module-lessons'
 import { antistressModuleTitle } from '@/lib/inner-growth/antistress-module-router'
@@ -57,28 +58,34 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
   const t = COPY[locale] || COPY.en
   const st=STRESS[locale]||STRESS.en
   const stress=programId==='stress'
+  const sevenSkillsPath=stress && (moduleId==='AS2'||!moduleId)
+  const sevenSkills=sevenSkillsPath?antiStressSevenSkillCards(locale):[]
   const blueprint=stress?antiStressBlueprint(locale):null
   // The old NAV-1.3 module-specific curriculum and labels remain pinned for existing cycles.
   const updatedPath=stress && (!routerVersion || routerVersion==='opora-nav-2.0-20261014')
-  const groups=stress ? (updatedPath
+  const groups=stress ? (sevenSkillsPath ? sevenSkills.map(s=>({id:s.id,start:s.days[0],end:s.days[1],title:s.title,summary:s.description})) : updatedPath
     ? oporaRecoveryStages(locale).map(stage=>({id:stage.id,start:stage.days[0],end:stage.days[1],title:stage.title,summary:stage.description}))
     : blueprint.skills.map(skill=>({id:skill.id,start:skill.days[0],end:skill.days[1],title:skill.title,summary:skill.description})))
     : coursePreEnrolmentPlan(locale)
   const chosenTitle=stress&&moduleId?antistressModuleTitle(moduleId,locale,routerVersion):null
-  const days=stress ? blueprint.days.map(day=>{
+  const days=sevenSkillsPath ? Array.from({length:14},(_,i)=>{
+    const info=antiStressSevenSkillDay(i+1,locale)
+    return {day:i+1,title:info.title,skill:info.skill,exercise:info.guide,
+      result:info.outcome,adapted:true,sevenSkillsV1:true,checkDay:i>=7}
+  }) : stress ? blueprint.days.map(day=>{
     const adapted=moduleId?moduleDayMeta(moduleId,day.day,locale,routerVersion):null
     return adapted?{...day,title:adapted.title,exercise:adapted.exercise,skill:groups[Math.floor((day.day-1)/2)]?.title||day.skill,adapted:true}:day
   }) : groups.flatMap(group=>group.days)
   return <section className={styles.overview} data-course-14-day-overview
     data-course-before-signup={compact ? 'guest' : 'intro'}
-    aria-label={stress?st.title:t.title}>
+    aria-label={sevenSkillsPath?(locale==='ru'?'7 навыков за 14 занятий':'7 skills across 14 lessons'):stress?st.title:t.title}>
     <header className={styles.heading}>
       <div className={styles.headingCopy}>
         <span className={styles.kicker}><Leaf size={14} aria-hidden="true"/>{t.eyebrow}</span>
-        <h2>{stress?st.title:t.title}</h2>
-        <p>{stress?st.intro:t.intro}</p>
+        <h2>{sevenSkillsPath?(locale==='ru'?'7 навыков за 14 занятий':locale==='es'?'7 habilidades en 14 lecciones':'7 skills across 14 lessons'):stress?st.title:t.title}</h2>
+        <p>{sevenSkillsPath?(locale==='ru'?'Первая неделя — семь конкретных навыков. Вторая — эти же семь, но глубже, самостоятельнее и в новых примерах.':locale==='es'?'Primera semana: siete habilidades. Segunda: las mismas siete, más profundas y autónomas.':'Week one: learn seven clear skills. Week two: practise the same seven more deeply and independently.'):stress?st.intro:t.intro}</p>
       </div>
-      <span className={styles.duration}><Clock3 size={16} aria-hidden="true"/>{t.daily}</span>
+      <span className={styles.duration}><Clock3 size={16} aria-hidden="true"/>{sevenSkillsPath?(locale==='ru'?'8–12 минут в день':'8–12 min each day'):t.daily}</span>
     </header>
     {stress&&<p className={styles.assessmentRail} data-antistress-baseline-before-days><strong>00 · {OPORA_ENTRY_AND_EXIT.entry[locale]||OPORA_ENTRY_AND_EXIT.entry.en}</strong>{chosenTitle&&<span>{locale==='ru'?'Выбранный маршрут':locale==='es'?'Ruta elegida':'Selected route'}: {chosenTitle}</span>}</p>}
     <div className={styles.phases} role={stress ? undefined : 'list'} aria-label={t.title}>
@@ -88,7 +95,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
           <summary className={styles.phaseSummary}>
             <span className={styles.phaseNumber} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <span className={styles.phaseBody}>
-              <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+              <span className={styles.phaseRange}>{t.days} {group.start}{sevenSkillsPath?' + ':'–'}{group.end}</span>
               <strong>{group.title}</strong>
             </span>
             <ChevronDown className={styles.phaseChevron} size={18} aria-hidden="true" />
@@ -107,7 +114,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
       ) : (
         <article role="listitem" className={styles.phase} key={group.id} data-course-phase={group.id}>
           <div className={styles.phaseTop}>
-            <span className={styles.phaseRange}>{t.days} {group.start}–{group.end}</span>
+            <span className={styles.phaseRange}>{t.days} {group.start}{sevenSkillsPath?' + ':'–'}{group.end}</span>
             <span className={styles.phaseIndex} aria-hidden="true">{index + 1}<span>/{groups.length}</span></span>
           </div>
           <h3>{group.title}</h3><p>{group.summary}</p>
@@ -130,7 +137,7 @@ export default function Course14DayOverview({ locale = 'en', compact = false, pr
             </summary>
             <div className={styles.dayExerciseContent}>
               <p><strong>{st.practice}:</strong> {day.exercise}</p>
-              <p><strong>{st.result}:</strong> {day.adapted?(locale==='ru'?'Опробовать подходящий способ и выбрать: продолжить, упростить, отдохнуть или пропустить.':locale==='es'?'Probar una opción adecuada y poder continuar, simplificar, descansar u omitir.':'Try an acceptable choice and decide to continue, simplify, rest or skip.'):day.result}</p>
+              <p><strong>{st.result}:</strong> {day.sevenSkillsV1?day.result:day.adapted?(locale==='ru'?'Опробовать подходящий способ и выбрать: продолжить, упростить, отдохнуть или пропустить.':locale==='es'?'Probar una opción adecuada y poder continuar, simplificar, descansar u omitir.':'Try an acceptable choice and decide to continue, simplify, rest or skip.'):day.result}</p>
               {!day.adapted&&<p data-methods-for-day={day.day}><strong>{locale==='ru'?'Методики занятия':locale==='es'?'Métodos de la lección':'Lesson methods'}:</strong> {day.methodNames.slice(0,3).join(' · ')}</p>}
               {!day.adapted&&day.methodStatus!=='implemented'&&<small>{locale==='ru'?'Разные упражнения внедряются поэтапно; текущие уроки уже содержат основную практику и самостоятельный выбор.':locale==='es'?'Los formatos interactivos avanzados se añaden progresivamente.':'Additional interactive formats are being introduced progressively.'}</small>}
               {!day.adapted&&<div className={styles.axisList} aria-label={st.scales}>
