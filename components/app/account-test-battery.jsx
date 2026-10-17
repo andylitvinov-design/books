@@ -5,10 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Brain, ClipboardList, Heart, Moon, Shield, Sparkles, Trash2, Zap } from 'lucide-react'
 import { TestExplorer } from './test-explorer'
-import { TestExplorerVisual } from './test-explorer-visual'
 import { MyTestsDashboard } from './my-tests-dashboard'
-import { coverageForFocus } from '@/lib/assessments/test-explorer'
-import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
@@ -633,12 +630,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           }}>{c.retry}</button></p>}
         {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
       </section>
-      <details className={styles.portraitDetails}>
-        <summary>{locale === 'ru' ? 'Мой психологический портрет · открыть подробности'
-          : 'My psychological portrait · view details'}</summary>
-        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
-          portrait={buildPsychPortrait(data.results)}/>
-      </details>
     </div>
     {/* Collapsing only hides this tab-local draft. Saving/discarding or changing
         account, plan or category replaces it; nothing is written on collapse. */}
