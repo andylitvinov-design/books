@@ -1,3 +1,4 @@
+import { openAccountTestPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
  await expect(action).toHaveCount(1)
@@ -159,14 +160,7 @@ async function openAccountRelationshipPicker(target){
  await expect(target).toHaveURL(origin+'/en/app/tests')
  const dashboard=target.locator('[data-my-tests-dashboard]')
  await expect(dashboard).toBeVisible()
- const explorer=target.locator('#my-test-explorer')
- if(!(await explorer.isVisible())){
-  const open=dashboard.getByRole('button',{name:/^(Open test filters|Review test filters)/})
-  await expect(open).toHaveCount(1)
-  await open.click()
- }
- await expect(explorer).toHaveCount(1)
- await expect(explorer).toBeVisible()
+ const explorer=await openAccountTestPicker(target,expect)
  const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
  await expect(browse).toHaveCount(1)
  await browse.click()

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 const source = readFileSync(new URL('../scripts/verify-relationships-assessments.mjs', import.meta.url), 'utf8')
-const helper = source.slice(0, source.indexOf('\n}', source.indexOf('async function publicTopicButton')) + 2)
+const helperStart = source.indexOf('async function publicTopicButton')
+assert.ok(helperStart >= 0)
+const helper = source.slice(helperStart, source.indexOf('\n}', helperStart) + 2)
 assert.ok(helper.includes('return button'))
 function harness(locale, { groupCount = 1, buttonCount = 1, visible = true, filterOnly = false } = {}) {
   const title = locale === 'ru' ? 'Отношения' : 'Relationships'

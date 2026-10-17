@@ -1,0 +1,174 @@
+import assert from 'node:assert/strict'
+import { availableTestCollections } from '../../lib/assessments/test-collections.js'
+import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, searchPublicTestEntries, TEST_EXPLORER_AXES } from '../../lib/assessments/test-explorer.js'
+import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
+import { getSiteNavigation } from '../../lib/site-navigation-model.js'
+
+const COPY = {
+  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Browse collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Открыть подборку', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Explorar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+}
+const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
+const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
+
+export async function assertPublicDiscoveryChrome(page, expect, locale) {
+  const bar = page.locator('.ia222-bottom-navigation')
+  const ribbon = page.locator('[data-sitewide-personal-review-banner]')
+  if (locale === 'es') {
+    // Spanish client pages retain their separately approved account-entry chrome.
+    await expect(bar).toHaveCount(0)
+    await expect(ribbon).toHaveCount(0)
+    return
+  }
+  await expect(bar).toBeVisible()
+  await expect(ribbon).toBeVisible()
+  const destinations = getSiteNavigation(locale).filter(item => item.id !== 'relationships')
+  await expect(bar.locator(':scope > a')).toHaveCount(6)
+  assert.deepEqual(await bar.locator(':scope > a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href'))), destinations.map(item => item.href))
+  await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)
+  await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'cabinet')
+}
+
+// These controls only filter real, cleared catalog entries. The synthetic page
+// never starts a questionnaire, authenticates, or writes an account while browsing.
+export async function exercisePublicCollections(page, expect, locale) {
+  const copy = COPY[locale]
+  const picker = page.locator('[data-prelogin-test-picker]')
+  const root = picker.locator('[data-test-topic-collections]')
+  const entries = buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
+  const collections = availableTestCollections(entries)
+  const cards = root.locator('[data-test-collection]')
+  await expect(root).toHaveCount(1)
+  await expect(root.getByRole('heading', { name: copy.collections, level: 2, exact: true })).toBeVisible()
+  await expect(root).toHaveAttribute('data-expanded', 'false')
+  await expect(cards).toHaveCount(collections.length)
+  const width = await page.evaluate(() => innerWidth)
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(Math.min(width <= 760 ? 4 : 8, collections.length))
+  for (const [index, collection] of collections.entries()) {
+    const card = cards.nth(index)
+    const count = collection.count
+    const unit = locale === 'ru'
+      ? count % 10 === 1 && count % 100 !== 11 ? 'тест' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'теста' : 'тестов'
+      : locale === 'es' ? count === 1 ? 'prueba' : 'pruebas' : count === 1 ? 'test' : 'tests'
+    await expect(card).toHaveAttribute('data-test-collection', collection.id)
+    await expect(card).toHaveAccessibleName(`${collection.title[locale]}. ${count} ${unit}. ${copy.browse}`)
+  }
+  const more = root.locator('button[aria-controls="hh-test-curated-grid"]')
+  await expect(more).toHaveAccessibleName(copy.more)
+  await expect(more).toHaveAttribute('aria-expanded', 'false')
+  await more.click()
+  await expect(more).toHaveAccessibleName(copy.less)
+  await expect(more).toHaveAttribute('aria-expanded', 'true')
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collections.length)
+  await more.click()
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(Math.min(width <= 760 ? 4 : 8, collections.length))
+
+  const initial = await readSelection(picker)
+  const manual = picker.locator('[data-test-match] input[type="checkbox"]:not(:checked)').first()
+  await expect(manual).toBeVisible()
+  await manual.check()
+  await expect.poll(async () => (await readSelection(picker)).length).toBe(initial.length + 1)
+  const preserved = await readSelection(picker)
+  const currentUrl = page.url()
+  const writes = []
+  const observe = request => {
+    const url = new URL(request.url())
+    if (url.pathname.startsWith('/api/app/') && request.method() !== 'GET') writes.push(url.pathname)
+  }
+  page.on('request', observe)
+  try {
+    for (const id of ['stress', 'relationships', 'tantra', 'sexuality']) {
+      const collection = collections.find(item => item.id === id)
+      assert.ok(collection)
+      const card = root.locator(`[data-test-collection="${id}"]`)
+      // Clicking an already active collection clears it; select it explicitly.
+      if (await card.getAttribute('aria-pressed') === 'true') await card.click()
+      await card.click()
+      await expect(card).toHaveAttribute('aria-pressed', 'true')
+      await expect(root.locator('[data-test-collection][aria-pressed="true"]')).toHaveCount(1)
+      const matches = picker.locator('[data-test-match]')
+      await expect(matches.first()).toBeVisible()
+      const allowed = new Set(filterExplorerEntries(entries, { availability: 'available', focus: collection.focus }).filter(entry => entry.selectable).map(entry => entry.key))
+      const shown = await matches.evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))
+      assert.ok(shown.length > 0 && shown.length <= 5)
+      assert.ok(shown.every(key => allowed.has(key)), 'Collection recommendations retain actual eligible source matches: ' + id)
+      assert.deepEqual(await readSelection(picker), preserved, 'Changing collections preserves only the manually selected battery')
+      await expect(page).toHaveURL(currentUrl)
+    }
+    const active = root.locator('[data-test-collection="sexuality"]')
+    await active.click()
+    await expect(root.locator('[data-test-collection][aria-pressed="true"]')).toHaveCount(0)
+    assert.deepEqual(await readSelection(picker), preserved, 'Clearing a collection does not auto-enroll intimate questionnaires')
+    // Catalog search must cross an unrelated topic while preserving that topic
+    // for recommendations and retaining every explicitly selected test.
+    await more.click()
+    const sleep = root.locator('[data-test-collection="sleep"]')
+    await sleep.click()
+    await expect(sleep).toHaveAttribute('aria-pressed', 'true')
+    const search = picker.locator('#hh-test-hero-search')
+    const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
+    await search.fill(query)
+    await search.press('Enter')
+    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: 'balanced' })
+    const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
+    assert.ok(expectedSearch.length > 0)
+    await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)
+    await expect(picker.locator('[data-via-family]')).toHaveCount(0)
+    await expect(sleep).toHaveAttribute('aria-pressed', 'true')
+    assert.deepEqual(await readSelection(picker), preserved, 'Love search does not auto-select intimate questionnaires')
+    await expect(page).toHaveURL(currentUrl)
+    await root.locator('[data-test-collection="sexuality"]').click()
+    await expect(search).toHaveValue('')
+    await expect(root.locator('[data-test-collection="sexuality"]')).toHaveAttribute('aria-pressed', 'true')
+    assert.deepEqual(await readSelection(picker), preserved)
+    await root.locator('[data-test-collection="sexuality"]').click()
+    await more.click()
+    assert.deepEqual(writes, [], 'Collection browsing must not create runs, save intents or account writes')
+  } finally { page.off('request', observe) }
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), locale + ' collection picker fits the viewport')
+}
+
+// Use the actual checkbox handlers, collapse/expand controls, and live radar.
+// Restore the original selection before continuing the pre-existing report journey.
+export async function exercisePortraitRays(portrait, expect, locale) {
+  const copy = COPY[locale]
+  const options = portrait.locator('[data-portrait-ray-options]')
+  const inputs = options.locator('input[type="checkbox"]')
+  const axes = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality')
+  assert.equal(axes.length, 17)
+  await expect(options).toHaveCount(1)
+  await expect(inputs).toHaveCount(10)
+  const id = await options.getAttribute('id')
+  assert.ok(id)
+  const more = portrait.getByRole('button', { name: copy.raysMore, exact: true })
+  await expect(more).toHaveAttribute('aria-controls', id)
+  await expect(more).toHaveAttribute('aria-expanded', 'false')
+  await more.click()
+  const less = portrait.getByRole('button', { name: copy.raysLess, exact: true })
+  await expect(less).toHaveAttribute('aria-expanded', 'true')
+  await expect(inputs).toHaveCount(17)
+  const original = await inputs.evaluateAll(nodes => nodes.map(node => node.checked))
+  assert.equal(original.filter(Boolean).length, 8, 'Default rays remain the eight recommended axes')
+  // Select an axis outside the collapsed ten, plus one more, reaching the cap.
+  const outside = original.findIndex((checked, index) => index >= 10 && !checked)
+  assert.ok(outside >= 10)
+  await inputs.nth(outside).check()
+  const another = original.findIndex((checked, index) => !checked && index !== outside)
+  await inputs.nth(another).check()
+  await expect(options.locator('input:checked')).toHaveCount(10)
+  await expect(options.locator('input:disabled')).toHaveCount(7)
+  await expect(portrait.locator('svg[role="img"] > g')).toHaveCount(10)
+  await less.click()
+  await expect(inputs).toHaveCount(10)
+  await expect(portrait.locator('svg[role="img"] > g')).toHaveCount(10)
+  await portrait.getByRole('button', { name: copy.raysMore, exact: true }).click()
+  await expect(inputs.nth(outside)).toBeChecked()
+  await expect(inputs.nth(another)).toBeChecked()
+  await inputs.nth(outside).uncheck()
+  await inputs.nth(another).uncheck()
+  assert.deepEqual(await inputs.evaluateAll(nodes => nodes.map(node => node.checked)), original)
+  await expect(options.locator('input:disabled')).toHaveCount(0)
+  await less.click()
+  await expect(inputs).toHaveCount(10)
+}

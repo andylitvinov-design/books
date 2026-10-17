@@ -36,7 +36,7 @@ test('all runnable compact reports provide semantic summaries rather than numeri
       }
     }
   }
-  assert.equal(checked, 2226)
+  assert.equal(checked, 2574)
 })
 
 test('semantic descriptions preserve independent construct detail for decimal means', () => {

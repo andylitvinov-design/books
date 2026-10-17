@@ -1,0 +1,43 @@
+name: Holistic House SEO admin dashboard
+on:
+  pull_request:
+    paths:
+      - 'app/admin/seo/**'
+      - 'lib/seo/admin-dashboard-data.mjs'
+      - 'data/seo/verified-baseline-2026-10-17.json'
+      - 'components/practitioner-cabinet.jsx'
+      - 'components/prescription-admin-header.jsx'
+      - 'tests/admin-seo-dashboard.test.mjs'
+      - '.github/workflows/admin-seo-dashboard.yml'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'app/admin/seo/**'
+      - 'lib/seo/admin-dashboard-data.mjs'
+      - 'data/seo/verified-baseline-2026-10-17.json'
+      - 'components/practitioner-cabinet.jsx'
+      - 'components/prescription-admin-header.jsx'
+      - 'tests/admin-seo-dashboard.test.mjs'
+      - '.github/workflows/admin-seo-dashboard.yml'
+permissions:
+  contents: read
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify SEO admin privacy, sources and exports
+        run: node --test tests/admin-seo-dashboard.test.mjs
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Production build
+        run: npm run build

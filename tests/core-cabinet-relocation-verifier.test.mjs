@@ -12,7 +12,7 @@ test('core follows visible Insights navigation and opens both real scale disclos
   const events=[]
   const locator=path=>({path,first(){return this},locator:s=>locator(path+'/'+s),getByRole:(role,options)=>locator(path+'/'+role+':'+options.name),click:async()=>events.push(['click',path])})
   const expect=target=>({toHaveText:async text=>events.push(['text',target.path,text]),toHaveAttribute:async(key,value)=>events.push(['attribute',target.path,key,value]),toHaveURL:async url=>events.push(['url',url]),toBeVisible:async()=>events.push(['visible',target.path]),not:{toHaveAttribute:async(key,value)=>events.push(['notattribute',target.path,key,value])}})
-  const helper=new Function('expect','origin',fragment+';return openInsightsProfileTools')(expect,'http://127.0.0.1:3100')
+  const helper=new Function('expect','origin','exercisePortraitRays',fragment+';return openInsightsProfileTools')(expect,'http://127.0.0.1:3100',async()=>{})
   await helper(locator('page'),locale)
   const link='page/nav a[href="/'+locale+'/app/portfolio"]:visible'
   assert.deepEqual(events.slice(0,4),[['text',link,locale==='ru'?'Результаты':'Insights'],['attribute',link,'href','/'+locale+'/app/portfolio'],['click',link],['url','http://127.0.0.1:3100/'+locale+'/app/portfolio']])

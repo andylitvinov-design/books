@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -17,6 +17,7 @@ const copy = {
     materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
+    seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
   },
   en: {
     title:'Practitioner Cabinet',description:'Clients, consultations, and documents in one calm workspace.',actions:'Main actions',
@@ -28,6 +29,7 @@ const copy = {
     materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
+    seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
   },
 }
 export function PractitionerCabinet({appRequestsEnabled=false}) {
@@ -40,6 +42,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
     return()=>window.removeEventListener('holistic-house-ui-locale',updateLocale)
   },[])
   const actions=[
+    {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
     {href:'/admin/materials',icon:Images,title:text.materials,body:text.materialsText},

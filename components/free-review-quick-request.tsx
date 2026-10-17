@@ -45,6 +45,9 @@ const copy = {
     action: "Send my request",
     nameLabel: "Name",
     questionLabel: "Initial question",
+    detailsLabel: "Add your name or a short note (optional)",
+    privacyLabel: "How the request works",
+    shortNote: "The free option is a written review, not a call. You choose where to send your message.",
     note: "Choose WhatsApp or Telegram, review the message and press Send there. No booking or payment is made automatically. The free option is a written review (questionnaire + paper drawing), not a free live call. Nothing is stored or sent by this website.",
   },
   ru: {
@@ -80,6 +83,9 @@ const copy = {
     action: "Отправить заявку",
     nameLabel: "Имя",
     questionLabel: "Мой вопрос",
+    detailsLabel: "Добавить имя или пару слов о запросе (необязательно)",
+    privacyLabel: "Как отправляется заявка",
+    shortNote: "Бесплатный формат — письменный разбор, не созвон. Сообщение вы отправляете сами.",
     note: "Выберите WhatsApp или Telegram, проверьте сообщение и нажмите «Отправить» в мессенджере. Запись и оплата не происходят автоматически. Бесплатный вариант — письменный разбор по анкете и рисунку, без созвона. Сайт ничего не сохраняет и не отправляет сам.",
   },
   es: {
@@ -115,6 +121,9 @@ const copy = {
     action: "Enviar solicitud",
     nameLabel: "Nombre",
     questionLabel: "Mi pregunta",
+    detailsLabel: "Añadir nombre o pregunta (opcional)",
+    privacyLabel: "Cómo funciona la solicitud",
+    shortNote: "La opción gratuita es un informe escrito, sin llamada. Tú decides cómo enviar el mensaje.",
     note: "Elige WhatsApp o Telegram, revisa el mensaje y pulsa Enviar allí. No se reserva ni se cobra automáticamente. La opción gratuita es un informe escrito con formulario y dibujo, no una llamada. Este sitio no almacena ni envía tus datos.",
   },
 } as const;
@@ -167,16 +176,19 @@ export function FreeReviewQuickRequest({ locale }: { locale: PublicLocale }) {
           })}
         </div>
       </fieldset>
-      <div className={styles.fields}>
-        <label>{t.name}
-          <input type="text" autoComplete="given-name" maxLength={80}
-            value={name} placeholder={t.namePlaceholder} onChange={(event) => setName(event.target.value)}/>
-        </label>
-        <label>{t.question}
-          <textarea rows={2} maxLength={300}
-            value={question} placeholder={t.questionPlaceholder} onChange={(event) => setQuestion(event.target.value)}/>
-        </label>
-      </div>
+      <details className={styles.moreFields}>
+        <summary>{t.detailsLabel}</summary>
+        <div className={styles.fields}>
+          <label>{t.name}
+            <input type="text" autoComplete="given-name" maxLength={80}
+              value={name} placeholder={t.namePlaceholder} onChange={(event) => setName(event.target.value)}/>
+          </label>
+          <label>{t.question}
+            <textarea rows={2} maxLength={300}
+              value={question} placeholder={t.questionPlaceholder} onChange={(event) => setQuestion(event.target.value)}/>
+          </label>
+        </div>
+      </details>
       <ContactChannelChooser
         locale={locale}
         whatsappUrl={whatsappUrl}
@@ -185,7 +197,11 @@ export function FreeReviewQuickRequest({ locale }: { locale: PublicLocale }) {
         event="service_request_start"
         attributes={{ "data-free-review-quick-enquiry": "true", "data-consultation-format": format }}
       />
-      <p className={styles.note}>{t.note}</p>
+      <p className={styles.shortNote}>{t.shortNote}</p>
+      <details className={styles.privacyNote}>
+        <summary>{t.privacyLabel}</summary>
+        <p className={styles.note}>{t.note}</p>
+      </details>
     </section>
   );
 }

@@ -30,9 +30,9 @@ export function validateInterpretationRelease(release, approvedDigests, { seedEx
     return { pending: true, reason: 'PREPARATORY C1 ONLY: no approved interpretation seed; native database integration has NOT run.' }
   }
   if (release.status !== 'approved' || !/^[a-f0-9]{40}$/.test(release.sourceCommit || '') ||
-      release.seedPath !== INTERPRETATION_SEED_PATH || release.recordCount !== 436 || !hash(release.seedSha256) ||
-      entries.length !== 436 || !seedExists)
-    throw new Error('C2 requires the approved source commit, exact 436-record manifest and pinned seed')
+      release.seedPath !== INTERPRETATION_SEED_PATH || release.recordCount !== 460 || !hash(release.seedSha256) ||
+      entries.length !== 460 || !seedExists)
+    throw new Error('C2 requires the approved source commit, exact 460-record manifest and pinned seed')
   const definitions = new Map()
   for (const [key, digest] of entries) {
     let identity
@@ -45,8 +45,8 @@ export function validateInterpretationRelease(release, approvedDigests, { seedEx
     const locales = definitions.get(keyWithoutLocale) || new Set()
     locales.add(identity[3]); definitions.set(keyWithoutLocale, locales)
   }
-  if (definitions.size !== 218 || [...definitions.values()].some(locales => locales.size !== 2))
-    throw new Error('C2 approved manifest must cover exactly 218 definitions in both report locales')
+  if (definitions.size !== 230 || [...definitions.values()].some(locales => locales.size !== 2))
+    throw new Error('C2 approved manifest must cover exactly 230 definitions in both report locales')
   return { pending: false }
 }
 export async function assertFreshInterpretationDatabase(db) {

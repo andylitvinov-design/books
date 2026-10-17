@@ -128,10 +128,12 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   assert.ok(picker.includes('id="hh-simple-recommendations"'))
 })
 
-test('Academy-style hero search and topic chips actually refine existing recommendations', () => {
+test('Academy-style hero searches the independent catalog while topic chips refine recommendations', () => {
   assert.match(picker, /\[heroSearch, setHeroSearch\] = useState\(''\)/)
   assert.match(picker, /const browseRecommendations = heroSearchTerm/)
-  assert.match(picker, /groupedRecommendations\.filter\(\(entry\) =>/)
+  assert.match(picker, /\? searchPublicTestEntries\(\s*groupViaRecommendations\(searchRecommendations, selectedKeys, showIndividualVia\)\.visible,\s*heroSearchTerm\)\s*: groupedRecommendations/)
+  assert.match(explorer, /filterExplorerEntries\(entries, \{ availability: 'available', kinds, maxMinutes \}\)/)
+  assert.match(explorer, /searchRecommendations=\{searchRecommendations\}/)
   assert.match(picker, /setSubmittedHeroSearch\(heroSearch\.trim\(\)\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /onSelectTestKind\?\.\(event\.target\.value/)

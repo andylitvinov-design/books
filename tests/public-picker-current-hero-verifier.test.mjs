@@ -14,6 +14,7 @@ for(const file of ['scripts/verify-app-r1.mjs','scripts/verify-es-public-site.mj
   for(const [locale,region,headline,topics,first] of [
    ['en','Choose your tests','Understand yourself. Find your next step.','Topics','What would you like to explore?'],
    ['ru','Подберите свои тесты','Лучше поймите себя. Найдите следующий шаг.','Темы','Что вы хотите исследовать?'],
+   ...(file==='scripts/verify-app-r1.mjs'?[['es','Elige tus pruebas','Conócete mejor. Descubre tu próximo paso.','Temas','¿Qué te gustaría explorar?']]:[]),
   ]){
    assert.ok(picker.includes("heroHeadline:'"+headline+"'"))
    assert.ok(picker.includes("heroTabTopics:'"+topics+"'"))

@@ -45,7 +45,7 @@ async function foundation(db){
    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(auth.jwt()->>'sub','')::uuid $$;
    GRANT USAGE ON SCHEMA auth TO authenticated; GRANT EXECUTE ON FUNCTION auth.jwt(),auth.uid() TO authenticated;`)
  await db.query(await readFile(new URL('supabase/migrations/20261002164037_hh_app_r1_foundation.sql',root),'utf8'))
- assert.equal(ASSESSMENT_DEFINITIONS.length,218)
+ assert.equal(ASSESSMENT_DEFINITIONS.length,230)
  for(const definition of ASSESSMENT_DEFINITIONS){
   const {contentHash,...content}=definition
   assert.equal(digest(canonicalJSON(content)),contentHash,'Technical source definition hash must be exact')
@@ -91,10 +91,10 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   proof.serverVersion=(await db.query('SELECT version() AS version')).rows[0].version
   const sourceBefore=await sourceSnapshot(db)
   await check('Actual repository migration executes in PostgreSQL 17',()=>db.query(schema))
-  await check('Actual SHA-pinned approved 436-row seed executes as one transaction',()=>db.query(seed))
+  await check('Actual SHA-pinned approved 460-row seed executes as one transaction',()=>db.query(seed))
   const stored=(await db.query(`SELECT ${recordColumns.join(',')} FROM app.assessment_interpretation_versions ORDER BY assessment_version_id,report_locale`)).rows
-  await check('Exact 218×2 source, locale, canonical-byte and approved-digest coverage',async()=>{
-   assert.equal(stored.length,436);assert.equal(stored.filter(row=>row.payload.catalogActive===true).length,416);assert.equal(stored.filter(row=>row.payload.catalogActive===false).length,20)
+  await check('Exact 230×2 source, locale, canonical-byte and approved-digest coverage',async()=>{
+   assert.equal(stored.length,460);assert.equal(stored.filter(row=>row.payload.catalogActive===true).length,440);assert.equal(stored.filter(row=>row.payload.catalogActive===false).length,20)
    const actual=new Set()
    for(const row of stored){
     const identity={definitionId:row.assessment_version_id,contentHash:row.definition_content_hash,interpretationVersion:row.interpretation_version,reportLocale:row.report_locale}
@@ -124,14 +124,14 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   })
   await check('Actual readback SQL reports exact coverage and zero integrity mismatches',async()=>{
    const result=await db.query(await readFile(new URL('docs/assessments/interpretation-registry-readback.sql',root),'utf8'))
-   for(const [key,value]of Object.entries({published_definitions:218,registry_rows:436,referenced_definitions:218,en_report_rows:218,ru_report_rows:218,active_rows:416,historical_rows:20,payload_byte_mismatches:0,payload_hash_mismatches:0,missing_expected_keys:0,unexpected_keys:0}))assert.equal(Number(result[0].rows[0][key]),value,key)
+   for(const [key,value]of Object.entries({published_definitions:230,registry_rows:460,referenced_definitions:230,en_report_rows:230,ru_report_rows:230,active_rows:440,historical_rows:20,payload_byte_mismatches:0,payload_hash_mismatches:0,missing_expected_keys:0,unexpected_keys:0}))assert.equal(Number(result[0].rows[0][key]),value,key)
    assert.equal(Number(result[1].rows[0].provenance_mismatches),0)
   })
   await check('Normal server loader reads every approved identity under hh_app_backend',()=>transaction(async()=>{
    for(const row of stored){const payload=await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:row.definition_content_hash,interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale});assert.deepEqual(payload,row.payload)}
    const row=stored[0];assert.equal(await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:'sha256:'+'0'.repeat(64),interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale}),null)
   },'hh_app_backend'))
-  await check('Real server enrichment and rendered meanings match compiled source for 218 synthetic results in both locales',()=>transaction(async()=>{
+  await check('Real server enrichment and rendered meanings match compiled source for 230 synthetic results in both locales',()=>transaction(async()=>{
    for(const definition of ASSESSMENT_DEFINITIONS){
     const answers=Object.fromEntries(definition.questions.map(question=>[question.id,question.min??definition.answerScale.min]))
     const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
@@ -178,9 +178,9 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
    for(const statement of ['UPDATE app.assessment_interpretation_versions SET created_at=created_at','DELETE FROM app.assessment_interpretation_versions','TRUNCATE app.assessment_interpretation_versions'])await assert.rejects(transaction(()=>db.query(statement)),errorCode('55000'))
    await assert.rejects(transaction(()=>db.query(insertSQL,recordValues(rehash(candidate()))),'hh_app_backend'),errorCode('42501'))
   })
-  await check('Source metadata/constraints/ACL/RLS remain unchanged and exactly 436 interpretation rows remain',async()=>{
+  await check('Source metadata/constraints/ACL/RLS remain unchanged and exactly 460 interpretation rows remain',async()=>{
    assert.deepEqual(await sourceSnapshot(db),sourceBefore)
-   assert.equal(Number((await db.query('SELECT count(*) AS count FROM app.assessment_interpretation_versions')).rows[0].count),436)
+   assert.equal(Number((await db.query('SELECT count(*) AS count FROM app.assessment_interpretation_versions')).rows[0].count),460)
    for(const table of ['assessment_runs','assessment_results','profile_snapshots','accounts'])assert.equal(Number((await db.query('SELECT count(*) AS count FROM app.'+table)).rows[0].count),0)
   })
   // node:test subtest failures are reflected in the parent test result. Never claim

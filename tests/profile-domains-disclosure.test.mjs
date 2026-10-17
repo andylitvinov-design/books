@@ -41,7 +41,7 @@ function mount(mode, locale) {
       PROFILE_AREAS: ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy'],
       profileServiceOffer: () => { throw new Error('Service rendering is outside this state regression') },
     },
-    './profile-domains.css': {},
+    './profile-domains.css': {}, './profile-refresh.css': {},
   }
   const runtime = { exports: {}, require: key => {
     assert.ok(Object.hasOwn(modules, key), 'Unexpected import: ' + key)

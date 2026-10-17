@@ -103,7 +103,18 @@ function assertSelected(h, result, report, section, locale) {
   assert.ok(visibleText(panel).includes(section.summary || section.meaning),
     'The semantic explanation must be visible without expanding details, not just its numeric prefix')
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
-  for (const limit of section.limitations || []) assert.ok(visibleText(panel).includes(limit), 'Source limitations must not require expansion')
+  const scoreDimension = section.bandBasis === 'unavailable' ? null : result.dimensions.find(item => item.key === section.key)
+  const scoreModel = gaugeModel(scoreDimension, result, locale)
+  for (const limit of section.limitations || []) {
+    if (scoreModel?.currentAnswerBand) {
+      // On original, non-clinical self-reflections the long methodological
+      // caveats are in disclosure; a plain-language nonclinical warning stays visible.
+      assert.ok(text(panel).includes(limit), 'Detailed caveat remains available')
+      assert.match(visibleText(panel), locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
+        'The interpretation must visibly distinguish answer anchors from clinical norms')
+    } else assert.ok(visibleText(panel).includes(limit),
+      'Screening, non-authorial and unverified warnings remain visible without expansion')
+  }
   if (section.followUp) assert.ok(text(panel).includes(section.followUp))
   if (section.source) assert.ok(nodes(h.tree).some(node => node.type === 'a' && node.props.href === section.source))
   assert.ok(text(h.tree).includes(report.methodology || ''))

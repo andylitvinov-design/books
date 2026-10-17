@@ -80,6 +80,8 @@ function gaugeFixture(card) {
     numeric: textOf(tagged(gauge, 'strong')),
     gaugeCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
     gaugeScale: gauge?.props['data-gauge-scale'],
+    answerScale: gauge?.props['data-answer-anchor-scale'],
+    answerSegments: elements(gauge).filter(node => node.type === 'path' && node.props['data-answer-anchor']).map(node => ({ code: node.props['data-answer-anchor'], path: node.props.d, width: String(node.props.strokeWidth) })),
     segmentCodes: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => node.props['data-band-code']),
     segments: elements(gauge).filter(node => node.type === 'path' && node.props['data-band-code']).map(node => ({ code: node.props['data-band-code'], path: node.props.d, width: String(node.props.strokeWidth) })),
     endpoints: textOf([].concat(gauge?.props.children).find(node => node?.type === 'div' && node.props['aria-hidden'] === 'true')),
@@ -129,6 +131,16 @@ function accountFixture(result, locale, component = CompactAssessmentReport) {
       rootGaugeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
       primaryCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-primary-support')).length,
       primaryText: textOf(marked(card, 'data-primary-support')),
+      answerReadingCount: elements(card).filter(node => node.props['data-answer-interpretation']).length,
+      answerRangesCount: elements(card).filter(node => node.props['data-answer-ranges']).length,
+      answerReading: textOf(marked(card, 'data-answer-interpretation')),
+      answerCaveat: textOf(tagged(marked(card, 'data-answer-ranges'), 'p')),
+      answerRanges: elements(marked(card, 'data-answer-ranges')).filter(node => node.type === 'li').map(node => ({
+        range: textOf(tagged(node, 'strong')),
+        label: textOf(find(node, item => item.type === 'span' && !item.props['aria-hidden'])),
+        current: node.props['aria-current'] === 'true', markedCurrent: node.props['data-active-answer-range'] === true,
+        marker: textOf(tagged(node, 'em')),
+      })),
       sources: elements(marked(tree, 'data-assessment-methodology')).filter(node => node.type === 'a' && node.props.href).map(node => node.props.href),
     })
   }
@@ -225,12 +237,38 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].primaryCount = 0 },
       s => { s.scales[0].primaryCount = 2 },
       s => { s.scales[0].primaryText = 'Unrelated advice' },
-      s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
+      s => { s.scales[0].text = s.scales[0].text.replaceAll(report.sections[0].meaning, '') },
       s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
       s => { s.guestCount = 1 },
     ]) { const broken = structuredClone(account); mutate(broken); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
+    for (const original of [snapshot, account]) {
+      const verify = original === snapshot ? assertGuestSnapshot : assertAccountReportSnapshot
+      for (const mutate of [
+        s => { s.scales[0].answerScale = 'invented-clinical-bands' },
+        s => { s.scales[0].answerSegments.push({ code: 'fabricated-response', path: '', width: '16' }) },
+      ]) { const broken = structuredClone(original); mutate(broken); assert.throws(() => verify(broken, result, locale)) }
+    }
+    if (account.scales[0].answerRanges.length) {
+      for (const mutate of [
+        s => { s.scales[0].answerScale = undefined },
+        s => { s.scales[0].answerSegments.pop() },
+        s => { s.scales[0].answerSegments[0].code = 'another-response' },
+        s => { s.scales[0].answerSegments[0].path = 'M 0 0 A 78 78 0 0 1 200 0' },
+        s => { s.scales[0].answerSegments[0].width = '999' },
+        s => { s.scales[0].answerReadingCount = 0 },
+        s => { s.scales[0].answerRangesCount = 2 },
+        s => { s.scales[0].answerReading = '' },
+        s => { s.scales[0].answerCaveat = '' },
+        s => { s.scales[0].answerRanges.pop() },
+        s => { s.scales[0].answerRanges[0].range = '0–100' },
+        s => { s.scales[0].answerRanges[0].label = 'Invented clinical norm' },
+        s => { s.scales[0].answerRanges[0].current = !s.scales[0].answerRanges[0].current },
+        s => { s.scales[0].answerRanges[0].markedCurrent = !s.scales[0].answerRanges[0].markedCurrent },
+        s => { s.scales[0].answerRanges[0].marker = 'Invented current response' },
+      ]) { const broken = structuredClone(account); mutate(broken); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
+    }
     if (account.scales.length > 1) {
       for (const field of ['scales', 'scaleKeys']) {
         const broken = structuredClone(account); [broken[field][0], broken[field][1]] = [broken[field][1], broken[field][0]]

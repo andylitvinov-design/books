@@ -1,3 +1,5 @@
+import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention } from './helpers/account-picker-disclosure-verifier.mjs'
+import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
@@ -105,10 +107,8 @@ function unsavedPublicTest(savedPlan){
 }
 async function chooseVisibleTest(testPage,name){
  const customizer=testPage.locator('button[aria-controls="hh-test-customizer"]')
- if(!(await customizer.count())){
-  const toggle=testPage.getByRole('button',{name:'Choose or change tests',exact:true})
-  if(await toggle.count())await toggle.click()
- }
+ if(!(await customizer.count()) && await testPage.locator('#my-tests-picker-toggle').count())
+  await openAccountTestPicker(testPage,expect)
  // Account selection starts in the compact picker; use its real catalog transition.
  // Public callers already enter the full catalog and retain their exact-one checks.
  const browseFull=testPage.getByRole('button',{name:'Browse full database',exact:true})
@@ -146,6 +146,8 @@ async function chooseVisibleTest(testPage,name){
 async function assertPublicPickerEntrance(target,locale){
  const copy=locale==='ru'
   ? {region:'Подберите свои тесты',hero:'Лучше поймите себя. Найдите следующий шаг.',action:'Темы',first:'Что вы хотите исследовать?'}
+  : locale==='es'
+    ? {region:'Elige tus pruebas',hero:'Conócete mejor. Descubre tu próximo paso.',action:'Temas',first:'¿Qué te gustaría explorar?'}
   : {region:'Choose your tests',hero:'Understand yourself. Find your next step.',action:'Topics',first:'What would you like to explore?'}
  const picker=target.locator('[data-prelogin-test-picker]')
  await expect(picker).toHaveAttribute('aria-label',copy.region)
@@ -200,13 +202,7 @@ async function chooseSingleAccountTest(target,name,{beforeSelection=null}={}){
  await target.goto(origin+'/en/app/tests')
  await expect(target).toHaveURL(origin+'/en/app/tests')
  await expect(target.locator('[data-my-tests-dashboard]')).toBeVisible()
- const explorer=target.locator('#my-test-explorer')
- if(!(await explorer.isVisible().catch(()=>false))){
-  const open=target.getByRole('button',{name:/^(Open test filters|Review test filters)/})
-  await expect(open).toHaveCount(1)
-  await open.click()
- }
- await expect(explorer).toBeVisible()
+ const explorer=await openAccountTestPicker(target,expect)
  const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
  await expect(browse).toHaveCount(1)
  await browse.click()
@@ -249,6 +245,8 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
   await expect(guest.getByRole('heading',{name:'Before you start',exact:true})).toHaveCount(0)
   const quick=guest.locator('.cabinet-quick-form')
   await expect(quick).toBeVisible()
+  await expect(target.locator('[data-sitewide-personal-review-banner]')).toBeHidden()
+  await expect(target.locator('.ia222-bottom-navigation')).toBeHidden()
   await expect(quick.locator('.cabinet-quick-question')).toHaveCount(expectedDefinition.questions.length)
   await expect(quick.getByRole('heading',{level:3})).toHaveText(expectedDefinition.questions.map(question=>question.text))
   await expect(quick.locator('.cabinet-quick-question').first()).toBeVisible()
@@ -280,6 +278,7 @@ async function openInsightsProfileTools(target=page,locale='en'){
  await expect(portrait).toBeVisible()
  await expect(portrait).toHaveAttribute('open','')
  await expect(portrait.locator('img[src*="holistic-house-test-brain-concept"]')).toBeVisible()
+ await exercisePortraitRays(portrait,expect,locale)
  const details=target.locator('[data-insights-detailed-scales]')
  await expect(details).not.toHaveAttribute('open','')
  await details.locator(':scope > summary').click()
@@ -302,8 +301,7 @@ async function enterTest(name='Current State Check',mode='Guided'){
    has:page.getByRole('heading',{name,exact:true}),
  }).filter({has:page.getByRole('button',{name:/^(Start test|Continue test|Retake test)/})}).first()
  if(!(await candidate().count())){
-  const filters=page.getByRole('button',{name:/Open test filters|Review test filters/})
-  if(await filters.count() && !(await page.locator('#my-test-explorer').isVisible().catch(()=>false))) await filters.click()
+  await openAccountTestPicker(page,expect)
   await chooseVisibleTest(page,name)
   testPlanDiagnostics.marker('before-selection-click')
   await page.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
@@ -666,6 +664,8 @@ try {
  await guestPickerPage.getByRole('button',{name:/Back to easy selection/}).click()
  await expect(picker).toBeVisible()
  assert.match(guestPickerPage.url(),/\/en\/client$/)
+ await assertPublicDiscoveryChrome(guestPickerPage,expect,'en')
+ await exercisePublicCollections(guestPickerPage,expect,'en')
  await guestPickerPage.goto(origin+'/ru/client')
  const ruPicker=guestPickerPage.locator('[data-prelogin-test-picker]')
  await assertPublicPickerEntrance(guestPickerPage,'ru')
@@ -686,6 +686,15 @@ try {
  await ruStress.click()
  await expect(ruStress).toHaveAttribute('aria-pressed','true')
  await expect(ruPicker.getByRole('button',{name:'Перегрузка на работе'})).toBeVisible()
+ await assertPublicDiscoveryChrome(guestPickerPage,expect,'ru')
+ await exercisePublicCollections(guestPickerPage,expect,'ru')
+ await guestPickerPage.goto(origin+'/es/client/tests')
+ await expect(guestPickerPage).toHaveURL(origin+'/es/client/tests')
+ await expect(guestPickerPage.locator('main[lang="es"]')).toBeVisible()
+ await expect(guestPickerPage.getByText('Algunas preguntas y resultados completos se presentan en su idioma original',{exact:false})).toBeVisible()
+ await assertPublicPickerEntrance(guestPickerPage,'es')
+ await assertPublicDiscoveryChrome(guestPickerPage,expect,'es')
+ await exercisePublicCollections(guestPickerPage,expect,'es')
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
 
@@ -729,7 +738,8 @@ try {
  await openCabinetMyTests(page,expect,{origin});
  await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
- await expect(page.getByRole('button',{name:/^Choose tests/}).first()).toBeInViewport();await expect(page.getByRole('button',{name:/Open test filters/})).toBeVisible();
+ const firstPicker=await assertAccountPickerDisclosure(page,expect,{expanded:false});
+ await expect(firstPicker.toggle).toBeInViewport();
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
@@ -801,11 +811,11 @@ try {
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
-  await expect(page.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
   await expect(page.locator('[data-profile-report-archive]')).toBeVisible()
   await expect(page.locator('[data-personal-reports]')).toBeVisible()
   await expect(page.locator('[data-analysis-offer]')).toHaveCount(0)
-  await expect(page.getByText('No saved reports yet')).toBeVisible()
+  await expect(page.getByText('No reports yet',{exact:true})).toBeVisible()
   const primaryNav=page.getByRole('navigation',{name:'Quick navigation'})
   await expect(primaryNav.locator('a')).toHaveCount(5)
   await expect(primaryNav.getByRole('link',{name:'Analysis'})).toHaveCount(0)
@@ -1052,7 +1062,7 @@ try {
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible({timeout:20000})
   await expect(clientPage.getByRole('link',{name:/Reiki study guide/})).toHaveAttribute('href','https://holistichouse.vercel.app/en/academy/reiki')
   await clientPage.getByRole('link',{name:'My profile (Reports)'}).click()
-  await expect(clientPage.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
+  await expect(clientPage.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
   await verifyProfileServiceOffers(clientPage,'en','legacy')
   await screenshotEvidence(clientPage,{path:output+'/private-client-profile-cta.png',fullPage:false})
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
@@ -1062,9 +1072,9 @@ try {
   const formerAnalysisUrl=new URL(clientLink)
   formerAnalysisUrl.searchParams.set('view','analysis')
   await clientPage.goto(formerAnalysisUrl.toString())
-  await expect(clientPage.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
+  await expect(clientPage.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
   await expect(clientPage.locator('[data-personal-reports]')).toBeVisible()
-  await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
+  await expect(clientPage.getByText('No reports yet',{exact:true})).toBeVisible()
   await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(0)
   await screenshotEvidence(clientPage,{path:output+'/private-client-integrated-profile.png',fullPage:true})
   await clientPage.getByRole('link',{name:'My materials'}).click()
@@ -1121,6 +1131,7 @@ try {
  await selectionGuided.getByRole('button',{name:/Topics that matter/}).click()
  await selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true}).click()
  await expect(selectionGuided.getByRole('button',{name:'Anxiety & worry',exact:true})).toHaveAttribute('aria-pressed','true')
+ await exerciseAccountPickerDraftRetention(selectionPage,expect)
  await accountExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()
  await expect(selectionPage).toHaveURL(/\/en\/app\/tests\?plan=/,{timeout:15000})
  await expect(selectionPage.locator('#my-tests-list')).toBeVisible()
