@@ -1,3 +1,4 @@
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -98,7 +99,7 @@ test('all six valid answers required, including zero; missing/null never become 
 
 test('one separate ASRS6 catalog entry supports EN/RU filters, persistent selection and run definition without activating 18Q',()=>{
   assert.equal(MONITORING_CATALOG.filter(c=>c.key==='asrs-6').length,1)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,139)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     const matches=entries.filter(e=>e.key==='asrs-6')
@@ -216,10 +217,11 @@ test('source-backed runner and report wiring preserve adult guard, accessible sh
   // The separately approved Bach pair is additive; no historical ID is excluded.
   const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
-  const beforeSplit=ASSESSMENT_DEFINITIONS.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id))
+  const historicalDefinitions=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key))
+  const beforeSplit=historicalDefinitions.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id))
   assert.equal(beforeSplit.length,210)
   assert.equal(digest(beforeSplit),'2eaa644a6c1d3db5c1a661ce9b9d180a7cc420b54cbe9d0dfe2a6561851efc36')
-  const prior=ASSESSMENT_DEFINITIONS.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
+  const prior=historicalDefinitions.filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!newViaIds.has(d.id)).filter(d=>!['ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10','ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10'].includes(d.key)).filter(d=>d.key!=='asrs-6')
   assert.equal(prior.length,178)
   assert.equal(digest(prior),'a6c1b0cca75863dc951a02003aa914437dff637d9dd61f9f0dc36925b40e12c0')
 })
