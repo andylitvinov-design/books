@@ -129,18 +129,11 @@ for (const locale of ['en', 'ru', 'es']) {
   });
 }
 
-for (const locale of ['en', 'ru', 'es']) {
-  test(`${locale} global ribbon still offers localized written review rather than the inline course`, () => {
-    const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
-      ...shared,
-      'next/navigation': { usePathname: () => `/${locale}/academy` },
-      './sitewide-antistress-banner.module.css': {},
-    }).SitewideAntistressBanner;
-    const pageLinks = renderLinks(banner, { initialLocale: locale });
-    assert.equal(pageLinks.length, 2);
-    assert.ok(pageLinks.every((link) => link.href === `/${locale}/services/free-situation-review`));
-  });
-}
+test('global review ribbon is permanently retired in every locale', () => {
+  assert.doesNotMatch(read('components/sitewide-antistress-banner.tsx'), /SitewideAntistressBanner|data-sitewide-personal-review-banner/);
+  assert.doesNotMatch(read('app/layout.tsx'), /SitewideAntistressBanner/);
+});
+
 
 test('Home retains server-provided intro content and consultation CTA after contextual link addition', () => {
   for (const locale of ['en', 'ru']) {
