@@ -22,7 +22,7 @@ test('Profile leads with authorized personal reports; category details are secon
   assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
-  assert.match(profile, /defaultOpen=\{external\}/)
+  assert.match(profile, /open=\{expanded\}/)
   assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
   assert.match(workspace, /embedded \/>\} \/>/)
   assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
@@ -104,5 +104,21 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
   assert.match(mobile,/className="hh-mobile-app-nav-home"/)
   assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
   assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important;/)
+  // Preserve the verifier branch's stricter exact bilingual ordering and Home contract.
+  const entries=[...navModel.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
+  assert.deepEqual(entries,[
+    {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
+    {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
+    {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
+  ])
+  assert.doesNotMatch(mobile, />Analysis</)
+  assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
+  assert.ok(mobile.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
+  assert.ok(mobile.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
+  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') > mobile.indexOf('nav.map'))
+
 })
+
 

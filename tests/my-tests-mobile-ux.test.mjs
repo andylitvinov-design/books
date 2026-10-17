@@ -17,7 +17,7 @@ test('first mobile screen: top picker, then concise metrics, quick actions and s
  assert.match(battery,/data-inline-selected-tests/)
  assert.match(battery,/data-remove-selected-test=\{row\.key\}/)
  assert.match(ui,/className=\{styles\.filterButton\}/)
- assert.match(css,/@media\(max-width:760px\)/)
+ assert.match(css,/@media\s*\(max-width:760px\)/)
  assert.match(css,/\.stats \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
  assert.doesNotMatch(ui,/styles\.pendingSelection|Another selection is ready/)
 })
@@ -44,14 +44,15 @@ test('compact semantic test cards have direct start and remove controls, no prac
  assert.match(battery,/onClick=\{\(\) => removeSelectedTest\(row\)\}/)
  assert.match(css,/\.row\{display:grid;grid-template-columns:38px minmax\(0,1fr\) auto 37px/)
  assert.match(css,/\.removeButton/)
- assert.match(css,/@media\(max-width:760px\)/)
+ assert.match(css,/@media\s*\(max-width:760px\)/)
 })
 
-test('one mobile bottom navigation keeps Home / My tests / Insights / Profile',()=>{
+test('one mobile bottom navigation renders the shared Profile / Tests / Reports / Courses / Practice model',()=>{
  const workspace=read('components/app/app-workspace.jsx')
  const css=read('app/[locale]/app/[[...path]]/workspace.css')
  assert.match(workspace,/<nav className="hh-nav"/)
  assert.match(workspace,/<nav className="hh-mobile-app-nav"/)
- assert.match(workspace,/href=\{root \+ '\/portrait'\} prefetch=\{false\} aria-current=\{page === 'portrait'/)
+ assert.match(workspace,/\{nav\.map\(\(\{ id, label, href, icon: Icon \}\) => \(/)
+ assert.match(workspace,/aria-current=\{navIsActive\(id\) \? 'page' : undefined\}/)
  assert.match(css,/\.hh-app \.hh-nav\{display:none!important\}/)
 })

@@ -1,3 +1,4 @@
+import { openAccountTestPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -43,12 +44,13 @@ async function openScenario({openCount=1,wrongAudience=false,wrongRemoval=false,
   assert.equal(name,'← Back to easy selection')
   return {count:1,click:async()=>{assert.equal(reset,true);assert.deepEqual(selected,[]);back=true}}
  }}
- const dashboard={visible:true,getByRole(role,{name}){assert.equal(role,'button');assert.equal(String(name),'/^(Open test filters|Review test filters)/');return {count:openCount,click:async()=>{opened=true}}}}
- const target={locator:selector=>selector==='#my-test-explorer'?explorer:(assert.equal(selector,'[data-my-tests-dashboard]'),dashboard)}
+ const toggle={count:openCount,visible:true,getAttribute:async key=>key==='aria-controls'?'my-test-explorer':String(opened),click:async()=>{opened=true}}
+ const dashboard={count:1,visible:true,locator:selector=>{assert.ok(['#my-tests-picker-toggle','#my-test-explorer'].includes(selector));return selector==='#my-tests-picker-toggle'?toggle:explorer}}
+ const target={locator:selector=>(assert.equal(selector,'[data-my-tests-dashboard]'),dashboard)}
  const navigate=async(page,url)=>{assert.equal(page,target);assert.equal(url,origin+'/en/app/tests')}
- const expect=locator=>({toHaveURL:async url=>{assert.equal(url,origin+'/en/app/tests');assert.equal(wrongAudience,false)},toBeVisible:async()=>assert.equal(locator.visible,true),toHaveCount:async n=>assert.equal(locator===checked?selected.length:locator.count,n)})
+ const expect=locator=>({toHaveURL:async url=>{assert.equal(url,origin+'/en/app/tests');assert.equal(wrongAudience,false)},toBeVisible:async()=>assert.equal(locator.visible,true),toBeHidden:async()=>assert.equal(opened,false),toHaveCount:async n=>assert.equal(locator===checked?selected.length:locator.count,n),toHaveAttribute:async(key,value)=>assert.equal(await locator.getAttribute(key),value),toHaveAccessibleName:async expected=>{const name=opened?'Hide test picker Tap to collapse the selection panel':'Choose matching tests Topics, concerns & recommended tests';if(expected instanceof RegExp)assert.match(name,expected);else assert.equal(name,expected)}})
  expect.poll=fn=>({toEqual:async expected=>assert.deepEqual(await fn(),expected)})
- const result=await load(openSource,'openAccountRelationshipPicker',{navigate,origin,expect})(target)
+ const result=await load(openSource,'openAccountRelationshipPicker',{navigate,origin,expect,openAccountTestPicker})(target)
  assert.equal(result,picker);assert.equal(opened&&browsed&&reset&&back,true)
 }
 test('actual relationship verifier opens authenticated My Tests and clears only its draft through real controls',()=>openScenario())

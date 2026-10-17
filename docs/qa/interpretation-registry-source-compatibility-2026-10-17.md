@@ -1,0 +1,11 @@
+# Interpretation registry compatibility after PR788 integration
+
+The approved registry retains immutable source commit `584371be44e4eedc4c980a0bc483f0676402e2e9` and seed SHA-256 `b9b98a2193de288bb246f915281ec57a452291885a9618bf08847da54b8154f1`.
+
+Accepted canonical commit `b8298bd7e05cd99791d820b9944490a65be26c81` adds the final PR788 picker behavior: keeping selected cross-topic cards visible, clearing stale discovery filters, and scrolling to the selected Tantra pathway. These component changes do not alter registered questionnaires, scoring, interpretation templates, or the compiled registry payloads.
+
+One of the 92 recorded source files differs: `data/assessments/mind-body-monitor-registry.js`. The accepted canonical deduplication retains one disabled `rights_review` RAS research-metadata entry. Its metadata category, priority, duration and access note differ from the earlier deduplication, while its educational PDF remains available and questionnaire start remains disabled. RAS is not one of the 230 published source definitions and has no approved interpretation row. The other 91 recorded source files remain byte-identical.
+
+An offline compatibility export of the integrated code checked all 230 registered technical definitions and all 33,100 attainable score/locale cases. All 460 entire payloads equal the approved historical export after normalizing only the unpublished comparison export's two commit markers (`sourceCommit`, `discoveryClassification.policySourceCommit`) and the one RAS metadata file hash. No interpretation field, scoring/provenance identity, classification, answer range, label, narrative, practice suggestion, or source citation differs. Counts remain 440 active plus 20 historical report-language records and 67 Check-in / 72 Pro / 6 Hobby active instruments.
+
+The comparison export is draft-only and supplies no runtime approval. The committed SQL, approval digests, release descriptor and original source attribution are unchanged. Current integration must pass the native PostgreSQL consumer/readback checks and browser CI before release. Historical source provenance must not be presented as a claim that every present-day repository file has the same hash.

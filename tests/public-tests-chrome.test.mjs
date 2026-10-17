@@ -35,6 +35,8 @@ test('Academy and My Tests keep navigation without an obsolete global review ban
   assert.match(bottom, /!isPublicTestDiscoveryPath\(pathname\)/)
   assert.doesNotMatch(ribbon, /data-sitewide-personal-review-banner/)
   assert.ok(bottom.includes("getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id))"))
+  assert.match(bottom, /id: 'tests', href: `\/\$\{locale\}\/client\/tests`/)
+  assert.match(bottom, /id: 'house', href: `\/\$\{locale === 'es' \? 'en' : locale\}\/app`/)
   assert.match(landing, /<PublicSiteHeader locale=\{typedLocale\}/)
   assert.match(explorer, /<PublicSiteHeader locale=\{locale as Locale\}/)
   assert.match(bottom, /aria-current=\{current === item.id \? 'page'/)

@@ -1,3 +1,4 @@
+import { openAccountTestPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
  await expect(action).toHaveCount(1)
@@ -26,6 +27,7 @@ async function publicTopicButton(picker, locale, title) {
  await expect(button).toBeVisible()
  return button
 }
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
@@ -158,14 +160,7 @@ async function openAccountRelationshipPicker(target){
  await expect(target).toHaveURL(origin+'/en/app/tests')
  const dashboard=target.locator('[data-my-tests-dashboard]')
  await expect(dashboard).toBeVisible()
- const explorer=target.locator('#my-test-explorer')
- if(!(await explorer.isVisible())){
-  const open=dashboard.getByRole('button',{name:/^(Open test filters|Review test filters)/})
-  await expect(open).toHaveCount(1)
-  await open.click()
- }
- await expect(explorer).toHaveCount(1)
- await expect(explorer).toBeVisible()
+ const explorer=await openAccountTestPicker(target,expect)
  const browse=explorer.getByRole('button',{name:'Browse full database',exact:true})
  await expect(browse).toHaveCount(1)
  await browse.click()
@@ -519,14 +514,15 @@ try{
  page=await diagnosticPage(account,'account')
  await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  // Exercise the primary topic action through the existing isolated auth and plan API.
  // This is a button that saves its two recommendations, not the full-catalog link.
  const relationshipJourney=TOPIC_JOURNEYS.find(journey=>journey.id==='relationships')
@@ -622,6 +618,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const file=await downloadAccountReport(page,locale),bytes=await readFile(await file.path())
   assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');assert.ok(bytes.length>12000)
   await file.saveAs(output+'/report-'+locale+'.pdf')

@@ -1,3 +1,4 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertAccountScaleJumpLayout } from './helpers/scale-jump-layout-verifier.mjs'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
@@ -111,14 +112,15 @@ try{
  observePage(page,'account')
  await navigate(page,origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({timeout:60000})
+ await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page, expect, { origin })
+ await openCabinetMyTests(page, expect, { origin })
  for(const [i,base] of defs.entries()){
   const locale=i%2?'ru':'en',mode=i%2?'guided':'quick',d=localized(base.key,locale)
   const run=await api(account,'runs',{definitionKey:d.key,definitionVersion:'v1',instrumentLocale:d.instrumentLocale,operationId:randomUUID()})
@@ -172,6 +174,8 @@ try{
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
   await navigate(page,origin+'/'+locale+'/app')
+  await assertCabinetPortrait(page, expect, { origin, locale })
+  await openCabinetMyTests(page, expect, { origin, locale })
   const download=page.waitForEvent('download',{timeout:60000})
   await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()
   const file=await download,bytes=await readFile(await file.path())
