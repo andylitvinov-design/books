@@ -51,7 +51,7 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
     text: normalized(`${numeral(band.from, locale)}–${numeral(band.to, locale)} ${band.label}${band.code === model.currentBand?.code ? ru ? ' · Ваш диапазон' : ' · Your range' : ''}`),
     current: band.code === model.currentBand?.code, markedCurrent: band.code === model.currentBand?.code,
   }))
-  assert.deepEqual(actual.intervals, expectedIntervals, 'Exact published endpoints, labels and current range; none on continuous scales')
+  assert.deepEqual(actual.intervals, account ? [] : expectedIntervals, 'Exact published endpoints, labels and current range; none on continuous scales')
   if (dimension.key === 'symptoms.asrs6.shaded_count') {
     assert.equal(dimension.displayKind, 'screening-count')
     assert.equal(dimension.min, 0); assert.equal(dimension.max, 6)
@@ -66,7 +66,7 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
     assert.equal(normalized(actual.caption), dimension.value >= 4
       ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
       : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)')
-    assert.equal(normalized(actual.caution), ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale')
+    assert.equal(normalized(actual.caution), account ? '' : ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale')
   } else {
     const kind = dimension.dimensionClass === 'trait' || dimension.direction === 'non-normative' ? 'neutral'
       : model.presentationDirection
@@ -111,7 +111,7 @@ function assertScoredGaugeSnapshot(actual, result, section, locale, account = fa
       }
     }
     assert.equal(normalized(actual.caption), displayedCaption)
-    assert.equal(normalized(actual.caution), caution)
+    assert.equal(normalized(actual.caution), account ? '' : caution)
     const left = kind === 'difficulty' ? section.max : section.min
     const right = kind === 'difficulty' ? section.min : section.max
     assert.equal(normalized(actual.endpoints), numeral(left, locale) + numeral(right, locale), 'Both exact axis endpoints')
@@ -168,10 +168,14 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     assert.equal(actual.activeCount, 1, 'Only one selected account panel is rendered')
     assert.deepEqual(actual.pressedKeys, [section.key], 'The selected scale alone is pressed and reachable')
     assert.equal(actual.rootGaugeCount, 1, 'The account report renders only its selected instrument gauge')
-    assert.equal(normalized(actual.title), normalized(section.construct || section.title))
+    const phqTitle = result.definitionKey === 'phq-4' ? { 'symptoms.phq4.total': ru ? 'Общий результат' : 'Overall', 'symptoms.phq4.depression': ru ? 'Настроение' : 'Mood', 'symptoms.phq4.anxiety': ru ? 'Тревога' : 'Anxiety' }[section.key] : null
+    assert.equal(normalized(actual.title), normalized(phqTitle || section.construct || section.title))
     assertScoredGaugeSnapshot(actual, result, section, locale, true)
     const dimension = result.dimensions.find(item => item.key === section.key)
     const model = interpretationBandModel(result, dimension, locale)
+    assert.deepEqual(actual.publishedBands, model.bands.map(band => ({
+      range: `${band.from}–${band.to}`, label: band.label, current: band.code === model.currentBand?.code,
+    })), 'Moved published strip retains every exact source range, label and current marker')
     const anchor = model.currentAnswerBand
     assert.equal(actual.answerReadingCount, anchor ? 1 : 0)
     assert.equal(actual.answerRangesCount, anchor ? 1 : 0)
@@ -263,6 +267,11 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
         activeCount: root.querySelectorAll('[data-active-scale]').length,
         pressedKeys: [...root.querySelectorAll('[data-assessment-scale-trigger][aria-pressed="true"]')].map(node => node.getAttribute('data-assessment-scale-trigger')),
         rootGaugeCount: root.querySelectorAll('[data-assessment-gauge]').length,
+        publishedBands: [...element.querySelectorAll('[data-score-band-strip] > span')].map(node => ({
+          range: node.querySelector('b')?.textContent,
+          label: [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/ · (?:ваш|yours)$/, '').trim(),
+          current: node.getAttribute('aria-current') === 'true',
+        })),
         primaryCount: element.querySelectorAll('[data-primary-support]').length,
         primaryText: element.querySelector('[data-primary-support]')?.textContent,
         sources: [...root.querySelectorAll('[data-assessment-methodology] a[href]')].map(node => node.getAttribute('href')),

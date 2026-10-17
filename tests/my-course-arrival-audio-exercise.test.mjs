@@ -1,3 +1,5 @@
+import { OPORA_SKILL_SLIDE_MODEL } from '../lib/inner-growth/anti-stress-skills-v5.js'
+import { buildCourseSlides } from '../lib/inner-growth/course-slide-sequence.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -9,10 +11,9 @@ const audio = read('components/app/course-practice-voice.jsx')
 const css = read('components/app/course-slide-player.module.css')
 
 function buildSlidesForTest(lesson) {
-  const start = player.indexOf('function buildSlides(lesson) {')
-  const end = player.indexOf('\nfunction MomentScale(', start)
-  assert.ok(start >= 0 && end > start, 'Pure slide builder exists')
-  return runInNewContext(player.slice(start, end) + '\nbuildSlides', {})(lesson)
+  const match = player.match(/function buildSlides\(lesson\) \{[\s\S]*?\n\}/)
+  assert.ok(match, 'Actual pure slide builder exists')
+  return runInNewContext('(' + match[0] + ')', { OPORA_SKILL_SLIDE_MODEL, buildCourseSlides })(lesson)
 }
 
 const dayOne = {

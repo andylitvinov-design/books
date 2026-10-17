@@ -131,7 +131,8 @@ function assertSelected(h, result, report, section, locale) {
   if (!model) return
   const gauge = renderedGauges[0]
   assert.equal(gauge.props['data-assessment-gauge'], model.displayKind === 'screening-count' ? model.displayKind : model.orientation)
-  const legend = nodes(gauge).filter(node => node.type === 'li')
+  const strip = nodes(panel).find(node => own(node, 'data-score-band-strip'))
+  const legend = [].concat(strip?.props.children || []).flat().filter(node => node?.type === 'span')
   assert.equal(legend.length, model.bands.length)
   const numeral = value => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
   model.bands.forEach((band, index) => {
@@ -139,7 +140,7 @@ function assertSelected(h, result, report, section, locale) {
     assert.ok(text(legend[index]).includes(band.label))
     assert.equal(legend[index].props['aria-current'] === 'true', band.code === model.currentBand?.code)
   })
-  assert.equal(nodes(gauge).filter(node => node.props['aria-current'] === 'true').length, model.currentBand ? 1 : 0)
+  assert.equal(legend.filter(node => node.props['aria-current'] === 'true').length, model.currentBand ? 1 : 0)
   if (model.displayKind !== 'screening-count') {
     assert.ok(gauge.props['aria-label'].includes(`${numeral(dimension.min)}–${numeral(dimension.max)}`))
     assert.equal(gauge.props['data-gauge-scale'], model.continuous ? 'continuous' : 'published-bands')

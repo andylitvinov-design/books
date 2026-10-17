@@ -219,7 +219,8 @@ test('actual chooser ignores invalid or personal referral parameters without cha
 
 test('release retains explicit paid selection, free internal action, reset, privacy and separate footer Telegram checks', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
-  const paid = source.slice(source.indexOf("await check('paid-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
+  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
+  assert.match(paid, /services\/imagery-therapy/);
   assert.match(paid, /openContactChannelChooser\(capture, expect\)/);
   assert.match(paid, /assertPreparedContactChannels\(chooser, expect\)/);
   assert.match(paid, /\[data-consultation-action\]'\)\)\.toHaveCount\(2\)/);
@@ -304,6 +305,12 @@ test('actual core JSX has one footer section with one chooser and the matching s
     for (const chooser of nodes(tree).filter(node => node.type === 'contact-chooser')) assert.equal(chooser.props.whatsappUrl, expected);
     pathname = '/' + locale + '/services/' + slug;
     const fallback = sitewide.SitewideLeadCapture();
+    if (kind === 'alchemy') {
+      assert.equal(fallback, null, 'Dedicated Alchemy form suppresses duplicate global capture');
+      assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-alchemy-lead-form="single"/);
+      assert.match(read('components/alchemy-soul-lead-form.tsx'), /ContactChannelChooser/);
+      continue;
+    }
     assert.equal(fallback.props['data-core-service-capture'], kind);
     const fallbackChoosers = nodes(fallback).filter(node => node.type === 'contact-chooser');
     assert.equal(fallbackChoosers.length, 1);

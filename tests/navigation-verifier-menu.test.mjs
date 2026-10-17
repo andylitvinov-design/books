@@ -1,3 +1,4 @@
+import { whatsappEnquiryUrl } from '../lib/whatsapp-enquiry.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -45,6 +46,8 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   ...common,
   'next/image': { default: props => jsx('img', props) },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
+  '@/components/contact-channel-chooser': { ContactChannelChooser: () => jsx('button', {}) },
+  '@/lib/whatsapp-enquiry': { whatsappEnquiryUrl },
   '@/data/core-service-offers': { coreServiceOffers },
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
   './services-solutions.module.css': { default: {} },

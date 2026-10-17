@@ -92,7 +92,7 @@ test("new DAO, Soul Alchemy and hypnotherapy landing pages are bilingual and hav
   assert.match(detail, /request: t\.actionMessage/);
   assert.match(detail, /option: t\.action/);
   assert.match(detail, /pagePath: "\/" \+ locale \+ "\/services\/" \+ serviceSlug/);
-  assert.equal((detail.match(/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/g) || []).length, 2);
+  assert.equal((detail.match(/<ContactChannelChooser locale=\{locale\} whatsappUrl=\{whatsappUrl\}/g) || []).length, 3);
   assert.match(detail, /reliable evidence/);
   assert.match(detail, /не медицинское обследование/);
   assert.match(css, /@media\(max-width:760px\)/);

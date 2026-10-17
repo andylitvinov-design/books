@@ -349,8 +349,10 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-consultation-safe-handoff', { engine, width, locale }, async () => {
-        await page.goto(origin + `/${locale}/services/psychohomeopathy`, { waitUntil: 'networkidle' });
+      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
+        // Alchemy now has a dedicated form covered by verify-app-r1; retain the
+        // complete generic paid-selector contract on the actual imagery service.
+        await page.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
         const capture = page.locator('[data-consultation-capture="service"]');
         await expect(capture).toHaveCount(1);
         await expect(capture.locator('[role="group"] button')).toHaveCount(3);

@@ -218,7 +218,7 @@ test('long Maya readers wait for rendered content instead of global network idle
 test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   assert.match(verifier, /check\('consultation-safe-handoff'/);
-  assert.match(verifier, /check\('paid-consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /assertPaidUrl\('session', '60', '€100'\)/);

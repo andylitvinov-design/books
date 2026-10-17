@@ -1,3 +1,4 @@
+import * as skillV5 from '../../lib/inner-growth/anti-stress-skills-v5.js'
 import * as phaseOutcomes from '../../lib/inner-growth/trauma-phase-outcomes.js'
 import * as measureContract from '../../lib/inner-growth/anti-stress-measurement-contract.js'
 import * as phaseCatalog from '../../lib/inner-growth/trauma-phase-catalog.js'
@@ -62,7 +63,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
-    '@/lib/inner-growth/course-membership': courseMembership, '@/lib/inner-growth/course-start-recovery': courseRecovery, '@/lib/inner-growth/course-slide-sequence': courseSequence,
+    '@/lib/inner-growth/anti-stress-skills-v5': skillV5, '@/lib/inner-growth/course-membership': courseMembership, '@/lib/inner-growth/course-start-recovery': courseRecovery, '@/lib/inner-growth/course-slide-sequence': courseSequence,
     '@/lib/inner-growth/course-programs': coursePrograms, '@/lib/inner-growth/opora-state-journey': oporaStateJourney, '@/lib/inner-growth/course-presets': presets, '@/lib/inner-growth/course-plans': coursePlans, '@/lib/billing/public-plan': billingPlan,
     '@/lib/inner-growth/course-entry-intent': courseEntryIntent, '@/lib/inner-growth/course-entry-client': courseEntryClient,
     './manual-billing-request': moduleFor('ManualBillingRequest'),

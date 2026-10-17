@@ -170,7 +170,7 @@ const uiNames = ['course-slide-player', 'opora-module-activity', 'opora-state-jo
 const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileModule(readFileSync(resolve(root, 'components/app', name + '.jsx'), 'utf8'), {
   fileName: name + '.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText]))
-const pureUI = Object.fromEntries(await Promise.all(['anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
+const pureUI = Object.fromEntries(await Promise.all(['anti-stress-skills-v5', 'anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
   'course-slide-sequence', 'course-membership', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )

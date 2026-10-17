@@ -41,7 +41,7 @@ test("home and services offer direct and clear free and paid landing actions", (
   for (const source of [homepage, services]) assert.match(source, /services\/free-situation-review/);
   assert.match(homepage, /className="service-home-paid-link"\s*href=\{`\/\$\{locale\}\/services#consultation`\}/);
   assert.match(homepage, /\{text\.heroBook\}/);
-  assert.match(services, /services\/free-situation-review#personal-consultation/);
+  assert.match(services, /services\/alchemy-of-soul/);
   assert.match(homepage, /service-home-button--primary/);
   assert.match(services, /paidCta:/);
   assert.match(styles, /\.heroActions\{/);

@@ -1,3 +1,4 @@
+import { COURSE_ANTISTRESS_SKILLS_V5 } from '../lib/inner-growth/anti-stress-skills-v5.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -132,7 +133,7 @@ for (const id of router.ANTISTRESS_ACTIVE_MODULE_IDS.filter(id => id !== 'AS4'))
   test(`real createNewCycle persists personal ${id} with the correct content version`, async () => {
     const h = harness()
     const cycleId = await h.create({ moduleId: id })
-    assertCreated(h, cycleId, id === 'AS2' ? COURSE_ANTISTRESS_OUTCOME_V3 : COURSE_CONTENT_V4, preferences(id))
+    assertCreated(h, cycleId, id === 'AS2' ? COURSE_ANTISTRESS_SKILLS_V5 : COURSE_CONTENT_V4, preferences(id))
   })
 }
 
@@ -142,9 +143,9 @@ test('trauma-focused AS4 cannot be newly created as an unsupervised cycle', asyn
   assert.equal(h.inserts.length,0)
 })
 
-test('real createNewCycle retains outcomeV3 AS2 for legacy personal Anti-Stress without a module selection', async () => {
+test('real createNewCycle creates approved SKILLS-5 AS2 for a new personal Anti-Stress cycle without changing existing history', async () => {
   const h = harness()
-  assertCreated(h, await h.create(), COURSE_ANTISTRESS_OUTCOME_V3, preferences('AS2'))
+  assertCreated(h, await h.create(), COURSE_ANTISTRESS_SKILLS_V5, preferences('AS2'))
 })
 
 test('real createNewCycle uses the encrypted personal selection when no new module is supplied', async () => {
@@ -163,7 +164,7 @@ test('invalid direct ids fall back to a saved educational choice or AS2', async 
   for (const moduleId of ['AS7']) for (const storedModule of [undefined, 'AS3']) {
     const h = harness(courseRow({ storedModule }))
     assertCreated(h, await h.create({ moduleId }),
-      storedModule ? COURSE_CONTENT_V4 : COURSE_ANTISTRESS_OUTCOME_V3, preferences(storedModule || 'AS2'))
+      storedModule ? COURSE_CONTENT_V4 : COURSE_ANTISTRESS_SKILLS_V5, preferences(storedModule || 'AS2'))
   }
 })
 

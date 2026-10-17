@@ -50,3 +50,17 @@ test('real loopback 503 with an unfinished body is released immediately',async()
   await Promise.race([closed,new Promise((_resolve,reject)=>{timer=setTimeout(()=>reject(Error('unused response was not released')),1500)})])
  }finally{clearTimeout(timer);server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
 })
+
+test('hard navigation cancels optional work; same-document navigation preserves it',async()=>{
+ const events=new Map(),navigation=new Map(),t=timers();let signal
+ const lifecycleTarget={addEventListener:(k,f)=>events.set(k,f),removeEventListener:(k,f)=>{if(events.get(k)===f)events.delete(k)},navigation:{addEventListener:(k,f)=>navigation.set(k,f),removeEventListener:(k,f)=>{if(navigation.get(k)===f)navigation.delete(k)}}}
+ const request=startTestCatalogStatsRequest(()=>assert.fail('cancelled'),{...t,lifecycleTarget,fetchImpl:(_url,options)=>{signal=options.signal;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}))}})
+ await Promise.resolve();navigation.get('navigate')({sameDocument:true});assert.equal(signal.aborted,false)
+ navigation.get('navigate')({sameDocument:false});await request.done;assert.equal(signal.aborted,true);assert.equal(events.size,0);assert.equal(navigation.size,0)
+})
+test('pagehide fallback cancels the request and removes every observer',async()=>{
+ const events=new Map(),t=timers();let signal
+ const lifecycleTarget={addEventListener:(k,f)=>events.set(k,f),removeEventListener:(k,f)=>{if(events.get(k)===f)events.delete(k)}}
+ const request=startTestCatalogStatsRequest(()=>assert.fail('cancelled'),{...t,lifecycleTarget,fetchImpl:(_url,options)=>{signal=options.signal;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}))}})
+ await Promise.resolve();events.get('pagehide')();await request.done;assert.equal(signal.aborted,true);assert.equal(events.size,0)
+})
