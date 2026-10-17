@@ -53,8 +53,11 @@ test("free diagnostic renders scope and safety in its steps and FAQ without a du
     "не медицинский или психиатрический диагноз или назначение лечения",
     "sin diagnósticos médicos o psiquiátricos ni recetas",
   ]) assert.ok(s.includes(phrase), phrase);
-  assert.match(s, /<p>\{t\.paidLead\}<\/p>/);
-  assert.match(s, /the free written review does not require a session/);
+  assert.match(s, /className=\{styles\.finalCapture\} id="personal-consultation"/);
+  assert.match(s, /className=\{styles\.finalRequest\} id="request-free-review"/);
+  assert.match(s, /<FreeReviewQuickRequest locale=\{locale\} \/>/);
+  assert.match(s, /This is optional, never a requirement for your free written review/);
+  assert.ok(s.indexOf('id="personal-consultation"') > s.indexOf("className={styles.details}"));
   assert.doesNotMatch(s, /className=\{styles\.scope\}/);
   const css = read("app/[locale]/services/free-situation-review/review.module.css");
   assert.match(css, /\.steps\{grid-template-columns:1fr/);
