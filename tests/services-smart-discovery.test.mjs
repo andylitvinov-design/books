@@ -108,7 +108,7 @@ test('Services: booking-style search and category selector appear above untouche
   assert.match(ui,/!aiAvailable \|\| !useExternalAi/)
   assert.match(ui,/No.*medical|not a diagnosis/i)
   assert.match(css,/@media\(max-width:620px\)/)
-  assert.match(css,/\\.quickFacets\\{display:flex;flex-wrap:nowrap;/)
+  assert.match(css,/\.quickFacets\{display:flex;flex-wrap:nowrap;/)
   assert.match(api,/HH_MARKETPLACE_AI_ENABLED/)
   assert.match(api,/EXPLICIT_AI_CONSENT_REQUIRED/)
   assert.match(api,/candidates\.has\(id\)/)
