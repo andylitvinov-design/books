@@ -379,6 +379,27 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onClearTestKinds={() => setKinds([])}
       onSelectTestKind={(kind) => setKinds(kind ? [kind] : [])}
       recommendations={simpleRecommendations}
+      catalogEntries={entries}
+      onChooseCollection={(keys) => {
+        // Switching collections resets stale facets but never discards manually selected tests.
+        setFocus(keys)
+        setProblems([])
+        setAvailability('available')
+        setStylesFilter([])
+        setKinds([])
+        setLengths([])
+        setDepth('balanced')
+        setAreas([])
+        setDetails([])
+        setAxes([])
+        setMaxMinutes(0)
+        setLanguage('any')
+        setTracking('any')
+        setFreeOnly(false)
+        setQuery('')
+        setSort('recommended')
+        setAxisFilter(null)
+      }}
       viaProfileEntry={entries.find((entry) => entry.key === 'ipip-via-r-strengths-96' && entry.selectable) || null}
       activeBattery={activeBattery}
       onToggleTest={toggleSimpleSelected}
