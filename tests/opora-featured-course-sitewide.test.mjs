@@ -20,7 +20,7 @@ test('public course enrollments focus on Anti-Stress without deleting old progra
   assert.match(ui, /applyProgramIntake\(started,programme,epoch,entryConcerns\)/)
 })
 
-test('the personal-review ribbon stays separate from the Anti-Stress card after each public test chooser', () => {
+test('retired sitewide promos stay removed while contextual course and review offers remain', () => {
   const bar = read('components/sitewide-antistress-banner.tsx')
   const style = read('components/sitewide-antistress-banner.module.css')
   const layout = read('app/layout.tsx')
@@ -28,12 +28,10 @@ test('the personal-review ribbon stays separate from the Anti-Stress card after 
   const picker = read('app/[locale]/client/tests/page.tsx')
   const publicExplorer = read('components/app/public-test-explorer.jsx')
   const client = read('components/app/cabinet-landing.jsx')
-  const top = bar.slice(0, bar.indexOf('export function TestSelectionCourseBanner'))
   const course = bar.slice(bar.indexOf('export function TestSelectionCourseBanner'))
-  assert.ok(layout.includes('<SitewideAntistressBanner initialLocale={lang} />'))
-  assert.ok(top.includes('data-sitewide-personal-review-banner'))
-  assert.ok(top.includes('services/free-situation-review'))
-  assert.ok(!top.includes('app/course?program=stress'))
+  assert.doesNotMatch(layout, /SitewideAntistressBanner|data-sitewide-personal-review-banner/)
+  assert.doesNotMatch(bar, /export function SitewideAntistressBanner|data-sitewide-personal-review-banner/)
+  assert.doesNotMatch(style, /\.ribbon\{/)
   assert.ok(course.includes('data-tests-course-banner'))
   assert.ok(course.includes('app/course?program=stress'))
   assert.ok(course.includes('locale === "es" ? "en" : locale'))
@@ -58,11 +56,6 @@ test('the personal-review ribbon stays separate from the Anti-Stress card after 
   }
   assert.ok(style.includes('.courseCard{'))
   assert.ok(style.includes('.courseActions{'))
-  assert.ok(style.includes('max-width:680px'))
-  for (const route of ['admin', 'course', 'runs', 'results', 'report', 'settings']) {
-    assert.ok(bar.includes(route), route + ' excludes a sensitive route')
-  }
-  assert.ok(style.includes('@media print'))
   assert.ok(style.includes('max-width:680px'))
   for (const unwanted of ['localStorage', 'sessionStorage', 'fetch(']) {
     assert.ok(!bar.includes(unwanted))
