@@ -49,9 +49,9 @@ test("all 23 published book covers have versioned public WebP outputs and unchan
   }
 });
 
-test("all 28 public academy and poster sources are pinned to original bytes and two responsive variants", () => {
-  assert.equal(Object.keys(registry.images).length, 28);
-  assert.equal(entries.length, 51);
+test("all 32 reviewed public academy, Library and poster sources are pinned with two variants", () => {
+  assert.equal(Object.keys(registry.images).length, 32);
+  assert.equal(entries.length, 55);
   for (const [key, item] of Object.entries(registry.images)) {
     assert.ok(key.startsWith("/academy/") || key.startsWith("/images/holistic-house/") || key.startsWith("/library/"));
     assert.equal(item.source, "public" + key);
