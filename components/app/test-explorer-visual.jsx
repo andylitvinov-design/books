@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { layoutPortraitRayLabels } from '@/lib/assessments/portrait-ray-labels'
 import {
-  PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
+  PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER,
   portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors,
 } from '@/lib/assessments/portrait-sectors'
 import styles from './test-explorer.module.css'
