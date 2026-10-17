@@ -30,3 +30,34 @@ test('focused relationship state and boundary/consent assertions remain strict',
   assert.match(source, /data-problem-key="consent-pressure"/)
   assert.doesNotMatch(helper, /\.first\(|\.nth\(|force:/)
 })
+
+// Exercise the exact hosted verifier block without any network or account data.
+const courseStart = source.indexOf("  const directCourseAction=")
+const courseEnd = source.indexOf('  await assertBoundaryConcerns()', courseStart)
+assert.ok(courseStart > 0 && courseEnd > courseStart)
+const verifyCourse = new (Object.getPrototypeOf(async function () {}).constructor)(
+  'focusedPicker', 'expect', 'locale', source.slice(courseStart, courseEnd))
+async function directCourse(locale, overrides = {}) {
+  const action = { count: 1, mode: 'course', visible: true, enabled: true,
+    text: locale === 'ru' ? 'Начать персональный курс' : 'Start my personal course', ...overrides }
+  const focusedPicker = { locator(selector) { assert.equal(selector, '[data-test-start-mode]'); return action } }
+  const expect = actual => ({
+    async toHaveCount(value) { assert.equal(actual.count, value) },
+    async toHaveAttribute(name, value) { assert.equal(name, 'data-test-start-mode'); assert.equal(actual.mode, value) },
+    async toBeVisible() { assert.equal(actual.visible, true) },
+    async toBeEnabled() { assert.equal(actual.enabled, true) },
+    async toContainText(value) { assert.ok(actual.text.includes(value)) },
+  })
+  await verifyCourse(focusedPicker, expect, locale)
+}
+for (const locale of ['en', 'ru']) test(`direct ${locale} course handoff remains unique, visible, enabled and exact`, async () => {
+  await directCourse(locale)
+  for (const bad of [{ count: 0 }, { count: 2 }, { mode: 'tests' }, { visible: false }, { enabled: false }, { text: 'Wrong action' }])
+    await assert.rejects(directCourse(locale, bad))
+})
+test('hosted journey verifies distinct tests/course routes and absence of removed switch', () => {
+  assert.ok(source.includes(".toHaveAttribute('data-test-start-mode','tests')"))
+  assert.ok(source.includes(".toHaveAttribute('data-test-start-mode','course')"))
+  assert.ok(source.includes("expect(focusedPicker.locator('[data-test-course-switch]')).toHaveCount(0)"))
+  assert.doesNotMatch(source, /testsMode\.click|courseMode\.click/)
+})
