@@ -14,7 +14,7 @@ test('Profile no longer duplicates the dedicated Tests and Courses destinations'
   assert.ok(profile.indexOf('id="personal-reports"') < profile.indexOf('className="hh-domain-more"'))
   assert.match(workspace, /page === 'tests' &&/)
   assert.match(workspace, /page === 'course' &&/)
-  assert.match(workspace, /data-insights-personal-portrait/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   // Existing shared card component remains backward-compatible if reused elsewhere.
   for (const service of ["id: 'tests'","id: 'blitz'","id: 'consultations'","id: 'course'"]) {
     assert.ok(cards.includes(service), service)
