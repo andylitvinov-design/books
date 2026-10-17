@@ -4,14 +4,15 @@ import {readFileSync} from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('restored top consultation banner stays separate from the quick-entry OPORA course card', () => {
+test('screenshot-matched free-review banner stays separate from the quick-entry OPORA course card', () => {
   const banner = read('components/sitewide-antistress-banner.tsx')
   const globalRibbon = banner.slice(0, banner.indexOf('export function TestSelectionCourseBanner'))
   const lowerRibbon = banner.slice(banner.indexOf('export function TestSelectionCourseBanner'))
   const entry = read('components/app/my-course.jsx')
   assert.ok(globalRibbon.includes('data-sitewide-personal-review-banner'))
   assert.ok(read('app/layout.tsx').includes('SitewideAntistressBanner'))
-  assert.ok(globalRibbon.includes('services#consultation'))
+  assert.ok(globalRibbon.includes('Get free review'))
+  assert.ok(globalRibbon.includes('services/free-situation-review'))
   assert.ok(lowerRibbon.includes('data-tests-course-banner'))
   assert.ok(lowerRibbon.includes('data-tests-review-banner'))
   assert.ok(lowerRibbon.includes('app/course?program=stress&entry=quick'))
