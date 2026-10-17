@@ -318,7 +318,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+(ru?'услуг':locale==='es'?'servicios':'services')}</span>
         </div>
       </div>
-    </section>
+    </section>}
     <PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
