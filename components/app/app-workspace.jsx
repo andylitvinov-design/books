@@ -44,7 +44,7 @@ import {
   rankAssessmentDefinitions,
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
-import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import PracticeWorkspace from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
