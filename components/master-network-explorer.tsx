@@ -347,33 +347,93 @@ function Filters({
   );
 }
 
-function ServiceCard({ service, locale }: { service: PublicService; locale: Locale }) {
+function ServiceCard({
+  service,
+  locale,
+  profileView = false,
+}: {
+  service: PublicService;
+  locale: Locale;
+  profileView?: boolean;
+}) {
   const t = COPY[locale];
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
+  const detailsHref = "/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug;
+  const requestHref = service.slug === "remote-energy-support"
+    ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
+    : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
+  const coverImage = service.photos?.[0] || service.imagePath;
+  const requestText = profileView
+    ? (isFree(service)
+      ? locale === "ru" ? "Получить бесплатно" : locale === "es" ? "Solicitar gratis" : "Get free"
+      : locale === "ru" ? "Заказать" : locale === "es" ? "Solicitar" : "Order")
+    : (isFree(service) ? t.requestFree : t.request);
+
   return (
-    <article className={styles.serviceCard} data-service-funnel-card>
+    <article className={profileView ? styles.serviceCard + " " + styles.profileServiceCard : styles.serviceCard}
+      data-service-funnel-card>
       <ServiceFunnelImpression serviceId={service.id} />
-      {service.photos?.[0] && <Link href={'/'+locale+'/services/'+service.practitionerSlug+'/'+service.slug} className={styles.serviceCover}><img src={service.photos[0]} alt={service.copy.title} loading="lazy" /></Link>}
-      <div className={styles.cardTop}>
-        <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
-          {service.practitionerPhoto ? <img className={styles.avatar} src={service.practitionerPhoto} alt="" loading="lazy" /> : <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>}
-          <span><small>{t.practitioner}</small><strong>{service.practitionerName}</strong></span>
+      {coverImage ? (
+        <Link href={detailsHref} className={styles.serviceCover}>
+          <img src={coverImage} alt={service.copy.title} loading="lazy" />
         </Link>
+      ) : profileView ? (
+        <div className={styles.profileCoverFallback} aria-hidden="true"><span>✦</span></div>
+      ) : null}
+      <div className={styles.cardTop}>
+        {!profileView && (
+          <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
+            {service.practitionerPhoto ? (
+              <img className={styles.avatar} src={service.practitionerPhoto} alt="" loading="lazy" />
+            ) : (
+              <span className={styles.avatar} aria-hidden="true">
+                {(service.practitionerName || "H").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span><small>{t.practitioner}</small><strong>{service.practitionerName}</strong></span>
+          </Link>
+        )}
         <span className={isFree(service) ? styles.freePrice : styles.price}>{servicePrice(service, locale)}</span>
       </div>
       <p className={styles.area}>{areaName(service.areaKey, locale)}</p>
       <h3>{service.copy.title}</h3>
       <p className={styles.description}>{service.copy.shortDescription}</p>
-      <div className={styles.meta}><span>{format}</span>{service.locationLabel && service.deliveryFormat !== "online" ? <span>{service.locationLabel}</span> : null}{service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}</div>
+      <div className={styles.meta}>
+        <span>{format}</span>
+        {!profileView && service.locationLabel && service.deliveryFormat !== "online"
+          ? <span>{service.locationLabel}</span> : null}
+        {service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}
+      </div>
       <div className={styles.actions}>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#reviews"}>{locale==="ru"?"Отзывы":locale==="es"?"Opiniones":"Reviews"} ★</Link>
-        <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={service.slug === "remote-energy-support" ? `/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug)}` : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
-          {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
+        <Link className={styles.secondary} href={detailsHref}>{t.details}</Link>
+        {!profileView && (
+          <Link className={styles.secondary} href={detailsHref + "#reviews"}>
+            {locale === "ru" ? "Отзывы" : locale === "es" ? "Opiniones" : "Reviews"} ★
+          </Link>
+        )}
+        <TrackedServiceLink serviceId={service.id} event="order"
+          className={styles.primary} href={requestHref}
+          aria-label={requestText + ": " + service.copy.title}>
+          {requestText}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
       </div>
     </article>
+  );
+}
+
+/** Reuse the exact Services marketplace card, with a tighter practitioner-profile presentation. */
+export function PractitionerServicesGrid({ services, locale: pageLocale }: {
+  services: PublicService[];
+  locale: string;
+}) {
+  const locale = localized(pageLocale);
+  return (
+    <div className={styles.cardGrid + " " + styles.practitionerServicesGrid}>
+      {services.map(service => (
+        <ServiceCard key={service.id} service={service} locale={locale} profileView />
+      ))}
+    </div>
   );
 }
 

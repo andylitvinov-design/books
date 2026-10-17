@@ -102,13 +102,19 @@ test('English Remedies page localizes book card titles while preserving source-l
 
 
 test('practitioner and service detail pages label zero-price offerings as free', async () => {
-  const [profile, detail] = await Promise.all([
+  const [profile, marketplace, detail] = await Promise.all([
     readFile('app/[locale]/masters/[slug]/page.tsx', 'utf8'),
+    readFile('components/master-network-explorer.tsx', 'utf8'),
     readFile('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx', 'utf8'),
   ])
-  assert.match(profile, /confirmedPrice===0/)
-  assert.match(profile, /Пройти бесплатно/)
-  assert.match(profile, /Start free/)
+  assert.match(profile, /isFreeService/)
+  assert.match(profile, /confirmedPrice\s*===\s*0/)
+  assert.match(profile, /PractitionerServicesGrid/)
+  // Public profiles now reuse the canonical price badge and localized request
+  // buttons instead of maintaining a second, stale copy of service cards.
+  assert.match(marketplace, /freePrice/)
+  assert.match(marketplace, /"Получить бесплатно"/)
+  assert.match(marketplace, /"Get free"/)
   assert.match(detail, /confirmedPrice===0/)
   assert.match(detail, /Бесплатно/)
   assert.match(detail, /Free/)

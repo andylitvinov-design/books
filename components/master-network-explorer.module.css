@@ -118,3 +118,67 @@
 
 /* On mobile and desktop, Details/Profile remains left of the burgundy action. */
 .actions > .primary,.actions > .energyButton { margin-inline-start:auto; }
+
+
+/* The same catalogue card, in a compact profile-first layout: Details left, Order right. */
+.practitionerServicesGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.profileServiceCard {
+  display: grid;
+  grid-template-columns: minmax(92px,130px) minmax(0,1fr);
+  grid-template-rows: auto auto auto minmax(0,1fr) auto auto;
+  column-gap: 13px;
+  row-gap: 0;
+  min-height: 0;
+  padding: 13px;
+  border-color: #e1d4c6;
+  background: #fffdfa;
+}
+.profileServiceCard > .serviceCover,.profileCoverFallback {
+  grid-column: 1;
+  grid-row: 1 / 5;
+  width: 100%;
+  height: 100%;
+  min-height: 154px;
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(145deg,#eee6dc,#e7edf0);
+}
+.profileServiceCard > .serviceCover img { width: 100%; height: 100%; min-height: 154px; object-fit: cover; }
+.profileCoverFallback { display: grid; place-items: center; color: #a07464; }
+.profileCoverFallback span { display: grid; place-items: center; width: 55px; height: 55px; border-radius: 50%; background: #fffcf7bf; font: 32px/1 Georgia,serif; }
+.profileServiceCard > .cardTop { grid-column: 2; grid-row: 1; justify-content: flex-start; margin-bottom: 5px; }
+.profileServiceCard > .area { grid-column: 2; grid-row: 2; margin: 0 0 5px; font-size: 9px; }
+.profileServiceCard > h3 { grid-column: 2; grid-row: 3; margin: 0 0 6px; font-size: clamp(18px, 2vw, 23px); line-height: 1.17; }
+.profileServiceCard > .description { grid-column: 2; grid-row: 4; margin: 0; font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; }
+.profileServiceCard > .meta { grid-column: 1 / -1; grid-row: 5; align-items: center; margin: 10px 0 9px; }
+.profileServiceCard > .actions {
+  grid-column: 1 / -1;
+  grid-row: 6;
+  display: grid;
+  grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr);
+  gap: 9px;
+  align-items: center;
+}
+.profileServiceCard .secondary { min-height: 43px; padding: 5px; }
+.profileServiceCard .primary { width: 100%; min-width: 0; min-height: 43px; margin: 0; padding: 9px 12px; }
+@media (max-width: 760px) { .practitionerServicesGrid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .practitionerServicesGrid { gap: 9px; }
+  .profileServiceCard { grid-template-columns: 104px minmax(0,1fr); padding: 12px; column-gap: 11px; border-radius: 17px; }
+  .profileServiceCard > .serviceCover,.profileCoverFallback { min-height: 138px; }
+  .profileServiceCard > .serviceCover img { min-height: 138px; }
+  .profileServiceCard > h3 { font-size: 20px; }
+  .profileServiceCard > .description { -webkit-line-clamp: 2; font-size: 11.5px; line-height: 1.4; }
+  .profileServiceCard > .cardTop .price,.profileServiceCard > .cardTop .freePrice { padding: 5px 9px; font-size: 10px; }
+  .profileServiceCard > .meta { margin-top: 8px; margin-bottom: 8px; }
+  .profileServiceCard .secondary { font-size: 12px; }
+  .profileServiceCard .primary { font-size: 12px; min-height: 42px; }
+}
+@media (max-width: 360px) {
+  .profileServiceCard { grid-template-columns: 84px minmax(0,1fr); padding: 10px; column-gap: 9px; }
+  .profileServiceCard > h3 { font-size: 18px; }
+  .profileServiceCard > .area { font-size: 8px; }
+  .profileServiceCard > .description { font-size: 11px; }
+  .profileServiceCard .primary { padding: 8px 10px; font-size: 11px; }
+}
