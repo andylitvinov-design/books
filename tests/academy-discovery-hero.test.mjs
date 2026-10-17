@@ -18,6 +18,8 @@ test("Academy home keeps one Services-style first screen instead of stacked lega
   assert.doesNotMatch(hub, /<nav className="library-media-switch"/);
   assert.match(hero, /<h1 id="academy-discovery-title">/);
   assert.match(hero, /academy\?view=videos/);
+  assert.match(hero, /academy\/free-ai-courses/);
+  assert.match(hero, /Бесплатные ИИ-курсы/);
   assert.match(hero, /aria-current=\{view === "programs"/);
   assert.match(hero, /aria-current=\{view === "videos"/);
   assert.match(styles, /linear-gradient\(121deg, #203450 0%, #283d5c 58%, #483a52 100%\)/);
@@ -48,6 +50,7 @@ test("Academy retains its real courses, video archive, free OPORA banner and Tan
   const hub = read("components/academy-hub.tsx");
   const hero = read("components/academy-discovery.tsx");
   assert.match(hub, /<AcademyFreeCourseBanner locale=\{locale\}/);
+  assert.match(read("app/[locale]/academy/[[...slug]]/page.tsx"), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\}/);
   assert.match(hub, /<AcademyVideoCourses locale=\{locale\}/);
   assert.match(hub, /id="academy-video-courses"/);
   assert.match(hub, /<AcademyCourseCapture locale=\{locale\}/);

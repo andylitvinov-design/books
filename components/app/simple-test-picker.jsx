@@ -182,9 +182,9 @@ export function SimpleTestPicker({
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
   const accountCopy = {
-    en: { kicker: 'MY TESTS', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Add test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
-    ru: { kicker: 'МОИ ТЕСТЫ', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Добавить тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
-    es: { kicker: 'MIS PRUEBAS', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Añadir prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
+    en: { kicker: 'MY TESTS', finderTitle: 'Find the right tests', finderHelp: 'Search by name, concern or choose a topic below.', finderSearch: 'Search', finderPlaceholder: 'Stress, sleep, relationships…', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Add test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
+    ru: { kicker: 'МОИ ТЕСТЫ', finderTitle: 'Подобрать подходящие тесты', finderHelp: 'Введите запрос или выберите интересующую тему.', finderSearch: 'Найти', finderPlaceholder: 'Стресс, сон, отношения…', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Добавить тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
+    es: { kicker: 'MIS PRUEBAS', finderTitle: 'Encuentra tus pruebas', finderHelp: 'Busca por nombre o elige un tema.', finderSearch: 'Buscar', finderPlaceholder: 'Estrés, sueño, relaciones…', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Añadir prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
@@ -236,30 +236,35 @@ export function SimpleTestPicker({
   const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
   const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
-  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker data-public-test-picker={!authenticated ? 'true' : undefined}>
-    <header className={academyStyles.hero} data-client-tests-hero>
-      <div className={academyStyles.topline}>
+  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker data-public-test-picker={!authenticated ? 'true' : undefined} data-account-test-picker={authenticated ? 'true' : undefined}>
+    <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
+      {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
         <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
           <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
           <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
         </nav>
-      </div>
-      <h1>{c.heroHeadline}</h1>
-      <p className={academyStyles.intro}>{c.heroDescription}</p>
-      <form className={academyStyles.form} role="search" onSubmit={(event) => {
+      </div>}
+      {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
+      {authenticated
+        ? <h2 className={styles.accountFinderTitle}>{c.finderTitle}</h2>
+        : <h1>{c.heroHeadline}</h1>}
+      <p className={authenticated ? styles.accountFinderHelp : academyStyles.intro}>
+        {authenticated ? c.finderHelp : c.heroDescription}
+      </p>
+      <form className={authenticated ? styles.accountFinderSearch : academyStyles.form} role="search" onSubmit={(event) => {
         event.preventDefault()
         setSubmittedHeroSearch(heroSearch.trim())
         setVisibleCount(5)
         document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }}>
-        <label className={academyStyles.srOnly} htmlFor="hh-test-hero-search">{c.heroSearchLabel}</label>
-        <input id="hh-test-hero-search" className={academyStyles.search} type="search" value={heroSearch}
+        <label className={authenticated ? styles.accountSrOnly : academyStyles.srOnly} htmlFor="hh-test-hero-search">{c.heroSearchLabel}</label>
+        <input id="hh-test-hero-search" className={authenticated ? styles.accountFinderInput : academyStyles.search} type="search" value={heroSearch}
           onChange={(event) => { setHeroSearch(event.target.value); if (!event.target.value.trim()) setSubmittedHeroSearch('') }}
-          placeholder={c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
-        <button className={academyStyles.submit} type="submit">{c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
+          placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
+        <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      <div className={academyStyles.filters}>
+      <div className={authenticated ? styles.accountFinderFilters : academyStyles.filters}>
         <label>{c.heroTopicFilter}
           <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
             onChange={(event) => {
@@ -283,14 +288,14 @@ export function SimpleTestPicker({
           </select>
         </label>
       </div>
-      <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
+      {!authenticated && <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
         <span>{c.heroPicks}:</span>
         {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
           const topic = TOPICS.find((item) => item.key === key)
           return <button key={key} type="button" aria-pressed={focus.includes(key)}
             onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
         })}
-      </div>
+      </div>}
       {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
 

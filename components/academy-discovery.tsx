@@ -20,7 +20,7 @@ const COPY = {
     description: "Explore Reiki, energywork and Temple Studies. Choose a free introduction or a complete learning program.",
     videoTitle: "Explore video lessons",
     videoDescription: "Find original lessons and guided practices, organized by program and recording language.",
-    programs: "Programs", videos: "Videos",
+    programs: "Programs", videos: "Videos", freeAiCourses: "Free AI Courses", aiShort: "AI Courses",
     placeholder: "e.g. Reiki, Tantra, Temple Studies or stress relief...",
     searchLabel: "Search learning programs",
     searchButton: "Find my course",
@@ -41,7 +41,7 @@ const COPY = {
     description: "Изучайте Рейки, энергопрактики и храмовые традиции. Начните бесплатно или выберите полную программу.",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Уроки и практики по программам с указанием языка оригинальной записи.",
-    programs: "Программы", videos: "Видео",
+    programs: "Программы", videos: "Видео", freeAiCourses: "Бесплатные ИИ-курсы", aiShort: "ИИ-курсы",
     placeholder: "Например: Рейки, Тантра, мистерии или антистресс…",
     searchLabel: "Поиск учебных программ",
     searchButton: "Подобрать курс",
@@ -62,7 +62,7 @@ const COPY = {
     description: "Explora Reiki, trabajo energético y Temple Studies. Empieza gratis o elige un programa completo.",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma de grabación original.",
-    programs: "Programas", videos: "Videos",
+    programs: "Programas", videos: "Videos", freeAiCourses: "Cursos de IA gratuitos", aiShort: "Cursos IA",
     placeholder: "Por ejemplo: Reiki, Tantra, tradiciones o antiestrés…",
     searchLabel: "Buscar programas de aprendizaje",
     searchButton: "Encontrar curso",
@@ -171,6 +171,7 @@ export function AcademyDiscovery({
           <nav className={styles.tabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
             <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{t.programs}</Link>
             <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{t.videos}</Link>
+            <Link href={"/" + locale + "/academy/free-ai-courses"} aria-label={t.freeAiCourses}><span className={styles.aiLong}>{t.freeAiCourses}</span><span className={styles.aiShort}>{t.aiShort}</span></Link>
           </nav>
         </div>
         <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>

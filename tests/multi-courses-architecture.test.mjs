@@ -29,8 +29,8 @@ test('explicit close preserves private history and owner export includes every c
  assert.match(course,/openSealed\(row.concerns_ciphertext/);assert.match(daily,/courseId:cycle.course_id/)
  assert.match(route,/exported.growthCourses/);assert.match(ui,/data-course-readonly-history/);assert.match(ui,/data.readOnly\|\|!isCurrent/)
 })
-test('five-tab Profile and quest navigation remains present with plural course labels',()=>{
+test('five-tab Profile and quest navigation remains present with concise Courses labels',()=>{
  const menu=read('components/app/app-workspace.jsx'),daily=read('components/app/course-today.jsx')
- assert.match(menu,/Мои курсы/);assert.match(menu,/My courses/);assert.match(menu,/page === 'portrait'/)
+ assert.match(menu,/id: 'course', label: locale === 'ru' \? 'Курсы' : 'Courses'/);assert.match(menu,/page === 'portrait'/);assert.match(menu,/nav\.map\(/)
  assert.match(daily,/CourseQuestMap/);assert.match(daily,/CourseSlidePlayer/);assert.match(daily,/'X-HH-Account-ID':accountId/)
 })

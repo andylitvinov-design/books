@@ -2248,3 +2248,244 @@
 @media (prefers-reduced-motion: reduce) {
   .curatedCard, .curatedMore svg { transition: none; }
 }
+
+
+/* My Tests private-cabinet compact finder (public /client/tests hero remains unchanged).
+   A filter panel must look like one part of the account, not a second full-page landing. */
+.shell[data-account-test-picker]{
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.shell[data-account-test-picker] .accountFinder{
+  display:grid;
+  gap:11px;
+  min-height:0;
+  margin:0 0 11px;
+  padding:clamp(14px,2.2vw,19px);
+  border:1px solid #e3dcd2;
+  border-radius:16px;
+  background:linear-gradient(125deg,#fffefb 0%,#faf6ee 100%);
+  box-shadow:0 2px 9px rgba(59,47,34,.045);
+  color:#423a33;
+}
+.shell[data-account-test-picker] .accountFinderEyebrow{
+  margin:0!important;
+  font:750 .66rem/1.25 system-ui,-apple-system,sans-serif!important;
+  letter-spacing:.14em;
+  color:#347767!important;
+  text-transform:uppercase;
+}
+.shell[data-account-test-picker] .accountFinderTitle{
+  margin:0!important;
+  color:#3f332e!important;
+  font:650 clamp(1.12rem,2.4vw,1.34rem)/1.24 Georgia,serif!important;
+  letter-spacing:-.022em;
+}
+.shell[data-account-test-picker] .accountFinderHelp{
+  margin:0!important;
+  color:#756b62!important;
+  font:400 .79rem/1.4 system-ui,-apple-system,sans-serif!important;
+}
+.shell[data-account-test-picker] .accountFinderSearch{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+  margin:0;
+  padding:5px;
+  border:1px solid #d8d8ce;
+  border-radius:12px;
+  background:#fff!important;
+  box-shadow:0 1px 3px rgba(35,51,40,.04);
+}
+.shell[data-account-test-picker] .accountSrOnly{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  margin:-1px!important;
+  padding:0!important;
+  border:0!important;
+  clip:rect(0,0,0,0)!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+.shell[data-account-test-picker] .accountFinderSearch .accountFinderInput{
+  width:100%;
+  min-width:0;
+  min-height:41px!important;
+  margin:0!important;
+  padding:8px 10px!important;
+  border:0!important;
+  border-radius:9px!important;
+  color:#3e3934!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font:400 16px/1.3 system-ui,-apple-system,sans-serif!important;
+}
+.shell[data-account-test-picker] .accountFinderInput::placeholder{
+  color:#8d8882;
+  opacity:1;
+}
+.shell[data-account-test-picker] .accountFinderSearch:focus-within{
+  border-color:#367c6d;
+  box-shadow:0 0 0 2px rgba(54,124,109,.12);
+}
+.shell[data-account-test-picker] .accountFinderSearch .accountFinderInput:focus-visible{
+  outline:0!important;
+}
+.shell[data-account-test-picker] .accountFinderSearch .accountFinderSubmit{
+  display:inline-flex!important;
+  flex:0 0 auto;
+  justify-content:center!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-height:41px!important;
+  margin:0!important;
+  padding:8px 13px!important;
+  border:1px solid #873a53!important;
+  border-radius:9px!important;
+  background:#873a53!important;
+  box-shadow:none!important;
+  color:#fff!important;
+  font:750 .79rem/1.2 system-ui,-apple-system,sans-serif!important;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.shell[data-account-test-picker] .accountFinderSubmit:hover{
+  background:#702e45!important;
+  border-color:#702e45!important;
+}
+.shell[data-account-test-picker] .accountFinderSubmit svg{
+  width:16px;
+  height:16px;
+  flex:none;
+}
+.shell[data-account-test-picker] .accountFinderFilters{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  width:100%;
+  min-width:0;
+}
+.shell[data-account-test-picker] .accountFinderFilters label{
+  display:grid;
+  align-content:start;
+  min-width:0;
+  gap:5px;
+  color:#665d55;
+  font:700 .73rem/1.25 system-ui,-apple-system,sans-serif!important;
+}
+.shell[data-account-test-picker] .accountFinderFilters select{
+  display:block;
+  width:100%!important;
+  max-width:100%;
+  min-width:0;
+  min-height:43px!important;
+  margin:0!important;
+  padding:8px 26px 8px 10px!important;
+  border:1px solid #e0d9d0!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#494039!important;
+  font:650 .81rem/1.25 system-ui,-apple-system,sans-serif!important;
+  text-overflow:ellipsis;
+  box-shadow:none!important;
+}
+.shell[data-account-test-picker] .accountFinderFilters select:focus-visible,
+.shell[data-account-test-picker] .accountFinderSubmit:focus-visible{
+  outline:3px solid #26776b!important;
+  outline-offset:2px;
+}
+/* Subsequent steps remain the real working topic, concern and test pickers, without
+   stacking thick full-bleed banners and extra framed pages inside the account. */
+.shell[data-account-test-picker] .section,
+.shell[data-account-test-picker] .problemSection,
+.shell[data-account-test-picker] .advanced{
+  min-width:0;
+  max-width:100%;
+  border-color:#e5ded5;
+  border-radius:15px;
+  background:#fffefb;
+  box-shadow:none;
+  margin:10px 0;
+}
+.shell[data-account-test-picker] .sectionHeader{
+  gap:9px;
+  margin-bottom:10px;
+}
+.shell[data-account-test-picker] .step{
+  width:32px;
+  height:32px;
+  font-size:1.08rem;
+}
+.shell[data-account-test-picker] .sectionHeader h2{
+  font:650 clamp(1rem,2.2vw,1.22rem)/1.28 Georgia,serif!important;
+  color:#3e3731;
+}
+.shell[data-account-test-picker] .topic{
+  min-height:48px;
+  border-radius:11px;
+  padding:8px 10px;
+  background:#fff;
+}
+.shell[data-account-test-picker] .topic[aria-pressed=true]{
+  background:#edf5ef;
+  border-color:#81b39d;
+  color:#275e4e;
+}
+.shell[data-account-test-picker] .privacy{
+  margin:11px 2px!important;
+  font-size:.72rem;
+}
+@media(max-width:760px){
+  .shell[data-account-test-picker] .accountFinder{
+    padding:13px 12px;
+    gap:10px;
+    border-radius:14px;
+  }
+  .shell[data-account-test-picker] .accountFinderTitle{
+    font-size:1.16rem!important;
+  }
+  .shell[data-account-test-picker] .accountFinderHelp{
+    font-size:.76rem!important;
+  }
+  .shell[data-account-test-picker] .accountFinderFilters{gap:8px}
+  .shell[data-account-test-picker] .accountFinderFilters select{
+    min-height:42px!important;
+    padding:8px 23px 8px 8px!important;
+    font-size:.85rem!important;
+  }
+  .shell[data-account-test-picker] .section,
+  .shell[data-account-test-picker] .problemSection,
+  .shell[data-account-test-picker] .advanced{
+    padding:12px 10px;
+    border-radius:13px;
+  }
+  .shell[data-account-test-picker] .topicGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+}
+@media(max-width:360px){
+  .shell[data-account-test-picker] .accountFinder{
+    padding:11px 9px;
+  }
+  .shell[data-account-test-picker] .accountFinderSearch .accountFinderInput{
+    padding-inline:6px!important;
+  }
+  .shell[data-account-test-picker] .accountFinderSearch .accountFinderSubmit{
+    padding:8px 9px!important;
+  }
+  .shell[data-account-test-picker] .accountFinderFilters select{
+    font-size:.81rem!important;
+    padding-left:6px!important;
+  }
+}
