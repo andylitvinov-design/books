@@ -136,7 +136,7 @@ test('continuous difficulty gauges use one illustrative gradient and neutral tra
   const gradient = nodes(gauges.ScoreGauge({ dimension: cbi.dimensions[0], result: cbi }))
   assert.equal(gradient.filter(node => node.type === 'path').length, 1, 'no fabricated clinical sectors')
   assert.equal(gradient.filter(node => node.type === 'linearGradient').length, 1)
-  assert.match(gradient.find(node => node.type === 'path').props.stroke, /^url\\(#hh-assessment-gradient-/)
+  assert.match(gradient.find(node => node.type === 'path').props.stroke, /^url\(#hh-assessment-gradient-/)
   const trait = scored('ipip-big-five-50')
   const neutral = nodes(gauges.ScoreGauge({ dimension: trait.dimensions[0], result: trait }))
   assert.equal(neutral.filter(node => node.type === 'linearGradient').length, 0)
