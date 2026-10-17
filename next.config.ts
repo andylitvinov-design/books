@@ -55,6 +55,12 @@ const nextConfig: NextConfig = {
         source: "/images/holistic-house/portrait-static/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Build-generated public artwork is content-addressed and never requests
+      // paid Vercel /_next/image transformations. Not applied to client files.
+      {
+        source: "/images/holistic-house/static-card-media/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
       ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
@@ -98,7 +104,7 @@ const nextConfig: NextConfig = {
   // the ~211 MB original corpus into each retained Function deployment.
   outputFileTracingExcludes: {
     // Public-only artwork is served statically, never read by document PDFs.
-    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*"],
+    "/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"],
     "/media/**": [
       "./source-books/book-1-alchemy-soul/media/**/*",
       "./source-books/book-2-dao-books/photos/**/*",
