@@ -33,9 +33,9 @@ function harness(locale) {
     fileName: 'components/app/test-explorer-visual.jsx',
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
   }).outputText
-  const module = { exports: {} }
+  const loaded = { exports: {} }
   runInNewContext(content, {
-    module, exports: module.exports,
+    module: loaded, exports: loaded.exports,
     require(name) {
       if (name === 'react') return fakeReact
       if (name === 'next/link') return { __esModule: true, default: 'a' }
@@ -50,7 +50,7 @@ function harness(locale) {
     [axis, { percent: 40 + n, source: 'Synthetic test', change: null }])) }
   const coverage = { axes: Object.fromEntries(TEST_EXPLORER_AXES.map(axis => [axis, { coverage: 0 }])), coveredCount: 0 }
   return {
-    render() { hook = 0; return module.exports.TestExplorerVisual({ locale, portrait, coverage }) },
+    render() { hook = 0; return loaded.exports.TestExplorerVisual({ locale, portrait, coverage }) },
     total: TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').length,
   }
 }
