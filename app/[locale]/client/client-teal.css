@@ -71,3 +71,37 @@
   background:#118d9c;border-color:#118d9c;color:#fff;
 }
 .client-entry-shell :is(button,a):focus-visible{outline-color:#258f9c}
+
+
+/* Public My Tests entry echoes the approved warm homepage masthead. */
+.client-entry-shell {
+  background:#faf7f1;
+  color:#352b24;
+}
+.client-entry-shell .house-header {
+  background:#fbf7ef;
+  border-bottom-color:#e4d9ce;
+}
+.client-entry-shell .house-wordmark {color:#352b24}
+.client-entry-shell .house-wordmark span {color:#75675b}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link {
+  background:#f2e6d9;
+  border-color:#d6bdab;
+  color:#70452e;
+}
+.client-entry-shell .house-header .site-navigation .site-cabinet-link:hover {
+  background:#e9d7c5;
+  border-color:#a77b5d;
+}
+@media(max-width:600px){
+  .client-entry-shell .house-header {
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:13px 12px;
+  }
+  .client-entry-shell .house-wordmark {min-width:0}
+  .client-entry-shell .site-navigation {gap:6px;flex-wrap:nowrap}
+  .client-entry-shell .site-main-menu-trigger__label {display:none}
+}
