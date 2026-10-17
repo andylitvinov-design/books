@@ -31,8 +31,8 @@
 }
 .eyebrow svg { flex: none; }
 .tabs {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px; width: min(256px, 42%); flex: none;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px; width: min(368px, 55%); flex: none;
   padding: 3px; border: 1px solid rgb(255 255 255 / 34%);
   background: rgb(255 255 255 / 8%); border-radius: 100px;
 }
@@ -42,6 +42,7 @@
   font: 700 12px/1.2 system-ui, sans-serif; text-decoration: none;
 }
 .tabs a[aria-current="page"] { color: #243854; background: #fff9f3; }
+.aiShort { display: none; }
 .hero h1 {
   max-width: 790px; margin: 0 0 12px; color: #fff;
   font: 400 clamp(31px, 4.5vw, 52px)/1.12 Georgia, serif;
@@ -130,9 +131,11 @@
 @media (max-width: 620px) {
   .hero { margin: 10px 0 13px; padding: 19px 15px 18px; border-radius: 16px; }
   .topline { align-items: flex-start; gap: 8px; margin-bottom: 15px; }
-  .eyebrow { max-width: 47%; font-size: 9px; letter-spacing: .075em; line-height: 1.45; }
-  .tabs { width: 49%; }
-  .tabs a { min-height: 36px; padding: 5px; font-size: 11px; }
+  .eyebrow { max-width: 34%; font-size: 9px; letter-spacing: .075em; line-height: 1.45; }
+  .tabs { width: 64%; }
+  .tabs a { min-height: 36px; padding: 5px 2px; font-size: 10px; }
+  .aiLong { display: none; }
+  .aiShort { display: inline; }
   .hero h1 { font-size: clamp(30px, 8vw, 38px); margin-bottom: 10px; }
   .intro { margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
   .form { display: grid; gap: 6px; padding: 6px; border-radius: 14px; }
