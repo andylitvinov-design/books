@@ -261,3 +261,77 @@
   .levelObservation{font-size:.82rem!important;padding:9px 10px}
   .levelDisclosure>summary{font-size:.83rem}
 }
+
+
+/* All-assessment scored-range contract: visible selected range, readable
+   source/editiorial intervals and one actual response-linked description. */
+.currentScoreRange{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:baseline;
+  min-width:0;max-width:100%;margin:0!important;font:700 .85rem/1.36 system-ui,sans-serif!important;
+  color:#255d57;overflow-wrap:anywhere}
+.currentScoreRange strong{color:#305a62}
+.currentScoreRange span{display:inline-flex;max-width:100%;padding:2px 7px;
+  border-radius:7px;background:#f5edf0;color:#7b4053;font-size:.78rem;
+  font-weight:780;font-variant-numeric:tabular-nums;white-space:normal}
+.rangeReport{box-sizing:border-box;max-width:100%;min-width:0;margin:12px 0;padding:clamp(11px,2.2vw,16px);
+  border-radius:15px;border:1px solid #d3e2df;background:#fafcfb;color:#31545a;overflow-wrap:anywhere}
+.rangeReport :where(*){box-sizing:border-box;min-width:0}
+.rangeEyebrow{margin:0 0 6px!important;font:800 .7rem/1.3 system-ui,sans-serif!important;
+  color:#477674;letter-spacing:.06em}
+.rangeHeading{margin:0 0 7px!important;color:#1e4659;
+  font:760 clamp(.98rem,2.4vw,1.13rem)/1.34 system-ui,sans-serif!important;overflow-wrap:anywhere}
+.rangeNarrative{margin:0 0 10px!important;color:#2c4e55;font-size:.9rem!important;
+  line-height:1.53!important;font-weight:540;overflow-wrap:anywhere}
+.rangeContext,.traitReading{margin:8px 0!important;padding:9px 11px;
+  border-left:3px solid #468d89;border-radius:8px;background:#f0f7f6;
+  color:#3f6063;font-size:.83rem!important;line-height:1.5!important;overflow-wrap:anywhere}
+.rangeContext strong,.traitReading strong{font-weight:800;color:#255c60}
+.traitReading{border-left-color:#84647d;background:#f7f3f7}
+.rangeHeader{display:flex;justify-content:space-between;align-items:baseline;gap:7px 12px;
+  flex-wrap:wrap;margin:13px 0 9px}
+.rangeHeader h5{margin:0!important;font:780 .85rem/1.35 system-ui,sans-serif!important;color:#22545c}
+.rangeHeader span{font:.72rem/1.3 system-ui,sans-serif;color:#647576}
+.rangeMap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,115px),1fr));
+  list-style:none;margin:0;padding:0;gap:7px;width:100%;max-width:100%;min-width:0}
+.rangeMap li{position:relative;display:flex;flex-direction:column;gap:4px;min-width:0;
+  padding:9px 9px 10px;border:1px solid #d7e3e2;border-radius:11px;background:#fff;
+  line-height:1.27;overflow-wrap:anywhere}
+.rangePosition{font:.67rem/1.2 system-ui,sans-serif!important;color:#7c9090;letter-spacing:.02em}
+.rangeMap b{font:.82rem/1.26 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#244e60;
+  font-weight:800;overflow-wrap:anywhere}
+.rangeMap li>span{font:.76rem/1.35 system-ui,sans-serif;color:#526b70;overflow-wrap:anywhere}
+.rangeMap li[data-selected-score-range]{border:2px solid #914c65;background:#fff8fa;
+  padding:8px 8px 9px;box-shadow:0 1px 5px #77344b19}
+.rangeMap li[data-selected-score-range] b,.rangeMap li[data-selected-score-range]>span{color:#713c50}
+.rangeMap em{font:800 .69rem/1.3 system-ui,sans-serif;color:#873f59;font-style:normal;align-self:start}
+.rangeDescriptions{margin:10px 0 0;max-width:100%;min-width:0;border-top:1px solid #e3e9e7}
+.rangeDescriptions>summary{min-height:40px;display:flex;align-items:center;cursor:pointer;
+  color:#2a6a65;font:750 .84rem/1.35 system-ui,sans-serif;outline-offset:2px}
+.rangeDescriptions>summary:focus-visible{outline:2px solid #327c70}
+.rangeDetailsList{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:7px}
+.rangeDetailsList li{padding:9px 11px;border:1px solid #e0e8e7;border-radius:10px;background:white;min-width:0}
+.rangeDetailsList li[data-selected-score-description]{background:#fcf5f7;border-color:#ad8596}
+.rangeDetailsList strong{font-size:.83rem;color:#234d5c;font-variant-numeric:tabular-nums}
+.rangeDetailsList p{margin:4px 0 0!important;color:#526365;font:.8rem/1.5 system-ui,sans-serif!important;
+  overflow-wrap:anywhere}
+.rangeDetailsList small{display:inline-block;margin-top:5px;color:#86445b;font-weight:780}
+.rangeCaveat{margin:10px 0 0!important;color:#617477;font:.74rem/1.42 system-ui,sans-serif!important}
+.typeSummary{margin-top:13px}
+.typeSummary .rangeEyebrow{margin:0 0 7px!important}
+.typeSummary h3{margin:0 0 6px!important;font:770 1.06rem/1.4 system-ui,sans-serif!important}
+.typeSummary>p:not(.rangeEyebrow){margin:5px 0!important;font-size:.86rem!important;line-height:1.45!important}
+.typeSummary details>summary{cursor:pointer;font-weight:730;font-size:.82rem;padding:8px 0}
+.typeSummary>small{display:block;margin-top:6px;font-size:.76rem;line-height:1.45}
+@media(max-width:570px){
+ .rangeReport{padding:11px 10px}
+ .rangeMap{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .rangeMap li{padding:8px 7px}
+ .rangeMap li[data-selected-score-range]{padding:7px 6px}
+ .rangeNarrative{font-size:.86rem!important;line-height:1.47!important}
+ .rangeContext,.traitReading{padding:8px 9px;font-size:.81rem!important}
+}
+@media(max-width:330px){
+ .rangeMap{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .rangeMap li>span{font-size:.73rem}
+ .currentScoreRange{font-size:.79rem!important}
+}
+@media print{.rangeReport,.rangeMap li{break-inside:avoid}.rangeDetailsList li{break-inside:avoid}}
