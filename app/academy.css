@@ -3731,3 +3731,194 @@
 .reiki-standalone-consultation .reiki-offer-card__actions:has([data-contact-channel-chooser]) {
   max-width: 520px;
 }
+
+
+/* Tantra Reiki · Level 1 editorial hierarchy: full first lesson, eight optional disclosures. */
+.academy-reading-shell--tantra .tantra-journey__focus-heading {
+  margin: 0 0 10px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid #c9e3df;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #f4fbf8 0%, #eaf5f2 100%);
+}
+.academy-reading-shell--tantra .tantra-journey__focus-heading .homeopathy-kicker,
+.academy-reading-shell--tantra .tantra-journey__continuation .homeopathy-kicker {
+  margin: 0 0 9px;
+  color: #247887;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.academy-reading-shell--tantra .tantra-journey__focus-heading h2,
+.academy-reading-shell--tantra .tantra-journey__continuation h2 {
+  margin: 0 0 10px;
+  color: #174852;
+  font-family: var(--font-serif);
+  font-size: clamp(29px, 3.8vw, 44px);
+  font-weight: 500;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.academy-reading-shell--tantra .tantra-journey__focus-heading > p:last-child,
+.academy-reading-shell--tantra .tantra-journey__continuation > p:last-child {
+  max-width: 70ch;
+  margin: 0;
+  color: #476b71;
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.6;
+}
+.academy-reading-shell--tantra .tantra-journey__level--first {
+  border: 1px solid #a6d2cf;
+  box-shadow: 0 16px 32px rgba(24, 86, 87, .08);
+}
+.academy-reading-shell--tantra .tantra-journey__first-description {
+  margin: 0;
+  border-left: 3px solid #2c8993;
+  padding: 6px 0 6px 17px;
+  color: #285b64;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.55;
+}
+.academy-reading-shell--tantra .tantra-journey__first-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 13px 20px;
+  margin: 2px 0 28px;
+  padding: 18px 20px;
+  border: 1px solid #b6d8d6;
+  border-radius: 16px;
+  background: #f2faf8;
+}
+.academy-reading-shell--tantra .tantra-journey__first-cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 12px 19px;
+  border-radius: 11px;
+  color: #fff;
+  background: #1a6876;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.academy-reading-shell--tantra .tantra-journey__first-cta a:hover { background: #14525f; }
+.academy-reading-shell--tantra .tantra-journey__first-cta p {
+  flex: 1 1 230px;
+  margin: 0;
+  color: #5f787c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.academy-reading-shell--tantra .tantra-journey__continuation {
+  scroll-margin-top: 110px;
+  margin: 0 0 5px;
+  padding: 16px 5px;
+}
+.academy-reading-shell--tantra .tantra-journey__continuation h2 { font-size: clamp(28px, 3.3vw, 39px); }
+.academy-reading-shell--tantra .tantra-journey__collapsed {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #d2e5e1;
+  border-radius: 15px;
+  background: #fff;
+  scroll-margin-top: 128px;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed + .tantra-journey__collapsed { margin-top: 8px; }
+.academy-reading-shell--tantra .tantra-journey__collapsed-summary {
+  display: grid;
+  grid-template-columns: 49px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  min-height: 78px;
+  padding: 13px 18px;
+  list-style: none;
+  cursor: pointer;
+  color: #214d57;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-summary::-webkit-details-marker { display: none; }
+.academy-reading-shell--tantra .tantra-journey__collapsed-summary:hover,
+.academy-reading-shell--tantra .tantra-journey__collapsed[open] > .tantra-journey__collapsed-summary {
+  background: #eff8f6;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-number {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #e5f2f0;
+  color: #277b86;
+  font-size: 19px;
+  font-weight: 800;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-title { display: grid; gap: 3px; min-width: 0; }
+.academy-reading-shell--tantra .tantra-journey__collapsed-title strong {
+  color: #194c57;
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.2vw, 27px);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-title small {
+  color: #658188;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #357683;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed-chevron {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #c6dfdc;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed[open] .tantra-journey__collapsed-chevron { transform: rotate(180deg); }
+.academy-reading-shell--tantra .tantra-journey__collapsed > .tantra-journey__level {
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #d2e5e1;
+  border-radius: 0;
+  box-shadow: none;
+}
+.academy-reading-shell--tantra .tantra-journey__collapsed .tantra-journey__level-heading h3 { font-size: clamp(29px, 3.3vw, 42px); }
+.academy-reading-shell--tantra .tantra-journey__first-cta a:focus-visible,
+.academy-reading-shell--tantra .tantra-journey__collapsed-summary:focus-visible {
+  outline: 3px solid #b97b43;
+  outline-offset: 3px;
+}
+@media (max-width: 620px) {
+  .academy-reading-shell--tantra .tantra-journey__focus-heading { padding: 19px 17px; }
+  .academy-reading-shell--tantra .tantra-journey__first-cta { padding: 14px; }
+  .academy-reading-shell--tantra .tantra-journey__first-cta a { width: 100%; }
+  .academy-reading-shell--tantra .tantra-journey__collapsed-summary {
+    grid-template-columns: 39px minmax(0, 1fr) 28px;
+    gap: 11px;
+    min-height: 70px;
+    padding: 11px 12px;
+  }
+  .academy-reading-shell--tantra .tantra-journey__collapsed-number { width: 39px; height: 39px; font-size: 15px; }
+  .academy-reading-shell--tantra .tantra-journey__collapsed-title strong { font-size: 21px; }
+  .academy-reading-shell--tantra .tantra-journey__collapsed-action { font-size: 0; gap: 0; }
+  .academy-reading-shell--tantra .tantra-journey__collapsed-chevron { width: 28px; height: 28px; font-size: 22px; }
+  .academy-reading-shell--tantra .tantra-journey__collapsed .tantra-journey__level-heading h3 { font-size: 33px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .academy-reading-shell--tantra .tantra-journey__collapsed-chevron { transition: none; }
+}

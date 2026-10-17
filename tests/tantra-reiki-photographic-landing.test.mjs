@@ -42,7 +42,7 @@ test("Tantra Reiki: nine concrete learning outcomes in all three supported local
 
 test("Tantra Reiki: sales hero and training contact remain visible above historical source", async () => {
   const page = await readFile("components/academy-record-page.tsx", "utf8");
-  assert.match(page, /Feel the flow. Deepen connection. Learn to work with it/);
+  assert.match(page, /Tantra Reiki Level 1: Spring of Life/);
   assert.match(page, /className="tantra-course-hero__cta"/);
   assert.match(page, /Ask for dates & format/);
   assert.match(page, /className="tantra-course-hero__visual"/);

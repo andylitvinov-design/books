@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Tantra Reiki has one combined PDF/levels intro with preserved links", async () => {
+test("Tantra Reiki presents Level 1 before the combined PDF and later-level reference", async () => {
   const [page, journey, css] = await Promise.all([
     readFile("components/academy-record-page.tsx", "utf8"),
     readFile("components/tantra-reiki-journey.tsx", "utf8"),
@@ -22,5 +22,5 @@ test("Tantra Reiki has one combined PDF/levels intro with preserved links", asyn
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   const mergedIndex = page.indexOf("tantra-mobile-guide--combined");
   const lessonsIndex = page.indexOf('className="tantra-level-summary"');
-  assert.ok(mergedIndex > 0 && mergedIndex < lessonsIndex);
+  assert.ok(lessonsIndex > 0 && lessonsIndex < mergedIndex, "The first-level journey comes before optional resources");
 });
