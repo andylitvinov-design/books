@@ -14,7 +14,7 @@ function fixture(locale='ru',day=1,{onSession}={}){
   const h=mount('opora-v6-slide-player',{locale,data,
     onClose:()=>{closed=true},
     onFinish:()=>{closed=true},
-    onSession:async input=>{calls++;payload=input;return onSession?await onSession(input):true},
+    onSession:async input=>{calls++;payload=structuredClone(input);return onSession?await onSession(input):true},
   })
   return {h,get payload(){return payload},get calls(){return calls},get closed(){return closed}}
 }
@@ -38,7 +38,6 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
      assert.match(textOf(h.tree),/Сомневаться нормально/)
    }
    if(i===8){await click(h,'Частично');assert.match(textOf(h.tree),/Частичная попытка тоже опыт/)}
-   if(i===10){const first=fixture('ru',1).h.tree; assert.ok(first)} // different case presented
    if(i<13)await click(h,'Далее')
    else await click(h,'Сохранить практику')
  }
