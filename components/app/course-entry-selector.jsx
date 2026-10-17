@@ -9,6 +9,7 @@ import { COURSE_MEMBERSHIP, COURSE_PUBLIC_PLANS } from '@/lib/inner-growth/cours
 import ManualBillingRequest from './manual-billing-request'
 import { appFetch } from '@/lib/app/client-fetch'
 import Course14DayOverview from './course-14-day-overview'
+import CabinetFreeCourseBanners from './cabinet-free-course-banners'
 import { antistressModuleTitle, ANTISTRESS_MODULE_IDS } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-entry-selector.module.css'
 
@@ -204,6 +205,8 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
       </div>
       <p>{t.intro}</p>
     </header>
+
+    <CabinetFreeCourseBanners locale={locale}/>
 
     <section className={styles.tiles} aria-label={t.title}>
       {hasCourse && <article className={styles.current} data-current-course-card>
