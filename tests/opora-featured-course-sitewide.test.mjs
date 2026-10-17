@@ -20,12 +20,14 @@ test('public course enrollments focus on Anti-Stress without deleting old progra
   assert.match(ui, /applyProgramIntake\(started,programme,epoch,entryConcerns\)/)
 })
 
-test('top ribbon is a personal written review; a separate course ribbon follows the test chooser', () => {
+test('the personal-review ribbon stays separate from the Anti-Stress card after each public test chooser', () => {
   const bar = read('components/sitewide-antistress-banner.tsx')
   const style = read('components/sitewide-antistress-banner.module.css')
   const layout = read('app/layout.tsx')
   const home = read('components/holistic-house-home.tsx')
   const picker = read('app/[locale]/client/tests/page.tsx')
+  const publicExplorer = read('components/app/public-test-explorer.jsx')
+  const client = read('components/app/cabinet-landing.jsx')
   const top = bar.slice(0, bar.indexOf('export function TestSelectionCourseBanner'))
   const course = bar.slice(bar.indexOf('export function TestSelectionCourseBanner'))
   assert.ok(layout.includes('<SitewideAntistressBanner initialLocale={lang} />'))
@@ -36,8 +38,21 @@ test('top ribbon is a personal written review; a separate course ribbon follows 
   assert.ok(course.includes('app/course?program=stress'))
   assert.ok(course.includes('locale === "es" ? "en" : locale'))
   assert.ok(home.includes('<HomepageTopicJourneys locale={locale} />\n      <TestSelectionCourseBanner locale={locale} />'))
-  assert.ok(picker.includes('<TestSelectionCourseBanner locale={locale as Locale} />'))
-  assert.ok(picker.indexOf('<PublicTestExplorer') < picker.indexOf('<TestSelectionCourseBanner'))
+  assert.ok(picker.includes('<PublicTestExplorer locale={locale} embedded'))
+  assert.ok(!picker.includes('<TestSelectionCourseBanner'))
+  assert.ok(publicExplorer.includes('<TestSelectionCourseBanner locale={locale} />'))
+  assert.ok(publicExplorer.indexOf('<TestExplorer') < publicExplorer.indexOf('<TestSelectionCourseBanner'))
+  assert.ok(client.includes("phase === 'catalog' && <div id=\\"cabinet-tests\\"><PublicTestExplorer"))
+  assert.ok(!client.includes('TestSelectionCourseBanner'))
+  assert.match(course, /coursePrimary/)
+  assert.match(course, /courseSecondary/)
+  assert.match(course, /course-hero-mindful\\.svg/)
+  for (const translation of ['Пройдите курс «Антистресс»', 'Take the free Anti-Stress course', 'Haz el curso gratuito «Antiestrés»']) {
+    assert.ok(bar.includes(translation), translation)
+  }
+  assert.ok(style.includes('.courseCard{'))
+  assert.ok(style.includes('.courseActions{'))
+  assert.ok(style.includes('max-width:680px'))
   for (const route of ['admin', 'course', 'runs', 'results', 'report', 'settings']) {
     assert.ok(bar.includes(route), route + ' excludes a sensitive route')
   }
