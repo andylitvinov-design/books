@@ -59,9 +59,9 @@ test('approval and obstacles answer notes name scored capabilities, while money 
     const definition = get(key), result = scoreAt(definition, value)
     const model = interpretationBandModel(result, result.dimensions[0], 'en')
     assert.equal(model.construct, expected)
-    assert.ok(model.currentAnswerBand.note.includes('“' + expected + '”'))
+    assert.ok(model.currentAnswerBand.note.includes('«' + expected + '»'))
     assert.ok(!model.currentAnswerBand.note.includes(misleading))
-    assert.match(model.currentAnswerBand.note, value === 0 ? /seldom reported/ : /consistently reported/)
+    assert.match(model.currentAnswerBand.note, value === 0 ? /weakly endorsed/ : /consistently reflected/)
     assert.equal(definition.questions.length, 6)
     assert.equal(definition.scoring.dimensions[0].direction, 'higher-reported-resource')
   }
@@ -70,7 +70,7 @@ test('approval and obstacles answer notes name scored capabilities, while money 
   assert.equal(difficulty.construct, 'Money-related difficulty')
   assert.equal(coping.construct, 'Available money-related coping')
   assert.equal(difficulty.answerBands.length, 0)
-  assert.ok(coping.currentAnswerBand.note.includes('“Available money-related coping”'))
+  assert.ok(coping.currentAnswerBand.note.includes('«Available money-related coping»'))
 })
 
 test('TIPI key and reverse scoring yield every attainable mean with honest position and pole-specific prose in both locales', () => {
@@ -162,9 +162,9 @@ test('wrong provenance, signature, out-of-range or off-lattice values never acqu
   }
 })
 
-test('current reports reject old v1, missing and relabeled v10 rules and fall back to exact v12 code', () => {
-  assert.equal(STORED_INTERPRETATION_VERSION, '2026-10-17.v2')
-  assert.equal(INTERPRETATION_RULES_VERSION, '2026-10-17.v12')
+test('current reports reject old v1, missing and relabeled v10 rules and fall back to exact v13 code', () => {
+  assert.equal(STORED_INTERPRETATION_VERSION, '2026-10-17.v3')
+  assert.equal(INTERPRETATION_RULES_VERSION, '2026-10-17.v13')
   assert.equal(STORED_INTERPRETATION_RULES_VERSION, INTERPRETATION_RULES_VERSION)
   for (const key of ['hh-approval-pressure', 'tipi-10', 'hh-bach-flower-profile']) for (const locale of ['en', 'ru']) {
     const definition = get(key), result = scoreAt(definition), payload = payloadFor(definition, result, locale)
