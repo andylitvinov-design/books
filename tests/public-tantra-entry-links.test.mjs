@@ -129,10 +129,25 @@ for (const locale of ['en', 'ru', 'es']) {
   });
 }
 
-test('global review ribbon is permanently retired in every locale', () => {
-  assert.doesNotMatch(read('components/sitewide-antistress-banner.tsx'), /SitewideAntistressBanner|data-sitewide-personal-review-banner/);
-  assert.doesNotMatch(read('app/layout.tsx'), /SitewideAntistressBanner/);
-});
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} restores the top navy banner with free review and booking links`, () => {
+    const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
+      ...shared,
+      'next/navigation': { usePathname: () => `/${locale}/academy` },
+      './sitewide-antistress-banner.module.css': {},
+    }).SitewideAntistressBanner;
+    const pageLinks = renderLinks(banner, { initialLocale: locale });
+    assert.deepEqual(pageLinks.map((link) => link.href), [
+      `/${locale}/services/free-situation-review`,
+      `/${locale}/services#consultation`,
+    ]);
+    assert.match(pageLinks[1].text, {
+      en: /Book a consultation/,
+      ru: /Заказать консультацию/,
+      es: /Reservar consulta/,
+    }[locale]);
+  });
+}
 
 
 test('Home retains server-provided intro content and consultation CTA after contextual link addition', () => {

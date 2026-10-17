@@ -114,7 +114,8 @@ test("the final form offers three compact choices without name, email or answer 
 
 test("the single landing is not interrupted by unrelated sitewide promotions", () => {
   assert.match(read("lib/public-lead-capture.js"), /free-initiation/);
-  assert.doesNotMatch(read("app/layout.tsx"), /SitewideAntistressBanner/);
+  assert.match(read("app/layout.tsx"), /SitewideAntistressBanner/);
+  assert.match(read("components/sitewide-antistress-banner.tsx"), /free-initiation/);
   assert.doesNotMatch(page, /<PublicConsultationCta/);
 });
 
