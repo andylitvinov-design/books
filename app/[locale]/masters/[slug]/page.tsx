@@ -10,6 +10,7 @@ import { createArticleRepository } from "@/lib/practitioners/article-repository"
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
+import PractitionerVideoGallery from "@/components/practitioner-video-gallery";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
 import styles from "./profile.module.css";
 
@@ -77,9 +78,9 @@ export default async function MasterProfile({ params }: PageProps) {
     (item) => item.public && item.verificationStatus === "verified" &&
       (!item.expiresOn || item.expiresOn >= new Date().toISOString().slice(0, 10))
   );
-  let articles: { id: string; slug: string; published: { title: string; excerpt: string } }[] = [];
+  let articles: { id: string; slug: string; published: { title: string; excerpt: string; locale: string } }[] = [];
   try {
-    articles = await createArticleRepository(getAppConfig()).publicList(locale, practitioner.slug);
+    articles = await createArticleRepository(getAppConfig()).publicByPractitioner(practitioner.slug);
   } catch {
     // The profile remains useful when article listing is unavailable.
   }
@@ -213,15 +214,19 @@ export default async function MasterProfile({ params }: PageProps) {
           </details>
         )}
 
+        {Boolean(profile.videoMaterials?.length) && (
+          <PractitionerVideoGallery videos={profile.videoMaterials || []} locale={locale} />
+        )}
         {articles.length > 0 && (
-          <section className={styles.articles}>
+          <section id="practitioner-articles" className={styles.articles}>
             <h2>{ru ? "Статьи автора" : es ? "Artículos" : "Articles by this practitioner"}</h2>
             <div className={styles.articleGrid}>
               {articles.map((article) => (
                 <article key={article.id}>
+                  <small>{article.published.locale.toUpperCase()}</small>
                   <h3>{article.published.title}</h3>
                   <p>{article.published.excerpt}</p>
-                  <Link href={"/" + locale + "/articles/" + article.slug}>
+                  <Link href={"/" + article.published.locale + "/articles/" + article.slug}>
                     {ru ? "Читать" : es ? "Leer" : "Read"} →
                   </Link>
                 </article>
