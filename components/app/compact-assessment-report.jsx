@@ -6,11 +6,27 @@ import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
 
+
+function phq4ShortName(key, locale) {
+  const ru = locale === 'ru'
+  return {
+    'symptoms.phq4.total': ru ? 'Общий результат' : 'Overall',
+    'symptoms.phq4.depression': ru ? 'Настроение' : 'Mood',
+    'symptoms.phq4.anxiety': ru ? 'Тревога' : 'Anxiety',
+  }[key] || null
+}
+
 // Only presentation changes here: instrument scores, banding and recommendations
 // are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
   const ru = locale === 'ru'
   const sections = Array.isArray(report?.sections) ? report.sections : []
+  const phq4 = result?.definitionKey === 'phq-4' && report?.verified !== false &&
+    sections.length === 3 && ['symptoms.phq4.total', 'symptoms.phq4.depression', 'symptoms.phq4.anxiety']
+      .every(key => sections.some(section => section.key === key && section.bandBasis === 'screening'))
+  const mood = phq4 ? sections.find(section => section.key === 'symptoms.phq4.depression') : null
+  const anxiety = phq4 ? sections.find(section => section.key === 'symptoms.phq4.anxiety') : null
+  const total = phq4 ? sections.find(section => section.key === 'symptoms.phq4.total') : null
   const guideByScale = new Map((getTestScaleGuide(result.definitionKey, locale)?.scales || []).map(scale => [scale.key, scale]))
   const overview = assessmentResultOverview(report, result, locale)
   const initialIndex = overview.initialIndex ?? 0
@@ -35,6 +51,8 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const anchor = model?.currentAnswerBand || null
   const rawNote = !model ? null : model.displayKind === 'screening-count'
     ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
+    : section.bandBasis === 'screening'
+      ? ru ? 'Больше баллов означает больше отмеченных симптомов — не показатель здоровья.' : 'Higher scores reflect more reported symptoms, not a health score.'
     : model.orientation === 'difficulty'
       ? ru ? 'Больше баллов = больше описанных трудностей.' : 'A higher score means more reported difficulties.'
       : model.orientation === 'resource'
@@ -64,7 +82,19 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <h2 id="hh-assessment-scale-title">{ru ? 'Шкалы теста' : 'Test scales'}</h2>
         <span>{sections.length} {ru ? 'показателей' : 'measures'}</span>
       </div>
-      <div className={styles.scaleTabs} role="group" aria-label={ru ? 'Выберите шкалу для просмотра' : 'Choose a scale to explore'}>
+      {phq4 && <div className={styles.phq4Overview} data-phq4-overview role="note">
+        <strong>{anxiety.recommendedReview
+          ? ru ? 'На что обратить внимание: тревога' : 'Key finding: anxiety deserves attention'
+          : mood.recommendedReview
+            ? ru ? 'На что обратить внимание: настроение' : 'Key finding: mood deserves attention'
+            : ru ? 'Ваш результат за две недели' : 'Your two-week overview'}</strong>
+        <p>{ru
+          ? `Тревога ${anxiety.value}/6 — ${anxiety.value >= 3 ? 'достигнут скрининговый порог 3' : 'ниже порога 3'}; настроение ${mood.value}/6 — ${mood.value >= 3 ? 'достигнут порог 3' : 'ниже порога 3'}. Общая сумма ${total.value}/12 («${total.band}»). Показатели помогают выбрать тему для уточнения, а не поставить диагноз.`
+          : `Anxiety ${anxiety.value}/6 — ${anxiety.value >= 3 ? 'meets the screening threshold of 3' : 'below the threshold of 3'}; mood ${mood.value}/6 — ${mood.value >= 3 ? 'meets the threshold of 3' : 'below the threshold of 3'}. Total ${total.value}/12 (“${total.band}”). These scores guide follow-up, not diagnosis.`}</p>
+      </div>}
+      <div className={styles.scaleTabs + (phq4 ? ' ' + styles.phq4ScaleTabs : '')}
+        data-phq4-compact-tabs={phq4 || undefined}
+        role="group" aria-label={ru ? 'Выберите шкалу для просмотра' : 'Choose a scale to explore'}>
         {sections.map((item, index) => {
           const validScore = typeof item.value === 'number' && Number.isFinite(item.value)
           return <button type="button" key={item.key + ':' + index}
@@ -72,7 +102,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             aria-pressed={selectedIndex === index}
             className={styles.scaleTab + (selectedIndex === index ? ' ' + styles.selected : '')}
             onClick={() => setActiveIndex(index)}>
-            <span className={styles.tabName}>{item.construct || item.title}</span>
+            <span className={styles.tabName}>{phq4ShortName(item.key, locale) || item.construct || item.title}</span>
             <span className={styles.tabMeta}>
               {validScore ? item.value + ' / ' + item.max : (item.band || (ru ? 'Без числового балла' : 'No numeric score'))}
               {item.recommendedReview && <span className={styles.reviewDot} aria-label={ru ? 'Рекомендовано профессиональное обсуждение' : 'Professional follow-up suggested'}>!</span>}
@@ -94,10 +124,10 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       className={styles.card} role="region" aria-label={section.construct || section.title}
       data-active-scale={section.key}>
       <div className={styles.measure + (!showCaveatsInline && section.bandBasis === 'descriptive' ? ' ' + styles.quietGauge : '')}>
-        <ScoreGauge dimension={dimension} locale={locale} result={result}/>
+        <ScoreGauge dimension={dimension} locale={locale} result={result} showLegend={false} showScaleNote={false}/>
         <div className={styles.summary}>
-          <h3>{section.construct || section.title}</h3>
-          {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band}>{section.band}</p>}
+          <h3>{phq4ShortName(section.key, locale) || section.construct || section.title}</h3>
+          {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band + (section.recommendedReview ? ' ' + styles.bandNeedsReview : '')}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
@@ -105,6 +135,14 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
+      {model?.bands?.length > 0 && <div className={styles.bandStrip} data-score-band-strip
+        aria-label={ru ? 'Диапазоны скрининга и ваш результат' : 'Screening intervals and your result'}>
+        {model.bands.map(band => <span key={band.code}
+          className={band.current ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
+          aria-current={band.current ? 'true' : undefined}>
+          <b>{band.from}–{band.to}</b> {band.label}{band.current ? (ru ? ' · ваш' : ' · yours') : ''}
+        </span>)}
+      </div>}
       {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
