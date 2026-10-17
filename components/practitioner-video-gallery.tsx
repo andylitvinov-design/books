@@ -33,7 +33,7 @@ export default function PractitionerVideoGallery({videos,locale='en'}:{videos:Vi
   .filter((item):item is {video:VideoMaterial;index:number;embed:Embed}=>Boolean(item.embed))
   .sort((a,b)=>Number(b.video.locale===locale)-Number(a.video.locale===locale))
  if(!entries.length)return null
- return <section className={styles.section} aria-labelledby="practitioner-video-gallery-title">
+ return <section id="practitioner-videos" className={styles.section} aria-labelledby="practitioner-video-gallery-title">
   <header className={styles.header}>
    <p className="homeopathy-kicker">{t.eyebrow}</p>
    <h2 id="practitioner-video-gallery-title">{t.title}</h2>
