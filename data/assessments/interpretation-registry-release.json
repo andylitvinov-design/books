@@ -1,7 +1,8 @@
 {
-  "status": "pending",
-  "sourceCommit": null,
+  "status": "approved",
+  "sourceCommit": "d9ba8b92eb7bff99864d5403d9a78a199b727892",
   "interpretationVersion": "2026-10-17.v1",
-  "seedPath": null,
-  "recordCount": 0
+  "seedPath": "supabase/seeds/assessment-interpretations-2026-10-17.v1.sql",
+  "recordCount": 436,
+  "seedSha256": "sha256:eaa6604d7104e6aadcb1d75163e5396a13593ef3e1a5518b6b2f990a2a5fc315"
 }
