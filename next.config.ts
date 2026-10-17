@@ -21,6 +21,12 @@ const practitionerRecordingSources = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The idle Next badge covers fixed mobile navigation in isolated browser CI.
+  // This supported option preserves compile/runtime error badges and overlays.
+  devIndicators: process.env.CI === "true" &&
+    process.env.HH_APP_TEST_RUNTIME === "isolated" &&
+    process.env.NODE_ENV === "development" && !process.env.VERCEL
+    ? false : undefined,
   poweredByHeader: false,
   // Keep optimization for existing book/media redirect paths.
   // Verified static course photographs and the hot-path portrait opt out locally.
