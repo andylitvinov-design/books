@@ -26,7 +26,7 @@ test('material record validation enforces title, locale, duplicates, bounds and 
  assert.throws(()=>profile([{...v,title:''}]),{code:'INVALID_VIDEO_MATERIAL'})
  assert.throws(()=>profile([v,{...v,url:'https://www.youtube.com/watch?v=DX9zJhDvIWY'}]),{code:'DUPLICATE_VIDEO_MATERIAL'})
  assert.throws(()=>profile(Array(13).fill(v)),{code:'INVALID_LIST'})
- assert.throws(()=>profile([{...v,clientId:'private'}]),{code:'INVALID_BODY'})
+ assert.throws(()=>profile([{...v,clientId:'private'}]),{code:'UNKNOWN_FIELD'})
 })
 test('videos share profile editorial review; public page uses only approved author materials',async()=>{
  const [contracts,repo,publicPage,cabinet,gallery,articlesRepo,articleEditor]=await Promise.all([
