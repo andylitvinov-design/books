@@ -14,8 +14,7 @@ const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnother
 const WORDS = {
   en: {
     eyebrow: 'YOUR CABINET · PRIVATE',
-    title: 'My profile & reports', accountTitle: 'My profile',
-    accountSubtitle: 'Reports, recommendations and progress — all in one place.',
+    title: 'My profile & reports',
     reports: 'Your private reports, recommendations and guidance from your practitioner.',
     intro: 'Four perspectives on your journey. Explore what is available, follow changes over time, and choose support only when you want it.',
     psychology: 'Psychological', homeopathy: 'Homeopathy', wu_xing: 'Wu Xing', hypnotherapy: 'Hypnotherapy',
@@ -44,19 +43,18 @@ const WORDS = {
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
     archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
-    browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', browseAccount: 'Psychology · Homeopathy · Wu Xing · Hypnotherapy', privacySummary: 'Your reports are private', savedDocumentsLink: 'My saved documents', getReview: 'Free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
-    consultationNote: 'Free introductory request · Andrey confirms the time. Full sessions are paid.',
+    browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
+    consultationNote: 'Free introductory request, not an instant booking. Andrey confirms availability personally; full sessions are paid.',
     emptyInviteTitle: 'No reports yet? Start with a consultation',
     emptyInviteCopy: 'Discuss your situation with Andrey in a personal session. Choose 30 minutes (€50) or 60 minutes (€100). A free written review is available separately.',
     benefitGuidance: 'Personal guidance', benefitGuidanceHint: 'Discuss your goals',
     benefitFormat: 'Choose your format', benefitFormatHint: '30 or 60 minutes',
     benefitPrivate: 'Private reports', benefitPrivateHint: 'Save shared documents',
-    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'All services', support: 'Personal support',
+    overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore services', support: 'Personal support',
   },
   ru: {
     eyebrow: 'ЛИЧНЫЙ КАБИНЕТ · ПРИВАТНО',
-    title: 'Мой профиль и отчёты', accountTitle: 'Мой профиль',
-    accountSubtitle: 'Отчёты, рекомендации и динамика — в одном месте.',
+    title: 'Мой профиль и отчёты',
     reports: 'Ваши личные отчёты, рекомендации и поддержка специалиста — в одном приватном пространстве.',
     intro: 'Четыре стороны вашего профиля. Вы можете спокойно изучить записи, увидеть изменения и обратиться за поддержкой, когда захотите.',
     psychology: 'Психология', homeopathy: 'Гомеопатия', wu_xing: 'У-Син', hypnotherapy: 'Гипнотерапия',
@@ -85,14 +83,14 @@ const WORDS = {
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
     archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
-    browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', browseAccount: 'Психология · Гомеопатия · У-Син · Гипнотерапия', privacySummary: 'Ваши отчёты защищены', savedDocumentsLink: 'Сохранённые документы', getReview: 'Бесплатный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
-    consultationNote: 'Бесплатный запрос · Время подтвердит Андрей. Полные сессии платные.',
+    browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
+    consultationNote: 'Бесплатное ознакомительное обращение, не подтверждённая запись. Андрей согласует время лично; полноценные сессии платные.',
     emptyInviteTitle: 'Нет отчётов? Начните с консультации',
     emptyInviteCopy: 'Обсудите свою ситуацию с Андреем лично: 30 минут — €50, 60 минут — €100. Бесплатный письменный разбор можно заказать отдельно.',
     benefitGuidance: 'Личная поддержка', benefitGuidanceHint: 'Обсудите свой запрос',
     benefitFormat: 'Выбор формата', benefitFormatHint: '30 или 60 минут',
     benefitPrivate: 'Личный архив', benefitPrivateHint: 'Сохраняйте свои отчёты',
-    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Все услуги', support: 'Личная поддержка',
+    overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
 }
 // No report content, client ID, test answers or private URLs enter this enquiry.
@@ -103,7 +101,7 @@ function freeIntroConsultationHref(locale) {
     locale: ru ? 'ru' : 'en',
     service: ru ? 'Бесплатная ознакомительная консультация' : 'Free introductory consultation',
     request: ru
-      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные сессии платные.'
+      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные консультации оплачиваются отдельно.'
       : 'I would like to request a free introductory consultation. Please confirm whether an introductory conversation is available and suggest a time. I understand this is a request, not a confirmed booking, and longer personal sessions are paid separately.',
   })
 }
@@ -258,12 +256,23 @@ export function ProfileDomains({
   const panelTitle = { psychology: t.psyDetail, homeopathy: t.homeoDetail, wu_xing: t.wuDetail, hypnotherapy: t.hypnoDetail }
   const mayBeLimited = !external && (savedReports.filter(r => r.available !== false).length > 30 || savedDocuments.filter(d => d.kind === 'recommendation').length > 20)
 
+  const footerActions = (
+    <div className="hh-domain-footer-actions">
+      <Link className="hh-domain-free-review-link" href={'/' + locale + '/services/free-situation-review#request-free-review'} prefetch={false}>
+        <Sparkles size={19} aria-hidden="true" />{t.getReview}<ArrowRight size={18} aria-hidden="true" />
+      </Link>
+      <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
+        <Leaf size={19} aria-hidden="true" />{t.discover}<ArrowRight size={18} aria-hidden="true" />
+      </Link>
+    </div>
+  )
+
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
     <header className="hh-domain-hero">
       <div className="hh-domain-title">
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
-        <h1>{external ? t.title : t.accountTitle}</h1>
-        <p className="hh-domain-hero-subtitle">{external ? t.reports : t.accountSubtitle}</p>
+        <h1>{t.title}</h1>
+        <p className="hh-domain-hero-subtitle">{t.reports}</p>
         <div className="hh-domain-hero-actions">
         <a href="#personal-reports">{t.archiveTitle} <ArrowRight size={16} aria-hidden="true" /></a>
         {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
@@ -285,10 +294,11 @@ export function ProfileDomains({
         </div>
       )}
     </section>}
+    {!external && footerActions}
     <details className="hh-domain-more" defaultOpen={external} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
-        <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{external ? t.browseHint : t.browseAccount}</small>
-          {external && <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>}
+        <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
+          <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>
         </span>
         <ChevronDown size={20} aria-hidden="true" />
       </summary>
@@ -355,18 +365,7 @@ export function ProfileDomains({
     </div>
       </div>
     </details>
-    {external ? <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p> :
-      <details className="hh-domain-privacy">
-        <summary><LockKeyhole size={15} aria-hidden="true" /><span>{t.privacySummary}</span><ChevronDown size={15} aria-hidden="true" /></summary>
-        <p>{t.private}</p>
-      </details>}
-    <div className="hh-domain-footer-actions">
-      <Link className="hh-domain-free-review-link" href={'/' + locale + '/services/free-situation-review#request-free-review'} prefetch={false}>
-        <Sparkles size={19} aria-hidden="true" />{t.getReview}<ArrowRight size={18} aria-hidden="true" />
-      </Link>
-      <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
-        <Leaf size={19} aria-hidden="true" />{t.discover}<ArrowRight size={18} aria-hidden="true" />
-      </Link>
-    </div>
+    <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
+    {external && footerActions}
   </section>
 }
