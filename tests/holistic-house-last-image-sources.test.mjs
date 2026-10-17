@@ -24,10 +24,11 @@ test("Yggdrasil module artwork is always a small verified local source and bypas
   }
 });
 
-test("books use direct precompressed 146KB section artwork but retain book-cover optimization", () => {
+test("books use direct precompressed section artwork and prebuilt static catalogue covers", () => {
   const code = read("components/book-catalog.tsx");
   assert.match(code, /<Image\s+unoptimized\s+alt=[\s\S]*?src="\/images\/holistic-house\/books-library\.webp"/);
-  assert.match(code, /src=\{"\/media\/" \+ book\.mediaSeries/);
+  assert.match(code, /bookCoverArtworkUrl\(book\.id, "\/media\/" \+ book\.mediaSeries/);
+  assert.match(code, /unoptimized=\{hasBookCoverArtwork\(book\.id\)\}/);
   assert.equal(statSync(new URL("../public/images/holistic-house/books-library.webp", import.meta.url)).size,146898);
   assert.doesNotMatch(read("next.config.ts"), /images:\s*\{\s*unoptimized:\s*true/);
 });

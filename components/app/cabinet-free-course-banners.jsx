@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { appFetch } from '@/lib/app/client-fetch'
 import Image from 'next/image'
+import { cardArtworkUrl, hasCardArtwork } from '@/lib/public-card-artwork'
 import Link from 'next/link'
 import { ArrowUpRight, Sparkles } from 'lucide-react'
 import styles from './cabinet-free-course-banners.module.css'
@@ -88,7 +89,7 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
           data-free-course-id={course.id}
         >
           <span className={styles.photo} aria-hidden="true">
-            <Image src={course.image} alt="" fill sizes="(max-width: 860px) 96px, 92px" />
+            <Image src={cardArtworkUrl(course.image)} unoptimized={hasCardArtwork(course.image)} alt="" fill sizes="(max-width: 860px) 96px, 92px" />
           </span>
           <span className={styles.body}>
             <span className={styles.offer}>{content.offer}</span>

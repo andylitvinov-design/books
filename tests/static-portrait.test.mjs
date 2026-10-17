@@ -35,5 +35,6 @@ test('approved live Home uses real static portraits without restoring oversized 
 });
 
 test('only new public artwork folders are excluded from function tracing',()=>{
- const s=readFileSync('next.config.ts','utf8');assert.ok(s.includes('"/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*"]'));assert.ok(!s.includes('"./public/**/*"'));
+ const s=readFileSync('next.config.ts','utf8');assert.ok(s.includes('"/*": ["./public/images/reiki-originals/**/*", "./public/images/holistic-house/portrait-static/**/*", "./public/images/holistic-house/static-card-media/**/*"]'));
+ assert.ok(s.includes('source: "/images/holistic-house/static-card-media/:path*"'));assert.ok(!s.includes('"./public/**/*"'));
 });

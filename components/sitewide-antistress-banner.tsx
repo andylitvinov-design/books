@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { cardArtworkUrl } from "@/lib/public-card-artwork";
 import { StaticPortrait } from "@/components/static-portrait";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -118,7 +119,7 @@ export function TestSelectionCourseBanner({ locale, showReview = false }: { loca
       <aside className={styles.courseCard} data-tests-course-banner aria-label={t.eyebrow}>
         <div className={styles.courseCardInner}>
           <div className={styles.courseVisual}>
-            <Image src="/images/holistic-house/course-focus-mountain-boy.webp" alt={t.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
+            <Image src={cardArtworkUrl("/images/holistic-house/course-focus-mountain-boy.webp")} unoptimized alt={t.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
           </div>
           <div className={styles.courseContent}>
             <p className={styles.courseEyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
