@@ -124,7 +124,7 @@ test('dedicated public explorer joins the existing guest runner with public keys
   assert.deepEqual(h.navigation, ['/en/client?startTests=hh-current-state%2Cmini-ipip-20'])
 })
 
-test('guest entry starts on a single CTA, with a visible privacy notice and protected catalog', () => {
+test('guest entry starts on a single CTA, without redundant picker notice and with protected catalog', () => {
   const cabinet = src('components/app/cabinet-landing.jsx')
   const publicFlow = src('components/app/public-test-explorer.jsx')
   const picker = src('components/app/simple-test-picker.jsx')
@@ -138,7 +138,7 @@ test('guest entry starts on a single CTA, with a visible privacy notice and prot
   assert.match(cabinet, /guestFetch\('guest\/test-plans'/)
   assert.match(cabinet, /sourceKind: 'guest_result'/)
   assert.match(cabinet, /await startRun\(next, plan.id\)/)
-  assert.match(picker, /data-guest-start-notice/)
+  assert.doesNotMatch(picker, /data-guest-start-notice/)
   assert.match(src('components/app/test-explorer.jsx'), /data-guest-start-notice/)
   assert.match(src('components/app/mood-checkin.jsx'), /data-guest-start-notice/)
   assert.match(publicFlow, /entry\?\.rightsStatus === 'cleared'/)
