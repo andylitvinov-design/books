@@ -927,3 +927,150 @@
 .portraitAxisBrowse strong{display:block;font-weight:750;font-size:14px}
 .portraitAxisBrowse p{margin:4px 0 0!important;font:inherit;color:#436c61}
 @media(max-width:440px){.portraitAxisBrowse{padding:10px 12px;margin-bottom:12px}.portraitAxisBrowse strong{font-size:13px}.portraitAxisBrowse p{font-size:12px}}
+
+/* Portrait: four-sector summary switch (2026-10-17).
+   Keep non-portrait explorer and compact public image untouched. */
+.visual:not(.visualCompact):has(.portraitRadar){
+  min-width:0;
+  padding:clamp(8px,1.4vw,16px);
+  background:linear-gradient(145deg,#fffaf2,#f6f0e6);
+}
+.visual:not(.visualCompact) .portraitSectorPicker{
+  display:grid;
+  gap:7px;
+  margin:2px 0 8px;
+  padding:8px;
+  border:1px solid #bbd9d0;
+  border-radius:14px;
+  background:#f1f9f5;
+}
+.visual:not(.visualCompact) .portraitSectorAll,
+.visual:not(.visualCompact) .portraitSectorChip{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:42px;
+  margin:0;
+  padding:8px 11px;
+  border:1px solid #b1d3ca;
+  border-radius:10px;
+  background:#e7f3ef;
+  color:#226258;
+  font:750 12px/1.27 system-ui,sans-serif;
+  text-align:center;
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.visual:not(.visualCompact) .portraitSectorGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  min-width:0;
+  flex:none;
+  font:inherit;
+  line-height:1.27;
+  overflow-wrap:normal;
+}
+.visual:not(.visualCompact) .portraitSectorAll[aria-pressed=true],
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed=true]{
+  background:#22776d;
+  border-color:#22776d;
+  color:#fff;
+  box-shadow:0 2px 8px rgba(19,92,84,.14);
+}
+.visual:not(.visualCompact) .portraitSectorAll:hover:not([aria-pressed=true]),
+.visual:not(.visualCompact) .portraitSectorChip:hover:not([aria-pressed=true]){
+  background:#d8ede5;
+  border-color:#81b9ad;
+}
+.visual:not(.visualCompact) .portraitSectorAll:focus-visible,
+.visual:not(.visualCompact) .portraitSectorChip:focus-visible{
+  outline:3px solid #1b7472;
+  outline-offset:2px;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+  position:relative;
+  min-height:0;
+  height:auto;
+  width:100%;
+  aspect-ratio:360 / 390;
+  margin:0;
+  border-radius:16px;
+  overflow:hidden;
+  touch-action:auto;
+  cursor:default;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  filter:drop-shadow(0 2px 4px rgba(39,73,67,.09));
+}
+.visual:not(.visualCompact) .radarReference{stroke-width:2}
+.visual:not(.visualCompact) .radarRay{stroke-width:4.4}
+.visual:not(.visualCompact) .radarPoint{stroke-width:2.6}
+.radarSummarySector{pointer-events:none}
+.radarSummaryMissingRay{stroke:#aab8b4;stroke-width:1.5;stroke-dasharray:4 7;opacity:.47}
+.radarSummaryMissingPoint{fill:#f7f8f4;stroke:#8ca59a;stroke-width:2.2;stroke-dasharray:3 3}
+.radarSummaryLabel{
+  fill:#17544e;
+  font:750 14px/1.18 system-ui,sans-serif;
+  paint-order:stroke fill;
+  stroke:rgba(255,253,246,.97);
+  stroke-width:3.5px;
+  stroke-linejoin:round;
+}
+.radarSummaryValue{fill:#1e7266;font-size:15px;font-weight:800}
+.radarSummarySector[data-measured=false] .radarSummaryValue{fill:#788a82}
+.visual:not(.visualCompact) .radarInlineLabel{
+  font-size:12.5px;
+  stroke-width:3.5px;
+}
+.visual:not(.visualCompact) .portraitControls{
+  padding:12px 13px;
+  margin-top:10px;
+}
+.visual:not(.visualCompact) .visualFooter{
+  margin:7px 1px 0;
+  gap:4px;
+  color:#67736e;
+}
+.visual:not(.visualCompact) .visualFooter p{max-width:68ch;font-size:11px;line-height:1.42}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{min-height:38px;padding:7px 8px;font-size:12px}
+  .visual:not(.visualCompact) .portraitSectorPicker{padding:7px;gap:6px}
+  .visual:not(.visualCompact) .portraitControls{padding:10px}
+  .visual:not(.visualCompact) .radarInlineLabel{font-size:12px}
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact):has(.portraitRadar){padding:6px}
+  .visual:not(.visualCompact) .portraitSectorPicker{margin-bottom:5px;padding:6px;border-radius:12px}
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11.5px;min-height:37px;padding:7px 6px}
+  .visual:not(.visualCompact) .modelStage:has(.portraitRadar){border-radius:12px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:13.5px}
+  .visual:not(.visualCompact) .radarSummaryValue{font-size:14px}
+  .visual:not(.visualCompact) .portraitControlsHeading{font-size:13px}
+  .visual:not(.visualCompact) .portraitRayOptions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:345px){
+  .visual:not(.visualCompact) .portraitSectorChip{font-size:11px}
+  .visual:not(.visualCompact) .radarSummaryLabel{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .visual:not(.visualCompact) .portraitSectorAll,
+  .visual:not(.visualCompact) .portraitSectorChip{transition:none}
+}
