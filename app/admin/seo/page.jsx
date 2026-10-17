@@ -7,6 +7,8 @@ import { requireAdminRequest } from "@/lib/prescriptions/admin";
 import { uiLocaleCookie } from "@/lib/ui-locale";
 import { readSearchMetrics, readPublicSitemap, verifiedSeoBaseline as baseline } from "@/lib/seo/admin-dashboard-data.mjs";
 import styles from "./seo-dashboard.module.css";
+import { SeoRecommendations } from "@/components/admin-seo-recommendations";
+import { getSeoRecommendations } from "@/lib/seo/actionable-recommendations.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,6 +103,9 @@ export default async function AdminSeoDashboard({ searchParams }) {
   const tech = baseline.technical;
   const lab = baseline.lighthouse;
   const indexedPercent = tracker.tracked ? Math.min(100, tracker.indexed / tracker.tracked * 100) : 0;
+  const recommendations = getSeoRecommendations({
+    search, baseline, sitemap: site, days, locale,
+  });
 
   return <main className={"prescription-admin-shell " + styles.page} data-seo-admin-dashboard>
     <PrescriptionAdminHeader
@@ -123,6 +128,7 @@ export default async function AdminSeoDashboard({ searchParams }) {
       <Metric label={t.ctr} value={percent(summary.ctr)} foot={summary.ctr==null?t.noCtr:t.searchNote}/>
       <Metric label={t.position} value={position(summary.position)} foot={summary.position==null?t.noPosition:t.searchNote}/>
     </div>
+    <SeoRecommendations recommendationResult={recommendations} locale={locale} />
     <div className={styles.two}>
       <section className={styles.panel}><div className={styles.panelHeading}><div><h2>{t.trend}</h2><p>{t.trendNote}</p></div><small className={styles.small}>{live ? t.live : t.saved}</small></div>
         {daily.length ? <><div className={styles.chart} role="img" aria-label={t.trend}>
