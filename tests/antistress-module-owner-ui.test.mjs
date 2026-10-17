@@ -4,7 +4,10 @@ import * as programs from '../lib/inner-growth/course-programs.js'
 import { mount, findPart, findButton, nodes, deferred, account, courseA, courseView } from './helpers/course-ui-harness.mjs'
 
 const scales = ['load','tension','functioning'].map(key => ({id:'hh-weekly-pulse::weekly.'+key,label:key}))
+const part = name => ({ default: Object.assign(() => null, { testName: name }) })
 const extraModules = {
+  './course-completion-review': part('CourseCompletionReview'),
+  './course-focus-picker': part('CourseFocusPicker'),
   '@/lib/inner-growth/course-strategy': {
     courseMeasuredProfile:()=>({eligible:scales,scales}),courseRecommendedTests:()=>[],courseSuggestedFocus:()=>scales,
   },
