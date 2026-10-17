@@ -111,7 +111,7 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,139)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
   assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
