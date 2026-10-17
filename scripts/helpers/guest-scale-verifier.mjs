@@ -13,7 +13,7 @@ export function assertGuestSaveIntent(body, result) {
   assert.match(body.operationId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
 }
 // Shared exact instrument checks apply to both guest cards and selected account scales.
-function assertScoredGaugeSnapshot(actual, result, section, locale) {
+function assertScoredGaugeSnapshot(actual, result, section, locale, account = false) {
   const ru = locale === 'ru'
   const dimension = result.dimensions.find(item => item.key === section.key)
   assert.ok(dimension, 'Every verified scale must retain its scored dimension')
@@ -52,7 +52,12 @@ function assertScoredGaugeSnapshot(actual, result, section, locale) {
     const caption = model.continuous ? ru ? 'Непрерывная шкала' : 'Continuous scale'
       : model.basis === 'screening' ? ru ? 'Скрининговые диапазоны' : 'Screening intervals'
         : ru ? 'Справочные диапазоны' : 'Reference intervals'
-    const caution = model.continuous ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs' : direction
+    const originalAnswer = account ? model.currentAnswerBand : null
+    const displayedCaption = originalAnswer
+      ? (ru ? 'Ближе к ответу: ' : 'Closest answer: ') + originalAnswer.label : caption
+    const caution = originalAnswer
+      ? ru ? 'Ответы анкеты, не клиническая категория' : 'Questionnaire responses, not a clinical category'
+      : model.continuous ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs' : direction
     assert.equal(actual.gaugeKind, kind)
     assert.equal(actual.gaugeScale, model.continuous ? 'continuous' : 'published-bands')
     assert.deepEqual(actual.segmentCodes, model.bands.map(band => band.code), 'Only published intervals may become dial sectors')
@@ -81,12 +86,12 @@ function assertScoredGaugeSnapshot(actual, result, section, locale) {
         assert.ok(Number.isFinite(value) && Math.abs(value - expected.coordinates[coordinateIndex]) < 1e-6, 'Exact source-bound sector coordinate: ' + tokenIndex)
       }
     }
-    assert.equal(normalized(actual.caption), caption)
+    assert.equal(normalized(actual.caption), displayedCaption)
     assert.equal(normalized(actual.caution), caution)
     const left = kind === 'difficulty' ? section.max : section.min
     const right = kind === 'difficulty' ? section.min : section.max
     assert.equal(normalized(actual.endpoints), numeral(left, locale) + numeral(right, locale), 'Both exact axis endpoints')
-    assert.equal(normalized(actual.gaugeLabel), `${ru ? 'Баллы' : 'Score'}: ${numeral(section.value, locale)}. ${ru ? 'Диапазон' : 'Range'} ${numeral(section.min, locale)}–${numeral(section.max, locale)}. ${caption}. ${model.currentBand?.label || direction}`)
+    assert.equal(normalized(actual.gaugeLabel), `${ru ? 'Баллы' : 'Score'}: ${numeral(section.value, locale)}. ${ru ? 'Диапазон' : 'Range'} ${numeral(section.min, locale)}–${numeral(section.max, locale)}. ${caption}. ${originalAnswer?.label || model.currentBand?.label || direction}`)
     assert.equal(actual.svgCount, 1)
     // Verify the actual needle against
     // BOTH persisted bounds, including nonzero minima and reversed difficulty.
@@ -140,7 +145,7 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     assert.deepEqual(actual.pressedKeys, [section.key], 'The selected scale alone is pressed and reachable')
     assert.equal(actual.rootGaugeCount, 1, 'The account report renders only its selected instrument gauge')
     assert.equal(normalized(actual.title), normalized(section.construct || section.title))
-    assertScoredGaugeSnapshot(actual, result, section, locale)
+    assertScoredGaugeSnapshot(actual, result, section, locale, true)
     assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
     for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || []), ...(section.limitations || [])].filter(Boolean))
       assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)

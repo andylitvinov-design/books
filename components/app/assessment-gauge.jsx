@@ -3,6 +3,7 @@ import styles from './assessment-gauge.module.css'
 
 const publishedColors = ['#a84842', '#b66c43', '#8c793d', '#477f69', '#2f6c5e']
 const continuousColor = '#728881'
+const answerColors = ['#b78363', '#c7a66b', '#b1ae72', '#729a87', '#397f69']
 // An unclassified trait stays neutral; published categorical bands may be
 // visually distinct without assigning a healthy/unhealthy meaning.
 const categoricalColors = ['#518c94', '#70a89a', '#cfad67', '#aa8aa7', '#c98975']
@@ -49,7 +50,7 @@ function BandLegend({ model, locale }) {
   </ol>
 }
 
-export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false, showLegend = true, showScaleNote = true }) {
+export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false, showLegend = true, showScaleNote = true, showAnswerAnchors = true }) {
   const model = gaugeModel(dimension, result, locale)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет достоверной числовой шкалы' : 'No verified numeric scale'}</span>
@@ -66,7 +67,9 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   </figure>
   // One continuous color transition is illustrative, not invented diagnosis cutoffs.
   // Neutral/trait scales retain the uncolored dial.
-  const graded = model.continuous && (model.orientation === 'difficulty' || model.orientation === 'resource')
+  const hasAnswerBands = showAnswerAnchors && Boolean(model.answerBands?.length)
+  const graded = model.continuous && !hasAnswerBands &&
+    (model.orientation === 'difficulty' || model.orientation === 'resource')
   const gradientId = continuousGradientId(dimension, result)
   const angle = (1 - model.fraction) * Math.PI
   const tip = coordinate(angle, 65)
@@ -83,10 +86,10 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
   const left = model.orientation === 'difficulty' ? dimension.max : dimension.min
   const right = model.orientation === 'difficulty' ? dimension.min : dimension.max
   return <figure className={styles.gauge + (compact ? ' ' + styles.compact : '')}
-    data-assessment-gauge={model.orientation} data-gauge-scale={model.continuous ? 'continuous' : 'published-bands'}
+    data-assessment-gauge={model.orientation} data-gauge-scale={model.continuous ? 'continuous' : 'published-bands'} data-answer-anchor-scale={hasAnswerBands ? 'source-responses' : undefined}
     aria-label={(ru ? 'Баллы: ' : 'Score: ') + numeral(dimension.value, locale) +
       '. ' + (ru ? 'Диапазон ' : 'Range ') + numeral(dimension.min, locale) + '–' + numeral(dimension.max, locale) +
-      '. ' + scaleType + '. ' + (model.currentBand?.label || direction)}>
+      '. ' + scaleType + '. ' + (hasAnswerBands ? model.currentAnswerBand?.label : model.currentBand?.label || direction)}>
     <svg viewBox="0 0 200 112" aria-hidden="true" focusable="false">
       {graded && <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -108,16 +111,28 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
           fill="none" stroke={bandColor(band, index, model)}
           strokeWidth={band.current ? '16' : '12'} strokeLinecap="butt" />
       })}
+      {hasAnswerBands && model.answerBands?.map((band, index) => {
+        const from = coordinate(Math.PI * (1 - band.startFraction))
+        const to = coordinate(Math.PI * (1 - band.endFraction))
+        return <path key={band.code} data-answer-anchor={band.code}
+          d={'M ' + from.x + ' ' + from.y + ' A 78 78 0 0 1 ' + to.x + ' ' + to.y}
+          fill="none" stroke={answerColors[Math.min(index, answerColors.length - 1)]}
+          strokeWidth={band.current ? '16' : '12'} strokeLinecap="butt" />
+      })}
       <line x1="100" y1="98" x2={tip.x} y2={tip.y} stroke="#394b45" strokeWidth="3.4" strokeLinecap="round"/>
       <circle cx="100" cy="98" r="6" fill="#394b45"/>
       <circle cx="100" cy="98" r="2" fill="#fffcf6"/>
     </svg>
     <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ {numeral(dimension.max, locale)}</span></strong>
     <div className={styles.endpoints} aria-hidden="true"><span>{numeral(left, locale)}</span><span>{numeral(right, locale)}</span></div>
-    <figcaption>{scaleType}</figcaption>
-    {showScaleNote && <small className={styles.scaleNote}>{model.continuous
-      ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs'
-      : direction}</small>}
+    <figcaption>{hasAnswerBands
+      ? (ru ? 'Ближе к ответу: ' : 'Closest answer: ') + model.currentAnswerBand?.label
+      : scaleType}</figcaption>
+    {showScaleNote && <small className={styles.scaleNote}>{hasAnswerBands
+      ? ru ? 'Ответы анкеты, не клиническая категория' : 'Questionnaire responses, not a clinical category'
+      : model.continuous
+        ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs'
+        : direction}</small>}
     {showLegend && <BandLegend model={model} locale={locale} />}
   </figure>
 }
