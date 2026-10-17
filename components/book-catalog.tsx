@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { bookCoverArtworkUrl, hasBookCoverArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { BookOpen, Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
@@ -180,7 +181,8 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
                     alt={locale === "ru" ? "Обложка: " + display.title : "Cover: " + display.title}
                     height={600}
                     priority={!showFeatured && index === 0}
-                    src={"/media/" + book.mediaSeries + "/" + book.cover}
+                    src={bookCoverArtworkUrl(book.id, "/media/" + book.mediaSeries + "/" + book.cover)}
+                    unoptimized={hasBookCoverArtwork(book.id)}
                     width={800}
                   />
                 </figure>
