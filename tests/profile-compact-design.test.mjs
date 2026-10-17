@@ -98,6 +98,6 @@ test('Profile, Tests, Reports, Courses and Practice share one five-button accoun
   assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
   assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
   assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
-  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{\s*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
 })
 
