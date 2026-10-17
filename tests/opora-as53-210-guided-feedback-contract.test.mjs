@@ -51,7 +51,8 @@ test('all fourteen aphorism slides have genuine voluntary voting, no forced agre
     assert.match(aph,/соглас|Соглас|отклика|Отклика/)
     assert.match(aph,/Сомневаю|сомневаю|сомнева/)
     assert.match(aph,/Не согласен|не согласен|Несоглас/)
-    assert.match(aph,/Пропустить/)
+    assert.doesNotMatch(aph,/«Пропустить»/)
+    assert.doesNotMatch(aph,/aphorismResponse:\s*skip/)
     assert.match(aph,/нейтральн|нейтральн|Ваш взгляд|Ваше мнение|Не нужно менять/)
     const row=rows[index].split('|').map(x=>x.trim())
     assert.equal(Number(row[1]),index+1)
@@ -62,6 +63,7 @@ test('all fourteen aphorism slides have genuine voluntary voting, no forced agre
     assert.ok(row[6].length>26,'EN neutral quote missing')
   }
   assert.equal((prior.match(/^#### Экран 05 — Афоризм и голосование/gm)||[]).length,14)
+  assert.doesNotMatch(prior,/aphorismResponse:agree\|unsure\|disagree\|skip/)
 })
 
 test('each practice has true attempts, hints or neutral alternatives, not a required clinical number',()=>{
