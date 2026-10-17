@@ -50,7 +50,7 @@ test('mobile Profile uses near edge-to-edge cards and a compact first viewport',
   assert.match(css, /max-height:720px/)
   assert.match(css, /prefers-reduced-motion:reduce/)
   assert.match(css, /:focus-visible/)
-  assert.ok(!css.includes('body {'), 'only private Profile can be affected')
+  assert.doesNotMatch(css, /^\s*body\s*\{/m, 'only private Profile can be affected')
   // Actual shared sitewide ribbon is already navy + burgundy; do not duplicate or recolour it.
   assert.match(banner, /\.ribbon\{[^\n]*background:#102849/)
   assert.match(banner, /\.cta\{[^\n]*background:#922f51/)
