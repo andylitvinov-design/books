@@ -388,6 +388,8 @@ export function SimpleTestPicker({
             aria-pressed={chosen} disabled={!onChooseTantraPath}
             onClick={() => {
               onChooseTantraPath?.(path.keys)
+              setHeroSearch('')
+              setSubmittedHeroSearch('')
               setVisibleCount(5)
               document.getElementById('hh-simple-recommendations')?.scrollIntoView({behavior:'smooth',block:'start'})
             }}>
