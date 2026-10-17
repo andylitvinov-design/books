@@ -390,7 +390,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       let courseId = null
       // A course-assigned questionnaire still belongs to its course journey.
       // Keep its special assignment/progression rules from the regular test list.
-      if (isCourseTest(courseState, entry.key) &&
+      if (courseKeys.includes(entry.key) &&
           !courseStatusByKey.get(entry.key)?.completed) {
         const fresh = await api('course')
         if (isCourseTest(fresh, entry.key) &&
