@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "property": "https://holistichouse.vercel.app/",
+  "capturedAt": "2026-10-17T12:25:39.357Z",
+  "search": {
+    "periodDays": 28,
+    "settledThrough": "2026-10-14",
+    "clicks": 0,
+    "impressions": 0,
+    "ctr": null,
+    "position": null,
+    "source": "Google Search Console via GSC Wizard",
+    "note": "No search impressions yet. CTR and average position are undefined, not 0% or position 0."
+  },
+  "sitemap": {
+    "fetchedAt": "2026-10-16T19:55:59.098Z",
+    "submittedUrls": 601,
+    "indexedReported": 0,
+    "errors": 0,
+    "warnings": 0,
+    "source": "Google Search Console Sitemaps report"
+  },
+  "tracker": {
+    "checkedAt": "2026-10-17T12:25:39.357Z",
+    "tracked": 19,
+    "indexed": 1,
+    "notIndexed": 16,
+    "pending": 2,
+    "errors": 0,
+    "warnings": 0,
+    "source": "GSC Wizard Indexing Tracker"
+  },
+  "technical": {
+    "checkedAt": "2026-10-16T19:58:43.170Z",
+    "checked": 601,
+    "ok200": 601,
+    "redirects": 0,
+    "invalid": 0,
+    "networkFailures": 0,
+    "source": "GitHub Actions exhaustive live sitemap audit",
+    "reportUrl": "https://github.com/andylitvinov-design/books/actions/runs/38958706357"
+  },
+  "lighthouse": {
+    "checkedAt": "2026-10-16T20:09:06.230Z",
+    "mobile": {
+      "performance": 82,
+      "seo": 92,
+      "lcpMs": 3231.768,
+      "cls": 0,
+      "tbtMs": 397.5,
+      "inpMs": null
+    },
+    "desktop": {
+      "performance": 100,
+      "seo": 92,
+      "lcpMs": 661.922,
+      "cls": 0,
+      "tbtMs": 0,
+      "inpMs": null
+    },
+    "source": "Lighthouse 12.6.0 lab test (not CrUX field data)",
+    "reportUrl": "https://github.com/andylitvinov-design/books/actions/runs/38959651113"
+  }
+}
