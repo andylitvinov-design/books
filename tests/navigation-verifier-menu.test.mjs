@@ -27,7 +27,7 @@ function loadComponent(path, modules) {
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: link },
-  'lucide-react': Object.fromEntries(['CircleUserRound', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'FileText', 'Flower2'].map(name => [name, () => null])),
+  'lucide-react': Object.fromEntries(['CircleUserRound', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown'].map(name => [name, () => null])),
 };
 let pathname = '/';
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
@@ -40,18 +40,23 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
-const { HomeFreePaths } = loadComponent('components/home-free-paths.tsx', {
-  ...common, '@/components/acquisition-event-link': { AcquisitionEventLink },
-  './home-free-paths.module.css': { default: {} },
+const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
+const { ServicesSolutions } = loadComponent('components/services-solutions.tsx', {
+  ...common,
+  'next/image': { default: props => jsx('img', props) },
+  '@/components/acquisition-event-link': { AcquisitionEventLink },
+  '@/data/core-service-offers': { coreServiceOffers },
+  '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
+  './services-solutions.module.css': { default: {} },
 });
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
   ...common, '@/data/local-acquisition': acquisition,
   '@/components/site-navigation': { SiteNavigation },
-  '@/components/home-free-paths': { HomeFreePaths },
+  '@/components/services-solutions': { ServicesSolutions },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
   ...Object.fromEntries([
     ['static-portrait', 'StaticPortrait'], ['homepage-contact-cta', 'HomepageContactCta'],
-    ['services-solutions', 'ServicesSolutions'], ['homepage-topic-journeys', 'HomepageTopicJourneys'],
+    ['homepage-topic-journeys', 'HomepageTopicJourneys'],
     ['home-free-tests-banner', 'HomeFreeTestsBanner'], ['personal-testimonials', 'PersonalTestimonials'],
     ['site-video-player', 'SiteVideoPlayer'],
     ['sitewide-antistress-banner', 'TestSelectionCourseBanner'],
@@ -85,20 +90,32 @@ function assertHomeRoutes(tree, locale) {
   ]);
   assert.deepEqual(actions.map(node => node.props.className), ['service-home-button service-home-button--primary', 'service-home-button service-home-button--secondary', 'service-home-paid-link']);
   const freeStart = nodes.filter(node => node.props.id === 'free-start');
-  assert.equal(freeStart.length, 1, 'Start free resolves to the real rendered section');
-  assertFreePaths(freeStart[0], locale);
-  assert.ok(nodes.indexOf(actions[2]) < nodes.indexOf(freeStart[0]));
+  assert.equal(freeStart.length, 1, 'Start free resolves to the actual photo service heading');
+  const services = nodes.filter(node => node.props['data-core-service-offers'] === 'home');
+  assert.equal(services.length, 1, 'Only the existing photographic services section is rendered');
+  assertPhotoServices(services[0], locale);
+  assert.ok(nodes.indexOf(actions[2]) < nodes.indexOf(services[0]));
 }
-function assertFreePaths(tree, locale) {
-  assert.deepEqual(treeNodes(tree).filter(node => node.type === 'a').map(node => node.props.href), [
-    '/' + locale + '/services/free-situation-review', '/' + locale + '/wu-xing', '/' + locale + '/client/tests',
-  ]);
+function assertPhotoServices(section, locale) {
+  const cards = treeNodes(section).filter(node => node.props['data-core-service-id']);
+  const ids = ['situation', 'dao', 'alchemy', 'hypnotherapy'];
+  const slugs = ['free-situation-review', 'dao-health-profile', 'alchemy-of-soul', 'hypnotherapy-course'];
+  assert.deepEqual(cards.map(card => card.props['data-core-service-id']), ids, 'The original four photo service cards remain');
+  cards.forEach((card, index) => {
+    const nodes = treeNodes(card);
+    const expectedHref = '/' + locale + '/services/' + slugs[index];
+    const links = nodes.filter(node => node.type === 'a' && node.props.href === expectedHref);
+    assert.equal(links.length, 3, 'Each photo card keeps linked photo, title and CTA: ' + ids[index]);
+    const images = nodes.filter(node => node.type === 'img');
+    assert.equal(images.length, 1, 'Each card retains its existing photograph: ' + ids[index]);
+    assert.match(images[0].props.src, /^\/(?:images\/holistic-house|academy\/)/);
+  });
 }
 for (const locale of ['en', 'ru']) {
   test(locale + ' homepage renders exact free review, tests and optional paid text-link routes in order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
 }
-for (const locale of ['en', 'ru', 'es']) {
-  test(locale + ' real HomeFreePaths keeps all three distinct free destinations', () => assertFreePaths(HomeFreePaths({ locale }), locale));
+for (const locale of ['en', 'ru']) {
+  test(locale + ' existing photo cards keep both free services and two personal-work options', () => assertPhotoServices(ServicesSolutions({ locale, variant: 'home' }), locale));
 }
 for (const action of ['free-written-review', 'free-tests', 'paid-sessions']) {
   test('homepage route contract rejects wrong ' + action + ' destination', () => {
@@ -113,7 +130,10 @@ for (const fault of ['wrong paid label', 'missing free target', 'wrong Wu Xing r
     const nodes = treeNodes(tree);
     if (fault === 'wrong paid label') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.children[0] = 'Free call';
     if (fault === 'missing free target') nodes.find(node => node.props.id === 'free-start').props.id = 'missing';
-    if (fault === 'wrong Wu Xing route') nodes.find(node => node.props.href === '/en/wu-xing').props.href = '/en/services/dao-health-profile';
+    if (fault === 'wrong Wu Xing route') {
+      const dao = nodes.find(node => node.props['data-core-service-id'] === 'dao');
+      treeNodes(dao).find(node => node.type === 'a' && node.props.href === '/en/services/dao-health-profile').props.href = '/wrong';
+    }
     assert.throws(() => assertHomeRoutes(tree, 'en'));
   });
 }
