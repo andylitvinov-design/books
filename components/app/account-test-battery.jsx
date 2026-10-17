@@ -10,7 +10,7 @@ import { getDefinitionById } from '@/lib/assessments/definitions'
 import { monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import { profileCompletionRecommendations } from '@/lib/profile/summary'
-import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { buildExplorerEntries, filterExplorerEntries, rankExplorerEntries, TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { INSIGHTS_TEST_CATEGORIES } from '@/lib/assessments/insights-categories'
 import { PENDING_TEST_SELECTION_KEY, readTestSelectionIntent, validTestKeys } from '@/lib/app/test-selection-intent'
@@ -128,7 +128,9 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   useEffect(() => {
     if (legacyDynamics) router.replace('/' + locale + '/app/portfolio?tab=dynamics', { scroll: false })
   }, [legacyDynamics, locale, router])
-  const openFromInsights = searchParams.get('explore') === '1'
+  const rayParam = searchParams.get('axis')
+  const portraitAxis = rayParam && rayParam !== 'personality' && TEST_EXPLORER_AXES.includes(rayParam) ? rayParam : null
+  const openFromInsights = searchParams.get('explore') === '1' || Boolean(portraitAxis)
   const fromCourse = searchParams.get('course') === '1'
   const requestedCourseId = searchParams.get('courseId') || null
   const accountId = data.account?.id
@@ -173,14 +175,14 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     let childFrame
     const frame = window.requestAnimationFrame(() => {
       childFrame = window.requestAnimationFrame(() => {
-        document.getElementById('hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document.getElementById(portraitAxis ? 'hh-test-list' : 'hh-test-customizer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     })
     return () => {
       window.cancelAnimationFrame(frame)
       if (childFrame !== undefined) window.cancelAnimationFrame(childFrame)
     }
-  }, [openFromInsights, insightsCategory])
+  }, [openFromInsights, insightsCategory, portraitAxis])
   const allowedFilters = ['all', 'notStarted', 'inProgress', 'completed', 'remaining']
   const requestedFilter = allowedFilters.includes(initialStatusFilter) ? initialStatusFilter : null
   const [statusFiltersOpen, setStatusFiltersOpen] = useState(Boolean(requestedFilter))
@@ -255,10 +257,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   // A category-scoped invitation starts a fresh *filter view*, never modifies
   // stored selections. Saving uses the existing appendActive flow.
   const categoryFocus = TEST_RECOMMENDATION_FOCUS.some((item) => item.key === insightsCategory) ? [insightsCategory] : []
-  const explorerPreferences = openFromInsights
-    ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
-    : selectionPreferences
-  const initialFilterGroup = !openFromInsights || !insightsCategory ? null
+  const explorerPreferences = portraitAxis
+    ? { axes: [portraitAxis], focus: [] }
+    : openFromInsights
+      ? { focus: categoryFocus, areas: insightsCategory === 'wu-xing' ? ['wu-xing'] : [] }
+      : selectionPreferences
+  const initialFilterGroup = portraitAxis ? 'scales' : !openFromInsights || !insightsCategory ? null
     : insightsCategory === 'wu-xing' ? 'areas' : categoryFocus.length ? 'topics' : null
   const priorityLabels = (selectionPreferences.focus || []).map((key) => TEST_RECOMMENDATION_FOCUS.find((item) => item.key === key)?.label?.[locale] || key)
   const axisLabels = (selectionPreferences.axes || []).map((key) => TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key)
@@ -603,10 +607,10 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
             <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
           </div>
         </aside>}
-        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
+        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', portraitAxis || '', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
           audience="account" onStart={choose} onStartSingle={!fromCourse ? chooseAndStart : null} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
           simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
-          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup} initialAxis={portraitAxis}
           pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
           recommendedKey={recommendedKey}
           onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
