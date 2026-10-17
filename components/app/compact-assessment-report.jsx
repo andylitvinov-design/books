@@ -3,6 +3,7 @@ import { FreeCourseBanner } from './free-course-banner'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
+import { SITUATION_OBSERVATION } from '@/lib/assessments/situational-score-context'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
 
@@ -113,6 +114,13 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null
   const scoreLevelGuide = model?.scoreLevelGuide || null
+  const situationObservation = result?.definitionKey?.startsWith('hh-')
+    ? SITUATION_OBSERVATION[section.key]?.[ru ? 'ru' : 'en'] ||
+      SITUATION_OBSERVATION[result.definitionKey]?.[ru ? 'ru' : 'en'] || null
+    : null
+  const hasPlainLanguageGuide = Boolean(
+    (scoreLevelGuide || anchor) && (result?.definitionKey?.startsWith('hh-') || result?.definitionKey?.startsWith('cbi-'))
+  )
   const rawNote = !model ? null : model.displayKind === 'screening-count'
     ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
     : section.bandBasis === 'screening'
@@ -215,10 +223,15 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <h4 className={styles.levelTitle}>{scoreLevelGuide.title}: {scoreLevelGuide.current.label}</h4>
         <p className={styles.levelLead} data-current-score-position>{scoreLevelGuide.current.note}</p>
         <p className={styles.levelOverview}>{scoreLevelGuide.overview}</p>
+        {scoreLevelGuide.observation && <p className={styles.levelObservation} data-situation-observation>
+          <strong>{ru ? 'Что заметить:' : 'What to notice:'}</strong> {scoreLevelGuide.observation}
+        </p>}
         <div className={styles.levelMeter} data-level-direction={model?.orientation || 'neutral'} aria-hidden="true">
           {scoreLevelGuide.bands.map(band => <span key={band.code}
             data-current-position={band.current || undefined} />)}
         </div>
+        <details className={styles.levelDisclosure} data-score-level-disclosure>
+          <summary>{ru ? 'Все пять уровней — пояснение каждого' : 'All five levels — what each means'}</summary>
         <h5 className={styles.levelSubheading}>{scoreLevelGuide.heading}</h5>
         <ol className={styles.levelList} data-score-level-descriptions>
           {scoreLevelGuide.bands.map((band, index) => <li key={band.code}
@@ -235,21 +248,29 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             </div>
           </li>)}
         </ol>
+        </details>
         <p className={styles.levelCaveat}>{scoreLevelGuide.caveat}</p>
       </section>}
       {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
         <p>{anchor.note}</p>
+        {situationObservation && <p className={styles.levelObservation} data-situation-observation>
+          <strong>{ru ? 'Что заметить:' : 'What to notice:'}</strong> {situationObservation}
+        </p>}
       </section>}
       {section.responseAnchors && <div className={styles.responseEndpoints} data-questionnaire-anchors>
         <span><strong>{section.min}</strong> {section.responseAnchors.low}</span>
         <span><strong>{section.max}</strong> {section.responseAnchors.high}</span>
       </div>}
-      {conciseMeaning && <section className={styles.interpretation} aria-label={ru ? 'Что показывают ваши ответы' : 'What your answers show'}>
+      {conciseMeaning && !hasPlainLanguageGuide && <section className={styles.interpretation} aria-label={ru ? 'Что показывают ваши ответы' : 'What your answers show'}>
         <h4>{ru ? 'Что показывают ваши ответы' : 'What your answers show'}</h4>
         <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>
       </section>}
+      {conciseMeaning && hasPlainLanguageGuide && <details className={styles.measureDetails} data-technical-score-reading>
+        <summary>{ru ? 'Точная методика расчёта результата' : 'How the questionnaire score is calculated'}</summary>
+        <p>{conciseMeaning}</p>
+      </details>}
       {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
         <h4>{ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges'}</h4>
         <ol className={styles.rangeList}>
