@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
+  HeartHandshake, Gift, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -25,6 +25,7 @@ const COPY = {
     description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
     placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
+    freeButton:"Find free services",
     examples:"You could try",
     exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
     quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
@@ -35,8 +36,10 @@ const COPY = {
     categoriesIntro:"Choose a direction if you'd rather browse than describe your situation.",
     noLive:"More services will appear here as practitioners are approved.",
     resultTitle:"Your options",
+    freeResultTitle:"Free services",
     resultFor:"Your request",
     matchIntro:"Choose a service, view its details, or send a request.",
+    freeMatchIntro:"Browse available free services and choose where to begin.",
     noDirect:"No services found for this topic yet. Try another area or a broader question.",
     online:"Online",
     free:"Free",
@@ -76,6 +79,7 @@ const COPY = {
     description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
     placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
+    freeButton:"Найти бесплатные услуги",
     examples:"Например",
     exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
     quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
@@ -86,8 +90,10 @@ const COPY = {
     categoriesIntro:"Можно просто выбрать сферу интереса без описания личной ситуации.",
     noLive:"Новые услуги появятся здесь после модерации мастеров.",
     resultTitle:"Ваши варианты",
+    freeResultTitle:"Бесплатные услуги",
     resultFor:"Ваш запрос",
     matchIntro:"Выберите услугу, раскройте подробности или отправьте заявку.",
+    freeMatchIntro:"Посмотрите доступные бесплатные услуги и выберите, с чего начать.",
     noDirect:"Пока нет услуг по этому запросу. Попробуйте другое направление или более общий вопрос.",
     online:"Онлайн",
     free:"Бесплатно",
@@ -127,6 +133,7 @@ const COPY = {
     description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
     placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
+    freeButton:"Encontrar servicios gratis",
     examples:"Por ejemplo",
     exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
     quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
@@ -137,8 +144,10 @@ const COPY = {
     categoriesIntro:"También puedes seleccionar un área sin describir tu situación.",
     noLive:"Aparecerán más servicios cuando se aprueben nuevos profesionales.",
     resultTitle:"Tus opciones",
+    freeResultTitle:"Servicios gratuitos",
     resultFor:"Tu búsqueda",
     matchIntro:"Elige un servicio, abre los detalles o envía una solicitud.",
+    freeMatchIntro:"Explora los servicios gratuitos disponibles y elige cómo empezar.",
     noDirect:"Aún no hay servicios para este tema. Prueba otra categoría o una pregunta más amplia.",
     online:"En línea",
     free:"Gratis",
@@ -247,7 +256,7 @@ export function ServicesSmartDiscovery({
   const eligible=useCallback((service:PublicService)=>serviceMatchesDiscoveryFacets(service,{
     format,city,language,price:budget,
   }),[format,city,language,budget]);
-  const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:4}),[submitted,services,activeCategory,eligible]);
+  const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:budget==="free"?10:4,includeAllAreas:budget==="free"}),[submitted,services,activeCategory,eligible,budget]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
     // The model is permitted to select ONLY existing published service IDs.
@@ -258,14 +267,14 @@ export function ServicesSmartDiscovery({
       return service && eligible(service) ? [{ service, areaKey: service.areaKey, score: 50, reasonKey: "explore" }] : [];
     });
     const chosen = new Set(fromAi.map((entry) => entry.service.id));
-    return [...fromAi, ...listed.filter((entry) => !chosen.has(entry.service.id))].slice(0,4);
-  },[listed,aiOrder,services,eligible]);
+    return [...fromAi, ...listed.filter((entry) => !chosen.has(entry.service.id))].slice(0,budget==="free"?10:4);
+  },[listed,aiOrder,services,eligible,budget]);
   const editorial = useMemo(() => {
     // Editorial cards have no validated physical city or numeric price data.
     // Preserve the default online suggestions, and only narrow to known free offers.
     if (format==="in_person" || (language && language!==locale) || (budget && budget!=="free")) return [];
     const offers=budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers;
-    return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:suggestions.length?2:4});
+    return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:budget==="free"?10:suggestions.length?2:4});
   },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget]);
 
   // Scroll only after a new selection has rendered. AI updates should not
@@ -341,6 +350,22 @@ export function ServicesSmartDiscovery({
     }
   }
 
+  function findFreeServices() {
+    // The CTA works without text. Preserve format and language selections,
+    // but include all free categories (including Wu Xing).
+    requestNumber.current += 1; // Invalidate any pending AI result.
+    searchInputRef.current?.blur();
+    setBudget("free");
+    setSubmitted(query.trim().slice(0,350));
+    setActiveCategory("");
+    setHasSelection(true);
+    setScrollRequest((count) => count + 1);
+    setAiOrder(null);
+    setAiStatus("local");
+    setExpandedCard(null);
+    setOrderingCard(null);
+  }
+
   function runExample(text: string) { setQuery(text); void find(text); }
 
   const highlighted = submitted || activeCategory;
@@ -361,6 +386,9 @@ export function ServicesSmartDiscovery({
             autoComplete="off" className={styles.textarea}/>
           <button type="submit" className={styles.submit} disabled={!query.trim() || aiStatus==="loading"}>
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
+          </button>
+          <button type="button" className={styles.freeSubmit} onClick={findFreeServices}>
+            {t.freeButton}<Gift size={19} aria-hidden="true"/>
           </button>
         </form>
         <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
@@ -439,8 +467,8 @@ export function ServicesSmartDiscovery({
         <div className={styles.resultHeader}>
           <div>
             <p className={styles.eyebrow}><Sparkles size={13} aria-hidden="true"/> {aiStatus==="ai"?t.aiMatch:t.localMatch}</p>
-            <h2 id="hh-service-discovery-results-title">{t.resultTitle}</h2>
-            <p>{t.matchIntro}</p>
+            <h2 id="hh-service-discovery-results-title">{budget==="free"?t.freeResultTitle:t.resultTitle}</h2>
+            <p>{budget==="free"?t.freeMatchIntro:t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
           <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setFormat("online");setCity("toronto");setLanguage(locale);setBudget("")}}>{t.clear} ×</button>
