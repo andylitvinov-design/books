@@ -40,15 +40,20 @@ test('Original source videos, and only original source videos, are used', () => 
   assert.match(learner, /t\.unavailable/)
 })
 
-test('Preview is explicit and does not fake durable account storage', () => {
-  assert.match(learner, /Your answers are not stored in your account yet/)
-  assert.match(learner, /Ответы пока не сохраняются в аккаунте/)
+test('Guests are unsaved; signed-in learners use consent and durable authenticated progress', () => {
+  assert.match(learner, /Guest preview · Answers are not saved/)
+  assert.match(learner, /Гостевой просмотр · Ответы не сохраняются/)
+  assert.match(learner, /action: "start", consent: true/)
+  assert.match(learner, /continueTo: "energywork"/)
+  assert.match(learner, /expectedRevision: revisionRef.current/)
+  assert.match(learner, /const queueRef = useRef/)
+  assert.match(learner, /950\)/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
   assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
-  assert.match(learner, /disabled=\{slide\.kind === "path-choice" && !path\}/)
+  assert.match(learner, /disabled=\{busy \|\| \(slide\.kind === "path-choice" && !path\)\}/)
   assert.match(curriculum, /does not grant Level 1 initiation or certification/)
 })
 
