@@ -16,12 +16,14 @@ test('My Courses shows three free Academy banners before paid/personal course ca
   assert.equal((banners.match(/id: '(energywork|tantra-reiki|reiki-yggdrasil)'/g) || []).length, 3)
 })
 
-test('each banner links to its existing localized Academy learning path, never auto-enrolls', () => {
-  for (const path of ['principles-of-energywork','reiki/tantra-reiki/free-initiation','reiki/yggdrasil/free-initiation']) {
+test('Energywork links to its safe interactive preview while Reiki level-one links remain, with no auto-enrolment', () => {
+  for (const path of ['principles-of-energywork/learn','reiki/tantra-reiki/free-initiation','reiki/yggdrasil/free-initiation']) {
     assert.ok(banners.includes("path: '" + path + "'"), path)
   }
   assert.match(banners, /href=\{'\/' \+ language \+ '\/academy\/' \+ course\.path\}/)
   assert.match(academy, /if \(key === "principles-of-energywork"\)/)
+  assert.match(academy, /if \(key === "principles-of-energywork\/learn"\)/)
+  assert.match(banners, /account saving in development/)
   assert.match(academy, /if \(key === "reiki\/tantra-reiki\/free-initiation"\)/)
   assert.match(academy, /if \(child === "free-initiation"\)/)
   assert.doesNotMatch(banners, /appFetch|fetch\(|onClick=|checkout/i)
