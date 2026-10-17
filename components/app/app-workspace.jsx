@@ -64,6 +64,7 @@ export { appFetch }
 const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
+const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 
@@ -2135,6 +2136,8 @@ function PortfolioPage({ data, locale }) {
             </button>
           </nav>} />
       </details>
+      {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
+      <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
         {[
