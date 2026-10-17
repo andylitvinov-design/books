@@ -36,6 +36,7 @@ const WORDS = {
     empty: 'Отчётов пока нет',
     emptyGoogle: 'Когда Андрей поделится личным отчётом, откройте приватную ссылку и сохраните его здесь. Начать также можно с консультации или бесплатного письменного разбора.',
     emptyLegacy: 'Когда Andy поделится отчётом, он появится здесь.',
+    emptyCompact: 'Когда Андрей поделится отчётом, откройте ссылку и сохраните его здесь.',
     report: 'Персональный отчёт',
     open: 'Открыть',
     download: 'Скачать PDF',
@@ -78,6 +79,7 @@ const WORDS = {
     empty: 'No reports yet',
     emptyGoogle: 'When Andrey shares a private report, open its link and save it here. You can also start with a consultation or a free written review.',
     emptyLegacy: 'When Andy shares a report with you, it will appear here.',
+    emptyCompact: 'When Andrey shares a private report, open its link and save it here.',
     report: 'Personal report',
     open: 'Open report',
     download: 'Download PDF',
@@ -184,7 +186,7 @@ export function DownloadPractitionerReport({ reportId = null, report = null, sel
   </span>
 }
 
-export function PersonalAnalysisReportList({ locale = 'en', reports = [], selector = null }) {
+export function PersonalAnalysisReportList({ locale = 'en', reports = [], selector = null, compact = false }) {
   const t = WORDS[locale === 'ru' ? 'ru' : 'en']
   const items = [...reports].sort((a,b) => String(b.occurredOn || '').localeCompare(String(a.occurredOn || '')) || String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
   function dateLabel(value) {
@@ -206,7 +208,7 @@ export function PersonalAnalysisReportList({ locale = 'en', reports = [], select
         {!unavailable && <div className="hh-analysis-report-actions"><Link href={href} prefetch={false}>{t.open}</Link><DownloadPractitionerReport reportId={item.id} selector={selector} locale={locale} /></div>}
         {item.legacy && <a className="hh-analysis-legacy-contact" href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">{t.contact}</a>}
       </article>
-    })}</div> : <div className="hh-analysis-reports-empty"><FileText size={23} aria-hidden="true" /><strong>{t.empty}</strong><p>{selector ? t.emptyLegacy : t.emptyGoogle}</p></div>}
+    })}</div> : <div className="hh-analysis-reports-empty"><FileText size={23} aria-hidden="true" /><strong>{t.empty}</strong><p>{selector ? t.emptyLegacy : compact ? t.emptyCompact : t.emptyGoogle}</p></div>}
     <p className="hh-analysis-privacy"><LockKeyhole size={16} aria-hidden="true" />{t.privacy}</p>
   </section>
 }
@@ -232,7 +234,7 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
   // The unified Profile owns this archive. Legacy /analysis links may still render
   // the existing standalone experience while all report access rules remain unchanged.
   if (embedded) return <div className="hh-personal-analysis hh-personal-analysis--embedded" data-personal-reports>
-    <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
+    <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} compact />
     {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>} 
   </div>
   return <section className="hh-personal-analysis" aria-label={t.title}>
