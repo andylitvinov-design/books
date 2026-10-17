@@ -20,9 +20,9 @@ test("book, remedy and academy hubs retain a single source of H1, without duplic
   assert.match(read("components/library-hub.tsx"), /<h1>\{text.title\}<\/h1>/);
   const academyHub = read("components/academy-hub.tsx");
   const academyHero = read("components/academy-discovery.tsx");
-  assert.match(academyHub, /<AcademyDiscovery locale=\\{locale\\} view=\\{view\\}/);
-  assert.equal((academyHub.match(/<h1\\b/g) ?? []).length, 0, "Academy hub must not duplicate its hero heading");
-  assert.equal((academyHero.match(/<h1\\b/g) ?? []).length, 1, "Academy hero owns one H1");
+  assert.match(academyHub, /<AcademyDiscovery locale=\{locale\} view=\{view\}/);
+  assert.equal((academyHub.match(/<h1\b/g) ?? []).length, 0, "Academy hub must not duplicate its hero heading");
+  assert.equal((academyHero.match(/<h1\b/g) ?? []).length, 1, "Academy hero owns one H1");
   assert.match(academyHero, /<h1 id="academy-discovery-title">/);
   assert.match(read("app/[locale]/homeopathy/remedies/page.tsx"), /<h1>\{current.heading\}<\/h1>/);
   assert.match(read("app/books/page.tsx"), /redirect\(/);
