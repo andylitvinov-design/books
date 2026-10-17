@@ -3,6 +3,18 @@ import styles from './assessment-gauge.module.css'
 
 const publishedColors = ['#a84842', '#b66c43', '#8c793d', '#477f69', '#2f6c5e']
 const continuousColor = '#728881'
+// An unclassified trait stays neutral; published categorical bands may be
+// visually distinct without assigning a healthy/unhealthy meaning.
+const categoricalColors = ['#518c94', '#70a89a', '#cfad67', '#aa8aa7', '#c98975']
+
+function continuousGradientId(dimension, result) {
+  const key = [result?.id, dimension?.key, dimension?.sourceResultId].filter(Boolean).join(':') || 'preview'
+  let hash = 2166136261
+  for (let index = 0; index < key.length; index += 1) {
+    hash = Math.imul(hash ^ key.charCodeAt(index), 16777619)
+  }
+  return 'hh-assessment-gradient-' + (hash >>> 0).toString(36)
+}
 
 function coordinate(angle, radius = 78) {
   return { x: 100 + radius * Math.cos(angle), y: 98 - radius * Math.sin(angle) }
@@ -14,6 +26,9 @@ const numeral = (value, locale) =>
 function bandColor(band, index, model) {
   // Color only distinguishes source-defined intervals. Neutral measures have
   // no good/bad color progression, and continuous scores have no sectors.
+  if (model.orientation === 'neutral' && model.bands.length) {
+    return categoricalColors[Math.round(index * (categoricalColors.length - 1) / Math.max(1, model.bands.length - 1))]
+  }
   if (model.orientation === 'neutral' || model.orientation === 'screening') return continuousColor
   const position = model.orientation === 'difficulty' ? model.bands.length - index - 1 : index
   return publishedColors[Math.round(position * (publishedColors.length - 1) / Math.max(1, model.bands.length - 1))]
@@ -34,7 +49,7 @@ function BandLegend({ model, locale }) {
   </ol>
 }
 
-export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false }) {
+export function ScoreGauge({ dimension, result = null, locale = 'en', compact = false, showLegend = true, showScaleNote = true }) {
   const model = gaugeModel(dimension, result, locale)
   const ru = locale === 'ru'
   if (!model) return <span className={styles.unavailable}>{ru ? 'Нет достоверной числовой шкалы' : 'No verified numeric scale'}</span>
@@ -46,9 +61,13 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
         ? ru ? 'На уровне или выше скринингового порога (4)' : 'At or above screening threshold (4)'
         : ru ? 'Ниже скринингового порога (4)' : 'Below screening threshold (4)'
       : ru ? 'Количество отмеченных ответов' : 'Shaded-response count'}</figcaption>
-    <small className={styles.scaleNote}>{ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale'}</small>
-    <BandLegend model={model} locale={locale} />
+    {showScaleNote && <small className={styles.scaleNote}>{ru ? 'Скрининг, не диагноз и не шкала тяжести' : 'Screening, not a diagnosis or severity scale'}</small>}
+    {showLegend && <BandLegend model={model} locale={locale} />}
   </figure>
+  // One continuous color transition is illustrative, not invented diagnosis cutoffs.
+  // Neutral/trait scales retain the uncolored dial.
+  const graded = model.continuous && (model.orientation === 'difficulty' || model.orientation === 'resource')
+  const gradientId = continuousGradientId(dimension, result)
   const angle = (1 - model.fraction) * Math.PI
   const tip = coordinate(angle, 65)
   const direction = model.orientation === 'difficulty'
@@ -69,7 +88,18 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
       '. ' + (ru ? 'Диапазон ' : 'Range ') + numeral(dimension.min, locale) + '–' + numeral(dimension.max, locale) +
       '. ' + scaleType + '. ' + (model.currentBand?.label || direction)}>
     <svg viewBox="0 0 200 112" aria-hidden="true" focusable="false">
-      <path d="M 22 98 A 78 78 0 0 1 178 98" fill="none" stroke={model.continuous ? continuousColor : '#e7e3dc'} strokeWidth="14" strokeLinecap="round"/>
+      {graded && <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#c4645d" />
+          <stop offset="25%" stopColor="#df965f" />
+          <stop offset="50%" stopColor="#ddbe75" />
+          <stop offset="75%" stopColor="#94b888" />
+          <stop offset="100%" stopColor="#368772" />
+        </linearGradient>
+      </defs>}
+      <path d="M 22 98 A 78 78 0 0 1 178 98" fill="none"
+        stroke={graded ? `url(#${gradientId})` : model.continuous ? continuousColor : '#e7e3dc'}
+        strokeWidth="14" strokeLinecap="round"/>
       {model.bands.map((band, index) => {
         const from = coordinate(Math.PI * (1 - band.startFraction))
         const to = coordinate(Math.PI * (1 - band.endFraction))
@@ -85,10 +115,10 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
     <strong className={styles.value}>{numeral(dimension.value, locale)} <span>/ {numeral(dimension.max, locale)}</span></strong>
     <div className={styles.endpoints} aria-hidden="true"><span>{numeral(left, locale)}</span><span>{numeral(right, locale)}</span></div>
     <figcaption>{scaleType}</figcaption>
-    <small className={styles.scaleNote}>{model.continuous
+    {showScaleNote && <small className={styles.scaleNote}>{model.continuous
       ? ru ? 'Без подтверждённых границ категорий' : 'No validated category cutoffs'
-      : direction}</small>
-    <BandLegend model={model} locale={locale} />
+      : direction}</small>}
+    {showLegend && <BandLegend model={model} locale={locale} />}
   </figure>
 }
 

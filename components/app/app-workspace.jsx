@@ -29,7 +29,6 @@ import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { ProfileDomains } from '@/components/app/profile-domains'
-import { PersonalPortraitSummary } from '@/components/app/personal-portrait-summary'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
@@ -44,7 +43,7 @@ import {
   rankAssessmentDefinitions,
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
-import PracticeWorkspace, { PracticeEntry } from '@/components/app/practice-workspace'
+import PracticeWorkspace from '@/components/app/practice-workspace'
 import MyCourse from '@/components/app/my-course'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
@@ -104,7 +103,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false)
   const quickAuthAttempted = useRef(false)
-  const page = path[0] || 'tests',
+  const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
   const retestLifetime = useRef({ mounted: false, epoch: 0 })
@@ -429,11 +428,11 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Five first-class destinations. Monitoring/history remain available from Insights
   // and account settings; /analysis stays as an old-link alias to Profile reports.
   const nav = [
-    ['home', locale === 'ru' ? 'Главная' : 'Home', locale === 'ru' ? '/?lang=ru' : '/?lang=en'],
-    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', ''],
-    ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
     ['portrait', c.portrait, '/portrait'],
+    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
+    ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
     ['course', locale === 'ru' ? 'Мои курсы' : 'My courses', '/course'],
+    ['home', locale === 'ru' ? 'Главная' : 'Home', locale === 'ru' ? '/?lang=ru' : '/?lang=en'],
   ]
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
@@ -445,7 +444,9 @@ export default function AppWorkspace({ locale, path = [] }) {
         <Link href={root} prefetch={false} className="hh-brand">
           Holistic House<span>{page === 'course'
             ? (locale === 'ru' ? 'Мои курсы' : 'My courses')
-            : (locale === 'ru' ? 'Мои тесты' : 'My tests')}</span>
+            : page === 'tests' ? (locale === 'ru' ? 'Мои тесты' : 'My tests')
+            : page === 'portfolio' ? (locale === 'ru' ? 'Результаты' : 'Insights')
+            : (locale === 'ru' ? 'Мои отчёты' : 'My reports')}</span>
         </Link>
         {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
         <details className="hh-account-menu">
@@ -469,7 +470,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
             </Link>
             <Link
-              href={`/${locale === 'en' ? 'ru' : 'en'}/app${page === 'tests' ? '' : `/${page}`}${recordId ? `/${recordId}` : ''}`}
+              href={`/${locale === 'en' ? 'ru' : 'en'}/app${`/${page}`}${recordId ? `/${recordId}` : ''}`}
               prefetch={false}
             >
               {locale === 'en' ? 'Русский' : 'English'}
@@ -502,14 +503,8 @@ export default function AppWorkspace({ locale, path = [] }) {
             <SaveContinuation data={data} locale={locale} reload={load} />
           )}
           {page === 'portrait' && (
-            <>
-              <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-                overviewContent={<PersonalPortraitSummary data={data} locale={locale} />}
-                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />}>
-                <Portrait data={data} locale={locale} />
-              </ProfileDomains>
-              <PracticeEntry data={data} locale={locale} />
-            </>
+            <ProfileDomains locale={locale} mode="account" results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
+              reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
           )}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
@@ -583,11 +578,11 @@ export default function AppWorkspace({ locale, path = [] }) {
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
       {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
-        <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
-        <Link href={root} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
-        <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
         <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
+        <Link href={root + '/tests'} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
+        <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
         <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</span></Link>
+        <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
       </nav>}
     </main>
     </SubscriptionProvider>
@@ -2145,6 +2140,10 @@ function PortfolioPage({ data, locale }) {
         <h1 id="hh-insights-title">{ru ? 'Мои результаты' : 'My results'}</h1>
         <p>{ru ? 'Ваши пройденные тесты, результаты и динамика.' : 'Your completed tests, scores and trends.'}</p>
       </header>
+      <details className="hh-insights-portrait-details" data-insights-detailed-scales>
+        <summary><Brain size={18} aria-hidden="true" />{ru ? 'Подробные шкалы и инструменты' : 'Detailed scales and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
+        <Portrait data={data} locale={locale} />
+      </details>
       <dl className="hh-insights-quickstats" data-testid="insights-summary" aria-label={ru ? 'Общая статистика тестов' : 'All-time test statistics'}>
         <div><dt>{ru ? 'Пройдено тестов' : 'Tests completed'}</dt><dd>{summary.tests}</dd></div>
         <div><dt>{ru ? 'Всего прохождений' : 'Total sessions'}</dt><dd>{summary.attempts}</dd></div>
@@ -2219,7 +2218,8 @@ function PortfolioPage({ data, locale }) {
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
                   aria-label={(ru ? 'Открыть отчёт и рекомендации: ' : 'Open analysis & recommendations: ') + group.title}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact result={latest} /></div>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact result={latest}
+                    showLegend={false} showScaleNote={false} /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
                       <time dateTime={latest.measurementAt}>{shortDateLabel(latest.measurementAt, locale)}</time>

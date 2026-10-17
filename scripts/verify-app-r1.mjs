@@ -1,3 +1,4 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -266,6 +267,27 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
   }else assert.equal(before.status,401)
   assert.deepEqual(accountWrites,[],'public Start must not attempt any account mutation or Google sign-in')
  }finally{target.off('request',observe)}
+}
+// PR784 moved measured scales and profile tools into Insights, not out of the journey.
+async function openInsightsProfileTools(target=page,locale='en'){
+ const path='/'+locale+'/app/portfolio'
+ const link=target.locator('nav a[href="'+path+'"]:visible').first()
+ await expect(link).toHaveText(locale==='ru'?'Результаты':'Insights')
+ await expect(link).toHaveAttribute('href',path)
+ await link.click()
+ await expect(target).toHaveURL(origin+path)
+ const portrait=target.locator('[data-testid="insights-psychological-portrait"]')
+ await expect(portrait).toBeVisible()
+ await expect(portrait).toHaveAttribute('open','')
+ await expect(portrait.locator('img[src*="holistic-house-test-brain-concept"]')).toBeVisible()
+ const details=target.locator('[data-insights-detailed-scales]')
+ await expect(details).not.toHaveAttribute('open','')
+ await details.locator(':scope > summary').click()
+ await expect(details).toHaveAttribute('open','')
+ await expect(details.getByRole('heading',{name:locale==='ru'?'Ваш профиль':'Your profile',level:1,exact:true})).toBeVisible()
+ await details.locator('[data-profile-deep-dive] > summary').click()
+ await expect(details.getByRole('heading',{name:locale==='ru'?'Шкалы профессиональных тестов':'Professional test scales',exact:true})).toBeVisible()
+ return details
 }
 async function enterTest(name='Current State Check',mode='Guided'){
  testPlanDiagnostics.marker('enter-test-begin')
@@ -555,7 +577,8 @@ try {
   const category=card.locator('label [data-test-kind-badge]')
   await expect(category).toHaveCount(1)
   await expect(category).toBeVisible()
-  await expect(category.locator('svg')).toBeVisible()
+  await expect(category.locator('svg')).toHaveAttribute('aria-hidden','true')
+  await expect(category.locator('svg')).toBeHidden()
   await expect(category.locator('span')).toBeVisible()
   await expect(category).toHaveAttribute('data-test-kind-badge',entry.testKind)
   await expect(category.locator('span')).toHaveText(`Type: ${kindLabel}`)
@@ -700,23 +723,42 @@ try {
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
- await page.getByRole('button',{name:'Create my private space'}).click();await ready();await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Create my private space'}).click();await ready();
+ await assertCabinetPortrait(page,expect,{origin});
+ await expect(page.locator('[data-profile-report-archive]')).toBeVisible();
+ await openCabinetMyTests(page,expect,{origin});
+ await expect(page.getByRole('heading',{name:/^(My tests|Choose your tests)$/,exact:true})).toBeVisible();
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible();
  await expect(page.getByRole('button',{name:/^Choose tests/}).first()).toBeInViewport();await expect(page.getByRole('button',{name:/Open test filters/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
- await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});await page.goto(origin+'/en/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible();await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();await expect(page.locator('[data-profile-head]')).toBeVisible();await expect(page.locator('[data-profile-head] img[src*="holistic-house-test-brain-concept"]')).toBeVisible();await page.locator('[data-profile-deep-dive] > summary').click();await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();await page.locator('[data-profile-extra-tools] > summary').click();await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();await expect(page.getByText('Profile',{exact:true}).first()).toBeVisible();await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();passed('supported SDK PKCE callback opens the action-first Cabinet dashboard')
+ await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});
+ await openInsightsProfileTools();
+ await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
+ await page.locator('[data-profile-extra-tools] > summary').click();
+ await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();
+ await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile',exact:true}).click();
+ await assertCabinetPortrait(page,expect,{origin});
+ passed('supported SDK PKCE callback opens private reports, then real My tests and detailed Insights navigation')
+
  const profileOfferCases=[
    ['psychology','alchemy-of-soul','Alchemy of the Soul'],
    ['homeopathy','psychohomeopathy','homeopathy'],
    ['wu_xing','dao-health-profile','Wu Xing'],
    ['hypnotherapy','hypnotherapy-course','Hypnotherapy'],
  ]
- async function verifyProfileServiceOffers(target, locale='en') {
+ async function verifyProfileServiceOffers(target, locale='en', mode='account') {
    // Legacy cabinets are SSR-first: do not race a tap against React hydration.
    await expect(target.locator('[data-profile-domains][data-profile-interactive="true"]')).toBeVisible({timeout:20000})
+   const areas=target.locator('.hh-domain-more')
+   if(mode==='account'){
+    await expect(areas).not.toHaveAttribute('open','')
+    await areas.locator(':scope > summary').click()
+   }
+   await expect(areas).toHaveAttribute('open','')
    for (const [area, slug, service] of profileOfferCases) {
      await target.locator('#hh-domain-tab-'+area).click()
      const support=target.locator('.hh-domain-support')
@@ -759,7 +801,7 @@ try {
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
-  await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible()
+  await expect(page.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
   await expect(page.locator('[data-profile-report-archive]')).toBeVisible()
   await expect(page.locator('[data-personal-reports]')).toBeVisible()
   await expect(page.locator('[data-analysis-offer]')).toHaveCount(0)
@@ -785,6 +827,8 @@ try {
  await saveAndExit();await enterTest();await page.getByText('Add optional context',{exact:true}).click();await expect(page.getByLabel('Anything else you want to note?')).toHaveValue('Synthetic private context, not a real person.');await expect(page.getByLabel('What changed or seems to trigger this?')).toHaveValue('Synthetic trigger.');await expect(page.getByLabel('What would you like to change?')).toHaveValue('Synthetic desired change.');passed('Save and exit flushes versioned optional context without touching scores')
  await page.getByRole('button',{name:'Save results and get recommendations'}).click();await openCompletedPlanResult();await expect(page.getByRole('heading',{name:'Context at this check-in'})).toBeVisible();await expect(page.getByText('Synthetic trigger.',{exact:true})).toBeVisible();const first=(await api('bootstrap')).data.results[0];assert.equal(first.dimensions.length,5);passed('first result, owner-only optional context and snapshot persist in actual PostgreSQL')
  await page.goto(origin+'/en/app');await ready()
+ await assertCabinetPortrait(page,expect,{origin})
+ await openCabinetMyTests(page,expect,{origin})
  await expect(page.getByRole('button',{name:'Download report'})).toBeEnabled()
  const pdfDownloadPromise=page.waitForEvent('download',{timeout:60000})
  await page.getByRole('button',{name:'Download report'}).click()
@@ -795,10 +839,7 @@ try {
  assert.equal(pdfBytes.subarray(0,8).toString(),'%PDF-1.4')
  assert.ok(pdfBytes.toString('latin1').includes('/Type /Pages'))
  passed('real printable PDF downloads with all latest personal results and scale data')
- await page.goto(origin+'/en/app/portrait');await ready();
-  await expect(page.locator('[data-profile-head]')).toBeVisible();
-  await expect(page.locator('[data-personal-portrait-summary]')).toBeVisible();
-  await page.locator('[data-profile-deep-dive] > summary').click();
+ await openInsightsProfileTools();
   await expect(page.locator('[data-measured-scale]')).toHaveCount(0);await expect(page.getByText(/No professional test results yet/)).toBeVisible();
   await expect(page.getByRole('heading',{name:'Professional test scales',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
@@ -807,7 +848,7 @@ try {
   await page.getByRole('link',{name:/Retake completed tests/}).click();
   await expect(page).toHaveURL(/\/en\/app\/tests\?filter=completed/);
   await expect(page.locator('#my-tests-list')).toBeVisible();
-  await page.goto(origin+'/en/app/portrait');await ready();await page.locator('[data-profile-deep-dive] > summary').click();await page.locator('[data-profile-extra-tools] > summary').click();
+  await openInsightsProfileTools();await page.locator('[data-profile-extra-tools] > summary').click();
   await expect(page.getByRole('heading',{name:'Add your baseline profile',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Results portfolio/})).toBeVisible()
  for(const width of[320,360,390,430,768,1280]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await screenshotEvidence(page,{path:`${output}/portrait-en-${width}.png`,fullPage:true})}
  assert.equal(await page.locator('.mobile-bottom-navigation').count(),0);passed('action-first profile dashboard and responsive no-overflow screenshots 320–1280')
@@ -915,14 +956,12 @@ try {
  await page.getByRole('button',{name:'Save and exit'}).click()
  await expect(page).toHaveURL(/\/tests$/)
  await ready()
- await page.goto(origin+'/en/app/portrait')
- await ready()
- await page.locator('[data-profile-deep-dive] > summary').click()
+ await openInsightsProfileTools()
  await page.locator('[data-profile-extra-tools] > summary').click()
  await expect(page.getByRole('heading',{name:'Finish: Weekly Psychic Health',exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:'Continue test',exact:true})).toBeVisible()
  passed('Quick draft resumes with its saved answers and can switch to one-question Guided mode')
- await page.goto(origin+'/ru/app/portrait');await ready();await expect(page.getByRole('heading',{name:'Ваш профиль',level:1,exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
+ await page.goto(origin+'/ru/app/portrait');await ready();await assertCabinetPortrait(page,expect,{origin,locale:'ru'});await screenshotEvidence(page,{path:output+'/portrait-ru.png',fullPage:true});passed('Russian app chrome preserves English instrument provenance')
  await page.goto(origin+'/en/app/consultations');await ready();await page.getByRole('button',{name:'Request a consultation',exact:true}).first().click();await page.getByLabel('How should Andy contact you?').fill('synthetic@example.invalid');await page.getByLabel('Your message (optional)').fill('A synthetic request for CI only.')
  await screenshotEvidence(page,{path:output+'/consultation-request.png',fullPage:true})
  await page.getByRole('button',{name:'Send request',exact:true}).click();await expect(page.getByText('Received',{exact:true})).toBeVisible();data=(await api('bootstrap')).data;assert.equal(data.requests.length,1);assert.equal(data.requests[0].sharedExcerpt,null);passed('real consultation request without implicit profile sharing')
@@ -1013,8 +1052,8 @@ try {
   await expect(clientPage.getByRole('heading',{name:'Study materials from Andy'})).toBeVisible({timeout:20000})
   await expect(clientPage.getByRole('link',{name:/Reiki study guide/})).toHaveAttribute('href','https://holistichouse.vercel.app/en/academy/reiki')
   await clientPage.getByRole('link',{name:'My profile (Reports)'}).click()
-  await expect(clientPage.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible()
-  await verifyProfileServiceOffers(clientPage)
+  await expect(clientPage.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
+  await verifyProfileServiceOffers(clientPage,'en','legacy')
   await screenshotEvidence(clientPage,{path:output+'/private-client-profile-cta.png',fullPage:false})
   passed('all four legacy private-client profile CTAs open a precise, privacy-safe order request')
 
@@ -1023,7 +1062,7 @@ try {
   const formerAnalysisUrl=new URL(clientLink)
   formerAnalysisUrl.searchParams.set('view','analysis')
   await clientPage.goto(formerAnalysisUrl.toString())
-  await expect(clientPage.getByRole('heading',{name:'Your profile',level:1,exact:true})).toBeVisible()
+  await expect(clientPage.getByRole('heading',{name:'My personal reports',level:1,exact:true})).toBeVisible()
   await expect(clientPage.locator('[data-personal-reports]')).toBeVisible()
   await expect(clientPage.getByText('No saved reports yet')).toBeVisible()
   await expect(clientPage.locator('[data-analysis-offer]')).toHaveCount(0)
@@ -1043,7 +1082,7 @@ try {
  // These old readiness signals are already true before consent is submitted.
  // Prove the 403 gate here; never retry it until it happens to become a 404.
  await expect(otherPage.locator('.hh-nav')).toBeVisible()
- await expect(otherPage).toHaveURL(/\/en\/app$/,{timeout:15000})
+ await expect(otherPage).toHaveURL(/\/en\/app\/portrait$/,{timeout:15000})
  const beforeConsent=await api('results/'+first.id,null,other)
  assert.equal(beforeConsent.status,403)
  assert.equal(beforeConsent.data.error,'CONSENT_REQUIRED')
@@ -1057,7 +1096,7 @@ try {
  ])
  assert.equal(onboardingResponse.status(),200)
  assert.equal((await onboardingResponse.json()).onboardingState,'active')
- await expect(otherPage.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:15000})
+ await assertCabinetPortrait(otherPage,expect,{origin})
  const otherBootstrap=await api('bootstrap',null,other)
  assert.equal(otherBootstrap.status,200)
  assert.equal(otherBootstrap.data.account.onboardingState,'active')
@@ -1154,7 +1193,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
@@ -1235,7 +1274,7 @@ try {
  // Sign in explicitly, then append through the actual account picker.
  await page.goto(origin+'/en/app')
  await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
- await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
+ await assertCabinetPortrait(page,expect,{origin})
  assert.deepEqual((await api('bootstrap')).data.activeTestPlan,savedBeforeSignout,'guest selection and Google sign-in leave the saved battery unchanged')
  const appendExplorer=await chooseSingleAccountTest(page,newPublicTest.title)
  await appendExplorer.getByRole('button',{name:'Start free monitoring',exact:true}).first().click()

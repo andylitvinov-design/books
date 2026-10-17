@@ -113,6 +113,36 @@ test('continuous, neutral and unverified versions never render decorative clinic
   assert.equal(gaugeModel({ ...original.dimensions[0], value: NaN }, original), null)
 })
 
+
+test('Insights mini-dials keep the colored scale but omit the narrow inline legend', () => {
+  const result = valueAt(scored('gad-7'), 12)
+  const full = gauges.ScoreGauge({ dimension: result.dimensions[0], result, locale: 'en' })
+  const mini = gauges.ScoreGauge({
+    dimension: result.dimensions[0], result, locale: 'en', compact: true,
+    showLegend: false, showScaleNote: false,
+  })
+  const fullPaths = nodes(full).filter(node => node.type === 'path' && node.props['data-band-code'])
+  const miniPaths = nodes(mini).filter(node => node.type === 'path' && node.props['data-band-code'])
+  assert.ok(fullPaths.length >= 3, 'published screening intervals remain visible in the dial')
+  assert.ok(new Set(fullPaths.map(node => node.props.stroke)).size >= 3, 'sectors have multiple colors')
+  assert.equal(miniPaths.length, fullPaths.length, 'mini dial keeps all verified sectors')
+  assert.equal(nodes(mini).filter(node => node.type === 'li').length, 0, 'no legend crammed into 90px')
+  assert.equal(nodes(mini).filter(node => node.type === 'small').length, 0)
+  assert.ok(nodes(full).some(node => node.props?.['aria-current'] === 'true'), 'full view retains band information')
+})
+
+test('continuous difficulty gauges use one illustrative gradient and neutral traits stay monochrome', () => {
+  const cbi = scored('cbi-personal')
+  const gradient = nodes(gauges.ScoreGauge({ dimension: cbi.dimensions[0], result: cbi }))
+  assert.equal(gradient.filter(node => node.type === 'path').length, 1, 'no fabricated clinical sectors')
+  assert.equal(gradient.filter(node => node.type === 'linearGradient').length, 1)
+  assert.match(gradient.find(node => node.type === 'path').props.stroke, /^url\(#hh-assessment-gradient-/)
+  const trait = scored('ipip-big-five-50')
+  const neutral = nodes(gauges.ScoreGauge({ dimension: trait.dimensions[0], result: trait }))
+  assert.equal(neutral.filter(node => node.type === 'linearGradient').length, 0)
+  assert.equal(neutral.find(node => node.type === 'path').props.stroke, '#728881')
+})
+
 test('reference bands preserve nonzero raw ranges and ASRS remains a count without a dial', () => {
   const result = valueAt(scored('brcs'), 14)
   const model = gaugeModel(result.dimensions[0], result)

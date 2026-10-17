@@ -51,7 +51,13 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  assert.match(source,/assert\.deepEqual\(errors,\[\]\)/);
  assert.ok(!source.includes('errors.filter'));assert.ok(!source.includes('errors.length ='));
  const start=source.indexOf('        // Do not abort');const end=source.indexOf('        results.push',start);
- assert.equal(createHash('sha256').update(source.slice(start,end)).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen published action/assertion block');
+ const block=source.slice(start,end);
+ const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
+ assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
+ // PR784 changes exactly these two redirect destinations; all other actions,
+ // fatal checks and navigation order retain the original frozen hash.
+ const normalized=block.replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
+ assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from two approved redirects');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{

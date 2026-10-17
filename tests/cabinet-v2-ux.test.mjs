@@ -142,7 +142,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.match(workspace, /<Link href=\{root \+ '\/monitoring'\}/)
   assert.match(workspace, /page === 'consultations'/)
   assert.match(workspace, /page === 'monitoring'/)
-  assert.match(workspace, /<PersonalPortraitSummary data=\{data\} locale=\{locale\}/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   assert.match(workspace, /function ReportsIndex/)
   assert.match(workspace, /reportTimeline\(data\.savedReports\)/)
   assert.match(workspace, /LatestChange/)

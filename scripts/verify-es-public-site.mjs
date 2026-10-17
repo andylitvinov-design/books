@@ -192,7 +192,7 @@ try {
         stage=`${engine} ${width} Spanish account navigation`;
         await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
         await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
-        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
         await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
@@ -200,7 +200,7 @@ try {
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
-        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;

@@ -1,3 +1,4 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
@@ -221,13 +222,14 @@ try {
   await navigate(page, origin + '/en/app')
   await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
   const onboarding = page.getByRole('heading', { name: 'Create my private space', exact: true })
-  await expect(onboarding.or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({ timeout: 60000 })
+  await expect(onboarding.or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await onboarding.isVisible()) {
     await page.getByLabel('I am 18 or older.').check()
     await page.getByLabel('I agree to private processing', { exact: false }).check()
     await page.getByRole('button', { name: 'Create my private space', exact: true }).click()
   }
-  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+  await assertCabinetPortrait(page, expect, { origin })
+  await openCabinetMyTests(page, expect, { origin })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
     const run = await api(account, 'runs', { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale, operationId: randomUUID() })

@@ -8,9 +8,15 @@ import '@/components/app/refinements.css'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export async function generateMetadata({ params }) {
-  const { locale } = await params
+  const { locale, path = [] } = await params
+  const titles = {
+    portrait: locale === 'ru' ? 'Мои личные отчёты' : 'My personal reports',
+    tests: locale === 'ru' ? 'Мои тесты' : 'My tests',
+    portfolio: locale === 'ru' ? 'Мои результаты' : 'My results',
+    course: locale === 'ru' ? 'Мои курсы' : 'My courses',
+  }
   return {
-  title: 'My tests | Holistic House',
+  title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
   manifest: locale === 'ru' ? '/course-ru.webmanifest' : '/course.webmanifest',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
@@ -20,6 +26,8 @@ export async function generateMetadata({ params }) {
 export default async function AppPage({ params }) {
   const { locale, path = [] } = await params
   if (!['en', 'ru'].includes(locale)) notFound()
+  // Personal reports are the first stop in the signed-in Cabinet.
+  if (path.length === 0) redirect('/' + locale + '/app/portrait')
   // Backward-compatible saved-document links now open the exact original
   // report renderer, rather than an abbreviated dashboard item.
   if (path[0] === 'documents') {
