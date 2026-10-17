@@ -127,7 +127,9 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
     <div className={styles.endpoints} aria-hidden="true"><span>{numeral(left, locale)}</span><span>{numeral(right, locale)}</span></div>
     <figcaption>{hasAnswerBands
       ? (ru ? 'Ближе к ответу: ' : 'Closest answer: ') + model.currentAnswerBand?.label
-      : scaleType}</figcaption>
+      : model.scoreLevelGuide
+        ? (ru ? 'Ваш участок: ' : 'Your range: ') + model.scoreLevelGuide.current.label
+        : scaleType}</figcaption>
     {showScaleNote && <small className={styles.scaleNote}>{hasAnswerBands
       ? ru ? 'Ответы анкеты, не клиническая категория' : 'Questionnaire responses, not a clinical category'
       : model.continuous
