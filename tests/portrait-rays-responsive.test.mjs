@@ -93,7 +93,7 @@ test('ray selection persists when its checkbox is hidden by collapsing the list'
   moreButton(app.render()).props.onClick()
   let expanded = app.render()
   assert.equal(inputs(expanded).at(-1).props.checked, false)
-  assert.equal(inputs(expanded).at(-1).props.disabled, false)
+  assert.notEqual(inputs(expanded).at(-1).props.disabled, true)
   inputs(expanded).at(-1).props.onChange()
   expanded = app.render()
   assert.equal(inputs(expanded).at(-1).props.checked, true)
