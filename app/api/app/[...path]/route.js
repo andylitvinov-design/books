@@ -492,7 +492,17 @@ async function handle(request, { params }) {
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
-    if (joined === 'practice' && method === 'GET') return json(await practiceRepo.getMyPractice(actor))
+    if (joined === 'practice' && method === 'GET') {
+      const workspace = await practiceRepo.getMyPractice(actor)
+      let newServices = null
+      try {
+        newServices = await practiceRepo.getMarketplaceNewServices()
+      } catch {
+        // Keep private practitioner tools available if the marketplace view fails.
+        // The UI shows "unavailable" instead of a misleading zero.
+      }
+      return json({ ...workspace, newServices })
+    }
     if (joined === 'practice/articles' && method === 'GET') return json({items:await articleRepo.mine(actor)})
     if (joined === 'export' && method === 'GET') {
       const exported = await repo.exportData(actor)
