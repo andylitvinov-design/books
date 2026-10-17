@@ -1,5 +1,5 @@
 .root{display:grid;gap:12px;min-width:0;align-content:start;color:#204b61}
-.root h3{font-size:clamp(23px,5.6vw,31px);font-weight:850;line-height:1.12;letter-spacing:-.035em;color:#173e57;margin:0}
+.root h2{font-size:clamp(23px,5.6vw,31px);font-weight:850;line-height:1.12;letter-spacing:-.035em;color:#173e57;margin:0}
 .week{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:850;letter-spacing:.06em;color:#137f87;text-transform:uppercase}
 .lead{font-size:14px;line-height:1.53;margin:0;color:#4b6a7a}
 .small{font-size:12px;line-height:1.52;color:#64808d;margin:0}
