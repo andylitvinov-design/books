@@ -6,7 +6,7 @@ const read = (name) => readFileSync(new URL('../' + name, import.meta.url), 'utf
 
 test('public picker transparently offers tests without registration and advertises scale-first results', () => {
   const source = read('components/app/simple-test-picker.jsx')
-  const note = source.indexOf('className={styles.heroFootnote}')
+  const note = source.indexOf('className={academyStyles.subnote}')
   const firstTopic = source.indexOf('id="hh-simple-topic-title"')
   assert.ok(note > 0 && firstTopic > note, 'access information must precede topic selection')
   assert.match(source, /heroFootnote:'Available tests and sets start without registration/)
