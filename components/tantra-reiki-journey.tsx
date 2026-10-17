@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
@@ -516,63 +517,136 @@ export function TantraReikiOverviewLinks({locale}:{locale:PublicLocale}) {
     </div>
   );
 }
+const levelOneFocus: Record<PublicLocale, {
+  eyebrow: string; title: string; description: string; request: string; note: string;
+  furtherEyebrow: string; furtherTitle: string; furtherDescription: string; expand: string; exploreNext: string;
+}> = {
+  en: {
+    eyebrow: "BEGIN HERE · LEVEL 1",
+    title: "Your first step: Spring of Life",
+    description: "Start with body awareness, gentle sensitivity and a respectful connection with yourself or a partner. The first level is a complete introduction; the other levels can wait until you choose to explore them.",
+    request: "Request a free Level 1 introduction",
+    note: "Introduction and initiation are arranged personally with Andrey; reading alone does not confer an initiation.",
+    furtherEyebrow: "OPTIONAL · EXPLORE AT YOUR OWN PACE",
+    furtherTitle: "Curious about Levels 2–9?",
+    furtherDescription: "The rest of the course stays here without overwhelming the first step. Tap any level to reveal its original description, practices and attunements.",
+    expand: "Open details",
+    exploreNext: "Explore later levels",
+  },
+  ru: {
+    eyebrow: "НАЧНИТЕ ЗДЕСЬ · ПЕРВАЯ СТУПЕНЬ",
+    title: "Первый шаг: «Родник жизни»",
+    description: "Начните с внимания к телу, мягкого развития чувствительности и бережного контакта с собой или партнёром. Первая ступень — самостоятельное знакомство с практикой. Остальные можно изучать позже, по желанию.",
+    request: "Запросить бесплатную инициацию 1-й ступени",
+    note: "Вводное знакомство и инициация согласовываются лично с Андреем; одно лишь чтение не является инициацией.",
+    furtherEyebrow: "ПРОДОЛЖЕНИЕ · ПО ВАШЕМУ ЖЕЛАНИЮ",
+    furtherTitle: "Хотите узнать о ступенях 2–9?",
+    furtherDescription: "Основная информация о первой ступени уже выше. Нажмите на интересующую ступень, чтобы раскрыть её полное авторское описание, настройки и практики.",
+    expand: "Раскрыть описание",
+    exploreNext: "Посмотреть следующие ступени",
+  },
+  es: {
+    eyebrow: "EMPIEZA AQUÍ · NIVEL 1",
+    title: "Tu primer paso: Manantial de vida",
+    description: "Empieza con la conciencia corporal, la sensibilidad suave y la conexión respetuosa contigo o con otra persona. El primer nivel es una introducción completa; los demás se pueden explorar después.",
+    request: "Solicitar una introducción gratuita al Nivel 1",
+    note: "La introducción y la iniciación se acuerdan personalmente con Andrey; leer los materiales no otorga una iniciación.",
+    furtherEyebrow: "OPCIONAL · A TU RITMO",
+    furtherTitle: "¿Quieres explorar los niveles 2–9?",
+    furtherDescription: "El primer paso es el protagonista. Pulsa cualquier otro nivel para ver su descripción original, las prácticas y las sintonizaciones.",
+    expand: "Ver detalles",
+    exploreNext: "Ver niveles posteriores",
+  },
+};
+
 export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
-  const c=ui[locale];
+  const c = ui[locale];
+  const focus = levelOneFocus[locale];
+
+  const renderLevel = (i: number) => {
+    const stage = stages[i];
+    const n = i + 1;
+    const copy = stage[locale];
+    const phase = Math.floor(i / 3);
+    const photo = levelPhotos[i];
+
+    const article = (
+      <article
+        className={"tantra-journey__level tantra-journey__level--phase-" + phase + (n === 1 ? " tantra-journey__level--first" : "")}
+        id={n === 1 ? "tantra-level-1" : undefined}
+        aria-labelledby={"tantra-heading-" + n}
+      >
+        <figure className="tantra-journey__photo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+        </figure>
+        <div className="tantra-journey__level-heading">
+          <div className="tantra-journey__chapter">
+            <strong className="tantra-journey__level-number">{c.level} {String(n).padStart(2, "0")} <small>/ 09</small></strong>
+            <span>{c.phases[phase]}</span>
+          </div>
+          <h3 id={"tantra-heading-" + n}>{copy.title}</h3>
+          <p className="tantra-journey__subtitle">{copy.subtitle}</p>
+        </div>
+        <div className="tantra-journey__details">
+          {n === 1 ? <p className="tantra-journey__first-description">{copy.intro}</p> : null}
+          <div className="tantra-journey__author-text" lang={locale}>
+            <h4>{c.original}</h4>
+            {originalAuthorDescription(locale, i).map((paragraph, j) => <p key={j}>{paragraph}</p>)}
+          </div>
+          <div className="tantra-journey__practice tantra-journey__practice--restored">
+            <strong>{c.restored}</strong>
+            <p>{originalProgrammeStudyStep(locale, i)}</p>
+          </div>
+          <details className="tantra-journey__extras" open={i === 0}>
+            <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
+            <div className="tantra-journey__extras-body">
+              <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
+              <div className="tantra-journey__settings">
+                <h4>{c.settings}</h4>
+                <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
+                {originalSettingDescription(locale, i) ? <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p> : null}
+              </div>
+            </div>
+          </details>
+          <div className="tantra-journey__actions">
+            {n > 1 ? <a href={"#tantra-level-" + (n - 1)} aria-label={c.previous + " " + (n - 1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
+            <a className="tantra-journey__next" href={n === 1 ? "#tantra-next-levels" : n < 9 ? "#tantra-level-" + (n + 1) : (locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n === 1 ? focus.exploreNext : n < 9 ? c.next : c.final} →</a>
+          </div>
+        </div>
+      </article>
+    );
+    if (n === 1) return article;
+    return (
+      <details className="tantra-journey__collapsed" id={"tantra-level-" + n} key={n}>
+        <summary className="tantra-journey__collapsed-summary">
+          <span className="tantra-journey__collapsed-number">{String(n).padStart(2, "0")}</span>
+          <span className="tantra-journey__collapsed-title"><strong>{copy.title}</strong><small>{copy.subtitle}</small></span>
+          <span className="tantra-journey__collapsed-action">{focus.expand}<span className="tantra-journey__collapsed-chevron" aria-hidden="true">⌄</span></span>
+        </summary>
+        {article}
+      </details>
+    );
+  };
+
   return (
     <div className="tantra-journey">
-      {stages.map((stage, i) => {
-        const n=i+1;
-        const copy=stage[locale];
-        const phase=Math.floor(i/3);
-        const photo = levelPhotos[i];
-        return (
-          <article className={"tantra-journey__level tantra-journey__level--phase-"+phase} id={"tantra-level-"+n} key={n} aria-labelledby={"tantra-heading-"+n}>
-            <figure className="tantra-journey__photo">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-            </figure>
-            <div className="tantra-journey__level-heading">
-              <div className="tantra-journey__chapter">
-                <strong className="tantra-journey__level-number">{c.level} {String(n).padStart(2,"0")} <small>/ 09</small></strong>
-                <span>{c.phases[phase]}</span>
-              </div>
-              <h3 id={"tantra-heading-"+n}>{copy.title}</h3>
-              <p className="tantra-journey__subtitle">{copy.subtitle}</p>
-            </div>
-            
-            <div className="tantra-journey__details">
-              
-              <div className="tantra-journey__author-text" lang={locale}>
-                <h4>{c.original}</h4>
-                {originalAuthorDescription(locale, i).map((paragraph, j) => (
-                  <p key={j}>{paragraph}</p>
-                ))}
-              </div>
-              <div className="tantra-journey__practice tantra-journey__practice--restored">
-                <strong>{c.restored}</strong>
-                <p>{originalProgrammeStudyStep(locale, i)}</p>
-              </div>
-              <details className="tantra-journey__extras">
-                <summary><span>{c.details}</span><span className="tantra-journey__extras-indicator" aria-hidden="true">+</span></summary>
-                <div className="tantra-journey__extras-body">
-                  <div className="tantra-journey__application"><strong>{c.application}</strong><p>{levelApplications[locale][i]}</p></div>
-                  <div className="tantra-journey__settings">
-                    <h4>{c.settings}</h4>
-                    <ul>{copy.att.map((att) => <li key={att}>{att}</li>)}</ul>
-                    {originalSettingDescription(locale, i) ? (
-                      <p className="tantra-journey__setting-description">{originalSettingDescription(locale, i)}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </details>
-              <div className="tantra-journey__actions">
-                {n>1 ? <a href={"#tantra-level-"+(n-1)} aria-label={c.previous+" "+(n-1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
-                <a className="tantra-journey__next" href={n<9?"#tantra-level-"+(n+1):(locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n<9?c.next:c.final} →</a>
-              </div>
-            </div>
-          </article>
-        );
-      })}
+      <header className="tantra-journey__focus-heading">
+        <p className="homeopathy-kicker">{focus.eyebrow}</p>
+        <h2>{focus.title}</h2>
+        <p>{focus.description}</p>
+      </header>
+      {renderLevel(0)}
+      <div className="tantra-journey__first-cta">
+        <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+        <p>{focus.note}</p>
+      </div>
+      <section className="tantra-journey__continuation" id="tantra-next-levels" aria-labelledby="tantra-next-levels-title">
+        <p className="homeopathy-kicker">{focus.furtherEyebrow}</p>
+        <h2 id="tantra-next-levels-title">{focus.furtherTitle}</h2>
+        <p>{focus.furtherDescription}</p>
+      </section>
+      {stages.slice(1).map((_, index) => renderLevel(index + 1))}
       <p className="tantra-journey__notice">{c.notice}</p>
     </div>
   );
