@@ -53,7 +53,7 @@ test('Guests are unsaved; signed-in learners use consent and durable authenticat
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
   assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
-  assert.match(learner, /disabled=\{busy \|\| \(slide\.kind === "path-choice" && !path\)\}/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| \(slide\.kind === "path-choice" && !path\)\}/)
   assert.match(curriculum, /does not grant Level 1 initiation or certification/)
 })
 
