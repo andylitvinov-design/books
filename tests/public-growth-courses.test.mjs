@@ -3,12 +3,18 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { activeNavigationId, getSiteNavigation } from '../lib/site-navigation-model.js';
 
-test('Tests and My House replace My Courses and My tests in six-slot public bottom menu', () => {
+test('Tests and My House replace the two right mobile slots without changing the desktop site menu', async () => {
+  const mobile = await readFile('components/mobile-bottom-navigation.tsx', 'utf8');
+  assert.match(mobile, /id: 'tests'/);
+  assert.match(mobile, /id: 'house'/);
+  assert.match(mobile, /localized\.tests/);
+  assert.match(mobile, /localized\.house/);
+  assert.match(mobile, /\/client\/tests/);
+  assert.match(mobile, /\/app/);
+  assert.match(mobile, /mobileItems\.map/);
   for (const locale of ['ru', 'en', 'es']) {
-    const links = getSiteNavigation(locale).filter(item => item.id !== 'relationships');
-    assert.deepEqual(links.map(item => item.id), ['home', 'library', 'services', 'academy', 'tests', 'house']);
-    assert.equal(links.find(item => item.id === 'tests').href, `/${locale}/client/tests`);
-    assert.equal(links.find(item => item.id === 'house').href, `/${locale === 'es' ? 'en' : locale}/app`);
+    const links = getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id));
+    assert.deepEqual(links.map(item => item.id), ['home', 'library', 'services', 'academy']);
     assert.equal(activeNavigationId(`/${locale}/academy/free-ai-courses`), 'academy');
     assert.equal(activeNavigationId(`/${locale}/about`), 'services');
   }
