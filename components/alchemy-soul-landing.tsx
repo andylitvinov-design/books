@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, Check,
@@ -211,7 +211,7 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
               <p className={styles.heroStatement}>{t.headline}</p>
             </div>
             <div className={styles.heroPortrait}>
-              <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 680px) 140px, 340px" />
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 680px) 140px, 340px" />
             </div>
           </div>
           <p className={styles.heroLead}>{t.intro}</p>
@@ -254,7 +254,7 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
           <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.videoSection].join(" ")} data-alchemy-panel="video" aria-labelledby="alchemy-video-title">
+        <section className={[styles.panel, styles.videoSection].join(" ")} id="service-video" data-alchemy-panel="video" aria-labelledby="alchemy-video-title">
           <div className={styles.videoText}>
             <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.videoKicker}</span>
             <h2 id="alchemy-video-title">{t.videoTitle}</h2>
