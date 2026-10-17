@@ -6,6 +6,7 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '../lib/assessments/test-explorer.js'
 import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.js'
+import { PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER, portraitAngleForAxis, portraitAxesForSectors } from '../lib/assessments/portrait-sectors.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -14,7 +15,13 @@ const descendants = node => node == null || typeof node !== 'object' ? []
     : [node, ...descendants(node.props?.children)]
 const options = tree => descendants(tree).filter(node => node.type === 'label'
   && typeof node.props.className === 'string' && node.props.className.includes('portraitRayOption'))
-const inputs = tree => descendants(tree).filter(node => node.type === 'input' && node.props.type === 'checkbox')
+// The sector checkboxes are separate from the original individual-ray checkboxes.
+const inputs = tree => options(tree).flatMap(item => descendants(item).filter(node => node.type === 'input' && node.props.type === 'checkbox'))
+const sectorLabels = tree => descendants(tree).filter(node => node.type === 'label' && typeof node.props.className === 'string' && node.props.className.includes('portraitSectorChip'))
+const sectorInput = (tree, key) => descendants(sectorLabels(tree).find(label => label.props['data-portrait-sector'] === key))
+  .find(node => node.type === 'input')
+const allSectorInput = tree => descendants(tree).find(node => node.type === 'input' && node.props['data-portrait-sector-all'])
+const rayLabels = tree => descendants(tree).filter(node => node.type === 'text' && node.props.className === 'radarInlineLabel')
 const moreButton = tree => descendants(tree).find(node => node.type === 'button'
   && String(node.props.className).includes('portraitShowMore'))
 
@@ -43,6 +50,7 @@ function harness(locale) {
       if (name === 'next/image') return { __esModule: true, default: 'img' }
       if (name === '@/lib/assessments/test-explorer') return { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS }
       if (name === '@/lib/assessments/portrait-ray-labels') return { layoutPortraitRayLabels }
+      if (name === '@/lib/assessments/portrait-sectors') return { PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER, portraitAngleForAxis, portraitAxesForSectors }
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
       return require(name)
     },
@@ -104,4 +112,51 @@ test('portrait ray options retain two columns even on iPhone width with legible 
   assert.match(css, /\.portraitRayOption\{display:grid;grid-template-columns:18px minmax\(0,1fr\) auto/)
   assert.match(css, /\.portraitDelta\{grid-column:3;grid-row:2/)
   assert.match(css, /\.portraitControls \.portraitShowMore\{display:flex/)
+})
+
+test('four sector checkboxes independently filter rays, all restores view without losing fine selections', () => {
+  const app = harness('en')
+  const initial = app.render()
+  assert.equal(sectorLabels(initial).length, 4)
+  assert.equal(sectorLabels(initial).filter(item => item.props['data-selected']).length, 4)
+  assert.equal(allSectorInput(initial).props.checked, true)
+  assert.equal(inputs(initial).filter(input => input.props.checked).length, 8)
+  assert.equal(rayLabels(initial).length, 8)
+
+  allSectorInput(initial).props.onChange()
+  const empty = app.render()
+  assert.equal(allSectorInput(empty).props.checked, false)
+  assert.equal(options(empty).length, 0)
+  assert.equal(rayLabels(empty).length, 0)
+
+  sectorInput(empty, 'body').props.onChange()
+  const body = app.render()
+  assert.equal(options(body).length, 5)
+  assert.equal(inputs(body).filter(input => input.props.checked).length, 4)
+  assert.equal(rayLabels(body).length, 4)
+
+  sectorInput(body, 'relationships').props.onChange()
+  const bodyAndRelationships = app.render()
+  assert.equal(options(bodyAndRelationships).length, 9)
+  assert.equal(rayLabels(bodyAndRelationships).length, 4)
+
+  allSectorInput(bodyAndRelationships).props.onChange()
+  const restored = app.render()
+  assert.equal(allSectorInput(restored).props.checked, true)
+  assert.equal(inputs(restored).filter(input => input.props.checked).length, 8)
+  assert.equal(rayLabels(restored).length, 8)
+})
+
+test('portrait SVG captions are plain near-dot words without pill rectangles, localized EN RU ES', () => {
+  for (const locale of ['en', 'ru', 'es']) {
+    const tree = harness(locale).render()
+    assert.equal(rayLabels(tree).length, 8, locale)
+    assert.ok(rayLabels(tree).every(node => node.props.textAnchor === 'start'), locale)
+    assert.ok(!descendants(tree).some(node => node.type === 'rect' && String(node.props.className).includes('radarLabelPill')), locale)
+  }
+  const css = read('components/app/test-explorer.module.css')
+  assert.match(css, /\\.radarInlineLabel\\{/)
+  assert.match(css, /\\.portraitSectorGrid\\{display:grid;grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/)
+  assert.match(css, /\\.radarSectorArc\\[/)
+  assert.doesNotMatch(css, /\\.radarLabelPill\\{/)
 })
