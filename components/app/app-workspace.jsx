@@ -2219,7 +2219,8 @@ function PortfolioPage({ data, locale }) {
               <article className="hh-insights-test-card" key={group.key}>
                 <Link href={`/${locale}/app/results/${encodeURIComponent(latest.id)}`} className="hh-insights-test-link" prefetch={false}
                   aria-label={(ru ? 'Открыть отчёт и рекомендации: ' : 'Open analysis & recommendations: ') + group.title}>
-                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact result={latest} /></div>
+                  <div className="hh-insights-test-gauge"><ScoreGauge dimension={main} locale={locale} compact result={latest}
+                    showLegend={false} showScaleNote={false} /></div>
                   <div className="hh-insights-test-body">
                     <div className="hh-insights-test-meta">
                       <time dateTime={latest.measurementAt}>{shortDateLabel(latest.measurementAt, locale)}</time>
