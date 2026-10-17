@@ -39,6 +39,12 @@ test('report actions are above the category accordion for the signed-in account 
   assert.match(profile, /\{t\.getReview\}/)
   assert.match(profile, /\{t\.discover\}/)
   assert.match(css, /> \.hh-domain-footer-actions \{\s*margin: 0 0 12px;/)
+  assert.match(css, /padding-bottom: calc\(132px \+ env\(safe-area-inset-bottom\)\)/)
+  assert.match(css, /width: 42px;height: 42px; padding: 9px;/)
+  assert.match(css, /\.hh-domain-footer-actions a \{\s*min-height: 46px;/)
+  assert.match(css, /background: radial-gradient\(circle at 90% 35%/)
+  assert.doesNotMatch(css, /A purposeful, short navy introduction/)
+
 })
 
 test('reports remain private, consultation remains an unconfirmed request and tabs stay accessible', () => {

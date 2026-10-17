@@ -6,6 +6,7 @@ import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
+import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
@@ -79,7 +80,7 @@ async function handle(request, { params }) {
         continueTo = body.continueTo || null,
         program = body.program || null
       if (continueTo !== null && !['tests', 'course'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -116,7 +117,7 @@ async function handle(request, { params }) {
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId) requireUUID(intentId)
       if (serviceId) requireUUID(serviceId)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','cabinet','my-tests','my-courses','reports','energywork'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       const destination = intentId
         ? `${origin}/${locale}/app/continue?intent=${encodeURIComponent(intentId)}&auto=1`
         : serviceId
@@ -133,7 +134,9 @@ async function handle(request, { params }) {
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
                       ? `${origin}/${locale}/app/portrait#personal-reports`
-                      : `${origin}/${locale}/app`
+                      : continueTo === 'energywork'
+                        ? `${origin}/${locale}/academy/principles-of-energywork/learn`
+                        : `${origin}/${locale}/app`
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return auth.apply(
           NextResponse.redirect((value => { const url = new URL(destination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
@@ -423,6 +426,14 @@ async function handle(request, { params }) {
         return json(await notifications.sendTest(actor))
       }
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'academy-energywork') {
+      if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      const energywork=createEnergyworkCourseRepository(config)
+      if (method === 'GET') return json({ accountId:actor.id, ...await energywork.read(actor) })
+      if (method === 'POST') return json({ accountId:actor.id, ...await energywork.command(actor,await readBody(request,8192)) })
+      throw new AppError('NOT_FOUND',404)
     }
     if (path[0] === 'course' && request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
     if (path[0] === 'course' && path.length === 2) {

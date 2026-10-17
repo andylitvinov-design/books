@@ -1568,7 +1568,6 @@
   max-width: 1500px;
   padding: 12px clamp(16px, 3vw, 46px) 100px;
 }
-.academy-reading-shell--yggdrasil .mind-body-monitor-strip { display: none; }
 .academy-reading-shell--yggdrasil .library-back-link { display: inline-flex; margin: 10px 0 16px; }
 .academy-reading-shell--yggdrasil .academy-course-layout {
   grid-template-columns: minmax(248px, 268px) minmax(0, 1fr);

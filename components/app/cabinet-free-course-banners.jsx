@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { appFetch } from '@/lib/app/client-fetch'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight, Sparkles } from 'lucide-react'
@@ -8,10 +12,10 @@ import styles from './cabinet-free-course-banners.module.css'
 const COURSES = [
   {
     id: 'energywork',
-    path: 'principles-of-energywork',
+    path: 'principles-of-energywork/learn',
     image: '/academy/reiki-yggdrasil/source/program-overview.jpg',
-    en: { offer: 'FREE INTRODUCTORY COURSE', title: 'Energywork Basics', description: 'Foundations and three Reiki traditions' },
-    ru: { offer: 'БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС', title: 'Основы энергетики', description: 'Основы практики и три системы Рейки' },
+    en: { offer: 'INTERACTIVE COURSE · PREVIEW', title: 'Energywork Basics', description: 'Slides, original videos and private save after sign-in' },
+    ru: { offer: 'ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ', title: 'Основы энергетики', description: 'Слайды, видео и сохранение после входа в аккаунт' },
   },
   {
     id: 'tantra-reiki',
@@ -34,19 +38,27 @@ const COPY = {
     eyebrow: 'HOLISTIC HOUSE ACADEMY',
     title: 'Free courses',
     note: 'Explore for free. Teacher-led initiations require personal confirmation.',
-    action: 'Open course',
+    action: 'Open course', continueTitle: 'Continue Energywork Basics', continueText: 'Your saved slides and private reflections are ready.', continueAction: 'Resume saved course', completed: 'Completed', slide: 'Slide',
   },
   ru: {
     eyebrow: 'АКАДЕМИЯ HOLISTIC HOUSE',
     title: 'Бесплатные курсы',
     note: 'Начальные материалы бесплатны. Инициация проводится по согласованию.',
-    action: 'Открыть курс',
+    action: 'Открыть курс', continueTitle: 'Продолжить «Основы энергетики»', continueText: 'Ваши пройденные слайды и приватные ответы сохранены.', continueAction: 'Продолжить сохранённый курс', completed: 'Завершён', slide: 'Слайд',
   },
 }
 
 export default function CabinetFreeCourseBanners({ locale = 'en' }) {
   const language = locale === 'ru' ? 'ru' : 'en'
   const t = COPY[language]
+  const [academyProgress, setAcademyProgress] = useState(null)
+  useEffect(() => {
+    let alive = true
+    appFetch('academy-energywork').then(value => {
+      if (alive && value?.enrolled && typeof value.slideId === 'string') setAcademyProgress(value)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   return <section className={styles.section} aria-labelledby="cabinet-free-course-heading" data-cabinet-free-courses>
     <div className={styles.heading}>
@@ -56,6 +68,16 @@ export default function CabinetFreeCourseBanners({ locale = 'en' }) {
       </div>
       <p className={styles.note}>{t.note}</p>
     </div>
+    {academyProgress ? <div className={styles.savedCourse} data-energywork-course-resume>
+      <div>
+        <span className={styles.savedLabel}>{academyProgress.status === 'completed' ? t.completed : t.continueTitle}</span>
+        <p>{t.continueText}</p>
+        <small>{t.slide}: {academyProgress.slideId}</small>
+      </div>
+      <Link className={styles.savedAction} href={'/' + language + '/academy/principles-of-energywork/learn'} prefetch={false}>
+        {t.continueAction}<ArrowUpRight size={16} aria-hidden="true" />
+      </Link>
+    </div> : null}
     <div className={styles.grid}>
       {COURSES.map(course => {
         const content = course[language]
