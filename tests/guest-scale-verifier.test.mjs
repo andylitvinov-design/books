@@ -225,7 +225,7 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].primaryCount = 0 },
       s => { s.scales[0].primaryCount = 2 },
       s => { s.scales[0].primaryText = 'Unrelated advice' },
-      s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
+      s => { if (report.sections[0].meaning) s.scales[0].text = s.scales[0].text.replaceAll(report.sections[0].meaning, '') },
       s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
