@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+
+const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
+const curriculum = read('data/academy/energywork-ai-curriculum.ts')
+const learner = read('components/energywork-ai-learner.tsx')
+const css = read('components/energywork-ai-learner.module.css')
+const route = read('app/[locale]/academy/[[...slug]]/page.tsx')
+const landing = read('components/principles-of-energywork.tsx')
+const academy = read('components/academy-free-course-banner.tsx')
+const cabinet = read('components/app/cabinet-free-course-banners.jsx')
+const originalVideos = read('data/academy/english-guided-meditations.ts')
+
+test('Energywork course has a distinct versioned identity and stable slide IDs', () => {
+  assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-17.p0"/)
+  const ids = [...curriculum.matchAll(/id: "(welcome-|flight-|presence-|intention-|boundaries-|paths-|ygg-|tan-|kun-|end-)[^"]+"/g)].map(match => match[0])
+  assert.equal(ids.length, 39)
+  assert.equal(new Set(ids).size, ids.length)
+  for (const phase of ['welcome', 'flight', 'presence', 'intention', 'boundaries', 'paths', 'personal', 'complete']) {
+    assert.ok(curriculum.includes(phase + ':'), phase)
+  }
+  for (const track of ['yggdrasil', 'tantra', 'kundalini']) {
+    assert.match(curriculum, new RegExp('id: "' + track.replace('yggdrasil', 'ygg').replace('kundalini', 'kun') + '-01"'))
+  }
+  assert.match(curriculum, /\.\.\.commonSlides, \.(?:\.\.\.)?\(path \? pathSlides\[path\]/)
+})
+
+test('Original source videos, and only original source videos, are used', () => {
+  assert.match(learner, /englishGuidedMeditations\.find/)
+  assert.match(learner, /<AcademyVideoPlayer/)
+  for (const key of ['flight-to-sun', 'tantra-reiki', 'reiki-yggdrasil', 'kundalini-reiki']) {
+    assert.ok(curriculum.includes('videoKey: "' + key + '"'), key)
+  }
+  for (const id of ['HqfixazXqRY', 'w2BN-HYmHUk', '80xZ7jN6o2Y', '_IOX0E8N-To']) {
+    assert.ok(originalVideos.includes(id), id)
+    assert.ok(!curriculum.includes(id), 'video URLs remain in approved registry: ' + id)
+  }
+  assert.match(learner, /t\.unavailable/)
+})
+
+test('Preview is explicit and does not fake durable account storage', () => {
+  assert.match(learner, /Your answers are not stored in your account yet/)
+  assert.match(learner, /Ответы пока не сохраняются в аккаунте/)
+  assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
+  assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
+  assert.doesNotMatch(learner, /localStorage|sessionStorage|fetch\(|XMLHttpRequest|sendBeacon/)
+  assert.match(learner, /maxLength=\{1600\}/)
+  assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
+  assert.match(learner, /disabled=\{slide\.kind === "path-choice" && !path\}/)
+  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
+})
+
+test('Preview navigation is integrated into Academy and the original source page remains', () => {
+  assert.match(route, /key === "principles-of-energywork\/learn"/)
+  assert.match(route, /EnergyworkAiLearner/)
+  assert.match(route, /robots: \{ index: false, follow: false \}/)
+  assert.match(route, /key === "principles-of-energywork"\) return <PrinciplesOfEnergywork/)
+  assert.match(landing, /data-energywork-interactive-course/)
+  assert.match(landing, /energywork-flight-to-sun/)
+  assert.match(landing, /energywork-systems/)
+  assert.match(academy, /path: "principles-of-energywork\/learn"/)
+  assert.match(academy, /detailsPath: "academy\/principles-of-energywork"/)
+  assert.match(cabinet, /path: 'principles-of-energywork\/learn'/)
+})
+
+test('Mobile-first teal learner has accessible buttons, outlines and no automatic video playback', () => {
+  assert.match(learner, /<details className=\{styles\.programme\}>/)
+  assert.match(learner, /role="progressbar"/)
+  assert.match(learner, /aria-labelledby="energywork-slide-title"/)
+  assert.match(learner, /type="range" min="0" max="10"/)
+  assert.match(learner, /type="radio"/)
+  assert.match(css, /@media \(max-width: 760px\)/)
+  assert.match(css, /@media \(max-width: 380px\)/)
+  assert.match(css, /:focus-visible/)
+  assert.match(css, /prefers-reduced-motion/)
+  assert.doesNotMatch(learner, /autoplay|autoPlay/)
+})
