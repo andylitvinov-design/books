@@ -103,7 +103,7 @@ function freeIntroConsultationHref(locale) {
     locale: ru ? 'ru' : 'en',
     service: ru ? 'Бесплатная ознакомительная консультация' : 'Free introductory consultation',
     request: ru
-      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные консультации оплачиваются отдельно.'
+      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные сессии платные.'
       : 'I would like to request a free introductory consultation. Please confirm whether an introductory conversation is available and suggest a time. I understand this is a request, not a confirmed booking, and longer personal sessions are paid separately.',
   })
 }
