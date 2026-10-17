@@ -100,8 +100,9 @@ try {
   // settled account landing, otherwise WebKit may interrupt the first goto.
   await expect(page).toHaveURL(/\/en\/app\/(?:portrait|tests)(?:[?#]|$)/,{timeout:90000})
   await expect(page.locator('.hh-mobile-app-nav')).toBeVisible({timeout:90000})
-  await expect(page.locator('[data-my-tests-dashboard], [data-personal-portrait-summary]'))
-    .toBeVisible({timeout:90000})
+  // The current signed-in Profile is ProfileDomains (not the older
+  // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
+  await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
