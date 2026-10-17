@@ -84,8 +84,8 @@ test('IPIP-50 is available in both explorer locales, but the questions remain id
 })
 
 test('17 additional psychotherapy scales are searchable references, not unlicensed online tests', () => {
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 159)
-  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(item => item.key)).size, 159)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 169)
+  assert.equal(new Set(MIND_BODY_MONITOR_REGISTRY.map(item => item.key)).size, 169)
   const guest = buildExplorerEntries({ locale: 'en', audience: 'guest' })
   const account = buildExplorerEntries({ locale: 'en', audience: 'account' })
   for (const ref of refs) {
