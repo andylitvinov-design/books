@@ -70,18 +70,17 @@ test('result page offers a real per-scale selector instead of a duplicated previ
   assert.match(jsx, /data-active-scale=\{section\.key\}/)
   assert.match(jsx, /<select value=\{selectedIndex\}/)
   assert.doesNotMatch(jsx, /overview\.preview\.map|overviewGrid|See every measure/)
-  assert.match(jsx, /findIndex\(item => item\.recommendedReview\)/)
+  assert.match(jsx, /overview\.initialIndex/)
   assert.match(jsx, /<ScoreGauge dimension=\{dimension\}/)
 
-  // Original per-scale medical limits, interpretation and up to two optional
-  // evidence-based steps stay source-derived, with longer text disclosed.
-  assert.match(jsx, /section\.steps\.slice\(0, 2\)/)
+  // One source-derived primary suggestion; complete original guidance stays accessible.
+  assert.match(jsx, /data-primary-support/)
   assert.match(jsx, /section\.recommendedReview && section\.followUp/)
   assert.match(jsx, /section\.meaning && section\.meaning !== conciseMeaning/)
   assert.match(jsx, /section\.source/)
   assert.match(jsx, /report\.instrumentText\.requiredSiteAttribution/)
   assert.match(jsx, /report\.methodology/)
-  assert.match(jsx, /More about this score & sources/)
+  assert.match(jsx, /More about this scale/)
   assert.match(jsx, /<FreeCourseBanner locale=\{locale\} compact\/>/)
 
   assert.match(css, /\.scaleTabs\{/)

@@ -144,7 +144,10 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     assert.ok(normalized(actual.text).includes(`${ru ? 'Баллы' : 'Score'}: ${section.value} · ${ru ? 'шкала' : 'range'} ${section.min}–${section.max}`), 'Exact account score and complete range')
     for (const text of [section.band, section.meaning, section.followUp, ...(section.steps || []), ...(section.limitations || [])].filter(Boolean))
       assert.ok(normalized(actual.text).includes(normalized(text)), 'Exact account explanation/advice: ' + section.key)
-    assert.deepEqual(actual.sources, section.source ? [section.source] : [], 'Exact account source reference')
+    assert.deepEqual(actual.sources, section.source ? [section.source] : [], 'Exact selected source reference in final methodology')
+    const primary = section.recommendedReview && section.followUp || section.primarySupport || section.steps?.[0] || section.followUp
+    assert.equal(actual.primaryCount, primary ? 1 : 0, 'One primary support option per selected scale')
+    assert.equal(normalized(actual.primaryText), normalized(primary), 'Source-derived primary support stays exact')
   }
   if (report.methodology) assert.ok(normalized(snapshot.methodology).includes(normalized(report.methodology)), 'Exact authenticated methodology')
   if (report.note) assert.ok(normalized(snapshot.text).includes(normalized(report.note)), 'Exact authenticated source limitations')
@@ -173,6 +176,22 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
     await expect(card).toHaveAttribute('data-active-scale', section.key)
     for (const detail of await card.locator('details').all())
       if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
+    const methodology = root.locator('[data-assessment-methodology]')
+    await expect(methodology).toHaveCount(1)
+    const methodologySummary = methodology.locator(':scope > summary')
+    if (await methodology.getAttribute('open') === null) {
+      await methodologySummary.focus()
+      await expect(methodologySummary).toBeFocused()
+      await methodologySummary.press('Enter')
+    }
+    if (section.source) {
+      const source = methodology.locator('a[href]')
+      await expect(source).toHaveCount(1)
+      await expect(source).toBeVisible()
+      await expect(source).toHaveAttribute('href', section.source)
+    }
+    await expect(card.locator('[data-primary-support]')).toHaveCount(1)
+    await expect(card.locator('[data-primary-support]')).toBeVisible()
     scales.push(await card.evaluate(element => {
       const root = element.closest('[data-personal-result-report]')
       const gauge = element.querySelector('[data-assessment-gauge]')
@@ -183,7 +202,9 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
         activeCount: root.querySelectorAll('[data-active-scale]').length,
         pressedKeys: [...root.querySelectorAll('[data-assessment-scale-trigger][aria-pressed="true"]')].map(node => node.getAttribute('data-assessment-scale-trigger')),
         rootGaugeCount: root.querySelectorAll('[data-assessment-gauge]').length,
-        sources: [...element.querySelectorAll('a[href]')].map(node => node.getAttribute('href')),
+        primaryCount: element.querySelectorAll('[data-primary-support]').length,
+        primaryText: element.querySelector('[data-primary-support]')?.textContent,
+        sources: [...root.querySelectorAll('[data-assessment-methodology] a[href]')].map(node => node.getAttribute('href')),
         numeric: gauge?.querySelector('strong')?.textContent,
         gaugeCount: element.querySelectorAll('[data-assessment-gauge]').length,
         gaugeScale: gauge?.dataset.gaugeScale,

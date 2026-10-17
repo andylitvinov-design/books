@@ -86,7 +86,7 @@ test('all compact reports show exactly one optional banner after unchanged repor
   assert.doesNotMatch(report, /hasSkills|skillAxes/)
   assert.match(report, /getTestScaleGuide\(result\.definitionKey, locale\)/)
   assert.match(report, /<ScoreGauge dimension=\{dimension\} locale=\{locale\}/)
-  assert.match(report, /section\.steps\.slice\(0, 2\)/)
+  assert.match(report, /data-primary-support/)
 })
 
 test('the actual report renders the optional banner without skill mappings or course state', () => {
