@@ -4,10 +4,11 @@ import { readFile } from 'node:fs/promises'
 
 const source = path => readFile(path, 'utf8')
 
-test('the signed-in Cabinet opens Profile by default and uses one five-tab navigation for every surface', async () => {
-  const [route, workspace] = await Promise.all([
+test('the signed-in Cabinet opens Profile with five private tabs and a localized public Home mobile link', async () => {
+  const [route, workspace, styles] = await Promise.all([
     source('app/[locale]/app/[[...path]]/page.jsx'),
     source('components/app/app-workspace.jsx'),
+    source('app/[locale]/app/[[...path]]/workspace.css'),
   ])
   assert.match(route, /if \(path\.length === 0\) redirect\('\/' \+ locale \+ '\/app\/portrait'\)/)
   assert.match(workspace, /const page = path\[0\] \|\| 'portrait'/)
@@ -33,6 +34,12 @@ test('the signed-in Cabinet opens Profile by default and uses one five-tab navig
   assert.match(menu, /\{nav\.map\(\(\{ id, label, href \}\)/)
   assert.match(desktop, /\{nav\.map\(\(\{ id, label, href \}\)/)
   assert.match(mobile, /\{nav\.map\(\(\{ id, label, href, icon: Icon \}\)/)
+  assert.match(mobile, /className="hh-mobile-app-nav-home"/)
+  assert.match(mobile, /href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
+  assert.match(mobile, /<House aria-hidden="true" size=\{22\}/)
+  assert.match(mobile, /\{locale === 'ru' \? 'Главная' : 'Home'\}/)
+  assert.ok(mobile.indexOf('hh-mobile-app-nav-home') > mobile.indexOf('nav.map'), 'Home appears after Practice')
+  assert.match(styles, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
   assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(menu, /hh-account-more/)
   assert.match(menu, /root \+ '\/settings'/)

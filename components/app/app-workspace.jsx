@@ -574,6 +574,10 @@ export default function AppWorkspace({ locale, path = [] }) {
             aria-current={navIsActive(id) ? 'page' : undefined}
           ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
         ))}
+        <Link href={locale === 'ru' ? '/ru' : '/'} prefetch={false}
+          className="hh-mobile-app-nav-home"
+          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
+        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
       </nav>}
     </main>
     </SubscriptionProvider>
