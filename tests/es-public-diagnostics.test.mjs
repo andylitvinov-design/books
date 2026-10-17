@@ -65,7 +65,9 @@ test('integration retains fatal gate, original checks and navigation sequence ex
    "        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});",
  ].join('\n');
  assert.ok(source.includes(reviewedFix), 'Exact approved load-event navigation fix');
- const canonical = source.replace(reviewedFix, previousPreamble);
+ assert.equal(source.split("await expect(page).toHaveURL(origin+'/en/app/portrait');").length-1, 2, 'Only the reviewed canonical Profile handoff is allowed');
+ const canonical = source.replace(reviewedFix, previousPreamble)
+   .replaceAll("await expect(page).toHaveURL(origin+'/en/app/portrait');", "await expect(page).toHaveURL(origin+'/en/app');");
  const start=canonical.indexOf('        // Do not abort');
  const end=canonical.indexOf('        results.push',start);
  assert.ok(start>=0 && end>start, 'Original browser check block must be present');
