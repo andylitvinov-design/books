@@ -96,6 +96,15 @@ export function middleware(request: NextRequest) {
       return ' ' + value.origin
     } catch {return ''}
   })()
+  // Public-only master marketing images. Never grant the private client media
+  // origin to unrelated Account, client report, admin, or API pages.
+  const listingImageOrigin = (() => {
+    if(!/^\/(en|ru|es)\/(app\/practice(?:\/|$)|masters(?:\/|$)|services(?:\/|$))/.test(pathname))return ''
+    try{
+      const url=new URL(process.env.HH_APP_SUPABASE_URL||'')
+      return url.protocol==='https:'&&url.hostname.endsWith('.supabase.co')?' '+url.origin:''
+    }catch{return ''}
+  })()
   // Owner-only private video PUT; never widen client/guest playback CSP.
   const externalVideoUploadOrigin = (() => {
     if ((process.env.HH_CLIENT_DELIVERY_ENABLED!=='true'&&!materialLibraryPage) ||
@@ -115,7 +124,7 @@ export function middleware(request: NextRequest) {
           : 'restricted'
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubePhoneUploader ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
-    academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com",
+    (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + listingImageOrigin,
     youtubePhoneUploader ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
     (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin) ? ' blob:' : '') + deliveryOrigin,
     "font-src 'self'", "connect-src 'self'" + (youtubePhoneUploader ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + externalVideoUploadOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubePhoneUploader ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
