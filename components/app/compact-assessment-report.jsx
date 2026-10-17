@@ -32,6 +32,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
   const guide = section.bandBasis === 'unavailable' ? null : guideByScale.get(section.key)
   const model = gaugeModel(dimension, result, locale)
+  const anchor = model?.currentAnswerBand || null
   const rawNote = !model ? null : model.displayKind === 'screening-count'
     ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
     : model.orientation === 'difficulty'
@@ -97,8 +98,29 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
-      {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
-      {section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
+      {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
+        <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
+        <p className={styles.readingTitle}>{ru ? 'По ответам: ' : 'Based on your answers: '}{anchor.label}</p>
+        <p>{anchor.note}</p>
+      </section>}
+      {conciseMeaning && !anchor && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
+      {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
+        <h4>{ru ? 'Диапазоны и их значение' : 'Score ranges explained'}</h4>
+        <ol className={styles.rangeList}>
+          {model.answerBands.map((band, index) => <li key={band.code}
+            data-active-answer-range={band.current || undefined}
+            aria-current={band.current ? 'true' : undefined}>
+            <span className={styles.rangeSwatch} style={{ backgroundColor: ['#b78363', '#c7a66b', '#b1ae72', '#729a87', '#397f69'][Math.min(index, 4)] }} aria-hidden="true"/>
+            <strong>{band.displayRange}</strong>
+            <span>{band.label}</span>
+            {band.current && <em>{ru ? 'Ваш диапазон' : 'Your range'}</em>}
+          </li>)}
+        </ol>
+        <p className={styles.answerCaveat}>{ru
+          ? 'Диапазоны показывают, к какому исходному варианту ответа ближе средний балл. Это ориентир для самонаблюдения, не медицинские нормы и не оценка «хорошо/плохо».'
+          : 'These ranges show which original answer option is closest to your average. They guide self-reflection, not clinical norms or a pass/fail judgement.'}</p>
+      </section>}
+      {!anchor && section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
       {primarySupport && <div className={styles.recommendations}>
         <h4>{ru ? 'Поддержка в вашем темпе' : 'Support at your own pace'}</h4>
         <p className={section.recommendedReview ? styles.care : styles.explanation}
@@ -112,6 +134,8 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         {section.followUp && section.followUp !== primarySupport && <p>{section.followUp}</p>}
         {section.steps?.length > 0 && <ol>{section.steps.filter(step => step !== primarySupport).map((step, index) => <li key={index}>{step}</li>)}</ol>}
         {section.bandBasis === 'screening' && <p>{ru ? 'Скрининг не устанавливает диагноз.' : 'Screening is not a diagnosis.'}</p>}
+        {anchor && section.meaning && <p>{section.meaning}</p>}
+        {anchor && section.limitations?.map(limit => <p key={limit} data-scale-limitation>{limit}</p>)}
       </details>
     </article>
 
@@ -122,7 +146,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
       <small>{report.personalityType.warning}</small>
     </details>}
-    {report.contextNote && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
+    {report.contextNote && !anchor && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     {report.instrumentText && <aside className={styles.instrumentText} data-asrs6-instrument-text>
       <div lang={report.instrumentText.instrumentLocale}>
         <p>{report.instrumentText.eligibilityText}</p>
@@ -141,6 +165,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <summary>{ru ? 'Методика, источники и ограничения' : 'Method, evidence & limitations'}</summary>
         {overview.measurementDateIso && <p><time dateTime={overview.measurementDateIso}>{overview.measurementDateLabel}</time></p>}
         {report.purpose && <p>{report.purpose}</p>}
+        {report.contextNote && anchor && <p data-assessment-context>{report.contextNote}</p>}
         {report.methodology && <p>{report.methodology}</p>}
         {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
         {report.note && <p>{report.note}</p>}

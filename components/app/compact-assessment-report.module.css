@@ -65,3 +65,24 @@
   .summary h3{font-size:1.04rem!important}
 }
 @media print{.scaleTabs,.jump{display:none}}
+
+/* Source response anchors: a readable explanatory range, not diagnostic cutoffs. */
+.answerReading{margin:12px 0 0;padding:13px 15px;border-radius:13px;border:1px solid #cddfd2;background:linear-gradient(110deg,#eef7f1,#f8faf5);color:#345448}
+.answerReading p{margin:4px 0 0!important;font-size:.89rem!important;line-height:1.47!important}
+.answerReading .readingLabel{margin:0!important;color:#426c58;text-transform:uppercase;letter-spacing:.055em;font-size:.69rem!important;font-weight:800}
+.answerReading .readingTitle{margin:5px 0!important;color:#2e5e49;font-size:1.06rem!important;line-height:1.32!important;font-weight:790}
+.answerRanges{margin:14px 0 0;padding:12px 14px 11px;border:1px solid #e1e8df;border-radius:13px;background:#fcfdfb;min-width:0}
+.answerRanges h4{margin:0 0 9px!important;color:#2f5948;font:750 .93rem/1.3 system-ui,sans-serif!important}
+.rangeList{display:grid;gap:5px;list-style:none;padding:0;margin:0}
+.rangeList li{display:grid;grid-template-columns:9px 90px minmax(0,1fr) auto;align-items:center;column-gap:9px;padding:7px 10px;min-width:0;border:1px solid transparent;border-radius:9px;color:#47594e;font-size:.79rem;line-height:1.3;overflow-wrap:anywhere}
+.rangeList li[data-active-answer-range]{background:#eaf5ed;border-color:#9cc5aa;color:#255a42}
+.rangeList strong{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:790}
+.rangeList em{font-style:normal;font-size:.69rem;font-weight:800;color:#276747}
+.rangeSwatch{width:9px;height:22px;border-radius:9px}
+.answerCaveat{margin:10px 0 0!important;font-size:.75rem!important;line-height:1.43!important;color:#6b736b}
+@media(max-width:570px){
+  .answerReading{padding:11px 12px}
+  .answerRanges{padding:11px 10px}
+  .rangeList li{grid-template-columns:8px 78px minmax(0,1fr);column-gap:7px;padding:7px 6px;font-size:.75rem}
+  .rangeList em{grid-column:3;margin-top:2px}
+}
