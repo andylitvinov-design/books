@@ -5,6 +5,7 @@ import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, Chevr
 import CrmManager from './crm-manager'
 import PractitionerArticles from './practitioner-articles'
 import PracticeServiceStatistics from './practice-service-statistics'
+import MyServicesDashboard from './my-services-dashboard'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import './practice-dashboard.css'
 
@@ -121,7 +122,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   useEffect(()=>{load()},[])
   useEffect(()=>{
     if(!activePanel)return undefined
-    const frame=requestAnimationFrame(()=>document.getElementById('hh-practice-workspace-detail')?.scrollIntoView({behavior:'smooth',block:'start'}))
+    const targetId=activePanel==='services'?'hh-practice-services-view':'hh-practice-workspace-detail'
+    const frame=requestAnimationFrame(()=>document.getElementById(targetId)?.scrollIntoView({behavior:'smooth',block:'start'}))
     return ()=>cancelAnimationFrame(frame)
   },[activePanel,newServiceRequest])
   const t=useMemo(()=>ru?{
@@ -211,6 +213,25 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else if(index===1)choosePanel('services')
     else shareProfile()
   }
+  if(!needsOnboarding&&activePanel==='services')return <section className="hh-practice-dashboard" aria-label={ru?'Мои услуги':'My services'}>
+    <nav className="hh-practice-breadcrumb hh-practice-services-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
+      <button type="button" onClick={()=>setActivePanel(null)}>{t.title}</button>
+      <ChevronRight aria-hidden="true" />
+      <strong>{d.services}</strong>
+    </nav>
+    <div id="hh-practice-services-view">
+      <Services items={services} t={t} locale={locale} busy={busy} quota={serviceQuota} createRequest={newServiceRequest}
+        onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
+        onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
+        onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
+      <details className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
+        <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
+        <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
+      </details>
+      <button type="button" className="hh-practice-services-back" onClick={()=>setActivePanel(null)}>{ru?'← Вернуться в My Practice':'← Back to My Practice'}</button>
+      {error&&<p role="alert" className="hh-practice-error">{error==='SERVICE_LIMIT_REACHED'?(ru?'На бесплатном тарифе Hobby можно сохранить до 10 услуг. Редактирование существующих услуг доступно.':'The free Hobby plan allows up to 10 saved services. You can still edit existing services.'):error}</p>}
+    </div>
+  </section>
   return <section className="hh-practice-dashboard">
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
@@ -313,16 +334,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
         {activePanel==='articles'&&<PractitionerArticles locale={locale} services={services} />}
-        {activePanel==='services'&&<>
-          <details className="hh-practice-fee-notice" aria-label={ru?'Условия комиссии':'Platform commission'}>
-            <summary>{ru?'Комиссия 20% за оплаченные заказы на сайте':'20% commission on paid website orders'}</summary>
-            <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
-          </details>
-          <Services items={services} t={t} locale={locale} busy={busy} quota={serviceQuota} createRequest={newServiceRequest}
-            onSave={(id,draft,expectedRevision)=>act(()=>practiceFetch('/services'+(id?'/'+id:''),{draft,expectedRevision}))}
-            onSubmit={item=>act(()=>practiceFetch('/services/'+item.id,{action:'submit',expectedRevision:item.revision}))}
-            onPause={item=>act(()=>practiceFetch('/services/'+item.id,{action:'pause',expectedRevision:item.revision}))} />
-        </>}
+
         {activePanel==='clients'&&(isOwner&&accountId
           ?<CrmManager key={accountId} locale={locale} accountId={accountId} />
           :<ClientLeads items={requests} locale={locale} onOpenRequests={()=>choosePanel('requests')} />)}
@@ -449,64 +461,14 @@ function Credentials({items,t,busy,onCreate,onDelete}){
     <label>{t.credTitle}<input required value={v.title} onChange={e=>setV({...v,title:e.target.value})}/></label><label>{t.issuer}<input value={v.issuer} onChange={e=>setV({...v,issuer:e.target.value})}/></label><label>{t.jurisdiction}<input value={v.jurisdiction} onChange={e=>setV({...v,jurisdiction:e.target.value})}/></label><label>{t.reference}<input value={v.reference} onChange={e=>setV({...v,reference:e.target.value})}/></label><label className="hh-check"><input type="checkbox" checked={v.public} onChange={e=>setV({...v,public:e.target.checked})}/>{t.public}</label><button disabled={busy}>{t.add}</button></form></section>
 }
 function Services({items,t,locale,busy,quota,createRequest=0,onSave,onSubmit,onPause}){
-  const ru=locale==='ru'
   const canAdd=quota?.canAdd!==false
-  const [creating,setCreating]=useState(items.length===0&&canAdd)
-  const [status,setStatus]=useState('all')
-  useEffect(()=>{if(items.length||!canAdd)setCreating(false)},[items.length,canAdd])
-  useEffect(()=>{if(createRequest>0&&canAdd)setCreating(true)},[createRequest,canAdd])
-  const visible=items.filter(item=>status==='all'||(status==='published'?item.status==='published':status==='review'?['submitted','changes_requested'].includes(item.status):['draft','paused'].includes(item.status)))
-  const statusLabel=value=>({
-    published:ru?'Опубликовано':'Published',
-    submitted:ru?'На проверке':'In review',
-    changes_requested:ru?'Нужны правки':'Changes needed',
-    draft:ru?'Черновик':'Draft',
-    paused:ru?'На паузе':'Paused',
-    suspended:ru?'Приостановлено':'Suspended',
-  }[value]||value)
-  const priceLabel=item=>item.pricingMode==='free'?(ru?'Бесплатно':'Free'):item.pricingMode==='contact'?(ru?'По запросу':'Price on request'):item.confirmedPrice!=null?((item.pricingMode==='from'?(ru?'От ':'From '):'')+[item.currency,item.confirmedPrice].filter(Boolean).join(' ')):(ru?'По запросу':'Price on request')
-  return <section className="hh-practice-services-editor">
-    <div className="hh-practice-service-toolbar">
-      <div><h3>{ru?'Мои услуги':'My services'} <small>({items.length})</small></h3>
-        <p>{ru?'Редактируйте предложения и следите за публикацией.':'Edit your offers and track publication.'}</p>
-      </div>
-      <div className="hh-practice-service-controls">
-        <select className="hh-practice-service-filter-control" aria-label={ru?'Фильтр услуг':'Filter services'} value={status} onChange={event=>setStatus(event.target.value)}>
-          <option value="all">{ru?'Все услуги':'All services'}</option>
-          <option value="published">{ru?'Опубликованные':'Published'}</option>
-          <option value="review">{ru?'На проверке':'Under review'}</option>
-          <option value="draft">{ru?'Черновики и пауза':'Drafts / paused'}</option>
-        </select>
-        <button type="button" className="hh-practice-new-service" disabled={!canAdd} aria-expanded={creating} onClick={()=>setCreating(value=>!value)}>
-          {creating?(ru?'Закрыть':'Close'):(ru?'+ Новая услуга':'+ New service')}
-        </button>
-      </div>
-    </div>
-    <p className="hh-practice-services-count" role="status">{ru?'Показано':'Showing'} {visible.length} / {items.length}</p>
-    {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
-    {creating&&canAdd&&<ServiceEditor key="new" item={null} t={t} locale={locale} busy={busy}
-      onSave={onSave} onSubmit={onSubmit} onPause={onPause} />}
-    {visible.map(item=><details key={item.id+':'+item.revision} className="hh-practice-service-row">
-      <summary>
-        <span className="hh-practice-service-row-main">
-          <span className="hh-practice-service-symbol" aria-hidden="true"><Leaf /></span>
-          <span className="hh-practice-service-row-description">
-            <strong>{item.copy?.title||item.localizedCopy?.en?.title||(ru?'Без названия':'Untitled service')}</strong>
-            <small>{item.deliveryFormat==='in_person'?(ru?'Лично':'In person'):item.deliveryFormat==='hybrid'?(ru?'Онлайн или лично':'Online or in person'):(ru?'Онлайн':'Online')}{item.durationMinutes?' · '+item.durationMinutes+' min':''}</small>
-            <small className="hh-practice-service-price">{priceLabel(item)}</small>
-          </span>
-        </span>
-        <span className="hh-practice-service-row-meta" data-status={item.status}>{statusLabel(item.status)}</span>
-        <ChevronRight className="hh-practice-service-chevron" aria-hidden="true"/>
-      </summary>
-      <ServiceEditor item={item} t={t} locale={locale} busy={busy} onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>
-    </details>)}
-    {items.length===0&&!creating&&<div className="hh-practice-empty-state">
-      <p>{ru?'Пока нет услуг. Создайте своё первое предложение.':'No services yet. Add your first offer.'}</p>
-      <button type="button" onClick={()=>setCreating(true)}>{ru?'+ Создать услугу':'+ Add a service'}</button>
-    </div>}
-    {items.length>0&&!visible.length&&<p role="status" className="hh-fine">{ru?'Услуг с таким статусом нет.':'No services with this status.'}</p>}
-  </section>
+  const ru=locale==='ru'
+  return <>
+    {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':locale==='es'?'Hobby gratis: has alcanzado el límite de 10 servicios. Puedes editar los existentes.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
+    <MyServicesDashboard items={items} locale={locale} quota={quota} createRequest={createRequest}
+      renderEditor={item=><ServiceEditor key={item?.id||'new'} item={item} t={t} locale={locale} busy={busy}
+        onSave={onSave} onSubmit={onSubmit} onPause={onPause}/>} />
+  </>
 }
 function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
   const base=item?.draftCopy&&Object.keys(item.draftCopy).length?item.draftCopy:item?{...emptyService,copy:{en:{...emptyService.copy.en,...(item.localizedCopy?.en||{})},ru:{...emptyService.copy.ru,...(item.localizedCopy?.ru||{})},es:{...emptyService.copy.es,...(item.localizedCopy?.es||{})}},goals:item.goals||[],methods:item.methods||[],benefits:item.benefits||[],faq:item.faq||[],displayLocales:item.displayLocales||['en','ru'],whatsapp:item.whatsapp||'',telegram:item.telegram||'',areaKey:item.areaKey,offeringType:item.offeringType,deliveryFormat:item.deliveryFormat,locationLabel:item.locationLabel,languages:item.languages,pricingMode:item.pricingMode,confirmedPrice:item.confirmedPrice??'',currency:item.currency||'CAD',durationMinutes:item.durationMinutes??'',imagePath:item.imagePath||''}:emptyService
