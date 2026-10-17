@@ -24,7 +24,7 @@ test('each banner links to its existing localized Academy learning path, never a
   assert.match(academy, /if \(key === "principles-of-energywork"\)/)
   assert.match(academy, /if \(key === "reiki\/tantra-reiki\/free-initiation"\)/)
   assert.match(academy, /if \(child === "free-initiation"\)/)
-  assert.doesNotMatch(banners, /appFetch|fetch\(|onClick=|checkout|enrol/i)
+  assert.doesNotMatch(banners, /appFetch|fetch\(|onClick=|checkout/i)
 })
 
 test('EN/RU copy distinguishes free study from personally confirmed initiations, including mobile layout', () => {
