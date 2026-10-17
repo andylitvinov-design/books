@@ -720,7 +720,7 @@ export default function CourseSlidePlayer({
           {!earned && <small>{words.xpNote}</small>}
           <button type="button" className={styles.textAction} onClick={() => setIndex(1)}>{words.replay}</button>
         </div> : <>
-          {slide.kind !== 'welcome' && <>
+          {slide.kind !== 'welcome' && !isSevenSkills && <>
             <div className={styles.slideIdentity}>
               <span className={styles.identityTag}><Icon size={17} aria-hidden="true"/>{words.day} {cycle.day}</span>
               <span className={styles.identityLabel}>{lesson.title}</span>
