@@ -63,7 +63,7 @@ test('AS-5.4 contract separates visible answers from navigation and formative fe
   assert.match(digital,/Mayer/)
   assert.match(digital,/CAST/)
   assert.match(digital,/WCAG/)
-  assert.match(digital,/не.*являются доказательством клинической эффективности/)
+  assert.match(digital,/Эффективность авторского интегрированного курса ОПОРА пока/)
   assert.equal((as52.match(/^#### Экран 05 — Афоризм и голосование/gm)||[]).length,14)
   assert.doesNotMatch(as52,/aphorismResponse:agree\|unsure\|disagree\|skip/)
   assert.match(passport,/AS-5\.4/)
