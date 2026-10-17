@@ -195,3 +195,10 @@
   .section[data-personal-testimonials="all"] .actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
   .section[data-personal-testimonials="all"] .more,.section[data-personal-testimonials="all"] .contact{font-size:11px;line-height:1.25;padding:8px 10px;min-height:44px}
 }
+
+/* The archive introduction is intentionally one short sentence on a phone. */
+@media(max-width:767px){
+  .section[data-personal-testimonials="all"] .intro h2{font-size:24px}
+  .section[data-personal-testimonials="all"] .intro>p:last-child{line-height:1.38;margin-top:5px}
+  .section[data-personal-testimonials="all"] .storyDisclosure{margin:9px 0 12px}
+}
