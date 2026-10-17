@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors,
+  portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors,
 } from '../lib/assessments/portrait-sectors.js'
 
 test('portrait grouping partitions all 17 directional axes exactly once and excludes personality', () => {
@@ -41,4 +41,33 @@ test('each sector has localized public labels', () => {
   for (const sector of PORTRAIT_SECTORS) {
     for (const lang of ['en', 'ru', 'es']) assert.ok(sector.label[lang], sector.key + '/' + lang)
   }
+})
+
+test('All: only actual measured axes contribute to four descriptive sector values', () => {
+  const portrait = {axes:{
+    stress:{percent:20},sleep:{percent:80},clarity:{percent:40},
+    relationships:{percent:65},boundaries:{percent:75},meaning:{percent:90},
+  }}
+  const summary = summarizePortraitSectors(portrait)
+  assert.deepEqual(summary.map(row => [row.key,row.percent,row.measured,row.total]), [
+    ['body',50,2,5],['work',40,1,3],['relationships',70,2,4],['growth',90,1,5],
+  ])
+  assert.deepEqual(summary.map(s => Math.round(portraitSectorMidAngle(s.key) * 1e6)),
+    PORTRAIT_SECTOR_KEYS.map((key,index) => Math.round((-Math.PI / 2 + (index+.5) * Math.PI / 2) * 1e6)))
+})
+
+test('No result: four sectors remain unmeasured, not percentages or health norms', () => {
+  const absent = summarizePortraitSectors(null)
+  assert.equal(absent.length, 4)
+  assert.deepEqual(absent.map(x => x.percent), [null,null,null,null])
+  assert.deepEqual(absent.map(x => x.measured), [0,0,0,0])
+  assert.equal(portraitSectorMidAngle('invalid'), null)
+  const invalid = summarizePortraitSectors({axes:{
+    stress:{percent:NaN},anxiety:{percent:-2},sleep:{percent:101},energy:{percent:'40'},
+    clarity:{percent:0},focus:{percent:100},
+  }})
+  assert.equal(invalid[0].percent,null)
+  assert.equal(invalid[1].percent,50)
+  assert.equal(invalid[1].measured,2)
+  assert.deepEqual(PORTRAIT_SECTOR_KEYS, ['body','work','relationships','growth'])
 })
