@@ -16,7 +16,7 @@ test("Wu Xing service has a dedicated EN/RU/ES public landing with an honest sco
   assert.match(page, /<PublicServiceOrderPanel locale=\{locale\} service=\{service\} specialized \/>/);
   assert.match(page, /href="#service-order"/);
   assert.match(page, /href="#how-it-works"/);
-  assert.match(page, /href=\{"/" \+ locale \+ "\/wu-xing"\}/);
+  assert.ok(page.includes('href={"/" + locale + "/wu-xing"}'));
   assert.match(page, /t\.benefits\.map/);
   assert.match(page, /t\.steps\.map/);
   assert.match(page, /t\.faqs\.map/);
@@ -42,6 +42,7 @@ test("public service ordering stays on the service page and uses the correct pra
   assert.match(generic, /href="#service-order"/);
   assert.match(generic, /<PublicServiceOrderPanel locale=\{locale as PublicLocale\} service=\{service\}/);
   assert.match(handoff, /id="service-order"/);
+  assert.match(handoff, /data-consultation-cta/);
   assert.match(handoff, /service\.practitionerSlug === "andy-litvinov"/);
   assert.match(handoff, /whatsappNumber/);
   assert.match(handoff, /telegramHandle/);
