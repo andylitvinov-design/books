@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
     imageSizes: [32, 64, 96, 160, 256, 384],
     formats: ["image/webp"],
+    // Limit expensive dynamic q variants, including arbitrary direct requests.
+    // Existing first-party public images already request the default q=75.
+    qualities: [75],
     minimumCacheTTL: 86400,
     remotePatterns: [
     { protocol: "https", hostname: "i.ytimg.com" },
