@@ -74,6 +74,16 @@ export const energyworkPathChoices: Array<{
   },
 ];
 
+const practiceQuestion: EnergyworkQuestion = {
+  type: "choice",
+  prompt: l("How did you use this practice?", "Как прошла эта практика?"),
+  help: l("Any response is fine; no result is required.", "Любой ответ подходит, специального результата не требуется."),
+  options: [
+    { id: "tried", label: l("I tried it in a way that suited me", "Я попробовал(а) в комфортном варианте") },
+    { id: "skipped", label: l("I chose to skip it today", "Сегодня я решил(а) пропустить") },
+  ],
+};
+
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Welcome to your energywork journey", "Добро пожаловать в путешествие"),
@@ -89,7 +99,7 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
-  { id: "flight-03", phase: "flight", kind: "practice",
+  { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
     body: l("With eyes open or closed, if comfortable, notice the room and imagine a source of warmth or light. You may simply look around instead. Stop whenever you wish.", "С открытыми или закрытыми глазами, если комфортно, осмотритесь и представьте источник тепла или света. Можно просто замечать окружающее. Остановитесь в любой момент.") },
   { id: "flight-04", phase: "flight", kind: "reflection",
@@ -100,7 +110,7 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "presence-01", phase: "presence", kind: "lesson", image: image.world,
     title: l("The foundation: presence", "Основа: присутствие"),
     body: l("Presence means bringing attention back to what is happening here and now, without trying to make a particular state happen.", "Присутствие — это возвращение внимания к тому, что происходит здесь и сейчас, без попыток вызвать особое состояние.") },
-  { id: "presence-02", phase: "presence", kind: "practice",
+  { id: "presence-02", phase: "presence", kind: "practice", question: practiceQuestion,
     title: l("Notice three ordinary things", "Заметьте три обычные вещи"),
     body: l("Without changing your breathing, notice three sounds, colours or points of contact in your surroundings. Choose whichever feels easy.", "Не меняя дыхание, заметьте три звука, цвета или точки опоры вокруг. Выберите то, что вам комфортно.") },
   { id: "presence-03", phase: "presence", kind: "reflection",
@@ -121,7 +131,7 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Write your own intention", "Запишите своё намерение"),
     body: l("Keep it simple and within your influence, such as making room for a short quiet pause.", "Пусть оно будет простым и посильным, например выделить пару минут для спокойной паузы."),
     question: { type: "text", prompt: l("My intention for this course…", "Моё намерение для курса…") } },
-  { id: "intention-04", phase: "intention", kind: "practice",
+  { id: "intention-04", phase: "intention", kind: "practice", question: practiceQuestion,
     title: l("Try your intention gently", "Мягко вспомните намерение"),
     body: l("For a few moments, notice your intention while staying aware of your surroundings. It is fine to change it later.", "На несколько мгновений вспомните своё намерение, оставаясь в контакте с окружающим. Позже его можно изменить.") },
 
@@ -137,7 +147,7 @@ const commonSlides: EnergyworkSlide[] = [
         { id: "adapt", label: l("Choose an easier alternative", "Выбрать более простой вариант") },
         { id: "ask", label: l("Ask the teacher for clarification", "Попросить преподавателя объяснить") },
       ] } },
-  { id: "boundaries-03", phase: "boundaries", kind: "practice",
+  { id: "boundaries-03", phase: "boundaries", kind: "practice", question: practiceQuestion,
     title: l("A moment of choice", "Момент выбора"),
     body: l("Try saying to yourself: 'I can choose the pace and the format.' You may also skip this exercise.", "Попробуйте сказать себе: «Я могу выбирать темп и формат». Это упражнение тоже можно пропустить.") },
   { id: "boundaries-04", phase: "boundaries", kind: "reflection",
@@ -167,7 +177,7 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "ygg-02", phase: "personal", kind: "video", videoKey: "reiki-yggdrasil",
       title: l("Original Reiki Yggdrasil meditation", "Оригинальная медитация Рейки Иггдрасиль"),
       body: l("English recording shared by Andrey. Participation is optional.", "Английская запись Андрея. Участие необязательно.") },
-    { id: "ygg-03", phase: "personal", kind: "practice",
+    { id: "ygg-03", phase: "personal", kind: "practice", question: practiceQuestion,
       title: l("Draw or imagine a tree", "Нарисуйте или представьте дерево"),
       body: l("On paper, draw roots, a trunk and a crown — or imagine them. Keep the drawing for yourself; image upload is not enabled in this preview.", "Нарисуйте на бумаге корни, ствол и крону — либо представьте их. Рисунок остаётся у вас; загрузка изображений пока недоступна.") },
     { id: "ygg-04", phase: "personal", kind: "reflection",
@@ -185,7 +195,7 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "tan-02", phase: "personal", kind: "video", videoKey: "tantra-reiki",
       title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
       body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
-    { id: "tan-03", phase: "personal", kind: "practice",
+    { id: "tan-03", phase: "personal", kind: "practice", question: practiceQuestion,
       title: l("Notice connection and space", "Заметьте связь и пространство"),
       body: l("Notice where you feel comfortable sitting or standing. You can practise simple awareness without any touch or physical contact.", "Заметьте, где вам удобно сидеть или стоять. Можно просто наблюдать ощущения без прикосновений и физического контакта.") },
     { id: "tan-04", phase: "personal", kind: "reflection",
@@ -203,7 +213,7 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "kun-02", phase: "personal", kind: "video", videoKey: "kundalini-reiki",
       title: l("Original Kundalini Reiki meditation", "Оригинальная медитация Кундалини Рейки"),
       body: l("Andrey's English-language source recording. Stop or skip whenever you wish.", "Авторская английская запись Андрея. В любой момент можно остановить или пропустить.") },
-    { id: "kun-03", phase: "personal", kind: "practice",
+    { id: "kun-03", phase: "personal", kind: "practice", question: practiceQuestion,
       title: l("A moment of grounding", "Момент опоры"),
       body: l("Notice the ground beneath your feet or the support of your chair. This is an optional everyday awareness exercise.", "Заметьте пол под ногами или опору стула. Это необязательное упражнение на повседневное внимание.") },
     { id: "kun-04", phase: "personal", kind: "reflection",
