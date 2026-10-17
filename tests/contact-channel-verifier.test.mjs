@@ -5,6 +5,7 @@ import test from 'node:test';
 import ts from 'typescript';
 import { openContactChannelChooser, assertPreparedContactChannels } from '../scripts/helpers/contact-channel-verifier.mjs';
 import * as enquiries from '../lib/whatsapp-enquiry.js';
+import * as organicReferrals from '../lib/organic-event-referrals.js';
 import * as publicLead from '../lib/public-lead-capture.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -43,11 +44,13 @@ function mountChooser(locale, fault, reducedMotion = false) {
     'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
     '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
     '@/lib/whatsapp-enquiry': enquiries,
+    '@/lib/organic-event-referrals': organicReferrals,
+    'next/navigation': { usePathname: () => '/' + locale + '/services/psychohomeopathy' },
     './contact-channel-chooser.module.css': { default: {} },
   };
   const exports = {};
   const compiled = ts.transpileModule(read('components/contact-channel-chooser.tsx'), { fileName: 'chooser.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  runInNewContext(compiled, { exports, window: { matchMedia: () => ({ matches: reducedMotion }) }, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
+  runInNewContext(compiled, { exports, window: { matchMedia: () => ({ matches: reducedMotion }), location: { search: '?private=never-share', pathname: '/' + locale + '/services/psychohomeopathy' } }, URLSearchParams, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
   function nodes() {
     const message = choice === 'session' ? 'Personal session 60 minutes €100' : 'Questions 30 minutes €50';
     let result;
