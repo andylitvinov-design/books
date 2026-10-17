@@ -115,3 +115,6 @@
   .singleMaster > .filters { order:1; }
   .singleMaster > .empty { order:0; }
 }
+
+/* On mobile and desktop, Details/Profile remains left of the burgundy action. */
+.actions > .primary,.actions > .energyButton { margin-inline-start:auto; }
