@@ -303,7 +303,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
 
   return <div className={styles.playerOverlay} role="dialog" aria-modal="true"
     aria-label={t.lesson + ' ' + cycle.day + ': ' + headline}
-    ref={containerRef} data-course-quest-player>
+    ref={containerRef} data-course-quest-player data-course-quest-one-screen="v1">
     <div className={styles.playerFrame}>
       <header className={styles.playerHeader}>
         <button className={styles.iconButton} type="button" aria-label={t.close}
