@@ -42,11 +42,11 @@ test('the personal-review ribbon stays separate from the Anti-Stress card after 
   assert.ok(!picker.includes('<TestSelectionCourseBanner'))
   assert.ok(publicExplorer.includes('<TestSelectionCourseBanner locale={locale} />'))
   assert.ok(publicExplorer.indexOf('<TestExplorer') < publicExplorer.indexOf('<TestSelectionCourseBanner'))
-  assert.ok(client.includes("phase === 'catalog' && <div id=\\"cabinet-tests\\"><PublicTestExplorer"))
+  assert.match(client, /phase === 'catalog' && <div id="cabinet-tests"><PublicTestExplorer/)
   assert.ok(!client.includes('TestSelectionCourseBanner'))
   assert.match(course, /coursePrimary/)
   assert.match(course, /courseSecondary/)
-  assert.match(course, /course-hero-mindful\\.svg/)
+  assert.ok(course.includes('course-hero-mindful.svg'))
   for (const translation of ['Пройдите курс «Антистресс»', 'Take the free Anti-Stress course', 'Haz el curso gratuito «Antiestrés»']) {
     assert.ok(bar.includes(translation), translation)
   }
