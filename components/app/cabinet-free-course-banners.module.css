@@ -35,3 +35,11 @@
 }
 @media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 @media print{.section{display:none}}
+
+.savedCourse { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin: 16px 0; padding: 17px; border-radius: 15px; background: #e9f5f2; border: 1px solid #b1d8d1; }
+.savedLabel { font-weight: 850; font-size: 15px; color: #195e5c; }
+.savedCourse p { margin: 5px 0 4px; color: #386b69; font-size: 13px; line-height: 1.5; }
+.savedCourse small { font-size: 11px; color: #607b77; }
+.savedAction { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 10px; text-decoration: none; background: #0b847f; color: white; min-height: 44px; font-weight: 850; font-size: 13px; }
+.savedAction:hover, .savedAction:focus-visible { background: #076962; color: #fff; }
+@media (max-width: 430px) { .savedAction { width: 100%; } }

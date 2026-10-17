@@ -8,6 +8,7 @@ import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
 import { PublicGrowthCourses } from "@/components/public-growth-courses";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
 import { PrinciplesOfEnergywork, KundaliniFreeInitiation } from "@/components/principles-of-energywork";
+import { EnergyworkAiLearner } from "@/components/energywork-ai-learner";
 import { TempleStudies } from "@/components/temple-studies";
 import { templeLegacyAnchors } from "@/data/academy/temple-studies-curriculum";
 import { AcademyRecordPage, makeFacultiesRecord } from "@/components/academy-record-page";
@@ -51,6 +52,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
   if (routeKey(slug) === "free-ai-courses") return locale === "ru" ? "Бесплатные ИИ-курсы" : locale === "es" ? "Cursos de IA gratuitos" : "Free AI Courses";
+  if (routeKey(slug) === "principles-of-energywork/learn") return locale === "ru" ? "Основы энергетики — интерактивный курс" : "Principles of Energywork — interactive course";
   if (routeKey(slug) === "principles-of-energywork") return locale === "ru" ? "Принципы энергетической работы — 3 системы Рейки бесплатно" : locale === "es" ? "Principios del trabajo energético — 3 Reiki gratis" : "Principles of Energywork — FREE Initiations into 3 Reiki Systems";
   if (routeKey(slug) === "reiki/kundalini-reiki/free-initiation") return locale === "ru" ? "Кундалини Рейки — бесплатная инициация 1-й ступени" : locale === "es" ? "Kundalini Reiki — iniciación gratis Nivel 1" : "Kundalini Reiki — Free Level 1 Initiation";
   if (routeKey(slug) === "temple-studies") return locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies";
@@ -83,7 +85,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "free-ai-courses"
+  const description = routeKey(slug) === "principles-of-energywork/learn"
+    ? locale === "ru" ? "Предварительная интерактивная версия курса Основы энергетики: слайды, оригинальные видео и добровольные задания." : "Preview of the interactive Principles of Energywork course: slides, original videos and optional exercises."
+    : routeKey(slug) === "free-ai-courses"
     ? locale === "ru" ? "Бесплатные образовательные курсы Holistic House: ОПОРА Антистресс, 14 занятий и личный прогресс в кабинете." : locale === "es" ? "Cursos gratuitos de Holistic House: OPORA Antiestrés, 14 lecciones y seguimiento personal." : "Free Holistic House courses: OPORA Stress Relief, 14 lessons, guided practices and your private course progress."
     : routeKey(slug) === "principles-of-energywork"
     ? locale === "ru" ? "Бесплатный вводный курс: основы энергетической работы, отличия Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки, ссылки на программы и инициации первой ступени." : locale === "es" ? "Curso introductorio gratis: principios del trabajo energético, tres sistemas Reiki, materiales y enlaces a las iniciaciones de Nivel 1." : "Principles of Energywork: free introductory course comparing Reiki Yggdrasil, Tantra Reiki and Kundalini Reiki, with original study materials and teacher-guided Level 1 offers."
@@ -119,6 +123,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: metadataBaseFor(),
     title: resolvedTitle,
     description: resolvedDescription,
+    ...(routeKey(slug) === "principles-of-energywork/learn" ? { robots: { index: false, follow: false } } : {}),
     alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, "x-default": "/en/academy" + languageSuffix } },
     ...(tantraFreeInitiation ? {
       openGraph: {
@@ -154,6 +159,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
 
   if (key === "free-ai-courses") return <PublicGrowthCourses locale={locale} />;
+  if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
   if (key === "temple-studies") return <TempleStudies locale={locale} />;

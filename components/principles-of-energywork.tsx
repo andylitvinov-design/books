@@ -18,6 +18,7 @@ type LocalizedCourse = {
   subtitle: string;
   intro: string;
   start: string;
+  interactiveStart: string;
   how: string;
   heroFacts: string[];
   foundationsEyebrow: string;
@@ -64,6 +65,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     subtitle: "FREE Initiations into 3 Reiki Systems",
     intro: "One welcoming introduction, three different Reiki paths. Learn the basic principles of mindful energy practice, discover each system, then choose a free, teacher-guided first-level introduction.",
     start: "Explore the 3 systems",
+    interactiveStart: "Start interactive course",
     how: "How the free initiation works",
     heroFacts: ["3 distinct Reiki systems", "Free Level 1 introductions", "No email or account required"],
     foundationsEyebrow: "STEP 2 · THE FOUNDATIONS",
@@ -124,6 +126,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     subtitle: "Бесплатные инициации в 3 системы Рейки",
     intro: "Один вводный курс — три самостоятельных направления Рейки. Познакомьтесь с основами энергетических практик, сравните системы и выберите бесплатную вводную инициацию первой ступени с преподавателем.",
     start: "Посмотреть 3 системы",
+    interactiveStart: "Начать интерактивный курс",
     how: "Как получить инициацию бесплатно",
     heroFacts: ["3 разные системы Рейки", "Бесплатная вводная 1-я ступень", "Без email и регистрации"],
     foundationsEyebrow: "ШАГ 2 · ОСНОВЫ",
@@ -184,6 +187,7 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     subtitle: "Iniciaciones GRATIS en 3 sistemas de Reiki",
     intro: "Una introducción y tres caminos diferentes de Reiki. Conoce los principios de la práctica energética consciente, explora cada sistema y elige una iniciación introductoria gratuita de Nivel 1 con el profesor.",
     start: "Explorar los 3 sistemas",
+    interactiveStart: "Empezar el curso interactivo (EN)",
     how: "Cómo funciona la iniciación gratis",
     heroFacts: ["3 sistemas diferentes", "Introducción gratuita al Nivel 1", "Sin correo ni registro"],
     foundationsEyebrow: "PASO 2 · FUNDAMENTOS",
@@ -339,7 +343,8 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
             <p className={styles.heroSubtitle}>{t.subtitle}</p>
             <p className={styles.heroLead}>{t.intro}</p>
             <div className={styles.heroActions}>
-              <a href="#energywork-flight-to-sun" className={styles.primaryButton}>{v.flightCta}<ArrowDown size={19} aria-hidden="true" /></a>
+              <Link href={"/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn"} className={styles.primaryButton} data-energywork-interactive-course>{t.interactiveStart}<ArrowRight size={19} aria-hidden="true" /></Link>
+              <a href="#energywork-flight-to-sun" className={styles.ghostButton}>{v.flightCta}<ArrowDown size={19} aria-hidden="true" /></a>
               <a href="#energywork-systems" className={styles.ghostButton}>{t.start}<ArrowRight size={17} aria-hidden="true" /></a>
             </div>
             <div className={styles.heroFacts}>{t.heroFacts.map((fact) => <span key={fact}><CheckCircle2 size={17} aria-hidden="true" />{fact}</span>)}</div>
