@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
-import { createHash } from "node:crypto";
 import test from "node:test";
 import sharp from "sharp";
 
