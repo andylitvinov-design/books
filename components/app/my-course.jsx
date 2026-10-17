@@ -475,6 +475,8 @@ export function MyCourse({ data, locale = 'en' }) {
   const showDashboard = courses.length > 0 && view === 'list'
   const isHistory = ['completed', 'archived'].includes(state?.course?.status)
   const stage = view === 'new' || view === 'switch' || state?.course?.status === 'closed' ? 0 : state?.course?.stage || 0
+  const stressWelcome = stage === 3 && !state?.course?.presetId &&
+    courseProgramFromTopics(state?.course?.focusTags || [])?.id === 'stress'
   const visibleStep = stage === 1 ? 2 : stage === 2
     ? ((state?.course?.testKeys || []).length ? 4 : 3) : stage === 3 ? 5 : stage === 4 ? 6 : 1
 
@@ -544,10 +546,10 @@ export function MyCourse({ data, locale = 'en' }) {
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
-    {!showDashboard && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
+    {!showDashboard && !stressWelcome && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
       ← {ru ? 'Мои курсы' : 'My courses'}
     </button>}
-    {!showDashboard && stage !== 4 && view === 'detail' && courses.length > 1 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
+    {!showDashboard && !stressWelcome && stage !== 4 && view === 'detail' && courses.length > 1 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
       <h2 id={selectorId + '-heading'}>{t.courses}</h2>
       <label htmlFor={selectorId}>{t.chooseCourse}</label>
       <select id={selectorId} value={state.course?.id || ''} disabled={busy} onChange={event => selectCourse(event.target.value)}>
@@ -557,7 +559,7 @@ export function MyCourse({ data, locale = 'en' }) {
       </select>
       {access && <p className={styles.courseSlotCount} role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit}</p>}
     </section>}
-    {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
+    {(showDashboard || courses.length === 0) && !stressWelcome ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
       changeView('list'); setShowCourse(false); setPersonalEntryDismissed(true); setCourseEntry(null)
       if (testReturn || programmeEntry || personalEntry) router.replace(root + '/course')
     }}><ArrowLeft size={17} aria-hidden="true"/>{ru ? 'Мои курсы' : 'My courses'}</button> : null}
@@ -645,7 +647,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <button type="button" disabled={busy} onClick={()=>void retryProgramIntake()}>{ru?'Повторить настройку программы':'Retry programme setup'}</button>
     </section>}
 
-    {!showDashboard && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
+    {!showDashboard && !stressWelcome && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
       onClick={() => changeView('switch')}>
       {ru ? 'Изменить направление курса' : 'Change course direction'}
     </button>}
@@ -664,7 +666,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
 
-    {stage !== 4 && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
+    {stage !== 4 && !stressWelcome && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 
