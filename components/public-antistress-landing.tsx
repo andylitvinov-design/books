@@ -10,6 +10,7 @@ import { oporaRecoveryStages } from "@/lib/inner-growth/antistress-recovery-path
 import { ANTISTRESS_ROUTER_VERSION, antistressModuleTitle } from "@/lib/inner-growth/antistress-module-router";
 import { moduleDayMeta } from "@/lib/inner-growth/antistress-module-lessons";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
+import { antiStressSevenSkillCards, antiStressSevenSkillDay } from "@/lib/inner-growth/anti-stress-seven-skills-v1";
 import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
@@ -652,9 +653,14 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
   const [previewModuleId,setPreviewModuleId]=useState('AS2');
-  const previewDay=(day:number)=>moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
+  const previewDay=(day:number)=>previewModuleId==='AS2'?antiStressSevenSkillDay(day,locale)?.title||'':
+    moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
   const previewTitle=antistressModuleTitle(previewModuleId,locale);
   const recoveryStages = oporaRecoveryStages(locale);
+  const isSevenSkillsPreview=previewModuleId==='AS2';
+  const displayedSkills=isSevenSkillsPreview?antiStressSevenSkillCards(locale).map(skill=>({
+    ...skill,outcome:antiStressSevenSkillDay(skill.days[0],locale)?.outcome||skill.description,
+  })):programme.skills;
   const enrollmentLocale = locale === "es" ? "en" : locale;
   const enrollmentPath = "/" + enrollmentLocale + "/app/course?program=stress";
   const aboutPath = "/" + locale + "/courses";
@@ -747,27 +753,27 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.section} id="programme" aria-labelledby="antistress-programme">
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>{t.skillsEyebrow}</p>
-            <h2 id="antistress-programme">{t.skillsTitle}</h2>
-            <p>{t.skillsLead}</p>
+            <h2 id="antistress-programme">{isSevenSkillsPreview?(locale==='ru'?'7 навыков · две недели':locale==='es'?'7 habilidades · dos semanas':'7 skills · two weeks'):t.skillsTitle}</h2>
+            <p>{isSevenSkillsPreview?(locale==='ru'?'Первая неделя — семь практических навыков. Вторая — эти же навыки в новых ситуациях, более самостоятельно. Каждый урок занимает около 8–12 минут.':locale==='es'?'Semana 1: siete habilidades. Semana 2: las mismas habilidades con más autonomía. Lecciones de 8–12 minutos.':'Week one: seven practical skills. Week two: the same skills in new situations, with greater independence. Each lesson: 8–12 minutes.'):t.skillsLead}</p>
           </div>
           <div className={styles.pathIllustration} aria-hidden="true">
             <img src="/images/holistic-house/course-journey-landscape.svg" width={860} height={245} alt="" loading="lazy" decoding="async" />
           </div>
           <p className={styles.previewLabel} data-antistress-preview-module>{locale==="ru"?"Просмотр программы":locale==="es"?"Vista previa de la ruta":"Route preview"}: <strong>{previewTitle}</strong></p>
           <div className={styles.skills}>
-            {programme.skills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
+            {displayedSkills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
-                  <small>{t.daysWord} {skill.days[0]}–{skill.days[1]}</small>
-                  <strong>{recoveryStages[index]?.title||skill.title}</strong>
-                  <span>{recoveryStages[index]?.description||skill.description}</span>
+                  <small>{t.daysWord} {skill.days[0]}{isSevenSkillsPreview?' + ':'–'}{skill.days[1]}</small>
+                  <strong>{isSevenSkillsPreview?skill.title:(recoveryStages[index]?.title||skill.title)}</strong>
+                  <span>{isSevenSkillsPreview?skill.description:(recoveryStages[index]?.description||skill.description)}</span>
                 </span>
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
               <div className={styles.lessonPair}>
-                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{previewDay(index * 2 + 1)}</strong></p>
-                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{previewDay(index * 2 + 2)}</strong></p>
+                <p><span>{t.dayWord} {skill.days[0]}</span><strong>{previewDay(skill.days[0])}</strong></p>
+                <p><span>{t.dayWord} {skill.days[1]}</span><strong>{previewDay(skill.days[1])}</strong></p>
                 <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{previewModuleId==='AS2'?skill.outcome:(recoveryStages[index]?.description||skill.outcome)}</strong></p>
               </div>
             </details>)}
