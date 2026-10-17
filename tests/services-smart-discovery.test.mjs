@@ -318,8 +318,8 @@ test('Services first fold on mobile uses concise search copy, five action chips 
   ])
   for(const marker of ['Find the right support','Подберите помощь под свой запрос','Encuentra el apoyo que buscas']) assert.ok(ui.includes(marker))
   assert.equal((ui.match(/quickExamples:\[/g)||[]).length,3)
-  const samples=[...ui.matchAll(/exampleList:\\[(.*?)\\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
-  const chips=[...ui.matchAll(/quickExamples:\\[(.*?)\\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const samples=[...ui.matchAll(/exampleList:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const chips=[...ui.matchAll(/quickExamples:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
   const expectedAreas=['body_somatic','emotional_psychological','relationships','business_money','personal_development']
   assert.equal(samples.length,3)
   assert.deepEqual(chips,[["Body & Energy","Stress & Anxiety","Relationships","Business & Money","Goals, Meaning & Growth"],["Тело и энергия","Стресс и тревога","Отношения","Бизнес и деньги","Цели, смыслы и развитие"],["Cuerpo y energía","Estrés y ansiedad","Relaciones","Negocios y dinero","Metas, sentido y desarrollo"]])
