@@ -76,8 +76,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "ПРОГРАММА НА 14 ДНЕЙ",
-    "skillsTitle": "От безопасности к устойчивости: 7 этапов восстановления.",
-    "skillsLead": "Каждый этап занимает два занятия и включает практику, а не заучивание теории. Названия показывают общую последовательность; упражнения различаются в шести курсах; четвёртый проводится при профессиональном сопровождении.",
+    "skillsTitle": "7 навыков устойчивости: сначала освоение, затем углубление.",
+    "skillsLead": "Первая неделя — 7 практических навыков. Вторая неделя — те же 7 навыков, но с большей самостоятельностью. Для других тематических маршрутов сохраняются собственные уроки.",
     "daysWord": "Дни",
     "dayWord": "День",
     "skills": [
@@ -282,8 +282,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "YOUR 14-DAY PATH",
-    "skillsTitle": "From safety to resilience: seven recovery steps.",
-    "skillsLead": "Two practical lessons per step, with activities adapted to your selected stress route. This is trauma-informed education, not trauma treatment.",
+    "skillsTitle": "Seven practical stress skills — learn, then deepen.",
+    "skillsLead": "Week one introduces all seven skills. Week two revisits each with more independent practice. Specialized routes retain their own lesson plans.",
     "daysWord": "Days",
     "dayWord": "Day",
     "skills": [
@@ -488,8 +488,8 @@ const copy = {
       }
     ],
     "skillsEyebrow": "TU CAMINO DE 14 DÍAS",
-    "skillsTitle": "De la seguridad a la resiliencia: siete etapas.",
-    "skillsLead": "Dos prácticas por etapa. Los ejercicios varían según el nivel de estrés percibido. No es un tratamiento del trauma.",
+    "skillsTitle": "Siete habilidades prácticas: aprender y profundizar.",
+    "skillsLead": "Semana uno: siete habilidades. Semana dos: las mismas siete habilidades practicadas con más autonomía. Las otras rutas tienen sus propios ejercicios.",
     "daysWord": "Días",
     "dayWord": "Día",
     "skills": [
@@ -652,7 +652,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
   };
   const [chosenExample, setChosenExample] = useState<number | null>(null);
   const [previewModuleId,setPreviewModuleId]=useState('AS2');
-  const previewDay=(day:number)=>moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
+  const previewDay=(day:number)=>previewModuleId==='AS2' ? programme.days[day-1]?.title || '' : moduleDayMeta(previewModuleId,day,locale,ANTISTRESS_ROUTER_VERSION)?.title || programme.days[day-1]?.title || '';
   const previewTitle=antistressModuleTitle(previewModuleId,locale);
   const recoveryStages = oporaRecoveryStages(locale);
   const enrollmentLocale = locale === "es" ? "en" : locale;
@@ -755,22 +755,24 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           </div>
           <p className={styles.previewLabel} data-antistress-preview-module>{locale==="ru"?"Просмотр программы":locale==="es"?"Vista previa de la ruta":"Route preview"}: <strong>{previewTitle}</strong></p>
           <div className={styles.skills}>
-            {programme.skills.map((skill, index) => <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
+            {programme.skills.map((skill, index) => {
+              const stageDays=previewModuleId==='AS2'?skill.days:[index*2+1,index*2+2];
+              return <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
                 <span className={styles.skillCopy}>
-                  <small>{t.daysWord} {skill.days[0]}–{skill.days[1]}</small>
-                  <strong>{recoveryStages[index]?.title||skill.title}</strong>
-                  <span>{recoveryStages[index]?.description||skill.description}</span>
+                  <small>{t.dayWord} {stageDays[0]} + {stageDays[1]}</small>
+                  <strong>{previewModuleId==='AS2'?skill.title:(recoveryStages[index]?.title||skill.title)}</strong>
+                  <span>{previewModuleId==='AS2'?skill.description:(recoveryStages[index]?.description||skill.description)}</span>
                 </span>
                 <ChevronDown className={styles.skillArrow} size={21} aria-hidden="true" />
               </summary>
               <div className={styles.lessonPair}>
-                <p><span>{t.dayWord} {index * 2 + 1}</span><strong>{previewDay(index * 2 + 1)}</strong></p>
-                <p><span>{t.dayWord} {index * 2 + 2}</span><strong>{previewDay(index * 2 + 2)}</strong></p>
+                <p><span>{t.dayWord} {stageDays[0]}</span><strong>{previewDay(stageDays[0])}</strong></p>
+                <p><span>{t.dayWord} {stageDays[1]}</span><strong>{previewDay(stageDays[1])}</strong></p>
                 <p className={styles.skillResult}><span><Check size={14} aria-hidden="true" /></span><strong>{previewModuleId==='AS2'?skill.outcome:(recoveryStages[index]?.description||skill.outcome)}</strong></p>
               </div>
-            </details>)}
+            </details>})}
           </div>
         </section>
 
