@@ -16,13 +16,11 @@ async function* sourceFiles(dir) {
   }
 }
 
-test('retired compass banner and global free-review ribbon never appear on any site route or component', async () => {
+test('retired beige compass banner never reappears on public site routes or components', async () => {
   const forbidden = [
     /\bMindBodyMonitorStrip\b/,
     /mind-body-monitor-strip/,
     /data-monitor-strip/,
-    /\bSitewideAntistressBanner\b/,
-    /data-sitewide-personal-review-banner/,
     /Clarify a goal, business challenge or personal concern/,
   ]
   const violations = []
@@ -34,18 +32,25 @@ test('retired compass banner and global free-review ribbon never appear on any s
       }
     }
   }
-  assert.deepEqual(violations, [], 'obsolete globally repeated assessment promotions must not return')
+  assert.deepEqual(violations, [], 'the obsolete beige assessment banner must not return')
   await assert.rejects(stat(join(root, 'components/mind-body-monitor-strip.tsx')), { code: 'ENOENT' })
 })
 
-test('removing global promos preserves real assessment requests and contextual post-test offers', async () => {
+test('top consultation bar is restored while beige strip stays absent and contextual offers survive', async () => {
   const [layout, service, offers] = await Promise.all([
     readFile(join(root, 'app/layout.tsx'), 'utf8'),
     readFile(join(root, 'app/[locale]/services/free-situation-review/page.tsx'), 'utf8'),
     readFile(join(root, 'components/sitewide-antistress-banner.tsx'), 'utf8'),
   ])
-  assert.doesNotMatch(layout, /SitewideAntistressBanner|MindBodyMonitorStrip/)
+  assert.match(layout, /<SitewideAntistressBanner initialLocale=\{lang\} \/>/)
+  assert.doesNotMatch(layout, /MindBodyMonitorStrip/)
   assert.match(layout, /\{children\}/)
+  assert.match(offers, /data-sitewide-personal-review-banner/)
+  assert.match(offers, /services#consultation/)
+  assert.match(offers, /\/services\/free-situation-review/)
+  for (const label of ['Заказать консультацию', 'Book a consultation', 'Reservar consulta']) {
+    assert.ok(offers.includes(label), label)
+  }
   assert.match(service, /FreeSituationReviewForm/)
   assert.match(offers, /export function TestSelectionCourseBanner/)
   assert.match(offers, /data-tests-review-banner/)
