@@ -265,6 +265,9 @@ const INTERACTIVE_STRESS = {
     imagined:'Imagine a safe step',phrase:'Prepare a phrase',real:'Tried in ordinary life',skip:'Not planning now',
   },
 }
+// Compatibility wrapper: old recorded courses and the server still share one exact slide builder.
+function buildSlides(lesson) { return buildCourseSlides(lesson) }
+
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
   return <div>
     <div className={styles.numberGrid} role="group" aria-label={label}>
@@ -339,7 +342,7 @@ export default function CourseSlidePlayer({
     ?traumaPhaseCheckpoints(cycle.moduleId,locale):[]
   const [phaseCheckpoints,setPhaseCheckpoints]=useState(session?.signals?.phaseCheckpoints||{})
   const [earned, setEarned] = useState(false)
-  const baseSlides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildCourseSlides(lesson),[isDayOne,lesson])
+  const baseSlides=useMemo(()=>isDayOne ? DAY_ONE_SLIDES : buildSlides(lesson),[isDayOne,lesson])
   const slides=useMemo(()=>withFinalFreeOffer(baseSlides,{
     day:cycle.day,durationDays:cycle.durationDays,show:promotion.show,
     checking:promotion.checking,alreadyDone:alreadyDone||earned,
