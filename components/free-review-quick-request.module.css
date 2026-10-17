@@ -36,3 +36,35 @@
   .optionPrice{font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.option{transition:none}}
+
+/* Compact enquiry: preserve all three choices and privacy details without a full-screen intake. */
+.moreFields,.privacyNote{margin:0 0 10px;border:1px solid #c7ddd4;background:rgba(255,255,255,.6);border-radius:11px}
+.moreFields summary,.privacyNote summary{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:43px;padding:10px 12px;cursor:pointer;list-style:none;color:#2e5c55;font:700 12px/1.4 Arial,sans-serif}
+.moreFields summary::-webkit-details-marker,.privacyNote summary::-webkit-details-marker{display:none}
+.moreFields summary::after,.privacyNote summary::after{content:"+";font:400 19px/1 Arial,sans-serif;color:#8c4055}
+.moreFields[open] summary::after,.privacyNote[open] summary::after{content:"−"}
+.moreFields .fields{padding:0 11px 12px;margin:0}
+.privacyNote{margin:6px 0 0;background:transparent;border:0}
+.privacyNote summary{min-height:37px;padding:8px 0;font-size:11px;color:#5a756d;font-weight:600}
+.privacyNote .note{padding:0 1px 9px;margin:0}
+.shortNote{margin:10px 0 0;color:#4d6b64;font:11px/1.45 Arial,sans-serif}
+.moreFields summary:focus-visible,.privacyNote summary:focus-visible{outline:3px solid #93c5b6;outline-offset:2px;border-radius:8px}
+@media(max-width:767px){
+  .card{padding:15px 14px;border-radius:16px}
+  .eyebrow{font-size:10px;margin-bottom:5px}
+  .card h2{font-size:25px;line-height:1.13;margin-bottom:5px}
+  .lead{font-size:12px;line-height:1.4;margin-bottom:10px}
+  .formatChoices{margin-bottom:9px}
+  .formatChoices legend{font-size:12px;margin-bottom:7px}
+  .optionList{gap:6px}
+  .option{min-height:50px;padding:7px 9px;gap:8px;border-radius:11px}
+  .optionText{gap:1px}
+  .optionText strong{font-size:12px}
+  .optionText small{font-size:10px;line-height:1.35}
+  .optionPrice{font-size:13px}
+  .action{min-height:49px}
+  .moreFields{margin-bottom:9px}
+  .moreFields summary{min-height:42px}
+  .shortNote{font-size:10.5px;line-height:1.35;margin-top:8px}
+  .privacyNote summary{min-height:33px}
+}
