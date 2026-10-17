@@ -436,9 +436,9 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
               <div className={styles.actions}>
-                {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
-                <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
                 {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={"/" + locale + "/services/" + master.slug + "/" + master.services[0].slug}>{t.viewService}</Link> : null}
+                <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
+                {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
               </div>
             </article>
           );
