@@ -341,10 +341,6 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18047441/',
     rightsNote: 'Price and Thompson research measure, 20 items; original electronic item rights and reproduction not yet cleared.',
   }),
-  row('ecr-r-36', 'relationships_support', 'relationships', 'B', 'Experiences in Close Relationships — Revised', 'ECR-R', 36, '7–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
-    sourceUrl: 'https://labs.psychology.illinois.edu/~rcfraley/measures/ecrr.htm',
-    rightsNote: 'Fraley, Waller and Brennan 2000; 36 attachment items. Commercial/online reproduction permission and scoring not independently cleared.',
-  }),
   row('new-sexual-satisfaction-scale-20', 'relationships_support', 'relationships', 'B', 'New Sexual Satisfaction Scale', 'NSSS-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
     sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/19629836/',
     rightsNote: 'Stulhofer, Busko and Brouillard 2010; 20 items. Publisher/author electronic reproduction permission not established.',
