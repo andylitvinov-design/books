@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Check, Compass, Leaf, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Compass, ShieldCheck, Sparkles } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicServiceOrderPanel } from "@/components/public-service-order-panel";
 import type { PublicServiceDetail } from "@/lib/practitioners/public-types";
