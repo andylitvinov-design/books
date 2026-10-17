@@ -1607,10 +1607,10 @@
 }
 
 
-/* Five equal touch targets including Personal Analysis; never wrap onto a second row. */
+/* Equal touch targets for the six mobile destinations; never wrap onto a second row. */
 @media(max-width:760px){
   .hh-app .hh-mobile-app-nav {
-    grid-template-columns:repeat(5,minmax(0,1fr));
+    grid-template-columns:repeat(6,minmax(0,1fr));
     gap:2px;
   }
   .hh-app .hh-mobile-app-nav a {
@@ -1679,21 +1679,22 @@
 .hh-result-page .hh-result-intro{font-size:15px}
 @media(max-width:600px){.hh-result-raw-details{padding:0 10px}.hh-result-raw-details>summary{font-size:13px}}
 
-/* My Course: six compact equal targets, keep existing five and add the course at the end. */
+/* Six compact tabs fit on one row, even on narrow phones. */
 @media(max-width:760px){
   .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(6,minmax(0,1fr)); }
   .hh-app .hh-mobile-app-nav a { font-size:10px; padding-inline:0; min-width:0; }
   .hh-app .hh-mobile-app-nav a svg { width:19px;height:19px; }
 }
 
-/* The signed-in Cabinet has five primary mobile destinations, not six.
-   Public-site six-way navigation is a separate surface and is unchanged. */
+/* Five private Cabinet tabs plus the rightmost shortcut to the public homepage. */
 @media(max-width:820px){
   .hh-app .hh-mobile-app-nav{
     display:grid;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
   }
-  .hh-app .hh-mobile-app-nav a{min-width:0;font-size:clamp(10px,2.65vw,12px);gap:3px}
+  .hh-app .hh-mobile-app-nav a{min-width:0;font-size:clamp(9px,2.4vw,11px);gap:3px}
+  .hh-app .hh-mobile-app-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hh-app .hh-mobile-app-nav a.hh-mobile-app-nav-home{color:#7b5239;border-left:1px solid #ece1d6}
   .hh-app .hh-mobile-app-nav a[aria-current='page']{background:#e8f2eb;color:#236d5e}
   .hh-app .hh-mobile-app-nav a svg{color:inherit}
 }
