@@ -86,10 +86,7 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
     data-assessment-gauge={model.orientation} data-gauge-scale={model.continuous ? 'continuous' : 'published-bands'}
     aria-label={(ru ? 'Баллы: ' : 'Score: ') + numeral(dimension.value, locale) +
       '. ' + (ru ? 'Диапазон ' : 'Range ') + numeral(dimension.min, locale) + '–' + numeral(dimension.max, locale) +
-      '. ' + scaleType + (model.continuous
-        ? (ru ? '. Без подтверждённых границ категорий' : '. No validated category cutoffs')
-        : '') + (graded ? (ru ? '. Цветовой переход иллюстративный' : '. Color gradient is illustrative') : '') +
-      '. ' + (model.currentBand?.label || direction)}>
+      '. ' + scaleType + '. ' + (model.currentBand?.label || direction)}>
     <svg viewBox="0 0 200 112" aria-hidden="true" focusable="false">
       {graded && <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
