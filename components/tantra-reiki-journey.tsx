@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { reikiPhotoUrl } from "@/lib/academy/reiki-photo";
 import tantraReikiArchive from "@/data/academy/tantra-reiki-full.generated.json";
@@ -563,8 +564,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
   const c = ui[locale];
   const focus = levelOneFocus[locale];
 
-  const renderLevel = (i: number) => {
-    const stage = stages[i];
+  const renderLevel = (stage: (typeof stages)[number], i: number) => {
     const n = i + 1;
     const copy = stage[locale];
     const phase = Math.floor(i / 3);
@@ -611,14 +611,14 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
           </details>
           <div className="tantra-journey__actions">
             {n > 1 ? <a href={"#tantra-level-" + (n - 1)} aria-label={c.previous + " " + (n - 1)}>← {c.previous}</a> : <a href="#tantra-course-hero-title">↑ {c.overview}</a>}
-            <a className="tantra-journey__next" href={n === 1 ? "#tantra-next-levels" : n < 9 ? "#tantra-level-" + (n + 1) : (locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n === 1 ? focus.exploreNext : n < 9 ? c.next : c.final} →</a>
+            <a className="tantra-journey__next" href={n === 1 ? "#tantra-next-levels" : n < 9 ? "#tantra-level-"+(n+1) : (locale === "en" ? "#english-guided-meditations-tantra-reiki" : "#tantra-testimonials")}>{n === 1 ? focus.exploreNext : n < 9 ? c.next : c.final} →</a>
           </div>
         </div>
       </article>
     );
     if (n === 1) return article;
     return (
-      <details className="tantra-journey__collapsed" id={"tantra-level-" + n} key={n}>
+      <details className="tantra-journey__collapsed" id={"tantra-level-"+n} key={n}>
         <summary className="tantra-journey__collapsed-summary">
           <span className="tantra-journey__collapsed-number">{String(n).padStart(2, "0")}</span>
           <span className="tantra-journey__collapsed-title"><strong>{copy.title}</strong><small>{copy.subtitle}</small></span>
@@ -636,17 +636,24 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         <h2>{focus.title}</h2>
         <p>{focus.description}</p>
       </header>
-      {renderLevel(0)}
-      <div className="tantra-journey__first-cta">
-        <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
-        <p>{focus.note}</p>
-      </div>
-      <section className="tantra-journey__continuation" id="tantra-next-levels" aria-labelledby="tantra-next-levels-title">
-        <p className="homeopathy-kicker">{focus.furtherEyebrow}</p>
-        <h2 id="tantra-next-levels-title">{focus.furtherTitle}</h2>
-        <p>{focus.furtherDescription}</p>
-      </section>
-      {stages.slice(1).map((_, index) => renderLevel(index + 1))}
+      {stages.map((stage, i) => (
+        <Fragment key={i}>
+          {i === 1 ? (
+            <section className="tantra-journey__continuation" id="tantra-next-levels" aria-labelledby="tantra-next-levels-title">
+              <p className="homeopathy-kicker">{focus.furtherEyebrow}</p>
+              <h2 id="tantra-next-levels-title">{focus.furtherTitle}</h2>
+              <p>{focus.furtherDescription}</p>
+            </section>
+          ) : null}
+          {renderLevel(stage, i)}
+          {i === 0 ? (
+            <div className="tantra-journey__first-cta">
+              <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <p>{focus.note}</p>
+            </div>
+          ) : null}
+        </Fragment>
+      ))}
       <p className="tantra-journey__notice">{c.notice}</p>
     </div>
   );
