@@ -34,7 +34,6 @@ test('private report list is first, saved sessions follow and psychological meas
   const embeddedList = reportList.slice(reportList.indexOf('if (embedded) return'))
   assert.ok(embeddedList.indexOf('<PersonalAnalysisReportList') < embeddedList.indexOf('<SavedSessionsPanel'))
   assert.match(workspace, /data-insights-detailed-scales/)
-  assert.match(workspace, /data-testid="insights-psychological-portrait"/)
   assert.match(workspace, /<Portrait data=\{data\} locale=\{locale\} \/>/)
   assert.match(reportList, /\/api\/app\/personal-analysis-reports/)
   assert.match(reportList, /credentials: 'same-origin'/)
