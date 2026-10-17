@@ -71,7 +71,7 @@ test('R2 migration preserves original Andy and service identities and adds scope
   assert.match(freeService,/pricing_mode <> 'free' or \(confirmed_price is null and currency is null\)/)
 })
 
-test('R2 UI exposes My Practice, public Masters and moderation without changing personal nav', async () => {
+test('R2 UI exposes Practice master cabinet, public Masters and moderation with shared personal nav', async () => {
   const [workspace, practice, moderation, route, repository, services, explorer] = await Promise.all([
     readFile(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-workspace.jsx',import.meta.url),'utf8'),
@@ -81,7 +81,9 @@ test('R2 UI exposes My Practice, public Masters and moderation without changing 
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.tsx',import.meta.url),'utf8'),
   ])
-  assert.match(workspace,/My Practice/)
+  assert.match(workspace,/id: 'practice', label: locale === 'ru' \? 'Практика' : 'Practice'/)
+  assert.match(workspace,/page === 'practice' && <PracticeWorkspace/)
+  assert.match(workspace,/nav\.map\(/)
   assert.match(workspace,/data\.services/)
   assert.match(practice,/Become a Master/)
   assert.match(practice,/Shared result excerpt/)
