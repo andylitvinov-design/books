@@ -27,7 +27,8 @@ test('My Tests shows the expandable matching-test picker before the title, progr
 
 test('The account picker expands inline and retains its hidden draft without moving below the list', () => {
   assert.match(battery, /const explorerVisible = exploring/)
-  assert.match(battery, /const explorerPanel = \(explorerVisible \|\| explorerMounted\) && \(/)
+  assert.match(battery, /const explorerPanel = \(/)
+  assert.match(battery, /\{\(explorerVisible \|\| explorerMounted\) && <>/)
   assert.match(battery, /<section id="my-test-explorer"/)
   assert.match(battery, /hidden=\{!explorerVisible\}/)
   assert.match(battery, /explorer=\{explorerPanel\}/)
