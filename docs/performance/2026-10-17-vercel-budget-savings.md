@@ -11,11 +11,11 @@ Keep `holistichouse.vercel.app` reachable, preserve the existing verified Englis
 - Regular Github test/build/CI exists.
 
 ## What this patch changes
-Image processing moves from **visitor request time** to **build time** for only the 23 published book catalogue cover images and 28 owned public card pictures. All original bytes are verified against their tracked Git blob SHA and byte length before generation. `prebuild` and `predev` run `scripts/build-public-card-artwork.mjs`, generating:
+Image processing moves from **visitor request time** to **build time** for only the 23 published book catalogue cover images and 32 owned public card pictures. All original bytes are verified against their tracked Git blob SHA and byte length before generation. `prebuild` and `predev` run `scripts/build-public-card-artwork.mjs`, generating:
 
 - 23 versioned WebP 720px catalogue cover files in `public/images/holistic-house/static-card-media/`.
-- 28 x 256px thumbnails and 28 x 960px source-proportional public card images, without enlargement.
-- The previously published full source book/image routes remain unchanged. No full-resolution unoptimized book JPEG is loaded by the catalogue cards.
+- 32 x 256px thumbnails and 32 x 960px source-proportional public card images, without enlargement.
+- The four additional pinned Library and service image sources (books-library WebP, distance-homeopathy WebP, incense WebP, a public Arnica JPG) are covered by those 32 cards. The previously published full source book/image routes remain unchanged. No full-resolution unoptimized book JPEG is loaded by the catalogue cards.
 - CDN gets immutable caching on this **content-addressed folder only**; protected/private content remains dynamic and uncacheable.
 - Non-registered images still use normal Next optimization: explicit safe fallback, no global bypass.
 
