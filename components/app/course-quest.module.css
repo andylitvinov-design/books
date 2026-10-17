@@ -285,3 +285,49 @@
 @media(max-width:620px){
   .mapShell .journeyScene{height:133px;border-radius:17px}
 }
+
+/* HH ONE SCREEN COURSE 2026-10-17
+   Five local steps are shown by default; all 14 remain available on request.
+   Use actual persisted completion count for progress/XP. */
+.mapShell .pathToggle{
+  display:flex;align-items:center;justify-content:center;
+  align-self:center;min-height:41px;width:min(100%,340px);
+  margin:0 auto;padding:9px 16px;
+  color:#0d8194;background:#f7ffff;
+  border:1px solid #aadfe2;border-bottom:3px solid #9acbd3;
+  border-radius:14px;font-size:13px;font-weight:800;cursor:pointer;
+}
+.mapShell .pathToggle:hover{background:#e3fbf9}
+.mapShell .pathToggle:focus-visible{outline:3px solid #13a3b1;outline-offset:3px}
+@media(max-width:620px){
+  .mapShell{gap:7px;padding:10px!important;border-radius:17px}
+  .mapShell .mapHeader{gap:9px}
+  .mapShell .mapHeader h3{font-size:20px}
+  .mapShell .mapHeader p:not(.eyebrow){font-size:11px;margin:3px 0 0}
+  .mapShell .pointBox{padding:7px 9px;gap:4px}
+  .mapShell .pointBox strong{font-size:18px}
+  .mapShell .path{gap:0;padding:0 0 3px}
+  .mapShell .path::before{top:34px;bottom:32px}
+  .mapShell .pathRow{
+    min-height:64px;gap:3px;
+    grid-template-columns:minmax(0,1fr) 68px minmax(0,1fr);
+  }
+  .mapShell .pathNode{
+    width:53px;height:53px;min-height:53px;
+    border-bottom-width:4px!important;
+    box-shadow:0 3px 0 #accfd7!important;
+  }
+  .mapShell .pathNode svg{width:24px;height:24px}
+  .mapShell .pathRow[data-side=left] .pathNode{transform:translateX(-9px)}
+  .mapShell .pathRow[data-side=right] .pathNode{transform:translateX(9px)}
+  .mapShell .pathLabel{min-height:50px;padding:4px!important;gap:2px}
+  .mapShell .pathLabel strong{font-size:11px!important;line-height:1.2}
+  .mapShell .pathLabel small{font-size:9px}
+  .mapShell .pathRow .chapter{
+    padding:7px 8px;margin:8px 0 3px;border-radius:11px;
+  }
+  .mapShell .journeyScene{height:64px;border-radius:12px}
+  .mapShell .mapFootnote{font-size:9px;line-height:1.2}
+  .mapShell .pathPreview{margin:3px 0 8px;padding:9px 11px}
+  .mapShell .pathPreview h4{font-size:17px}
+}
