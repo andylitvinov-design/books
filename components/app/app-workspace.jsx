@@ -54,6 +54,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
+import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft } from '@/lib/practitioners/remote-energy-support'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -3535,7 +3536,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
     [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
-    operation = useRef(null)
+    operation = useRef(null),
+    [energyPrefill, setEnergyPrefill] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
+    if (!draft) return
+    setNote((current) => current || formatRemoteSupportDraft(draft))
+    setEnergyPrefill(true)
+  }, [service.id])
   const shared = data.results.find((r) => r.id === shareId)
   async function submit(e) {
     e.preventDefault()
@@ -3552,6 +3561,9 @@ function RequestForm({ service, locale, data, close, onDone }) {
     operation.current = body
     try {
       await appFetch('requests', body)
+      if (energyPrefill && typeof window !== 'undefined' && readRemoteSupportDraft(window.sessionStorage, service.id)) {
+        window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)
+      }
       operation.current = null
       await onDone()
     } catch (e) {
@@ -3567,6 +3579,9 @@ function RequestForm({ service, locale, data, close, onDone }) {
         {c.close}
       </button>
       <h2>{service.copy[locale].title}</h2>
+      {energyPrefill && <p className="hh-fine">{locale === 'ru'
+        ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
+        : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.'}</p>}
       <p>{c.requestNote}</p>
       <form className="hh-form" onSubmit={submit}>
         <label>
