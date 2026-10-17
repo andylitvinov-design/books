@@ -232,8 +232,8 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
   // The unified Profile owns this archive. Legacy /analysis links may still render
   // the existing standalone experience while all report access rules remain unchanged.
   if (embedded) return <div className="hh-personal-analysis hh-personal-analysis--embedded" data-personal-reports>
-    {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>}
     <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
+    {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>} 
   </div>
   return <section className="hh-personal-analysis" aria-label={t.title}>
     <header className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></header>
