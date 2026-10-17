@@ -130,7 +130,7 @@ for (const locale of ['en', 'ru', 'es']) {
 }
 
 for (const locale of ['en', 'ru', 'es']) {
-  test(`${locale} restores the top navy banner with free review and booking links`, () => {
+  test(`${locale} retains the approved screenshot banner with free-review links on both sides`, () => {
     const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
       ...shared,
       'next/navigation': { usePathname: () => `/${locale}/academy` },
@@ -139,12 +139,12 @@ for (const locale of ['en', 'ru', 'es']) {
     const pageLinks = renderLinks(banner, { initialLocale: locale });
     assert.deepEqual(pageLinks.map((link) => link.href), [
       `/${locale}/services/free-situation-review`,
-      `/${locale}/services#consultation`,
+      `/${locale}/services/free-situation-review`,
     ]);
     assert.match(pageLinks[1].text, {
-      en: /Book a consultation/,
-      ru: /Заказать консультацию/,
-      es: /Reservar consulta/,
+      en: /Get free review/,
+      ru: /Получить разбор/,
+      es: /Solicitar gratis/,
     }[locale]);
   });
 }
