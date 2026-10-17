@@ -9,12 +9,13 @@ const layout = read('components/home-free-tests-banner.module.css')
 const academyStyles = read('components/academy-free-course-banner.module.css')
 const journeys = read('components/homepage-topic-journeys.tsx')
 
-test('free test promo comes before How I can help without replacing existing services', () => {
+test('photo service cards appear before the free-test banner and existing topic cards', () => {
   assert.match(home, /import \{ HomeFreeTestsBanner \}/)
   const bannerAt = home.indexOf('<HomeFreeTestsBanner locale={locale} />')
   const helpAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />')
-  assert.ok(bannerAt > 0 && helpAt > bannerAt)
-  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') > helpAt)
+  assert.ok(helpAt > 0 && bannerAt > helpAt)
+  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') > bannerAt)
+  assert.doesNotMatch(home, /HomeFreePaths/)
 })
 
 test('free test CTA selects a relevant topic instead of opening the obsolete unfiltered tests screen', () => {
