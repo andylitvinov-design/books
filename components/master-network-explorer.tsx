@@ -331,6 +331,7 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
           {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
         <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
+        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#reviews"}>{locale==="ru"?"Отзывы":locale==="es"?"Opiniones":"Reviews"} ★</Link>
       </div>
     </article>
   );
