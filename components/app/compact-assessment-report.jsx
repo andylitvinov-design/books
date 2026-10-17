@@ -196,7 +196,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
-          {rawNote && !scoreLevelGuide && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
+          {rawNote && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
