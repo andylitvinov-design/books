@@ -8,8 +8,8 @@ import styles from "./public-growth-courses.module.css";
 
 const copy = {
   ru: {
-    eyebrow: "HOLISTIC HOUSE · ПРОГРАММЫ ПОДДЕРЖКИ",
-    title: "Мои курсы",
+    eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
+    title: "Бесплатные ИИ-курсы", academy: "Академия",
     lead: "Небольшие шаги к спокойствию и внутренней опоре.",
     intro: "14 дней в вашем темпе. Один урок, одна практика и возможность замечать свои изменения.",
     start: "Начать бесплатно", learn: "Подробнее об Антистрессе",
@@ -52,8 +52,8 @@ const copy = {
     note: "Курсы предназначены для самоисследования и образовательной поддержки, а не для постановки диагноза или замены медицинской и психотерапевтической помощи. Для начала понадобится вход в личный кабинет.",
   },
   en: {
-    eyebrow: "HOLISTIC HOUSE · GUIDED LEARNING",
-    title: "My courses",
+    eyebrow: "HOLISTIC HOUSE · ACADEMY",
+    title: "Free AI courses", academy: "Academy",
     lead: "Small steps towards calm and inner support.",
     intro: "Fourteen days at your own pace. One lesson, one practice, and room to notice how you feel.",
     start: "Start for free", learn: "About Stress Relief",
@@ -96,8 +96,8 @@ const copy = {
     note: "These programmes offer educational self-reflection, not diagnosis or a replacement for medical or mental health care. You will sign in to your private cabinet to begin.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · PROGRAMAS DE APOYO",
-    title: "Mis cursos",
+    eyebrow: "HOLISTIC HOUSE · ACADEMIA",
+    title: "Cursos de IA gratuitos", academy: "Academia",
     lead: "Pequeños pasos hacia la calma y tu apoyo interior.",
     intro: "Catorce días a tu ritmo. Una lección, una práctica y espacio para observar los cambios.",
     start: "Empezar gratis", learn: "Conocer Antiestrés",
@@ -151,6 +151,9 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
 
   return <main className={styles.root} lang={locale} data-public-my-courses>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+    <nav className={styles.academyTrail} aria-label={t.academy}>
+      <Link href={"/" + locale + "/academy"}>{t.academy}</Link><span aria-hidden="true">›</span><span aria-current="page">{t.title}</span>
+    </nav>
     <section className={styles.hero} aria-labelledby="courses-title">
       <div className={styles.heroCopy}>
         <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
@@ -174,7 +177,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
       </div>
     </section>
 
-    <PublicCourseCabinet locale={appLocale} />
+    <div id="my-courses"><PublicCourseCabinet locale={appLocale} /></div>
 
     <section className={styles.section} id="course-programmes" aria-labelledby="course-programmes-title">
       <p className={styles.sectionKicker}>{t.eyebrowPrograms}</p>
