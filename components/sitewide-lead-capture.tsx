@@ -20,7 +20,7 @@ const copy = {
       title: "Explore a service with the right practitioner.",
       description: "Review the practitioner's services and request the one that interests you. Each independent practitioner confirms their own availability, format and fees.",
       primary: "Explore practitioner services",
-      service: "Request this service",
+      service: "Order",
       secondary: "See all services",
     },
     training: {
@@ -51,7 +51,7 @@ const copy = {
       title: "Выберите специалиста под свой запрос.",
       description: "Посмотрите услуги выбранного практика и отправьте запрос. Условия, доступность и стоимость каждый практик уточняет индивидуально.",
       primary: "Посмотреть услуги практика",
-      service: "Запросить эту услугу",
+      service: "Заказать",
       secondary: "Все услуги",
     },
     training: {
@@ -82,7 +82,7 @@ const copy = {
       title: "Encuentra al profesional para tu consulta.",
       description: "Explora los servicios y solicita el que te interesa. Cada profesional confirma su disponibilidad, modalidad y tarifas de manera individual.",
       primary: "Explorar los servicios",
-      service: "Solicitar este servicio",
+      service: "Solicitar",
       secondary: "Todos los servicios",
     },
     training: {
