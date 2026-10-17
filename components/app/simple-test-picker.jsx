@@ -369,7 +369,7 @@ export function SimpleTestPicker({
                    <img src={artworkFor(entry)} alt="" width="104" height="112" loading="lazy" decoding="async" />
                  </span>
                  <div className={styles.testImageMeta}>
-                   <KindBadge entry={entry} locale={locale} />
+                   {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
                    <span className={styles.imageDuration}><Clock3 size={13} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
                  </div>
                </div>
@@ -380,7 +380,7 @@ export function SimpleTestPicker({
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
-                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>}
+                    <KindBadge entry={entry} locale={locale} />
                    {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
                  </span>
                </label>
