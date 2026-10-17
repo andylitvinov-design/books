@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
@@ -315,9 +314,10 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
   return (
     <article className={styles.serviceCard} data-service-funnel-card>
       <ServiceFunnelImpression serviceId={service.id} />
+      {service.photos?.[0] && <Link href={'/'+locale+'/services/'+service.practitionerSlug+'/'+service.slug} className={styles.serviceCover}><img src={service.photos[0]} alt={service.copy.title} loading="lazy" /></Link>}
       <div className={styles.cardTop}>
         <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
-          <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>
+          {service.practitionerPhoto ? <img className={styles.avatar} src={service.practitionerPhoto} alt="" loading="lazy" /> : <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>}
           <span><small>{t.practitioner}</small><strong>{service.practitionerName}</strong></span>
         </Link>
         <span className={isFree(service) ? styles.freePrice : styles.price}>{servicePrice(service, locale)}</span>
@@ -381,7 +381,7 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
           return (
             <article className={styles.masterCard} key={master.id}>
               <div className={styles.masterHeading}>
-                {profile.photoPath ? <Image src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} /> :
+                {profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
                   <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>}
                 <div><p className={styles.area}>{[profile.city, profile.country].filter(Boolean).join(", ") || t.online}</p>
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
