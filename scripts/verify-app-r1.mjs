@@ -850,46 +850,59 @@ try {
   await expect(page.getByRole('heading',{name:'My results',exact:true})).toBeVisible()
  await expect(page.locator('[data-testid="completed-test-insights"]')).toBeVisible()
 
- // Four-sector profile is a real rendered iPhone interaction, not merely a CSS snapshot.
+ // One row of 4 category buttons and full-circle scales: real iPhone rendering.
  const radarCard=page.locator('[data-testid="insights-psychological-portrait"]')
- const allSector=radarCard.locator('button[data-portrait-sector-all]')
- await expect(allSector).toHaveAttribute('aria-pressed','true')
- await expect(radarCard.locator('[data-radar-mode="summary"]')).toBeVisible()
- await expect(radarCard.locator('[data-sector-point]')).toHaveCount(4)
- await expect(radarCard.locator('.radarInlineLabel')).toHaveCount(0)
- await expect(radarCard.locator('[data-portrait-ray-options]')).toHaveCount(0)
+ const fourSectorButtons=radarCard.locator('button[data-portrait-sector]')
+ await expect(fourSectorButtons).toHaveCount(4)
+ await expect(radarCard.locator('[data-portrait-sector-all]')).toHaveCount(0)
+ await expect(radarCard.locator('[class*="visualState"]')).toHaveCount(0)
+ await expect(radarCard.locator('button[data-portrait-sector="body"]')).toHaveAttribute('aria-pressed','true')
+ await expect(radarCard.locator('[data-radar-layout="full-circle"]')).toBeVisible()
+ await expect(radarCard.locator('[data-detail-axis]')).toHaveCount(5)
+ await expect(radarCard.locator('[data-contour-axis]')).toHaveCount(5)
  for(const width of [320,390,430]){
    await page.setViewportSize({width,height:900})
    const fit=await radarCard.evaluate(card=>{
-     const svg=card.querySelector('[data-radar-mode="summary"]')
+     const svg=card.querySelector('[data-radar-layout="full-circle"]')
      const ring=svg?.querySelector('circle[class*="radarReference"]')
      const chart=svg?.getBoundingClientRect()
      const bounds=ring?.getBoundingClientRect()
-     return {svg:chart?.width||0,ring:bounds?.width||0,overflow:document.documentElement.scrollWidth-innerWidth}
+     const buttons=[...card.querySelectorAll('button[data-portrait-sector]')]
+     const tops=buttons.map(button=>button.getBoundingClientRect().top)
+     const texts=[...svg.querySelectorAll('text[class*="radarInlineLabel"]')]
+     const captionBounds=texts.map(text=>text.getBoundingClientRect())
+     const labelsInside=chart && captionBounds.every(rect=>rect.left>=chart.left-2 && rect.right<=chart.right+2
+       && rect.top>=chart.top-2 && rect.bottom<=chart.bottom+2)
+     return {
+       svg:chart?.width||0,ring:bounds?.width||0,
+       overflow:document.documentElement.scrollWidth-innerWidth,
+       fourInRow:tops.length===4 && Math.max(...tops)-Math.min(...tops)<2,
+       labelsInside,
+     }
    })
-   assert.ok(fit.svg>0 && fit.ring/fit.svg>.75,'Radar must fill at least 75% of its image width at '+width)
+   assert.ok(fit.svg>0 && fit.ring/fit.svg>.78,'Full radar must fill 78% of viewport image at '+width)
    assert.ok(fit.overflow<=1,'Radar must not overflow '+width+'px')
-   await screenshotEvidence(page,{path:`${output}/portrait-sectors-all-en-${width}.png`,fullPage:false})
+   assert.ok(fit.fourInRow,'All four category buttons must share one row at '+width)
+   assert.ok(fit.labelsInside,'Scale labels must stay inside the radar on '+width)
+   await screenshotEvidence(page,{path:`${output}/portrait-four-tabs-en-${width}.png`,fullPage:false})
  }
- const bodySector=radarCard.locator('button[data-portrait-sector="body"]')
- await bodySector.click()
- await expect(bodySector).toHaveAttribute('aria-pressed','true')
- await expect(allSector).toHaveAttribute('aria-pressed','false')
- await expect(radarCard.locator('[data-radar-mode="detail"]')).toBeVisible()
- await expect(radarCard.locator('[data-sector-point]')).toHaveCount(0)
- await expect(radarCard.locator('[data-portrait-ray="stress"]')).toBeVisible()
- await expect(radarCard.locator('[data-portrait-ray="relationships"]')).toHaveCount(0)
- await screenshotEvidence(page,{path:output+'/portrait-sectors-body-en.png',fullPage:false})
- const workSector=radarCard.locator('button[data-portrait-sector="work"]')
- await workSector.click()
- await expect(workSector).toHaveAttribute('aria-pressed','true')
- await expect(bodySector).toHaveAttribute('aria-pressed','false')
- await expect(radarCard.locator('[data-portrait-ray="clarity"]')).toBeVisible()
- await expect(radarCard.locator('[data-portrait-ray="stress"]')).toHaveCount(0)
- await allSector.click()
- await expect(radarCard.locator('[data-sector-point]')).toHaveCount(4)
+ for(const [key,count] of [['body',5],['work',3],['relationships',4],['growth',5]]){
+   const button=radarCard.locator('button[data-portrait-sector="'+key+'"]')
+   await button.click()
+   await expect(button).toHaveAttribute('aria-pressed','true')
+   await expect(radarCard.locator('button[data-portrait-sector][aria-pressed="true"]')).toHaveCount(1)
+   await expect(radarCard.locator('[data-detail-axis]')).toHaveCount(count)
+   await expect(radarCard.locator('[data-contour-axis]')).toHaveCount(count)
+   // The selected sector uses every quadrant of the 360° ring (if >=3 axes).
+   const coverage=await radarCard.locator('[data-contour-axis]').evaluateAll(dots=>{
+     const pts=dots.map(dot=>({x:Number(dot.getAttribute('cx'))-180,y:Number(dot.getAttribute('cy'))-182}))
+     return {left:pts.some(p=>p.x< -20),right:pts.some(p=>p.x>20),
+       top:pts.some(p=>p.y< -20),bottom:pts.some(p=>p.y>20)}
+   })
+   assert.ok(coverage.left&&coverage.right&&coverage.top&&coverage.bottom,'Category must span all directions: '+key)
+ }
  await expect(radarCard.locator('[data-testid="portrait-quick-actions"]')).toBeVisible()
- passed('Reports portrait: iPhone ring 320/390/430, four-sector All summary, single-select body/work drilldown')
+ passed('Reports portrait: four tabs in one iPhone row, no header, full-circle category detail, width 320/390/430')
  await page.setViewportSize({width:390,height:844})
 
   const insightsSummary=page.locator('[data-testid="insights-summary"]')
