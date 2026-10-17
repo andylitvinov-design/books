@@ -105,15 +105,20 @@ function assertSelected(h, result, report, section, locale) {
   for (const step of section.steps || []) assert.ok(text(panel).includes(step), 'Every approved step remains available')
   const scoreDimension = section.bandBasis === 'unavailable' ? null : result.dimensions.find(item => item.key === section.key)
   const scoreModel = gaugeModel(scoreDimension, result, locale)
+  const critical = section.limitations?.some(note =>
+    /translation|unvalidated|russian form|without reversing|перевод|английск|русск|без разворота/i.test(note))
+  const originalBoilerplate = result.definitionKey?.startsWith('hh-') &&
+    section.bandBasis === 'descriptive' && !critical
   for (const limit of section.limitations || []) {
-    if (scoreModel?.currentAnswerBand) {
-      // On original, non-clinical self-reflections the long methodological
-      // caveats are in disclosure; a plain-language nonclinical warning stays visible.
-      assert.ok(text(panel).includes(limit), 'Detailed caveat remains available')
-      assert.match(visibleText(panel), locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
-        'The interpretation must visibly distinguish answer anchors from clinical norms')
+    if (scoreModel?.currentAnswerBand || originalBoilerplate) {
+      // Only repetitive methodological notes on supported original reflections
+      // may live in disclosure. Integrity and translation warnings must be visible.
+      assert.ok(text(panel).includes(limit), 'Detailed caveat remains accessible')
+      if (scoreModel?.currentAnswerBand) assert.match(visibleText(panel),
+        locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
+        'Answer anchors cannot be mistaken for published clinical cutoffs')
     } else assert.ok(visibleText(panel).includes(limit),
-      'Screening, non-authorial and unverified warnings remain visible without expansion')
+      'Screening, translation, mixed-polarity or unverified warnings must remain visible')
   }
   if (section.followUp) assert.ok(text(panel).includes(section.followUp))
   if (section.source) assert.ok(nodes(h.tree).some(node => node.type === 'a' && node.props.href === section.source))
