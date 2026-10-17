@@ -99,7 +99,7 @@ export function PublicServiceOrderPanel({
 
   return (
     <section className={styles.panel} id="service-order" aria-labelledby="service-order-title"
-      data-public-service-order={service.slug} data-free-service={free}>
+      data-public-service-order={service.slug} data-consultation-cta data-free-service={free}>
       <div className={styles.intro}>
         <p className={styles.eyebrow}><ShieldCheck size={16} aria-hidden="true" /> {t.eyebrow}</p>
         <h2 id="service-order-title">{specialized ? t.freeTitle : t.title}</h2>
