@@ -16,6 +16,69 @@ function phq4ShortName(key, locale) {
   }[key] || null
 }
 
+// Published bands keep source-defined boundaries. The text below explains
+// their meanings without treating screening results as diagnoses.
+function explainPublishedLevel(code, locale) {
+  const ru = locale === 'ru'
+  const copy = {
+    below_screen: [
+      'Ниже опубликованного скринингового порога. Это не исключает трудностей, если они беспокоят.',
+      'Below the published screening threshold. Difficulties may still be present.',
+    ],
+    screen_signal: [
+      'На уровне или выше скринингового порога. При беспокоящих симптомах можно обсудить их со специалистом.',
+      'At or above a screening threshold. Discuss concerning symptoms with a qualified professional.',
+    ],
+    minimal: [
+      'Самый нижний из опубликованных диапазонов для данного опросника.',
+      'The lowest published symptom range for this questionnaire.',
+    ],
+    mild: [
+      'Следующий диапазон отмеченных симптомов: выше минимального, но ниже средних категорий.',
+      'The next published symptom range: above minimal, below the middle categories.',
+    ],
+    moderate: [
+      'Средний из опубликованных диапазонов; полезно учесть влияние симптомов на повседневную жизнь.',
+      'A middle published range; consider how the reported symptoms affect daily life.',
+    ],
+    moderately_severe: [
+      'Диапазон выше умеренного: это основание внимательнее оценить беспокоящие проявления.',
+      'A range above moderate; consider a closer review of concerning experiences.',
+    ],
+    severe: [
+      'Верхняя опубликованная категория опросника — это не самостоятельный диагноз.',
+      'The questionnaire’s highest published category; it is not a diagnosis.',
+    ],
+    low: [
+      'Нижний опубликованный диапазон выраженности сообщаемых симптомов.',
+      'A lower published range of reported symptoms.',
+    ],
+    medium: [
+      'Промежуточный опубликованный диапазон выраженности сообщаемых симптомов.',
+      'An intermediate published range of reported symptoms.',
+    ],
+    high: [
+      'Верхний опубликованный диапазон выраженности сообщаемых симптомов.',
+      'An upper published range of reported symptoms.',
+    ],
+    low_coping: [
+      'По этой шкале отмечается сравнительно меньше устойчивых способов совладания.',
+      'Fewer resilient coping responses are reported on this scale.',
+    ],
+    mid_coping: [
+      'По этой шкале отмечается промежуточная выраженность способов совладания.',
+      'An intermediate range of resilient coping responses on this scale.',
+    ],
+    high_coping: [
+      'По этой шкале отмечается сравнительно больше устойчивых способов совладания.',
+      'More resilient coping responses are reported on this scale.',
+    ],
+  }
+  return copy[code]?.[ru ? 0 : 1] || (ru
+    ? 'Опубликованный диапазон опросника описывает ответы, но не устанавливает диагноз.'
+    : 'This published questionnaire interval describes responses, not a diagnosis.')
+}
+
 // Only presentation changes here: instrument scores, banding and recommendations
 // are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
@@ -49,6 +112,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const guide = section.bandBasis === 'unavailable' ? null : guideByScale.get(section.key)
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null
+  const scoreLevelGuide = model?.scoreLevelGuide || null
   const rawNote = !model ? null : model.displayKind === 'screening-count'
     ? ru ? 'Количество ответов в заштрихованных клетках. Это не шкала тяжести.' : 'Number of responses in shaded cells. This is not a severity scale.'
     : section.bandBasis === 'screening'
@@ -127,11 +191,12 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <ScoreGauge dimension={dimension} locale={locale} result={result} showLegend={false} showScaleNote={false}/>
         <div className={styles.summary}>
           <h3>{phq4ShortName(section.key, locale) || section.construct || section.title}</h3>
+          {scoreLevelGuide && <p className={styles.band} data-descriptive-score-current>{scoreLevelGuide.current.label}</p>}
           {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band + (section.recommendedReview ? ' ' + styles.bandNeedsReview : '')}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
-          {rawNote && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
+          {rawNote && !scoreLevelGuide && <p className={styles.scale} data-scale-direction>{rawNote}</p>}
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
@@ -141,8 +206,37 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           className={band.current ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
           aria-current={band.current ? 'true' : undefined}>
           <b>{band.from}–{band.to}</b> {band.label}{band.current ? (ru ? ' · ваш' : ' · yours') : ''}
+          <small>{explainPublishedLevel(band.code, locale)}</small>
         </span>)}
       </div>}
+      {scoreLevelGuide && <section className={styles.levelGuide} data-descriptive-score-guide
+        aria-label={ru ? 'Пояснение вашего результата и уровней шкалы' : 'Explanation of your result and scale levels'}>
+        <p className={styles.levelEyebrow}>{ru ? 'ПОНЯТНЫЙ РАЗБОР РЕЗУЛЬТАТА' : 'YOUR SCORE EXPLAINED'}</p>
+        <h4 className={styles.levelTitle}>{scoreLevelGuide.title}: {scoreLevelGuide.current.label}</h4>
+        <p className={styles.levelLead} data-current-score-position>{scoreLevelGuide.current.note}</p>
+        <p className={styles.levelOverview}>{scoreLevelGuide.overview}</p>
+        <div className={styles.levelMeter} data-level-direction={model?.orientation || 'neutral'} aria-hidden="true">
+          {scoreLevelGuide.bands.map(band => <span key={band.code}
+            data-current-position={band.current || undefined} />)}
+        </div>
+        <h5 className={styles.levelSubheading}>{scoreLevelGuide.heading}</h5>
+        <ol className={styles.levelList} data-score-level-descriptions>
+          {scoreLevelGuide.bands.map((band, index) => <li key={band.code}
+            data-current-position={band.current || undefined}
+            aria-current={band.current ? 'true' : undefined}>
+            <span className={styles.levelIndex}>{index + 1}</span>
+            <div className={styles.levelBody}>
+              <div className={styles.levelHeading}>
+                <strong>{band.label}</strong>
+                <span>{band.displayRange}</span>
+              </div>
+              <p>{band.note}</p>
+              {band.current && <small>{ru ? 'Ваш участок шкалы' : 'Your scale position'}</small>}
+            </div>
+          </li>)}
+        </ol>
+        <p className={styles.levelCaveat}>{scoreLevelGuide.caveat}</p>
+      </section>}
       {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
