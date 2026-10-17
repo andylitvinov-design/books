@@ -172,7 +172,7 @@ const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileMod
 }).outputText]))
 const pureUI = Object.fromEntries(await Promise.all(['anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
-  'course-slide-sequence', 'course-membership', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
+  'course-slide-sequence', 'course-membership', 'anti-stress-skills-v5', 'anti-stress-skills-v6', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )
 
 // Executes real JSX component functions with isolated state/effect slots.
@@ -198,7 +198,7 @@ export function mount(name, props, { exportName = 'default' } = {}) {
   const jsx = (type, props, key) => ({ type, props, key })
   const modules = { ...pureUI, react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'lucide-react': new Proxy({}, { get: (_, name) => stub(String(name)) }),
-    './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
+    './opora-v6-slide-player': child('OporaV6SlidePlayer'), './course-guided-timer': child('CourseGuidedTimer'), './course-practice-voice': child('CoursePracticeVoice'),
     './anti-stress-method-activity': child('AntiStressMethodActivity'), './anti-stress-practice-lab': child('AntiStressPracticeLab'),
     './course-lesson-result': child('CourseLessonResult'), './anti-stress-day-one': {
       __esModule: true, default: stub('DayOneExercise'), DayOneChoices: stub('DayOneChoices'), DayOneFocusPicker: stub('DayOneFocusPicker'),
