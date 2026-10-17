@@ -6,7 +6,9 @@ import {
 } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 import { SiteVideoPlayer } from "@/components/site-video-player";
-import { AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
+import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { getServiceVideoMedia } from "@/data/service-video-library";
 import styles from "./alchemy-soul-landing.module.css";
 
@@ -25,7 +27,7 @@ const copy = {
     headline: "Найти то, что удерживает проблему — и наметить путь к изменениям.",
     intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
     chips: ["Расстановка", "Гипнотерапия", "Ресурсная поддержка"],
-    cta: "Обсудить мой запрос",
+    cta: "Заказать сеанс",
     freeStart: "Начать с бесплатного письменного разбора",
     practitioner: "С Андреем Литвиновым",
     place: "Онлайн · Торонто по договорённости",
@@ -76,7 +78,7 @@ const copy = {
     programTitle: "Поддержка в течение месяца",
     programDescription: "2 личные сессии + 4 недели сопровождения и наблюдения изменений.",
     programPrice: "Стоимость обсуждается лично · без подписки",
-    optionsAction: "Запросить подходящий формат",
+    optionsAction: "Заказать сеанс",
     freeText: "Хотите сначала бесплатно? ",
     freeLink: "Получить письменный разбор ситуации",
 
@@ -91,7 +93,7 @@ const copy = {
 
     requestKicker: "ВАШ ПЕРВЫЙ ШАГ",
     requestTitle: "Начнём с вашего вопроса",
-    requestIntro: "Выберите формат и тему. Подробности расскажете мне лично в переписке.",
+    requestIntro: "Выберите формат и тему, затем удобный мессенджер — WhatsApp или Telegram.",
     safety: "Это авторская консультативная и символическая практика, не замена медицинской или психиатрической помощи. Гомеопатия не имеет надёжной доказательной эффективности при лечении заболеваний; не меняйте назначенное лечение без врача. Результаты не гарантируются.",
   },
   en: {
@@ -102,7 +104,7 @@ const copy = {
     headline: "Explore what keeps a problem in place — and find a possible way forward.",
     intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
     chips: ["Constellations", "Hypnotherapy", "Personal resources"],
-    cta: "Discuss my situation",
+    cta: "Book a session",
     freeStart: "Start with a free written situation review",
     practitioner: "With Andrey Litvinov",
     place: "Online · Toronto by arrangement",
@@ -153,7 +155,7 @@ const copy = {
     programTitle: "Four-week personal support",
     programDescription: "2 personal sessions + 4 weeks of individual follow-up and reflection.",
     programPrice: "Price agreed individually · no subscription",
-    optionsAction: "Ask about a session",
+    optionsAction: "Book a session",
     freeText: "Prefer to start free? ",
     freeLink: "Request a written situation review",
 
@@ -168,7 +170,7 @@ const copy = {
 
     requestKicker: "YOUR FIRST STEP",
     requestTitle: "Start with your question",
-    requestIntro: "Choose a format and topic; share more details privately in our conversation.",
+    requestIntro: "Choose a format and topic, then select WhatsApp or Telegram to request your booking.",
     safety: "This is an author's reflective and symbolic consultation, not a replacement for medical or psychiatric care. Homeopathy has no reliable evidence for treating health conditions. Do not change prescribed medication without medical guidance. Outcomes are not guaranteed.",
   },
 } as const;
@@ -193,6 +195,15 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
   const video = getServiceVideoMedia("alchemy", locale);
   const reviews = testimonials[locale];
   const freeReview = "/" + locale + "/services/free-situation-review";
+  const heroWhatsApp = whatsappEnquiryUrl({
+    locale,
+    service: locale === "ru" ? "Алхимия души / Психогомеопатия" : "Alchemy of the Soul / Psycho-homeopathy",
+    request: locale === "ru"
+      ? "Хочу заказать индивидуальный сеанс. Подскажите доступные дату и время для подтверждения записи."
+      : "I would like to book a personal session. Please send your available dates and times to confirm.",
+    option: locale === "ru" ? "Личная сессия · 60 минут · €100" : "Personal session · 60 min · €100",
+    pagePath: "/" + locale + "/services/alchemy-of-soul",
+  });
 
   return (
     <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
@@ -216,7 +227,11 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
           </div>
           <p className={styles.heroLead}>{t.intro}</p>
           <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
-          <a className={styles.heroAction} href="#alchemy-request">{t.cta}<ArrowRight size={18} aria-hidden="true" /></a>
+          <div className={styles.heroOrder}>
+            <ContactChannelChooser locale={locale} whatsappUrl={heroWhatsApp} label={t.cta}
+              className={styles.heroOrderButton} event="service_request_start"
+              attributes={{ "data-alchemy-booking": "hero" }} />
+          </div>
           <div className={styles.heroBottom}><span>{t.place}</span><Link href={freeReview}>{t.freeStart}<ArrowUpRight size={14} aria-hidden="true" /></Link></div>
         </section>
 
@@ -272,15 +287,21 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
-          <div className={styles.reviewRail} role="region" aria-label={t.swipe} tabIndex={0}>
+          <div className={styles.reviewStack} data-alchemy-review-stack>
             {reviews.map((review) => (
               <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
-                <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale }} locale={locale} compact minimal fallbackPoster={review.poster} />
-                <p>{review.title}</p>
+                <div className={styles.reviewVideo}>
+                  <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale }}
+                    locale={locale} compact minimal fallbackPoster={review.poster} />
+                </div>
+                <div className={styles.reviewInfo}>
+                  <h3>{review.title}</h3>
+                  <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank"
+                    rel="noopener noreferrer">{locale === "ru" ? "Смотреть отзыв" : "Watch testimonial"}<ArrowUpRight size={15} aria-hidden="true" /></a>
+                </div>
               </article>
             ))}
           </div>
-          <p className={styles.swipeHint}><ArrowRight size={14} aria-hidden="true" />{t.swipe}</p>
           <p className={styles.reviewNote}>{t.reviewsNote}</p>
         </section>
 
@@ -289,22 +310,7 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
           </header>
-          <div className={styles.optionGrid}>
-            <article className={styles.optionCard}>
-              <p className={styles.optionTime}>{t.shortTime}</p><strong>{t.shortPrice}</strong>
-              <h3>{t.shortName}</h3><p>{t.shortText}</p>
-            </article>
-            <article className={[styles.optionCard, styles.optionFeatured].join(" ")}>
-              <p className={styles.optionTime}>{t.fullTime}</p><strong>{t.fullPrice}</strong>
-              <h3>{t.fullName}</h3><p>{t.fullText}</p>
-            </article>
-          </div>
-          <div className={styles.monthlyCard}>
-            <div><h3>{t.programTitle}</h3><p>{t.programDescription}</p><small>{t.programPrice}</small></div>
-            <span aria-hidden="true">✧</span>
-          </div>
-          <a className={styles.optionsAction} href="#alchemy-request">{t.optionsAction}<ArrowRight size={17} aria-hidden="true" /></a>
-          <p className={styles.freeOption}>{t.freeText}<Link href={freeReview}>{t.freeLink}</Link></p>
+          <AlchemySoulFormatSelector locale={locale} />
         </section>
 
         <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
