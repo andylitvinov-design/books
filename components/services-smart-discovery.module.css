@@ -11,8 +11,9 @@
 .submit{display:inline-flex;gap:13px;align-items:center;justify-content:center;align-self:stretch;flex:none;min-width:175px;min-height:56px;padding:12px 18px;border:0;border-radius:12px;background:#822d4d;color:#fff;font:750 13px/1.4 system-ui,sans-serif;cursor:pointer}
 .submit:hover{background:#6c2341}
 .submit:disabled{opacity:.65;cursor:default}
-.freeSubmit{display:inline-flex;gap:8px;align-items:center;justify-content:center;align-self:stretch;flex:none;min-width:176px;min-height:56px;padding:11px 14px;border:1px solid #e7c8d4;border-radius:12px;background:#fff0f5;color:#75304a;font:750 12.5px/1.35 system-ui,sans-serif;cursor:pointer}
-.freeSubmit:hover{background:#fbe3eb;border-color:#d9a4b9}
+.freeOnlyToggle{display:inline-flex;align-items:center;gap:9px;min-height:32px;max-width:100%;margin:8px 0 0;color:#f2e9ef;font:650 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.freeOnlyToggle input{box-sizing:border-box;flex:none;width:17px;height:17px;margin:0;accent-color:#ad5679;cursor:pointer}
+.freeOnlyToggle:hover{color:#fff}
 .examples{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 0;align-items:center;max-width:1000px}
 .examples>span{margin-right:3px;font:650 11px/1.5 system-ui,sans-serif;color:#cdd5e1}
 .examples button{min-height:36px;padding:7px 11px;border-radius:999px;border:1px solid #a7b7cf63;background:#ffffff13;color:#f2f1f5;font:550 11px/1.4 system-ui,sans-serif;cursor:pointer;text-align:left}
@@ -78,11 +79,9 @@
 .hero{padding:20px 16px;border-radius:16px}
 .hero h2{font-size:30px}
 .intro{font-size:12px;margin-bottom:16px}
-.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:6px;border-radius:14px}
-.textarea{grid-column:1/-1;min-height:75px;max-height:180px;padding:12px}
+.form{display:grid;gap:6px;padding:6px;border-radius:14px}
+.textarea{min-height:75px;max-height:180px;padding:12px}
 .submit{min-width:0;width:100%;min-height:46px;border-radius:10px}
-.submit,.freeSubmit{min-width:0;width:100%;min-height:46px;padding:9px 7px;gap:5px;border-radius:10px;font-size:11px;line-height:1.25;text-align:center;white-space:normal}
-.submit svg,.freeSubmit svg{flex:none;width:16px;height:16px}
 .examples{gap:6px;margin-top:11px}
 .examples button{font-size:10px;min-height:33px;padding:6px 9px}
 .categorySection{margin:12px 0 18px}
@@ -347,10 +346,6 @@
   .suggestionDetailsToggle svg,.editorialDetailsButton svg{transition:none}
 }
 
-@media(max-width:350px){
-  .form{grid-template-columns:minmax(0,1fr)}
-  .submit,.freeSubmit{font-size:12px}
-}
 .quickFacets{display:flex;flex-wrap:nowrap;align-items:center;gap:7px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:12px 0 8px;padding:1px 0 3px}
 .quickFacets::-webkit-scrollbar{display:none}
 .quickFacets label{display:inline-flex;flex:0 0 auto;align-items:center;gap:4px;min-width:0;min-height:37px;padding:0 7px 0 9px;border:1px solid #d7c9cd;border-radius:10px;background:#f8f6f4;color:#594454;font:650 11px/1.2 system-ui,sans-serif;white-space:nowrap}

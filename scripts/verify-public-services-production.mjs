@@ -99,8 +99,53 @@ try {
         await insights.scrollIntoViewIfNeeded();
         await insights.screenshot({ path: output + "/services-" + locale + "-free-insights-390.png" });
       }
+      // Contract for the mobile screenshot regression: restore ONE full-width
+      // Find my options action and a small, initially unchecked free-only filter.
+      const discovery = page.locator("#find-your-service");
+      const searchForm = discovery.locator('form[role="search"]');
+      const findOptions = searchForm.locator('button[type="submit"]');
+      const freeOnly = discovery.locator("input[data-free-services-only]");
+      const price = discovery.locator('select[class*="facetPrice"]');
+      await visible(freeOnly);
+      assert.equal(await freeOnly.isChecked(), false, "Free Services Only starts unchecked");
+      assert.equal(await price.inputValue(), "", "Price starts at Any");
+      assert.equal(await findOptions.count(), 1, "one original primary Find my options button");
+      await expect(findOptions).toBeDisabled();
+      if (width <= 390) {
+        const formBox = await searchForm.boundingBox();
+        const buttonBox = await findOptions.boundingBox();
+        assert.ok(formBox && buttonBox && buttonBox.width >= formBox.width * 0.92,
+          "Find my options is full-width on mobile, not split with a second CTA");
+      }
+      await freeOnly.check();
+      await expect(price).toHaveValue("free");
+      await expect(findOptions).toBeEnabled();
+      await findOptions.click();
+      await expect(discovery.locator("#hh-service-discovery-results-title"))
+        .toHaveText(locale === "ru" ? "Бесплатные услуги" : "Free services");
+      await price.selectOption("");
+      await expect(freeOnly).not.toBeChecked();
+      await expect(findOptions).toBeDisabled();
+      await price.selectOption("free");
+      await expect(freeOnly).toBeChecked();
+      await freeOnly.uncheck();
+      await expect(price).toHaveValue("");
+      await assertViewport(page, locale + "/services/free-only/" + width);
       await page.close();
     }
+  }
+
+  // Spanish uses its own page route but the same EN/RU/ES discovery component.
+  {
+    const page = await createPage(390);
+    await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
+    const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
+    await visible(freeOnly);
+    await expect(freeOnly).not.toBeChecked();
+    await freeOnly.check();
+    await page.locator('#find-your-service form[role="search"] button[type="submit"]').click();
+    await expect(page.locator("#hh-service-discovery-results-title")).toHaveText("Servicios gratuitos");
+    await page.close();
   }
 
   const coreServices = [

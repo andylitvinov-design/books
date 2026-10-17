@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Gift, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -26,7 +26,7 @@ const COPY = {
     description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
     placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
-    freeButton:"Find free services",
+    freeOnlyLabel:"Free Services Only",
     examples:"You could try",
     exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
     quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
@@ -80,7 +80,7 @@ const COPY = {
     description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
     placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
-    freeButton:"Найти бесплатные услуги",
+    freeOnlyLabel:"Только бесплатные услуги",
     examples:"Например",
     exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
     quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
@@ -134,7 +134,7 @@ const COPY = {
     description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
     placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
-    freeButton:"Encontrar servicios gratis",
+    freeOnlyLabel:"Solo servicios gratuitos",
     examples:"Por ejemplo",
     exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
     quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
@@ -322,7 +322,7 @@ export function ServicesSmartDiscovery({
   async function find(queryText: string) {
     const nonce = ++requestNumber.current;
     const text = queryText.trim().slice(0,350);
-    if (!text) return;
+    if (!text && budget !== "free") return;
     searchInputRef.current?.blur(); // Dismiss the mobile keyboard before navigating.
     setScrollRequest((count) => count + 1);
     setActiveCategory("");
@@ -332,7 +332,7 @@ export function ServicesSmartDiscovery({
     setOrderingCard(null);
     setAiOrder(null);
     setAiStatus("local");
-    if (!aiAvailable || !useExternalAi) return;
+    if (!text || !aiAvailable || !useExternalAi) return;
     setAiStatus("loading");
     try {
       const response=await fetch("/api/marketplace/intent-match",{
@@ -349,22 +349,6 @@ export function ServicesSmartDiscovery({
     } catch {
       if (nonce === requestNumber.current) setAiStatus("unavailable");
     }
-  }
-
-  function findFreeServices() {
-    // The CTA works without text. Preserve format and language selections,
-    // but include all free categories (including Wu Xing).
-    requestNumber.current += 1; // Invalidate any pending AI result.
-    searchInputRef.current?.blur();
-    setBudget("free");
-    setSubmitted(query.trim().slice(0,350));
-    setActiveCategory("");
-    setHasSelection(true);
-    setScrollRequest((count) => count + 1);
-    setAiOrder(null);
-    setAiStatus("local");
-    setExpandedCard(null);
-    setOrderingCard(null);
   }
 
   function runExample(text: string) { setQuery(text); void find(text); }
@@ -385,13 +369,24 @@ export function ServicesSmartDiscovery({
           <textarea ref={searchInputRef} id="hh-service-free-text" value={query} maxLength={350} rows={2}
             placeholder={t.placeholder} onChange={event=>setQuery(event.target.value)}
             autoComplete="off" className={styles.textarea}/>
-          <button type="submit" className={styles.submit} disabled={!query.trim() || aiStatus==="loading"}>
+          <button type="submit" className={styles.submit} disabled={(!query.trim() && budget!=="free") || aiStatus==="loading"}>
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
-          <button type="button" className={styles.freeSubmit} onClick={findFreeServices}>
-            {t.freeButton}<Gift size={19} aria-hidden="true"/>
-          </button>
         </form>
+        <label className={styles.freeOnlyToggle}>
+          <input
+            type="checkbox"
+            data-free-services-only
+            checked={budget === "free"}
+            onChange={event => {
+              requestNumber.current += 1;
+              setBudget(event.target.checked ? "free" : "");
+              setAiOrder(null);
+              setAiStatus("local");
+            }}
+          />
+          <span>{t.freeOnlyLabel}</span>
+        </label>
         <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
           <label>
             <span>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}</span>

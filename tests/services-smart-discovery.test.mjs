@@ -73,7 +73,7 @@ test('category selector cannot manufacture masters, offers or prices, and respec
   assert.equal(normalizeDiscoveryInput('У-Син, Ёлка'), 'у син елка')
 })
 
-test('one-tap free discovery includes all eligible free areas, without surfacing paid offers',()=>{
+test('free-only price facet includes all eligible free areas without surfacing paid offers',()=>{
   const freeWuXing={...offering('free-wuxing','homeopathy_holistic','Free Wu Xing profile','Personal resource map'),pricingMode:'free'};
   const freeSomatic={...offering('free-somatic','body_somatic','Free somatic introduction','Body awareness'),pricingMode:'free'};
   const paid=offering('paid-reiki','energy_spiritual','Paid Reiki session','Individual session');
@@ -86,21 +86,39 @@ test('one-tap free discovery includes all eligible free areas, without surfacing
   assert.ok(rankDiscoveryServices('',freeOnline,{limit:10}).every(row=>row.service.areaKey!=='homeopathy_holistic'));
 });
 
-test('Find free services CTA is translated, works with empty query and shows free results',async()=>{
+test('Free Services Only is an initially unchecked compact filter below the restored full-width search CTA',async()=>{
   const [ui,css]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
   ]);
-  for(const phrase of ['Find free services','Найти бесплатные услуги','Encontrar servicios gratis'])
+  for(const phrase of ['Free Services Only','Только бесплатные услуги','Solo servicios gratuitos'])
     assert.ok(ui.includes(phrase),phrase);
-  assert.match(ui,/<button type="button" className=\{styles\.freeSubmit\} onClick=\{findFreeServices\}>/);
-  assert.match(ui,/function findFreeServices\(\) \{[\s\S]*?setBudget\("free"\);[\s\S]*?setHasSelection\(true\)/);
-  assert.match(ui,/includeAllAreas:budget==="free"/);
-  assert.match(ui,/budget==="free"\?10:suggestions\.length\?2:4/);
-  assert.match(ui,/budget==="free"\?t\.freeResultTitle:t\.resultTitle/);
-  assert.match(css,/\.freeSubmit\{display:inline-flex;/);
-  assert.match(css,/\.form\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css,/@media\(max-width:350px\)\{\s*\.form\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.ok(ui.includes('const [budget,setBudget] = useState("")'),'free is off by default');
+  assert.ok(ui.includes('checked={budget === "free"}'),'checkbox and Price select share one state');
+  assert.ok(ui.includes('data-free-services-only'),'free checkbox has a stable interactive target');
+  assert.ok(ui.includes('setBudget(event.target.checked ? "free" : "")'),'checkbox switches free facet on and off');
+  assert.ok(ui.includes('value={budget} onChange={e=>{setBudget(e.target.value);setHasSelection(true)}}'),'changing Price also changes checkbox');
+  assert.ok(ui.includes('disabled={(!query.trim() && budget!=="free") || aiStatus==="loading"}'),
+    'the original search button becomes actionable even without text when free is selected');
+  assert.ok(ui.includes('if (!text && budget !== "free") return;'),'empty free-only searches reach results');
+  assert.ok(ui.includes('if (!text || !aiAvailable || !useExternalAi) return;'),'empty query never requests external AI');
+  assert.ok(ui.includes('includeAllAreas:budget==="free"'),'free matching covers every service category');
+  assert.ok(ui.includes('budget==="free"?10:suggestions.length?2:4'),'free editorial matches are not unnecessarily hidden');
+  assert.ok(ui.includes('budget==="free"?t.freeResultTitle:t.resultTitle'));
+  const formIndex=ui.indexOf('<form className={styles.form}');
+  const endForm=ui.indexOf('</form>',formIndex);
+  const checkbox=ui.indexOf('className={styles.freeOnlyToggle}');
+  const facets=ui.indexOf('className={styles.quickFacets}');
+  assert.ok(formIndex>=0 && endForm<formIndex+1000 && endForm<checkbox && checkbox<facets,
+    'the small checkbox follows, not splits, the primary search form');
+  assert.ok(css.includes('.freeOnlyToggle{display:inline-flex;'),'checkbox is an understated compact row');
+  assert.ok(css.includes('.form{display:grid;gap:6px;padding:6px;border-radius:14px}'),
+    'phone form restores a single full-width submit');
+  assert.ok(css.includes('.submit{width:100%;min-width:0;min-height:44px'),
+    'phone submit spans full search width');
+  assert.ok(!ui.includes('freeSubmit') && !ui.includes('findFreeServices') && !ui.includes('Gift size={19}'),
+    'extra Find free services button is gone');
+  assert.ok(!css.includes('.freeSubmit'),'removed CTA styles cannot override the restored single-button layout');
 });
 
 test('editorial fallback points only to source-backed known routes, never a synthetic booking',()=>{
@@ -158,7 +176,7 @@ test('Service discovery scrolls to submitted and category results on mobile and 
   assert.match(ui,/window\.requestAnimationFrame/)
   assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
   assert.match(ui,/aria-labelledby="hh-service-discovery-results-title"/)
-  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,3)
+  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,2)
   assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
   assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
 })
