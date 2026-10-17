@@ -46,8 +46,8 @@ const COPY = {
     clear: "Clear filters",
     noResults: "No matches yet. Try removing a filter or using a broader word.",
     details: "Service details",
-    request: "Request service",
-    requestFree: "Request free service",
+    request: "Order",
+    requestFree: "Order",
     onRequest: "Price on request",
     from: "from",
     practitioner: "Practitioner",
@@ -84,8 +84,8 @@ const COPY = {
     clear: "Сбросить фильтры",
     noResults: "По этим параметрам пока ничего нет. Попробуйте убрать один фильтр.",
     details: "Подробнее",
-    request: "Запросить услугу",
-    requestFree: "Запросить бесплатно",
+    request: "Заказать",
+    requestFree: "Заказать",
     onRequest: "По запросу",
     from: "от",
     practitioner: "Мастер",
@@ -122,8 +122,8 @@ const COPY = {
     clear: "Limpiar filtros",
     noResults: "No hay resultados. Prueba a quitar algún filtro.",
     details: "Detalles",
-    request: "Solicitar servicio",
-    requestFree: "Solicitar gratis",
+    request: "Solicitar",
+    requestFree: "Solicitar",
     onRequest: "Precio a consultar",
     from: "desde",
     practitioner: "Profesional",
@@ -325,10 +325,10 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
       <p className={styles.description}>{service.copy.shortDescription}</p>
       <div className={styles.meta}><span>{format}</span>{service.locationLabel && service.deliveryFormat !== "online" ? <span>{service.locationLabel}</span> : null}{service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}</div>
       <div className={styles.actions}>
-        <Link className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
+        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
+        <Link className={styles.primary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#service-order"}>
           {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
         </Link>
-        <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
       </div>
     </article>
   );
