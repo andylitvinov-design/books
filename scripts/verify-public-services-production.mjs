@@ -151,6 +151,34 @@ try {
       assert.equal(await advanced.evaluate(element => element.open), false, "Detailed questionnaire must start collapsed");
       await assertNoDevIssueOverlay(page, locale + "/free-situation-review/" + width);
       await assertViewport(page, locale + "/free-situation-review/" + width);
+      if (width <= 390) {
+        const panelHeights = await page.evaluate(() => {
+          const sections = {
+            hero: 'section[aria-labelledby="review-hero-title"]',
+            request: '#request-free-review',
+            outcomes: 'section[aria-labelledby="review-outcomes-title"]',
+            paid: '#personal-consultation',
+            testimonials: '[data-personal-testimonials="all"]',
+            about: 'section[aria-labelledby="review-about-title"]',
+            faq: 'section[aria-labelledby="review-faq-title"]',
+            steps: '#how-it-works',
+            final: 'section[aria-labelledby="review-final-title"]',
+          };
+          const max = window.innerHeight - 90; // reserve bottom menu and a little breathing room
+          return Object.entries(sections).map(([name, selector]) => {
+            const node = document.querySelector(selector);
+            return { name, height: Math.ceil(node?.getBoundingClientRect().height ?? 9999), max };
+          });
+        });
+        assert.deepEqual(panelHeights.filter(item => item.height > item.max), [],
+          "Each collapsed mobile landing panel should fit within one viewport: " + JSON.stringify(panelHeights));
+        const archive = page.locator('[data-personal-testimonials="all"]');
+        const gallery = archive.locator('[role="region"]');
+        assert.equal(await archive.locator('[data-testimonial-video-id]').count(), 12);
+        assert.equal(await archive.locator('details').first().evaluate(element => element.open), false);
+        assert.ok(await gallery.evaluate(element => element.scrollWidth > element.clientWidth),
+          "All twelve source-backed reviews remain available by horizontal swipe");
+      }
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/free-review-" + locale + "-hero-" + width + ".png", fullPage: false });
       }
