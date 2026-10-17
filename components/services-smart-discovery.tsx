@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
-import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
+import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesDiscoveryFacets } from "@/lib/practitioners/discovery-intent.js";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
@@ -227,9 +227,9 @@ export function ServicesSmartDiscovery({
   const [query,setQuery] = useState("");
   const [submitted,setSubmitted] = useState("");
   const [activeCategory,setActiveCategory] = useState("");
-  const [goal,setGoal] = useState("");
-  const [format,setFormat] = useState("");
-  const [language,setLanguage] = useState("");
+  const [format,setFormat] = useState("online");
+  const [city,setCity] = useState("toronto");
+  const [language,setLanguage] = useState<Locale | "">(locale);
   const [budget,setBudget] = useState("");
   const [hasSelection,setHasSelection] = useState(false);
   const [useExternalAi,setUseExternalAi] = useState(false);
@@ -243,11 +243,10 @@ export function ServicesSmartDiscovery({
   const orderPanelRef = useRef<HTMLDivElement>(null);
   const [scrollRequest, setScrollRequest] = useState(0);
 
-  // User-selected hard constraints are enforced even when an AI reranker is enabled.
-  const eligible=useCallback((service:PublicService)=>serviceMatchesGoal(service,goal)
-    &&(!format||service.deliveryFormat===format||service.deliveryFormat==='hybrid')
-    &&(!language||(service.languages||[]).includes(language))
-    &&(!budget||(service.pricingMode!=='contact'&&service.confirmedPrice!=null&&service.currency==='EUR'&&service.confirmedPrice<=Number(budget))),[goal,format,language,budget]);
+  // These constraints apply to both locally-ranked and AI-ranked published services.
+  const eligible=useCallback((service:PublicService)=>serviceMatchesDiscoveryFacets(service,{
+    format,city,language,price:budget,
+  }),[format,city,language,budget]);
   const listed = useMemo(() => rankDiscoveryServices(submitted,services.filter(eligible),{category:activeCategory,limit:4}),[submitted,services,activeCategory,eligible]);
   const suggestions = useMemo(() => {
     if (!aiOrder?.length) return listed;
@@ -261,10 +260,13 @@ export function ServicesSmartDiscovery({
     const chosen = new Set(fromAi.map((entry) => entry.service.id));
     return [...fromAi, ...listed.filter((entry) => !chosen.has(entry.service.id))].slice(0,4);
   },[listed,aiOrder,services,eligible]);
-  const editorial = useMemo(
-    () => goal||format||language||budget?[]:rankEditorialDiscovery(submitted,editorialOffers,{category:activeCategory,limit:suggestions.length?2:4}),
-    [submitted,editorialOffers,activeCategory,suggestions.length,goal,format,language,budget]
-  );
+  const editorial = useMemo(() => {
+    // Editorial cards have no validated physical city or numeric price data.
+    // Preserve the default online suggestions, and only narrow to known free offers.
+    if (format==="in_person" || (language && language!==locale) || (budget && budget!=="free")) return [];
+    const offers=budget==="free" ? editorialOffers.filter(item=>item.free) : editorialOffers;
+    return rankEditorialDiscovery(submitted,offers,{category:activeCategory,limit:suggestions.length?2:4});
+  },[submitted,editorialOffers,activeCategory,suggestions.length,format,language,locale,budget]);
 
   // Scroll only after a new selection has rendered. AI updates should not
   // unexpectedly pull the visitor back to the results while they read.
@@ -341,7 +343,7 @@ export function ServicesSmartDiscovery({
 
   function runExample(text: string) { setQuery(text); void find(text); }
 
-  const highlighted = submitted || activeCategory || goal || format || language || budget;
+  const highlighted = submitted || activeCategory;
   const selectedArea = DISCOVERY_AREAS.find((area)=>area.key===activeCategory);
 
   return (
@@ -361,26 +363,35 @@ export function ServicesSmartDiscovery({
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
         </form>
-        <div className={styles.quickFacets} aria-label={locale==="ru"?"Фильтры поиска":"Search filters"}>
-          <label>{locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}
-            <select value={goal} onChange={e=>{setGoal(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
+        <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
+          <label>
+            <span>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}</span>
+            <select className={styles.facetFormat} value={format} onChange={e=>{setFormat(e.target.value);setHasSelection(true)}}>
+              <option value="online">{t.online}</option>
+              <option value="in_person">{locale==="ru"?"Очно":locale==="es"?"Presencial":"In person"}</option>
+              <option value="">{locale==="ru"?"Любой":locale==="es"?"Cualquiera":"Any"}</option>
+            </select>
+          </label>
+          {format==="in_person"&&<label>
+            <span>{locale==="ru"?"Город":locale==="es"?"Ciudad":"City"}</span>
+            <select className={styles.facetCity} value={city} onChange={e=>{setCity(e.target.value);setHasSelection(true)}}>
+              <option value="toronto">Toronto</option>
+              <option value="">{locale==="ru"?"Любой":locale==="es"?"Cualquiera":"Any"}</option>
+            </select>
+          </label>}
+          <label>
+            <span>{locale==="ru"?"Цена":locale==="es"?"Precio":"Price"}</span>
+            <select className={styles.facetPrice} value={budget} onChange={e=>{setBudget(e.target.value);setHasSelection(true)}}>
               <option value="">{locale==="ru"?"Любая":locale==="es"?"Cualquiera":"Any"}</option>
-              {([["confidence","Уверенность","Confidence"],["relationships","Отношения","Relationships"],["relaxation","Расслабление","Relaxation"],["learning","Обучение","Learning"],["clarity","Ясность","Clarity"],["purpose","Предназначение","Purpose"],["energy","Энергия","Energy"],["self_awareness","Самопознание","Self-awareness"]] as const).map(([id,ru,en])=><option key={id} value={id}>{locale==="ru"?ru:en}</option>)}
+              <option value="free">{t.free}</option>
+              {[30,50,75,100,200].map(value=><option key={value} value={value}>≤ €{value}</option>)}
             </select>
           </label>
-          <label>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}
-            <select value={format} onChange={e=>{setFormat(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
-              <option value="">{locale==="ru"?"Любой":"Any"}</option><option value="online">Online</option><option value="in_person">{locale==="ru"?"Очно":"In person"}</option>
-            </select>
-          </label>
-          <label>{locale==="ru"?"Цена":locale==="es"?"Precio":"Price"}
-            <select value={budget} onChange={e=>{setBudget(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
-              <option value="">{locale==="ru"?"Любая":"Any"}</option>{[30,50,75,100,200].map(value=><option key={value} value={value}>{locale==="ru"?"До ":"Up to "}€{value}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Язык":locale==="es"?"Idioma":"Language"}
-            <select value={language} onChange={e=>{setLanguage(e.target.value);setHasSelection(true);setScrollRequest(n=>n+1)}}>
-              <option value="">{locale==="ru"?"Любой":"Any"}</option>{["en","ru","es"].map(value=><option key={value} value={value}>{value.toUpperCase()}</option>)}
+          <label>
+            <span>{locale==="ru"?"Язык":locale==="es"?"Idioma":"Language"}</span>
+            <select className={styles.facetLanguage} value={language} onChange={e=>{setLanguage(e.target.value as Locale | "");setHasSelection(true)}}>
+              {["en","ru","es"].map(value=><option key={value} value={value}>{value.toUpperCase()}</option>)}
+              <option value="">{locale==="ru"?"Любой":locale==="es"?"Cualquiera":"Any"}</option>
             </select>
           </label>
         </div>
@@ -432,7 +443,7 @@ export function ServicesSmartDiscovery({
             <p>{t.matchIntro}</p>
             {highlighted&&<p className={styles.requestContext}>{t.resultFor}: <strong>{submitted || selectedArea?.label[locale] || ""}</strong></p>}
           </div>
-          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setGoal("");setFormat("");setLanguage("");setBudget("")}}>{t.clear} ×</button>
+          <button type="button" className={styles.clear} onClick={()=>{requestNumber.current+=1;setHasSelection(false);setActiveCategory("");setSubmitted("");setAiOrder(null);setAiStatus("local");setExpandedCard(null);setOrderingCard(null);setFormat("online");setCity("toronto");setLanguage(locale);setBudget("")}}>{t.clear} ×</button>
         </div>
         {aiStatus==="unavailable"&&<p role="status" className={styles.message}>{t.aiUnavailable}</p>}
         {suggestions.length>0?<div className={styles.suggestionGrid}>
