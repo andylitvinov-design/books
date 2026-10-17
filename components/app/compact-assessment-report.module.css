@@ -33,6 +33,11 @@
 .interpretation{margin:12px 0 3px;min-width:0}
 .interpretation h4{margin:0!important;font:780 .87rem/1.32 system-ui,-apple-system,sans-serif!important;color:#285d4e}
 .interpretation .explanation{margin:7px 0 0!important}
+/* The source-wide caution remains in the markup for auditability; original
+   HH cards show a concise nonclinical footer instead of repeating boilerplate. */
+.quietGauge figure > small{display:none}
+.technicalBand{font-size:.78rem!important;line-height:1.35!important;color:#617269}
+
 @media(max-width:460px){.responseEndpoints{padding:9px 10px;gap:8px}.responseEndpoints span{flex:1 1 44%;font-size:.77rem}}
 
 .recommendations{margin:12px 0 0;padding:12px 14px;background:#f3f8f3;border-radius:13px}
