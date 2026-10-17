@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
+import { ArrowRight, Brain, CalendarDays, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
+import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 import './profile-domains.css'
 import './profile-refresh.css'
 
@@ -33,7 +34,7 @@ const WORDS = {
     noRemedies: 'This document has no named homeopathic remedies to display.',
     continue: 'Open report', openDocument: 'Read original recommendation', seeAll: 'See all personal reports',
     compare: 'Test dynamics', assessments: 'My tests', analysis: 'Personal analysis',
-    request: 'Request personal support', consultation: 'Book a consultation', freeWu: 'Request free resource analysis',
+    request: 'Request personal support', consultation: 'Book free consultation', freeWu: 'Request free resource analysis',
     learnMore: 'Explore consultation options', date: 'Dated', loading: 'Opening your saved materials…',
     incomplete: 'Some saved materials could not be opened. Available originals remain accessible in My personal reports below.',
     private: 'Private to your cabinet. Nothing is sent to a practitioner when you open a profile; a consultation request does not attach test answers or reports automatically.',
@@ -43,6 +44,7 @@ const WORDS = {
     google: 'Open my Google Cabinet',
     archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
     browseTitle: 'Reports by area', browseHint: 'Browse your saved reports by topic.', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
+    consultationNote: 'Free introductory request, not an instant booking. Andrey confirms availability personally; full sessions are paid.',
     emptyInviteTitle: 'No reports yet? Start with a consultation',
     emptyInviteCopy: 'Discuss your situation with Andrey in a personal session. Choose 30 minutes (€50) or 60 minutes (€100). A free written review is available separately.',
     benefitGuidance: 'Personal guidance', benefitGuidanceHint: 'Discuss your goals',
@@ -72,7 +74,7 @@ const WORDS = {
     noRemedies: 'В этом документе нет названий гомеопатических препаратов.',
     continue: 'Читать отчёт', openDocument: 'Открыть исходную рекомендацию', seeAll: 'Все личные отчёты',
     compare: 'Динамика тестов', assessments: 'Мои тесты', analysis: 'Личный анализ',
-    request: 'Запросить личную поддержку', consultation: 'Заказать консультацию', freeWu: 'Запросить бесплатную диагностику ресурсов',
+    request: 'Запросить личную поддержку', consultation: 'Заказать бесплатную консультацию', freeWu: 'Запросить бесплатную диагностику ресурсов',
     learnMore: 'Варианты консультации', date: 'Дата', loading: 'Открываем сохранённые материалы…',
     incomplete: 'Некоторые материалы открыть не удалось. Доступные оригиналы — ниже, в разделе «Мои личные отчёты».',
     private: 'Доступно только вам. Просмотр профиля ничего не отправляет специалисту; при запросе консультации ответы тестов и отчёты не прикрепляются автоматически.',
@@ -82,6 +84,7 @@ const WORDS = {
     google: 'Открыть Google-кабинет',
     archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
     browseTitle: 'Отчёты по направлениям', browseHint: 'Просмотрите сохранённые отчёты по темам.', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
+    consultationNote: 'Бесплатное ознакомительное обращение, не подтверждённая запись. Андрей согласует время лично; полноценные сессии платные.',
     emptyInviteTitle: 'Нет отчётов? Начните с консультации',
     emptyInviteCopy: 'Обсудите свою ситуацию с Андреем лично: 30 минут — €50, 60 минут — €100. Бесплатный письменный разбор можно заказать отдельно.',
     benefitGuidance: 'Личная поддержка', benefitGuidanceHint: 'Обсудите свой запрос',
@@ -89,6 +92,18 @@ const WORDS = {
     benefitPrivate: 'Личный архив', benefitPrivateHint: 'Сохраняйте свои отчёты',
     overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
+}
+// No report content, client ID, test answers or private URLs enter this enquiry.
+// An owner-approved introductory call is a request pending personal availability confirmation.
+function freeIntroConsultationHref(locale) {
+  const ru = locale === 'ru'
+  return whatsappEnquiryUrl({
+    locale: ru ? 'ru' : 'en',
+    service: ru ? 'Бесплатная ознакомительная консультация' : 'Free introductory consultation',
+    request: ru
+      ? 'Хочу запросить бесплатную ознакомительную консультацию. Подскажите, пожалуйста, возможно ли такое знакомство и доступное время. Понимаю, что это запрос, а не подтверждённая запись; полноценные консультации оплачиваются отдельно.'
+      : 'I would like to request a free introductory consultation. Please confirm whether an introductory conversation is available and suggest a time. I understand this is a request, not a confirmed booking, and longer personal sessions are paid separately.',
+  })
 }
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10))
 function readableDate(value, locale) {
@@ -257,23 +272,14 @@ export function ProfileDomains({
       {reportsContent}
       {!external && savedReports.filter(report => report.available !== false).length === 0 && (
         <div className="hh-domain-when-empty" data-profile-empty-consultation>
-          <div className="hh-domain-empty-offer">
-            <div className="hh-domain-empty-offer-heading">
-              <span className="hh-domain-empty-offer-icon" aria-hidden="true"><CalendarDays size={29} strokeWidth={1.7} /></span>
-              <div>
-                <h3>{t.emptyInviteTitle}</h3>
-                <p>{t.emptyInviteCopy}</p>
-              </div>
-            </div>
-            <Link className="hh-domain-appointment-button" href={'/' + locale + '/services#consultation'} prefetch={false}>
-              {t.consultation} <ArrowRight size={20} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="hh-domain-benefit-row" role="list">
-            <div role="listitem"><span className="hh-domain-benefit-icon"><HeartHandshake size={21} aria-hidden="true" /></span><span><strong>{t.benefitGuidance}</strong><small>{t.benefitGuidanceHint}</small></span></div>
-            <div role="listitem"><span className="hh-domain-benefit-icon"><CalendarDays size={21} aria-hidden="true" /></span><span><strong>{t.benefitFormat}</strong><small>{t.benefitFormatHint}</small></span></div>
-            <div role="listitem"><span className="hh-domain-benefit-icon"><FileText size={21} aria-hidden="true" /></span><span><strong>{t.benefitPrivate}</strong><small>{t.benefitPrivateHint}</small></span></div>
-          </div>
+          <a className="hh-domain-appointment-button" href={freeIntroConsultationHref(locale)}
+            target="_blank" rel="noopener noreferrer" data-contact-channel="whatsapp"
+            data-consultation-kind="free-introduction">
+            <CalendarDays size={20} aria-hidden="true" />
+            <span>{t.consultation}</span>
+            <ArrowRight size={20} aria-hidden="true" />
+          </a>
+          <p className="hh-domain-consultation-disclaimer">{t.consultationNote}</p>
         </div>
       )}
     </section>}
