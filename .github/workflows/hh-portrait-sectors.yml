@@ -1,0 +1,31 @@
+name: Portrait four-sector focused verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/test-explorer.module.css'
+      - 'lib/assessments/portrait-sectors.js'
+      - 'tests/portrait-sectors.test.mjs'
+      - 'tests/portrait-rays-responsive.test.mjs'
+      - 'scripts/verify-app-r1.mjs'
+      - '.github/workflows/hh-portrait-sectors.yml'
+permissions:
+  contents: read
+jobs:
+  portrait:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Four measured sectors, missing-score math, button and responsive contracts
+        run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs
+      - name: TypeScript and JSX build check
+        run: npm run build
+      - run: npx --no-install tsc --noEmit
