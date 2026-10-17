@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import Link from "next/link";
@@ -173,7 +174,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
             <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
           </aside>
         </div>
-        <div className={styles.photo}><Image src={t.image} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
+        <div className={styles.photo}><Image src={cardArtworkUrl(t.image, "feature")} unoptimized={hasCardArtwork(t.image)} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
       </section>
       <ServiceVideoShowcase topic={kind === "dao" ? "overview" : kind} locale={locale} id="service-video" />
       <section className={styles.outcomes} aria-labelledby="core-service-process-heading">
