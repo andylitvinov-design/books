@@ -71,7 +71,7 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('Profile, Tests, Reports, Courses and Practice share one five-button account navigation', () => {
+test('five private Cabinet tabs share menus while mobile adds a sixth public Home shortcut', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const navStart = workspace.indexOf('const nav = [')
@@ -98,6 +98,8 @@ test('Profile, Tests, Reports, Courses and Practice share one five-button accoun
   assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
   assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
   assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
-  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
+  assert.match(mobile,/className="hh-mobile-app-nav-home"/)
+  assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important;/)
 })
 
