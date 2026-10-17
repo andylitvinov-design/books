@@ -247,60 +247,90 @@ test('compact account browser proof rejects public variant, missing search and p
   }
 })
 
-function collectionChipHarness(locale, fault = null) {
+function collectionChipHarness(locale, fault = null, width = 390) {
   const react = hooks(), { SimpleTestPicker } = compile(pickerSource, react, modules)
   const catalogEntries = explorerModule.buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
   const collections = availableTestCollections(catalogEntries)
-  const tree = SimpleTestPicker({ locale, authenticated: false, focus: [], recommendations: [], activeBattery: [], matchCount: 0, depth: 'balanced', maxMinutes: 0, catalogEntries })
-  const root = nodes(tree).find(node => node.props['data-test-topic-collections'])
-  const heading = nodes(root).find(node => node.type === 'h2')
-  const cards = nodes(root).filter(node => node.props['data-test-collection'])
   const rawText = node => node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(rawText).join('') : rawText(node.props.children)
-  if (fault === 'missingHeading') heading.type = 'p'
-  if (fault === 'hiddenHeading') heading.props['aria-hidden'] = true
-  if (fault === 'wrongBinding') root.props['aria-labelledby'] = 'wrong-heading'
-  if (fault === 'wrongName') cards[0].props['aria-label'] = 'Stress only'
-  if (fault === 'wrongCount') nodes(cards[0]).find(node => node.props.className === 'curatedCardBottom').props.children[0].props.children = 999
-  if (fault === 'wrongTitle') nodes(cards[0]).find(node => node.type === 'strong').props.children = 'Incorrect title'
-  if (fault === 'description') cards[0].props.children.push(jsx('small', { children: 'Removed description' }))
-  if (fault === 'missingCard') cards[0].props['data-test-collection'] = undefined
-  const locator = values => ({
-    values,
-    nth(index) { return locator(values.slice(index, index + 1)) },
+  let root, heading, clicks = 0
+  const render = () => {
+    react.reset()
+    const tree = SimpleTestPicker({ locale, authenticated: false, focus: [], recommendations: [], activeBattery: [], matchCount: 0, depth: 'balanced', maxMinutes: 0, catalogEntries })
+    root = nodes(tree).find(node => node.props['data-test-topic-collections'])
+    heading = nodes(root).find(node => node.type === 'h2')
+    const cards = nodes(root).filter(node => node.props['data-test-collection'])
+    const expanded = root.props['data-expanded'] === 'true'
+    const collapsedCount = width <= 760 ? 4 : 8
+    // Match accepted CSS: display:none removes a card and its descendants from
+    // the accessibility tree; the offscreen heading remains accessible.
+    for (const [index, card] of cards.entries()) for (const node of nodes(card)) node.cssHidden = !expanded && index >= collapsedCount
+    if (fault === 'missingHeading') heading.type = 'p'
+    if (fault === 'hiddenHeading') heading.props['aria-hidden'] = true
+    if (fault === 'wrongBinding') root.props['aria-labelledby'] = 'wrong-heading'
+    if (fault === 'wrongName') cards[0].props['aria-label'] = 'Stress only'
+    if (fault === 'wrongHiddenName') cards.at(-1).props['aria-label'] = 'Hidden incorrect source label'
+    if (fault === 'wrongCount') nodes(cards[0]).find(node => node.props.className === 'curatedCardBottom').props.children[0].props.children = 999
+    if (fault === 'wrongTitle') nodes(cards[0]).find(node => node.type === 'strong').props.children = 'Incorrect title'
+    if (fault === 'description') cards[0].props.children.push(jsx('small', { children: 'Removed description' }))
+    if (fault === 'missingCard') cards[0].props['data-test-collection'] = undefined
+    if (fault === 'expandedHidden' && expanded) for (const node of nodes(cards.at(-1))) node.cssHidden = true
+    if (fault === 'expandedInaccessible' && expanded) cards.at(-1).props['aria-hidden'] = true
+    if (fault === 'wrongCollapsedOrder' && !expanded) {
+      for (const node of nodes(cards[0])) node.cssHidden = true
+      for (const node of nodes(cards.at(-1))) node.cssHidden = false
+    }
+    return root
+  }
+  const hidden = node => node.cssHidden || node.props['aria-hidden'] === true || node.props['aria-hidden'] === 'true'
+  const locator = query => ({
+    list: query,
+    nth(index) { return locator(() => query().slice(index, index + 1)) },
     locator(selector) {
-      return locator(values.flatMap(nodes).flatMap(node => {
-        if (selector === '[data-test-collection]') return node.props['data-test-collection'] ? [node] : []
+      return locator(() => query().flatMap(nodes).flatMap(node => {
+        if (selector === '[data-test-collection]' || selector === '[data-test-collection]:visible') return node.props['data-test-collection'] && (!selector.endsWith(':visible') || !node.cssHidden) ? [node] : []
+        if (selector === 'button[aria-controls="hh-test-curated-grid"]') return node.type === 'button' && node.props['aria-controls'] === 'hh-test-curated-grid' ? [node] : []
         if (selector === 'strong' || selector === 'small') return node.type === selector ? [node] : []
         assert.equal(selector, 'span[aria-hidden="true"] > span')
         return node.type === 'span' && node.props['aria-hidden'] === 'true' ? [].concat(node.props.children).filter(child => child?.type === 'span') : []
       }))
     },
     getByRole(role, options) {
-      assert.equal(role, 'heading'); assert.deepEqual(options, { name: collections.length && heading.props.children, level: 2, exact: true })
-      return locator(values.flatMap(nodes).filter(node => node.type === 'h2' && !node.props['aria-hidden']))
+      assert.equal(role, 'heading'); assert.equal(options.level, 2); assert.equal(options.exact, true)
+      return locator(() => query().flatMap(nodes).filter(node => node.type === 'h2' && !hidden(node) && accessibleText(node) === options.name))
+    },
+    async click() {
+      const values = query(); assert.equal(values.length, 1); assert.ok(!hidden(values[0]))
+      assert.equal(values[0].props['aria-controls'], 'hh-test-curated-grid')
+      clicks++
+      if (fault !== 'blockedExpansion' && !(fault === 'blockedCollapse' && clicks > 1)) values[0].props.onClick()
     },
   })
   const expect = value => ({
-    async toHaveCount(count) { assert.equal(value.values.length, count) },
-    async toBeVisible() { assert.equal(value.values.length, 1); assert.equal(value.values[0], root, 'Only the visible chip section, not its screen-reader heading, needs visual presence') },
-    async toHaveAttribute(name, expected) { assert.equal(value.values.length, 1); assert.equal(value.values[0].props[name], expected) },
-    async toHaveText(expected) { assert.equal(value.values.length, 1); assert.equal(rawText(value.values[0]), expected) },
+    async toHaveCount(count) { assert.equal(value.list().length, count) },
+    async toBeVisible() { const values = value.list(); assert.equal(values.length, 1); assert.ok(!values[0].cssHidden) },
+    async toBeHidden() { const values = value.list(); assert.equal(values.length, 1); assert.equal(values[0].cssHidden, true) },
+    async toHaveAttribute(name, expected) { const values = value.list(); assert.equal(values.length, 1); assert.equal(String(values[0].props[name]), expected) },
+    async toHaveText(expected) { const values = value.list(); assert.equal(values.length, 1); assert.equal(rawText(values[0]), expected) },
     async toHaveAccessibleName(expected) {
-      assert.equal(value.values.length, 1); const node = value.values[0]
-      const label = node.props['aria-label'] ?? accessibleText(nodes(root).find(item => item.props.id === node.props['aria-labelledby']))
+      const values = value.list(); assert.equal(values.length, 1); const node = values[0]
+      const label = hidden(node) ? '' : node.props['aria-label'] ?? (node.props['aria-labelledby'] ? accessibleText(nodes(root).find(item => item.props.id === node.props['aria-labelledby'])) : accessibleText(node))
       assert.equal(label, expected)
     },
   })
-  return { root: locator([root]), expect, collections, heading }
+  return { root: locator(() => [render()]), expect, collections, width, heading: () => { render(); return heading }, clicks: () => clicks }
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' compact collection chips retain source counts, visible names and complete accessible labels', async () => {
-  const h = collectionChipHarness(locale)
-  await assertPublicCollectionChips(h.root, h.expect, locale, h.collections)
-  assert.equal(h.heading.props.className, 'curatedSrOnly')
+for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 1280]) test(locale + ' collection disclosure preserves every source chip and verifies visible accessibility at ' + width + 'px', async () => {
+  const h = collectionChipHarness(locale, null, width)
+  const hidden = h.root.locator('[data-test-collection]').nth(width <= 760 ? 4 : 8)
+  await assert.rejects(h.expect(hidden).toHaveAccessibleName('A CSS-hidden chip cannot expose its aria-label'))
+  await h.expect(hidden).toHaveAccessibleName('')
+  await assertPublicCollectionChips(h.root, h.expect, locale, h.collections, h.width)
+  assert.equal(h.heading().props.className, 'curatedSrOnly')
+  assert.equal(h.clicks(), 2, 'Real expansion and collapse handlers must both run')
 })
-for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongCount', 'wrongTitle', 'description', 'missingCard']) test('compact collection proof rejects ' + fault, async () => {
+for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongHiddenName', 'wrongCount', 'wrongTitle', 'description', 'missingCard', 'expandedHidden', 'expandedInaccessible', 'wrongCollapsedOrder', 'blockedExpansion', 'blockedCollapse']) test('compact collection proof rejects ' + fault, async () => {
   const h = collectionChipHarness('en', fault)
-  await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections))
+  await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections, h.width))
 })
 test('collection heading stays accessible offscreen; visible chip rows and real interaction checks remain strict', () => {
   const css = read('components/app/simple-test-picker.module.css')
@@ -311,6 +341,6 @@ test('collection heading stays accessible offscreen; visible chip rows and real 
   assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
   assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
-  assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections\)/)
+  assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'allowed.has(key)', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
 })

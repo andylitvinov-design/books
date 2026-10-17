@@ -31,9 +31,12 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
   await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'tests')
 }
 
-export async function assertPublicCollectionChips(root, expect, locale, collections) {
+export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
+  assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
+  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
   await expect(root).toBeVisible()
+  await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
   await expect(root).toHaveAccessibleName(copy.collections)
   const heading = root.getByRole('heading', { name: copy.collections, level: 2, exact: true })
@@ -41,6 +44,8 @@ export async function assertPublicCollectionChips(root, expect, locale, collecti
   await expect(heading).toHaveAttribute('id', 'hh-test-curated-heading')
   const cards = root.locator('[data-test-collection]')
   await expect(cards).toHaveCount(collections.length)
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collapsedCount)
+  const names = []
   for (const [index, collection] of collections.entries()) {
     const card = cards.nth(index)
     const count = collection.count
@@ -48,37 +53,49 @@ export async function assertPublicCollectionChips(root, expect, locale, collecti
       ? count % 10 === 1 && count % 100 !== 11 ? 'тест' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'теста' : 'тестов'
       : locale === 'es' ? count === 1 ? 'prueba' : 'pruebas' : count === 1 ? 'test' : 'tests'
     await expect(card).toHaveAttribute('data-test-collection', collection.id)
-    await expect(card).toHaveAccessibleName(`${collection.title[locale]}. ${count} ${unit}. ${copy.browse}`)
+    const name = `${collection.title[locale]}. ${count} ${unit}. ${copy.browse}`
+    names.push(name)
+    // CSS-collapsed cards retain source attributes but have no accessible name.
+    await expect(card).toHaveAttribute('aria-label', name)
+    if (index < collapsedCount) {
+      await expect(card).toBeVisible()
+      await expect(card).toHaveAccessibleName(name)
+    } else await expect(card).toBeHidden()
     await expect(card.locator('strong')).toHaveText(collection.title[locale])
     await expect(card.locator('span[aria-hidden="true"] > span')).toHaveText(String(count))
     await expect(card.locator('small')).toHaveCount(0)
   }
+  const more = root.locator('button[aria-controls="hh-test-curated-grid"]')
+  await expect(more).toHaveCount(1)
+  await expect(more).toHaveAccessibleName(copy.more)
+  await expect(more).toHaveAttribute('aria-expanded', 'false')
+  await more.click()
+  await expect(root).toHaveAttribute('data-expanded', 'true')
+  await expect(more).toHaveAccessibleName(copy.less)
+  await expect(more).toHaveAttribute('aria-expanded', 'true')
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collections.length)
+  for (const [index, name] of names.entries()) {
+    await expect(cards.nth(index)).toBeVisible()
+    await expect(cards.nth(index)).toHaveAccessibleName(name)
+  }
+  await more.click()
+  await expect(root).toHaveAttribute('data-expanded', 'false')
+  await expect(more).toHaveAccessibleName(copy.more)
+  await expect(more).toHaveAttribute('aria-expanded', 'false')
+  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collapsedCount)
 }
 
 // These controls only filter real, cleared catalog entries. The synthetic page
 // never starts a questionnaire, authenticates, or writes an account while browsing.
 export async function exercisePublicCollections(page, expect, locale) {
-  const copy = COPY[locale]
   const picker = page.locator('[data-prelogin-test-picker]')
   const root = picker.locator('[data-test-topic-collections]')
   const entries = buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
   const collections = availableTestCollections(entries)
-  const cards = root.locator('[data-test-collection]')
   await expect(root).toHaveCount(1)
-  await assertPublicCollectionChips(root, expect, locale, collections)
-  await expect(root).toHaveAttribute('data-expanded', 'false')
-  await expect(cards).toHaveCount(collections.length)
   const width = await page.evaluate(() => innerWidth)
-  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(Math.min(width <= 760 ? 4 : 8, collections.length))
+  await assertPublicCollectionChips(root, expect, locale, collections, width)
   const more = root.locator('button[aria-controls="hh-test-curated-grid"]')
-  await expect(more).toHaveAccessibleName(copy.more)
-  await expect(more).toHaveAttribute('aria-expanded', 'false')
-  await more.click()
-  await expect(more).toHaveAccessibleName(copy.less)
-  await expect(more).toHaveAttribute('aria-expanded', 'true')
-  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collections.length)
-  await more.click()
-  await expect(root.locator('[data-test-collection]:visible')).toHaveCount(Math.min(width <= 760 ? 4 : 8, collections.length))
 
   const initial = await readSelection(picker)
   const manual = picker.locator('[data-test-match] input[type="checkbox"]:not(:checked)').first()

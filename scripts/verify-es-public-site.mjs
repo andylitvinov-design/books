@@ -68,8 +68,21 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog).toHaveCount(1);
   await expect(catalog).toHaveAttribute('lang', 'es');
   await expect(catalog.getByRole('heading', { level: 1, name: 'Cursos de IA gratuitos', exact: true })).toBeVisible();
-  const start = catalog.getByRole('link', { name: 'Empezar gratis', exact: true });
+  // The header's free-start action and the course hero intentionally share a label.
+  // Scope each contract; the direct header action is hidden at compact widths.
+  const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
+  await expect(freeStart).toHaveCount(1);
+  await expect(freeStart).toHaveText('Empezar gratis');
+  await expect(freeStart).toHaveAttribute('href', '/es#free-start');
+  if (page.viewportSize().width > 1140) {
+    await expect(freeStart).toBeVisible();
+    await expect(freeStart).toHaveAccessibleName('Empezar gratis');
+  } else await expect(freeStart).toBeHidden();
+  const hero = catalog.locator('section[aria-labelledby="courses-title"]');
+  await expect(hero).toHaveCount(1);
+  const start = hero.getByRole('link', { name: 'Empezar gratis', exact: true });
   await expect(start).toHaveCount(1);
+  await expect(start).toBeVisible();
   await expect(start).toHaveAttribute('href', '/en/app/course?program=stress');
   await expect(catalog.locator('[data-course-programme]')).toHaveCount(1);
   const stress = catalog.locator('[data-course-programme="stress"]');
