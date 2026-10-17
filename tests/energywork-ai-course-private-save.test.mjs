@@ -46,6 +46,11 @@ test('private answers follow checked types and cannot become arbitrary JSON',()=
   for(const val of ['-1','11','05','no','999'])assert.equal(energyworkAnswerValid('presence-03',val),false)
   for(const val of ['pause','adapt','ask'])assert.equal(energyworkAnswerValid('boundaries-02',val),true)
   assert.equal(energyworkAnswerValid('boundaries-02','force'),false)
+  for (const id of ['flight-03','presence-02','intention-04','boundaries-03','ygg-03','tan-03','kun-03']) {
+    assert.equal(energyworkAnswerValid(id,'tried'),true)
+    assert.equal(energyworkAnswerValid(id,'skipped'),true)
+    assert.equal(energyworkAnswerValid(id,'pause'),false)
+  }
 })
 
 test('encrypted owner-only DB includes restricted RLS policies and no public grants',()=>{
@@ -88,5 +93,8 @@ test('client only continues after a successful save, supports retry and print-to
   assert.match(learner,/onClick=\{\(\) => window\.print\(\)\}/)
   assert.match(learner,/window\.confirm\(t\.resetConfirm\)/)
   assert.match(learner,/dirtyRef\.current/)
+  assert.match(learner,/function PracticeTimer/)
+  assert.match(learner,/window\.setInterval/)
+  assert.match(learner,/setRunning\(false\)/)
   assert.doesNotMatch(learner,/(?:localStorage|sessionStorage)\s*[.\[]/)
 })
