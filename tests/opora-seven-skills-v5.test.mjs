@@ -88,3 +88,18 @@ test('V5 server/client route only applies to new AS2 cycles, not already running
  assert.match(passport,/ПТСР/)
  assert.match(passport,/AS4/)
 })
+
+test('V5 practice screens omit visible Skip response buttons; saved legacy routes remain supported',()=>{
+ const player=read('components/app/course-slide-player.jsx')
+ assert.match(player,/\{!isSkillV5&&<button type="button" className=\{styles\.welcomeSkip\}/)
+ assert.match(player,/\{!isSkillV5&&\(\['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'\]/)
+ assert.match(player,/\.\.\.\(!isSkillV5\?\[\['skip',learning\.practiceSkip\]\]:\[\]\)/)
+ const feedbackGate=player.match(/\.\.\.\(!isSkillV5\?\[\['skip',words\.preferNot\]\]:\[\]\)/g)||[]
+ assert.equal(feedbackGate.length,3)
+ // Older lesson versions still understand previously saved 'skip' values.
+ assert.match(player,/session\?\.signals\?\.comfort \|\| 'skip'/)
+ assert.match(player,/session\?\.signals\?\.practiceAttempt \|\| ''/)
+ // The normal footer action does not gate continuation on any optional answer.
+ assert.match(player,/index === slides\.length - 1 \? \(\) => void finishLesson\(\)/)
+ assert.match(player,/isSkillV5\?'8–12'/)
+})
