@@ -214,7 +214,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <h4 className={styles.levelTitle}>{scoreLevelGuide.title}: {scoreLevelGuide.current.label}</h4>
         <p className={styles.levelLead} data-current-score-position>{scoreLevelGuide.current.note}</p>
         <p className={styles.levelOverview}>{scoreLevelGuide.overview}</p>
-        <div className={styles.levelMeter} aria-hidden="true">
+        <div className={styles.levelMeter} data-level-direction={model?.orientation || 'neutral'} aria-hidden="true">
           {scoreLevelGuide.bands.map(band => <span key={band.code}
             data-current-position={band.current || undefined} />)}
         </div>
