@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { isPublicTestDiscoveryPath } from "@/lib/site-navigation-model";
 import styles from "./sitewide-antistress-banner.module.css";
 
 type Locale = "ru" | "en" | "es";
@@ -53,7 +52,7 @@ const courseCopy = {
 const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
-  (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !isPublicTestDiscoveryPath(pathname)) ||
+  (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
 
