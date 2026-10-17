@@ -696,3 +696,31 @@
   .hh-app .hh-practice-top-cta-quota strong{font-size:11px}
   .hh-app .hh-practice-top-cta-quota span{font-size:10px}
 }
+
+
+/* Services tab: return to My Practice without the oversized dashboard above the finder. */
+.hh-app .hh-practice-services-breadcrumb {
+  margin:0 0 10px;padding:0 2px;min-height:26px;
+}
+.hh-app .hh-practice-services-breadcrumb button {
+  border:0;background:transparent;padding:4px 0;
+  color:#755f50;font:680 12px/1.4 system-ui,sans-serif;
+  cursor:pointer;
+}
+.hh-app #hh-practice-services-view {scroll-margin-top:88px}
+.hh-app #hh-practice-services-view > .hh-practice-fee-notice {
+  margin:13px 0 9px;border-left:3px solid #812d49;border-radius:0 11px 11px 0;
+}
+.hh-app .hh-practice-services-back {
+  display:inline-flex;align-items:center;min-height:40px;
+  padding:7px 4px;border:0;background:none;color:#376c61;
+  font:730 12px/1.4 system-ui,sans-serif;cursor:pointer;
+}
+.hh-app .hh-practice-services-breadcrumb button:focus-visible,
+.hh-app .hh-practice-services-back:focus-visible {
+  outline:3px solid #247a68;outline-offset:3px;border-radius:4px;
+}
+@media(max-width:600px) {
+  .hh-app .hh-practice-services-breadcrumb {margin-bottom:7px}
+  .hh-app #hh-practice-services-view {scroll-margin-top:74px}
+}
