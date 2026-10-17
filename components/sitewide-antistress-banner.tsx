@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
 import styles from "./sitewide-antistress-banner.module.css";
@@ -140,7 +141,7 @@ export function TestSelectionCourseBanner({ locale, showReview = false }: { loca
         <aside className={styles.reviewCard} data-tests-review-banner aria-label={review.eyebrow}>
           <div className={styles.courseCardInner}>
             <div className={styles.courseVisual}>
-              <Image src="/images/holistic-house/andy-about.png" alt={review.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt={review.photoAlt} fill sizes="(max-width: 680px) 88px, 136px" loading="lazy" />
             </div>
             <div className={styles.courseContent}>
               <p className={styles.courseEyebrow}><Sparkles size={15} aria-hidden="true" />{review.eyebrow}</p>
