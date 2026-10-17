@@ -19,8 +19,8 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   const aboutPos = page.indexOf("<ServicesAboutEntry locale={locale as Locale} />");
   assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && aboutPos > cardPos);
   assert.match(page, /<PublicSiteHeader locale=\{locale\} showAssessmentStrip=\{false\} \/>/);
-  assert.match(sharedHeader, /showAssessmentStrip = true/);
-  assert.match(sharedHeader, /showAssessmentStrip && <MindBodyMonitorStrip/);
+  assert.match(sharedHeader, /showAssessmentStrip\?: boolean/);
+  assert.doesNotMatch(sharedHeader, /<MindBodyMonitorStrip/, 'retired promotional strip must not reappear');
   assert.match(greenHero, /<StaticPortrait/);
   assert.match(greenHero, /andy-about\.png/);
   assert.match(greenHero, /className=\{styles\.visual\}/);
