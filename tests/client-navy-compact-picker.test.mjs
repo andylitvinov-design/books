@@ -31,7 +31,7 @@ test('each Take Test button starts only that eligible test through the guest run
   assert.match(publicFlow, /guestStartable\(entries\)/)
   assert.match(publicFlow, /onGuestStart\(entries\)/)
   assert.doesNotMatch(publicFlow, /auth\/start/)
-  assert.match(picker, /data-test-course-switch/)
+  assert.doesNotMatch(picker, /data-test-course-switch|data-guest-start-notice/)
   assert.match(picker, /onClick=\{journeyMode === 'course' \? onStartCourse : onStart\}/)
 })
 
