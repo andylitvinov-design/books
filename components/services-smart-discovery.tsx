@@ -11,6 +11,7 @@ import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesDiscoveryFacets } from "@/lib/practitioners/discovery-intent.js";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ServicesFreeRecommendations } from "@/components/services-free-recommendations";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
 
@@ -564,6 +565,8 @@ export function ServicesSmartDiscovery({
         </div>}
         <details className={styles.why}><summary>{t.expand}<ChevronDown size={16} aria-hidden="true"/></summary><p>{t.help}</p></details>
       </div>}
+
+      <ServicesFreeRecommendations locale={locale} />
 
       <div className={styles.personalDivider}>
         <span>{t.personal}</span><a href="#solutions">{t.personalAction}<ArrowRight size={16} aria-hidden="true"/></a>
