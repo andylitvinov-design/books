@@ -45,3 +45,22 @@
 /* Origin and limits of psychological/scientific evidence, separate from score training. */
 .purpose .methodology{margin-top:10px!important;padding-top:9px;border-top:1px solid #e8e2d9;color:#63594f;font-size:12px;line-height:1.55}
 .purpose .methodology strong{font-size:12px}
+
+/* Bach original weighted matches use within-report ranking, never clinical severity. */
+.bachScaleGuide{max-width:100%;min-width:0;margin:12px 0 15px;padding:13px 14px;
+  border:1px solid #d5e1df;border-radius:14px;background:#fafcfa;overflow-wrap:anywhere}
+.bachScaleGuide h3{font:780 1rem/1.35 system-ui,sans-serif;color:#264c5d;margin:0 0 7px}
+.bachScaleGuide p{color:#456267;font-size:.84rem;line-height:1.49;margin:0 0 10px}
+.bachRankLegend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;
+  max-width:100%;min-width:0}
+.bachRankLegend span{display:flex;flex-direction:column;gap:3px;min-width:0;
+  border-radius:10px;border:1px solid #dce4e2;padding:8px;color:#587175;
+  background:white;font:500 .76rem/1.4 system-ui,sans-serif;overflow-wrap:anywhere}
+.bachRankLegend strong{color:#24595b;font-size:.78rem;line-height:1.35}
+.bachScaleGuide small{display:block;margin-top:10px;font:.73rem/1.46 system-ui,sans-serif;color:#6b7877}
+.bachSelectedGroup{font:.8rem/1.45 system-ui,sans-serif!important;color:#51676b;
+  padding:7px 9px;border-left:3px solid #867080;background:#f8f4f7;
+  border-radius:7px;margin:5px 0!important;overflow-wrap:anywhere}
+.bachSelectedGroup strong{color:#63475a;font-weight:780}
+@media(max-width:570px){.bachScaleGuide{padding:11px 10px}.bachRankLegend{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:360px){.bachRankLegend{grid-template-columns:minmax(0,1fr)}}
