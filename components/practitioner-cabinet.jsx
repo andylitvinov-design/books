@@ -17,6 +17,7 @@ const copy = {
     materials:'Материалы',materialsText:'Библиотека фото, видео и YouTube-ссылок для выбора в отчетах клиентов.',
     appRequests:'Заявки из приложения',appRequestsText:'Запросы консультаций и только те резюме, которыми пользователь решил поделиться.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
+    acquisition:'Кампании и обращения',acquisitionText:'Счётчики услуг, статус измерений и безопасные ссылки кампаний.',
     seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
   },
   en: {
@@ -29,6 +30,7 @@ const copy = {
     materials:'Materials',materialsText:'Reusable photo, video and YouTube library for attaching to client reports.',
     appRequests:'App consultation requests',appRequestsText:'Requests and only the summaries users explicitly chose to share.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
+    acquisition:'Campaigns & enquiries',acquisitionText:'Service counters, measurement coverage and safe campaign links.',
     seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
   },
 }
@@ -42,6 +44,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
     return()=>window.removeEventListener('holistic-house-ui-locale',updateLocale)
   },[])
   const actions=[
+    {href:'/admin/acquisition',icon:SearchCheck,title:text.acquisition,body:text.acquisitionText},
     {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},

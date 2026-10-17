@@ -11,6 +11,11 @@ on:
       - 'tests/admin-seo-recommendations.test.mjs'
       - 'lib/seo/actionable-recommendations.mjs'
       - 'components/admin-seo-recommendations.jsx'
+      - 'app/admin/acquisition/**'
+      - 'lib/acquisition/**'
+      - 'components/admin-acquisition-links.jsx'
+      - 'tests/acquisition-report.test.mjs'
+      - 'scripts/verify-acquisition-admin.mjs'
       - '.github/workflows/admin-seo-dashboard.yml'
   push:
     branches: ['codex/public-book-library']
@@ -24,6 +29,11 @@ on:
       - 'tests/admin-seo-recommendations.test.mjs'
       - 'lib/seo/actionable-recommendations.mjs'
       - 'components/admin-seo-recommendations.jsx'
+      - 'app/admin/acquisition/**'
+      - 'lib/acquisition/**'
+      - 'components/admin-acquisition-links.jsx'
+      - 'tests/acquisition-report.test.mjs'
+      - 'scripts/verify-acquisition-admin.mjs'
       - '.github/workflows/admin-seo-dashboard.yml'
 permissions:
   contents: read
@@ -47,3 +57,17 @@ jobs:
         run: npx tsc --noEmit
       - name: Production build
         run: npm run build
+      - name: Install isolated acquisition browser tools
+        run: |
+          npm install --prefix /tmp/acquisition-browser --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          ln -s /tmp/acquisition-browser/node_modules/@playwright node_modules/@playwright
+          /tmp/acquisition-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify isolated signed-admin acquisition flow
+        run: node scripts/verify-acquisition-admin.mjs
+      - name: Upload isolated acquisition evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acquisition-admin-isolated-${{ github.sha }}
+          path: output/acquisition-admin-isolated/
+          retention-days: 7
