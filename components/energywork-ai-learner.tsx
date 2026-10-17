@@ -93,9 +93,12 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
     "Course: " + ENERGYWORK_COURSE_ID + " · " + ENERGYWORK_COURSE_VERSION,
     chosen ? chosen.title[locale] : "",
     "",
-    ...slides.flatMap((slide) => answers[slide.id]?.trim()
-      ? [slide.title[locale], slide.question?.prompt[locale] || "", answers[slide.id], ""]
-      : []),
+    ...slides.flatMap((slide) => {
+      const answer = answers[slide.id];
+      if (!answer?.trim()) return [];
+      const choice = slide.question?.options?.find((option) => option.id === answer);
+      return [slide.title[locale], slide.question?.prompt[locale] || "", choice?.label[locale] ?? answer, ""];
+    }),
   ];
   return lines.filter((value) => value !== undefined).join("\n").trim();
 }
@@ -109,7 +112,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const slides = useMemo(() => energyworkSlides(path), [path]);
-  const slide = slides[index] ?? slides[slides.length - 1];
+  const slide = slides[index] ?? slides[0]!;
   const pathData = energyworkPathChoices.find((option) => option.id === path);
   const total = energyworkSlides("yggdrasil").length; // All branches have equal length.
   const completed = slide.kind === "finish";
