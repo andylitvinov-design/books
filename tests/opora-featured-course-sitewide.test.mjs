@@ -20,7 +20,7 @@ test('public course enrollments focus on Anti-Stress without deleting old progra
   assert.match(ui, /applyProgramIntake\(started,programme,epoch,entryConcerns\)/)
 })
 
-test('restored navy and burgundy sitewide banner stays distinct from contextual course and review offers', () => {
+test('original navy and burgundy free-review banner stays distinct from contextual course offers', () => {
   const bar = read('components/sitewide-antistress-banner.tsx')
   const style = read('components/sitewide-antistress-banner.module.css')
   const layout = read('app/layout.tsx')
@@ -32,7 +32,8 @@ test('restored navy and burgundy sitewide banner stays distinct from contextual 
   assert.match(layout, /<SitewideAntistressBanner initialLocale=\{lang\} \/>/)
   assert.match(bar, /export function SitewideAntistressBanner/)
   assert.match(bar, /data-sitewide-personal-review-banner/)
-  assert.match(bar, /services#consultation/)
+  assert.ok(bar.includes('className={styles.cta} href={`/${locale}/services/free-situation-review`}'))
+  assert.match(bar, /Get free review/)
   assert.match(style, /\.ribbon\{/)
   assert.ok(style.includes('background:#102849'), 'original navy background')
   assert.ok(style.includes('background:#922f51'), 'original burgundy CTA')
