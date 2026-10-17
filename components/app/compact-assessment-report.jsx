@@ -3,7 +3,6 @@ import { FreeCourseBanner } from './free-course-banner'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
-import { SITUATION_OBSERVATION } from '@/lib/assessments/situational-score-context'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
 
@@ -114,10 +113,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null
   const scoreLevelGuide = model?.scoreLevelGuide || null
-  const situationObservation = result?.definitionKey?.startsWith('hh-')
-    ? SITUATION_OBSERVATION[section.key]?.[ru ? 'ru' : 'en'] ||
-      SITUATION_OBSERVATION[result.definitionKey]?.[ru ? 'ru' : 'en'] || null
-    : null
+  const situationObservation = model?.observation || null
   const hasPlainLanguageGuide = Boolean(
     (scoreLevelGuide || anchor) && (result?.definitionKey?.startsWith('hh-') || result?.definitionKey?.startsWith('cbi-'))
   )
