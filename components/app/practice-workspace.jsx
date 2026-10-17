@@ -217,7 +217,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     add:'Add your service',limit:'10-service limit reached',
   }
   const hasProfile=Boolean(p?.profile?.displayName||p?.draftProfile?.displayName)
-  const profileLive=Boolean(p?.slug&&p.status==='approved')
+  const profileLive=Boolean(p?.slug&&p?.profile?.displayName&&['approved','submitted','changes_requested'].includes(p.status))
   const setupSteps=[
     {name:ru?'Заполните профиль':'Complete your profile',hint:ru?'Расскажите о себе':'Introduce your work',done:hasProfile},
     {name:ru?'Добавьте первую услугу':'Add your first service',hint:ru?'Можно начать с бесплатной':'A free introduction works well',done:services.length>0},
