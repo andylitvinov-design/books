@@ -1944,7 +1944,8 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
   .cabinet-landing-shell .cabinet-guest-runner .cabinet-answer-list button { animation:none; transition:none; }
 }
 
-/* Keep mobile navigation out of active guest questionnaires, consent and results. */
+/* Preserve distraction-free questionnaire execution while the public top bar is restored. */
+body:has(.client-entry-shell .cabinet-guest-tests) [data-sitewide-personal-review-banner],
 body:has(.client-entry-shell .cabinet-guest-tests) .ia222-bottom-navigation {
   display: none !important;
 }
