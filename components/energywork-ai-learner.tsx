@@ -30,7 +30,7 @@ type SaveCommand = {
 
 const copy = {
   en: {
-    shortTitle: "Principles of Energywork",
+    shortTitle: "Reiki Practitioner",
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
@@ -48,6 +48,9 @@ const copy = {
     value: "Your choice",
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
+    welcomeOffer: "3 possible Level 1 initiations",
+    welcomeRequirement: "For each system: watch the course videos, complete the tasks and answer the questions.",
+    welcomeTeacher: "When the tasks are complete, you can request each initiation. Andrey conducts it separately by arrangement; finishing the course does not grant it automatically.",
     pathway: "Choose one system to continue",
     picked: "Selected",
     finish: "Course completed",
@@ -77,7 +80,7 @@ const copy = {
     myCourses: "My Courses",
   },
   ru: {
-    shortTitle: "Основы энергетики",
+    shortTitle: "Практик Рейки",
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
@@ -95,6 +98,9 @@ const copy = {
     value: "Ваш выбор",
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
+    welcomeOffer: "3 возможные инициации первой ступени",
+    welcomeRequirement: "По каждой системе: посмотрите учебные видео, выполните задания и ответьте на вопросы.",
+    welcomeTeacher: "После выполнения заданий можно запросить каждую инициацию. Андрей проводит её отдельно, по согласованию; завершение курса не заменяет инициацию.",
     pathway: "Выберите одно направление",
     picked: "Выбрано",
     finish: "Курс завершён",
@@ -459,12 +465,22 @@ export function EnergyworkAiLearner({ locale }: Props) {
           </div>
         </aside>
 
-        <section className={styles.slide} key={slide.id} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.kind === "welcome" ? (
+                <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
+                  <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
+                  <ul className={styles.welcomeSystems}>
+                    {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
+                  </ul>
+                  <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
+                  <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
+                </div>
+              ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.kind === "path-choice" ? (

@@ -148,3 +148,30 @@
 .highlights { margin: 13px 0 22px; padding-left: 22px; color: #255e63; font-size: 14px; line-height: 1.65; }
 .highlights li { margin: 5px 0; overflow-wrap: anywhere; }
 @media print { .highlights, .guideNote { display: block !important; } }
+
+/* The first Reiki Practitioner slide shows the three initiation paths at a glance. */
+.welcomeReward { margin-top: 20px; border: 1px solid #cce6df; border-radius: 17px; background: linear-gradient(140deg, #ecf8f4, #f8fcfb); padding: 16px 18px; }
+.welcomeRewardTitle { margin: 0; display: flex; align-items: center; gap: 8px; color: #155e62; font-size: 16px; line-height: 1.35; font-weight: 850; }
+.welcomeRewardTitle svg { color: #a64359; flex: 0 0 auto; }
+.welcomeSystems { list-style: none; display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 11px 0 12px; }
+.welcomeSystems li { max-width: 100%; border: 1px solid #bfddd7; background: #fff; color: #1a6268; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 750; line-height: 1.25; }
+.welcomeRequirement { margin: 0; color: #2a5e62; font-size: 13px; line-height: 1.5; font-weight: 750; }
+.welcomeTeacher { margin: 7px 0 0; color: #527478; font-size: 12px; line-height: 1.45; }
+@media (max-width: 760px) {
+  .welcomeSlide { min-height: 0; }
+  .welcomeSlide .slideMain { padding: 16px 18px; gap: 12px; }
+  .welcomeSlide .eyebrow { margin-bottom: 8px; }
+  .welcomeSlide .content h1 { font-size: clamp(25px, 6.5vw, 34px); margin-bottom: 10px; }
+  .welcomeSlide .description { font-size: 14px; line-height: 1.5; }
+  .welcomeSlide .art { min-height: 88px; max-height: 108px; border-radius: 13px; }
+  .welcomeReward { margin-top: 12px; padding: 12px 13px; border-radius: 13px; }
+  .welcomeRewardTitle { font-size: 14px; }
+  .welcomeSystems { gap: 6px; margin: 9px 0; }
+  .welcomeSystems li { padding: 5px 8px; font-size: 11px; }
+  .welcomeRequirement { font-size: 12px; line-height: 1.42; }
+  .welcomeTeacher { font-size: 11px; line-height: 1.42; }
+}
+@media (max-width: 380px) {
+  .welcomeSlide .slideMain { padding: 13px 15px; }
+  .welcomeSlide .art { min-height: 68px; max-height: 80px; }
+}
