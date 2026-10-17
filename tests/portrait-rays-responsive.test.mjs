@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '../lib/assessments/test-explorer.js'
+import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.js'
 
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -41,6 +42,7 @@ function harness(locale) {
       if (name === 'next/link') return { __esModule: true, default: 'a' }
       if (name === 'next/image') return { __esModule: true, default: 'img' }
       if (name === '@/lib/assessments/test-explorer') return { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS }
+      if (name === '@/lib/assessments/portrait-ray-labels') return { layoutPortraitRayLabels }
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) }
       return require(name)
     },
