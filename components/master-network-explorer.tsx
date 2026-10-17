@@ -369,7 +369,7 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
       <div className={styles.actions}>
         <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
         <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug + "#reviews"}>{locale==="ru"?"Отзывы":locale==="es"?"Opiniones":"Reviews"} ★</Link>
-        <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
+        <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={service.slug === "remote-energy-support" ? `/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug)}` : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
           {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
         </TrackedServiceLink>
       </div>
