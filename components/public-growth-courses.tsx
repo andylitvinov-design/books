@@ -23,15 +23,15 @@ const copy = {
     stressSkills: {
       "title": "Антистресс · 7 навыков за 14 занятий",
       "kicker": "ОПОРА · АНТИСТРЕСС",
-      "intro": "Каждому навыку посвящены два занятия: знакомство с техникой и её бережная тренировка в обычной ситуации.",
+      "intro": "Неделя 1 — семь навыков по одному в день. Неделя 2 — те же семь навыков глубже и с меньшим количеством подсказок. Каждый урок ≈ 8–12 минут.",
       "skills": [
-        "Ориентироваться в настоящем и сохранять выбор",
-        "Раньше замечать признаки перегрузки",
-        "Мягко регулировать напряжение и нагрузку",
-        "Находить реальные и внутренние ресурсы",
-        "Отделять тревожные мысли от фактов",
-        "Обозначать границы и обращаться за поддержкой",
-        "Самостоятельно применять знакомые практики"
+        "Замечать первые признаки стресса",
+        "Делать паузу вместо автопилота",
+        "Выбирать ответ на тревожную мысль",
+        "Находить личную опору",
+        "Использовать опору в обычных делах",
+        "Поддерживать себя в трудный день",
+        "Самостоятельно выбирать практику"
       ],
       "cta": "Начать программу «Антистресс»",
       "safety": "Самостоятельное обучение управлению повседневным стрессом. Не терапия шоковой травмы или ПТСР и не замена помощи специалиста. Любую практику можно остановить или пропустить."
@@ -67,15 +67,15 @@ const copy = {
     stressSkills: {
       "title": "Stress Relief · 7 skills across 14 lessons",
       "kicker": "OPORA · STRESS RELIEF",
-      "intro": "Each skill is explored twice: first a gentle introduction, then practice in an ordinary, manageable situation.",
+      "intro": "Week 1: learn seven skills, one per day. Week 2: deepen the same skills with less guidance. Each lesson takes about 8–12 minutes.",
       "skills": [
-        "Orient to the present and retain choice",
-        "Notice signs of overload earlier",
-        "Regulate tension and pace gently",
-        "Find practical and inner sources of support",
-        "Separate worrying thoughts from facts",
-        "Set boundaries and ask for support",
-        "Choose familiar practices independently"
+        "Notice early stress signs",
+        "Pause instead of autopilot",
+        "Choose a response to a worrying thought",
+        "Find a personal anchor",
+        "Use the skill in daily routines",
+        "Support yourself on difficult days",
+        "Choose a suitable practice independently"
       ],
       "cta": "Start Stress Relief",
       "safety": "Self-guided education for everyday stress, not shock-trauma or PTSD treatment and not a replacement for professional care. You may stop or skip any exercise."
@@ -111,15 +111,15 @@ const copy = {
     stressSkills: {
       "title": "Menos estrés · 7 habilidades en 14 lecciones",
       "kicker": "OPORA · MENOS ESTRÉS",
-      "intro": "Cada habilidad se practica en dos lecciones: primero se conoce y después se prueba en una situación cotidiana segura.",
+      "intro": "Semana 1: aprende las siete habilidades, una por día. Semana 2: repítelas con mayor autonomía. Cada lección dura aproximadamente 8–12 minutos.",
       "skills": [
-        "Orientarte en el presente y poder elegir",
-        "Reconocer antes las señales de sobrecarga",
-        "Regular la tensión y la carga con suavidad",
-        "Encontrar apoyos reales e internos",
-        "Distinguir pensamientos inquietantes de hechos",
-        "Poner límites y pedir apoyo",
-        "Elegir prácticas conocidas con autonomía"
+        "Reconocer señales tempranas de estrés",
+        "Hacer una pausa antes de reaccionar",
+        "Elegir cómo responder a pensamientos inquietantes",
+        "Encontrar un apoyo personal",
+        "Usar el apoyo en situaciones cotidianas",
+        "Apoyarte en días difíciles",
+        "Elegir la práctica adecuada con autonomía"
       ],
       "cta": "Empezar el programa antiestrés",
       "safety": "Educación para afrontar el estrés cotidiano; no es tratamiento del trauma agudo ni del TEPT y no sustituye la ayuda profesional. Puedes detener o saltar cualquier ejercicio."
@@ -209,7 +209,7 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
           {t.stressSkills.skills.map((skill, index) => <li key={skill}>
             <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             <strong>{skill}</strong>
-            <small>{index * 2 + 1}–{index * 2 + 2} / 14</small>
+            <small>{index + 1} + {index + 8}</small>
           </li>)}
         </ol>
         <div className={styles.stressSkillsFoot}>
