@@ -56,13 +56,14 @@ test('Master Network v3: money amounts and provider state reject invalid values'
 })
 
 test('Master Network v3: filtered public catalog and actionable My Practice stay connected without activating payments', async () => {
-  const [masters,services,finder,css,practice,styles] = await Promise.all([
+  const [masters,services,finder,css,practice,styles,ownServices] = await Promise.all([
     readFile(new URL('../app/[locale]/masters/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/master-network-explorer.module.css',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-workspace.jsx',import.meta.url),'utf8'),
     readFile(new URL('../components/app/practice-dashboard.css',import.meta.url),'utf8'),
+    readFile(new URL('../components/app/my-services-dashboard.jsx',import.meta.url),'utf8'),
   ])
   assert.match(masters,/<MarketplaceMasterFinder practitioners=/)
   assert.match(services,/<MarketplaceServiceFinder services=/)
@@ -76,7 +77,10 @@ test('Master Network v3: filtered public catalog and actionable My Practice stay
   assert.match(css,/@media \(max-width:640px\)/)
   assert.match(css,/:focus-visible/)
   assert.match(practice,/hh-practice-overview/)
-  assert.match(practice,/hh-practice-service-filter/)
+  assert.match(practice,/<MyServicesDashboard /)
+  assert.match(ownServices,/filterPracticeServices/)
+  assert.match(ownServices,/aria-controls="hh-services-picker"/)
+  assert.match(ownServices,/value=\{price\}/)
   assert.match(practice,/hh-practice-fee-notice/)
   assert.match(practice,/Marketplace checkout and payouts are not yet enabled/)
   assert.match(styles,/hh-practice-overview/)
