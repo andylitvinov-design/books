@@ -136,7 +136,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
       <div className={styles.list}>
         {visible.map(item=><details key={item.id+':'+item.revision} className={styles.serviceCard}>
           <summary>
-            <span className={styles.serviceIcon}><Leaf size={21} aria-hidden="true"/></span>
+            <span className={styles.serviceIcon}>{(item.draftCopy?.photos?.[0]||item.photos?.[0])?<img src={item.draftCopy?.photos?.[0]||item.photos?.[0]} alt="" loading="lazy" />:<Leaf size={21} aria-hidden="true"/>}</span>
             <span className={styles.serviceInfo}>
               <strong>{item.localizedCopy?.[lang]?.title||item.copy?.title||item.localizedCopy?.en?.title||c.untitled}</strong>
               <small>{item.deliveryFormat==='in_person'?c.inPerson:item.deliveryFormat==='hybrid'?c.hybrid:c.online}{item.durationMinutes?' · '+item.durationMinutes+' '+c.min:''}</small>
