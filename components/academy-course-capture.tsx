@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { ArrowRight, Check, GraduationCap } from "lucide-react";
 
@@ -141,7 +142,7 @@ export function AcademyCourseCapture({ locale }: { locale: PublicLocale }) {
               key={id}
               onClick={() => setSelected(id)}
             >
-              <span className={styles.photo}><Image src={item.image} alt="" fill sizes="64px" /></span>
+              <span className={styles.photo}><Image src={cardArtworkUrl(item.image)} unoptimized={hasCardArtwork(item.image)} alt="" fill sizes="64px" /></span>
               <span className={styles.choiceCopy}>
                 <strong>{item.title}</strong>
                 <small>{c.descriptions[id]}</small>
