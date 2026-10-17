@@ -37,7 +37,7 @@ const copy = {
       benefit: "Understand the pattern · explore the deeper mechanism · find support and a realistic next step.",
       sectionsTitle: "One integrated approach · four connected stages",
       sections: [
-        { title: "01 · Situation analysis through constellations", text: "We clarify your goal and map the situation, roles, relationships and obstacles with a systemic constellation. This symbolic exploration is a working hypothesis, not proof of hidden facts." },
+        { title: "01 · Situation analysis through constellations", text: "We clarify your goal and map the situation, roles, relationships and obstacles with a systemic constellation. Systemic constellations provide working hypotheses for reflection, not proof of hidden facts." },
         { title: "02 · Hypnotherapy and guided imagery", text: "With your agreement, a gentle guided-imagery or hypnotherapy exercise explores the emotional roots of a recurring reaction, a stressed inner part or unmet need. We do not treat imagery as recovered factual memories." },
         { title: "03 · Complementary homeopathic selection", text: "Within Andrey's psycho-homeopathy model we may explore an individual homeopathic remedy and its symbolic resonance with the present state. This is optional, not an evidence-based treatment or a medical prescription; no dosage is set." },
         { title: "04 · Alchemical integration and follow-up", text: "Where appropriate we draw on archetypal work, the Dao / Wu Xing resource model or contemplative energy practices. We identify practical actions and, during continued support, review what has changed." },
