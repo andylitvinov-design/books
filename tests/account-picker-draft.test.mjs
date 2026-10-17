@@ -244,14 +244,24 @@ test('compact account copy is opt-in and leaves explicit save callbacks intact i
       return {}
     },
   })
-  for (const [locale, label] of [['en', 'Add selected tests'], ['ru', 'Добавить выбранные тесты'], ['es', 'Añadir pruebas seleccionadas']]) {
-    const p = { locale, focus: [], depth: 'balanced', maxMinutes: 0, recommendations: [{ key: 'sample', title: 'Sample', topics: [], durationMinutes: 2 }], activeBattery: [{ key: 'sample', title: 'Sample' }], matchCount: 1, onStart() {}, onStartSingle() {} }
+  for (const [locale, label, startLabel, guestLabel] of [
+    ['en', 'Add selected tests', 'Start test', 'Take test'],
+    ['ru', 'Добавить выбранные тесты', 'Начать тест', 'Пройти'],
+    ['es', 'Añadir pruebas seleccionadas', 'Iniciar prueba', 'Realizar'],
+  ]) {
+    const started = []
+    const p = { locale, focus: [], depth: 'balanced', maxMinutes: 0, recommendations: [{ key: 'sample', title: 'Sample', topics: [], durationMinutes: 2 }], activeBattery: [{ key: 'sample', title: 'Sample' }], matchCount: 1, onStart() {}, onStartSingle(entry) { started.push(entry.key) } }
     const publicTree = exported.SimpleTestPicker(p)
     assert.equal(JSON.stringify(publicTree), JSON.stringify(exported.SimpleTestPicker({ ...p, authenticated: false })))
     assert.ok(JSON.stringify(publicTree).includes(locale === 'ru' ? 'без регистрации' : locale === 'es' ? 'sin registrarte' : 'without registration'), 'public tests must not require sign-in')
     const accountTree = exported.SimpleTestPicker({ ...p, authenticated: true })
     assert.ok(!JSON.stringify(accountTree).includes('Google'))
     assert.ok(JSON.stringify(accountTree).includes(label))
+    const cardStart = elements(accountTree).find(n => n.type === 'button' && n.props?.['aria-label'] === startLabel + ': Sample')
+    assert.ok(cardStart, 'signed-in per-card button must say ' + startLabel)
+    cardStart.props.onClick()
+    assert.equal(started.at(-1), 'sample')
+    assert.ok(elements(publicTree).some(n => n.type === 'button' && n.props?.['aria-label'] === guestLabel + ': Sample'), 'guest Start test copy stays untouched')
     assert.equal(elements(accountTree).find(n => n.props?.['data-test-start-mode'] === 'tests').props.onClick, p.onStart)
   }
 })
