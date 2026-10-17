@@ -18,6 +18,7 @@ import {
 import { MONITORING_CATALOG, monitoringCatalogItem } from '../data/assessments/catalog.js'
 import { IPIP_VIA_R_COMPLETION_CATALOG } from '../data/assessments/ipip-via-r-completion-2026.js'
 import { RELATIONSHIPS_INTIMACY_KEYS } from '../data/assessments/relationships-intimacy-v1.js'
+import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import { EXPANDED_BATTERY_V3_KEYS } from '../data/assessments/expanded-battery-v3.js'
 import { EXPANDED_BATTERY_V4_KEYS } from '../data/assessments/expanded-battery-v4.js'
 import { PROFESSIONAL_BATTERY_2026_CATALOG } from '../data/assessments/professional-battery-2026.js'
@@ -104,6 +105,7 @@ test('monitoring catalog exposes the cleared active checks and keeps uncleared m
     ...IPIP_BIG_FIVE_50_CATALOG.map((item) => item.key),
     ...PERSONALITY_TYPE_CATALOG.map((item) => item.key),
     ...RELATIONSHIPS_INTIMACY_KEYS,
+    ...TANTRIC_REFLECTION_KEYS,
     ...IPIP_THREE_CATALOG.map((item) => item.key),
     ...IPIP_FIVE_CATALOG.map((item) => item.key),
     ...OPEN_PROFESSIONAL_2026_CATALOG.map((item) => item.key),
