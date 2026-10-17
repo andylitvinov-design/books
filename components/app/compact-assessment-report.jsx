@@ -100,20 +100,26 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </div>
       {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
-        <p className={styles.readingTitle}>{ru ? 'По ответам: ' : 'Based on your answers: '}{anchor.label}</p>
+        <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
         <p>{anchor.note}</p>
       </section>}
       {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
       {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
-        <h4>{ru ? 'Диапазоны и их значение' : 'Score ranges explained'}</h4>
+        <h4>{ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges'}</h4>
         <ol className={styles.rangeList}>
           {model.answerBands.map((band, index) => <li key={band.code}
-            data-active-answer-range={band.current || undefined}
+            data-active-answer-range={band.current || undefined} data-answer-level={index + 1}
             aria-current={band.current ? 'true' : undefined}>
             <span className={styles.rangeSwatch} style={{ backgroundColor: ['#b78363', '#c7a66b', '#b1ae72', '#729a87', '#397f69'][Math.min(index, 4)] }} aria-hidden="true"/>
-            <strong>{band.displayRange}</strong>
-            <span>{band.label}</span>
-            {band.current && <em>{ru ? 'Ваш диапазон' : 'Your range'}</em>}
+            <span className={styles.rangeContent}>
+              <span className={styles.rangeHeading}>
+                <strong>{band.displayRange}</strong>
+                <b>{band.levelLabel || band.label}</b>
+              </span>
+              {band.levelLabel && <small>{band.label}</small>}
+              <span className={styles.rangeNarrative}>{band.note}</span>
+              {band.current && <em>{ru ? 'Ваш диапазон' : 'Your range'}</em>}
+            </span>
           </li>)}
         </ol>
         <p className={styles.answerCaveat}>{ru
