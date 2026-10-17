@@ -4,24 +4,26 @@ import { readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('Profile is an integrated personal portrait before its four perspectives and private archive', () => {
+test('Profile leads with authorized personal reports; category details are secondary', () => {
   const profile = read('components/app/profile-domains.jsx')
   const workspace = read('components/app/app-workspace.jsx')
   const hero = profile.indexOf('<header className="hh-domain-hero">')
+  const archive = profile.indexOf('id="personal-reports"')
+  const browse = profile.indexOf('className="hh-domain-more"')
   const overview = profile.indexOf('{overviewContent}')
   const tabs = profile.indexOf('<div className="hh-domain-tabs"')
   const panel = profile.indexOf('<div role="tabpanel"')
-  const archive = profile.indexOf('id="personal-reports"')
   const support = profile.indexOf('<details className="hh-domain-support">')
   const discover = profile.indexOf('<Link className="hh-domain-services-link"')
-  assert.ok(hero >= 0 && overview > hero && tabs > overview && panel > tabs)
-  assert.ok(support > panel && archive > support && discover > archive)
+  assert.ok(hero >= 0 && archive > hero && browse > archive && overview > browse)
+  assert.ok(tabs > overview && panel > tabs && support > panel && discover > support)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
-  assert.match(workspace, /overviewContent=\{<PersonalPortraitSummary data=\{data\} locale=\{locale\} \/>\}/)
+  assert.match(profile, /defaultOpen=\{external\}/)
   assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
-  assert.match(workspace, /embedded \/>\}/)
-  assert.doesNotMatch(profile.slice(hero,tabs), /<FreeInsightsPaths|<ProfileServiceOffer/)
+  assert.match(workspace, /embedded \/>\} \/>/)
+  assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   assert.doesNotMatch(profile, /Math\.random\(|mockProfileScore|syntheticScores/)
 })
 
@@ -45,11 +47,13 @@ test('Four existing privacy-safe areas stay accessible while optional services a
   assert.match(css, /\.hh-domain-report-archive/)
 })
 
-test('Measured details remain linkable but are collapsed under non-redundant Profile summary', () => {
+test('Measured psychological portrait is accessible in Insights, separate from Profile reports', () => {
   const overview = read('components/app/profile-assessment-overview.jsx')
   const summary = read('components/app/personal-portrait-summary.jsx')
   const style = read('components/app/profile-assessment-overview.module.css')
   const workspace = read('components/app/app-workspace.jsx')
+  assert.match(workspace, /data-insights-detailed-scales/) 
+  assert.match(workspace, /<details className="hh-insights-portrait-details" data-insights-detailed-scales>/)
   assert.match(workspace, /<details className="hh-domain-psych-details" data-profile-deep-dive>/)
   assert.match(workspace, /<ProfileAssessmentOverview data=\{data\} locale=\{locale\} onBeginTest=\{beginSelectedTest\} showPortrait=\{false\}>/)
   assert.match(overview, /showPortrait=true/)
@@ -71,6 +75,8 @@ test('Cabinet main mobile nav has exactly five destinations, while public site n
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const nav=workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}',workspace.indexOf('<nav className="hh-mobile-app-nav"')))
+  assert.ok(nav.indexOf("href={root + '/portrait'}") < nav.indexOf("href={root + '/tests'}"))
+  assert.match(nav, /href=\{root \+ '\/tests'\}/)
   assert.equal((nav.match(/<Link /g)||[]).length,5)
   for(const label of ['Home','My tests','Insights','Profile','My course']) assert.ok(nav.includes(label),label)
   assert.doesNotMatch(nav, />Analysis</)
