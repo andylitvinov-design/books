@@ -756,7 +756,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <p className={styles.previewLabel} data-antistress-preview-module>{locale==="ru"?"Просмотр программы":locale==="es"?"Vista previa de la ruta":"Route preview"}: <strong>{previewTitle}</strong></p>
           <div className={styles.skills}>
             {programme.skills.map((skill, index) => {
-              const stageDays=previewModuleId==='AS2'?skill.days:[index*2+1,index*2+2];
+              const stageDays=previewModuleId==='AS2'?skill.days:[index * 2 + 1,index * 2 + 2];
               return <details className={styles.skill} key={skill.id} data-antistress-skill={index + 1}>
               <summary>
                 <span className={styles.skillArtwork} aria-hidden="true"><span className={styles.skillNumber}>{String(index + 1).padStart(2, "0")}</span></span>
