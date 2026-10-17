@@ -892,3 +892,9 @@
 .pdfResourceSecondary{font-size:.82rem;color:#386d62!important;font-weight:650;text-decoration:underline}
 .pdfResource small{display:block;margin-top:9px;font-size:.76rem;line-height:1.5;color:#52665f}
 @media(max-width:540px){.pdfResourcePrimary{width:100%;justify-content:center}.pdfResourceActions{align-items:stretch}}
+
+/* Real, privacy-safe catalog popularity and voluntary user-usefulness ratings. */
+.socialProof{display:flex;gap:6px 15px;flex-wrap:wrap;align-items:center;margin-top:9px;font-size:.76rem;line-height:1.35;color:#626c69;font-variant-numeric:tabular-nums}
+.socialProof strong{color:#a16c2b;font-size:.84rem;white-space:nowrap}
+.socialProof small{font-weight:500;color:#6d726c;font-size:.73rem}
+@media(max-width:500px){.socialProof{gap:6px 10px;font-size:.72rem}}
