@@ -10,7 +10,7 @@ async function* sourceFiles(dir) {
     const filename = join(dir, entry.name)
     if (entry.isDirectory()) {
       yield* sourceFiles(filename)
-    } else if (entry.isFile() && /\\.(?:js|jsx|mjs|ts|tsx|css)$/.test(entry.name)) {
+    } else if (entry.isFile() && /\.(?:js|jsx|mjs|ts|tsx|css)$/.test(entry.name)) {
       yield filename
     }
   }
@@ -18,10 +18,10 @@ async function* sourceFiles(dir) {
 
 test('retired compass banner and global free-review ribbon never appear on any site route or component', async () => {
   const forbidden = [
-    /\\bMindBodyMonitorStrip\\b/,
+    /\bMindBodyMonitorStrip\b/,
     /mind-body-monitor-strip/,
     /data-monitor-strip/,
-    /\\bSitewideAntistressBanner\\b/,
+    /\bSitewideAntistressBanner\b/,
     /data-sitewide-personal-review-banner/,
     /Clarify a goal, business challenge or personal concern/,
   ]
@@ -45,7 +45,7 @@ test('removing global promos preserves real assessment requests and contextual p
     readFile(join(root, 'components/sitewide-antistress-banner.tsx'), 'utf8'),
   ])
   assert.doesNotMatch(layout, /SitewideAntistressBanner|MindBodyMonitorStrip/)
-  assert.match(layout, /\\{children\\}/)
+  assert.match(layout, /\{children\}/)
   assert.match(service, /FreeSituationReviewForm/)
   assert.match(offers, /export function TestSelectionCourseBanner/)
   assert.match(offers, /data-tests-review-banner/)
