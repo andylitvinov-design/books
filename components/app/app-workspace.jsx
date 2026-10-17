@@ -29,7 +29,6 @@ import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { ProfileDomains } from '@/components/app/profile-domains'
-import { PersonalPortraitSummary } from '@/components/app/personal-portrait-summary'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
@@ -2129,13 +2128,10 @@ function PortfolioPage({ data, locale }) {
         <h1 id="hh-insights-title">{ru ? 'Мои результаты' : 'My results'}</h1>
         <p>{ru ? 'Ваши пройденные тесты, результаты и динамика.' : 'Your completed tests, scores and trends.'}</p>
       </header>
-      <div className="hh-insights-personal-portrait" data-insights-personal-portrait>
-        <PersonalPortraitSummary data={data} locale={locale} />
-        <details className="hh-insights-portrait-details">
-          <summary><Brain size={18} aria-hidden="true" />{ru ? 'Психологический портрет: шкалы и инструменты' : 'Psychological portrait: measurements and tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
-          <Portrait data={data} locale={locale} />
-        </details>
-      </div>
+      <details className="hh-insights-portrait-details" data-insights-detailed-scales>
+        <summary><Brain size={18} aria-hidden="true" />{ru ? 'Подробные шкалы и инструменты' : 'Detailed scales and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
+        <Portrait data={data} locale={locale} />
+      </details>
       <dl className="hh-insights-quickstats" data-testid="insights-summary" aria-label={ru ? 'Общая статистика тестов' : 'All-time test statistics'}>
         <div><dt>{ru ? 'Пройдено тестов' : 'Tests completed'}</dt><dd>{summary.tests}</dd></div>
         <div><dt>{ru ? 'Всего прохождений' : 'Total sessions'}</dt><dd>{summary.attempts}</dd></div>
