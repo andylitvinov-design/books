@@ -16,6 +16,7 @@ test('My Practice starts with real site-wide new-service counts, then View all, 
   const ownStats = view.indexOf('className="hh-practice-overview"')
   assert.ok(panel > 0 && panel < viewAll && viewAll < add && add < requests && requests < ownStats)
   assert.equal([...view.matchAll(/className="hh-practice-top-cta"/g)].length, 1)
+  assert.match(view, /<\/section>\}\s*<PracticeRequestsOverview requests=\{requests\}/)
   assert.match(view, /const newServices=data\.newServices/)
   for (const stat of ['submitted7d', 'pendingNow', 'published7d', 'availableNow']) {
     assert.match(view, new RegExp('newServices\\.' + stat))
