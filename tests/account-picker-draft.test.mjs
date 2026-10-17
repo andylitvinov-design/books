@@ -61,7 +61,7 @@ test('actual easy picker clears guest scale filters by default and preserves acc
     } else assert.deepEqual(Array.from(submitted.axes), [], 'public easy view clears full-view axes by default')
   }
 })
-function batteryHarness({ failSave = false, failCourse = null } = {}) {
+function batteryHarness({ failSave = false, failCourse = null, failRun = false, holdSave = false, planStatus = 'active' } = {}) {
   let slots = [], cursor = 0, effects = [], query = new URLSearchParams()
   const hooks = {
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], v => { slots[i] = typeof v === 'function' ? v(slots[i]) : v }] },
@@ -78,16 +78,32 @@ function batteryHarness({ failSave = false, failCourse = null } = {}) {
     readTestSelectionIntent: () => null, validTestKeys: x => x,
     courseTestKeys: () => [], coursePendingKeys: () => [], groupCourseTestRows: rows => ({ course: [], other: rows }),
   }
-  const exported = {}, requests = []
+  const exported = {}, requests = [], navigation = []
+  let releaseSave = null
   const jsx = (type, props, key) => ({ type, props, key })
   const window = { requestAnimationFrame: () => 0, cancelAnimationFrame() {}, sessionStorage: { getItem: () => null, removeItem() {} } }
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
     exports: exported, window, AbortController, console, crypto: { randomUUID: () => 'operation' },
-    fetch: async (path, options) => { requests.push({ path, options }); return { ok: !(failSave && options.method === 'POST') && !(path.endsWith('course') && failCourse === options.method), json: async () => path.endsWith('test-plans') ? { id: 'plan', status: 'active', definitionIds: ['saved-v1'] } : path.endsWith('course') ? { course: { stage: 2, revision: 1 } } : {} } },
+    fetch: async (path, options) => {
+      requests.push({ path, options })
+      if (holdSave && path.endsWith('test-plans') && options.method === 'POST') {
+        await new Promise(resolve => { releaseSave = resolve })
+      }
+      const failed = (failSave && options.method === 'POST') ||
+        (failRun && path.endsWith('/runs') && options.method === 'POST') ||
+        (path.endsWith('course') && failCourse === options.method)
+      return {
+        ok: !failed,
+        json: async () => failed ? { error: 'SERVICE_UNAVAILABLE' }
+          : path.endsWith('test-plans') ? { id: 'plan', status: planStatus, definitionIds: ['saved-v1'] }
+          : path.endsWith('/runs') ? { id: 'run-1', definitionId: 'saved-v1', status: 'draft' }
+          : path.endsWith('course') ? { course: { stage: 2, revision: 1 } } : {},
+      }
+    },
     require(name) {
       if (name === 'react') return hooks
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
-      if (name === 'next/navigation') return { useRouter: () => ({ replace() {}, push() {} }), useSearchParams: () => query }
+      if (name === 'next/navigation') return { useRouter: () => ({ replace: path => navigation.push(['replace', path]), push: path => navigation.push(['push', path]) }), useSearchParams: () => query }
       if (name === 'next/link' || name.endsWith('.css')) return { default: name.endsWith('.css') ? {} : 'Link' }
       if (name.startsWith('@/')) return lib
       if (name === 'lucide-react') return {}
@@ -95,7 +111,8 @@ function batteryHarness({ failSave = false, failCourse = null } = {}) {
     },
   })
   return {
-    requests, query(value) { query = new URLSearchParams(value) },
+    requests, navigation, releaseSave() { assert.ok(releaseSave, 'save request must be pending'); releaseSave() },
+    query(value) { query = new URLSearchParams(value) },
     render(props) { cursor = 0; const tree = exported.AccountTestBattery(props); const pending = effects; effects = []; pending.forEach(fn => fn()); return elements(tree) },
   }
 }
@@ -237,4 +254,74 @@ test('compact account copy is opt-in and leaves explicit save callbacks intact i
     assert.ok(JSON.stringify(accountTree).includes(label))
     assert.equal(elements(accountTree).find(n => n.props?.['data-test-start-mode'] === 'tests').props.onClick, p.onStart)
   }
+})
+
+
+const target = { key: 'saved', selectable: true,
+  definition: { id: 'saved-v1', key: 'saved', version: '1', instrumentLocale: 'en' } }
+
+test('one-tap Start test adds exactly the chosen instrument and opens its runner', async () => {
+  const h = batteryHarness()
+  const tree = h.render(props())
+  const picker = tree.find(n => n.type === 'TestExplorer')
+  assert.equal(typeof picker.props.onStartSingle, 'function')
+  await picker.props.onStartSingle(target, { focus: ['stress'], axes: ['anxiety'] })
+  const writes = h.requests.filter(r => r.options.method === 'POST')
+  assert.equal(writes.length, 2, 'plan add and run start are the only writes')
+  assert.equal(writes[0].path, '/api/app/test-plans')
+  const payload = JSON.parse(writes[0].options.body)
+  assert.equal(payload.appendActive, true)
+  assert.equal(payload.replaceActive, undefined)
+  assert.equal(payload.items.length, 1)
+  assert.equal(payload.items[0].definitionKey, 'saved')
+  assert.equal(payload.items[0].definitionVersion, '1')
+  assert.equal('selectionPreferences' in payload, false, 'individual Start test does not overwrite user filter preferences')
+  assert.equal(writes[1].path, '/api/app/runs')
+  const runPayload = JSON.parse(writes[1].options.body)
+  assert.equal(runPayload.definitionKey, 'saved')
+  assert.equal(h.navigation.length, 1)
+  assert.equal(h.navigation[0][0], 'push')
+  assert.equal(h.navigation[0][1], '/en/app/runs/run-1?mode=quick&plan=plan')
+})
+
+test('double taps on Start test yield one save request and one run', async () => {
+  const h = batteryHarness({ holdSave: true })
+  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  const first = picker.props.onStartSingle(target, {})
+  const second = picker.props.onStartSingle(target, {})
+  assert.equal(h.requests.filter(r => r.path.endsWith('/test-plans')).length, 1)
+  h.releaseSave()
+  await Promise.all([first, second])
+  assert.equal(h.requests.filter(r => r.path.endsWith('/runs')).length, 1)
+  assert.equal(h.navigation.filter(([action]) => action === 'push').length, 1)
+})
+
+test('failed save does not open a run, and a failed run reports that selection was saved', async () => {
+  const failedSave = batteryHarness({ failSave: true })
+  const fromSave = failedSave.render(props()).find(n => n.type === 'TestExplorer')
+  await assert.rejects(fromSave.props.onStartSingle(target, {}), /Could not add the test/)
+  assert.equal(failedSave.requests.filter(r => r.path.endsWith('/runs')).length, 0)
+  assert.equal(failedSave.navigation.length, 0)
+
+  const failedRun = batteryHarness({ failRun: true })
+  const fromRun = failedRun.render(props()).find(n => n.type === 'TestExplorer')
+  await assert.rejects(fromRun.props.onStartSingle(target, {}), /Test saved to My tests/)
+  assert.equal(failedRun.requests.filter(r => r.path.endsWith('/test-plans')).length, 1)
+  assert.equal(failedRun.requests.filter(r => r.path.endsWith('/runs')).length, 1)
+  assert.equal(failedRun.navigation.length, 0)
+})
+
+test('retaking a test from a completed battery avoids advancing the historic plan', async () => {
+  const h = batteryHarness({ planStatus: 'completed' })
+  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  await picker.props.onStartSingle(target, {})
+  assert.deepEqual(h.navigation[0], ['push', '/en/app/runs/run-1?mode=quick'])
+})
+
+test('course selection still uses the existing explicit Save flow, not auto-run', () => {
+  const h = batteryHarness()
+  h.query('course=1&explore=1')
+  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  assert.equal(picker.props.onStartSingle, null)
+  assert.equal(picker.props.explicitSelectionOnly, true)
 })
