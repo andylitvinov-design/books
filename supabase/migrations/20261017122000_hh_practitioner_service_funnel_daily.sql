@@ -13,7 +13,12 @@ create table if not exists app_private.service_funnel_daily (
 );
 alter table app_private.service_funnel_daily enable row level security;
 alter table app_private.service_funnel_daily force row level security;
-revoke all on app_private.service_funnel_daily from public,anon,authenticated,service_role,hh_app_inbox;
+revoke all on app_private.service_funnel_daily from public,anon,authenticated,hh_app_inbox;
+do $funnel_roles$ begin
+  if exists(select 1 from pg_roles where rolname='service_role') then
+    execute 'revoke all on app_private.service_funnel_daily from service_role';
+  end if;
+end $funnel_roles$;
 grant select,insert,update on app_private.service_funnel_daily to hh_app_backend;
 create policy service_funnel_backend on app_private.service_funnel_daily
   for all to hh_app_backend using (true) with check (true);
