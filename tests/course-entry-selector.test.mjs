@@ -228,7 +228,11 @@ test('a consumed personal entry cannot populate a second separately consented co
   }
   await h.settle();findButton(h.tree,'Start course for free').props.onClick();await agree()
   entry=null
-  findButton(h.tree,'Start another course').props.onClick();await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
+  // The sole saved course stays accessible; a second program is selected from
+  // the explicit My courses dashboard, never the in-course limit banner.
+  findButton(h.tree,'My courses').props.onClick();await h.settle()
+  findPart(h.tree,'MyCoursesDashboard').props.onNew();await h.settle()
+  findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
   const starts=h.calls.filter(c=>c.body?.action==='start'),intakes=h.calls.filter(c=>c.body?.action==='intake')
   assert.equal(starts.length,2);assert.equal(intakes.length,1)
   assert.notEqual(starts[0].body.courseId,starts[1].body.courseId)
