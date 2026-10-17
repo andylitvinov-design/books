@@ -111,3 +111,27 @@
 @media (prefers-reduced-motion: reduce) {
   .progress > span, .pathCard, .back, .next { transition: none; }
 }
+
+/* Authenticated progress is deliberately compact: one shared consent/status row. */
+.syncContent { flex: 1; min-width: 0; }
+.syncContent > strong { display: flex; align-items: center; gap: 7px; }
+.syncContent > small { display: block; margin-top: 4px; color: #526e70; font-size: 12px; }
+.syncContent > a { display: inline-block; margin-top: 5px; color: #0a746d; font-size: 13px; font-weight: 700; }
+.syncContent button { border: 0; cursor: pointer; }
+.syncButton { margin-top: 10px; padding: 10px 14px; border-radius: 10px; min-height: 44px; color: #fff; background: #087e7e; font-weight: 800; }
+.syncButton:disabled { opacity: .55; cursor: not-allowed; }
+.consentLabel { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font-size: 13px; line-height: 1.55; color: #365f61; cursor: pointer; }
+.consentLabel input { width: 19px; height: 19px; margin-top: 2px; flex: 0 0 auto; accent-color: #078b87; }
+.saveError { color: #8d3248 !important; font-weight: 650; }
+.retryButton { margin-left: 9px; background: transparent; color: #90344f; text-decoration: underline; min-height: 36px; font-weight: 700; }
+@media print {
+  @page { size: A4; margin: 16mm; }
+  .page { background: white !important; padding: 0 !important; color: #1c3335 !important; }
+  .shell { max-width: none; padding: 0; }
+  .top, .preview, .progress, .progressHeader, .programme, .footer, .art, .video,
+  .copyButton, .teacherLink, .textLink, .restart, .initiationNote { display: none !important; }
+  .slide { display: block; border: 0; border-radius: 0; min-height: 0; box-shadow: none; }
+  .slideMain { display: block; padding: 0; }
+  .final { border: 0; padding: 0; }
+  .notes { max-height: none; overflow: visible; border: 0; white-space: pre-wrap; }
+}
