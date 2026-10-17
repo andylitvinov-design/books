@@ -1,9 +1,9 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
 import CrmManager from './crm-manager'
-import PractitionerArticles from './practitioner-articles'
+import PracticeMaterials from './practice-materials'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
 import MyServicesDashboard from './my-services-dashboard'
@@ -29,7 +29,7 @@ const AREAS={
   business_money:['Business & money','Бизнес и деньги'],
   personal_development:['Personal development','Личностное развитие'],
 }
-const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:'',videoPresentation:null}
+const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:'',videoPresentation:null,videoMaterials:[]}
 const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:'',videoPresentation:null}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
@@ -377,8 +377,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <div className="hh-practice-tool-grid">
           <PracticeTile Icon={UsersRound} title={d.clients} description={d.clientsHint}
             onClick={()=>isOwner?openOwner('clients'):choosePanel('clients')} active={!isOwner&&activePanel==='clients'} />
-          <PracticeTile Icon={FileText} title={ru?'Статьи':'Articles'} description={ru?'Пишите полезные статьи и публикуйте после проверки.':'Publish helpful articles after editorial review.'}
-            onClick={()=>choosePanel('articles')} active={activePanel==='articles'} />
+          <PracticeTile Icon={Film} title={ru?'Материалы':'Materials'} description={ru?'Ваши статьи и видео: добавляйте, редактируйте и публикуйте после проверки.':'Your articles and videos: add, edit and submit for review.'}
+            onClick={()=>choosePanel('materials')} active={activePanel==='materials'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
@@ -405,10 +405,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='articles'?(ru?'Мои статьи':'My articles'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
-        {activePanel==='articles'&&<PractitionerArticles locale={locale} services={services} />}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.revision||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
+           onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
+             profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}))}
+           onSubmitVideos={()=>act(()=>practiceFetch('/profile',{action:'submit',expectedRevision:p.revision}))} />}
 
         {activePanel==='clients'&&(isOwner&&accountId
           ?<CrmManager key={accountId} locale={locale} accountId={accountId} />
