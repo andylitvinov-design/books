@@ -15,19 +15,44 @@ const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.
 export async function assertPublicDiscoveryChrome(page, expect, locale) {
   const bar = page.locator('.ia222-bottom-navigation')
   const ribbon = page.locator('[data-sitewide-personal-review-banner]')
-  if (locale === 'es') {
-    // Spanish client pages retain their separately approved account-entry chrome.
-    await expect(bar).toHaveCount(0)
-    await expect(ribbon).toHaveCount(0)
-    return
-  }
+  if (locale === 'es') await expect(ribbon).toHaveCount(0)
+  else await expect(ribbon).toBeVisible()
+  await expect(bar).toHaveCount(1)
   await expect(bar).toBeVisible()
-  await expect(ribbon).toBeVisible()
-  const destinations = getSiteNavigation(locale).filter(item => item.id !== 'relationships')
-  await expect(bar.locator(':scope > a')).toHaveCount(6)
-  assert.deepEqual(await bar.locator(':scope > a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href'))), destinations.map(item => item.href))
+  const destinations = getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id))
+  destinations.push(
+    { id: 'tests', href: `/${locale}/client/tests`, label: locale === 'ru' ? 'Тесты' : 'Tests' },
+    { id: 'house', href: `/${locale === 'es' ? 'en' : locale}/app`, label: locale === 'ru' ? 'Мой дом' : locale === 'es' ? 'Mi Casa' : 'My House' },
+  )
+  const links = bar.locator(':scope > a')
+  await expect(links).toHaveCount(6)
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href, label }) => ({ id, href, label })))
   await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)
-  await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'cabinet')
+  await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'tests')
+}
+
+export async function assertPublicCollectionChips(root, expect, locale, collections) {
+  const copy = COPY[locale]
+  await expect(root).toBeVisible()
+  await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
+  await expect(root).toHaveAccessibleName(copy.collections)
+  const heading = root.getByRole('heading', { name: copy.collections, level: 2, exact: true })
+  await expect(heading).toHaveCount(1)
+  await expect(heading).toHaveAttribute('id', 'hh-test-curated-heading')
+  const cards = root.locator('[data-test-collection]')
+  await expect(cards).toHaveCount(collections.length)
+  for (const [index, collection] of collections.entries()) {
+    const card = cards.nth(index)
+    const count = collection.count
+    const unit = locale === 'ru'
+      ? count % 10 === 1 && count % 100 !== 11 ? 'тест' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'теста' : 'тестов'
+      : locale === 'es' ? count === 1 ? 'prueba' : 'pruebas' : count === 1 ? 'test' : 'tests'
+    await expect(card).toHaveAttribute('data-test-collection', collection.id)
+    await expect(card).toHaveAccessibleName(`${collection.title[locale]}. ${count} ${unit}. ${copy.browse}`)
+    await expect(card.locator('strong')).toHaveText(collection.title[locale])
+    await expect(card.locator('span[aria-hidden="true"] > span')).toHaveText(String(count))
+    await expect(card.locator('small')).toHaveCount(0)
+  }
 }
 
 // These controls only filter real, cleared catalog entries. The synthetic page
@@ -40,20 +65,11 @@ export async function exercisePublicCollections(page, expect, locale) {
   const collections = availableTestCollections(entries)
   const cards = root.locator('[data-test-collection]')
   await expect(root).toHaveCount(1)
-  await expect(root.getByRole('heading', { name: copy.collections, level: 2, exact: true })).toBeVisible()
+  await assertPublicCollectionChips(root, expect, locale, collections)
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(cards).toHaveCount(collections.length)
   const width = await page.evaluate(() => innerWidth)
   await expect(root.locator('[data-test-collection]:visible')).toHaveCount(Math.min(width <= 760 ? 4 : 8, collections.length))
-  for (const [index, collection] of collections.entries()) {
-    const card = cards.nth(index)
-    const count = collection.count
-    const unit = locale === 'ru'
-      ? count % 10 === 1 && count % 100 !== 11 ? 'тест' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'теста' : 'тестов'
-      : locale === 'es' ? count === 1 ? 'prueba' : 'pruebas' : count === 1 ? 'test' : 'tests'
-    await expect(card).toHaveAttribute('data-test-collection', collection.id)
-    await expect(card).toHaveAccessibleName(`${collection.title[locale]}. ${count} ${unit}. ${copy.browse}`)
-  }
   const more = root.locator('button[aria-controls="hh-test-curated-grid"]')
   await expect(more).toHaveAccessibleName(copy.more)
   await expect(more).toHaveAttribute('aria-expanded', 'false')

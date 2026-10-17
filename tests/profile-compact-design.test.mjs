@@ -71,17 +71,22 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('Cabinet main mobile nav has exactly five destinations, while public site navigation is untouched', () => {
+test('Cabinet main mobile nav has exactly five destinations, from the shared localized private model', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const nav=workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}',workspace.indexOf('<nav className="hh-mobile-app-nav"')))
-  assert.ok(nav.indexOf("href={root + '/portrait'}") < nav.indexOf("href={root + '/tests'}"))
-  assert.match(nav, /href=\{root \+ '\/tests'\}/)
-  assert.equal((nav.match(/<Link /g)||[]).length,5)
-  for(const label of ['Home','My tests','Insights','Profile','My course']) assert.ok(nav.includes(label),label)
+  assert.match(nav, /nav\.map\(\(\{ id, label, href, icon: Icon \}\)/)
+  assert.match(nav, /href=\{href\} prefetch=\{false\}/)
+  assert.match(nav, /aria-current=\{navIsActive\(id\)/)
   assert.doesNotMatch(nav, />Analysis</)
   assert.match(css, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
-  const top=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('  return (',workspace.indexOf('const nav = [')))
-  assert.doesNotMatch(top, /\['analysis'/)
-  assert.equal((top.match(/\['(?:home|tests|portfolio|portrait|course)'/g)||[]).length,5)
+  const top=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('const navIsActive'))
+  const entries=[...top.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
+  assert.deepEqual(entries,[
+    {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
+    {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
+    {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
+  ])
 })

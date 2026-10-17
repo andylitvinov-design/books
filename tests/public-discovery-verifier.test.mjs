@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { availableTestCollections } from '../lib/assessments/test-collections.js'
-import { exercisePortraitRays } from '../scripts/helpers/public-discovery-verifier.mjs'
+import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
+import { exercisePortraitRays, assertPublicCollectionChips } from '../scripts/helpers/public-discovery-verifier.mjs'
 import * as explorerModule from '../lib/assessments/test-explorer.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -176,4 +177,140 @@ test('core keeps new discovery paths inside the isolated native browser acceptan
   assert.ok(core.includes("target.locator('.ia222-bottom-navigation')).toBeHidden()"))
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
   for (const contract of ['toHaveAccessibleName', 'allowed.has(key)', 'readSelection(picker), preserved', "assert.deepEqual(writes, []", 'toHaveURL(currentUrl)', "locale === 'es' ? 'en' : locale"]) assert.ok(helper.includes(contract), contract)
+})
+
+function accountPickerLocator(values) {
+  return {
+    values,
+    locator(selector) {
+      return accountPickerLocator(values.flatMap(nodes).filter(node => {
+        if (selector === '[data-account-test-picker="true"]') return node.props['data-account-test-picker'] === 'true'
+        if (selector === '[data-public-test-picker="true"]') return node.props['data-public-test-picker'] === 'true'
+        if (selector === '[data-client-tests-hero]') return node.props['data-client-tests-hero'] === true
+        assert.equal(selector, '#hh-test-hero-search'); return node.props.id === 'hh-test-hero-search'
+      }))
+    },
+    getByRole(role, options = {}) {
+      return accountPickerLocator(values.flatMap(nodes).filter(node => {
+        const matches = role === 'heading' ? node.type === 'h' + options.level : node.type === (role === 'navigation' ? 'nav' : role)
+        return matches && (options.name === undefined || accessibleText(node) === options.name)
+      }))
+    },
+  }
+}
+const accountPickerExpect = value => ({
+  async toHaveCount(count) { assert.equal(value.values.length, count) },
+  async toBeVisible() { assert.equal(value.values.length, 1) },
+  async toHaveAttribute(name, expected) { assert.equal(value.values.length, 1); assert.equal(value.values[0].props[name], expected) },
+})
+for (const locale of ['en', 'ru', 'es']) test(locale + ' compact account finder keeps actual local search, manual choices and save opt-in', async () => {
+  const parentHooks = hooks(), pickerHooks = hooks()
+  const { TestExplorer } = compile(parentSource, parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
+  let starts = 0, pickerProps, tree
+  const render = () => {
+    parentHooks.reset(); pickerHooks.reset()
+    const parent = TestExplorer({ locale, audience: 'account', authenticated: true, simpleMode: true, preserveScaleFilters: true, onStart: () => { starts++ } })
+    pickerProps = parent.props; tree = SimpleTestPicker(pickerProps); return tree
+  }
+  render()
+  await assertCompactAccountPicker(accountPickerLocator([tree]), accountPickerExpect, { locale })
+  assert.equal(nodes(tree).filter(node => node.props['data-test-topic-collections']).length, 0)
+  const selected = pickerProps.activeBattery.map(entry => entry.key)
+  const candidate = pickerProps.recommendations.find(entry => !selected.includes(entry.key))
+  assert.ok(candidate); pickerProps.onToggleTest(candidate.key); render()
+  const preserved = pickerProps.activeBattery.map(entry => entry.key)
+  assert.equal(preserved.length, selected.length + 1)
+  const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
+  nodes(tree).find(node => node.props.id === 'hh-test-hero-search').props.onChange({ target: { value: query } }); render()
+  nodes(tree).find(node => node.type === 'form' && node.props.role === 'search').props.onSubmit({ preventDefault() {} }); render()
+  const hits = nodes(tree).filter(node => node.props['data-test-match']).map(node => node.props['data-test-match'])
+  assert.ok(hits.length > 0)
+  const allowed = new Set(explorerModule.searchPublicTestEntries(pickerProps.searchRecommendations, query).map(entry => entry.key))
+  assert.ok(hits.every(key => allowed.has(key)))
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
+  assert.equal(starts, 0, 'Search and manual choice must not save or start tests')
+  assert.equal(nodes(tree).find(node => node.props['data-test-start-mode'] === 'tests').props.onClick, pickerProps.onStart)
+})
+
+test('compact account browser proof rejects public variant, missing search and promotional hero leakage', async () => {
+  for (const fault of ['publicVariant', 'wrongTitle', 'missingSearch', 'publicH1', 'publicTabs']) {
+    const pickerHooks = hooks(), { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
+    const tree = SimpleTestPicker({ locale: 'en', authenticated: true, focus: [], recommendations: [], activeBattery: [], matchCount: 0, depth: 'balanced', maxMinutes: 0 })
+    const header = nodes(tree).find(node => node.props['data-client-tests-hero'])
+    if (fault === 'publicVariant') { tree.props['data-account-test-picker'] = undefined; tree.props['data-public-test-picker'] = 'true' }
+    if (fault === 'wrongTitle') nodes(header).find(node => node.type === 'h2').props.children = 'Old headline'
+    if (fault === 'missingSearch') nodes(header).find(node => node.props.id === 'hh-test-hero-search').props.id = 'missing'
+    if (fault === 'publicH1') header.props.children.push(jsx('h1', { children: 'Public headline' }))
+    if (fault === 'publicTabs') header.props.children.push(jsx('nav', { children: 'Public tabs' }))
+    await assert.rejects(assertCompactAccountPicker(accountPickerLocator([tree]), accountPickerExpect))
+  }
+})
+
+function collectionChipHarness(locale, fault = null) {
+  const react = hooks(), { SimpleTestPicker } = compile(pickerSource, react, modules)
+  const catalogEntries = explorerModule.buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
+  const collections = availableTestCollections(catalogEntries)
+  const tree = SimpleTestPicker({ locale, authenticated: false, focus: [], recommendations: [], activeBattery: [], matchCount: 0, depth: 'balanced', maxMinutes: 0, catalogEntries })
+  const root = nodes(tree).find(node => node.props['data-test-topic-collections'])
+  const heading = nodes(root).find(node => node.type === 'h2')
+  const cards = nodes(root).filter(node => node.props['data-test-collection'])
+  const rawText = node => node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(rawText).join('') : rawText(node.props.children)
+  if (fault === 'missingHeading') heading.type = 'p'
+  if (fault === 'hiddenHeading') heading.props['aria-hidden'] = true
+  if (fault === 'wrongBinding') root.props['aria-labelledby'] = 'wrong-heading'
+  if (fault === 'wrongName') cards[0].props['aria-label'] = 'Stress only'
+  if (fault === 'wrongCount') nodes(cards[0]).find(node => node.props.className === 'curatedCardBottom').props.children[0].props.children = 999
+  if (fault === 'wrongTitle') nodes(cards[0]).find(node => node.type === 'strong').props.children = 'Incorrect title'
+  if (fault === 'description') cards[0].props.children.push(jsx('small', { children: 'Removed description' }))
+  if (fault === 'missingCard') cards[0].props['data-test-collection'] = undefined
+  const locator = values => ({
+    values,
+    nth(index) { return locator(values.slice(index, index + 1)) },
+    locator(selector) {
+      return locator(values.flatMap(nodes).flatMap(node => {
+        if (selector === '[data-test-collection]') return node.props['data-test-collection'] ? [node] : []
+        if (selector === 'strong' || selector === 'small') return node.type === selector ? [node] : []
+        assert.equal(selector, 'span[aria-hidden="true"] > span')
+        return node.type === 'span' && node.props['aria-hidden'] === 'true' ? [].concat(node.props.children).filter(child => child?.type === 'span') : []
+      }))
+    },
+    getByRole(role, options) {
+      assert.equal(role, 'heading'); assert.deepEqual(options, { name: collections.length && heading.props.children, level: 2, exact: true })
+      return locator(values.flatMap(nodes).filter(node => node.type === 'h2' && !node.props['aria-hidden']))
+    },
+  })
+  const expect = value => ({
+    async toHaveCount(count) { assert.equal(value.values.length, count) },
+    async toBeVisible() { assert.equal(value.values.length, 1); assert.equal(value.values[0], root, 'Only the visible chip section, not its screen-reader heading, needs visual presence') },
+    async toHaveAttribute(name, expected) { assert.equal(value.values.length, 1); assert.equal(value.values[0].props[name], expected) },
+    async toHaveText(expected) { assert.equal(value.values.length, 1); assert.equal(rawText(value.values[0]), expected) },
+    async toHaveAccessibleName(expected) {
+      assert.equal(value.values.length, 1); const node = value.values[0]
+      const label = node.props['aria-label'] ?? accessibleText(nodes(root).find(item => item.props.id === node.props['aria-labelledby']))
+      assert.equal(label, expected)
+    },
+  })
+  return { root: locator([root]), expect, collections, heading }
+}
+for (const locale of ['en', 'ru', 'es']) test(locale + ' compact collection chips retain source counts, visible names and complete accessible labels', async () => {
+  const h = collectionChipHarness(locale)
+  await assertPublicCollectionChips(h.root, h.expect, locale, h.collections)
+  assert.equal(h.heading.props.className, 'curatedSrOnly')
+})
+for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongCount', 'wrongTitle', 'description', 'missingCard']) test('compact collection proof rejects ' + fault, async () => {
+  const h = collectionChipHarness('en', fault)
+  await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections))
+})
+test('collection heading stays accessible offscreen; visible chip rows and real interaction checks remain strict', () => {
+  const css = read('components/app/simple-test-picker.module.css')
+  const rule = css.match(/\.curatedSrOnly\s*\{([^}]+)\}/)?.[1]
+  assert.ok(rule)
+  for (const declaration of [/position:\s*absolute/, /width:\s*1px/, /height:\s*1px/, /clip:\s*rect\(0, 0, 0, 0\)/]) assert.match(rule, declaration)
+  assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/)
+  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
+  const helper = read('scripts/helpers/public-discovery-verifier.mjs')
+  assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections\)/)
+  for (const guard of ["'aria-pressed', 'true'", 'allowed.has(key)', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
 })

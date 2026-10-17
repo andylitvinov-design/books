@@ -127,3 +127,102 @@ test('six external research questionnaires are reference-only and rights-gated',
    }
  }
 })
+
+
+test('tantric library exposes nine explicit EN/RU paths without protected or automatic tests', async () => {
+  const { TANTRA_TEST_PATHS, availableTantraTestPaths } = await import('../lib/assessments/test-collections.js')
+  assert.equal(TANTRA_TEST_PATHS.length, 9)
+  assert.equal(new Set(TANTRA_TEST_PATHS.map(path => path.id)).size, 9)
+  for (const locale of ['en','ru']) {
+    const entries = buildExplorerEntries({locale, audience:'guest'})
+    const routes = availableTantraTestPaths(entries)
+    assert.equal(routes.length, 9, locale)
+    for (const route of routes) {
+      assert.equal(route.testCount, route.keys.length, route.id)
+      assert.ok(route.questionCount >= 6 && route.scaleCount >= 2, route.id)
+      assert.ok(route.durationMinutes > 0 && route.durationMinutes <= 20, route.id)
+      assert.ok(route.keys.every(key => entries.find(e=>e.key===key)?.selectable), route.id)
+      assert.ok(route.title[locale] && route.detail[locale], route.id)
+      assert.ok(route.keys.every(key => !/tantric-sex-scale|maia-2|sexual-mindfulness/.test(key)))
+    }
+    assert.equal(routes.find(route=>route.id==='gentle-start')?.questionCount, 6)
+    assert.equal(routes.find(route=>route.id==='deep-portrait')?.questionCount, 64)
+    // Fail closed: removing eligibility from one member hides the whole route.
+    const altered = entries.map(entry => entry.key==='hh-sensual-joy'
+      ? {...entry, selectable:false} : entry)
+    assert.ok(!availableTantraTestPaths(altered).some(route=>route.id==='body-sensitivity'))
+  }
+})
+
+test('every authored tantric scale has five scored response levels with distinct context and no invented norms', () => {
+  for (const key of [...TANTRIC_REFLECTION_KEYS, 'hh-tantra-presence', 'hh-sensual-joy']) {
+    for (const language of ['en','ru']) {
+      const definition = getAssessmentDefinition(key,'v1',language)
+      for (const response of [0,1,2,3,4]) {
+        const result = scoreAssessment(definition,
+          Object.fromEntries(definition.questions.map(item => [item.id,response])))
+        const report = buildAssessmentResultReport(result,language)
+        assert.equal(report.sections.length,result.dimensions.length,key)
+        for (const dimension of result.dimensions) {
+          const scale = interpretationBandModel(result,dimension,language)
+          assert.equal(scale.verified,true,key+'/'+language)
+          assert.equal(scale.basis,'descriptive')
+          assert.equal(scale.continuous,true)
+          assert.deepEqual(scale.bands,[], 'descriptive levels are NOT clinical cutoffs')
+          assert.equal(scale.currentBand,null)
+          assert.equal(scale.answerBands.length,5)
+          assert.equal(new Set(scale.answerBands.map(item=>item.levelLabel)).size,5)
+          assert.deepEqual(scale.answerBands.map(item=>item.displayRange),
+            ['0–<0.5','0.5–<1.5','1.5–<2.5','2.5–<3.5','3.5–4'])
+          assert.equal(scale.currentAnswerBand?.code,'answer-'+response)
+          assert.equal(scale.currentAnswerBand?.label,definition.responseAnchors[response])
+          const plan = interpretationDimensionPlan(result,dimension.key)
+          assert.ok(plan?.explicit,key+'/'+dimension.key)
+          const label = plan.label[language]
+          assert.ok(label.length>4)
+          for (const item of scale.answerBands) {
+            assert.ok(item.note.includes(label),key+'/'+dimension.key+'/'+item.code)
+            assert.ok(item.note.length>65,key+'/'+item.code)
+            assert.equal(item.optionalPractice,plan.step[language])
+          }
+          assert.equal(report.sections.find(section=>section.key===dimension.key)?.bandBasis,'descriptive')
+        }
+      }
+    }
+  }
+})
+
+test('tampered tantric versions never receive explanatory answer levels', () => {
+  const definition=getAssessmentDefinition('hh-tantric-personality-portrait','v1','en')
+  const result=scoreAssessment(definition,Object.fromEntries(definition.questions.map(q=>[q.id,2])))
+  const wrong={...result,contentHash:'sha256:not-the-original-translation'}
+  for(const d of result.dimensions) {
+    const model=interpretationBandModel(wrong,d,'en')
+    assert.equal(model.basis,'unavailable')
+    assert.deepEqual(model.answerBands,[])
+    assert.equal(model.currentAnswerBand,null)
+  }
+})
+
+test('responsive five-position explanation grid and personal test journeys are part of real UI', async () => {
+  const read=(file)=>import('node:fs').then(({readFileSync})=>
+    readFileSync(new URL('../'+file,import.meta.url),'utf8'))
+  const [picker,explorer,report,reportCss,pathCss]=await Promise.all([
+    read('components/app/simple-test-picker.jsx'),
+    read('components/app/test-explorer.jsx'),
+    read('components/app/compact-assessment-report.jsx'),
+    read('components/app/compact-assessment-report.module.css'),
+    read('components/app/simple-test-picker.module.css'),
+  ])
+  assert.match(picker,/data-tantra-test-paths/)
+  assert.match(picker,/data-tantra-path=\{path\.id\}/)
+  assert.match(picker,/onChooseTantraPath\?\.\(path\.keys\)/)
+  assert.match(explorer,/setSelectedKeys\(distinct\)/)
+  assert.match(explorer,/setSimpleSelectionChanged\(true\)/)
+  assert.match(report,/data-answer-level=\{index \+ 1\}/)
+  assert.match(report,/band\.levelLabel/)
+  assert.match(report,/band\.note/)
+  assert.match(reportCss,/\.answerRanges \.rangeList\{display:grid;grid-template-columns:repeat\(2/)
+  assert.match(reportCss,/@media\(max-width:680px\)/)
+  assert.match(pathCss,/\.tantraPaths:not\(\[data-expanded="true"\]\) \.tantraPath:nth-child\(n\+5\)/)
+})

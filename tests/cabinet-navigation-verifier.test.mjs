@@ -26,7 +26,7 @@ for (const locale of ['en', 'ru']) {
     const expect = value => ({
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
-      async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Мои тесты' : 'My tests'); events.push('label') },
+      async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
       async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
     })
     await assertCabinetPortrait(page, expect, { origin, locale })

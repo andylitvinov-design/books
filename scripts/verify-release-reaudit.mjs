@@ -37,6 +37,17 @@ async function assertCspPublicHome(page) {
   await expect(home).toBeVisible();
 }
 
+async function assertAnonymousPrivateNavigation(page) {
+  const response = await page.goto(origin + '/en/app/portrait', { waitUntil: 'networkidle' });
+  assert.equal(response.status(), 200);
+  await expect(page).toHaveURL(origin + '/en/app/portrait');
+  await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
+  await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+  await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
+  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+  await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href', '/en/client');
+}
+
 async function verifyCspBfcache() {
   // Playwright Page lifecycle/locators explicitly do not support BFCache.
   // Use its browser launcher only; every observation/navigation below is CDP.
@@ -458,8 +469,8 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client"]').click();
-          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client/tests"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
@@ -471,11 +482,24 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Private pages intentionally omit the public bottom bar. Leave through
-          // the visible header wordmark, then use the public About content link.
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          // Test discovery keeps public navigation while retaining private CSP.
+          // Check the actual private account separately, without altering this
+          // page's Back/Forward chain or reading an authenticated account.
+          const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
+          await expect(discoveryBottom).toBeVisible();
+          await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
+          await expect(discoveryBottom.locator('[data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
+          await expect(discoveryBottom.locator('[data-nav-item="house"]')).toHaveAttribute('href', '/en/app');
+          const privatePage = await cspContext.newPage();
+          privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
+          try {
+            await assertAnonymousPrivateNavigation(privatePage);
+          } finally { await privatePage.close(); }
+          // Leave discovery through its visible header wordmark, then use the
+          // public About content link to preserve the cross-policy history test.
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
-          const privateWordmark = cspPage.locator('.client-entry-shell .house-wordmark');
+          const privateWordmark = cspPage.locator('.house-header--services .house-wordmark');
+          await expect(privateWordmark).toHaveCount(1);
           await expect(privateWordmark).toBeVisible();
           await expect(privateWordmark).toHaveAttribute('href', '/');
           await privateWordmark.click();
@@ -514,10 +538,12 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           historyPhase = 'back-to-private';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
-          await expect(cspPage).toHaveURL(origin + '/en/client');
+          await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toBeVisible();
+          await expect(cspPage.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
+          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
@@ -553,7 +579,7 @@ async function exercise(engine, browserType, width) {
           });
           if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
           assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);

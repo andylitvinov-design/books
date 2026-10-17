@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
@@ -8,6 +9,7 @@ import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
+import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
 import styles from "./contact-channel-chooser.module.css";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
@@ -55,8 +57,21 @@ export function ContactChannelChooser({
   id,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const [publicEventSearch, setPublicEventSearch] = useState("");
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  // Capture ONLY approved public UTM tokens, never any personal URL query text.
+  // No storage, cookies, analytics request or identity association is created.
+  useEffect(() => {
+    const referral = readOrganicEventReferral(window.location.search, window.location.pathname);
+    setPublicEventSearch(referral ? "?" + new URLSearchParams({
+      utm_source: referral.source,
+      utm_medium: "organic_event",
+      utm_campaign: referral.campaign,
+      ...(referral.content ? { utm_content: referral.content } : {}),
+    }).toString() : "");
+  }, [pathname]);
   // A new selected service should never inherit the previous open handoff.
   useEffect(() => setOpen(false), [whatsappUrl]);
   // Show the newly revealed mini-form even if the order button sits at the bottom of a phone viewport.
@@ -66,7 +81,8 @@ export function ContactChannelChooser({
     panelRef.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
   }, [open]);
   const c = copy[locale];
-  const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
+  const referredWhatsappUrl = withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale);
+  const telegramUrl = telegramEnquiryUrlFromWhatsApp(referredWhatsappUrl);
   return (
     <div className={styles.wrapper} data-contact-channel-chooser>
       <button
@@ -88,7 +104,7 @@ export function ContactChannelChooser({
           <AcquisitionEventLink
             prefetch={false}
             className={styles.whatsapp}
-            href={whatsappUrl}
+            href={referredWhatsappUrl}
             event={event}
             analyticsEvent={analyticsEvent}
             onClick={() => onChannelClick?.("whatsapp")}

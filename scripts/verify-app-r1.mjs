@@ -1,6 +1,6 @@
-import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention } from './helpers/account-picker-disclosure-verifier.mjs'
+import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
-import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
+import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -270,7 +270,7 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
 async function openInsightsProfileTools(target=page,locale='en'){
  const path='/'+locale+'/app/portfolio'
  const link=target.locator('nav a[href="'+path+'"]:visible').first()
- await expect(link).toHaveText(locale==='ru'?'Результаты':'Insights')
+ await expect(link).toHaveText(locale==='ru'?'Отчёты':'Reports')
  await expect(link).toHaveAttribute('href',path)
  await link.click()
  await expect(target).toHaveURL(origin+path)
@@ -745,6 +745,9 @@ try {
  await expect(page.locator('.hh-nav')).toBeHidden();
  await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
  await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});
+ await assertCompactAccountPicker(await openAccountTestPicker(page,expect),expect);
+ await firstPicker.toggle.click();
+ await assertAccountPickerDisclosure(page,expect,{expanded:false});
  await openInsightsProfileTools();
  await expect(page.getByRole('heading',{name:'Selected tests still to complete',exact:true})).toBeVisible();
  await page.locator('[data-profile-extra-tools] > summary').click();
@@ -796,8 +799,12 @@ try {
  // A public Master account must not be allowed to open the owner's global client database.
  await page.goto(origin+'/en/app/portrait');await ready();
  await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
- await expect(page.getByRole('link',{name:'Master',exact:true})).toBeVisible();
- await page.getByRole('link',{name:'Master',exact:true}).click();
+ const practice=page.locator('.hh-master-header-link');
+ await expect(practice).toHaveCount(1);
+ await expect(practice).toHaveText('Practice');
+ await expect(practice).toHaveAttribute('href','/en/app/practice');
+ await expect(practice).toBeVisible();
+ await practice.click();
  await expect(page).toHaveURL(/\/en\/app\/practice$/);
  await expect(page.getByRole('heading',{name:'Practitioner tools',exact:true})).toHaveCount(0);
  await expect(page.locator('.hh-practice-dashboard')).toBeVisible({timeout:25000});
@@ -822,6 +829,7 @@ try {
   await expect(primaryNav.getByRole('link',{name:'Profile'})).toHaveAttribute('aria-current','page')
   for(const width of [320,390,768,1280]){
     await page.setViewportSize({width,height:900})
+    await assertCabinetPrimaryNavigation(page,expect,{current:'portrait'})
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Profile must not overflow viewport at '+width+'px')
     await screenshotEvidence(page,{path:output+'/integrated-profile-en-'+width+'.png',fullPage:true})
   }

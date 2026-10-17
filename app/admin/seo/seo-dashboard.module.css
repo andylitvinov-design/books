@@ -63,3 +63,36 @@
 .details code{background:#ede8df;white-space:normal;overflow-wrap:anywhere;padding:2px 4px;border-radius:4px}
 @media(max-width:1020px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two,.twoEqual{grid-template-columns:1fr}}
 @media(max-width:570px){.page{padding:0 12px 78px}.grid{gap:8px}.metric{padding:14px;min-height:118px;border-radius:13px}.metricValue{font-size:35px}.metricFoot{font-size:10px}.two{gap:10px}.panel{padding:15px;border-radius:14px}.technical{grid-template-columns:repeat(3,1fr);gap:6px}.techUnit{padding:9px}.techUnit strong{font-size:22px}.quickLinks{grid-template-columns:1fr}.intro{margin-top:18px}.range a{padding:8px 10px}}
+
+/* Actionable, evidence-based SEO guidance — integrated with Holistic House admin. */
+.adviceSection{margin-top:22px}
+.adviceSectionHeader{display:flex;align-items:end;justify-content:space-between;gap:14px;margin:0 0 15px;flex-wrap:wrap}
+.adviceSectionHeader h2{font:400 clamp(24px,3.5vw,32px)/1.15 Georgia,serif;letter-spacing:-.03em;margin:0 0 7px}
+.adviceSectionHeader p:not(.eyebrow){color:var(--muted);font-size:13px;line-height:1.55;max-width:680px;margin:0}
+.adviceCounts{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.adviceCounts span{font-size:11px;border:1px solid #e0d6c8;background:#faf7f2;color:#645647;padding:6px 9px;border-radius:999px}
+.adviceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.adviceCard{border:1px solid #e8e0d4;border-radius:16px;background:#fff;padding:19px;min-width:0;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 28px rgba(60,46,33,.03)}
+.adviceHeader{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.advicePriority{font-size:10px;color:#745c39;background:#f6efe3;border:1px solid #e8dece;border-radius:7px;padding:5px 9px;font-weight:720;white-space:nowrap}
+.advicePriority[data-priority="P0"]{background:#faece8;color:#984e40;border-color:#ead4cf}
+.advicePriority[data-priority="OK"]{background:#ecf1e9;color:#56734f;border-color:#dee8d9}
+.adviceMetric{color:#4a5f4c;font-size:12px;letter-spacing:.015em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.adviceTitle{font:400 21px/1.17 Georgia,serif;letter-spacing:-.02em;margin:0;color:#362f26}
+.adviceExplain{margin:0;color:#675e54;font-size:12px;line-height:1.65}
+.adviceExplain strong{color:#534739;font-weight:700}
+.adviceWhat{margin:5px 0 -4px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#6c765f;font-weight:750}
+.adviceSteps{margin:0 0 5px;padding-left:19px;color:#4b463e;font-size:12px;line-height:1.6}
+.adviceSteps li+li{margin-top:5px}
+.adviceFooter{display:flex;align-items:center;justify-content:space-between;gap:9px;border-top:1px solid #eee7dd;padding-top:12px;margin-top:auto;flex-wrap:wrap}
+.adviceFooter>span{font-size:10px;line-height:1.5;color:#84786b;max-width:100%}
+.adviceFooter a{font-size:11px;font-weight:700;text-decoration:none;color:#39543c;white-space:normal}
+.adviceFooter a:hover{text-decoration:underline}
+.adviceRest{margin-top:10px}
+.adviceRest>summary{display:flex;align-items:center;justify-content:center;cursor:pointer;padding:12px;border:1px solid #dcd3c6;border-radius:12px;background:#fff;font-size:12px;font-weight:700;color:#405540;gap:8px;list-style:none}
+.adviceRest>summary::-webkit-details-marker{display:none}
+.adviceRest>summary:hover{background:#f7f6f0}
+.adviceRest[open]>summary{margin-bottom:12px}
+.adviceCalm{margin:0 0 12px;font-size:12px;color:#526347}
+@media(max-width:1050px){.adviceGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:630px){.adviceGrid{grid-template-columns:1fr;gap:9px}.adviceSection{margin-top:20px}.adviceCard{padding:15px}.adviceTitle{font-size:20px}.adviceSectionHeader{gap:10px}.adviceFooter{align-items:start}}

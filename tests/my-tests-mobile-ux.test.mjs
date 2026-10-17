@@ -47,11 +47,12 @@ test('compact semantic test cards have direct start and remove controls, no prac
  assert.match(css,/@media\s*\(max-width:760px\)/)
 })
 
-test('one mobile bottom navigation keeps Home / My tests / Insights / Profile',()=>{
+test('one mobile bottom navigation renders the shared Profile / Tests / Reports / Courses / Practice model',()=>{
  const workspace=read('components/app/app-workspace.jsx')
  const css=read('app/[locale]/app/[[...path]]/workspace.css')
  assert.match(workspace,/<nav className="hh-nav"/)
  assert.match(workspace,/<nav className="hh-mobile-app-nav"/)
- assert.match(workspace,/href=\{root \+ '\/portrait'\} prefetch=\{false\} aria-current=\{page === 'portrait'/)
+ assert.match(workspace,/\{nav\.map\(\(\{ id, label, href, icon: Icon \}\) => \(/)
+ assert.match(workspace,/aria-current=\{navIsActive\(id\) \? 'page' : undefined\}/)
  assert.match(css,/\.hh-app \.hh-nav\{display:none!important\}/)
 })

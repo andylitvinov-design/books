@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+
 // The account root is a portrait/reports entry. Tests and PDF export live in My Tests.
 // Follow the same visible navigation as a signed-in user, without replacing auth
 // or relying on a nav that is also rendered before consent has been committed.
@@ -14,9 +16,20 @@ export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }
   const path = '/' + locale + '/app/tests'
   const link = page.locator('nav a[href="' + path + '"]:visible').first()
   await expect(link).toBeVisible()
-  await expect(link).toHaveText(locale === 'ru' ? 'Мои тесты' : 'My tests')
+  await expect(link).toHaveText(locale === 'ru' ? 'Тесты' : 'Tests')
   await expect(link).toHaveAttribute('href', path)
   await link.click()
   await expect(page).toHaveURL(origin + path, { timeout: 30000 })
   await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+}
+
+export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'en', current } = {}) {
+  const nav = page.locator('nav.hh-nav:visible, nav.hh-mobile-app-nav:visible')
+  await expect(nav).toHaveCount(1)
+  await expect(nav).toBeVisible()
+  const labels = locale === 'ru' ? ['Профиль', 'Тесты', 'Отчёты', 'Курсы', 'Практика'] : ['Profile', 'Tests', 'Reports', 'Courses', 'Practice']
+  const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
+  const links = nav.locator(':scope > a')
+  await expect(links).toHaveCount(5)
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current') }))), paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null })))
 }

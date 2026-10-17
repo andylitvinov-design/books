@@ -6,7 +6,7 @@ import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, Gr
 import styles from './simple-test-picker.module.css'
 import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { availableTestCollections } from '@/lib/assessments/test-collections'
+import { availableTestCollections, availableTantraTestPaths } from '@/lib/assessments/test-collections'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
@@ -124,6 +124,29 @@ const COLLECTION_ICONS = {
   sleep: Moon, resources: Leaf, personality: Compass, mood: Smile,
   attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
 }
+const TANTRA_PATH_ICONS = {
+  'gentle-start': Sparkles, 'body-sensitivity': Activity,
+  'heart-connection': Heart, 'healthy-boundaries': ShieldCheck,
+  'freedom-kindness': Leaf, 'chakra-symbols': Sun,
+  'five-practice-themes': Compass, 'deep-portrait': BookOpen,
+}
+const TANTRA_PATH_COPY = {
+  en: { eyebrow:'EXPLORE TANTRA YOUR WAY', title:'Tantric test journeys',
+    intro:'Choose one focused set. Each scale has five descriptive response ranges and a practical reflection; no spiritual rank or diagnosis.',
+    select:'Use this set', chosen:'Selected', details:'See all paths', less:'Show four paths',
+    test:'test', tests:'tests', questions:'questions', scales:'scales', minute:'min',
+    note:'Selecting a path only changes the unsaved selection. Tests begin when you choose Start; saved results stay intact.' },
+  ru: { eyebrow:'ТАНТРИЧЕСКОЕ САМОПОЗНАНИЕ', title:'Подборка тантрических тестов',
+    intro:'Выберите маршрут: у каждой шкалы есть пять понятных описательных диапазонов и мягкий практический шаг. Это не диагноз и не духовный рейтинг.',
+    select:'Выбрать набор', chosen:'Выбрано', details:'Все маршруты', less:'Свернуть до четырёх',
+    test:'тест', tests:'тестов', questions:'вопросов', scales:'шкал', minute:'мин',
+    note:'Выбор набора меняет только несохранённый подбор. Тестирование начнётся после отдельного нажатия кнопки запуска; прошлые результаты сохранятся.' },
+  es: { eyebrow:'EXPLORACIÓN TÁNTRICA', title:'Colecciones de pruebas de tantra',
+    intro:'Elige una ruta: escalas descriptivas y reflexión, sin diagnóstico ni rangos espirituales. Los cuestionarios están disponibles en inglés.',
+    select:'Elegir selección', chosen:'Elegida', details:'Mostrar todas', less:'Mostrar cuatro',
+    test:'prueba', tests:'pruebas', questions:'preguntas', scales:'escalas', minute:'min',
+    note:'La selección no inicia ninguna prueba y no modifica tus resultados guardados.' },
+}
 const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
@@ -176,20 +199,24 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
   const accountCopy = {
-    en: { kicker: 'MY TESTS', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Add test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
-    ru: { kicker: 'МОИ ТЕСТЫ', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Добавить тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
-    es: { kicker: 'MIS PRUEBAS', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Añadir prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
+    en: { kicker: 'MY TESTS', finderTitle: 'Find the right tests', finderHelp: 'Search by name, concern or choose a topic below.', finderSearch: 'Search', finderPlaceholder: 'Stress, sleep, relationships…', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Add test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
+    ru: { kicker: 'МОИ ТЕСТЫ', finderTitle: 'Подобрать подходящие тесты', finderHelp: 'Введите запрос или выберите интересующую тему.', finderSearch: 'Найти', finderPlaceholder: 'Стресс, сон, отношения…', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Добавить тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
+    es: { kicker: 'MIS PRUEBAS', finderTitle: 'Encuentra tus pruebas', finderHelp: 'Busca por nombre o elige un tema.', finderSearch: 'Buscar', finderPlaceholder: 'Estrés, sueño, relaciones…', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Añadir prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
+  const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
   const collections = availableTestCollections(catalogEntries)
+  const tantraPaths = availableTantraTestPaths(catalogEntries)
+  const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
+  const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
@@ -236,30 +263,35 @@ export function SimpleTestPicker({
   const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
   const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
-  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker data-public-test-picker={!authenticated ? 'true' : undefined}>
-    <header className={academyStyles.hero} data-client-tests-hero>
-      <div className={academyStyles.topline}>
+  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker data-public-test-picker={!authenticated ? 'true' : undefined} data-account-test-picker={authenticated ? 'true' : undefined}>
+    <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
+      {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
         <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
           <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
           <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
         </nav>
-      </div>
-      <h1>{c.heroHeadline}</h1>
-      <p className={academyStyles.intro}>{c.heroDescription}</p>
-      <form className={academyStyles.form} role="search" onSubmit={(event) => {
+      </div>}
+      {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
+      {authenticated
+        ? <h2 className={styles.accountFinderTitle}>{c.finderTitle}</h2>
+        : <h1>{c.heroHeadline}</h1>}
+      <p className={authenticated ? styles.accountFinderHelp : academyStyles.intro}>
+        {authenticated ? c.finderHelp : c.heroDescription}
+      </p>
+      <form className={authenticated ? styles.accountFinderSearch : academyStyles.form} role="search" onSubmit={(event) => {
         event.preventDefault()
         setSubmittedHeroSearch(heroSearch.trim())
         setVisibleCount(5)
         document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }}>
-        <label className={academyStyles.srOnly} htmlFor="hh-test-hero-search">{c.heroSearchLabel}</label>
-        <input id="hh-test-hero-search" className={academyStyles.search} type="search" value={heroSearch}
+        <label className={authenticated ? styles.accountSrOnly : academyStyles.srOnly} htmlFor="hh-test-hero-search">{c.heroSearchLabel}</label>
+        <input id="hh-test-hero-search" className={authenticated ? styles.accountFinderInput : academyStyles.search} type="search" value={heroSearch}
           onChange={(event) => { setHeroSearch(event.target.value); if (!event.target.value.trim()) setSubmittedHeroSearch('') }}
-          placeholder={c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
-        <button className={academyStyles.submit} type="submit">{c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
+          placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
+        <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      <div className={academyStyles.filters}>
+      <div className={authenticated ? styles.accountFinderFilters : academyStyles.filters}>
         <label>{c.heroTopicFilter}
           <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
             onChange={(event) => {
@@ -283,24 +315,20 @@ export function SimpleTestPicker({
           </select>
         </label>
       </div>
-      <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
+      {!authenticated && <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
         <span>{c.heroPicks}:</span>
         {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
           const topic = TOPICS.find((item) => item.key === key)
           return <button key={key} type="button" aria-pressed={focus.includes(key)}
             onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
         })}
-      </div>
+      </div>}
       {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
 
     {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
       data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
-      <div className={styles.curatedHeader}>
-        <p className={styles.curatedEyebrow}>{collectionCopy.eyebrow}</p>
-        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
-        <p className={styles.curatedIntro}>{collectionCopy.intro}</p>
-      </div>
+      <h2 id="hh-test-curated-heading" className={styles.curatedSrOnly}>{collectionCopy.title}</h2>
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
         {collections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
@@ -320,14 +348,11 @@ export function SimpleTestPicker({
               setVisibleCount(5)
               document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }}>
-            <span className={styles.curatedIcon}><Icon size={21} strokeWidth={1.8} aria-hidden="true" /></span>
-            <span className={styles.curatedCardText}>
-              <strong>{title}</strong>
-              <small>{collection.detail[locale] || collection.detail.en}</small>
-            </span>
-            <span className={styles.curatedCardBottom}>
-              <span>{collection.count} {countLabel}</span>
-              {active ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+            <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
+            <span className={styles.curatedCardText}><strong>{title}</strong></span>
+            <span className={styles.curatedCardBottom} aria-hidden="true">
+              <span>{collection.count}</span>
+              {active && <Check size={13} />}
             </span>
           </button>
         })}
@@ -338,6 +363,52 @@ export function SimpleTestPicker({
         {collectionsOpen ? collectionCopy.less : collectionCopy.more}
         <ChevronDown size={17} aria-hidden="true" />
       </button>}
+    </section>}
+
+    {showTantraPaths && <section className={styles.tantraPaths} data-tantra-test-paths
+      data-expanded={tantraPathsOpen ? 'true' : 'false'} aria-labelledby="hh-tantra-test-paths-title">
+      <header className={styles.tantraPathHeading}>
+        <p>{tantraCopy.eyebrow}</p>
+        <h2 id="hh-tantra-test-paths-title">{tantraCopy.title}</h2>
+        <span>{tantraCopy.intro}</span>
+      </header>
+      <div className={styles.tantraPathGrid} role="group" aria-label={tantraCopy.title}>
+        {tantraPaths.map((path) => {
+          const Icon = TANTRA_PATH_ICONS[path.id] || Sparkles
+          const chosen = activeBattery.length === path.keys.length &&
+            path.keys.every(key => selectedKeys.has(key))
+          return <button type="button" key={path.id} className={styles.tantraPath}
+            data-tantra-path={path.id} data-tone={path.tone}
+            aria-pressed={chosen} disabled={!onChooseTantraPath}
+            onClick={() => {
+              onChooseTantraPath?.(path.keys)
+              setVisibleCount(5)
+              document.getElementById('hh-simple-recommendations')?.scrollIntoView({behavior:'smooth',block:'start'})
+            }}>
+            <span className={styles.tantraPathIcon} aria-hidden="true"><Icon size={20} strokeWidth={1.8}/></span>
+            <span className={styles.tantraPathBody}>
+              <strong>{path.title[locale] || path.title.en}</strong>
+              <small>{path.detail[locale] || path.detail.en}</small>
+              <span className={styles.tantraPathMeta}>
+                {path.testCount} {path.testCount===1 ? tantraCopy.test : tantraCopy.tests}
+                {' · '}{path.questionCount} {tantraCopy.questions}
+                {' · '}{path.scaleCount} {tantraCopy.scales}
+                {' · ~'}{path.durationMinutes} {tantraCopy.minute}
+              </span>
+            </span>
+            <span className={styles.tantraPathAction}>
+              {chosen ? tantraCopy.chosen : tantraCopy.select}
+              {chosen ? <Check size={15} aria-hidden="true"/> : <ArrowRight size={15} aria-hidden="true"/>}
+            </span>
+          </button>
+        })}
+      </div>
+      {tantraPaths.length > 4 && <button type="button" className={styles.tantraPathToggle}
+        aria-expanded={tantraPathsOpen} onClick={() => setTantraPathsOpen(value => !value)}>
+        {tantraPathsOpen ? tantraCopy.less : tantraCopy.details}
+        <ChevronDown size={16} aria-hidden="true"/>
+      </button>}
+      <p className={styles.tantraPathNote}>{tantraCopy.note}</p>
     </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">

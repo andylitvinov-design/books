@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { readFile, mkdir, writeFile, access } from 'node:fs/promises'
 import pg from 'pg'
+import {compactInterpretationInsert} from '../scripts/compact-interpretation-sql.mjs'
 import { ASSESSMENT_DEFINITIONS } from '../lib/assessments/definitions.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
@@ -169,6 +170,11 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   const rehash=row=>{row.payload_canonical=canonicalJSON(row.payload);row.payload_sha256=digest(row.payload_canonical);return row}
   await check('Conflicts, mismatched provenance, forged hashes and malformed variants fail in native SQL',async()=>{
    await assert.rejects(transaction(()=>db.query(insertSQL,recordValues(stored[0]))),errorCode('23505'))
+   // Exercise the real compact transport's statement-level atomicity as well.
+   const fresh=rehash(candidate())
+   const mixed=compactInterpretationInsert([fresh,stored[0]]).sql
+   await assert.rejects(transaction(()=>db.query(mixed)),errorCode('23505'))
+   assert.equal(Number((await db.query('SELECT count(*) AS count FROM app.assessment_interpretation_versions WHERE interpretation_version=$1',[fresh.interpretation_version])).rows[0].count),0)
    for(const mutate of [row=>{row.provenance.scoringVersion='incorrect';row.payload.provenance=row.provenance},row=>{row.payload.dimensions[0].variants=[null]},row=>{row.payload.dimensions[0].variants=[]},row=>{row.payload.dimensions[0].allowedValues=[99999]}]){
     const row=candidate();mutate(row);rehash(row);await assert.rejects(transaction(()=>db.query(insertSQL,recordValues(row))),errorCode('23514'))
    }

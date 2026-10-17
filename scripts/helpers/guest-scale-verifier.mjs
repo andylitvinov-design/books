@@ -175,13 +175,18 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     const anchor = model.currentAnswerBand
     assert.equal(actual.answerReadingCount, anchor ? 1 : 0)
     assert.equal(actual.answerRangesCount, anchor ? 1 : 0)
-    assert.deepEqual(actual.answerRanges, (anchor ? model.answerBands : []).map(band => ({
-      range: band.displayRange, label: band.label,
+    assert.deepEqual(actual.answerRanges, (anchor ? model.answerBands : []).map((band, index) => ({
+      level: String(index + 1), range: band.displayRange,
+      levelLabel: band.levelLabel || band.label, label: band.label, note: band.note,
       current: band.code === anchor.code, markedCurrent: band.code === anchor.code,
       marker: band.code === anchor.code ? ru ? 'Ваш диапазон' : 'Your range' : '',
-    })), 'Exact original response ranges, labels and single current range')
+    })), 'Exact ordered response levels, original ranges, labels, narratives and single current range')
     if (anchor) {
-      assert.ok(normalized(actual.answerReading).includes(normalized((ru ? 'По ответам: ' : 'Based on your answers: ') + anchor.label)))
+      assert.equal(normalized(actual.answerReadingLabel), ru ? 'Что означает ваш результат' : 'What your result means')
+      assert.equal(normalized(actual.answerReadingTitle), normalized((anchor.levelLabel ? anchor.levelLabel + ' · ' : '') + anchor.label),
+        'Exact source-bound descriptive level and original response label')
+      assert.equal(normalized(actual.answerRangesHeading), ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges')
+      assert.ok(normalized(actual.answerReading).includes(normalized(actual.answerReadingTitle)), 'The selected response title remains in its visible interpretation')
       assert.ok(normalized(actual.answerReading).includes(normalized(anchor.note)), 'Source-bound response interpretation remains available')
       assert.equal(normalized(actual.answerCaveat), ru
         ? 'Диапазоны показывают, к какому исходному варианту ответа ближе средний балл. Это ориентир для самонаблюдения, не медицинские нормы и не оценка «хорошо/плохо».'
@@ -226,6 +231,9 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
       await expect(card.locator('[data-answer-interpretation]')).toBeVisible()
       await expect(card.locator('[data-answer-ranges]')).toBeVisible()
       await expect(card.locator('[data-answer-ranges] > p')).toBeVisible()
+      await expect(card.locator('[data-answer-interpretation] > p').nth(1)).toBeVisible()
+      await expect(card.locator('[data-answer-ranges] > h4')).toBeVisible()
+      for (const range of await card.locator('[data-answer-ranges] li').all()) await expect(range).toBeVisible()
     }
     for (const detail of await card.locator('details').all())
       if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
@@ -261,10 +269,16 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
         answerReadingCount: element.querySelectorAll('[data-answer-interpretation]').length,
         answerRangesCount: element.querySelectorAll('[data-answer-ranges]').length,
         answerReading: element.querySelector('[data-answer-interpretation]')?.textContent,
+        answerReadingLabel: element.querySelector('[data-answer-interpretation] > p:first-of-type')?.textContent,
+        answerReadingTitle: element.querySelector('[data-answer-interpretation] > p:nth-of-type(2)')?.textContent,
+        answerRangesHeading: element.querySelector('[data-answer-ranges] > h4')?.textContent,
         answerCaveat: element.querySelector('[data-answer-ranges] > p')?.textContent,
         answerRanges: [...element.querySelectorAll('[data-answer-ranges] li')].map(node => ({
+          level: node.getAttribute('data-answer-level'),
           range: node.querySelector('strong')?.textContent,
-          label: node.querySelector('span:not([aria-hidden])')?.textContent,
+          levelLabel: node.querySelector('b')?.textContent,
+          label: (node.querySelector('small') || node.querySelector('b'))?.textContent,
+          note: node.querySelector(':scope > span:not([aria-hidden]) > span:last-of-type')?.textContent,
           current: node.getAttribute('aria-current') === 'true', markedCurrent: node.hasAttribute('data-active-answer-range'),
           marker: node.querySelector('em')?.textContent || '',
         })),

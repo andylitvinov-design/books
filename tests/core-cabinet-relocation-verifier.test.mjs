@@ -3,7 +3,7 @@ import test from 'node:test'
 import {readFileSync} from 'node:fs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const source=read('scripts/verify-app-r1.mjs')
-test('core follows visible Insights navigation and opens both real scale disclosures in EN/RU',async()=>{
+test('core follows visible Reports navigation and opens both real scale disclosures in EN/RU',async()=>{
  const start=source.indexOf('async function openInsightsProfileTools(')
  const fragment=source.slice(start,source.indexOf('\n}',start)+2)
  const workspace=read('components/app/app-workspace.jsx')
@@ -15,7 +15,7 @@ test('core follows visible Insights navigation and opens both real scale disclos
   const helper=new Function('expect','origin','exercisePortraitRays',fragment+';return openInsightsProfileTools')(expect,'http://127.0.0.1:3100',async()=>{})
   await helper(locator('page'),locale)
   const link='page/nav a[href="/'+locale+'/app/portfolio"]:visible'
-  assert.deepEqual(events.slice(0,4),[['text',link,locale==='ru'?'Результаты':'Insights'],['attribute',link,'href','/'+locale+'/app/portfolio'],['click',link],['url','http://127.0.0.1:3100/'+locale+'/app/portfolio']])
+  assert.deepEqual(events.slice(0,4),[['text',link,locale==='ru'?'Отчёты':'Reports'],['attribute',link,'href','/'+locale+'/app/portfolio'],['click',link],['url','http://127.0.0.1:3100/'+locale+'/app/portfolio']])
   assert.ok(events.some(e=>e[0]==='click'&&e[1].endsWith('[data-insights-detailed-scales]/:scope > summary')))
   assert.ok(events.some(e=>e[0]==='click'&&e[1].endsWith('[data-profile-deep-dive] > summary')))
   assert.ok(events.some(e=>e[0]==='visible'&&e[1].endsWith('heading:'+(locale==='ru'?'Шкалы профессиональных тестов':'Professional test scales'))))

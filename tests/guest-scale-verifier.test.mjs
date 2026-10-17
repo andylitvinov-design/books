@@ -16,9 +16,10 @@ import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-ty
 import { MHC_SF_DEFINITIONS } from '../data/assessments/mhc-sf-adult-dec2011.js'
 import { COMPASSION_DEFINITIONS } from '../data/assessments/compassion-2026.js'
 import { ASRS6_DEFINITIONS } from '../data/assessments/asrs-v1-6-nyu.js'
+import { TANTRIC_REFLECTION_DEFINITIONS } from '../data/assessments/tantric-reflections-v1.js'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
 const { buildAssessmentResultReport } = reportModule
-const definitions = [...PERSONALITY_TYPE_DEFINITIONS, ...MHC_SF_DEFINITIONS, ...COMPASSION_DEFINITIONS, ...ASRS6_DEFINITIONS, ...RELATIONSHIPS_INTIMACY_DEFINITIONS,
+const definitions = [...PERSONALITY_TYPE_DEFINITIONS, ...MHC_SF_DEFINITIONS, ...COMPASSION_DEFINITIONS, ...ASRS6_DEFINITIONS, ...RELATIONSHIPS_INTIMACY_DEFINITIONS, ...TANTRIC_REFLECTION_DEFINITIONS,
   getAssessmentDefinition('phq-9','v1','en'), getAssessmentDefinition('brcs','v1','en'),
   getAssessmentDefinition('gad-7','v1','ru'), getAssessmentDefinition('hh-money-pressure','v1','en')]
 const sourceRoot = process.env.HH_VERIFIER_SOURCE_ROOT ? pathToFileURL(resolve(process.env.HH_VERIFIER_SOURCE_ROOT) + '/') : new URL('../', import.meta.url)
@@ -134,10 +135,16 @@ function accountFixture(result, locale, component = CompactAssessmentReport) {
       answerReadingCount: elements(card).filter(node => node.props['data-answer-interpretation']).length,
       answerRangesCount: elements(card).filter(node => node.props['data-answer-ranges']).length,
       answerReading: textOf(marked(card, 'data-answer-interpretation')),
+      answerReadingLabel: textOf(elements(marked(card, 'data-answer-interpretation')).filter(node => node.type === 'p')[0]),
+      answerReadingTitle: textOf(elements(marked(card, 'data-answer-interpretation')).filter(node => node.type === 'p')[1]),
+      answerRangesHeading: textOf(tagged(marked(card, 'data-answer-ranges'), 'h4')),
       answerCaveat: textOf(tagged(marked(card, 'data-answer-ranges'), 'p')),
       answerRanges: elements(marked(card, 'data-answer-ranges')).filter(node => node.type === 'li').map(node => ({
+        level: String(node.props['data-answer-level']),
         range: textOf(tagged(node, 'strong')),
-        label: textOf(find(node, item => item.type === 'span' && !item.props['aria-hidden'])),
+        levelLabel: textOf(tagged(node, 'b')),
+        label: textOf(tagged(node, 'small') || tagged(node, 'b')),
+        note: textOf([].concat(find(node, item => item.type === 'span' && !item.props['aria-hidden']).props.children).filter(item => item?.type === 'span').at(-1)),
         current: node.props['aria-current'] === 'true', markedCurrent: node.props['data-active-answer-range'] === true,
         marker: textOf(tagged(node, 'em')),
       })),
@@ -260,9 +267,15 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
         s => { s.scales[0].answerReadingCount = 0 },
         s => { s.scales[0].answerRangesCount = 2 },
         s => { s.scales[0].answerReading = '' },
+        s => { s.scales[0].answerReadingLabel = 'Unrelated interpretation' },
+        s => { s.scales[0].answerReadingTitle = 'Invented response level' },
+        s => { s.scales[0].answerRangesHeading = 'All clinical categories' },
         s => { s.scales[0].answerCaveat = '' },
         s => { s.scales[0].answerRanges.pop() },
+        s => { s.scales[0].answerRanges[0].level = '99' },
         s => { s.scales[0].answerRanges[0].range = '0–100' },
+        s => { s.scales[0].answerRanges[0].levelLabel = 'Invented spiritual rank' },
+        s => { s.scales[0].answerRanges[0].note = 'Unrelated narrative' },
         s => { s.scales[0].answerRanges[0].label = 'Invented clinical norm' },
         s => { s.scales[0].answerRanges[0].current = !s.scales[0].answerRanges[0].current },
         s => { s.scales[0].answerRanges[0].markedCurrent = !s.scales[0].answerRanges[0].markedCurrent },
@@ -438,5 +451,29 @@ test('all five audience-specific browser verifiers keep exact guest and authenti
     assert.match(script, /await assertGuestScaleResult\(page,\s*expect,\s*(result|stored),\s*locale\)/)
     assert.match(script, /await assertAccountScaleReport\(page,\s*expect,\s*(result|stored),\s*locale\)/)
     assert.ok(script.includes('[data-personal-result-report]'), 'Existing account report assertions retained')
+  }
+})
+
+
+test('Tantric reports retain all five source-bound descriptive levels on every reachable scale', () => {
+  for (const definition of TANTRIC_REFLECTION_DEFINITIONS) for (const locale of ['en', 'ru']) {
+    const result = scored(definition, 'mixed'), snapshot = accountFixture(result, locale)
+    assertAccountReportSnapshot(snapshot, result, locale)
+    for (const [index, scale] of snapshot.scales.entries()) {
+      assert.equal(scale.answerRanges.length, 5, 'Every Tantric scale retains its full five-level grid')
+      assert.deepEqual(scale.answerRanges.map(range => range.level), ['1', '2', '3', '4', '5'])
+      assert.equal(scale.answerRanges.filter(range => range.current).length, 1)
+      for (const field of ['level', 'range', 'levelLabel', 'label', 'note', 'marker']) for (let level = 0; level < 5; level++) {
+        const broken = structuredClone(snapshot)
+        broken.scales[index].answerRanges[level][field] = 'tampered-' + field
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale), definition.key + ': every scale and response level must retain ' + field)
+      }
+      const staleTitle = structuredClone(snapshot)
+      staleTitle.scales[index].answerReadingTitle = (locale === 'ru' ? 'По ответам: ' : 'Based on your answers: ') + scale.answerRanges.find(range => range.current).label
+      assert.throws(() => assertAccountReportSnapshot(staleTitle, result, locale), 'Reject the retired selected-response title')
+      const staleHeading = structuredClone(snapshot)
+      staleHeading.scales[index].answerRangesHeading = locale === 'ru' ? 'Все диапазоны ответов' : 'All response ranges'
+      assert.throws(() => assertAccountReportSnapshot(staleHeading, result, locale), 'Reject the retired range heading')
+    }
   }
 })

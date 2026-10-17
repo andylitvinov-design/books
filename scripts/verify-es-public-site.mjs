@@ -58,6 +58,33 @@ async function assertSpanishNavigation(page, path) {
   await expect(trigger).toBeFocused();
   await expect(page).toHaveURL(currentUrl);
 }
+async function assertSpanishCourseCatalog(page, response) {
+  const canonical = '/es/academy/free-ai-courses';
+  await expect(page).toHaveURL(origin + canonical);
+  assert.equal(response.status(), 200, 'Canonical Spanish course catalog must render');
+  assert.equal(response.url(), origin + canonical, 'The final navigation response belongs to the canonical catalog');
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://holistichouse.vercel.app' + canonical);
+  const catalog = page.locator('main[data-public-my-courses]');
+  await expect(catalog).toHaveCount(1);
+  await expect(catalog).toHaveAttribute('lang', 'es');
+  await expect(catalog.getByRole('heading', { level: 1, name: 'Cursos de IA gratuitos', exact: true })).toBeVisible();
+  const start = catalog.getByRole('link', { name: 'Empezar gratis', exact: true });
+  await expect(start).toHaveCount(1);
+  await expect(start).toHaveAttribute('href', '/en/app/course?program=stress');
+  await expect(catalog.locator('[data-course-programme]')).toHaveCount(1);
+  const stress = catalog.locator('[data-course-programme="stress"]');
+  await expect(stress.getByRole('heading', { level: 3, name: 'Menos estrés', exact: true })).toBeVisible();
+  await expect(stress.locator('a[href="/en/app/course?program=stress"]')).toHaveCount(1);
+  await expect(catalog.getByRole('link', { name: 'Conocer Antiestrés', exact: true })).toHaveCount(2);
+  for (const link of await catalog.getByRole('link', { name: 'Conocer Antiestrés', exact: true }).all()) await expect(link).toHaveAttribute('href', '/es/courses/antistress');
+  await expect(catalog.getByRole('link', { name: 'Conocer el método OPORA', exact: true })).toHaveAttribute('href', '/es/courses/methodology');
+  await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
+  await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
+  await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
+  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
+  await expect(page.locator('.mobile-bottom-navigation [data-nav-item="academy"]')).toHaveAttribute('aria-current', 'page');
+}
+
 // Production-parity HTTPS browser checks. Never read real private records,
 // submit production forms, send messages, or mutate publication data.
 import assert from 'node:assert/strict';
@@ -78,7 +105,7 @@ const results = [];
 const diagnostics = createPublicDiagnostics(origin);
 const saveDiagnostics = () => writeFileSync(`${evidence}/${live?'live':'local'}-es-public-diagnostics.json`, JSON.stringify({events:diagnostics.events, dropped:diagnostics.dropped}, null, 2));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
+const routes = ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/academy/free-ai-courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client'];
 mkdirSync(evidence, { recursive: true });
 let app, proxy, stage = 'start';
 try {
@@ -115,7 +142,7 @@ try {
         page.on('pageerror', error => errors.push(error.message));
         page.on('request', request => {
           const url = new URL(request.url());
-          if (watchingUnselectedClients && url.origin === origin && /^\/(en|ru)\/client\/?$/.test(url.pathname)) {
+          if (watchingUnselectedClients && url.origin === origin && /^\/(en|ru)\/client(?:\/tests)?\/?$/.test(url.pathname)) {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
@@ -144,6 +171,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang','es');
           await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current','true');
           await assertSpanishNavigation(page, path);
+          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);
           assert.ok(!/Inicio \(EN\)|Servicios \(EN\)|Remedios \(EN\)|[\u0400-\u04ff]/.test(await page.locator('main').innerText()),'No untranslated public labels: '+path);
           assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Overflow: '+path);
           assert.equal(await page.locator('iframe').count(),0,'No eager video');
@@ -234,7 +262,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eight-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eight-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
@@ -247,7 +275,9 @@ try {
     assert.ok(/<html lang="es"/.test(html),'Spanish remedy document: '+slug); assert.ok(html.includes('Traducción automática'),slug); assert.ok(!response.url.includes('/en/'),slug);
   }));
   const xml=await(await fetch(auditOrigin+'/sitemap.xml')).text();
-  for(const path of routes.filter(path=>path!=='/es/client'))assert.ok(xml.includes('https://holistichouse.vercel.app'+path),path);
+  const sitemapUrls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+  for(const path of routes.filter(path=>!['/es/client','/es/courses'].includes(path)))assert.ok(sitemapUrls.includes('https://holistichouse.vercel.app'+path),path);
+  assert.ok(!sitemapUrls.some(href => new URL(href).pathname === '/es/courses'), 'Legacy course redirect must not be indexed');
   for(const slug of slugs)assert.ok(xml.includes('/es/homeopathy/remedies/'+slug),slug);
   assert.ok(!xml.includes('/es/client'));
   console.log(`PASS: ${slugs.length} complete Spanish remedy routes and public sitemap`);

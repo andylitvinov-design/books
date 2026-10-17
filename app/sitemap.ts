@@ -8,7 +8,7 @@ import { getSpanishRemedySlugs } from '@/data/remedies-es';
 import { getAppConfig } from '@/lib/app/config';
 import { createPractitionerRepository } from '@/lib/practitioners/repository';
 import { createArticleRepository } from '@/lib/practitioners/article-repository';
-const academyDirectoryPaths = ["", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
+const academyDirectoryPaths = ["", "/free-ai-courses", "/reiki", "/temple-studies", "/archive", "/videos", "/history/faculties", "/reiki/tantra-reiki/free-initiation", "/principles-of-energywork", "/reiki/kundalini-reiki/free-initiation"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = metadataBaseFor().toString().replace(/\/$/, '');

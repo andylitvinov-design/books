@@ -388,6 +388,21 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recommendations={simpleRecommendations}
       searchRecommendations={searchRecommendations}
       catalogEntries={entries}
+      onChooseTantraPath={(keys) => {
+        // A named path is an explicit replacement of the unsaved local draft.
+        // No automatic runner, subscription, course or account write occurs.
+        const distinct = [...new Set(keys)]
+        if (!distinct.length || distinct.length > 12 ||
+          distinct.some(key => !entries.some(entry =>
+            entry.key === key && entry.selectable && entry.rightsStatus === 'cleared'))) return
+        setSelectedKeys(distinct)
+        setSimpleSelectionChanged(true)
+        setFocus(['tantra'])
+        setProblems([])
+        setKinds([])
+        setMaxMinutes(0)
+        setActionError(null)
+      }}
       onChooseCollection={(keys) => {
         // Switching collections resets stale facets but never discards manually selected tests.
         setFocus(keys)

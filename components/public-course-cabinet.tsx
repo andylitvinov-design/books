@@ -14,7 +14,7 @@ type CabinetSnapshot = { locale: Locale; loaded: boolean; course: Course | null;
 
 const copy = {
   ru: {
-    eyebrow: 'ЛИЧНЫЙ КАБИНЕТ', title: 'Мои программы',
+    eyebrow: 'ЛИЧНЫЙ КАБИНЕТ', title: 'Мои курсы',
     description: 'Продолжайте с того места, где остановились.',
     current: 'ТЕКУЩИЙ КУРС', personal: 'Мой персональный курс',
     stress: 'Антистресс', confidence: 'Внутренняя уверенность',
@@ -28,7 +28,7 @@ const copy = {
     free: 'Первый курс бесплатно', badge: '14 дней · ваш темп',
   },
   en: {
-    eyebrow: 'PRIVATE CABINET', title: 'My programmes',
+    eyebrow: 'PRIVATE CABINET', title: 'My courses',
     description: 'Pick up right where you left off.',
     current: 'CURRENT COURSE', personal: 'My personal course',
     stress: 'Stress Relief', confidence: 'Inner Confidence',

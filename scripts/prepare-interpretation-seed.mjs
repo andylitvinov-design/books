@@ -1,3 +1,4 @@
+import {compactInterpretationInsert} from './compact-interpretation-sql.mjs'
 // Offline generator only; no database connection or credential use.
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -19,7 +20,8 @@ const escape=x=>"'"+String(x).replaceAll("'","''")+"'"
 const statements=rows.map(row=>`INSERT INTO app.assessment_interpretation_versions (assessment_version_id,interpretation_version,report_locale,definition_content_hash,provenance,source_commit,rules_engine_version,payload_sha256,payload_canonical,payload) SELECT ${escape(row.assessment_version_id)}::uuid,${escape(row.interpretation_version)},${escape(row.report_locale)},${escape(row.definition_content_hash)},${escape(JSON.stringify(row.provenance))}::jsonb,${escape(row.source_commit)},${escape(row.rules_engine_version)},${escape(row.payload_sha256)},v.payload_canonical,v.payload_canonical::jsonb FROM (VALUES (${escape(row.payload_canonical)})) AS v(payload_canonical);`)
 // Plain INSERT only: conflicts abort; no UPSERT or alteration of existing records.
 const testGuard = manifest.sourceTreeVerified===true ? '' : "-- DRAFT / PGLITE TEST ONLY. Refuses every regular PostgreSQL target.\nDO $isolated$ BEGIN IF pg_catalog.strpos(pg_catalog.version(), 'PGlite 0.5.10') = 0 OR pg_catalog.strpos(pg_catalog.version(), 'wasm32-unknown-emscripten') = 0 THEN RAISE EXCEPTION 'DRAFT_INTERPRETATION_SEED_PGLITE_ONLY'; END IF; END $isolated$;\n"
-const sql="BEGIN;\nSET LOCAL standard_conforming_strings = on;\n"+testGuard+statements.join('\n')+'\nCOMMIT;\n'
+const compact=compactInterpretationInsert(rows)
+const sql="BEGIN;\nSET LOCAL standard_conforming_strings = on;\n"+testGuard+compact.sql+'\nCOMMIT;\n'
 await fs.writeFile(path.join(outDir,'insert-all.sql'),sql)
 // Optional bounded transport: each immutable batch is its own transaction. Complete
 // registry activation is a separate step only after every expected digest is read back.
@@ -42,7 +44,7 @@ for(let i=0;i<batches.length;i++){
 }
 await fs.writeFile(path.join(outDir,'batch-manifest.json'),JSON.stringify({sourceCommit:manifest.sourceCommit,interpretationVersion:manifest.interpretationVersion,draft:manifest.sourceTreeVerified!==true,maxBatchBytes:batchLimit,rowCount:rows.length,batches:batchManifest,execution:'Preflight absence/conflicts globally. INSERT only. After each batch read exact identities and hashes. Unknown outcome: read back first; never blind retry or upsert. Stop on conflict. Do not activate until complete registry readback.'},null,2))
 
-await fs.writeFile(path.join(outDir,'seed-manifest.json'),JSON.stringify({sourceCommit:manifest.sourceCommit,interpretationVersion:manifest.interpretationVersion,draft:manifest.sourceTreeVerified!==true,rowCount:rows.length,sqlSha256:'sha256:'+crypto.createHash('sha256').update(sql).digest('hex'),note:'Execute as one transaction only after schema and exact payload approval. No partial upsert/retry. Re-read all stored hashes afterward.'},null,2))
+await fs.writeFile(path.join(outDir,'seed-manifest.json'),JSON.stringify({sourceCommit:manifest.sourceCommit,interpretationVersion:manifest.interpretationVersion,draft:manifest.sourceTreeVerified!==true,rowCount:rows.length,encoding:'canonical-json-fragments.v1',dictionaryEntries:compact.dictionaryEntries,sqlSha256:'sha256:'+crypto.createHash('sha256').update(sql).digest('hex'),note:'Execute as one transaction only after schema and exact payload approval. No partial upsert/retry. Re-read all stored hashes afterward.'},null,2))
 // The C2 runtime allowlist is created only from a fully verified C1 source export.
 // Draft test data must never become executable runtime approval, even with the test SQL flag.
 if(manifest.sourceTreeVerified===true){

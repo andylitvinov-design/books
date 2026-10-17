@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { PublicGrowthCourses } from "@/components/public-growth-courses";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 import { metadataBaseFor } from "@/data/site-metadata";
 
@@ -16,11 +15,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: ru
       ? "Сейчас доступен курс ОПОРА Антистресс: 14 занятий, семь навыков самоподдержки, практика и наблюдение за изменениями. Другие курсы в разработке."
       : "OPORA Stress Relief is the currently available free learning course: 14 lessons, seven practical skills, gentle exercises and honest progress tracking.",
-    alternates: { canonical: `/${locale}/courses`, languages: { en: "/en/courses", ru: "/ru/courses", es: "/es/courses" } },
+    alternates: { canonical: `/${locale}/academy/free-ai-courses`, languages: { en: "/en/academy/free-ai-courses", ru: "/ru/academy/free-ai-courses", es: "/es/academy/free-ai-courses" } },
   };
 }
 export default async function CoursesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
-  return <PublicGrowthCourses locale={locale} />;
+  permanentRedirect(`/${locale}/academy/free-ai-courses`);
 }

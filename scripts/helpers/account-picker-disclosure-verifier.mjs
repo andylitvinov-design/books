@@ -32,6 +32,23 @@ export async function openAccountTestPicker(page, expect, options = {}) {
   return (await assertAccountPickerDisclosure(page, expect, { ...options, expanded: true })).panel
 }
 
+export async function assertCompactAccountPicker(panel, expect, { locale = 'en' } = {}) {
+  const picker = panel.locator('[data-account-test-picker="true"]')
+  const header = picker.locator('[data-client-tests-hero]')
+  const title = locale === 'ru' ? 'Подобрать подходящие тесты' : locale === 'es' ? 'Encuentra tus pruebas' : 'Find the right tests'
+  await expect(picker).toHaveCount(1)
+  await expect(picker).toBeVisible()
+  await expect(panel.locator('[data-public-test-picker="true"]')).toHaveCount(0)
+  await expect(header.getByRole('heading', { name: title, level: 2, exact: true })).toBeVisible()
+  await expect(header.getByRole('heading', { level: 1 })).toHaveCount(0)
+  await expect(header.getByRole('navigation')).toHaveCount(0)
+  const search = header.locator('#hh-test-hero-search')
+  await expect(search).toBeVisible()
+  await expect(search).toHaveAttribute('type', 'search')
+  await expect(header.getByRole('button', { name: locale === 'ru' ? 'Найти' : locale === 'es' ? 'Buscar' : 'Search', exact: true })).toBeVisible()
+  await expect(picker.getByRole('button', { name: locale === 'ru' ? 'Открыть всю базу тестов' : locale === 'es' ? 'Explorar base completa' : 'Browse full database', exact: true })).toBeVisible()
+}
+
 // Collapse/reopen only the visible disclosure. Preserve the exact checked draft,
 // its filter choices and URL without starting a test or saving a selection.
 export async function exerciseAccountPickerDraftRetention(page, expect, { locale = 'en' } = {}) {

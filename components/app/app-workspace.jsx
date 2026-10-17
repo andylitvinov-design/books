@@ -425,15 +425,17 @@ export default function AppWorkspace({ locale, path = [] }) {
         </section>
       </main>
     )
-  // Five first-class destinations. Monitoring/history remain available from Insights
-  // and account settings; /analysis stays as an old-link alias to Profile reports.
+  // Shared private navigation for desktop, mobile and the Account dropdown.
+// Reports reuses the existing Insights/portfolio screen; Practice is the master cabinet.
   const nav = [
-    ['portrait', c.portrait, '/portrait'],
-    ['tests', locale === 'ru' ? 'Мои тесты' : 'My tests', '/tests'],
-    ['portfolio', locale === 'ru' ? 'Результаты' : 'Insights', '/portfolio'],
-    ['course', locale === 'ru' ? 'Мои курсы' : 'My courses', '/course'],
-    ['home', locale === 'ru' ? 'Главная' : 'Home', locale === 'ru' ? '/?lang=ru' : '/?lang=en'],
+    { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
+    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
+    { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course', icon: BookOpen },
+    { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
   ]
+  const navIsActive = (id) => page === id ||
+    (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
     page === 'reports'
@@ -442,56 +444,40 @@ export default function AppWorkspace({ locale, path = [] }) {
     <main className={documentReader ? 'hh-app hh-app--document-reader' : 'hh-app'}>
       {!documentReader && <header className="hh-header">
         <Link href={root} prefetch={false} className="hh-brand">
-          Holistic House<span>{page === 'course'
-            ? (locale === 'ru' ? 'Мои курсы' : 'My courses')
-            : page === 'tests' ? (locale === 'ru' ? 'Мои тесты' : 'My tests')
-            : page === 'portfolio' ? (locale === 'ru' ? 'Результаты' : 'Insights')
-            : (locale === 'ru' ? 'Мои отчёты' : 'My reports')}</span>
+          Holistic House<span>{nav.find(item => navIsActive(item.id))?.label || c.account}</span>
         </Link>
-        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={`${root}/practice`} prefetch={false}>{locale === 'ru' ? 'Мастер' : 'Master'}</Link>}
+        {(data.practitioner || data.practice) && <Link className="hh-master-header-link" href={root + '/practice'} prefetch={false}>{locale === 'ru' ? 'Практика' : 'Practice'}</Link>}
         <details className="hh-account-menu">
           <summary>{data.account.displayName || c.account}</summary>
           <div>
-            <Link href={root + '/portrait'} prefetch={false}>
-              {c.portrait}
-            </Link>
-            <Link href={root + '/portrait#personal-reports'} prefetch={false}>{locale === 'ru' ? 'Мои отчёты' : 'My reports'}</Link>
-            <Link href={root + '/course'} prefetch={false}>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</Link>
-            <Link href={root + '/history'} prefetch={false}>
-              {c.history}
-            </Link>
-            <Link href={root + '/monitoring'} prefetch={false}>
-              {c.monitoring}
-            </Link>
-            <Link href={`${root}/settings`} prefetch={false}>
-              {c.settings}
-            </Link>
-            <Link href={`${root}/practice`} prefetch={false}>
-              {data.practice ? (locale === 'ru' ? 'Моя практика' : 'My Practice') : (locale === 'ru' ? 'Стать мастером' : 'Become a Master')}
-            </Link>
-            <Link
-              href={`/${locale === 'en' ? 'ru' : 'en'}/app${`/${page}`}${recordId ? `/${recordId}` : ''}`}
-              prefetch={false}
-            >
-              {locale === 'en' ? 'Русский' : 'English'}
-            </Link>
-            <button onClick={() => logout()} disabled={busy}>
-              {c.signout}
-            </button>
+            {nav.map(({ id, label, href }) => (
+              <Link key={id} href={href} prefetch={false}
+                aria-current={navIsActive(id) ? 'page' : undefined}
+                onClick={(event) => event.currentTarget.closest('details.hh-account-menu')?.removeAttribute('open')}
+              >{label}</Link>
+            ))}
+            <div className="hh-account-menu-secondary">
+              <details className="hh-account-more">
+                <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
+                <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
+                <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
+                <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
+              </details>
+              <Link
+                href={`/${locale === 'en' ? 'ru' : 'en'}/app/${page}${recordId ? `/${recordId}` : ''}`}
+                prefetch={false}
+              >{locale === 'en' ? 'Русский' : 'English'}</Link>
+              <button onClick={() => logout()} disabled={busy}>{c.signout}</button>
+            </div>
           </div>
         </details>
       </header>}
       {!documentReader && page !== 'runs' && (
         <nav className="hh-nav" aria-label={c.account}>
-          {nav.map(([id, label, url]) => (
-            <Link
-              key={id}
-              href={id === 'home' ? url : root + url}
-              prefetch={false}
-              aria-current={page === id ? 'page' : undefined}
-            >
-              {label}
-            </Link>
+          {nav.map(({ id, label, href }) => (
+            <Link key={id} href={href} prefetch={false}
+              aria-current={navIsActive(id) ? 'page' : undefined}
+            >{label}</Link>
           ))}
         </nav>
       )}
@@ -578,11 +564,11 @@ export default function AppWorkspace({ locale, path = [] }) {
         <a href={`/${locale}/client`}>{c.legacy}</a>
       </footer>}
       {!documentReader && page !== 'runs' && <nav className="hh-mobile-app-nav" aria-label={locale === 'ru' ? 'Быстрая навигация' : 'Quick navigation'}>
-        <Link href={root + '/portrait'} prefetch={false} aria-current={page === 'portrait' ? 'page' : undefined}><UserRound aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Профиль' : 'Profile'}</span></Link>
-        <Link href={root + '/tests'} prefetch={false} aria-current={page === 'tests' ? 'page' : undefined}><ClipboardList aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои тесты' : 'My tests'}</span></Link>
-        <Link href={root + '/portfolio'} prefetch={false} aria-current={page === 'portfolio' || page === 'monitoring' ? 'page' : undefined}><BarChart3 aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Результаты' : 'Insights'}</span></Link>
-        <Link href={root + '/course'} prefetch={false} aria-current={page === 'course' ? 'page' : undefined}><BookOpen aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Мои курсы' : 'My courses'}</span></Link>
-        <Link href={locale === 'ru' ? '/?lang=ru' : '/?lang=en'} prefetch={false}><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
+        {nav.map(({ id, label, href, icon: Icon }) => (
+          <Link key={id} href={href} prefetch={false}
+            aria-current={navIsActive(id) ? 'page' : undefined}
+          ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
+        ))}
       </nav>}
     </main>
     </SubscriptionProvider>

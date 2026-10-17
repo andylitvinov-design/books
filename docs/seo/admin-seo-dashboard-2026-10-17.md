@@ -46,3 +46,22 @@ Implementation uses Google OAuth's short-lived service-account JWT assertion, th
 6. Dedicated tests + TypeScript + Next production build green; actual Vercel alias points at the merged commit before reporting LIVE.
 
 No Google account grants or permissions are assumed; automatic GSC refresh is **pending external Google service-account setup**. This does not block the verified historical SEO dashboard.
+
+
+## Metric-aware recommendations — 2026-10-17
+
+The protected admin SEO page now shows *Recommendations and priorities* beneath the search KPIs. RU/EN cards are sorted P0 urgent, P1 important, P2 planned, and OK healthy. Every card gives its triggering metric, understandable interpretation, concrete steps, a trusted link, source, and date. First three cards are immediately visible, with the rest in a responsive expandable section.
+
+Pure, offline rule engine: lib/seo/actionable-recommendations.mjs. It uses the exact search period currently selected (7/28/90 days), the saved source-labelled Google indexing tracker, the live sitemap check and the recorded Lighthouse lab metrics.
+
+- HTTP errors or sitemap redirects in a verified crawl → P0 investigation; all 601/601 returning 200 → healthy result instead.
+- Live sitemap URL count differs from the *dated* Google sitemap report → reconcile, never assume both were fetched simultaneously.
+- Missing GSC API → set up read-only access; missing search data is not interpreted as zero. A verified 28-day snapshot is never reused for 7/90 days.
+- Zero organic impressions → inspect priority page indexing, content and internal links, *not* claim technical SEO failure. A new site may not yet have been crawled/indexed.
+- Fewer than 100 search impressions → insufficient sample for decisive CTR advice. At least 100 impressions plus CTR below 2% with position 15 or better → review snippet relevance. At position worse than 20 → strengthen helpful content before attempting wholesale title changes. These are editorial triggers, **not universal CTR guarantees**.
+- Low indexed share in the 19-page tracker → inspect specific pages; a recent tracker snapshot (<14 days old) is a watch recommendation, not a failure. Tracker data are not the sitemap Google indexed count.
+- Mobile Lighthouse below 90 or saved lab LCP above 2,500ms → rerun on the current production commit and optimize measurable bottlenecks. Do not present outdated Lighthouse results as real-user CrUX data.
+- Unverified GA4 → suggest privacy-respecting aggregate inquiry measurement, never transmit client answers or health data.
+- Search data more than 30 days old → request a fresh report before making decisions based on old values.
+
+Guidance is read-only: no automatic website edits, indexing requests, paid advertising, AI credits or secret transfers. The dedicated CI tests include no-data, CTR sample boundaries, technical severity, indexing age, bilingual explanations, safe links and responsive disclosure. Production release still needs exact Vercel SHA verification.

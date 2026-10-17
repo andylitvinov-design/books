@@ -54,9 +54,11 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  const block=source.slice(start,end);
  const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
  assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
- // PR784 changes exactly these two redirect destinations; all other actions,
- // fatal checks and navigation order retain the original frozen hash.
- const normalized=block.replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
+ // Preserve the original frozen action sequence except for the two approved
+ // portrait redirects and the new exact canonical-course catalog assertion.
+ const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
+ assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
+ const normalized=block.replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
  assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from two approved redirects');
 });
 
@@ -96,4 +98,16 @@ test('diagnostic write failure cannot prevent original proxy and app cleanup',()
  const run=new Function('saveDiagnostics','proxy','app',cleanup.slice(0,cleanup.lastIndexOf('}')));
  assert.throws(()=>run(()=>{throw failure;},{closeAllConnections(){calls.push('connections');},close(){calls.push('proxy');}},{kill(signal){calls.push(signal);}}),error=>error===failure);
  assert.deepEqual(calls,['connections','proxy','SIGTERM']);
+});
+
+for (const locale of ['en', 'ru', 'es']) test(locale + ' canonical course diagnostics retain sanitized lifecycle and request evidence', () => {
+ const path='/' + locale + '/academy/free-ai-courses';
+ assert.deepEqual(publicRoute(path+'?_rsc=secret&token=secret#secret',origin),{path,rsc:true});
+ const d=createPublicDiagnostics(origin);
+ for(const kind of ['request-start','response','request-failed','proxy-response','frame-navigation','pageerror'])d.record(kind,path+'?secret=hidden',{stage:'webkit 390 '+path,status:200,error:'other'});
+ assert.equal(d.events.length,6);
+ assert.ok(d.events.every(event=>event.path===path && event.stage===path));
+ assert.ok(!/secret|hidden/.test(JSON.stringify(d.events)));
+ for(const suffix of ['/private-id','/progress','/course-a'])assert.equal(publicRoute(path+suffix,origin),null);
+ for(const privatePath of ['/'+locale+'/client/tests','/'+locale+'/app/course'])assert.equal(publicRoute(privatePath,origin),null);
 });
