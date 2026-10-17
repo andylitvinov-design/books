@@ -337,3 +337,10 @@
   .hh-app .hh-result-consultation-action {transition:none}
   .hh-app .hh-result-consultation-action:hover {transform:none}
 }
+
+
+/* Prevent intrinsic report-scroller widths from stretching the entire mobile page.
+   Only the deliberately horizontal scale picker may scroll internally. */
+.hh-app .hh-result-page{min-width:0;max-width:100%;grid-template-columns:minmax(0,1fr)}
+.hh-app .hh-result-page > *,.hh-app .hh-result-section{min-width:0;max-width:100%}
+.hh-app .hh-result-page [data-compact-assessment-report]{min-width:0;width:100%;max-width:100%}

@@ -35,6 +35,11 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(offers, /Alchemy of the Soul/);
   assert.match(offers, /Курс гипнотерапии/);
   assert.match(ui, /id="methods"/);
+  assert.match(ui, /data-alchemy-service-actions/);
+  assert.match(ui, /ContactChannelChooser/);
+  assert.match(ui, /styles\.cardDetails/);
+  assert.match(ui, /styles\.cardDirectOrder/);
+  assert.match(ui, /"data-alchemy-booking": "services-card"/);
   assert.doesNotMatch(hero, /ME, GOAL|draw by hand|€100/i);
   const editorialStart = page.indexOf("const editorialOffers =");
   const renderStart = page.indexOf("  return (");

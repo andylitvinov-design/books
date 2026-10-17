@@ -438,13 +438,26 @@ async function verifyPublicServiceConversionJourneys(){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
      await expect(form.locator('select')).toHaveCount(2)
-     await expect(form.locator('button[type="submit"]')).toBeVisible()
+     await expect(form.locator('[data-contact-order]')).toBeVisible()
      await form.locator('select').first().selectOption('30')
      await form.locator('select').nth(1).selectOption('business')
      await expect(form.locator('select').first()).toHaveValue('30')
      await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
-     const rail=servicePage.locator('[role="region"]').filter({has:servicePage.locator('[data-testimonial-video-id]')})
-     assert.ok(await rail.evaluate(node=>node.scrollWidth>node.clientWidth),'Testimonials swipe horizontally')
+     const stack=servicePage.locator('[data-alchemy-review-stack]')
+     const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
+       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
+     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+     assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
+       'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
+     assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
+       'Vertical testimonial stack cannot overflow horizontally')
+     const pricing=servicePage.locator('[data-alchemy-booking-formats]')
+     await pricing.locator('[data-alchemy-format="30"]').click()
+     await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
+     const order=await openContactChannelChooser(pricing,expect)
+     const prepared=await assertPreparedContactChannels(order,expect)
+     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
+       'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')

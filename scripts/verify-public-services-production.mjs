@@ -179,10 +179,23 @@ try {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
             await form.scrollIntoViewIfNeeded();
-            await visible(form.locator('button[type="submit"]'));
+            await visible(form.locator('[data-contact-order]'));
             await expect(form.locator('select')).toHaveCount(2);
-            const testimonialRail = main.locator('[role="region"]').filter({has: main.locator('[data-testimonial-video-id]')});
-            assert.ok(await testimonialRail.evaluate(node => node.scrollWidth > node.clientWidth), "All reviews available with swipe");
+            const reviewStack = main.locator('[data-alchemy-review-stack]');
+            const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
+              nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
+            assert.equal(positions.length, 3, "Exactly three original testimonials");
+            assert.ok(positions.every((pos, index) => index === 0 || pos.top >= positions[index-1].bottom),
+              "All testimonial videos must stack vertically");
+            assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
+              "No horizontal scrolling or squeezed testimonials");
+            const pricing = main.locator('[data-alchemy-booking-formats]');
+            await pricing.locator('[data-alchemy-format="30"]').click();
+            const channels = await openContactChannelChooser(pricing, expect);
+            const prepared = await assertPreparedContactChannels(channels, expect);
+            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
+              "Selected express session must appear in prepared order draft");
+            await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
             const capture = main.locator('section:has(> details)');
