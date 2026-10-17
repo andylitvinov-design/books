@@ -110,18 +110,17 @@ test('each recommended test has a single visible test-kind badge, not a duplicat
 })
 
 
-test('editorial polish reduces top-of-page bulk without losing the three-step picker', () => {
-  assert.match(css, /My Tests editorial spacing & mobile card readability/)
-  assert.match(css, /\.shell \.benefits>div\{/)
-  assert.match(css, /\.shell \.promoImage\{/)
-  assert.match(css, /\.shell \.promoCopy h2\{/)
-  assert.match(css, /\.shell \.sectionHeader\{/)
-  assert.match(css, /@media\(max-width:600px\)/)
-  assert.match(css, /\.shell \.promoImage\{width:76px;height:100px/)
-  assert.match(css, /\.shell \.benefits>div\{min-height:37px/)
+test('the first screen is one compact photo hero; the original topic and catalog flow survives', () => {
+  assert.match(css, /Home-aligned My Tests first screen/)
+  assert.match(css, /andy-about\\.png/)
+  assert.match(css, /\\.shell \\.heroActions/)
+  assert.match(css, /@media\\(max-width:600px\\)/)
+  assert.match(picker, /className=\\{styles\\.heroContent\\}/)
+  assert.match(picker, /className=\\{styles\\.heroPrimary\\}/)
+  assert.match(picker, /className=\\{styles\\.heroSecondary\\}/)
+  assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo/)
   assert.match(picker, /id="hh-simple-topic-title"/)
   assert.match(picker, /id="hh-simple-recommendations"/)
-  assert.match(picker, /data-client-tests-promo/)
 })
 
 test('mobile cards give full width to labels and keep a 44px burgundy launch button below metadata', () => {
@@ -137,46 +136,38 @@ test('mobile cards give full width to labels and keep a 44px burgundy launch but
   assert.match(css, /\.shell \.takeTest,\.shell \.cta\[data-test-start-mode=tests\]/)
 })
 
-test('brief introductions remain localized and their topic action still jumps to the real picker', () => {
-  assert.match(picker, /promoTitle:'Start with a personal check-in'/)
-  assert.match(picker, /promoTitle:'Начните с базовых тестов'/)
-  assert.match(picker, /promoTitle:'Empieza con pruebas sencillas'/)
+test('free test hero is localized, and both actions jump to real content', () => {
+  assert.match(picker, /heroPrimary:'Choose my topics'/)
+  assert.match(picker, /heroPrimary:'Выбрать темы'/)
+  assert.match(picker, /heroPrimary:'Elegir temas'/)
+  assert.match(picker, /heroSecondary:'Browse free tests'/)
   assert.match(picker, /href="#hh-simple-topic-title"/)
-  assert.match(picker, /aria-pressed=\{checked\}/)
-  assert.match(picker, /onToggleFocus\(key\)/)
-  assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
+  assert.match(picker, /href="#hh-simple-recommendations"/)
+  assert.match(picker, /aria-pressed=\\{checked\\}/)
+  assert.match(picker, /onToggleFocus\\(key\\)/)
+  assert.match(picker, /data-test-start-mode=\\{journeyMode\\}/)
 })
 
 
-test('approved turquoise reference keeps its airy topic chooser with two mobile columns', () => {
-  const coast = read('public/images/holistic-house/assessment-coast.svg')
-  const lotus = read('public/images/holistic-house/assessment-lotus.svg')
-  assert.match(coast, /Quiet sunrise above a coast/)
-  assert.match(lotus, /lotus flower/)
-  assert.match(picker, /src="\/images\/holistic-house\/assessment-coast\.svg"/)
-  assert.match(picker, /const TOPICS = \[\.\.\.HOME_TEST_TOPICS/)
+test('the existing two-column mobile topic chooser is untouched by the warm hero', () => {
+  assert.match(picker, /const TOPICS = \\[\\.\\.\\.HOME_TEST_TOPICS/)
   assert.match(picker, /key: 'function', en: 'Work & daily life'/)
-  assert.match(picker, /className=\{styles\.selectAll\}/)
-  assert.match(picker, /TOPICS\.every\(\(\{key\}\) => focus\.includes\(key\)\)/)
-  assert.match(picker, /onToggleFocus\(key\)/)
+  assert.match(picker, /className=\\{styles\\.selectAll\\}/)
+  assert.match(picker, /TOPICS\\.every\\(\\(\\{key\\}\\) => focus\\.includes\\(key\\)\\)/)
+  assert.match(picker, /onToggleFocus\\(key\\)/)
   assert.match(css, /Restore the user's approved airy turquoise reference/)
-  assert.match(css, /@media\(max-width:760px\)\{\s*\.shell \.topicGrid\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(css, /\.shell \.benefits>div\{/)
-  assert.match(css, /\.shell \.promoAction\{/)
-  assert.match(css, /background:linear-gradient\(110deg,#973a5b,#822b48\)!important/)
-  assert.match(routeCss, /restored My Tests reference: light aqua header/)
+  assert.match(css, /@media\\(max-width:760px\\)\\{\\s*\\.shell \\.topicGrid\\{\\s*grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/)
+  assert.match(css, /background:linear-gradient\\(110deg,#973a5b,#822b48\\)!important/)
+  assert.match(routeCss, /Public My Tests entry echoes the approved warm homepage masthead/)
 })
 
-test('Google notice remains before topic choices but no longer dominates the hero', () => {
+test('the first mobile step follows the hero immediately, without redundant promo or benefits', () => {
   const hero = picker.indexOf('data-client-tests-hero')
-  const benefits = picker.indexOf('data-client-tests-benefits')
-  const promo = picker.indexOf('data-client-tests-promo')
-  const notice = picker.indexOf('data-prelogin-google-notice')
   const topics = picker.indexOf('id="hh-simple-topic-title"')
-  assert.ok(hero < benefits && benefits < promo && promo < notice && notice < topics)
-  assert.match(picker, /className=\{styles\.accessNote\} data-prelogin-google-notice/)
-  assert.match(picker, /c\.accessNote/)
-  assert.match(picker, /c\.guestAction/)
+  assert.ok(hero > 0 && topics > hero)
+  assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo|data-prelogin-google-notice/)
+  assert.match(picker, /!authenticated && <p className=\\{styles\\.heroFootnote\\}/)
+  assert.match(picker, /c\\.privacy/)
 })
 
 test('problems search and optional skip use the existing topic-derived concerns', () => {
