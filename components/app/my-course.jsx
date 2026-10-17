@@ -495,7 +495,10 @@ export function MyCourse({ data, locale = 'en' }) {
     onCloseCourse={closeCourse} closing={busy}
     onOpen={() => {
       if (state.course?.id && state.course.stage > 0 && !['closed', 'archived'].includes(state.course.status)) {
-        selectCourse(state.course.id)
+        const activeChoices = courses.filter(item => item && item.stage > 0 &&
+          !['closed', 'archived', 'completed'].includes(item.status))
+        if (activeChoices.length === 1 && activeChoices[0].id === state.course.id) selectCourse(state.course.id)
+        else setShowCourse(true) // Multiple courses still offer the dashboard picker.
       } else if (canAddCourse) {
         setShowCourse(true); startAnother()
       } else {
