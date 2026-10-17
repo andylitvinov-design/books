@@ -52,7 +52,8 @@ test('Health is a real non-diagnostic wellbeing filter, not a duplicate Energy c
 
 test('burgundy is reserved for important CTA buttons and selected recommendation controls', () => {
   assert.match(css, /--action-wine:#8b3151/)
-  assert.match(css, /\.shell \.promoAction,\s*\.shell \.cta\[data-test-start-mode=tests\]/)
+  assert.ok(css.includes('.shell .heroActions .heroPrimary'))
+  assert.ok(css.includes('background:#742c42'))
   assert.match(css, /\.shell \.takeTest,\.shell \.viaFamilyActions \.takeTest/)
   assert.match(css, /\.shell \.browseTabs button\[aria-pressed=true\]\{/)
   assert.match(css, /\.shell \.testEntry\[data-selected=true\]\{/)

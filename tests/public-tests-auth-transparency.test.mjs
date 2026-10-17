@@ -6,14 +6,15 @@ const read = (name) => readFileSync(new URL('../' + name, import.meta.url), 'utf
 
 test('public picker transparently offers tests without registration and advertises scale-first results', () => {
   const source = read('components/app/simple-test-picker.jsx')
-  const notice = source.indexOf('data-prelogin-google-notice')
+  const note = source.indexOf('className={styles.heroFootnote}')
   const firstTopic = source.indexOf('id="hh-simple-topic-title"')
-  assert.ok(notice > 0 && firstTopic > notice, 'access information must precede topic selection')
-  assert.match(source, /sets start without registration/)
-  assert.match(source, /наборы проходятся без регистрации/)
-  assert.match(source, /conjuntos disponibles sin registrarte/)
+  assert.ok(note > 0 && firstTopic > note, 'access information must precede topic selection')
+  assert.match(source, /heroFootnote:'Available tests and sets start without registration/)
+  assert.match(source, /heroFootnote:'Доступные тесты и наборы проходятся без регистрации/)
+  assert.match(source, /heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte/)
   assert.match(source, /free personal analysis/)
   assert.match(source, /бесплатные пояснения и анализ/)
+  assert.ok(source.includes('className={styles.testEntry}'))
 })
 
 test('homepage accurately advertises registration-free starts and free Cabinet analysis', () => {

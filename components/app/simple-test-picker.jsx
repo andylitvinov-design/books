@@ -14,12 +14,10 @@ import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/l
 const TEXT = {
   en: {
     kicker:'FREE WELLBEING MONITORING', title:'Choose your tests',
-    heroKicker:'MY TESTS · HOLISTIC HOUSE', heroHeadline:'Understand yourself and your life better',
-    heroDescription:'Choose topics, explore suitable tests and receive personal guidance.',
-    accessNote:'Choose topics freely. Available tests and sets start without registration. After each, see your scales; sign in for a free personal analysis.', guestAction:'Try guest tests',
-    benefitOne:'Measurable progress', benefitTwo:'Deeper understanding', benefitThree:'Personal guidance', benefitFour:'Support & growth',
-    promoKicker:'FREE SELF-REFLECTION', promoTitle:'Start with a personal check-in',
-    promoText:'Explore stress, mood and inner resources, with gentle next steps.', promoAction:'Choose my topics',
+    heroKicker:'FREE SELF-CHECKS · HOLISTIC HOUSE', heroHeadline:'Understand yourself. Find your next step.',
+    heroDescription:'Explore stress, mood, sleep and inner resources with free self-checks. See your results as soon as you finish.',
+    heroPrimary:'Choose my topics', heroSecondary:'Browse free tests',
+    heroFootnote:'Available tests and sets start without registration. Sign in for a free personal analysis.',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
@@ -43,12 +41,10 @@ const TEXT = {
   },
   ru: {
     kicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', title:'Подберите свои тесты',
-    heroKicker:'МОИ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше понять себя и свою жизнь',
-    heroDescription:'Выберите темы, пройдите тесты и получите персональные рекомендации.',
-    accessNote:'Выбирайте темы свободно. Доступные тесты и наборы проходятся без регистрации. После каждого — шкалы и баллы; бесплатные пояснения и анализ — после входа в кабинет.', guestAction:'Попробовать без регистрации',
-    benefitOne:'Измеримый прогресс', benefitTwo:'Глубокое понимание', benefitThree:'Персональные рекомендации', benefitFour:'Поддержка и развитие',
-    promoKicker:'БЕСПЛАТНЫЙ МОНИТОРИНГ', promoTitle:'Начните с базовых тестов',
-    promoText:'Узнайте больше о стрессе, настроении и ресурсах, а затем получите рекомендации.', promoAction:'Выбрать темы',
+    heroKicker:'БЕСПЛАТНЫЕ ТЕСТЫ · HOLISTIC HOUSE', heroHeadline:'Лучше поймите себя. Найдите следующий шаг.',
+    heroDescription:'Исследуйте стресс, настроение, сон и внутренние ресурсы с помощью бесплатных тестов. Результаты доступны сразу после прохождения.',
+    heroPrimary:'Выбрать темы', heroSecondary:'Посмотреть тесты',
+    heroFootnote:'Доступные тесты и наборы проходятся без регистрации. После входа — бесплатные пояснения и анализ.',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
@@ -72,12 +68,10 @@ const TEXT = {
   },
   es: {
     kicker:'MONITOREO GRATUITO', title:'Elige tus pruebas',
-    heroKicker:'MIS PRUEBAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor y comprende tu vida',
-    heroDescription:'Elige temas, completa pruebas adecuadas y recibe orientación personal.',
-    accessNote:'Elige temas libremente. Puedes realizar pruebas y conjuntos disponibles sin registrarte. Verás las escalas; entra a tu espacio para el análisis gratuito.', guestAction:'Probar sin registrarse',
-    benefitOne:'Progreso visible', benefitTwo:'Conócete mejor', benefitThree:'Orientación personal', benefitFour:'Apoyo y crecimiento',
-    promoKicker:'MONITOREO GRATUITO', promoTitle:'Empieza con pruebas sencillas',
-    promoText:'Explora tu estrés, tu ánimo y tus recursos para dar el siguiente paso.', promoAction:'Elegir temas',
+    heroKicker:'PRUEBAS GRATUITAS · HOLISTIC HOUSE', heroHeadline:'Conócete mejor. Descubre tu próximo paso.',
+    heroDescription:'Explora el estrés, el ánimo, el sueño y tus recursos internos con pruebas gratuitas. Consulta tus resultados al terminar.',
+    heroPrimary:'Elegir temas', heroSecondary:'Ver pruebas gratuitas',
+    heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte. Entra para recibir un análisis personal gratuito.',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
@@ -205,37 +199,17 @@ export function SimpleTestPicker({
 
   return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
     <header className={styles.hero} data-client-tests-hero>
-      <div>
+      <div className={styles.heroContent}>
         <p className={styles.eyebrow}>{c.heroKicker}</p>
         <h1>{c.heroHeadline}</h1>
         <p className={styles.lead}>{c.heroDescription}</p>
-      </div>
-      <div className={styles.heroSaying} aria-hidden="true">
-        <span>{locale === 'ru' ? 'Осознанность сегодня — больше свободы завтра' : locale === 'es' ? 'Más conciencia hoy, más libertad mañana' : 'Awareness today, more freedom tomorrow'}</span>
-        <Heart size={22} strokeWidth={1.5}/>
+        <nav className={styles.heroActions} aria-label={locale === 'ru' ? 'Бесплатные тесты' : locale === 'es' ? 'Pruebas gratuitas' : 'Free self-checks'}>
+          <a href="#hh-simple-topic-title" className={styles.heroPrimary}>{c.heroPrimary}<ArrowRight size={20} aria-hidden="true"/></a>
+          <a href="#hh-simple-recommendations" className={styles.heroSecondary}>{c.heroSecondary}<ArrowRight size={20} aria-hidden="true"/></a>
+        </nav>
+        {!authenticated && <p className={styles.heroFootnote}>{c.heroFootnote}</p>}
       </div>
     </header>
-    <div className={styles.benefits} aria-label={locale === 'ru' ? 'Возможности мониторинга' : 'Monitoring benefits'} data-client-tests-benefits>
-      <div><Activity size={21} aria-hidden="true"/><span>{c.benefitOne}</span></div>
-      <div><Heart size={21} aria-hidden="true"/><span>{c.benefitTwo}</span></div>
-      <div><Leaf size={21} aria-hidden="true"/><span>{c.benefitThree}</span></div>
-      <div><Users size={21} aria-hidden="true"/><span>{c.benefitFour}</span></div>
-    </div>
-    <section className={styles.promo} aria-label={c.promoTitle} data-client-tests-promo>
-      <div className={styles.promoImage}>
-        <img src="/images/holistic-house/assessment-coast.svg" alt="" width="480" height="480" decoding="async" />
-      </div>
-      <div className={styles.promoCopy}>
-        <p className={styles.promoKicker}>{c.promoKicker}</p>
-        <h2>{c.promoTitle}</h2>
-        <p>{c.promoText}</p>
-        <a href="#hh-simple-topic-title" className={styles.promoAction}>{c.promoAction}<ArrowRight size={19} aria-hidden="true"/></a>
-      </div>
-    </section>
-    {!authenticated && <p className={styles.accessNote} data-prelogin-google-notice>
-      {c.accessNote}{' '}
-      <Link href={`/${locale === 'ru' ? 'ru' : 'en'}/client`} prefetch={false}>{c.guestAction} →</Link>
-    </p>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.topicHeading}>

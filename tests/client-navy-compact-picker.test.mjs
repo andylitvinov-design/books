@@ -110,18 +110,17 @@ test('each recommended test has a single visible test-kind badge, not a duplicat
 })
 
 
-test('editorial polish reduces top-of-page bulk without losing the three-step picker', () => {
-  assert.match(css, /My Tests editorial spacing & mobile card readability/)
-  assert.match(css, /\.shell \.benefits>div\{/)
-  assert.match(css, /\.shell \.promoImage\{/)
-  assert.match(css, /\.shell \.promoCopy h2\{/)
-  assert.match(css, /\.shell \.sectionHeader\{/)
-  assert.match(css, /@media\(max-width:600px\)/)
-  assert.match(css, /\.shell \.promoImage\{width:76px;height:100px/)
-  assert.match(css, /\.shell \.benefits>div\{min-height:37px/)
-  assert.match(picker, /id="hh-simple-topic-title"/)
-  assert.match(picker, /id="hh-simple-recommendations"/)
-  assert.match(picker, /data-client-tests-promo/)
+test('the first screen is one compact photo hero; the original topic and catalog flow survives', () => {
+  assert.ok(css.includes('Home-aligned My Tests first screen'))
+  assert.ok(css.includes('andy-about.png'))
+  assert.ok(css.includes('.shell .heroActions'))
+  assert.ok(css.includes('@media(max-width:600px)'))
+  assert.ok(picker.includes('className={styles.heroContent}'))
+  assert.ok(picker.includes('className={styles.heroPrimary}'))
+  assert.ok(picker.includes('className={styles.heroSecondary}'))
+  assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo/)
+  assert.ok(picker.includes('id="hh-simple-topic-title"'))
+  assert.ok(picker.includes('id="hh-simple-recommendations"'))
 })
 
 test('mobile cards give full width to labels and keep a 44px burgundy launch button below metadata', () => {
@@ -137,46 +136,38 @@ test('mobile cards give full width to labels and keep a 44px burgundy launch but
   assert.match(css, /\.shell \.takeTest,\.shell \.cta\[data-test-start-mode=tests\]/)
 })
 
-test('brief introductions remain localized and their topic action still jumps to the real picker', () => {
-  assert.match(picker, /promoTitle:'Start with a personal check-in'/)
-  assert.match(picker, /promoTitle:'Начните с базовых тестов'/)
-  assert.match(picker, /promoTitle:'Empieza con pruebas sencillas'/)
-  assert.match(picker, /href="#hh-simple-topic-title"/)
-  assert.match(picker, /aria-pressed=\{checked\}/)
-  assert.match(picker, /onToggleFocus\(key\)/)
-  assert.match(picker, /data-test-start-mode=\{journeyMode\}/)
+test('free test hero is localized, and both actions jump to real content', () => {
+  assert.ok(picker.includes("heroPrimary:'Choose my topics'"))
+  assert.ok(picker.includes("heroPrimary:'Выбрать темы'"))
+  assert.ok(picker.includes("heroPrimary:'Elegir temas'"))
+  assert.ok(picker.includes("heroSecondary:'Browse free tests'"))
+  assert.ok(picker.includes('href="#hh-simple-topic-title"'))
+  assert.ok(picker.includes('href="#hh-simple-recommendations"'))
+  assert.ok(picker.includes('aria-pressed={checked}'))
+  assert.ok(picker.includes('onToggleFocus(key)'))
+  assert.ok(picker.includes('data-test-start-mode={journeyMode}'))
 })
 
 
-test('approved turquoise reference keeps its airy topic chooser with two mobile columns', () => {
-  const coast = read('public/images/holistic-house/assessment-coast.svg')
-  const lotus = read('public/images/holistic-house/assessment-lotus.svg')
-  assert.match(coast, /Quiet sunrise above a coast/)
-  assert.match(lotus, /lotus flower/)
-  assert.match(picker, /src="\/images\/holistic-house\/assessment-coast\.svg"/)
-  assert.match(picker, /const TOPICS = \[\.\.\.HOME_TEST_TOPICS/)
-  assert.match(picker, /key: 'function', en: 'Work & daily life'/)
-  assert.match(picker, /className=\{styles\.selectAll\}/)
-  assert.match(picker, /TOPICS\.every\(\(\{key\}\) => focus\.includes\(key\)\)/)
-  assert.match(picker, /onToggleFocus\(key\)/)
-  assert.match(css, /Restore the user's approved airy turquoise reference/)
-  assert.match(css, /@media\(max-width:760px\)\{\s*\.shell \.topicGrid\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(css, /\.shell \.benefits>div\{/)
-  assert.match(css, /\.shell \.promoAction\{/)
-  assert.match(css, /background:linear-gradient\(110deg,#973a5b,#822b48\)!important/)
-  assert.match(routeCss, /restored My Tests reference: light aqua header/)
+test('the existing two-column mobile topic chooser is untouched by the warm hero', () => {
+  assert.ok(picker.includes('const TOPICS = [...HOME_TEST_TOPICS'))
+  assert.ok(picker.includes("key: 'function', en: 'Work & daily life'"))
+  assert.ok(picker.includes('className={styles.selectAll}'))
+  assert.ok(picker.includes('TOPICS.every(({key}) => focus.includes(key))'))
+  assert.ok(picker.includes('onToggleFocus(key)'))
+  assert.ok(css.includes("Restore the user's approved airy turquoise reference"))
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))
+  assert.ok(css.includes('background:linear-gradient(110deg,#973a5b,#822b48)!important'))
+  assert.ok(routeCss.includes('Public My Tests entry echoes the approved warm homepage masthead'))
 })
 
-test('Google notice remains before topic choices but no longer dominates the hero', () => {
+test('the first mobile step follows the hero immediately, without redundant promo or benefits', () => {
   const hero = picker.indexOf('data-client-tests-hero')
-  const benefits = picker.indexOf('data-client-tests-benefits')
-  const promo = picker.indexOf('data-client-tests-promo')
-  const notice = picker.indexOf('data-prelogin-google-notice')
   const topics = picker.indexOf('id="hh-simple-topic-title"')
-  assert.ok(hero < benefits && benefits < promo && promo < notice && notice < topics)
-  assert.match(picker, /className=\{styles\.accessNote\} data-prelogin-google-notice/)
-  assert.match(picker, /c\.accessNote/)
-  assert.match(picker, /c\.guestAction/)
+  assert.ok(hero > 0 && topics > hero)
+  assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo|data-prelogin-google-notice/)
+  assert.ok(picker.includes('!authenticated && <p className={styles.heroFootnote}'))
+  assert.ok(picker.includes('c.privacy'))
 })
 
 test('problems search and optional skip use the existing topic-derived concerns', () => {

@@ -1689,3 +1689,173 @@
   .shell .browseTabs{grid-template-columns:repeat(4,minmax(0,1fr)) 33px;gap:3px}
   .shell .browseTabs button{font-size:.61rem!important;padding:5px 1px}
 }
+
+
+/* Home-aligned My Tests first screen, 2026-10-16.
+   One photography-led introduction replaces the stacked benefits and promo.
+   The original topic filters, catalog, account flows and course CTA are unchanged. */
+.shell {
+  background:#faf7f1;
+  border-color:#e9e0d6;
+}
+.shell .hero {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  min-height:445px;
+  padding:clamp(28px,5vw,56px) clamp(24px,5vw,54px);
+  border:1px solid #e5d9cc;
+  border-radius:21px;
+  background:#f6eddf;
+}
+.shell .hero::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  background:url('/images/holistic-house/andy-about.png') 74% 62% / cover no-repeat;
+  opacity:.75;
+  pointer-events:none;
+}
+.shell .hero::after {
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  background:linear-gradient(90deg,
+    rgba(246,237,223,.99) 0%,
+    rgba(246,237,223,.97) 43%,
+    rgba(246,237,223,.8) 67%,
+    rgba(246,237,223,.27) 100%);
+  pointer-events:none;
+}
+.shell .heroContent {
+  position:relative;
+  z-index:2;
+  width:100%;
+  max-width:620px;
+}
+.shell .eyebrow {
+  color:#89563b;
+  font-size:.71rem;
+  font-weight:750;
+  line-height:1.4;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  margin:0 0 14px;
+}
+.shell .hero h1 {
+  color:#352920;
+  max-width:19ch;
+  font:400 clamp(2.35rem,4.7vw,4rem)/1.06 Georgia,serif!important;
+  letter-spacing:-.041em;
+  text-wrap:balance;
+  margin:0 0 16px!important;
+}
+.shell .hero .lead {
+  color:#574b42;
+  max-width:50ch;
+  font-size:clamp(.96rem,1.6vw,1.08rem);
+  line-height:1.48;
+  margin:0!important;
+}
+.shell .heroActions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:stretch;
+  gap:10px;
+  margin-top:22px;
+}
+.shell .heroActions a {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  min-height:51px;
+  border:1px solid transparent;
+  border-radius:999px;
+  padding:12px 20px;
+  font:750 .88rem/1.25 Arial,Helvetica,sans-serif;
+  text-decoration:none;
+  text-align:center;
+  transition:background-color .15s ease,border-color .15s ease;
+}
+.shell .heroActions a svg {width:18px;height:18px;flex:0 0 18px}
+.shell .heroActions .heroPrimary {
+  background:#742c42;
+  border-color:#742c42;
+  color:#fffaf4;
+  box-shadow:0 7px 20px rgba(86,30,49,.17);
+}
+.shell .heroActions .heroPrimary:hover {background:#612238;border-color:#612238}
+.shell .heroActions .heroSecondary {
+  background:rgba(255,250,244,.96);
+  border-color:#987258;
+  color:#633c29;
+}
+.shell .heroActions .heroSecondary:hover {background:#fff}
+.shell .heroActions a:focus-visible {
+  outline:3px solid #986d55;
+  outline-offset:3px;
+}
+.shell .heroFootnote {
+  margin:14px 0 0;
+  color:#705e50;
+  font-size:.77rem;
+  font-weight:650;
+  line-height:1.35;
+}
+.shell :global(#hh-simple-recommendations) {scroll-margin-top:100px}
+@media(max-width:600px){
+  .shell {
+    width:calc(100% - 18px);
+    margin:8px auto 24px;
+    padding:9px;
+    border-radius:19px;
+  }
+  .shell .hero {
+    display:flex;
+    min-height:0;
+    padding:27px 19px 24px;
+    border-radius:15px;
+    gap:0;
+  }
+  .shell .hero::before {
+    background-position:62% 60%;
+    opacity:.59;
+  }
+  .shell .hero::after {
+    background:linear-gradient(90deg,
+      rgba(246,237,223,.98) 0%,
+      rgba(246,237,223,.93) 63%,
+      rgba(246,237,223,.75) 100%);
+  }
+  .shell .eyebrow {font-size:.65rem;letter-spacing:.12em;margin-bottom:12px}
+  .shell .hero h1 {
+    max-width:17ch;
+    font-size:clamp(2.08rem,8.9vw,2.7rem)!important;
+    line-height:1.07;
+    margin-bottom:13px!important;
+  }
+  .shell .hero .lead {max-width:36ch;font-size:.91rem;line-height:1.44}
+  .shell .heroActions {display:grid;grid-template-columns:1fr;gap:9px;margin-top:20px}
+  .shell .heroActions a {
+    width:100%;
+    min-height:49px;
+    justify-content:space-between;
+    padding:11px 19px;
+    font-size:.9rem;
+  }
+  .shell .heroFootnote {margin-top:12px;font-size:.72rem}
+}
+@media(max-width:370px){
+  .shell .hero{padding:22px 15px 20px}
+  .shell .hero h1{font-size:clamp(1.95rem,9vw,2.12rem)!important}
+  .shell .hero .lead{font-size:.84rem}
+  .shell .heroActions a{font-size:.83rem;padding-inline:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .shell .heroActions a{transition:none}
+}
