@@ -25,6 +25,7 @@ import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
 import { TestDynamics } from '@/components/app/test-dynamics'
 import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
+import { TestRatingCard } from '@/components/app/test-rating-card'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
@@ -2870,6 +2871,7 @@ function ResultPage({ id, locale, data }) {
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
       <PersonalResultReport result={result} locale={locale} previous={previous} />
+      <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
         {canRepeat
           ? <button type="button" onClick={repeatTest} disabled={retaking}>
