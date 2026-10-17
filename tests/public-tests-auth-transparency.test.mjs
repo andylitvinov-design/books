@@ -14,7 +14,7 @@ test('public picker transparently offers tests without registration and advertis
   assert.match(source, /heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte/)
   assert.match(source, /free personal analysis/)
   assert.match(source, /бесплатные пояснения и анализ/)
-  assert.match(source, /className=\\{styles\\.testEntry\\}/)
+  assert.ok(source.includes('className={styles.testEntry}'))
 })
 
 test('homepage accurately advertises registration-free starts and free Cabinet analysis', () => {
