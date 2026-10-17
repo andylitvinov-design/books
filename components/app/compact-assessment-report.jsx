@@ -93,11 +93,11 @@ export function CompactAssessmentReport({ result, previous = null, report, local
     <article id="hh-assessment-scale-panel" key={section.key + ':' + selectedIndex}
       className={styles.card} role="region" aria-label={section.construct || section.title}
       data-active-scale={section.key}>
-      <div className={styles.measure}>
-        <ScoreGauge dimension={dimension} locale={locale} result={result} showScaleNote={false}/>
+      <div className={styles.measure + (!showCaveatsInline && section.bandBasis === 'descriptive' ? ' ' + styles.quietGauge : '')}>
+        <ScoreGauge dimension={dimension} locale={locale} result={result}/>
         <div className={styles.summary}>
           <h3>{section.construct || section.title}</h3>
-          {section.band && ['screening', 'published-reference'].includes(section.bandBasis) && <p className={styles.band}>{section.band}</p>}
+          {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
@@ -148,7 +148,9 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </div>}
       <details className={styles.details}>
         <summary>{ru ? 'Подробнее об этой шкале' : 'More about this scale'}</summary>
+        {section.bandBasis === 'descriptive' && section.band && <p className={styles.technicalBand}>{section.band}</p>}
         {section.meaning && section.meaning !== conciseMeaning && <p>{section.meaning}</p>}
+        {!showCaveatsInline && section.limitations?.map(limit => <p key={limit} data-scale-limitation>{limit}</p>)}
         {guide?.watch && <p><strong>{ru ? 'Что наблюдать:' : 'What to monitor:'}</strong> {guide.watch}</p>}
         {guide?.skill && <p><strong>{ru ? 'Навык по желанию:' : 'Optional skill:'}</strong> {guide.skill}</p>}
         {section.followUp && section.followUp !== primarySupport && <p>{section.followUp}</p>}
@@ -186,7 +188,6 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         {report.purpose && <p>{report.purpose}</p>}
         {report.contextNote && anchor && <p data-assessment-context>{report.contextNote}</p>}
         {report.methodology && <p>{report.methodology}</p>}
-        {report.verified !== false && section.limitations?.map(limit => <p key={limit} data-scale-limitation>{limit}</p>)}
         {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
         {report.note && <p>{report.note}</p>}
         {report.seekSupport && report.seekSupport !== primarySupport && <p>{report.seekSupport}</p>}
