@@ -346,7 +346,13 @@ export function SimpleTestPicker({
               setHeroSearch('')
               setSubmittedHeroSearch('')
               setVisibleCount(5)
-              document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              // Keep the named Tantra pathway chooser in view, rather than
+              // jumping past it to the generic recommendation list.
+              window.requestAnimationFrame(() => {
+                const target = !active && ['tantra','sexuality'].includes(collection.id)
+                  ? 'hh-tantra-test-paths-title' : 'hh-simple-recommendations'
+                document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              })
             }}>
             <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className={styles.curatedCardText}><strong>{title}</strong></span>
@@ -382,6 +388,8 @@ export function SimpleTestPicker({
             aria-pressed={chosen} disabled={!onChooseTantraPath}
             onClick={() => {
               onChooseTantraPath?.(path.keys)
+              setHeroSearch('')
+              setSubmittedHeroSearch('')
               setVisibleCount(5)
               document.getElementById('hh-simple-recommendations')?.scrollIntoView({behavior:'smooth',block:'start'})
             }}>

@@ -2501,6 +2501,7 @@
   }
 }
 
+
 /* Accessible, compact path picker: exactly one explicit draft set at a time. */
 .tantraPaths{margin:12px 0;padding:clamp(14px,2vw,19px);background:linear-gradient(140deg,#fffdfa,#faf8fb);
   border:1px solid #dfdce6;border-radius:18px;color:#203d56;box-shadow:0 4px 16px rgba(29,48,73,.04)}

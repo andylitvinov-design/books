@@ -87,6 +87,15 @@ export async function assertPublicCollectionChips(root, expect, locale, collecti
 
 // These controls only filter real, cleared catalog entries. The synthetic page
 // never starts a questionnaire, authenticates, or writes an account while browsing.
+export function assertPublicCollectionMatches(shown, entries, collection, selectedKeys) {
+  const allowed = new Set(filterExplorerEntries(entries, {
+    availability: 'available', focus: collection.focus, selectedKeys,
+  }).filter(entry => entry.selectable).map(entry => entry.key))
+  assert.ok(shown.length > 0 && shown.length <= 5)
+  assert.equal(new Set(shown).size, shown.length, 'Collection cards remain unique')
+  assert.ok(shown.every(key => allowed.has(key)), 'Collection matches retain source eligibility and only explicit cross-topic selections: ' + collection.id)
+}
+
 export async function exercisePublicCollections(page, expect, locale) {
   const picker = page.locator('[data-prelogin-test-picker]')
   const root = picker.locator('[data-test-topic-collections]')
@@ -122,10 +131,8 @@ export async function exercisePublicCollections(page, expect, locale) {
       await expect(root.locator('[data-test-collection][aria-pressed="true"]')).toHaveCount(1)
       const matches = picker.locator('[data-test-match]')
       await expect(matches.first()).toBeVisible()
-      const allowed = new Set(filterExplorerEntries(entries, { availability: 'available', focus: collection.focus }).filter(entry => entry.selectable).map(entry => entry.key))
       const shown = await matches.evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))
-      assert.ok(shown.length > 0 && shown.length <= 5)
-      assert.ok(shown.every(key => allowed.has(key)), 'Collection recommendations retain actual eligible source matches: ' + id)
+      assertPublicCollectionMatches(shown, entries, collection, preserved)
       assert.deepEqual(await readSelection(picker), preserved, 'Changing collections preserves only the manually selected battery')
       await expect(page).toHaveURL(currentUrl)
     }

@@ -3,9 +3,9 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
-import { availableTestCollections } from '../lib/assessments/test-collections.js'
+import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
-import { exercisePortraitRays, assertPublicCollectionChips } from '../scripts/helpers/public-discovery-verifier.mjs'
+import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
 import * as explorerModule from '../lib/assessments/test-explorer.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -22,11 +22,11 @@ function hooks() {
     useMemo: fn => fn(), useEffect() {}, useRef: initial => ({ current: initial }), useId: () => 'synthetic-portrait-rays',
   }
 }
-function compile(source, react, modules = {}) {
+function compile(source, react, modules = {}, browser = {}) {
   const exported = {}
-  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    exports: exported, window: {}, console, URLSearchParams,
-    document: { getElementById: () => ({ scrollIntoView() {} }) },
+  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, {
+    exports: exported, window: browser.window || {}, console, URLSearchParams,
+    document: browser.document || { getElementById: () => ({ scrollIntoView() {} }) },
     require(name) {
       if (modules[name]) return modules[name]
       if (name === 'react') return react
@@ -52,9 +52,14 @@ for (const source of [parentSource, pickerSource])
 
 for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handlers reset stale facets, preserve manual selections and never start tests', () => {
   const parentHooks = hooks(), pickerHooks = hooks()
-  const { TestExplorer } = compile(parentSource, parentHooks, modules)
-  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
   let starts = 0, tree, pickerProps
+  const frames = [], scrolls = []
+  const browser = {
+    window: { requestAnimationFrame(callback) { frames.push(callback) } },
+    document: { getElementById(id) { return nodes(tree).some(node => node.props.id === id) ? { scrollIntoView(options) { scrolls.push({ id, ...options }) } } : null } },
+  }
+  const { TestExplorer } = compile(parentSource, parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules, browser)
   const render = () => {
     parentHooks.reset(); pickerHooks.reset()
     const parent = TestExplorer({ locale, audience: 'guest', simpleMode: true, onStart: () => { starts++ } })
@@ -64,6 +69,17 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
     return tree
   }
   const collectionCards = () => nodes(tree).filter(node => node.type === 'button' && node.props['data-test-collection'])
+  const chooseCollection = id => {
+    const card = collectionCards().find(node => node.props['data-test-collection'] === id)
+    const target = !card.props['aria-pressed'] && ['tantra', 'sexuality'].includes(id) ? 'hh-tantra-test-paths-title' : 'hh-simple-recommendations'
+    const before = scrolls.length
+    card.props.onClick()
+    assert.equal(scrolls.length, before, 'Scroll waits for the updated section to render')
+    assert.equal(frames.length, 1)
+    render()
+    frames.shift()()
+    assert.deepEqual(scrolls.slice(before), [{ id: target, behavior: 'smooth', block: 'start' }])
+  }
   render()
   const collections = availableTestCollections(pickerProps.catalogEntries)
   assert.deepEqual(collectionCards().map(node => node.props['data-test-collection']), collections.map(item => item.id))
@@ -84,21 +100,23 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   pickerProps.onDepth('deep'); pickerProps.onMaxMinutes(5); pickerProps.onSelectTestKind('professional'); render()
   for (const id of ['stress', 'relationships', 'tantra', 'sexuality']) {
     const collection = collections.find(item => item.id === id)
-    collectionCards().find(node => node.props['data-test-collection'] === id).props.onClick(); render()
+    chooseCollection(id)
     assert.deepEqual(Array.from(pickerProps.focus), collection.focus)
     assert.equal(pickerProps.depth, 'balanced'); assert.equal(pickerProps.maxMinutes, 0)
     assert.deepEqual(Array.from(pickerProps.testKinds), [])
     assert.deepEqual(Array.from(pickerProps.problems), [])
     assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
-    const expected = new Set(explorerModule.filterExplorerEntries(pickerProps.catalogEntries, { availability: 'available', focus: collection.focus }).filter(entry => entry.selectable).map(entry => entry.key))
+    const expected = new Set(explorerModule.filterExplorerEntries(pickerProps.catalogEntries, { availability: 'available', focus: collection.focus, selectedKeys: preserved }).filter(entry => entry.selectable).map(entry => entry.key))
     assert.ok(pickerProps.recommendations.length > 0)
     assert.ok(pickerProps.recommendations.every(entry => expected.has(entry.key)))
+    assert.ok(preserved.every(key => pickerProps.recommendations.some(entry => entry.key === key)), 'Every explicit cross-topic selection stays reachable')
+    assertPublicCollectionMatches(nodes(tree).filter(node => node.props['data-test-match']).map(node => node.props['data-test-match']), pickerProps.catalogEntries, collection, preserved)
     assert.equal(collectionCards().filter(node => node.props['aria-pressed']).length, 1)
   }
-  collectionCards().find(node => node.props['data-test-collection'] === 'sexuality').props.onClick(); render()
+  chooseCollection('sexuality')
   assert.deepEqual(Array.from(pickerProps.focus), [])
   assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
-  collectionCards().find(node => node.props['data-test-collection'] === 'sleep').props.onClick(); render()
+  chooseCollection('sleep')
   const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
   const search = () => nodes(tree).find(node => node.props.id === 'hh-test-hero-search')
   search().props.onChange({ target: { value: query } }); render()
@@ -110,10 +128,80 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   assert.equal(nodes(tree).filter(node => node.props['data-via-family']).length, 0)
   assert.deepEqual(Array.from(pickerProps.focus), ['sleep'])
   assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
-  collectionCards().find(node => node.props['data-test-collection'] === 'sexuality').props.onClick(); render()
+  chooseCollection('sexuality')
   assert.equal(search().props.value, '')
   assert.deepEqual(Array.from(pickerProps.focus), ['sexuality'])
   assert.equal(starts, 0)
+})
+
+for (const locale of ['en', 'ru', 'es']) test(locale + ' explicit Tantric path clears stale facets and search while preserving every selected cross-topic card until Start', async () => {
+  const parentHooks = hooks(), pickerHooks = hooks()
+  const { TestExplorer } = compile(parentSource, parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
+  const starts = []
+  let tree, pickerProps
+  const initialPreferences = { focus: ['tantra'], problems: [], styles: ['professional'], kinds: ['professional'], lengths: ['long'], depth: 'deep', areas: ['work'], details: ['sleep'], axes: ['sleep'], maxMinutes: 1, language: 'ru', tracking: 'repeat', freeOnly: true }
+  const render = () => {
+    parentHooks.reset(); pickerHooks.reset()
+    pickerProps = TestExplorer({ locale, audience: 'guest', simpleMode: true, preserveScaleFilters: true, initialPreferences, onStart: async (entries, preferences) => starts.push({ keys: entries.map(entry => entry.key), preferences }) }).props
+    tree = SimpleTestPicker(pickerProps)
+  }
+  render()
+  assert.deepEqual(starts, [])
+  const paths = availableTantraTestPaths(pickerProps.catalogEntries)
+  assert.equal(paths.length, 9)
+  const path = paths.find(item => item.id === 'aftercare-check-in')
+  assert.ok(path)
+  const search = () => nodes(tree).find(node => node.props.id === 'hh-test-hero-search')
+  search().props.onChange({ target: { value: 'Love' } }); render()
+  nodes(tree).find(node => node.type === 'form' && node.props.role === 'search').props.onSubmit({ preventDefault() {} }); render()
+  assert.equal(search().props.value, 'Love')
+  const toggle = nodes(tree).find(node => node.props.className === 'tantraPathToggle')
+  assert.equal(toggle.props['aria-expanded'], false)
+  toggle.props.onClick(); render()
+  assert.equal(nodes(tree).find(node => node.props['data-tantra-test-paths']).props['data-expanded'], 'true')
+  nodes(tree).find(node => node.props['data-tantra-path'] === path.id).props.onClick(); render()
+  assert.equal(search().props.value, '')
+  assert.deepEqual(Array.from(pickerProps.focus), ['tantra'])
+  assert.equal(pickerProps.depth, 'balanced'); assert.equal(pickerProps.maxMinutes, 0)
+  assert.deepEqual(Array.from(pickerProps.testKinds), [])
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key).sort(), [...path.keys].sort())
+  assert.ok(path.keys.every(key => pickerProps.recommendations.some(entry => entry.key === key)))
+  const matching = new Set(explorerModule.filterExplorerEntries(pickerProps.catalogEntries, { availability: 'available', focus: ['tantra'] }).map(entry => entry.key))
+  assert.ok(path.keys.some(key => !matching.has(key)), 'The exercised path must include a selected card outside the current topic')
+  // Follow the real disclosure until every selected card is visible. A cleared
+  // text field alone would miss a stale submitted-search filter.
+  for (let step = 0; step < pickerProps.recommendations.length; step++) {
+    const more = nodes(tree).find(node => node.type === 'button' && node.props['aria-controls'] === 'hh-public-recommended-tests')
+    if (!more) break
+    more.props.onClick(); render()
+  }
+  const shown = nodes(tree).filter(node => node.props['data-test-match'])
+  for (const key of path.keys) {
+    const card = shown.find(node => node.props['data-test-match'] === key)
+    assert.ok(card, 'Explicit cross-topic card remains reachable: ' + key)
+    assert.equal(nodes(card).find(node => node.type === 'input').props.checked, true)
+  }
+  assert.deepEqual(starts, [], 'Choosing a path and browsing never starts or saves it')
+  const start = nodes(tree).find(node => node.props['data-test-start-mode'] === 'tests')
+  assert.equal(start.props.onClick, pickerProps.onStart)
+  await start.props.onClick()
+  assert.equal(starts.length, 1, 'Only explicit Start invokes the handoff')
+  assert.deepEqual(starts[0].keys.sort(), [...path.keys].sort())
+  assert.deepEqual(JSON.parse(JSON.stringify(starts[0].preferences)), { focus: ['tantra'], problems: [], details: [], axes: [], areas: [], styles: [], kinds: [], lengths: [], depth: 'balanced', maxMinutes: 0, language: 'any', tracking: 'any', freeOnly: false })
+})
+
+test('collection browser eligibility allows only actual topic matches and explicit eligible cross-topic selections', () => {
+  const entries = explorerModule.buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const collection = availableTestCollections(entries).find(item => item.id === 'sleep')
+  const matching = explorerModule.filterExplorerEntries(entries, { availability: 'available', focus: collection.focus }).filter(entry => entry.selectable)
+  const keys = new Set(matching.map(entry => entry.key))
+  const outside = entries.filter(entry => entry.selectable && !keys.has(entry.key))
+  const selected = outside[0].key, unselected = outside[1].key
+  assertPublicCollectionMatches([matching[0].key, selected], entries, collection, [selected])
+  for (const shown of [[selected], [unselected], ['unknown-key'], [matching[0].key, matching[0].key], [], Array(6).fill(matching[0].key)]) {
+    assert.throws(() => assertPublicCollectionMatches(shown, entries, collection, []))
+  }
 })
 
 function portraitHarness(locale, mutate = source => source) {

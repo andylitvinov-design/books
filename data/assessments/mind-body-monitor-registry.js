@@ -336,6 +336,9 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
   row('fscrs-22', 'self_criticism', 'resources', 'A', 'Forms of Self-Criticizing/Attacking and Self-Reassuring Scale', 'FSCRS', 22, '4-6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
     rightsNote: 'This reference introduces the three published constructs, without copying questionnaire items.',
   }),
+  row('ras-7', 'relationship_satisfaction', 'relationships', 'A', 'Relationship Assessment Scale', 'RAS', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Only research metadata; verify permission before public self-administration.',
+  }),
   row('cfq-7', 'psychological_flexibility', 'resources', 'A', 'Cognitive Fusion Questionnaire - 7', 'CFQ-7', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
     sourceUrl: 'https://doi.org/10.1371/journal.pone.0246434',
     rightsNote: 'Open-access research does not automatically license commercial item reproduction.',
@@ -380,7 +383,8 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
 
 
   // Additional curated research references; questionnaire access stays gated.
-  ...NEW_PSYCHOTHERAPY_REFERENCES.map((item) => row(
+  // RAS-7 already has a fuller rights-reviewed record above. Import it once.
+  ...NEW_PSYCHOTHERAPY_REFERENCES.filter((item) => item.key !== 'ras-7').map((item) => row(
     item.key, item.category, item.area, item.priority, item.instrument,
     item.acronym, item.items, item.duration, item.rightsStatus, item.access,
     { rightsNote: item.rightsNote },
