@@ -31,7 +31,7 @@ test('Academy and My Tests use the same sitewide banner and bottom navigation', 
   const explorer = source('app/[locale]/client/tests/page.tsx')
   assert.match(root, /<SitewideAntistressBanner initialLocale=\{lang\}/)
   assert.match(root, /<MobileBottomNavigation initialLocale=\{lang\}/)
-  assert.match(ribbon, /!isPublicTestDiscoveryPath\(pathname\)/)
+  assert.ok(ribbon.includes('client(?:\\/tests)?'))
   assert.match(bottom, /!isPublicTestDiscoveryPath\(pathname\)/)
   assert.match(ribbon, /data-sitewide-personal-review-banner/)
   assert.match(bottom, /getSiteNavigation\(locale\)\.filter\(item => item.id !== 'relationships'\)/)
