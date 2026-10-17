@@ -44,6 +44,13 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   // score prefix. Legacy/specialised reports retain their complete explanation.
   const conciseMeaning = section.summary || section.meaning
   const canShowScore = typeof section.value === 'number' && Number.isFinite(section.value)
+  // Keep material integrity, translation and mixed-polarity warnings visible.
+  // Only repetitive methodological boilerplate for safely identified original
+  // HH self-reflection scales belongs behind the method disclosure.
+  const materialCaveat = section.limitations?.some(note =>
+    /translation|unvalidated|russian form|without reversing|перевод|английск|русск|без разворота/i.test(note))
+  const showCaveatsInline = report.verified === false || section.bandBasis === 'unavailable' ||
+    !result?.definitionKey?.startsWith('hh-') || materialCaveat
   const primarySupport = report.verified === false || section.bandBasis === 'unavailable'
     ? null : section.recommendedReview && section.followUp
       ? section.followUp : section.primarySupport || section.steps?.[0] || section.followUp
@@ -133,7 +140,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           ? 'Диапазоны показывают, к какому исходному варианту ответа ближе средний балл. Это ориентир для самонаблюдения, не медицинские нормы и не оценка «хорошо/плохо».'
           : 'These ranges show which original answer option is closest to your average. They guide self-reflection, not clinical norms or a pass/fail judgement.'}</p>
       </section>}
-      {report.verified === false && section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
+      {showCaveatsInline && section.limitations?.map(limit => <p key={limit} className={styles.contextNote} role="note" data-scale-limitation>{limit}</p>)}
       {primarySupport && <div className={styles.recommendations}>
         <h4>{ru ? 'Поддержка в вашем темпе' : 'Support at your own pace'}</h4>
         <p className={section.recommendedReview ? styles.care : styles.explanation}
