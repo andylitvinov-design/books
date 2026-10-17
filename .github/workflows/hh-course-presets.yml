@@ -11,6 +11,8 @@ on:
       - 'components/app/course-preset-catalog.*'
       - 'components/app/my-course.jsx'
       - 'components/app/my-courses-dashboard.jsx'
+      - 'components/app/course-entry-selector.jsx'
+      - 'components/app/cabinet-free-course-banners.*'
       - 'components/app/course-r3-steps.jsx'
       - 'lib/app/growth-course.js'
       - 'tests/course-presets.test.mjs'
@@ -19,6 +21,8 @@ on:
       - 'lib/app/course-access.js'
       - 'docs/billing/proposed-concurrent-course-schema.sql'
       - 'tests/course-dashboard-integration.test.mjs'
+      - 'tests/cabinet-free-energy-courses.test.mjs'
+      - 'tests/helpers/course-ui-harness.mjs'
       - 'tests/course-concurrency-ui.test.mjs'
       - 'tests/course-free-slot-restart.test.mjs'
       - 'package.json'
@@ -41,8 +45,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Test exact five-test fixed curricula, old R3 and multicourse
-        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs
+        run: node --conditions=react-server --test tests/course-presets.test.mjs tests/my-course.test.mjs tests/course-plans.test.mjs tests/multi-courses-architecture.test.mjs tests/course-concurrency-ui.test.mjs tests/course-dashboard-integration.test.mjs tests/course-free-slot-restart.test.mjs tests/cabinet-free-energy-courses.test.mjs
       - name: Lint course code
-        run: npx eslint components/app/course-preset-catalog.jsx components/app/my-course.jsx components/app/course-r3-steps.jsx components/app/my-courses-dashboard.jsx lib/inner-growth/course-presets.js lib/app/growth-course.js
+        run: npx eslint components/app/course-preset-catalog.jsx components/app/my-course.jsx components/app/course-r3-steps.jsx components/app/my-courses-dashboard.jsx components/app/course-entry-selector.jsx components/app/cabinet-free-course-banners.jsx lib/inner-growth/course-presets.js lib/app/growth-course.js
       - name: Next production compile
         run: npm run build

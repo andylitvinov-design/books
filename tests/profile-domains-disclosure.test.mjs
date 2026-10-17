@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
+import * as whatsappEnquiry from '../lib/whatsapp-enquiry.js'
 
 const source = readFileSync(new URL('../components/app/profile-domains.jsx', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', compilerOptions: {
@@ -36,6 +37,7 @@ function mount(mode, locale) {
   const modules = {
     react, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
     'next/link': { default: 'a' }, 'lucide-react': new Proxy({}, { get: () => 'svg' }),
+    '@/lib/whatsapp-enquiry': whatsappEnquiry,
     '@/lib/documents/recommendation': { recommendationItemType: item => item.type },
     '@/lib/profile/profile-service-offers': {
       PROFILE_AREAS: ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy'],
