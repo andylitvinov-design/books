@@ -710,6 +710,7 @@
 .phaseCheckpoints select { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:44px; white-space:normal; }
 .phaseCheckpoints p { overflow-wrap:anywhere; }
 
+
 /* HH ONE SCREEN COURSE 2026-10-17
    Mobile-first course card design: one primary action per screen, compact
    progress, friendly teal surfaces and opt-in secondary explanations.
@@ -955,4 +956,49 @@
 @media(prefers-reduced-motion:reduce){
   .overlay[data-course-one-screen] .primary,
   .overlay[data-course-one-screen] .progressValue{transition:none!important}
+}
+
+
+/* AS-5.0: one actionable, mobile-first screen at a time.
+   Never hide important content or disable scrolling with large text settings. */
+.overlay[data-course-skills-v5="true"] .content{gap:10px;padding:14px clamp(13px,3.5vw,25px) 16px}
+.overlay[data-course-skills-v5="true"] .header{min-height:58px;padding-block:calc(7px + env(safe-area-inset-top)) 7px}
+.overlay[data-course-skills-v5="true"] .footer{padding:9px clamp(13px,3.5vw,25px) calc(9px + env(safe-area-inset-bottom));gap:5px}
+.overlay[data-course-skills-v5="true"] .slideTitle{font-size:clamp(21px,4.6vw,29px);line-height:1.18}
+.overlay[data-course-skills-v5="true"] .instruction,.overlay[data-course-skills-v5="true"] .prompt{font-size:clamp(14px,2.5vw,17px);line-height:1.4}
+.overlay[data-course-skills-v5="true"] .feedbackOptions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.overlay[data-course-skills-v5="true"] .feedbackOptions button{min-height:48px!important;padding:9px 10px!important;font-size:12px!important}
+.overlay[data-course-skills-v5="true"] .timerDetails>summary{min-height:36px;padding:8px 10px}
+.overlay[data-course-skills-v5="true"] .welcomeScreen{padding:clamp(130px,26vh,210px) 15px 12px!important}
+.overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:clamp(125px,25vh,200px);object-fit:contain}
+.overlay[data-course-skills-v5="true"] .welcomeContent{gap:7px}
+.overlay[data-course-skills-v5="true"] .welcomeContent .slideTitle{font-size:clamp(22px,5.5vw,30px)}
+.overlay[data-course-skills-v5="true"] .welcomeChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.overlay[data-course-skills-v5="true"] .welcomeChoices button{min-height:53px;padding:7px!important;font-size:12px!important;gap:5px}
+.overlay[data-course-skills-v5="true"] .welcomeChoiceIcon{width:30px;height:30px;border-radius:9px}
+.overlay[data-course-skills-v5="true"] .welcomeChoiceIcon svg{width:16px;height:16px}
+.overlay[data-course-skills-v5="true"] .welcomeNote{font-size:11px}
+.overlay[data-course-skills-v5="true"] .welcomePrompt{font-size:13px}
+.overlay[data-course-skills-v5="true"] .noteField textarea{min-height:86px}
+.overlay[data-course-skills-v5="true"] .practiceRating{padding:10px;gap:8px}
+.skillPracticeCard{display:grid;gap:12px;padding:clamp(14px,3vw,23px);border-radius:19px;border:1px solid #b9e5e1;background:linear-gradient(140deg,#effefb,#f7fcff);box-shadow:0 6px 16px #0d768515}
+.skillStepCount{font-size:11px;letter-spacing:.045em;text-transform:uppercase;color:#067c87;font-weight:800}
+.skillStepText{font-size:clamp(17px,3vw,22px);font-weight:650;color:#164866;line-height:1.48;margin:0;min-height:90px}
+.skillStepActions{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.skillStepActions button{display:inline-flex;gap:6px;align-items:center;justify-content:center;padding:9px 12px!important;border-radius:12px!important;border:1px solid #aad6d9!important;color:#125b78!important;background:#fff!important;font-weight:750!important;min-height:43px}
+.skillStepDone{display:inline-flex;gap:7px;align-items:center;font-size:12px;color:#236b66;line-height:1.35}
+.skillMapDisclosure{border:1px solid #b6e4e2;border-radius:12px;background:#f5fffe;padding:8px 10px;color:#186579;font-size:12px}
+.skillMapDisclosure>summary{display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:780}
+.skillMapDisclosure>summary svg{margin-left:auto}
+.skillMapDisclosure ol{margin:8px 0 4px;padding-left:22px;line-height:1.55}
+@media(max-width:380px){
+ .overlay[data-course-skills-v5="true"] .welcomeScreen{padding-top:clamp(105px,22vh,155px)!important}
+ .overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:clamp(105px,21vh,155px)}
+ .overlay[data-course-skills-v5="true"] .welcomeChoices button{min-height:46px!important;font-size:11px!important}
+ .overlay[data-course-skills-v5="true"] .footer>p{font-size:9px}
+ .skillPracticeCard{padding:12px}
+}
+@media(max-height:640px){
+ .overlay[data-course-skills-v5="true"] .welcomeScreen{padding-top:110px!important}
+ .overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:110px}
 }
