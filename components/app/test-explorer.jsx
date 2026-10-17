@@ -271,10 +271,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const collapsedViaCount = visible.length - visibleCatalog.length
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
+  // Include explicitly selected tests even when a curated Tantra path spans
+  // topics outside the current focus. This pins the actual selected cards in
+  // the recommendation list without broadening automatic starter tests.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
-    matching.filter((entry) => entry.selectable),
+    filtered.filter((entry) => entry.selectable),
     { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
-  ), [matching, focus, problems, details, axes, depth, stylesFilter, lengths])
+  ), [filtered, focus, problems, details, axes, depth, stylesFilter, lengths])
   // Only explicit duration/type options restrict catalog search.
   // Topic and concern selections still drive recommendations, not searches.
   const searchRecommendations = useMemo(() => rankPublicTestMatches(
@@ -388,6 +391,34 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recommendations={simpleRecommendations}
       searchRecommendations={searchRecommendations}
       catalogEntries={entries}
+      onChooseTantraPath={(keys) => {
+        // A named path is an explicit replacement of the unsaved local draft.
+        // No automatic runner, subscription, course or account write occurs.
+        const distinct = [...new Set(keys)]
+        if (!distinct.length || distinct.length > 12 ||
+          distinct.some(key => !entries.some(entry =>
+            entry.key === key && entry.selectable && entry.rightsStatus === 'cleared'))) return
+        setSelectedKeys(distinct)
+        setSimpleSelectionChanged(true)
+        setFocus(['tantra'])
+        setProblems([])
+        setAvailability('available')
+        setStylesFilter([])
+        setKinds([])
+        setLengths([])
+        setDepth('balanced')
+        setAreas([])
+        setDetails([])
+        setAxes([])
+        setMaxMinutes(0)
+        setLanguage('any')
+        setTracking('any')
+        setFreeOnly(false)
+        setQuery('')
+        setSort('recommended')
+        setAxisFilter(null)
+        setActionError(null)
+      }}
       onChooseCollection={(keys) => {
         // Switching collections resets stale facets but never discards manually selected tests.
         setFocus(keys)

@@ -16,7 +16,7 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  assert.equal(active.length,139)
+  assert.equal(active.length,145)
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')
@@ -55,10 +55,10 @@ test('MHC-SF explanation preserves accepted source, language and non-diagnostic 
   }
 })
 
-test('all 154 research-only references have concise bilingual field, verified rights and no public start',()=>{
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,154)
+test('all 168 research-only references have concise bilingual field, verified rights and no public start',()=>{
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length,168)
   const unique=new Set(MIND_BODY_MONITOR_REGISTRY.map(x=>x.key))
-  assert.equal(unique.size,154)
+  assert.equal(unique.size,168)
   for(const locale of ['en','ru']){
     const entries=buildExplorerEntries({locale,audience:'guest'})
     for(const row of MIND_BODY_MONITOR_REGISTRY){

@@ -34,14 +34,14 @@ test('the core list is exactly 100 nonduplicated professional instruments across
 test('fifteen new professional references expand registry without publishing copyrighted questionnaires', () => {
   assert.equal(NEW_PSYCHOTHERAPY_REFERENCES.length, 15)
   const allKeys = new Set(MIND_BODY_MONITOR_REGISTRY.map((item) => item.key))
-  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 154)
-  assert.equal(allKeys.size, 154)
+  assert.equal(MIND_BODY_MONITOR_REGISTRY.length, 168)
+  assert.equal(allKeys.size, 168)
   for (const reference of NEW_PSYCHOTHERAPY_REFERENCES) {
     const row = MIND_BODY_MONITOR_REGISTRY.find((item) => item.key === reference.key)
     assert.ok(row, reference.key)
     assert.equal(row.enabled, false)
     assert.ok([RIGHTS_STATUS.RIGHTS_REVIEW, RIGHTS_STATUS.PERMISSION_REQUIRED, RIGHTS_STATUS.LICENSED_ONLY, RIGHTS_STATUS.CLINICIAN_ONLY, RIGHTS_STATUS.MANAGED_SAFETY_ONLY].includes(row.rightsStatus))
-    assert.ok(row.rightsNote.includes('No protected items'))
+    assert.ok(reference.key === 'ras-7' ? row.rightsNote.includes('Only research metadata') : row.rightsNote.includes('No protected items'))
     assert.equal(ASSESSMENT_DEFINITIONS.some((definition) => definition.key === reference.key), false)
   }
   for (const key of ['mmpi-3','pai','ados-2','caps-5','diva-5','scoff-5']) {

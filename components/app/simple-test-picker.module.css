@@ -2500,3 +2500,43 @@
     padding-left:6px!important;
   }
 }
+
+
+/* Accessible, compact path picker: exactly one explicit draft set at a time. */
+.tantraPaths{margin:12px 0;padding:clamp(14px,2vw,19px);background:linear-gradient(140deg,#fffdfa,#faf8fb);
+  border:1px solid #dfdce6;border-radius:18px;color:#203d56;box-shadow:0 4px 16px rgba(29,48,73,.04)}
+.tantraPathHeading{display:grid;gap:5px;margin-bottom:13px}
+.tantraPathHeading p{margin:0;color:#84516a;font-size:.67rem;font-weight:800;letter-spacing:.1em}
+.tantraPathHeading h2{margin:0!important;font-size:clamp(1.17rem,2.5vw,1.53rem)!important;line-height:1.2;color:#1c3f58}
+.tantraPathHeading>span{font-size:.82rem;line-height:1.42;color:#647483;max-width:75ch}
+.tantraPathGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tantraPath{display:grid;grid-template-columns:39px minmax(0,1fr);gap:9px;align-items:start;text-align:left;
+  min-height:132px;padding:12px;background:#fff;color:#29485f;border:1px solid #dce4e9;border-radius:14px;
+  cursor:pointer;box-shadow:0 3px 10px rgba(35,59,76,.035);transition:border-color .15s,background .15s}
+.tantraPath:hover{border-color:#90a5b7;background:#f9fbff}
+.tantraPath:focus-visible,.tantraPathToggle:focus-visible{outline:2px solid #234e72;outline-offset:2px}
+.tantraPath[aria-pressed=true]{border-color:#647d93;background:#edf4f7}
+.tantraPathIcon{display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:#f1e9ef;color:#84536a}
+.tantraPathBody{display:grid;gap:4px;min-width:0}
+.tantraPathBody strong{font-size:.91rem;line-height:1.24;color:#1b415b;overflow-wrap:anywhere}
+.tantraPathBody small{font-size:.76rem;line-height:1.4;color:#607484}
+.tantraPathMeta{font-size:.68rem;line-height:1.34;color:#526e80;font-weight:670}
+.tantraPathAction{grid-column:2;display:inline-flex;align-items:center;gap:6px;justify-self:start;align-self:end;
+  font-size:.73rem;font-weight:780;color:#24516c}
+.tantraPath[aria-pressed=true] .tantraPathAction{color:#176e5b}
+.tantraPaths:not([data-expanded="true"]) .tantraPath:nth-child(n+5){display:none}
+.tantraPathToggle{display:flex;align-items:center;gap:7px;min-height:40px;margin:9px auto 0;
+  padding:6px 12px;border:1px solid #ccdae2;border-radius:10px;background:#fff;color:#285270;font-weight:760}
+.tantraPaths[data-expanded=true] .tantraPathToggle svg{transform:rotate(180deg)}
+.tantraPathNote{margin:11px 0 0;font-size:.72rem;line-height:1.45;color:#6b7883}
+@media(max-width:650px){
+  .tantraPaths{padding:12px 10px;border-radius:15px}
+  .tantraPathGrid{grid-template-columns:minmax(0,1fr);gap:8px}
+  .tantraPath{min-height:111px;padding:10px;grid-template-columns:32px minmax(0,1fr);gap:8px}
+  .tantraPathIcon{width:32px;height:32px}
+  .tantraPathIcon svg{width:17px;height:17px}
+  .tantraPathBody strong{font-size:.86rem}
+  .tantraPathBody small{font-size:.74rem}
+  .tantraPathMeta{font-size:.68rem}
+}
+@media(prefers-reduced-motion:reduce){.tantraPath{transition:none}}

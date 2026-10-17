@@ -6,7 +6,7 @@ import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, Gr
 import styles from './simple-test-picker.module.css'
 import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { availableTestCollections } from '@/lib/assessments/test-collections'
+import { availableTestCollections, availableTantraTestPaths } from '@/lib/assessments/test-collections'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
@@ -124,6 +124,29 @@ const COLLECTION_ICONS = {
   sleep: Moon, resources: Leaf, personality: Compass, mood: Smile,
   attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
 }
+const TANTRA_PATH_ICONS = {
+  'gentle-start': Sparkles, 'body-sensitivity': Activity,
+  'heart-connection': Heart, 'healthy-boundaries': ShieldCheck,
+  'freedom-kindness': Leaf, 'chakra-symbols': Sun,
+  'five-practice-themes': Compass, 'deep-portrait': BookOpen,
+}
+const TANTRA_PATH_COPY = {
+  en: { eyebrow:'EXPLORE TANTRA YOUR WAY', title:'Tantric test journeys',
+    intro:'Choose one focused set. Each scale has five descriptive response ranges and a practical reflection; no spiritual rank or diagnosis.',
+    select:'Use this set', chosen:'Selected', details:'See all paths', less:'Show four paths',
+    test:'test', tests:'tests', questions:'questions', scales:'scales', minute:'min',
+    note:'Selecting a path only changes the unsaved selection. Tests begin when you choose Start; saved results stay intact.' },
+  ru: { eyebrow:'ТАНТРИЧЕСКОЕ САМОПОЗНАНИЕ', title:'Подборка тантрических тестов',
+    intro:'Выберите маршрут: у каждой шкалы есть пять понятных описательных диапазонов и мягкий практический шаг. Это не диагноз и не духовный рейтинг.',
+    select:'Выбрать набор', chosen:'Выбрано', details:'Все маршруты', less:'Свернуть до четырёх',
+    test:'тест', tests:'тестов', questions:'вопросов', scales:'шкал', minute:'мин',
+    note:'Выбор набора меняет только несохранённый подбор. Тестирование начнётся после отдельного нажатия кнопки запуска; прошлые результаты сохранятся.' },
+  es: { eyebrow:'EXPLORACIÓN TÁNTRICA', title:'Colecciones de pruebas de tantra',
+    intro:'Elige una ruta: escalas descriptivas y reflexión, sin diagnóstico ni rangos espirituales. Los cuestionarios están disponibles en inglés.',
+    select:'Elegir selección', chosen:'Elegida', details:'Mostrar todas', less:'Mostrar cuatro',
+    test:'prueba', tests:'pruebas', questions:'preguntas', scales:'escalas', minute:'min',
+    note:'La selección no inicia ninguna prueba y no modifica tus resultados guardados.' },
+}
 const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
@@ -176,7 +199,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
@@ -189,7 +212,11 @@ export function SimpleTestPicker({
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
+  const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
   const collections = availableTestCollections(catalogEntries)
+  const tantraPaths = availableTantraTestPaths(catalogEntries)
+  const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
+  const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
@@ -319,7 +346,13 @@ export function SimpleTestPicker({
               setHeroSearch('')
               setSubmittedHeroSearch('')
               setVisibleCount(5)
-              document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              // Keep the named Tantra pathway chooser in view, rather than
+              // jumping past it to the generic recommendation list.
+              window.requestAnimationFrame(() => {
+                const target = !active && ['tantra','sexuality'].includes(collection.id)
+                  ? 'hh-tantra-test-paths-title' : 'hh-simple-recommendations'
+                document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              })
             }}>
             <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
             <span className={styles.curatedCardText}><strong>{title}</strong></span>
@@ -336,6 +369,54 @@ export function SimpleTestPicker({
         {collectionsOpen ? collectionCopy.less : collectionCopy.more}
         <ChevronDown size={17} aria-hidden="true" />
       </button>}
+    </section>}
+
+    {showTantraPaths && <section className={styles.tantraPaths} data-tantra-test-paths
+      data-expanded={tantraPathsOpen ? 'true' : 'false'} aria-labelledby="hh-tantra-test-paths-title">
+      <header className={styles.tantraPathHeading}>
+        <p>{tantraCopy.eyebrow}</p>
+        <h2 id="hh-tantra-test-paths-title">{tantraCopy.title}</h2>
+        <span>{tantraCopy.intro}</span>
+      </header>
+      <div className={styles.tantraPathGrid} role="group" aria-label={tantraCopy.title}>
+        {tantraPaths.map((path) => {
+          const Icon = TANTRA_PATH_ICONS[path.id] || Sparkles
+          const chosen = activeBattery.length === path.keys.length &&
+            path.keys.every(key => selectedKeys.has(key))
+          return <button type="button" key={path.id} className={styles.tantraPath}
+            data-tantra-path={path.id} data-tone={path.tone}
+            aria-pressed={chosen} disabled={!onChooseTantraPath}
+            onClick={() => {
+              onChooseTantraPath?.(path.keys)
+              setHeroSearch('')
+              setSubmittedHeroSearch('')
+              setVisibleCount(5)
+              document.getElementById('hh-simple-recommendations')?.scrollIntoView({behavior:'smooth',block:'start'})
+            }}>
+            <span className={styles.tantraPathIcon} aria-hidden="true"><Icon size={20} strokeWidth={1.8}/></span>
+            <span className={styles.tantraPathBody}>
+              <strong>{path.title[locale] || path.title.en}</strong>
+              <small>{path.detail[locale] || path.detail.en}</small>
+              <span className={styles.tantraPathMeta}>
+                {path.testCount} {path.testCount===1 ? tantraCopy.test : tantraCopy.tests}
+                {' · '}{path.questionCount} {tantraCopy.questions}
+                {' · '}{path.scaleCount} {tantraCopy.scales}
+                {' · ~'}{path.durationMinutes} {tantraCopy.minute}
+              </span>
+            </span>
+            <span className={styles.tantraPathAction}>
+              {chosen ? tantraCopy.chosen : tantraCopy.select}
+              {chosen ? <Check size={15} aria-hidden="true"/> : <ArrowRight size={15} aria-hidden="true"/>}
+            </span>
+          </button>
+        })}
+      </div>
+      {tantraPaths.length > 4 && <button type="button" className={styles.tantraPathToggle}
+        aria-expanded={tantraPathsOpen} onClick={() => setTantraPathsOpen(value => !value)}>
+        {tantraPathsOpen ? tantraCopy.less : tantraCopy.details}
+        <ChevronDown size={16} aria-hidden="true"/>
+      </button>}
+      <p className={styles.tantraPathNote}>{tantraCopy.note}</p>
     </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">

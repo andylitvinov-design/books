@@ -71,17 +71,33 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('Cabinet main mobile nav has exactly five destinations, while public site navigation is untouched', () => {
+test('Profile, Tests, Reports, Courses and Practice share one five-button account navigation', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
-  const nav=workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}',workspace.indexOf('<nav className="hh-mobile-app-nav"')))
-  assert.ok(nav.indexOf("href={root + '/portrait'}") < nav.indexOf("href={root + '/tests'}"))
-  assert.match(nav, /href=\{root \+ '\/tests'\}/)
-  assert.equal((nav.match(/<Link /g)||[]).length,5)
-  for(const label of ['Home','My tests','Insights','Profile','My course']) assert.ok(nav.includes(label),label)
-  assert.doesNotMatch(nav, />Analysis</)
-  assert.match(css, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
-  const top=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('  return (',workspace.indexOf('const nav = [')))
-  assert.doesNotMatch(top, /\['analysis'/)
-  assert.equal((top.match(/\['(?:home|tests|portfolio|portrait|course)'/g)||[]).length,5)
+  const navStart = workspace.indexOf('const nav = [')
+  const navEnd = workspace.indexOf('  const navIsActive =', navStart)
+  assert.ok(navStart >= 0 && navEnd > navStart, 'one shared account nav model')
+  const navModel = workspace.slice(navStart, navEnd)
+  for (const [id, title, route] of [
+    ['portrait', 'Profile', '/portrait'],
+    ['tests', 'Tests', '/tests'],
+    ['portfolio', 'Reports', '/portfolio'],
+    ['course', 'Courses', '/course'],
+    ['practice', 'Practice', '/practice'],
+  ]) {
+    assert.match(navModel, new RegExp("id: '" + id + "'"))
+    assert.ok(navModel.includes("label: locale === 'ru'"), 'EN and RU navigation labels')
+    assert.ok(navModel.includes("'" + title + "'"), title)
+    assert.ok(navModel.includes("href: root + '" + route + "'"), route)
+  }
+  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice)'/g)||[]).length,5)
+  assert.doesNotMatch(navModel, /\{ id: 'analysis'/)
+  const mobileStart=workspace.indexOf('<nav className="hh-mobile-app-nav"')
+  const mobile=workspace.slice(mobileStart,workspace.indexOf('</nav>}',mobileStart))
+  assert.ok(mobileStart>0 && mobile.length>100)
+  assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
+  assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
+  assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important;/)
 })
+
