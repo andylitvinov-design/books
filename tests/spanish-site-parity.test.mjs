@@ -23,7 +23,8 @@ test('Spanish service funnel has real pages and localized form without EN fallba
 test('Spanish practitioner paths and contact routes keep protected app separate', () => {
  for(const path of ['app/[locale]/masters/page.tsx','app/[locale]/masters/[slug]/page.tsx','app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx']) assert.match(content(path),/isPublicLocale\(locale\)/);
  const service=content('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx');
- assert.match(service,/\/es\/services\/free-situation-review/);
+ assert.match(service, /<PublicServiceOrderPanel locale=\{locale as PublicLocale\} service=\{service\}/);
+  assert.doesNotMatch(service, /\/es\/services\/free-situation-review/);
  assert.match(content('data/remedies.d.ts'),/Locale = "ru" \| "en"/);
  assert.match(content('app/es/client/page.tsx'),/locale="en" displayLocale="es"/);
  assert.doesNotMatch(content('app/sitemap.ts'),/['"]\/es\/client['"]/);
