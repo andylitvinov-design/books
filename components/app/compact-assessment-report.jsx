@@ -191,6 +191,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <ScoreGauge dimension={dimension} locale={locale} result={result} showLegend={false} showScaleNote={false}/>
         <div className={styles.summary}>
           <h3>{phq4ShortName(section.key, locale) || section.construct || section.title}</h3>
+          {scoreLevelGuide && <p className={styles.band} data-descriptive-score-current>{scoreLevelGuide.current.label}</p>}
           {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band + (section.recommendedReview ? ' ' + styles.bandNeedsReview : '')}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
