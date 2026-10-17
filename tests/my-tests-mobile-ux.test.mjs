@@ -3,21 +3,22 @@ import {readFileSync} from 'node:fs'
 import test from 'node:test'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
-test('first mobile screen: concise title, three real metrics, filter control, all selected rows, then report',()=>{
+test('first mobile screen: top picker, then concise metrics, quick actions and selected rows',()=>{
  const ui=read('components/app/my-tests-dashboard.jsx')
  const battery=read('components/app/account-test-battery.jsx')
  const css=read('components/app/my-tests-dashboard.module.css')
  const title=ui.indexOf('className={styles.title}')
  const stats=ui.indexOf('className={styles.stats}')
- const filters=ui.indexOf('className={styles.filterButton}')
- const list=ui.indexOf('{hasList?children')
+ const filters=ui.indexOf('id="my-tests-picker-toggle"')
+ const picker=ui.indexOf('{explorer}')
+ const list=ui.indexOf('{hasList && children}')
  const report=ui.indexOf('className={styles.quickActions}')
- assert.ok(title>0&&stats>title&&filters>stats&&list>filters&&report>list)
+ assert.ok(filters>0&&picker>filters&&title>picker&&stats>title&&report>stats&&list>report)
  assert.match(battery,/data-inline-selected-tests/)
  assert.match(battery,/data-remove-selected-test=\{row\.key\}/)
  assert.match(ui,/className=\{styles\.filterButton\}/)
  assert.match(css,/@media\(max-width:760px\)/)
- assert.match(css,/\.stats\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+ assert.match(css,/\.stats \{ display:grid; grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
  assert.doesNotMatch(ui,/styles\.pendingSelection|Another selection is ready/)
 })
 
