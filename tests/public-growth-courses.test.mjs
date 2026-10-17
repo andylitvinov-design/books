@@ -29,7 +29,10 @@ test('public course pages offer a free start with real 14-day program IDs and pr
   assert.match(landing, /Start for free/);
   assert.match(landing, /Начать бесплатно/);
   assert.match(enRu, /generateMetadata/);
-  assert.match(spanish, /PublicGrowthCourses locale="es"/);
+  assert.match(spanish, /permanentRedirect\("\/es\/academy\/free-ai-courses"\)/);
+  assert.match(enRu, /permanentRedirect/);
+  assert.match(landing, /id="my-courses"/);
+  assert.match(landing, /Free AI courses/);
   assert.match(style, /@media \(max-width: 700px\)/);
 });
 
