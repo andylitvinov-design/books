@@ -1,0 +1,33 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+
+test("single turquoise mobile landing reuses the approved PR498 media and the four-stage integrated method", () => {
+  const page = read("app/[locale]/services/alchemy-of-soul/page.tsx");
+  const landing = read("components/alchemy-soul-landing.tsx");
+  const css = read("components/alchemy-soul-landing.module.css");
+  const form = read("components/alchemy-soul-lead-form.tsx");
+  const sitewide = read("components/sitewide-lead-capture.tsx");
+  const oldRoute = read("app/[locale]/services/psychohomeopathy/page.tsx");
+  assert.match(page, /<AlchemySoulLanding locale=/);
+  assert.match(page, /<DistanceHomeopathyGuide locale=\{locale as Locale\} embedded \/>/);
+  assert.match(page, /data-alchemy-extended-guide/);
+  for (const term of ["Расстановка — карта ситуации", "Гипнотерапия — глубинный уровень", "Психогомеопатия — подбор ресурса", "Интеграция — реальный шаг", "Constellation — map the situation", "Hypnotherapy — explore deeper", "Psycho-homeopathy — optional support", "Integration — practical action"]) assert.ok(landing.includes(term), term);
+  for (const section of ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
+  assert.equal((landing.match(/<AlchemySoulLeadForm locale=\{locale\}/g) || []).length, 1, "One enquiry form only");
+  assert.match(form, /window\.location\.assign\("https:\/\/wa\.me/);
+  assert.doesNotMatch(form, /fetch\(|localStorage|sessionStorage|sendBeacon/);
+  assert.match(form, /nothing is booked or charged automatically/);
+  assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
+  assert.match(landing, /MIVLm1GUTtM/);
+  assert.match(landing, /Dk0LBmOivQo/);
+  assert.match(css, /100svh/);
+  assert.match(css, /scroll-snap-type:x mandatory/);
+  assert.match(css, /@media\(max-width:680px\)/);
+  assert.match(css, /@media\(max-height:650px\)/);
+  assert.match(sitewide, /coreKind === "alchemy" && locale !== "es"/);
+  assert.match(oldRoute, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
+  assert.match(landing, /no reliable evidence/);
+  assert.match(landing, /надёжной доказательной эффективности/);
+});

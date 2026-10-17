@@ -1,0 +1,333 @@
+import Image from "next/image";
+import Link from "next/link";
+import {
+  ArrowLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, Check,
+  Compass, Heart, Layers3, PlayCircle, ShieldCheck, Sparkles, Waves,
+} from "lucide-react";
+import type { Locale } from "@/data/remedies";
+import { SiteVideoPlayer } from "@/components/site-video-player";
+import { AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
+import { getServiceVideoMedia } from "@/data/service-video-library";
+import styles from "./alchemy-soul-landing.module.css";
+
+/**
+ * The compact turquoise service landing builds on the source-backed PR #498
+ * design and the canonical four-stage psycho-homeopathy method.
+ * Each primary mobile section is intentionally one screen of content.
+ * This is one service, not a second "psychohomeopathy" sales page.
+ */
+const copy = {
+  ru: {
+    back: "Все услуги",
+    kicker: "ЛИЧНАЯ РАБОТА · АНДРЕЙ ЛИТВИНОВ",
+    title: "Алхимия души",
+    titleDetail: "Психогомеопатия",
+    headline: "Найти то, что удерживает проблему — и наметить путь к изменениям.",
+    intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
+    chips: ["Расстановка", "Гипнотерапия", "Ресурсная поддержка"],
+    cta: "Обсудить мой запрос",
+    freeStart: "Начать с бесплатного письменного разбора",
+    practitioner: "С Андреем Литвиновым",
+    place: "Онлайн · Торонто по договорённости",
+
+    painKicker: "С ЧЕМ МОЖНО ОБРАТИТЬСЯ",
+    painTitle: "Когда привычный способ уже не помогает",
+    painIntro: "Не нужно подбирать правильные слова — можно начать с того, что повторяется.",
+    pains: [
+      { title: "Отношения", text: "Дистанция, конфликт, повторяющиеся сценарии и границы." },
+      { title: "Стресс и блоки", text: "Напряжение, внутренний запрет, страх оценки или перемен." },
+      { title: "Дело и деньги", text: "Застой, сложные решения и трудность действовать." },
+      { title: "Цели и смысл", text: "Потеря опоры, ясности или направления." },
+    ],
+    painEnd: "Работаем с вашим реальным запросом, а не с готовым шаблоном.",
+
+    methodKicker: "МОЙ АВТОРСКИЙ ПОДХОД",
+    methodTitle: "Четыре шага одной работы",
+    methodIntro: "Сначала понять систему. Затем исследовать внутренний механизм и подобрать поддержку.",
+    steps: [
+      { title: "Расстановка — карта ситуации", text: "Исследуем цель, отношения, роли и возможные скрытые связи в символической форме." },
+      { title: "Гипнотерапия — глубинный уровень", text: "Через образы и символдраму исследуем эмоциональные реакции и внутренние части." },
+      { title: "Психогомеопатия — подбор ресурса", text: "По желанию обсуждаем гомеопатический препарат как дополнительную, не доказанную лечебную практику." },
+      { title: "Интеграция — реальный шаг", text: "Даосские ресурсы У-Син, архетипы и другие практики по ситуации; наблюдаем изменения." },
+    ],
+    methodNote: "Не все инструменты обязательны: глубину работы и методы согласуем вместе. Образы не считаются доказательством скрытых событий.",
+
+    videoKicker: "ЗНАКОМСТВО СО МНОЙ",
+    videoTitle: "Посмотрите, как я работаю",
+    videoIntro: "Короткое ранее опубликованное видео о выборе метода под конкретный запрос.",
+    videoNote: "Видео знакомит с общим подходом; не является полной демонстрацией всех этапов «Алхимии души».",
+
+    reviewsKicker: "ОПЫТ КЛИЕНТОВ",
+    reviewsTitle: "Люди рассказывают сами",
+    reviewsIntro: "Ранее опубликованные видеоотзывы о разных форматах моей работы.",
+    swipe: "Листайте отзывы в сторону →",
+    reviewsNote: "Индивидуальный опыт не гарантирует аналогичного результата.",
+
+    optionsKicker: "ФОРМАТЫ РАБОТЫ",
+    optionsTitle: "Выберите подходящее начало",
+    shortName: "Экспресс-разбор",
+    shortTime: "30 минут",
+    shortPrice: "€50",
+    shortText: "Прояснить основной узел и первый шаг.",
+    fullName: "Личная сессия",
+    fullTime: "60 минут",
+    fullPrice: "€100",
+    fullText: "Подробнее исследовать ситуацию и внутренние реакции.",
+    programTitle: "Поддержка в течение месяца",
+    programDescription: "2 личные сессии + 4 недели сопровождения и наблюдения изменений.",
+    programPrice: "Стоимость обсуждается лично · без подписки",
+    optionsAction: "Запросить подходящий формат",
+    freeText: "Хотите сначала бесплатно? ",
+    freeLink: "Получить письменный разбор ситуации",
+
+    faqKicker: "ВАЖНО ЗНАТЬ",
+    faqTitle: "Коротко о главном",
+    faq: [
+      { q: "Это медицинская диагностика?", a: "Нет. Расстановка и работа с образами служат для исследования переживаний и ситуаций, а не для установления медицинских диагнозов." },
+      { q: "Нужна ли гомеопатия каждому?", a: "Нет. Гомеопатический компонент добровольный. Надёжных доказательств эффективности гомеопатии для лечения заболеваний нет." },
+      { q: "Это можно делать онлайн?", a: "Да. Основной формат — онлайн. Возможность личной встречи в Торонто обсуждается индивидуально." },
+      { q: "Что будет после заявки?", a: "Откроется WhatsApp с подготовленным сообщением. Вы сами решите, отправлять ли его. Затем согласуем время и формат; никакого списания денег нет." },
+    ],
+
+    requestKicker: "ВАШ ПЕРВЫЙ ШАГ",
+    requestTitle: "Начнём с вашего вопроса",
+    requestIntro: "Выберите формат и тему. Подробности расскажете мне лично в переписке.",
+    safety: "Это авторская консультативная и символическая практика, не замена медицинской или психиатрической помощи. Гомеопатия не имеет надёжной доказательной эффективности при лечении заболеваний; не меняйте назначенное лечение без врача. Результаты не гарантируются.",
+  },
+  en: {
+    back: "All services",
+    kicker: "PERSONAL WORK · ANDREY LITVINOV",
+    title: "Alchemy of the Soul",
+    titleDetail: "Psycho-homeopathy",
+    headline: "Explore what keeps a problem in place — and find a possible way forward.",
+    intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
+    chips: ["Constellations", "Hypnotherapy", "Personal resources"],
+    cta: "Discuss my situation",
+    freeStart: "Start with a free written situation review",
+    practitioner: "With Andrey Litvinov",
+    place: "Online · Toronto by arrangement",
+
+    painKicker: "WHAT YOU CAN BRING",
+    painTitle: "When the same pattern keeps returning",
+    painIntro: "You need not explain it perfectly. Begin with what feels stuck or familiar.",
+    pains: [
+      { title: "Relationships", text: "Distance, conflict, recurring patterns and boundaries." },
+      { title: "Stress and blocks", text: "Tension, internal restrictions and fear of judgement." },
+      { title: "Work and money", text: "Feeling stuck, difficult choices and trouble taking action." },
+      { title: "Goals and meaning", text: "Losing your sense of direction, clarity or support." },
+    ],
+    painEnd: "We begin with your question, not a one-size-fits-all protocol.",
+
+    methodKicker: "MY INTEGRATED APPROACH",
+    methodTitle: "Four stages, one coherent process",
+    methodIntro: "Map the situation, explore the inner pattern and choose a suitable next step.",
+    steps: [
+      { title: "Constellation — map the situation", text: "Explore your goal, relationships and roles through a symbolic systemic exercise." },
+      { title: "Hypnotherapy — explore deeper", text: "Guided imagery and inner dialogue help explore emotional reactions and inner parts." },
+      { title: "Psycho-homeopathy — optional support", text: "If you wish, consider a homeopathic remedy as a complementary practice, not proven medical treatment." },
+      { title: "Integration — practical action", text: "When useful, draw on Wu Xing, archetypes and other practices; review real-life changes." },
+    ],
+    methodNote: "Every method is optional and agreed with you. Imagery is not evidence of hidden events or recovered factual memories.",
+
+    videoKicker: "MEET MY APPROACH",
+    videoTitle: "See how I work",
+    videoIntro: "A previously published short video about choosing a method for each person's situation.",
+    videoNote: "This introduces the broader approach, not all stages of the Alchemy of the Soul service.",
+
+    reviewsKicker: "CLIENT EXPERIENCES",
+    reviewsTitle: "Hear from people I've worked with",
+    reviewsIntro: "Previously published testimonials from several kinds of personal sessions.",
+    swipe: "Swipe for more stories →",
+    reviewsNote: "Personal experiences are not guarantees of similar results.",
+
+    optionsKicker: "PERSONAL FORMATS",
+    optionsTitle: "Choose where to begin",
+    shortName: "Express review",
+    shortTime: "30 minutes",
+    shortPrice: "€50",
+    shortText: "Clarify the main issue and first step.",
+    fullName: "Personal session",
+    fullTime: "60 minutes",
+    fullPrice: "€100",
+    fullText: "Explore your situation and inner patterns in more depth.",
+    programTitle: "Four-week personal support",
+    programDescription: "2 personal sessions + 4 weeks of individual follow-up and reflection.",
+    programPrice: "Price agreed individually · no subscription",
+    optionsAction: "Ask about a session",
+    freeText: "Prefer to start free? ",
+    freeLink: "Request a written situation review",
+
+    faqKicker: "GOOD TO KNOW",
+    faqTitle: "A few helpful answers",
+    faq: [
+      { q: "Is this medical diagnosis?", a: "No. Constellation and imagery work explore experiences and situations. They do not establish medical diagnoses." },
+      { q: "Is homeopathy required?", a: "No, it is optional. Homeopathy has no reliable evidence of effectiveness for treating medical or mental-health conditions." },
+      { q: "Can we work online?", a: "Yes. Online is the main option, with in-person Toronto availability discussed individually." },
+      { q: "What happens when I enquire?", a: "WhatsApp opens a draft for your review; you choose whether to send it. We then discuss availability. There is no automatic booking or charge." },
+    ],
+
+    requestKicker: "YOUR FIRST STEP",
+    requestTitle: "Start with your question",
+    requestIntro: "Choose a format and topic; share more details privately in our conversation.",
+    safety: "This is an author's reflective and symbolic consultation, not a replacement for medical or psychiatric care. Homeopathy has no reliable evidence for treating health conditions. Do not change prescribed medication without medical guidance. Outcomes are not guaranteed.",
+  },
+} as const;
+
+// These original public testimonial video IDs and poster files were provenance-checked
+// in design PR #498. Do not replace them with fabricated quotes or new avatar renders.
+const testimonials = {
+  ru: [
+    { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", poster: "/images/holistic-house/testimonial-posters/MIVLm1GUTtM.webp" },
+    { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", poster: "/images/holistic-house/testimonial-posters/ttQxUHopaUM.webp" },
+    { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о консультации", poster: "/images/holistic-house/testimonial-posters/VABgpmn4ZYA.webp" },
+  ],
+  en: [
+    { id: "Dk0LBmOivQo", title: "Business constellation — client testimonial", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
+    { id: "aUJde6A-9p0", title: "Business consulting — client testimonial", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
+    { id: "4NrryHcEF1A", title: "Psychic Alchemy — client testimonial", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
+  ],
+} as const;
+
+export function AlchemySoulLanding({ locale }: { locale: Locale }) {
+  const t = copy[locale];
+  const video = getServiceVideoMedia("alchemy", locale);
+  const reviews = testimonials[locale];
+  const freeReview = "/" + locale + "/services/free-situation-review";
+
+  return (
+    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
+      <div className={styles.shell}>
+        <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : "Breadcrumb"}>
+          <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
+          <span aria-hidden="true">/</span><span>{t.title}</span>
+        </nav>
+
+        <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" aria-labelledby="alchemy-title">
+          <p className={styles.heroEyebrow}><Sparkles size={14} aria-hidden="true" />{t.kicker}</p>
+          <div className={styles.heroGrid}>
+            <div className={styles.heroMain}>
+              <h1 id="alchemy-title">{t.title}</h1>
+              <span className={styles.heroSubname}>{t.titleDetail}</span>
+              <p className={styles.heroStatement}>{t.headline}</p>
+            </div>
+            <div className={styles.heroPortrait}>
+              <Image src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 680px) 140px, 340px" />
+            </div>
+          </div>
+          <p className={styles.heroLead}>{t.intro}</p>
+          <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+          <a className={styles.heroAction} href="#alchemy-request">{t.cta}<ArrowRight size={18} aria-hidden="true" /></a>
+          <div className={styles.heroBottom}><span>{t.place}</span><Link href={freeReview}>{t.freeStart}<ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+        </section>
+
+        <section className={[styles.panel, styles.painSection].join(" ")} data-alchemy-panel="situations" aria-labelledby="alchemy-situations-title">
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}><Heart size={14} aria-hidden="true" />{t.painKicker}</span>
+            <h2 id="alchemy-situations-title">{t.painTitle}</h2>
+            <p>{t.painIntro}</p>
+          </header>
+          <div className={styles.painGrid}>
+            {t.pains.map((item, index) => (
+              <article className={styles.painCard} key={item.title}>
+                <span className={styles.iconCircle} aria-hidden="true">{index === 0 ? <Heart size={20} /> : index === 1 ? <Waves size={20} /> : index === 2 ? <BriefcaseBusiness size={20} /> : <Compass size={20} />}</span>
+                <h3>{item.title}</h3><p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+          <p className={styles.sectionClosing}>{t.painEnd}</p>
+        </section>
+
+        <section className={[styles.panel, styles.methodSection].join(" ")} data-alchemy-panel="method" aria-labelledby="alchemy-method-title">
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}><Layers3 size={14} aria-hidden="true" />{t.methodKicker}</span>
+            <h2 id="alchemy-method-title">{t.methodTitle}</h2>
+            <p>{t.methodIntro}</p>
+          </header>
+          <div className={styles.methodSteps}>
+            {t.steps.map((item, index) => (
+              <article className={styles.methodStep} key={item.title}>
+                <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
+                <div><h3>{item.title}</h3><p>{item.text}</p></div>
+              </article>
+            ))}
+          </div>
+          <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
+        </section>
+
+        <section className={[styles.panel, styles.videoSection].join(" ")} data-alchemy-panel="video" aria-labelledby="alchemy-video-title">
+          <div className={styles.videoText}>
+            <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.videoKicker}</span>
+            <h2 id="alchemy-video-title">{t.videoTitle}</h2>
+            <p>{t.videoIntro}</p>
+          </div>
+          <div className={styles.videoMedia}>
+            <SiteVideoPlayer video={video.video} locale={locale} compact minimal fallbackPoster={video.poster} />
+          </div>
+          <p className={styles.videoNote}>{t.videoNote}</p>
+        </section>
+
+        <section className={[styles.panel, styles.reviewSection].join(" ")} data-alchemy-panel="reviews" aria-labelledby="alchemy-reviews-title">
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}>{t.reviewsKicker}</span>
+            <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
+            <p>{t.reviewsIntro}</p>
+          </header>
+          <div className={styles.reviewRail} role="region" aria-label={t.swipe} tabIndex={0}>
+            {reviews.map((review) => (
+              <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
+                <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale }} locale={locale} compact minimal fallbackPoster={review.poster} />
+                <p>{review.title}</p>
+              </article>
+            ))}
+          </div>
+          <p className={styles.swipeHint}><ArrowRight size={14} aria-hidden="true" />{t.swipe}</p>
+          <p className={styles.reviewNote}>{t.reviewsNote}</p>
+        </section>
+
+        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" aria-labelledby="alchemy-options-title">
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}>{t.optionsKicker}</span>
+            <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
+          </header>
+          <div className={styles.optionGrid}>
+            <article className={styles.optionCard}>
+              <p className={styles.optionTime}>{t.shortTime}</p><strong>{t.shortPrice}</strong>
+              <h3>{t.shortName}</h3><p>{t.shortText}</p>
+            </article>
+            <article className={[styles.optionCard, styles.optionFeatured].join(" ")}>
+              <p className={styles.optionTime}>{t.fullTime}</p><strong>{t.fullPrice}</strong>
+              <h3>{t.fullName}</h3><p>{t.fullText}</p>
+            </article>
+          </div>
+          <div className={styles.monthlyCard}>
+            <div><h3>{t.programTitle}</h3><p>{t.programDescription}</p><small>{t.programPrice}</small></div>
+            <span aria-hidden="true">✧</span>
+          </div>
+          <a className={styles.optionsAction} href="#alchemy-request">{t.optionsAction}<ArrowRight size={17} aria-hidden="true" /></a>
+          <p className={styles.freeOption}>{t.freeText}<Link href={freeReview}>{t.freeLink}</Link></p>
+        </section>
+
+        <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}>{t.faqKicker}</span>
+            <h2 id="alchemy-faq-title">{t.faqTitle}</h2>
+          </header>
+          <div className={styles.faqList}>
+            {t.faq.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+          </div>
+        </section>
+
+        <section className={[styles.panel, styles.requestSection].join(" ")} id="alchemy-request" data-alchemy-panel="request" aria-labelledby="alchemy-request-title">
+          <div className={styles.requestText}>
+            <span className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" />{t.requestKicker}</span>
+            <h2 id="alchemy-request-title">{t.requestTitle}</h2>
+            <p>{t.requestIntro}</p>
+          </div>
+          <AlchemySoulLeadForm locale={locale} />
+        </section>
+
+        <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
+      </div>
+    </main>
+  );
+}
