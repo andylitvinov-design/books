@@ -42,8 +42,8 @@ try{
   await page.goto(origin+path)
   if(route==='app')await expect(page.getByRole('button',{name:locale==='ru'?'Продолжить с Google':'Continue with Google',exact:true})).toBeVisible()
   else await expect(page.locator('[data-prelogin-test-picker]')).toBeVisible()
-  await page.waitForLoadState('networkidle')
-  // Cold Next dev compilation can reload the document. Compare the live DOM
+  await page.waitForLoadState('load', {timeout:30000})
+  // A document is ready on its load event; optional API prefetches may stay active.\n  // Cold Next dev compilation can reload the document. Compare the live DOM
   // with its own navigation response, never the previous document's nonce.
   const document=documents.at(-1),response=document?.response
   assert.ok(response?.ok())
