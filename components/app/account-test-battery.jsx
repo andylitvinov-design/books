@@ -153,7 +153,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
-  const [exploring, setExploring] = useState(openFromInsights)
+  const [exploring, setExploring] = useState(openFromInsights || fromCourse || Boolean(recommendedKey))
   const [explorerMounted, setExplorerMounted] = useState(false)
   const [explorerRevision, setExplorerRevision] = useState(0)
   useEffect(() => {
