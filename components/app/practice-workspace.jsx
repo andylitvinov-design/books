@@ -5,6 +5,7 @@ import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, Chevr
 import CrmManager from './crm-manager'
 import PractitionerArticles from './practitioner-articles'
 import PracticeServiceStatistics from './practice-service-statistics'
+import PracticeRequestsOverview from './practice-requests-overview'
 import MyServicesDashboard from './my-services-dashboard'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import './practice-dashboard.css'
@@ -249,7 +250,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    {!needsOnboarding&&<div className="hh-practice-top-cta" aria-label={ru?'Добавление услуг':'Add services'}>
+    <PracticeRequestsOverview requests={requests} services={services} locale={locale}
+      canAdd={serviceQuota.canAdd}
+      onAddService={needsOnboarding
+        ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+        : addService}
+      onViewAll={()=>{setActivePanel('requests');setError('')}} />
+    {!needsOnboarding&&requests.length>0&&<div className="hh-practice-top-cta" aria-label={ru?'Добавление услуг':'Add services'}>
       <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
         aria-pressed={activePanel==='services'} onClick={addService}>
         <Plus aria-hidden="true" />
@@ -524,7 +531,7 @@ function ServiceEditor({item,t,locale,busy,onSave,onSubmit,onPause}){
   </form>
 }
 function Requests({items,t,busy,onStatus}){
-  const [status,setStatus]=useState('open')
+  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted'].includes(item.status))?'open':'all')
   const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted'].includes(item.status):item.status===status))
   const ru=t.requests==='Заявки'
   return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
