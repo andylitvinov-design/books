@@ -225,3 +225,17 @@
 @media print{.levelGuide{break-inside:avoid}.levelList li{break-inside:avoid}}
 
 .bandStrip small{display:block;margin-top:5px;font-size:.76rem!important;line-height:1.43!important;color:#52675b;overflow-wrap:anywhere}
+
+/* Low-to-high follows the numeric instrument, not a health/goodness index. */
+.levelMeter[data-level-direction="difficulty"] span:nth-child(1){background:#c8ded3}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(2){background:#bdcbb0}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(3){background:#d5bc83}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(4){background:#d29b77}
+.levelMeter[data-level-direction="difficulty"] span:nth-child(5){background:#b76c66}
+.levelMeter[data-level-direction="difficulty"] span[data-current-position]{outline-color:#9c524a}
+.levelMeter[data-level-direction="neutral"] span:nth-child(1){background:#d8e4e8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(2){background:#bdced6}
+.levelMeter[data-level-direction="neutral"] span:nth-child(3){background:#a5bdc8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(4){background:#86a9b8}
+.levelMeter[data-level-direction="neutral"] span:nth-child(5){background:#648fa5}
+.levelMeter[data-level-direction="neutral"] span[data-current-position]{outline-color:#4e7891}
