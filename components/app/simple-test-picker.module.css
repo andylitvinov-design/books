@@ -2059,3 +2059,50 @@
 @media(prefers-reduced-motion:reduce){
   .shell .testEntry .testDetailsButton svg{transition:none}
 }
+
+
+/* 2026-10-17 — Public Tests discovery hero shares the Academy's visual system.
+   Keep the existing topic selection, recommendations and quiz cards underneath. */
+.shell[data-public-test-picker="true"] {
+  width: min(1100px, 100%);
+  margin: 0 auto 26px;
+  padding: 8px 16px 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.heroQuickPicks button[aria-pressed="true"] {
+  border-color: #f0c4d4;
+  background: #fff8f5;
+  color: #243854;
+  font-weight: 750;
+}
+.heroSearchSummary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 13px;
+  color: #486172;
+  font-size: .8rem;
+  line-height: 1.4;
+}
+.heroSearchSummary strong { color: #243e56; }
+.heroSearchSummary button {
+  border: 1px solid #e2c9d3;
+  border-radius: 999px;
+  background: #fffafc;
+  color: #893b58;
+  padding: 6px 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media(max-width:620px) {
+  .shell[data-public-test-picker="true"] {
+    width: 100%;
+    margin: 0 auto 24px;
+    padding: 2px 10px 24px;
+  }
+}
