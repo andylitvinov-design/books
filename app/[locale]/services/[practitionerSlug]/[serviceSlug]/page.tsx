@@ -10,6 +10,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicServiceDetail } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink, TrackedServiceExternalLink } from "@/components/service-funnel-tracking";
+import mediaStyles from "@/components/marketplace-service-gallery.module.css";
 
 type PageProps={params:Promise<{locale:string;practitionerSlug:string;serviceSlug:string}>};
 export const dynamic="force-dynamic";
@@ -51,6 +52,7 @@ export default async function ServiceDetail({params}:PageProps){
         </div>
       </div>
     </section>
+    {service.photos?.length>0&&<section className={mediaStyles.gallery} aria-label={ru?"Фотографии услуги":es?"Fotos del servicio":"Service photos"}>{service.photos.map((src,i)=><img key={src} src={src} alt={service.copy.title+" — "+(i+1)} loading="lazy" />)}</section>}
     <section className="services-studio-approach">
       <div><p className="homeopathy-kicker">{ru?"Практик":es?"Profesional":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":es?"Credenciales verificadas":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">{es?"Colaborador de Holistic House":"Holistic House Partner"}</p>}</div>
       <div><p>{service.copy.description||service.copy.shortDescription}</p>
