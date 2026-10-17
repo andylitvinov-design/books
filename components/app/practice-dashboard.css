@@ -806,3 +806,12 @@
   .hh-app .hh-practice-marketplace .hh-practice-top-cta-button,
   .hh-app .hh-practice-marketplace .hh-practice-top-cta-quota{min-height:45px}
 }
+
+/* Optional video presentations in practitioner and service editors. */
+.hh-practice-presentation{display:grid;gap:.8rem;margin:1rem 0;padding:1.05rem;border:1px solid #c4b38d8c;border-radius:16px;background:linear-gradient(135deg,#142d42 0%,#1b3446 65%,#493942 100%);color:#fff}
+.hh-practice-presentation-head{display:grid;gap:.3rem}.hh-practice-presentation-head strong{font-size:1.05rem}.hh-practice-presentation-head small{color:#e0e9ed;line-height:1.5}
+.hh-practice-presentation-options{display:flex;gap:.5rem;flex-wrap:wrap}.hh-practice-presentation-options button{padding:.55rem .9rem;border:1px solid #d7b77e8a;border-radius:10px;background:#fff1;color:#fff;cursor:pointer}
+.hh-practice-presentation-options button.is-selected{color:#1c3140;background:#e7c993;border-color:#e7c993;font-weight:700}
+.hh-practice-presentation-input{display:grid;gap:.5rem}.hh-practice-presentation-input label{display:grid;gap:.5rem}.hh-practice-presentation-input input[type=url],.hh-practice-presentation-input input[type=file]{max-width:100%;box-sizing:border-box;background:#fff;color:#162c3b;border-radius:9px;padding:.6rem;min-width:0}
+.hh-practice-presentation-input p{margin:0;color:#e8d7ad}.hh-practice-presentation-remove{justify-self:start;padding:.4rem .6rem;background:transparent;border:0;color:#f1c9c3;text-decoration:underline;cursor:pointer}
+.hh-practice-presentation .hh-fine{color:#d5dee6;margin:0}.hh-practice-presentation .hh-practice-error{color:#ffcdcd}

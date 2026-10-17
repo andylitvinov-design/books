@@ -7,6 +7,7 @@ import { createNotificationRepository } from '@/lib/app/notification-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import {
@@ -602,6 +603,8 @@ async function handle(request, { params }) {
     if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
     if (path[0] === 'requests' && path.length === 2)
       return json(await repo.updateRequest(actor, path[1], body))
+    if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
+    if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))
     if (joined === 'practice/profile') {
       if (body.action === 'submit')

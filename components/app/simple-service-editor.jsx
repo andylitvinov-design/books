@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, Globe2, Send, Save } from 'lucide-react'
 import PracticePhotoUpload from './practice-photo-upload'
+import PracticeVideoField from './practice-video-field'
 import styles from './simple-service-editor.module.css'
 
 const AREAS = {
@@ -82,7 +83,7 @@ const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
   pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'',
-  imagePath:'', photos:[], goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
+  imagePath:'', photos:[], videoPresentation:null, goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
 }
 
 const commas = value => String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
@@ -95,7 +96,7 @@ function initialDraft(item,locale) {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', imagePath:item.imagePath||'', photos:item.photos||[], goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
@@ -107,6 +108,7 @@ function initialDraft(item,locale) {
 
 export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,onSaveAndSubmit,onPause}) {
   const lang = TEXT[locale]?locale:'en', c = TEXT[lang]
+  const [videoBusy,setVideoBusy]=useState(false)
   const [draft,setDraft] = useState(()=>initialDraft(item,lang))
   const [activeLanguage,setActiveLanguage] = useState(()=>{
     const original = initialDraft(item,lang).copy
@@ -134,10 +136,10 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
       ? [...new Set([...(draft.displayLocales||['en','ru']),'es'])]
       : (draft.displayLocales||['en','ru']).filter(code=>code!=='es'),
   })
-  const saveDraft = () => onSave(item?.id||null,makePayload(),item?.revision)
+  const saveDraft = () => {if(!videoBusy)onSave(item?.id||null,makePayload(),item?.revision)}
   const submit = event => {
     event.preventDefault()
-    onSaveAndSubmit(item?.id||null,makePayload(),item?.revision)
+    if(!videoBusy)onSaveAndSubmit(item?.id||null,makePayload(),item?.revision)
   }
   const title = draft.copy[activeLanguage]?.title||''
   const short = draft.copy[activeLanguage]?.shortDescription||''
@@ -218,6 +220,7 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
         </label>
       </div>}
     </div>
+    <PracticeVideoField locale={locale} value={draft.videoPresentation} onChange={value=>set('videoPresentation',value)} onBusyChange={setVideoBusy}/>
     <details className={styles.advanced}>
       <summary><span>{c.more}</span><ChevronDown size={18} aria-hidden="true"/></summary>
       <div className={styles.advancedContent}>
@@ -267,10 +270,10 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
       </div>
     </details>
     <div className={styles.actions}>
-      <button className={styles.submit} type="submit" disabled={busy}>
+      <button className={styles.submit} type="submit" disabled={busy||videoBusy}>
         <Send size={17} aria-hidden="true"/>{item?c.update:c.submit}
       </button>
-      <button className={styles.draft} type="button" disabled={busy} onClick={saveDraft}>
+      <button className={styles.draft} type="button" disabled={busy||videoBusy} onClick={saveDraft}>
         <Save size={16} aria-hidden="true"/>{c.draft}
       </button>
       {item&&['published','submitted','changes_requested'].includes(item.status)&&
