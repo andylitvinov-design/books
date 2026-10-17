@@ -48,6 +48,8 @@ export type PublicService = {
   currency: string
   durationMinutes: number | null
   imagePath: string
+  photos?: string[]
+  practitionerPhoto?: string
   goals?: string[]
   methods?: string[]
   benefits?: string[]
