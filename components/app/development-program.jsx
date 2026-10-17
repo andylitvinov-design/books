@@ -249,7 +249,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       {showPlan && <div className={styles.plan} data-testid="development-recommendations">
         <header className={styles.planHeading}><span className={styles.pill}><Target size={15} aria-hidden="true" /> {t.results}</span><p>{t.resultsDesc}</p></header>
         {plan.priorities.length > 0 ? <div className={styles.priorityList}>
-          {plan.priorities.slice(0, allRows ? 8 : 5).map((item, index) => <article key={item.id} className={styles.priorityCard}>
+          {(allRows ? plan.priorities : plan.priorities.slice(0, 5)).map((item, index) => <article key={item.id} className={styles.priorityCard}>
             <div className={styles.priorityIndex}>{index + 1}</div>
             <div className={styles.priorityMain}>
               <strong>{axisLabel(item.axis, lang)} <span>· {item.label}</span></strong>
