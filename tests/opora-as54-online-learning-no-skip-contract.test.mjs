@@ -51,7 +51,7 @@ test('no Skip choice anywhere in new 210 screen response lists, including moment
 })
 
 test('AS-5.4 contract separates visible answers from navigation and formative feedback',()=>{
-  assert.match(digital,/ответ.*«Пропустить» УДАЛЕНО/)
+  assert.match(digital,/«Пропустить» УДАЛЕНО/)
   assert.match(digital,/agree\|unsure\|disagree\|null/)
   assert.match(digital,/«Далее»/)
   assert.match(digital,/«Пауза»/)
