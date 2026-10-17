@@ -9,6 +9,7 @@ import PracticeRequestsOverview from './practice-requests-overview'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
 import PracticePhotoUpload from './practice-photo-upload'
+import PracticeVideoField from './practice-video-field'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import './practice-dashboard.css'
 
@@ -28,8 +29,8 @@ const AREAS={
   business_money:['Business & money','Бизнес и деньги'],
   personal_development:['Personal development','Личностное развитие'],
 }
-const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:''}
-const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:''}
+const emptyProfile={displayName:'',professionalTitle:'',shortBio:'',fullBio:'',languages:['en'],city:'',region:'',country:'',formats:['online'],areas:['personal_development'],methods:[],yearsExperience:'',websiteUrl:'',socialUrls:[],photoPath:'',videoPresentation:null}
+const emptyService={copy:{en:{title:'',shortDescription:'',description:''},ru:{title:'',shortDescription:'',description:''},es:{title:'',shortDescription:'',description:''}},areaKey:'personal_development',offeringType:'session',deliveryFormat:'online',locationLabel:'',languages:['en','ru'],pricingMode:'contact',confirmedPrice:'',currency:'CAD',durationMinutes:'',imagePath:'',photos:[],goals:[],methods:[],benefits:[],faq:[],displayLocales:['en','ru'],whatsapp:'',telegram:'',videoPresentation:null}
 const emptyFreeService={...emptyService,pricingMode:'free',confirmedPrice:null,currency:''}
 const DASHBOARD_COPY = {
   "en": {
@@ -484,6 +485,9 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
         <label>{t.country}<input value={profile.country||''} onChange={e=>setProfileValue('country',e.target.value)}/></label>
         <label>{t.years}<input type="number" min="0" max="80" value={profile.yearsExperience??''} onChange={e=>setProfileValue('yearsExperience',e.target.value)}/></label>
         <label>{t.website}<input type="url" value={profile.websiteUrl||''} onChange={e=>setProfileValue('websiteUrl',e.target.value)}/></label>
+        <label>{locale==='ru'?'Видео о мастере (YouTube/Vimeo)':'Practitioner introduction (YouTube/Vimeo)'}
+          <input type="url" placeholder="https://youtu.be/..." value={profile.videoPresentation?.kind==='external'?profile.videoPresentation.url:''}
+            onChange={e=>setProfileValue('videoPresentation',e.target.value?{kind:'external',url:e.target.value}:null)}/></label>
         <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.continueFree}</button><button type="button" disabled={busy} onClick={()=>onAction(payload('save',false))}>{t.saveDraft}</button></div>
         <p className="hh-fine">{t.moderation}</p>
       </form>:
@@ -505,6 +509,9 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
           <label>{t.location}<input value={offer.locationLabel||''} onChange={e=>setOfferValue('locationLabel',e.target.value)}/></label>
           <label>{t.languages}<input value={arr(offer.languages)} onChange={e=>setOfferValue('languages',list(e.target.value))}/></label>
           <label>{t.duration}<input type="number" min="5" max="1440" value={offer.durationMinutes??''} onChange={e=>setOfferValue('durationMinutes',e.target.value)}/></label>
+          <label>{locale==='ru'?'Видео об услуге (YouTube/Vimeo)':'Service video (YouTube/Vimeo)'}
+            <input type="url" placeholder="https://youtu.be/..." value={offer.videoPresentation?.kind==='external'?offer.videoPresentation.url:''}
+              onChange={e=>setOfferValue('videoPresentation',e.target.value?{kind:'external',url:e.target.value}:null)}/></label>
         </>}
         {!includeService&&<p className="hh-notice">{t.skipFree}</p>}
         <div className="hh-actions"><button type="button" disabled={busy} onClick={()=>setStep(1)}>{t.back}</button><button type="button" disabled={busy} onClick={saveDraft}>{t.saveDraft}</button><button className="hh-primary" disabled={busy}>{includeService?t.submitTogether:t.submitProfile}</button></div>
@@ -514,9 +521,10 @@ function MasterOnboarding({data,practitioner,service,locale,t,busy,onAction}){
   </section>
 }
 function ProfileEditor({practitioner,locale,t,busy,onSave,onSubmit}){
+  const [videoBusy,setVideoBusy]=useState(false)
   const [v,setV]=useState({...emptyProfile,...(practitioner?.draftProfile||{})})
   const set=(k,x)=>setV(s=>({...s,[k]:x}))
-  return <section className="hh-panel hh-section"><h2>{t.profile}</h2>{practitioner?.reviewNote&&<p className="hh-notice">{practitioner.reviewNote}</p>}<form className="hh-form" onSubmit={e=>{e.preventDefault();onSave({...v,languages:list(v.languages),methods:list(v.methods),socialUrls:Array.isArray(v.socialUrls)?v.socialUrls:list(v.socialUrls)},practitioner?.revision)}}>
+  return <section className="hh-panel hh-section"><h2>{t.profile}</h2>{practitioner?.reviewNote&&<p className="hh-notice">{practitioner.reviewNote}</p>}<form className="hh-form" onSubmit={e=>{e.preventDefault();if(videoBusy)return;onSave({...v,languages:list(v.languages),methods:list(v.methods),socialUrls:Array.isArray(v.socialUrls)?v.socialUrls:list(v.socialUrls)},practitioner?.revision)}}>
     <PracticePhotoUpload mode="profile" value={v.photoPath||''} onChange={value=>set('photoPath',value)} locale={locale} disabled={busy}/>
     <label>{t.displayName}<input required maxLength="120" value={v.displayName||''} onChange={e=>set('displayName',e.target.value)}/></label>
     <label>{t.professionalTitle}<input required maxLength="160" value={v.professionalTitle||''} onChange={e=>set('professionalTitle',e.target.value)}/></label>
@@ -529,7 +537,8 @@ function ProfileEditor({practitioner,locale,t,busy,onSave,onSubmit}){
     <label>{t.city}<input value={v.city||''} onChange={e=>set('city',e.target.value)}/></label><label>{t.region}<input value={v.region||''} onChange={e=>set('region',e.target.value)}/></label><label>{t.country}<input value={v.country||''} onChange={e=>set('country',e.target.value)}/></label>
     <label>{t.years}<input type="number" min="0" max="80" value={v.yearsExperience??''} onChange={e=>set('yearsExperience',e.target.value)}/></label>
     <label>{t.website}<input type="url" value={v.websiteUrl||''} onChange={e=>set('websiteUrl',e.target.value)}/></label>
-    <div className="hh-actions"><button className="hh-primary" disabled={busy}>{t.save}</button>{onSubmit&&<button type="button" disabled={busy} onClick={onSubmit}>{t.submit}</button>}</div><p className="hh-fine">{t.moderation}</p>
+    <PracticeVideoField locale={locale} value={v.videoPresentation} onChange={value=>set('videoPresentation',value)} onBusyChange={setVideoBusy}/>
+    <div className="hh-actions"><button className="hh-primary" disabled={busy||videoBusy}>{t.save}</button>{onSubmit&&<button type="button" disabled={busy||videoBusy} onClick={onSubmit}>{t.submit}</button>}</div><p className="hh-fine">{t.moderation}</p>
   </form></section>
 }
 function Credentials({items,t,busy,onCreate,onDelete}){
