@@ -239,3 +239,25 @@
 .levelMeter[data-level-direction="neutral"] span:nth-child(4){background:#86a9b8}
 .levelMeter[data-level-direction="neutral"] span:nth-child(5){background:#648fa5}
 .levelMeter[data-level-direction="neutral"] span[data-current-position]{outline-color:#4e7891}
+
+/* Situational results show one useful interpretation first.
+   Full nonclinical response ranges and technical notes are opt-in. */
+.levelObservation{margin:10px 0 12px!important;padding:9px 11px;border-left:3px solid #478977;
+  background:#e9f3ee;border-radius:8px;font-size:.84rem!important;
+  line-height:1.49!important;color:#355849;overflow-wrap:anywhere}
+.levelObservation strong{font-weight:800;color:#226951}
+.levelDisclosure{width:100%;max-width:100%;min-width:0;margin:8px 0 0;border-top:1px solid #d9e8de}
+.levelDisclosure>summary{display:flex;align-items:center;cursor:pointer;min-height:40px;
+  font:760 .86rem/1.4 system-ui,sans-serif;color:#286f58;list-style:revert;
+  outline-offset:3px}
+.levelDisclosure>summary:focus-visible,.measureDetails>summary:focus-visible{outline:2px solid #468c74}
+.levelDisclosure[open]{padding-bottom:5px}
+.measureDetails{margin:12px 0 5px;max-width:100%;min-width:0;border-top:1px solid #e3e9e3}
+.measureDetails>summary{cursor:pointer;color:#536d61;font:750 .84rem/1.4 system-ui,sans-serif;min-height:36px}
+.measureDetails p{font-size:.83rem!important;line-height:1.46!important;
+  color:#53655c;margin:6px 0 0!important;overflow-wrap:anywhere}
+@media(max-width:460px){
+  .levelGuide,.answerReading,.answerRanges,.measureDetails{width:100%;max-width:100%;min-width:0}
+  .levelObservation{font-size:.82rem!important;padding:9px 10px}
+  .levelDisclosure>summary{font-size:.83rem}
+}
