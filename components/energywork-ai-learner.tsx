@@ -369,7 +369,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
               <p>{t.guestHint}</p>
             </> : null}
             {sync === "ready" ? <>
-              <strong><Check size={16} aria-hidden="true" />{busy ? t.saving : t.saved}</strong>
+              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
               {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
               <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
             </> : null}
@@ -470,8 +470,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0 || busy} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
+              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
                 {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
