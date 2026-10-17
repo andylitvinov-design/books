@@ -16,6 +16,69 @@ function phq4ShortName(key, locale) {
   }[key] || null
 }
 
+// Published bands keep source-defined boundaries. The text below explains
+// their meanings without treating screening results as diagnoses.
+function explainPublishedLevel(code, locale) {
+  const ru = locale === 'ru'
+  const copy = {
+    below_screen: [
+      'Ниже опубликованного скринингового порога. Это не исключает трудностей, если они беспокоят.',
+      'Below the published screening threshold. Difficulties may still be present.',
+    ],
+    screen_signal: [
+      'На уровне или выше скринингового порога. При беспокоящих симптомах можно обсудить их со специалистом.',
+      'At or above a screening threshold. Discuss concerning symptoms with a qualified professional.',
+    ],
+    minimal: [
+      'Самый нижний из опубликованных диапазонов для данного опросника.',
+      'The lowest published symptom range for this questionnaire.',
+    ],
+    mild: [
+      'Следующий диапазон отмеченных симптомов: выше минимального, но ниже средних категорий.',
+      'The next published symptom range: above minimal, below the middle categories.',
+    ],
+    moderate: [
+      'Средний из опубликованных диапазонов; полезно учесть влияние симптомов на повседневную жизнь.',
+      'A middle published range; consider how the reported symptoms affect daily life.',
+    ],
+    moderately_severe: [
+      'Диапазон выше умеренного: это основание внимательнее оценить беспокоящие проявления.',
+      'A range above moderate; consider a closer review of concerning experiences.',
+    ],
+    severe: [
+      'Верхняя опубликованная категория опросника — это не самостоятельный диагноз.',
+      'The questionnaire’s highest published category; it is not a diagnosis.',
+    ],
+    low: [
+      'Нижний опубликованный диапазон выраженности сообщаемых симптомов.',
+      'A lower published range of reported symptoms.',
+    ],
+    medium: [
+      'Промежуточный опубликованный диапазон выраженности сообщаемых симптомов.',
+      'An intermediate published range of reported symptoms.',
+    ],
+    high: [
+      'Верхний опубликованный диапазон выраженности сообщаемых симптомов.',
+      'An upper published range of reported symptoms.',
+    ],
+    low_coping: [
+      'По этой шкале отмечается сравнительно меньше устойчивых способов совладания.',
+      'Fewer resilient coping responses are reported on this scale.',
+    ],
+    mid_coping: [
+      'По этой шкале отмечается промежуточная выраженность способов совладания.',
+      'An intermediate range of resilient coping responses on this scale.',
+    ],
+    high_coping: [
+      'По этой шкале отмечается сравнительно больше устойчивых способов совладания.',
+      'More resilient coping responses are reported on this scale.',
+    ],
+  }
+  return copy[code]?.[ru ? 0 : 1] || (ru
+    ? 'Опубликованный диапазон опросника описывает ответы, но не устанавливает диагноз.'
+    : 'This published questionnaire interval describes responses, not a diagnosis.')
+}
+
 // Only presentation changes here: instrument scores, banding and recommendations
 // are still sourced from the existing versioned result-report registry.
 export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
@@ -142,6 +205,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           className={band.current ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
           aria-current={band.current ? 'true' : undefined}>
           <b>{band.from}–{band.to}</b> {band.label}{band.current ? (ru ? ' · ваш' : ' · yours') : ''}
+          <small>{explainPublishedLevel(band.code, locale)}</small>
         </span>)}
       </div>}
       {scoreLevelGuide && <section className={styles.levelGuide} data-descriptive-score-guide
