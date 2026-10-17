@@ -143,7 +143,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const Icon=SCENES[step%SCENES.length]
   useEffect(()=>{
     if(slide?.key)visited.current.add(slide.key)
-    scroller.current?.scrollTo({top:0,behavior:'instant'})
+    scroller.current?.scrollTo?.({top:0,behavior:'instant'})
     heading.current?.focus()
     setShowHint(false)
   },[step,slide?.key])
