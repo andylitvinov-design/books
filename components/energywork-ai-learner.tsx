@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import {
   ENERGYWORK_COURSE_ID, ENERGYWORK_COURSE_VERSION,
@@ -15,12 +16,24 @@ import styles from "./energywork-ai-learner.module.css";
 
 type Props = { locale: EnergyworkLocale };
 type AnswerMap = Record<string, string>;
+type StoredProgress = {
+  accountId: string; enrolled: boolean; courseVersion: string;
+  slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
+  revision?: number; savedAt?: string; status?: "active" | "completed";
+};
+type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
+type SaveCommand = {
+  action: "save" | "switch";
+  version: string; slideId: string; nextSlideId: string;
+  pathId?: EnergyworkPath | null; answer?: string;
+};
+
 const copy = {
   en: {
     shortTitle: "Principles of Energywork",
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
-    preview: "Preview mode · Your answers are not stored in your account yet.",
-    previewHelp: "Only enter information you are comfortable keeping in this unsaved page. Private save & resume is being built.",
+    preview: "Guest preview · Answers are not saved.",
+    previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
     backCourse: "Course details",
     step: "Slide",
@@ -37,9 +50,9 @@ const copy = {
     unavailable: "This recording is not available. You can continue using the written teaching.",
     pathway: "Choose one system to continue",
     picked: "Selected",
-    finish: "Learning preview completed",
-    finishNote: "The reflections on this screen have not been uploaded or saved. Copy them before leaving if you wish to keep them.",
-    summary: "Your reflections in this preview",
+    finish: "Course completed",
+    finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
+    summary: "Your personal course journal",
     nothing: "You did not add written reflections; that is completely fine.",
     copy: "Copy my notes",
     copied: "Notes copied",
@@ -49,12 +62,25 @@ const copy = {
     teacher: "Request teacher-guided Level 1",
     noInitiation: "Studying the material, completing the course or sending a request does not automatically provide initiation.",
     continuePath: "Continue with the selected path",
+    checking: "Checking saved course…", consentTitle: "Save your learning privately",
+    consentText: "I agree to save my course position and optional reflections in my private Holistic House account. I can delete them later; they will not be shared with a teacher automatically.",
+    enableSave: "Start & save my course", signIn: "Sign in with Google to save",
+    guestHint: "You may continue as a guest without saving.",
+    saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
+    retry: "Retry", saveFailed: "Could not save. Your answer is still on this screen; retry before continuing.",
+    conflict: "Your course changed in another session. Reload the saved version before continuing.",
+    reload: "Reload saved progress", print: "Print / Save PDF",
+    resetConfirm: "Delete your saved course progress and reflections? Your other courses and tests will remain.",
+    switchConfirm: "Switching Reiki paths removes reflections from the previous branch. Continue?",
+    signupError: "Could not start Google sign-in. Try again from the My Courses cabinet.",
+    accountError: "Account needs attention. Open your personal cabinet to complete sign-in and consent.",
+    myCourses: "My Courses",
   },
   ru: {
     shortTitle: "Основы энергетики",
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
-    preview: "Предварительная версия · Ответы пока не сохраняются в аккаунте.",
-    previewHelp: "Пишите только то, что готовы оставить на этой несохранённой странице. Приватное сохранение и продолжение курса разрабатываются.",
+    preview: "Гостевой просмотр · Ответы не сохраняются.",
+    previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
     backCourse: "Описание курса",
     step: "Слайд",
@@ -71,9 +97,9 @@ const copy = {
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     pathway: "Выберите одно направление",
     picked: "Выбрано",
-    finish: "Ознакомительный курс завершён",
-    finishNote: "Ответы на этом экране не передавались и не сохранились в кабинете. Скопируйте их перед выходом, если хотите сохранить.",
-    summary: "Ваши наблюдения в этой версии",
+    finish: "Курс завершён",
+    finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
+    summary: "Ваш личный учебный дневник",
     nothing: "Вы не записали наблюдения, и это совершенно нормально.",
     copy: "Скопировать записи",
     copied: "Записи скопированы",
@@ -83,6 +109,19 @@ const copy = {
     teacher: "Запросить 1-ю ступень у преподавателя",
     noInitiation: "Просмотр материалов, окончание курса или отправка заявки не предоставляют инициацию автоматически.",
     continuePath: "Продолжить выбранный путь",
+    checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
+    consentText: "Я согласен(на) сохранять пройденный слайд и необязательные ответы в личном кабинете Holistic House. Их можно удалить; преподавателю они не передаются автоматически.",
+    enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
+    guestHint: "Можно продолжить как гость без сохранения.",
+    saved: "Сохранено приватно", saving: "Сохраняем…", offline: "Сохранение недоступно. Ответы не записываются на сервер.",
+    retry: "Повторить", saveFailed: "Не удалось сохранить. Ответ остался на экране; повторите перед переходом.",
+    conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
+    reload: "Загрузить прогресс", print: "Печать / Сохранить PDF",
+    resetConfirm: "Удалить сохранённый прогресс и ответы этого курса? Остальные курсы и тесты останутся.",
+    switchConfirm: "При смене системы Рейки ответы прошлой ветки будут удалены. Продолжить?",
+    signupError: "Не удалось начать вход через Google. Попробуйте через раздел «Мои курсы».",
+    accountError: "Завершите вход и согласие в личном кабинете.",
+    myCourses: "Мои курсы",
   },
 } as const;
 
@@ -107,10 +146,85 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const t = copy[locale];
   const [path, setPath] = useState<EnergyworkPath | null>(null);
   const [index, setIndex] = useState(0);
-  // P0: in-memory preview only. Never persist private reflection text in localStorage,
-  // URL search params or a general analytics event. P1 will add consent + private API.
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
+  const [sync, setSync] = useState<SyncStatus>("checking");
+  const [consented, setConsented] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const accountIdRef = useRef<string | null>(null);
+  const revisionRef = useRef(0);
+  const savedPathRef = useRef<EnergyworkPath | null>(null);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const dirtyRef = useRef(new Set<string>());
+  const progressRef = useRef("welcome-01");
+  const request = useCallback((body: SaveCommand) => {
+    const task = queueRef.current.catch(() => {}).then(async () => {
+      const value = await appFetch("academy-energywork", {
+        ...body, expectedRevision: revisionRef.current,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      if (!value.enrolled || !Number.isSafeInteger(value.revision)) throw new Error("INVALID_PROGRESS_RESPONSE");
+      revisionRef.current = value.revision!;
+      savedPathRef.current = value.pathId ?? null;
+      progressRef.current = value.slideId ?? "welcome-01";
+      setSavedAt(value.savedAt || null);
+      setSaveError(null);
+      return value;
+    });
+    queueRef.current = task.catch(() => {});
+    return task;
+  }, []);
+  const hydrate = useCallback((value: StoredProgress) => {
+    accountIdRef.current = value.accountId;
+    if (!value.enrolled) { setSync("consent"); return; }
+    const restoredPath = value.pathId ?? null;
+    const restored = energyworkSlides(restoredPath);
+    revisionRef.current = value.revision ?? 0;
+    savedPathRef.current = restoredPath;
+    progressRef.current = value.slideId ?? "welcome-01";
+    setPath(restoredPath);
+    setAnswers(value.answers ?? {});
+    setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
+    setSavedAt(value.savedAt || null);
+    dirtyRef.current.clear();
+    setSaveError(null);
+    setSync("ready");
+  }, []);
+  const reloadProgress = useCallback(async () => {
+    setBusy(true);
+    try {
+      const response = await appFetch("academy-energywork") as StoredProgress;
+      hydrate(response);
+    } catch (error) {
+      setSync((error as { status?: number })?.status === 401 ? "guest" : "unavailable");
+    } finally { setBusy(false); }
+  }, [hydrate]);
+  useEffect(() => { void reloadProgress(); }, [reloadProgress]);
+  async function startSaving() {
+    if (!consented || busy) return;
+    setBusy(true);
+    try {
+      const result = await appFetch("academy-energywork", {
+        action: "start", consent: true, version: ENERGYWORK_COURSE_VERSION,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      hydrate(result);
+      setConsented(false);
+    } catch (error) {
+      setSaveError((error as { status?: number })?.status === 403 ? t.accountError : t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function signIn() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await appFetch("auth/start", { locale, continueTo: "energywork" }, "POST") as { redirectUrl?: string };
+      if (!response.redirectUrl || !response.redirectUrl.startsWith("https://")) throw new Error("BAD_OAUTH_URL");
+      window.location.assign(response.redirectUrl);
+    } catch {
+      setSaveError(t.signupError); setBusy(false);
+    }
+  }
   const slides = useMemo(() => energyworkSlides(path), [path]);
   const slide = slides[index] ?? slides[0]!;
   const pathData = energyworkPathChoices.find((option) => option.id === path);
@@ -122,26 +236,89 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const teacher = pathData ? "/" + locale + "/academy/" + pathData.freePath : null;
 
   function choosePath(chosen: EnergyworkPath) {
+    if (busy) return;
     if (chosen !== path) {
-      setAnswers((existing) => Object.fromEntries(Object.entries(existing).filter(([id]) => !/^(ygg|tan|kun)-/.test(id))));
+      setAnswers((existing) => Object.fromEntries(Object.entries(existing)
+        .filter(([id]) => !/^(ygg|tan|kun|end)-/.test(id))));
     }
     setPath(chosen);
     setCopyState("idle");
   }
   function setAnswer(value: string) {
     setAnswers((old) => ({ ...old, [slide.id]: value }));
+    dirtyRef.current.add(slide.id);
     setCopyState("idle");
   }
-  function next() {
-    if (slide.kind === "path-choice" && !path) return;
+  async function store(nextSlideId: string) {
+    if (sync !== "ready") return;
+    const switching = Boolean(savedPathRef.current && path && savedPathRef.current !== path);
+    if (switching && !window.confirm(t.switchConfirm)) throw new Error("USER_CANCELLED");
+    const response = await request({
+      action: switching ? "switch" : "save",
+      version: ENERGYWORK_COURSE_VERSION,
+      slideId: slide.id, nextSlideId,
+      pathId: slide.kind === "path-choice" ? path : savedPathRef.current,
+      ...(slide.question ? { answer: answers[slide.id] || "" } : {}),
+    });
+    dirtyRef.current.delete(slide.id);
+    return response;
+  }
+  async function next() {
+    if (busy || (slide.kind === "path-choice" && !path)) return;
+    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
+    if (sync === "ready") {
+      setBusy(true);
+      try { await store(nextId); }
+      catch (error) {
+        if ((error as Error).message !== "USER_CANCELLED")
+          setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
+        setBusy(false); return;
+      }
+      setBusy(false);
+    }
     setIndex((current) => Math.min(current + 1, energyworkSlides(path).length - 1));
   }
-  function previous() {
+  async function previous() {
+    if (index === 0 || busy) return;
+    if (sync === "ready" && slide.question && dirtyRef.current.has(slide.id)) {
+      setBusy(true);
+      try { await store(slide.id); } catch {
+        setSaveError(t.saveFailed); setBusy(false); return;
+      }
+      setBusy(false);
+    }
     setIndex((current) => Math.max(0, current - 1));
   }
-  function restart() {
+  async function restart() {
+    if (busy || (sync === "ready" && !window.confirm(t.resetConfirm))) return;
+    if (sync === "ready") {
+      setBusy(true);
+      try {
+        await queueRef.current.catch(() => {});
+        const value = await appFetch("academy-energywork", { action:"delete", confirmed: true }, "POST",
+          { accountId: accountIdRef.current || undefined }) as StoredProgress;
+        hydrate(value);
+      } catch { setSaveError(t.saveFailed); setBusy(false); return; }
+      setBusy(false);
+    }
     setIndex(0); setPath(null); setAnswers({}); setCopyState("idle");
+    dirtyRef.current.clear();
   }
+  // A brief debounce preserves reflections while users type; queued writes and
+  // revision checks prevent racing a Next button or concurrent browser tab.
+  useEffect(() => {
+    if (sync !== "ready" || !slide.question || !dirtyRef.current.has(slide.id)) return;
+    const id = slide.id, value = answers[id] ?? "", remotePath = savedPathRef.current;
+    const timer = window.setTimeout(() => {
+      void request({action:"save",version:ENERGYWORK_COURSE_VERSION,
+        slideId:id,nextSlideId:id,pathId:remotePath,answer:value})
+        .then(() => {
+          if (value === (answers[id] ?? "")) dirtyRef.current.delete(id);
+        })
+        .catch(() => { setSaveError(t.saveFailed); });
+    }, 950);
+    return () => window.clearTimeout(timer);
+  }, [sync, slide.id, slide.question, answers, request, t.saveFailed]);
   async function copyNotes() {
     if (!navigator.clipboard?.writeText) {
       setCopyState("error"); return;
@@ -173,9 +350,33 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span style={{ width: ((index + 1) / total * 100) + "%" }} />
         </div>
 
-        <aside className={styles.preview} aria-label={t.preview}>
+        <aside className={styles.preview} aria-live="polite">
           <LockKeyhole size={19} aria-hidden="true" />
-          <div><strong>{t.preview}</strong><p>{t.previewHelp}</p></div>
+          <div className={styles.syncContent}>
+            {sync === "checking" ? <strong>{t.checking}</strong> : null}
+            {sync === "guest" ? <>
+              <strong>{t.preview}</strong><p>{t.previewHelp}</p>
+              <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
+              <p>{t.guestHint}</p>
+            </> : null}
+            {sync === "consent" ? <>
+              <strong>{t.consentTitle}</strong>
+              <label className={styles.consentLabel}>
+                <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                <span>{t.consentText}</span>
+              </label>
+              <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
+              <p>{t.guestHint}</p>
+            </> : null}
+            {sync === "ready" ? <>
+              <strong><Check size={16} aria-hidden="true" />{busy ? t.saving : t.saved}</strong>
+              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
+              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+            </> : null}
+            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
+            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
+              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
+          </div>
         </aside>
 
         <section className={styles.slide} key={slide.id} aria-labelledby="energywork-slide-title">
@@ -238,11 +439,12 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <pre className={styles.notes}>{Object.values(answers).some((value) => value.trim()) ? notes : t.nothing}</pre>
                   <p>{t.finishNote}</p>
                   <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
+                  <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
                   {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
                   {source ? <Link className={styles.textLink} href={source}>{t.source}<ArrowRight size={16} /></Link> : null}
                   {teacher ? <Link className={styles.teacherLink} href={teacher}>{t.teacher}<ArrowRight size={16} /></Link> : null}
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
-                  <button type="button" className={styles.restart} onClick={restart}>{t.restart}</button>
+                  <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
                 </div>
               ) : null}
             </div>
@@ -268,8 +470,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={slide.kind === "path-choice" && !path} className={styles.next} data-energywork-next>
+              <button type="button" onClick={previous} disabled={index === 0 || busy} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              <button type="button" onClick={next} disabled={busy || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
                 {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
