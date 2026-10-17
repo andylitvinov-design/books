@@ -418,7 +418,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -436,36 +436,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span style={{ width: ((index + 1) / total * 100) + "%" }} />
         </div>
 
-        <aside className={styles.preview} aria-live="polite">
-          <LockKeyhole size={19} aria-hidden="true" />
-          <div className={styles.syncContent}>
-            {sync === "checking" ? <strong>{t.checking}</strong> : null}
-            {sync === "guest" ? <>
-              <strong>{t.preview}</strong><p>{t.previewHelp}</p>
-              <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
-              <p>{t.guestHint}</p>
-            </> : null}
-            {sync === "consent" ? <>
-              <strong>{t.consentTitle}</strong>
-              <label className={styles.consentLabel}>
-                <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                <span>{t.consentText}</span>
-              </label>
-              <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
-              <p>{t.guestHint}</p>
-            </> : null}
-            {sync === "ready" ? <>
-              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
-              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
-            </> : null}
-            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
-            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
-              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
-          </div>
-        </aside>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} aria-labelledby="energywork-slide-title">
+
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
@@ -571,6 +544,40 @@ export function EnergyworkAiLearner({ locale }: Props) {
             <li key={key} aria-current={key === slide.phase ? "step" : undefined}>{title[locale]}</li>
           ))}</ol>
         </details>
+        <aside className={styles.preview} aria-live="polite">
+          <LockKeyhole size={19} aria-hidden="true" />
+          <div className={styles.syncContent}>
+            {sync === "checking" ? <strong>{t.checking}</strong> : null}
+            {sync === "guest" ? <>
+              <strong>{t.preview}</strong>
+              <details className={styles.saveDetails}>
+                <summary>{locale === "ru" ? "Сохранить в моих курсах" : "Save to My Courses"}</summary>
+                <p>{t.previewHelp}</p>
+                <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
+                <p>{t.guestHint}</p>
+              </details>
+            </> : null}
+            {sync === "consent" ? <>
+              <details className={styles.saveDetails}>
+                <summary>{t.consentTitle}</summary>
+                <label className={styles.consentLabel}>
+                  <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                  <span>{t.consentText}</span>
+                </label>
+                <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
+                <p>{t.guestHint}</p>
+              </details>
+            </> : null}
+            {sync === "ready" ? <>
+              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
+              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
+              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+            </> : null}
+            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
+            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
+              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
+          </div>
+        </aside>
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions}>
