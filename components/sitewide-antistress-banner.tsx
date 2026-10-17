@@ -10,9 +10,9 @@ import styles from "./sitewide-antistress-banner.module.css";
 type Locale = "ru" | "en" | "es";
 
 const copy = {
-  ru: { eyebrow: "ЛИЧНАЯ ДИАГНОСТИКА · БЕСПЛАТНО", detail: "Анкета + рисунок · личный письменный разбор", cta: "Заказать консультацию" },
-  en: { eyebrow: "FREE PERSONAL SITUATION REVIEW", detail: "Short form + drawing · personal written feedback", cta: "Book a consultation" },
-  es: { eyebrow: "ANÁLISIS PERSONAL GRATUITO", detail: "Formulario + dibujo · informe personal por escrito", cta: "Reservar consulta" },
+  ru: { eyebrow: "ЛИЧНАЯ ДИАГНОСТИКА · БЕСПЛАТНО", detail: "Анкета + рисунок · личный письменный разбор", cta: "Получить разбор" },
+  en: { eyebrow: "FREE PERSONAL SITUATION REVIEW", detail: "Short form + drawing · personal written feedback", cta: "Get free review" },
+  es: { eyebrow: "ANÁLISIS PERSONAL GRATUITO", detail: "Formulario + dibujo · informe personal por escrito", cta: "Solicitar gratis" },
 } as const;
 
 const courseCopy = {
@@ -99,7 +99,7 @@ export function SitewideAntistressBanner({ initialLocale = "en" }: { initialLoca
       <div className={styles.inner}>
         <Link className={styles.name} href={"/" + locale + "/services/free-situation-review"} prefetch={false} aria-label={t.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}<ArrowRight size={14} aria-hidden="true" /></Link>
         <span className={styles.detail}>{t.detail}</span>
-        <Link className={styles.cta} href={`/${locale}/services#consultation`} prefetch={false}>
+        <Link className={styles.cta} href={`/${locale}/services/free-situation-review`} prefetch={false}>
           {t.cta}<ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
