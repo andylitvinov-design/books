@@ -184,6 +184,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const [path, setPath] = useState<EnergyworkPath | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const answersRef = useRef<AnswerMap>({});
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [sync, setSync] = useState<SyncStatus>("checking");
   const [consented, setConsented] = useState(false);
@@ -221,7 +222,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
     savedPathRef.current = restoredPath;
     progressRef.current = value.slideId ?? "welcome-01";
     setPath(restoredPath);
-    setAnswers(value.answers ?? {});
+    const restoredAnswers = value.answers ?? {};
+    answersRef.current = restoredAnswers;
+    setAnswers(restoredAnswers);
     setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
     setSavedAt(value.savedAt || null);
     dirtyRef.current.clear();
@@ -275,14 +278,18 @@ export function EnergyworkAiLearner({ locale }: Props) {
   function choosePath(chosen: EnergyworkPath) {
     if (busy) return;
     if (chosen !== path) {
-      setAnswers((existing) => Object.fromEntries(Object.entries(existing)
-        .filter(([id]) => !/^(ygg|tan|kun|end)-/.test(id))));
+      const updated = Object.fromEntries(Object.entries(answersRef.current)
+        .filter(([id]) => !/^(ygg|tan|kun|end)-/.test(id)));
+      answersRef.current = updated;
+      setAnswers(updated);
     }
     setPath(chosen);
     setCopyState("idle");
   }
   function setAnswer(value: string) {
-    setAnswers((old) => ({ ...old, [slide.id]: value }));
+    const updated = { ...answersRef.current, [slide.id]: value };
+    answersRef.current = updated;
+    setAnswers(updated);
     dirtyRef.current.add(slide.id);
     setCopyState("idle");
   }
@@ -338,6 +345,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
       } catch { setSaveError(t.saveFailed); setBusy(false); return; }
       setBusy(false);
     }
+    answersRef.current = {};
     setIndex(0); setPath(null); setAnswers({}); setCopyState("idle");
     dirtyRef.current.clear();
   }
@@ -350,12 +358,20 @@ export function EnergyworkAiLearner({ locale }: Props) {
       void request({action:"save",version:ENERGYWORK_COURSE_VERSION,
         slideId:id,nextSlideId:id,pathId:remotePath,answer:value})
         .then(() => {
-          if (value === (answers[id] ?? "")) dirtyRef.current.delete(id);
+          if (value === (answersRef.current[id] ?? "")) dirtyRef.current.delete(id);
         })
         .catch(() => { setSaveError(t.saveFailed); });
     }, 950);
     return () => window.clearTimeout(timer);
   }, [sync, slide.id, slide.question, answers, request, t.saveFailed]);
+  // Warn before losing a not-yet-confirmed private answer.
+  useEffect(() => {
+    if (!dirtyRef.current.size) return;
+    const beforeLeave = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", beforeLeave);
+    return () => window.removeEventListener("beforeunload", beforeLeave);
+  }, [answers, savedAt]);
+
   async function copyNotes() {
     if (!navigator.clipboard?.writeText) {
       setCopyState("error"); return;
