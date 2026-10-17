@@ -87,6 +87,17 @@ export function PersonalTestimonials({
     : videos;
   const titleId = isHome ? "home-testimonials-title" : "services-testimonials-title";
 
+  const story = (
+      <figure className={styles.quoteCard}>
+        <span className={styles.quoteIcon} aria-hidden="true"><Quote size={28} strokeWidth={1.4}/></span>
+        <div>
+          <p className={styles.quoteEyebrow}>{current.storyEyebrow}</p>
+          <blockquote className={styles.quoteText}>“{current.storyQuote}”</blockquote>
+          <figcaption className={styles.source}>{current.storySource}</figcaption>
+        </div>
+      </figure>
+  );
+
   return (
     <section
       className={styles.section}
@@ -101,20 +112,22 @@ export function PersonalTestimonials({
         <p>{isHome || variant === "all" ? current.lead : current.serviceLead}</p>
       </header>
 
-      <figure className={styles.quoteCard}>
-        <span className={styles.quoteIcon} aria-hidden="true"><Quote size={28} strokeWidth={1.4}/></span>
-        <div>
-          <p className={styles.quoteEyebrow}>{current.storyEyebrow}</p>
-          <blockquote className={styles.quoteText}>“{current.storyQuote}”</blockquote>
-          <figcaption className={styles.source}>{current.storySource}</figcaption>
-        </div>
-      </figure>
+      {variant === "all" ? (
+        <details className={styles.storyDisclosure}>
+          <summary>{locale === "ru" ? "Прочитать личную историю клиента" : "Read a personal client story"}</summary>
+          {story}
+        </details>
+      ) : story}
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
         <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
-      <div className={styles.videoGrid}>
+      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : "Swipe or scroll to see all video reviews →"}</p>}
+      <div className={styles.videoGrid}
+        role={variant === "all" ? "region" : undefined}
+        aria-label={variant === "all" ? (locale === "ru" ? "Галерея из 12 видеоотзывов" : "Gallery of 12 video testimonials") : undefined}
+        tabIndex={variant === "all" ? 0 : undefined}>
         {presentedVideos.map((item) => (
           <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
             {variant === "all" ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
