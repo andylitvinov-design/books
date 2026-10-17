@@ -643,7 +643,7 @@ export default function CourseSlidePlayer({
     data-course-slide-player data-course-skills-v5={isSkillV5?'true':undefined} data-opora-first-lesson={isDayOne?"as-1.9":undefined}
     data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
     data-opora-day={isOporaModule?cycle.day:undefined}
-    data-opora-state-journey={isOporaStateJourney?"v1":undefined} ref={frame}>
+    data-opora-state-journey={isOporaStateJourney?"v1":undefined} data-course-one-screen="v1" ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -823,13 +823,16 @@ export default function CourseSlidePlayer({
             {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
             <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
-            <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
             </div>
-            <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>
+            <details className={styles.supportDetails} data-course-optional-explanation>
+              <summary><CircleHelp size={15} aria-hidden="true"/>{locale==='ru'?'О практике и безопасном выборе':'About this practice'}</summary>
+              <p>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+              <p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>
+            </details>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
