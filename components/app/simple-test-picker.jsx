@@ -31,12 +31,12 @@ const TEXT = {
     time:'Time per test', anyTime:'Any duration', shortTime:'Up to 5 min', mediumTime:'Up to 10 min',
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
-    modeLabel:'Choose your next step', modeTests:'Tests', modeCourse:'Tests + support course', courseHint:'A personal, self-guided 14-day support course. Review your selected tests and explicitly consent before saving.', courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
+    courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
-    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Results stay temporary in this browser; create or open your Cabinet for a free personal analysis.', startNotice:'By pressing Take test or Start free monitoring, you confirm you are 18 or older and agree to temporary private processing of your answers and results. No registration is required.',
+    browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Results stay temporary in this browser; create or open your Cabinet for a free personal analysis.',
     noTests:'Choose a test to continue.', reset:'Use suggested set', back:'Back to easy selection', saved:'Already have a plan? Open my saved tests',
     more:'Show {count} more tests', showing:'Showing {shown} of {total} matching tests', fit:'match', fitInfo:'Estimated relevance from your selected topics and concerns — not a clinical score or diagnosis.',
     selectAll:'Select all',clearAll:'Clear topics',skip:'Skip',problemSearch:'e.g. trouble relaxing, low energy, relationships…',noProblemMatches:'No matching concerns.',filterTitle:'Filter tests',filters:'Filters',problemsTitle:'Which problems are most important?', problemsHelp:'Optional: choose what specifically troubles you. These suggestions come from the topics above.', problemsEmpty:'Choose a topic above to see relevant concerns.', problemsClear:'Clear problems', problemsMore:'Show more problems', problemsLess:'Show fewer problems',
@@ -60,12 +60,12 @@ const TEXT = {
     time:'Время на один тест', anyTime:'Любое', shortTime:'До 5 мин', mediumTime:'До 10 мин',
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
-    modeLabel:'Как хотите продолжить', modeTests:'Тесты', modeCourse:'Тесты + коррекция', courseHint:'Персональный курс поддержки на 14 дней с ежедневными упражнениями. Перед сохранением вы подтвердите выбор и согласие.', courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
+    courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
-    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'Результаты временно сохраняются в этом браузере. Для бесплатного анализа создайте кабинет или войдите в него.', startNotice:'Нажимая «Пройти» или «Начать мониторинг», вы подтверждаете, что вам есть 18 лет, и соглашаетесь на временную приватную обработку ответов и результатов. Регистрация не нужна.',
+    browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'Результаты временно сохраняются в этом браузере. Для бесплатного анализа создайте кабинет или войдите в него.',
     noTests:'Выберите тест для продолжения.', reset:'Вернуть рекомендованный набор', back:'Назад к простому подбору', saved:'Уже есть подборка? Открыть мои тесты',
     more:'Показать ещё {count} тестов', showing:'Показано {shown} из {total} подходящих тестов', fit:'соответствие', fitInfo:'Ориентировочная релевантность по выбранным темам и проблемам — не диагноз и не показатель здоровья.',
     selectAll:'Выбрать все',clearAll:'Снять выбор',skip:'Пропустить',problemSearch:'Например: не могу расслабиться, мало энергии, отношения…',noProblemMatches:'Уточнения не найдены.',filterTitle:'Фильтры тестов',filters:'Фильтры',problemsTitle:'Какие проблемы беспокоят?', problemsHelp:'Необязательно: уточните запрос. Варианты зависят от выбранных тем.', problemsEmpty:'Сначала выберите тему — появятся соответствующие проблемы.', problemsClear:'Очистить проблемы', problemsMore:'Показать больше проблем', problemsLess:'Показать меньше проблем',
@@ -89,12 +89,12 @@ const TEXT = {
     time:'Tiempo por prueba', anyTime:'Sin límite', shortTime:'Hasta 5 min', mediumTime:'Hasta 10 min',
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
-    modeLabel:'Elige cómo continuar', modeTests:'Pruebas', modeCourse:'Pruebas + apoyo', courseHint:'Curso personal de apoyo de 14 días. Revisa las pruebas y da tu consentimiento antes de guardar.', courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
+    courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
-    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'Los resultados son temporales en este navegador. Entra a tu espacio para el análisis gratuito.', startNotice:'Al pulsar Realizar o Iniciar monitoreo, confirmas que tienes 18 años o más y aceptas el tratamiento privado y temporal de tus respuestas y resultados. No necesitas registrarte.',
+    browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'Los resultados son temporales en este navegador. Entra a tu espacio para el análisis gratuito.',
     noTests:'Elige una prueba para continuar.', reset:'Usar selección sugerida', back:'Volver al selector sencillo', saved:'¿Ya tienes pruebas? Abrir mis pruebas',
     more:'Mostrar {count} pruebas más', showing:'Mostrando {shown} de {total} pruebas', fit:'coincidencia', fitInfo:'Relevancia estimada por temas y dificultades seleccionadas; no es un diagnóstico.',
     selectAll:'Elegir todo',clearAll:'Quitar selección',skip:'Omitir',problemSearch:'Por ejemplo: tensión, poca energía, relaciones…',noProblemMatches:'Sin resultados.',filterTitle:'Filtrar pruebas',filters:'Filtros',problemsTitle:'¿Qué dificultades te preocupan?', problemsHelp:'Opcional: concreta tus inquietudes según los temas elegidos.', problemsEmpty:'Elige primero un tema para ver dificultades relacionadas.', problemsClear:'Borrar dificultades', problemsMore:'Mostrar más dificultades', problemsLess:'Mostrar menos dificultades',
@@ -167,7 +167,7 @@ export function SimpleTestPicker({
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
-  const [journeyMode, setJourneyMode] = useState(initialMode === 'course' ? 'course' : 'tests')
+  const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
   const [problemQuery, setProblemQuery] = useState('')
   const browseTab = testKinds.length === 0 ? 'all' : testKinds.length === 1 ? testKinds[0] : null
@@ -360,12 +360,6 @@ export function SimpleTestPicker({
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
-      {!authenticated && <p className={styles.privacy} data-guest-start-notice>{c.startNotice}</p>}
-      {onStartCourse && <div className={styles.modeSwitch} role="group" aria-label={c.modeLabel} data-test-course-switch>
-        <button type="button" aria-pressed={journeyMode === 'tests'} onClick={() => setJourneyMode('tests')}>{c.modeTests}</button>
-        <button type="button" aria-pressed={journeyMode === 'course'} onClick={() => setJourneyMode('course')}>{c.modeCourse}</button>
-      </div>}
-      {journeyMode === 'course' && <p className={styles.modeHint}>{c.courseHint}</p>}
       <div className={styles.recommendationMeta}>
         <div className={styles.matchCount} role="status" aria-live="polite">{browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
         <details className={styles.why}>
@@ -493,7 +487,6 @@ export function SimpleTestPicker({
         <span><strong>{starting ? '…' : journeyMode === 'course' ? c.courseCta : c.build}</strong><small>{journeyMode === 'course' ? c.courseCtaHint : c.buildHelp}</small></span>
         <ArrowRight size={23} aria-hidden="true"/>
       </button>
-      {!authenticated && <p className={styles.privacy} data-guest-start-notice>{c.startNotice}</p>}
       {actionError && <p className={styles.error} role="alert">{actionError.code || actionError.message || String(actionError)}</p>}
       {!activeBattery.length && <p className={styles.noMatches} role="status">{c.noTests}</p>}
       <button type="button" className={styles.fullDatabase} onClick={onBrowseCore}>
