@@ -9,7 +9,6 @@ import { ServicesSolutions } from "@/components/services-solutions";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
 import { HomeFreeTestsBanner } from "@/components/home-free-tests-banner";
-import { HomeFreePaths } from "@/components/home-free-paths";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -153,9 +152,8 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
       </section>
 
-      <HomeFreePaths locale={locale} />
-      <HomeFreeTestsBanner locale={locale} />
       <ServicesSolutions locale={locale} variant="home" />
+      <HomeFreeTestsBanner locale={locale} />
       <HomepageTopicJourneys locale={locale} />
       <TestSelectionCourseBanner locale={locale} />
 
