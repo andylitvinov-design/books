@@ -266,7 +266,26 @@ const INTERACTIVE_STRESS = {
   },
 }
 function buildSlides(lesson) {
-  return buildCourseSlides(lesson)
+  if(lesson?.antiStress?.slideModel===OPORA_SKILL_SLIDE_MODEL)return buildCourseSlides(lesson)
+  const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
+  // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
+  const hasArrival = guided.some(section => section.kind === 'arrive')
+  return [
+    { key: 'welcome', kind: 'welcome' },
+    { key: 'baseline', kind: 'baseline' },
+    { key: 'checkin', kind: 'checkin' },
+    ...(lesson.practiceV3?.recall ? [{ key: 'recall', kind: 'recall' }] : []),
+    { key: 'idea', kind: 'idea' },
+    ...(!hasArrival && (lesson.sections||[]).some(section=>section.kind==='learn')?[{key:'understand',kind:'understand'}]:[]),
+    ...(lesson.workbook?.workingPosition ? [{ key: 'phrase', kind: 'phrase' }] : []),
+    ...guided.map((section, index) => ({ key: 'guided-' + index, kind: 'guided', section })),
+    { key: 'ritual', kind: 'ritual' },
+    ...(lesson.workbook?.microPractice ? [{ key: 'transfer', kind: 'transfer' }] : []),
+    ...(lesson.practiceV4 ? [{ key: 'symbol', kind: 'symbol' }] : []),
+    { key: 'reflection', kind: 'reflection' },
+    { key: 'moment', kind: 'moment' },
+    { key: 'feedback', kind: 'feedback' },
+  ]
 }
 
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
