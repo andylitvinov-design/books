@@ -55,9 +55,6 @@
 .inlineNotice{color:#28765d;background:#e8f4ec;border:1px solid #c6e3d0}
 .inlineError{color:#953f37;background:#fff1ec;border:1px solid #ebc1b6}
 .inlineError button{border:0;color:#b64d33;background:transparent;text-decoration:underline;margin-left:5px}
-.portraitDetails{border:1px solid #e4d9c9;border-radius:15px;background:#faf6ef;overflow:hidden}
-.portraitDetails summary{cursor:pointer;min-height:43px;padding:10px 14px;font-weight:700;color:#316d61;font-size:.8rem;list-style-position:inside}
-.portraitDetails>section{margin:0;border:0;box-shadow:none}
 .explorerSection{scroll-margin-top:15px;padding-top:4px;max-width:1120px;margin:0 auto 20px}
 @media(max-width:760px){
  .batteryLayout{gap:9px}
