@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
   HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
@@ -13,7 +14,7 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsa
 import styles from "./services-smart-discovery.module.css";
 
 type Locale = "en" | "ru" | "es";
-type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean};
+type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean;image?:string};
 type AIResult = { serviceIds: string[]; mode: "ai" | "local" };
 
 const COPY = {
@@ -173,6 +174,23 @@ const COPY = {
 } as const;
 
 const ICONS = [Compass, Flower2, HandHeart, HeartHandshake, Waves, Leaf, BookOpenText, UsersRound];
+
+// Existing service photos are preferred, with category-specific fallbacks.
+const FALLBACK_SERVICE_PHOTOS: Record<string,string> = {
+  personal_development:"/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  energy_spiritual:"/academy/reiki-yggdrasil/source/basic-program.jpg",
+  emotional_psychological:"/images/holistic-house/hero-olive-incense.webp",
+  relationships:"/images/holistic-house/video-posters/constellations-en-v1.webp",
+  body_somatic:"/images/holistic-house/hero-olive-incense.webp",
+  homeopathy_holistic:"/images/holistic-house/distance-homeopathy.webp",
+  career_purpose:"/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+  business_money:"/images/holistic-house/video-posters/constellations-en-v1.webp",
+};
+function servicePhoto(path:string|undefined,areaKey:string) {
+  const selected=path?.trim();
+  if (selected && (selected.startsWith("https://") || selected.startsWith("http://") || (selected.startsWith("/") && !selected.startsWith("//")))) return selected;
+  return FALLBACK_SERVICE_PHOTOS[areaKey] || "/images/holistic-house/hero-olive-incense.webp";
+}
 
 function formatPrice(service: PublicService, locale: Locale, t: typeof COPY[Locale]) {
   if (service.pricingMode === "free" || (service.pricingMode !== "contact" && service.confirmedPrice === 0)) return t.free;
@@ -420,6 +438,9 @@ export function ServicesSmartDiscovery({
           {suggestions.map(({service,reasonKey})=>{
             const mainArea=DISCOVERY_AREAS.find(a=>a.key===service.areaKey);
             return <article className={styles.suggestion} key={service.id}>
+              <div className={styles.servicePhoto}>
+                <Image src={servicePhoto(service.imagePath,service.areaKey)} alt="" fill unoptimized loading="lazy" sizes="(max-width: 620px) 33vw, 185px" />
+              </div>
               <div className={styles.suggestionTop}><span>{mainArea?.label[locale]||t.service}</span><strong>{formatPrice(service,locale,t)}</strong></div>
               <h3>{service.copy.title}</h3>
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
@@ -452,6 +473,9 @@ export function ServicesSmartDiscovery({
             const whatsappUrl = editorialEnquiryUrl(item,locale);
             const telegramUrl = telegramEnquiryUrlFromWhatsApp(whatsappUrl);
             return <article key={item.id} className={styles.editorialCard} data-discovery-editorial-offer={item.id} data-selected={ordering}>
+              <div className={styles.servicePhoto}>
+                <Image src={servicePhoto(item.image,item.areaKey)} alt="" fill unoptimized loading="lazy" sizes="(max-width: 620px) 33vw, 185px" />
+              </div>
               <div className={styles.editorialCardMeta}>
                 <span>{item.label || DISCOVERY_AREAS.find(area=>area.key===item.areaKey)?.label[locale] || t.service}</span>
                 <strong>{item.price || (item.free?t.free:t.contact)}</strong>
