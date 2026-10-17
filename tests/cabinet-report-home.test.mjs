@@ -9,15 +9,15 @@ test('the signed-in Cabinet opens Profile by default and uses one five-tab navig
     source('app/[locale]/app/[[...path]]/page.jsx'),
     source('components/app/app-workspace.jsx'),
   ])
-  assert.match(route, /if \\(path\\.length === 0\\) redirect\\('\\/' \\+ locale \\+ '\\/app\\/portrait'\\)/)
-  assert.match(workspace, /const page = path\\[0\\] \\|\\| 'portrait'/)
-  assert.match(route, /path\\[0\\] === 'analysis' && path\\.length === 1/)
+  assert.match(route, /if \(path\.length === 0\) redirect\('\/' \+ locale \+ '\/app\/portrait'\)/)
+  assert.match(workspace, /const page = path\[0\] \|\| 'portrait'/)
+  assert.match(route, /path\[0\] === 'analysis' && path\.length === 1/)
 
   const start = workspace.indexOf('const nav = [')
   const end = workspace.indexOf('const navIsActive', start)
   assert.ok(start >= 0 && end > start, 'one shared private nav model exists')
   const model = workspace.slice(start, end)
-  const entries = [...model.matchAll(/\\{ id: '([^']+)', label: locale === 'ru' \\? '([^']+)' : '([^']+)', href: root \\+ '([^']+)', icon: (\\w+) \\}/g)]
+  const entries = [...model.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)', icon: (\w+) \}/g)]
     .map(([, id, ru, en, href, icon]) => ({ id, ru, en, href, icon }))
   assert.deepEqual(entries, [
     { id: 'portrait', ru: 'Профиль', en: 'Profile', href: '/portrait', icon: 'UserRound' },
@@ -30,14 +30,14 @@ test('the signed-in Cabinet opens Profile by default and uses one five-tab navig
   const menu = workspace.slice(workspace.indexOf('<details className="hh-account-menu">'), workspace.indexOf('</header>}'))
   const desktop = workspace.slice(workspace.indexOf('<nav className="hh-nav"'), workspace.indexOf('</nav>', workspace.indexOf('<nav className="hh-nav"')))
   const mobile = workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}', workspace.indexOf('<nav className="hh-mobile-app-nav"')))
-  assert.match(menu, /\\{nav\\.map\\(\\(\\{ id, label, href \\}\\)/)
-  assert.match(desktop, /\\{nav\\.map\\(\\(\\{ id, label, href \\}\\)/)
-  assert.match(mobile, /\\{nav\\.map\\(\\(\\{ id, label, href, icon: Icon \\}\\)/)
-  assert.equal((workspace.match(/nav\\.map\\(/g) || []).length, 3)
+  assert.match(menu, /\{nav\.map\(\(\{ id, label, href \}\)/)
+  assert.match(desktop, /\{nav\.map\(\(\{ id, label, href \}\)/)
+  assert.match(mobile, /\{nav\.map\(\(\{ id, label, href, icon: Icon \}\)/)
+  assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(menu, /hh-account-more/)
-  assert.match(menu, /root \\+ '\\/settings'/)
-  assert.match(menu, /root \\+ '\\/monitoring'/)
-  assert.match(menu, /root \\+ '\\/history'/)
+  assert.match(menu, /root \+ '\/settings'/)
+  assert.match(menu, /root \+ '\/monitoring'/)
+  assert.match(menu, /root \+ '\/history'/)
   assert.match(workspace, /page === 'portfolio' && <PortfolioPage/)
   assert.match(workspace, /page === 'practice' && <PracticeWorkspace/)
   assert.match(workspace, /page === 'tests' &&/)
