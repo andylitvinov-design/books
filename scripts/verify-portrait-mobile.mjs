@@ -77,13 +77,19 @@ async function measure(locale, width, sector) {
       radarWidth: image.width, ringWidth: rect(outer).width,
       labelCount:texts.length,dotCount:dots.length,
       labelsWithinSvg:labelRects.every(b=>b.left >= image.left-2 && b.right <= image.right+2 && b.top >= image.top-2 && b.bottom <= image.bottom+2),
+      outsideLabels:labelRects.flatMap((b,i)=> b.left < image.left-2 || b.right > image.right+2 ||
+        b.top < image.top-2 || b.bottom > image.bottom+2 ? [{
+          label:texts[i].textContent,
+          left:Math.round(b.left-image.left),right:Math.round(b.right-image.right),
+          top:Math.round(b.top-image.top),bottom:Math.round(b.bottom-image.bottom),
+        }] : []),
       noOverlap:overlaps.length === 0, overlaps,
       fourDirections:coords.some(p=>p.x>20)&&coords.some(p=>p.x< -20)&&coords.some(p=>p.y>20)&&coords.some(p=>p.y< -20),
     }
   })
   console.log('PORTRAIT_QA', JSON.stringify({ engine:name, locale, width, sector, ...data }))
-  assertMobileEvidence({locale,width,sector,data})
   await card().screenshot({ path:`${output}/${name}-${locale}-${width}-${sector}.png`, animations:'disabled', timeout:30000 })
+  assertMobileEvidence({locale,width,sector,data})
 }
 
 try {
