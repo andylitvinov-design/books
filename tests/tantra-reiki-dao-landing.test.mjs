@@ -34,7 +34,7 @@ test("real festival photos are restored to levels and visual gallery, not mislab
   assert.match(festival, /className="tantra-festival-moments__gallery"/);
 });
 
-test("only the three secondary level sections collapse, never the original author story", async () => {
+test("first level story and attunements are visible, later levels need an explicit click", async () => {
   const journey = await read("components/tantra-reiki-journey.tsx");
   const author = journey.indexOf('<div className="tantra-journey__author-text"');
   const expandable = journey.indexOf('<details className="tantra-journey__extras">');
@@ -49,7 +49,10 @@ test("only the three secondary level sections collapse, never the original autho
   assert.ok(journey.indexOf('className="tantra-journey__practice tantra-journey__practice--restored"') < expandable);
   assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(details, /<summary>/);
-  assert.doesNotMatch(journey, /<details className="tantra-journey__extras" open/);
+  assert.match(journey, /<details className="tantra-journey__extras" open=\{i === 0\}>/);
+  assert.match(journey, /if \(n === 1\) return article;/);
+  assert.match(journey, /<details className="tantra-journey__collapsed"/);
+  assert.match(journey, /stages.map\(\(stage, i\) =>/);
 });
 
 test("correct Level 1 meditation remains separate and immediately precedes testimonials", async () => {
