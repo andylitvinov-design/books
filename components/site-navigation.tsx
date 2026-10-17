@@ -103,7 +103,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
       prefetch={false}
       data-nav-item="cabinet"
-      aria-current={current === 'cabinet' ? 'page' : undefined}
+      aria-current={current === 'house' ? 'page' : undefined}
       aria-label={cabinet.aria}
     >
       <CircleUserRound aria-hidden="true" />
@@ -126,7 +126,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
         {getSiteNavigation(activeLocale).map(item => (
           <Link
             key={item.id}
-            href={item.id === 'cabinet' ? `/${activeLocale === 'es' ? 'en' : activeLocale}/app` : item.href}
+            href={item.href}
             prefetch={false}
             aria-current={current === item.id ? 'page' : undefined}
             onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
