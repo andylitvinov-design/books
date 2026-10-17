@@ -95,10 +95,8 @@
 @media(prefers-reduced-motion:reduce){.hh-app .hh-insights-filter-chevron{transition:none}}
 
 /* The psychological portrait belongs with measured Results, not private reports. */
-.hh-app .hh-insights-personal-portrait{margin:14px 0 18px}
-.hh-app .hh-insights-personal-portrait [data-profile-head]{margin-top:0}
 .hh-app .hh-insights-portrait-details{
-  border:1px solid #cfe4e1;border-radius:14px;background:#f7fcfb;margin:12px 0 0;overflow:hidden;
+  border:1px solid #cfe4e1;border-radius:14px;background:#f7fcfb;margin:12px 0 18px;overflow:hidden;
 }
 .hh-app .hh-insights-portrait-details>summary{
   display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 15px;
@@ -113,5 +111,4 @@
 .hh-app .hh-insights-portrait-details summary:focus-visible{outline:3px solid #167c8d;outline-offset:2px}
 @media(max-width:560px){
   .hh-app .hh-insights-portrait-details>[data-profile-page]{padding:8px}
-  .hh-app .hh-insights-personal-portrait{margin:12px 0}
 }
