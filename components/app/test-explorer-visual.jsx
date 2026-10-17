@@ -203,12 +203,24 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       {selectedSectors.length === 0 && <p>{ru ? 'Отметьте хотя бы один сектор выше.' : es ? 'Selecciona al menos un sector arriba.' : 'Select at least one sector above.'}</p>}
       {selectedSectors.length > 0 && visibleRays.length === 0 && measuredAxes.length > 0 && <p>{ru ? 'В этих секторах пока не выбраны лучи. Отметьте нужные шкалы ниже.' : es ? 'Elige las escalas de los sectores seleccionados.' : 'No rays selected in these sectors yet. Choose individual scales below.'}</p>}
       {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
-      <div id={portraitRayOptionsId} className={styles.portraitRayOptions} data-portrait-ray-options>{portraitOptions.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait?.axes?.[axis] ? `${portrait.axes[axis].source} · ${formatDate(portrait.axes[axis].measuredAt)}` : (ru ? 'Нет измерения' : 'Not measured')}>
-          <input type="checkbox" checked={checkedRays.includes(axis)} onChange={() => toggleRay(axis)} />
-          <span>{label(axis)}</span>
-          <strong>{portrait?.axes?.[axis] ? `${portrait.axes[axis].percent}%` : '—'}</strong>
-          {portrait?.axes?.[axis]?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{portrait.axes[axis].change > 0 ? '+' : ''}{portrait.axes[axis].change} {ru ? 'п.п.' : 'pp'}</small>}
-        </label>)}</div>
+      <div id={portraitRayOptionsId} className={styles.portraitRayOptions} data-portrait-ray-options>{portraitOptions.map((axis) => {
+        const measure = portrait?.axes?.[axis] || null
+        return <div key={axis} className={styles.portraitRayItem} data-portrait-ray={axis} data-measured={Boolean(measure)}>
+          <label className={styles.portraitRayOption} title={measure ? `${measure.source} · ${formatDate(measure.measuredAt)}` : (ru ? 'Нет измерения' : es ? 'Sin medición' : 'Not measured')}>
+            <input type="checkbox" checked={checkedRays.includes(axis)} onChange={() => toggleRay(axis)} />
+            <span>{label(axis)}</span>
+            <strong>{measure ? `${measure.percent}%` : '—'}</strong>
+            {measure?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{measure.change > 0 ? '+' : ''}{measure.change} {ru ? 'п.п.' : 'pp'}</small>}
+          </label>
+          {!measure && <Link
+            href={`/${locale}/app/tests?explore=1&axis=${encodeURIComponent(axis)}`}
+            prefetch={false}
+            className={styles.portraitRayTestLink}
+            aria-label={`${ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it'}: ${label(axis)}`}>
+            {ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it'} <span aria-hidden="true">→</span>
+          </Link>}
+        </div>
+      })}</div>
       {focusOptions.length > PORTRAIT_COLLAPSED_COUNT && <button
         type="button" className={styles.portraitShowMore} aria-controls={portraitRayOptionsId}
         aria-expanded={showAllPortraitRays} onClick={() => setShowAllPortraitRays(current => !current)}>
