@@ -143,7 +143,7 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
       await visible(page.locator("[data-free-quick-request]").first());
-      assert.equal(await page.locator("[data-free-quick-request]").count(), 2, "The same compact consultation selector appears at the top and bottom");
+      assert.equal(await page.locator("[data-free-quick-request]").count(), 1, "One consultation selector appears only after the benefits, process and Alchemy of the Soul link");
       await expect(page.locator("[data-free-quick-request]").first().locator('input[type="radio"]')).toHaveCount(3);
       const detailIntake = page.locator("[data-free-drawing-intake]");
       await detailIntake.waitFor({ state: "hidden" });
@@ -155,10 +155,10 @@ try {
         const panelHeights = await page.evaluate(() => {
           const sections = {
             hero: 'section[aria-labelledby="review-hero-title"]',
-            request: '#request-free-review',
+            situations: '#situations',
             outcomes: 'section[aria-labelledby="review-outcomes-title"]',
-            paid: '#personal-consultation',
             testimonials: '[data-personal-testimonials="all"]',
+            alchemy: 'section[aria-labelledby="review-alchemy-title"]',
             about: 'section[aria-labelledby="review-about-title"]',
             faq: 'section[aria-labelledby="review-faq-title"]',
             steps: '#how-it-works',
@@ -189,6 +189,10 @@ try {
     await page.goto(origin + "/" + locale + "/services/free-situation-review", { waitUntil: "networkidle" });
     const quick = page.locator("[data-free-quick-request]").first();
     await visible(quick);
+    assert.equal(await page.locator("#personal-consultation").count(), 1, "Existing service consultation links still target the final selector");
+    assert.equal(await page.locator("#situations .situationGrid article").count(), 4, "Four grounded question categories are displayed");
+    const heroText = await page.locator('section[aria-labelledby="review-hero-title"]').innerText();
+    assert.ok(!heroText.includes("€50") && !heroText.includes("€100"), "First screen focuses on benefits, not pricing");
     const quickChooser = await openContactChannelChooser(quick, expect);
     const freeDraft = await assertPreparedContactChannels(quickChooser, expect);
     const freeMessage = freeDraft.whatsappUrl.searchParams.get("text") || "";
@@ -204,12 +208,8 @@ try {
       assert.ok(text.includes(price) && text.includes(minutes), "Messenger draft retains exact paid amount and duration: " + format);
       assert.equal(telegramUrl.searchParams.get("text"), text, "Telegram and WhatsApp preserve paid selection");
     }
-    const bottom = page.locator("[data-free-quick-request]").last();
-    await visible(bottom);
-    await bottom.locator('input[type="radio"][value="full"]').check();
-    const bottomChooser = await openContactChannelChooser(bottom, expect);
-    const bottomDraft = await assertPreparedContactChannels(bottomChooser, expect);
-    assert.ok((bottomDraft.whatsappUrl.searchParams.get("text") || "").includes("€100"), "Bottom capture must also respect chosen full session");
+    // The only format selector is the final section; the selected prices above
+    // have already been verified against WhatsApp and Telegram drafts.
     const intake = page.locator("[data-free-drawing-intake]");
     const advanced = page.locator("details").filter({ has: intake });
     await intake.waitFor({ state: "hidden" });
