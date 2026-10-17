@@ -267,13 +267,22 @@ test('compact account copy is opt-in and leaves explicit save callbacks intact i
 })
 
 
+// The account explorer mounts lazily only after the user opens the top disclosure.
+function openedPicker(h, accountProps = props()) {
+  const dashboard = h.render(accountProps).find(n => n.type === 'MyTestsDashboard')
+  assert.ok(dashboard, 'account dashboard must render')
+  dashboard.props.onOpenFilters()
+  const picker = h.render(accountProps).find(n => n.type === 'TestExplorer')
+  assert.ok(picker, 'test picker must be mounted after opening')
+  return picker
+}
+
 const target = { key: 'saved', selectable: true,
   definition: { id: 'saved-v1', key: 'saved', version: '1', instrumentLocale: 'en' } }
 
 test('one-tap Start test adds exactly the chosen instrument and opens its runner', async () => {
   const h = batteryHarness()
-  const tree = h.render(props())
-  const picker = tree.find(n => n.type === 'TestExplorer')
+  const picker = openedPicker(h)
   assert.equal(typeof picker.props.onStartSingle, 'function')
   await picker.props.onStartSingle(target, { focus: ['stress'], axes: ['anxiety'] })
   const writes = h.requests.filter(r => r.options.method === 'POST')
@@ -296,7 +305,7 @@ test('one-tap Start test adds exactly the chosen instrument and opens its runner
 
 test('double taps on Start test yield one save request and one run', async () => {
   const h = batteryHarness({ holdSave: true })
-  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  const picker = openedPicker(h)
   const first = picker.props.onStartSingle(target, {})
   const second = picker.props.onStartSingle(target, {})
   assert.equal(h.requests.filter(r => r.path.endsWith('/test-plans')).length, 1)
@@ -308,13 +317,13 @@ test('double taps on Start test yield one save request and one run', async () =>
 
 test('failed save does not open a run, and a failed run reports that selection was saved', async () => {
   const failedSave = batteryHarness({ failSave: true })
-  const fromSave = failedSave.render(props()).find(n => n.type === 'TestExplorer')
+  const fromSave = openedPicker(failedSave)
   await assert.rejects(fromSave.props.onStartSingle(target, {}), /Could not add the test/)
   assert.equal(failedSave.requests.filter(r => r.path.endsWith('/runs')).length, 0)
   assert.equal(failedSave.navigation.length, 0)
 
   const failedRun = batteryHarness({ failRun: true })
-  const fromRun = failedRun.render(props()).find(n => n.type === 'TestExplorer')
+  const fromRun = openedPicker(failedRun)
   await assert.rejects(fromRun.props.onStartSingle(target, {}), /Test saved to My tests/)
   assert.equal(failedRun.requests.filter(r => r.path.endsWith('/test-plans')).length, 1)
   assert.equal(failedRun.requests.filter(r => r.path.endsWith('/runs')).length, 1)
@@ -323,7 +332,7 @@ test('failed save does not open a run, and a failed run reports that selection w
 
 test('retaking a test from a completed battery avoids advancing the historic plan', async () => {
   const h = batteryHarness({ planStatus: 'completed' })
-  const picker = h.render(props()).find(n => n.type === 'TestExplorer')
+  const picker = openedPicker(h)
   await picker.props.onStartSingle(target, {})
   assert.deepEqual(h.navigation[0], ['push', '/en/app/runs/run-1?mode=quick'])
 })
