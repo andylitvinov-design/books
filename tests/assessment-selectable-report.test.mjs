@@ -152,6 +152,7 @@ function assertSelected(h, result, report, section, locale) {
       assert.equal(rangeRows[index].props['aria-current'] === 'true', band.current)
     })
   }
+  const numeral = value => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
   if (model.displayKind !== 'screening-count') {
     assert.ok(gauge.props['aria-label'].includes(`${numeral(dimension.min)}–${numeral(dimension.max)}`))
     assert.equal(gauge.props['data-gauge-scale'], model.continuous ? 'continuous' : 'published-bands')
