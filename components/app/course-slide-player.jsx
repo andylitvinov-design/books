@@ -19,7 +19,7 @@ import {validateOporaStateJourney} from '@/lib/inner-growth/opora-state-journey'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
 import { withFinalFreeOffer, buildCourseSlides } from '@/lib/inner-growth/course-slide-sequence'
-import { OPORA_SKILL_SLIDE_MODEL } from '@/lib/inner-growth/anti-stress-skills-v5'
+import { OPORA_SKILL_SLIDE_MODEL, oporaSkillCards } from '@/lib/inner-growth/anti-stress-skills-v5'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
@@ -286,6 +286,24 @@ function buildSlides(lesson) {
     { key: 'moment', kind: 'moment' },
     { key: 'feedback', kind: 'feedback' },
   ]
+}
+
+function SkillPracticeSteps({text,locale,disabled}) {
+  const parts=useMemo(()=>String(text||'').split(/(?=\\b[1-9]\\.\\s)/)
+    .map(s=>s.replace(/^\\s*[1-9]\\.\\s*/, '').trim()).filter(Boolean),[text])
+  const [stepIndex,setStepIndex]=useState(0)
+  if(parts.length===0)return null
+  return <section className={styles.skillPracticeCard} data-course-skill-guided-steps>
+    <span className={styles.skillStepCount}>{locale==='ru'?'Практика':locale==='es'?'Práctica':'Practice'} · {stepIndex+1}/{parts.length}</span>
+    <p className={styles.skillStepText}>{parts[stepIndex]}</p>
+    <div className={styles.skillStepActions}>
+      {stepIndex>0&&<button type="button" onClick={()=>setStepIndex(i=>Math.max(0,i-1))} disabled={disabled}>
+        <ArrowLeft size={15}/>{locale==='ru'?'Назад':'Back'}</button>}
+      {stepIndex<parts.length-1&&<button type="button" onClick={()=>setStepIndex(i=>Math.min(parts.length-1,i+1))} disabled={disabled}>
+        {locale==='ru'?'Следующий шаг':'Next step'}<ArrowRight size={15}/></button>}
+      {stepIndex===parts.length-1&&<span className={styles.skillStepDone}><CheckCircle2 size={16}/>{locale==='ru'?'Все шаги показаны. Отметьте фактическую попытку дальше.':'All steps shown. Report your actual attempt next.'}</span>}
+    </div>
+  </section>
 }
 
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
@@ -622,7 +640,7 @@ export default function CourseSlidePlayer({
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined}
+    data-course-slide-player data-course-skills-v5={isSkillV5?'true':undefined} data-opora-first-lesson={isDayOne?"as-1.9":undefined}
     data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
     data-opora-day={isOporaModule?cycle.day:undefined}
     data-opora-state-journey={isOporaStateJourney?"v1":undefined} ref={frame}>
@@ -755,6 +773,14 @@ export default function CourseSlidePlayer({
               <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
               <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
               {isOporaModule&&<p className={styles.welcomeModule} data-opora-welcome-theme>{lesson.oporaModule.theme}</p>}
+              {isSkillV5&&<div data-course-v5-skill-summary>
+                <strong>{lesson.antiStress.skill}</strong>
+                <p className={styles.helper}>{lesson.antiStress.learningOutcome}</p>
+                {cycle.day===1&&<details className={styles.skillMapDisclosure}>
+                  <summary>{locale==='ru'?'Семь навыков курса':'Seven course skills'}<ChevronDown size={15}/></summary>
+                  <ol>{oporaSkillCards(locale).map(item=><li key={item.id}>{item.title}</li>)}</ol>
+                </details>}
+              </div>}
               <p className={styles.welcomePrompt}>{isDayOne
                 ? (locale==='ru'?'С каким внутренним состоянием вы пришли сегодня? Ничего менять не нужно.':
                   'What inner state are you arriving with today? Nothing needs to change.')
@@ -886,7 +912,7 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && !isOporaStateJourney && <IllustratedMoment variant="calm" kind={slide.kind}/>}
-            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
+            {slide.section.kind==='meditation' && !isSkillV5 && <div className={styles.practiceRating} data-course-practice-pre>
               <p className={styles.prompt}>{words.practicePrePrompt}</p>
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
                 label={words.before + ': ' + focusLabel} disabled={locked}/>
@@ -896,6 +922,7 @@ export default function CourseSlidePlayer({
               <MethodActivityComponent key={String(cycle.day)} day={cycle.day} locale={locale} activity={routePlan?.methodActivity}
                 value={dailyMethodChoice} onChange={setDailyMethodChoice}
                 hintUsed={dailyMethodHintUsed} onHint={recordRouteHint} disabled={locked}/>}
+            {isSkillV5&&slide.section.kind==='meditation'&&<SkillPracticeSteps key={cycle.day} text={neutralMode?words.neutralPractice:slide.section.text} locale={locale} disabled={locked}/>}
             {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
               <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
               <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
@@ -940,7 +967,16 @@ export default function CourseSlidePlayer({
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
             </details>}
-            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-post>
+            {slide.section.kind==='meditation' && isSkillV5 && <details className={styles.timerDetails} data-course-optional-moment-ratings>
+              <summary>{locale==='ru'?'Необязательно: сравнить самочувствие до и после':'Optional: compare before and after'}<ChevronDown size={16}/></summary>
+              <div className={styles.practiceRating}>
+                <p className={styles.prompt}>{words.practicePrePrompt}</p>
+                <MomentScale value={beforeNow} onChange={setBeforeNow} words={words} label={words.before+': '+focusLabel} disabled={locked}/>
+                <p className={styles.prompt}>{words.practicePostPrompt}</p>
+                <MomentScale value={afterNow} onChange={setAfterNow} words={words} label={words.after+': '+focusLabel} disabled={locked}/>
+              </div>
+            </details>}
+            {slide.section.kind==='meditation' && !isSkillV5 && <div className={styles.practiceRating} data-course-practice-post>
               <p className={styles.prompt}>{words.practicePostPrompt}</p>
               <MomentScale value={afterNow} onChange={setAfterNow} words={words}
                 label={words.after + ': ' + focusLabel} disabled={locked}/>
