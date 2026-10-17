@@ -17,7 +17,9 @@ test("Reiki and Temple Studies have distinct, genuine EN/RU/ES search metadata",
       assert.doesNotMatch(item.title + " " + item.description, /certified psychotherapist|guaranteed cure|лечит болезни|cura garantizada/i);
     }
   }
-  assert.match(seoMetaForAcademyRoute("en", "reiki/tantra-reiki").title, /9-Level/);
+  assert.match(seoMetaForAcademyRoute("en", "reiki/tantra-reiki").title, /Level 1.*Spring of Life/);
+  assert.match(seoMetaForAcademyRoute("ru", "reiki/tantra-reiki").title, /1-я ступень/);
+  assert.match(seoMetaForAcademyRoute("es", "reiki/tantra-reiki").title, /Nivel 1/);
   assert.match(seoMetaForAcademyRoute("en", "reiki/yggdrasil").title, /7 Modules/);
   for (const locale of ["en", "ru", "es"]) assert.ok(seoMetaForAcademyRoute(locale, "reiki/yggdrasil/basic-course").description.length <= 160, locale);
   assert.match(seoMetaForAcademyRoute("en", "reiki/kundalini-reiki").title, /3-Level/);

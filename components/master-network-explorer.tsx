@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
+import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import styles from "./master-network-explorer.module.css";
 
@@ -312,7 +313,8 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   return (
-    <article className={styles.serviceCard}>
+    <article className={styles.serviceCard} data-service-funnel-card>
+      <ServiceFunnelImpression serviceId={service.id} />
       <div className={styles.cardTop}>
         <Link href={"/" + locale + "/masters/" + service.practitionerSlug} className={styles.masterLink}>
           <span className={styles.avatar} aria-hidden="true">{(service.practitionerName || "H").slice(0, 1).toUpperCase()}</span>
@@ -325,9 +327,9 @@ function ServiceCard({ service, locale }: { service: PublicService; locale: Loca
       <p className={styles.description}>{service.copy.shortDescription}</p>
       <div className={styles.meta}><span>{format}</span>{service.locationLabel && service.deliveryFormat !== "online" ? <span>{service.locationLabel}</span> : null}{service.durationMinutes ? <span>{service.durationMinutes} min</span> : null}</div>
       <div className={styles.actions}>
-        <Link className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
+        <TrackedServiceLink serviceId={service.id} event="order" className={styles.primary} href={"/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id)}>
           {isFree(service) ? t.requestFree : t.request}<span aria-hidden="true">→</span>
-        </Link>
+        </TrackedServiceLink>
         <Link className={styles.secondary} href={"/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug}>{t.details}</Link>
       </div>
     </article>

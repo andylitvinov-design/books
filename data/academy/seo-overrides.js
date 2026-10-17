@@ -22,9 +22,9 @@ const courses = {
     es: { title: "Iniciación gratis de Tantra Reiki online | Nivel 1", description: "Explora Tantra Reiki Nivel 1 gratis con Andrey Litvinov: vídeo original, materiales, siete preguntas y solicitud de una introducción guiada online." },
   },
   "reiki/tantra-reiki": {
-    en: { title: "Tantra Reiki Training — Andrey's 9-Level Course", description: "Discover Andrey Litvinov's distinct nine-level Tantra Reiki program, original level descriptions, optional partner exercises and ways to enquire about initiation." },
-    ru: { title: "Обучение Тантра Рейки — авторская программа 9 ступеней", description: "Девять ступеней системы Тантра Рейки Андрея Литвинова: оригинальные описания уровней, добровольные парные практики и запрос личной инициации." },
-    es: { title: "Tantra Reiki — Programa de 9 niveles de Andrey", description: "Conoce los nueve niveles de Tantra Reiki de Andrey Litvinov, sus descripciones originales, prácticas opcionales y opciones de iniciación." },
+    en: { title: "Tantra Reiki Level 1 — Spring of Life with Andrey", description: "Begin Tantra Reiki Level 1 with Andrey Litvinov: body awareness, sensitivity, three traditional attunements and a free introduction. Explore Levels 2–9 only if you wish." },
+    ru: { title: "Тантра Рейки — 1-я ступень «Родник жизни»", description: "Начните с первой ступени Тантра Рейки: чувствительность, осознанный контакт, три традиционные настройки и бесплатное знакомство с Андреем. Ступени 2–9 раскрываются по нажатию." },
+    es: { title: "Tantra Reiki Nivel 1 — Manantial de vida", description: "Empieza Tantra Reiki Nivel 1 con Andrey: conciencia corporal, sensibilidad, tres sintonizaciones tradicionales e introducción gratuita. Los niveles 2–9 son opcionales." },
   },
   "reiki/kundalini-reiki": {
     en: { title: "Kundalini Reiki — 3-Level Course and Original Manual", description: "Three Kundalini Reiki levels, self-practice, traditional Balance and Master themes, plus the original Paul Crick manual as a downloadable study resource." },

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
+import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
@@ -18,6 +19,7 @@ const TEXT = {
     heroDescription:'Explore stress, mood, sleep and inner resources with free self-checks. See your results as soon as you finish.',
     heroPrimary:'Choose my topics', heroSecondary:'Browse free tests',
     heroFootnote:'Available tests and sets start without registration. Sign in for a free personal analysis.',
+    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTopics:'Topics', heroTabTests:'Tests', heroPicks:'You could try', heroSearchClear:'Clear search',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
@@ -45,6 +47,7 @@ const TEXT = {
     heroDescription:'Исследуйте стресс, настроение, сон и внутренние ресурсы с помощью бесплатных тестов. Результаты доступны сразу после прохождения.',
     heroPrimary:'Выбрать темы', heroSecondary:'Посмотреть тесты',
     heroFootnote:'Доступные тесты и наборы проходятся без регистрации. После входа — бесплатные пояснения и анализ.',
+    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTopics:'Темы', heroTabTests:'Тесты', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
@@ -72,6 +75,7 @@ const TEXT = {
     heroDescription:'Explora el estrés, el ánimo, el sueño y tus recursos internos con pruebas gratuitas. Consulta tus resultados al terminar.',
     heroPrimary:'Elegir temas', heroSecondary:'Ver pruebas gratuitas',
     heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte. Entra para recibir un análisis personal gratuito.',
+    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTopics:'Temas', heroTabTests:'Pruebas', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
@@ -165,6 +169,8 @@ export function SimpleTestPicker({
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
   const [problemQuery, setProblemQuery] = useState('')
+  const [heroSearch, setHeroSearch] = useState('')
+  const [submittedHeroSearch, setSubmittedHeroSearch] = useState('')
   const browseTab = testKinds.length === 0 ? 'all' : testKinds.length === 1 ? testKinds[0] : null
   const [showIndividualVia, setShowIndividualVia] = useState(false)
   const focusKey = [...focus].sort().join('|')
@@ -187,7 +193,18 @@ export function SimpleTestPicker({
   const viaCopy = VIA_COPY[locale] || VIA_COPY.en
   const groupedRecommendations = via.visible
   // The parent has already applied the selected kind(s) to these recommendations.
-  const browseRecommendations = groupedRecommendations
+  // Search is local to this page and never sends personal queries to the server.
+  const heroSearchTerm = submittedHeroSearch.trim().toLocaleLowerCase(locale)
+  const browseRecommendations = heroSearchTerm
+    ? groupedRecommendations.filter((entry) => {
+        const topicLabels = (entry.topics || []).map((key) => {
+          const topic = TOPICS.find((item) => item.key === key)
+          return topic?.[locale] || topic?.en || key
+        })
+        return [entry.title, entry.description, entry.category, ...topicLabels].some((value) =>
+          String(value || '').toLocaleLowerCase(locale).includes(heroSearchTerm))
+      })
+    : groupedRecommendations
   const visibleRecommendations = browseRecommendations.slice(0, visibleCount)
   const remainingCount = Math.max(0, browseRecommendations.length - visibleCount)
   const nextBatch = Math.min(5, remainingCount)
@@ -198,18 +215,62 @@ export function SimpleTestPicker({
   const visibleFocus = new Set(TOPICS.map((topic) => topic.key))
   const themeRefinements = TEST_RECOMMENDATION_FOCUS.filter((topic) => focus.includes(topic.key) && !visibleFocus.has(topic.key))
 
-  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker>
-    <header className={styles.hero} data-client-tests-hero>
-      <div className={styles.heroContent}>
-        <p className={styles.eyebrow}>{c.heroKicker}</p>
-        <h1>{c.heroHeadline}</h1>
-        <p className={styles.lead}>{c.heroDescription}</p>
-        <nav className={styles.heroActions} aria-label={locale === 'ru' ? 'Бесплатные тесты' : locale === 'es' ? 'Pruebas gratuitas' : 'Free self-checks'}>
-          <a href="#hh-simple-topic-title" className={styles.heroPrimary}>{c.heroPrimary}<ArrowRight size={20} aria-hidden="true"/></a>
-          <a href="#hh-simple-recommendations" className={styles.heroSecondary}>{c.heroSecondary}<ArrowRight size={20} aria-hidden="true"/></a>
+  return <section className={styles.shell} aria-label={c.title} data-prelogin-test-picker data-public-test-picker={!authenticated ? 'true' : undefined}>
+    <header className={academyStyles.hero} data-client-tests-hero>
+      <div className={academyStyles.topline}>
+        <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
+        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
+          <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
+          <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
         </nav>
-        {!authenticated && <p className={styles.heroFootnote}>{c.heroFootnote}</p>}
       </div>
+      <h1>{c.heroHeadline}</h1>
+      <p className={academyStyles.intro}>{c.heroDescription}</p>
+      <form className={academyStyles.form} role="search" onSubmit={(event) => {
+        event.preventDefault()
+        setSubmittedHeroSearch(heroSearch.trim())
+        setVisibleCount(5)
+        document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }}>
+        <label className={academyStyles.srOnly} htmlFor="hh-test-hero-search">{c.heroSearchLabel}</label>
+        <input id="hh-test-hero-search" className={academyStyles.search} type="search" value={heroSearch}
+          onChange={(event) => { setHeroSearch(event.target.value); if (!event.target.value.trim()) setSubmittedHeroSearch('') }}
+          placeholder={c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
+        <button className={academyStyles.submit} type="submit">{c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
+      </form>
+      <div className={academyStyles.filters}>
+        <label>{c.heroTopicFilter}
+          <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
+            onChange={(event) => {
+              const chosen = event.target.value
+              focus.forEach((key) => onToggleFocus(key))
+              if (chosen !== 'all') onToggleFocus(chosen)
+              setVisibleCount(5)
+            }}>
+            <option value="all">{c.heroAllTopics}</option>
+            {TOPICS.map((topic) => <option value={topic.key} key={topic.key}>{topic[locale] || topic.en}</option>)}
+          </select>
+        </label>
+        <label>{c.heroTypeFilter}
+          <select value={browseTab || 'all'} onChange={(event) => {
+            onSelectTestKind?.(event.target.value === 'all' ? null : event.target.value)
+            setVisibleCount(5)
+          }}>
+            <option value="all">{c.heroAllTypes}</option>
+            {BROWSE_TABS.filter((item) => item.key !== 'all').map((item) =>
+              <option value={item.key} key={item.key}>{testKindShortLabel({ testKind: item.key }, locale)}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
+        <span>{c.heroPicks}:</span>
+        {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
+          const topic = TOPICS.find((item) => item.key === key)
+          return <button key={key} type="button" aria-pressed={focus.includes(key)}
+            onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
+        })}
+      </div>
+      {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
 
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
@@ -336,7 +397,7 @@ export function SimpleTestPicker({
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       <div className={styles.recommendationMeta}>
-        <div className={styles.matchCount} role="status" aria-live="polite">{browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
+        <div className={styles.matchCount} role="status" aria-live="polite">{heroSearchTerm ? browseRecommendations.length : browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
         <details className={styles.why}>
           <summary>{c.why} <ArrowRight size={14} aria-hidden="true"/></summary>
           <p>{c.whyText}</p>
@@ -354,6 +415,10 @@ export function SimpleTestPicker({
           }}><SlidersHorizontal size={18} aria-hidden="true" /></button>
       </div>
 
+      {submittedHeroSearch.trim() && <p className={styles.heroSearchSummary} role="status">
+        {c.heroSearchLabel}: <strong>{submittedHeroSearch}</strong>
+        <button type="button" onClick={() => { setHeroSearch(''); setSubmittedHeroSearch(''); setVisibleCount(5) }}>{c.heroSearchClear}</button>
+      </p>}
       {browseRecommendations.length > 0 ? <div className={styles.testList} id="hh-public-recommended-tests" data-visible-test-count={visibleRecommendations.length}>
          {visibleRecommendations.map((entry, index) => {
            const checked = selectedKeys.has(entry.key)
@@ -369,7 +434,7 @@ export function SimpleTestPicker({
                    <img src={artworkFor(entry)} alt="" width="104" height="112" loading="lazy" decoding="async" />
                  </span>
                  <div className={styles.testImageMeta}>
-                   <KindBadge entry={entry} locale={locale} />
+                   {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
                    <span className={styles.imageDuration}><Clock3 size={13} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
                  </div>
                </div>
@@ -380,7 +445,7 @@ export function SimpleTestPicker({
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
-                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>}
+                    <KindBadge entry={entry} locale={locale} />
                    {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
                  </span>
                </label>
