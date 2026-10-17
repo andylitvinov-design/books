@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Brain, CalendarDays, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
@@ -9,6 +10,7 @@ import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
 import './profile-domains.css'
 import './profile-refresh.css'
 
+const DevelopmentProgram = dynamic(() => import('./development-program'), { ssr: false })
 const DOMAINS = PROFILE_AREAS
 const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnotherapy: HeartHandshake }
 const WORDS = {
@@ -186,7 +188,7 @@ function ProfileServiceOffer({ area, locale }) {
  * Wu Xing values or therapy instructions from arbitrary narrative text.
  */
 export function ProfileDomains({
-  locale = 'en', mode = 'account', selector = null, assessments = [], homeopathyUpdates = [],
+  locale = 'en', mode = 'account', selector = null, accountId = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
   overviewContent = null, reportsContent = null, focusReports = false,
 }) {
@@ -279,6 +281,7 @@ export function ProfileDomains({
       </div>
       </div>
     </header>
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} />}
     {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-analysis-reports-title" data-profile-report-archive>
       {reportsContent}
       {!external && savedReports.filter(report => report.available !== false).length === 0 && (
