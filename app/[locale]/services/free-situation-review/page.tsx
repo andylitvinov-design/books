@@ -27,11 +27,11 @@ const copy = {
     scopeLimit: "Это символическая интерпретация ситуации, не медицинская или психиатрическая диагностика, не назначение лечения и не гарантия результата. Платная консультация необязательна.",
     title: "Бесплатная диагностика ситуации и личная консультация",
     description: "Бесплатно: коучинг-форма, рисунок от руки «Я, цель, проблема» и персональный письменный отчёт от Андрея Литвинова. Не звонок и не медицинская диагностика.",
-    eyebrow: "ЛИЧНЫЙ РАЗБОР · АНДРЕЙ ЛИТВИНОВ · Торонто и онлайн",
-    heading: "Поймите, что мешает двигаться вперёд — и с чего начать перемены.",
-    lead: "Когда ситуация запуталась, трудно увидеть главное. Я помогу взглянуть на ваш запрос со стороны, заметить важные темы, доступные ресурсы и возможные следующие шаги. Начните с короткого бесплатного обращения; для полного письменного разбора позже понадобятся материалы.",
+    eyebrow: "БЕСПЛАТНЫЙ РАЗБОР · АНДРЕЙ ЛИТВИНОВ",
+    heading: "Разберитесь в ситуации и найдите следующий шаг.",
+    lead: "Опишите ваш запрос. После короткой анкеты и рисунка от руки я лично пришлю письменный разбор, чтобы вы могли увидеть ситуацию с другой стороны и наметить следующие шаги.",
     bullets: ["Лучше понять суть проблемы и свой настоящий запрос", "Увидеть повторяющиеся сценарии и точки опоры", "Получить личный письменный разбор и направления для дальнейших шагов"],
-    free: "€0 · Лично от Андрея · Письменный отчёт · Без платной подписки",
+    free: "€0 · Личный письменный разбор · Без платного созвона",
     request: "Начать бесплатный разбор",
     paidQuick: "Личная консультация · от €50",
     practitioner: "Андрей Литвинов",
@@ -86,11 +86,11 @@ const copy = {
     scopeLimit: "This is an interpretive, symbolic assessment, not a medical or psychiatric diagnosis, prescription or guaranteed outcome. Booking a paid session is optional.",
     title: "Free Situation Review & Personal Consultation",
     description: "Free coaching questionnaire + hand-drawn ME / GOAL / PROBLEM drawing, with a personal written report from Andrey Litvinov. No free call or medical diagnosis.",
-    eyebrow: "PERSONAL GUIDANCE · ANDREY LITVINOV · TORONTO & ONLINE",
-    heading: "Understand what is keeping you stuck — and explore your next step.",
-    lead: "When life feels complicated, it is hard to see what matters most. I can help you reflect on your situation, notice recurring themes and personal resources, and explore possible next steps. Begin with a short free enquiry; the full written review requires follow-up materials.",
+    eyebrow: "FREE PERSONAL REVIEW · ANDREY LITVINOV",
+    heading: "Find clarity in your situation — and a way forward.",
+    lead: "Tell me what you are facing. After a short questionnaire and hand drawing, I will personally prepare a written perspective on your situation, resources and possible next steps.",
     bullets: ["Clarify the problem and what matters most to you", "Explore patterns, strengths and overlooked options", "Receive personal written reflections and possible next steps"],
-    free: "€0 · Personally reviewed · Written report · No paid booking required",
+    free: "€0 · Personal written review · No paid call required",
     request: "Get my free written review",
     paidQuick: "Personal consultation · from €50",
     practitioner: "Andrey Litvinov",
@@ -145,11 +145,11 @@ const copy = {
     scopeLimit: "Es una interpretación simbólica, no un diagnóstico médico o psiquiátrico, receta ni resultado garantizado. Una consulta de pago es opcional.",
     title: "Revisión gratuita y consulta personal",
     description: "Formulario de coaching y dibujo a mano (YO, META, PROBLEMA) con un informe personal escrito de Andrey Litvinov. Sin llamada gratuita ni diagnóstico médico.",
-    eyebrow: "ORIENTACIÓN PERSONAL · ANDREY LITVINOV · TORONTO Y ONLINE",
-    heading: "Aclara tu situación y descubre por dónde empezar.",
-    lead: "Cuando una situación parece complicada, cuesta ver qué importa. Te ayudo a reflexionar sobre tu problema, reconocer patrones y recursos y explorar próximos pasos. Empieza con una solicitud breve; el informe escrito completo requiere materiales posteriores.",
+    eyebrow: "REVISIÓN GRATUITA · ANDREY LITVINOV",
+    heading: "Aclara tu situación y encuentra el siguiente paso.",
+    lead: "Cuéntame qué te preocupa. Después de un formulario breve y un dibujo a mano, prepararé personalmente una reflexión escrita sobre tu situación y posibles pasos.",
     bullets: ["Aclarar qué está pasando y qué importa más", "Explorar patrones, recursos y nuevas opciones", "Recibir observaciones personales por escrito y posibles siguientes pasos"],
-    free: "€0 · Revisión personal · Informe escrito · Sin reserva de pago",
+    free: "€0 · Informe personal escrito · Sin llamada de pago",
     request: "Recibir revisión escrita gratuita",
     paidQuick: "Consulta personal · desde €50",
     practitioner: "Andrey Litvinov",
@@ -293,7 +293,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
   const outcome = outcomes[locale];
   return (
     <main className={styles.page} lang={locale}>
-      <PublicSiteHeader locale={locale} />
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
 
       <section className={styles.contentGrid} aria-labelledby="review-hero-title">
         <div className={styles.heroCopy}>
@@ -316,9 +316,10 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           </div>
           <p className={styles.safety}>{t.transparency}</p>
         </div>
-        <div className={styles.capturePanel} id="request-free-review">
-          <FreeReviewQuickRequest locale={locale} />
-        </div>
+      </section>
+
+      <section className={styles.capturePanel} id="request-free-review" aria-label={t.request}>
+        <FreeReviewQuickRequest locale={locale} />
       </section>
 
       <section className={styles.outcomes} aria-labelledby="review-outcomes-title">
@@ -424,16 +425,11 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <p className={styles.eyebrow}>{outcome.eyebrow}</p>
           <h2 id="review-final-title">{t.finalTitle}</h2>
           <p>{outcome.finalLead}</p>
+          <Link href={"/" + locale + "/services"} className={styles.backToServices}>{t.back} <ArrowRight size={15} aria-hidden="true" /></Link>
         </div>
         <FreeReviewQuickRequest locale={locale} />
       </section>
 
-      <section className={styles.closing}>
-        <MessageCircle aria-hidden="true" size={24}/>
-        <h2>{t.finalTitle}</h2>
-        <a href="#request-free-review">{t.finalAction} <ArrowRight size={18} aria-hidden="true"/></a>
-        <Link href={"/" + locale + "/services"} className={styles.back}>{t.back}</Link>
-      </section>
     </main>
   );
 }
