@@ -1,0 +1,14 @@
+key,respondent_locale,question_count,source_url,evidence_caveat,rights_status,access
+scsconceal-larson1990-enus10,EN-US,10,https://doi.org/10.1521/jscp.1990.9.4.439,original,permission_required,research_only
+scsconceal-letelier2020-escl10,ES-CL,10,https://doi.org/10.7764/psykhe.29.2.1220,adult_validation,permission_required,research_only
+scsconceal-deniz2010-trtr10-youth,TR-TR,10,https://ilkogretim-online.org/index.php/pub/article/view/670,adolescent_validation,permission_required,research_only
+scsconceal-terzi2010-trtr10-adult,TR-TR,10,https://dergipark.org.tr/en/pub/tebd/article/275028,student_validation,permission_required,research_only
+scsconceal-fan2023-zhcn10-older,ZH-CN,10,https://doi.org/10.2147/PRBM.S434491,older_adults_validation,permission_required,research_only
+scsconceal-sarvandani2026-fair10,FA-IR,10,https://doi.org/10.3390/healthcare14152262,qualified_model_partial_invariance,permission_required,research_only
+ddi-kahn2001-enus12,EN-US,12,https://about.illinoisstate.edu/jhkahn/distress-disclosure-index/,original,permission_required,research_only
+ddi-gizirgursoy2017-trtr12-univ,TR-TR,12,https://www.acarindex.com/en/ege-egitim-dergisi/oznel-sikintilar-kendini-acma-kendini-gizleme-universite-ogrencileri-gecerlik-guvenirlik-859540,university_validation,permission_required,research_only
+opener-miller1983-enus10,EN-US,10,https://www.cmu.edu/common-cold-project/measures-by-study/psychological-and-social-constructs/personality-measures/eliciting-self-disclosure.html,original_apa_permission_required,permission_required,research_only
+ddrs-chu2026-zhcn16,ZH-CN,16,https://doi.org/10.1177/02654075261454433,original,permission_required,research_only
+ddi-arslan2017-trtr12-school,TR-TR,12,https://doi.org/10.16947/fsmia.323350,adolescent_validation,permission_required,research_only
+ddi-rocha2020-ptpt12-oncology,PT-PT,12,https://repositorio.ispa.pt/entities/publication/802067ce-e2bc-46cc-bcb0-3ddc910da09b,preliminary_restricted_thesis,permission_required,research_only
+opener-rocha2020-ptpt10-oncology,PT-PT,10,https://repositorio.ispa.pt/entities/publication/802067ce-e2bc-46cc-bcb0-3ddc910da09b,preliminary_restricted_thesis,permission_required,research_only
