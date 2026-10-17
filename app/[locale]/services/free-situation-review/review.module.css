@@ -262,3 +262,73 @@
   .finalIntro p:last-child{font-size:13px}
   .advancedIntake summary{font-size:12px}
 }
+
+
+/* 2026-10-17: one-screen mobile funnel. Each major panel is an independent section. */
+.contentGrid{display:block;grid-template-columns:none;width:min(1140px,calc(100% - 32px));margin-top:16px}
+.heroCopy{max-width:900px;padding:0}
+.heroCopy h1{max-width:840px}
+.heroCopy .lead{max-width:770px}
+.heroCopy .introContact{max-width:620px}
+.capturePanel{width:min(700px,calc(100% - 40px));margin:18px auto 0;scroll-margin-top:20px}
+.capturePanel :global([data-free-quick-request]){background:linear-gradient(145deg,#f5fffb,#e9f5f1 80%,#faf5ea);box-shadow:0 10px 30px rgba(25,54,62,.09)}
+.backToServices{display:inline-flex;align-items:center;gap:7px;min-height:44px;color:#7b4054;font:700 12px/1.4 Arial,sans-serif;text-decoration:underline;text-underline-offset:4px}
+@media(max-width:767px){
+  .contentGrid{width:calc(100% - 20px);padding:18px 16px 14px;margin-top:9px;border-radius:19px}
+  .heroCopy{padding:0}
+  .heroCopy .eyebrow{font-size:10px;line-height:1.35;margin-bottom:9px;letter-spacing:.075em}
+  .heroCopy h1{font-size:clamp(29px,8.1vw,36px);line-height:1.06;margin-bottom:11px}
+  .heroCopy .lead{font-size:14px;line-height:1.43;margin-bottom:12px}
+  .heroCopy .benefits{display:none}
+  .heroCopy .freeLine{margin-bottom:12px;font-size:11px;line-height:1.4}
+  .heroActions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:9px}
+  .heroActions a{min-height:48px;font-size:11.5px;line-height:1.35;padding:9px 7px;gap:5px;border-radius:12px}
+  .heroActions a svg{flex:none;width:15px;height:15px}
+  .introContact{padding:8px 0;gap:10px}
+  .introContact strong{font-size:14px}
+  .introContact span{font-size:10px;line-height:1.35}
+  .photo{width:41px;height:41px}
+  .heroCopy .safety{font-size:10px;line-height:1.35;margin:8px 0 0}
+  .capturePanel{width:calc(100% - 20px);margin-top:11px;scroll-margin-top:14px}
+  .outcomes{margin-top:25px}
+  .outcomes h2{font-size:clamp(25px,7.1vw,30px);line-height:1.13;margin-bottom:7px}
+  .outcomeIntro{font-size:12.5px;line-height:1.45;margin:0}
+  .outcomeGrid{gap:8px;margin-top:12px}
+  .outcomeGrid article{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:10px;row-gap:3px;padding:12px 14px}
+  .outcomeGrid article span{grid-row:span 2;padding-top:5px}
+  .outcomeGrid h3{font-size:20px;line-height:1.12;margin:0}
+  .outcomeGrid p{font-size:12px;line-height:1.43}
+  .paid{margin-top:24px;padding:17px;gap:11px}
+  .paid h2{font-size:26px}
+  .paid>div>p:not(.eyebrow){font-size:12.5px;line-height:1.45}
+  .paidOptions{gap:7px}
+  .paidOptions a{min-height:64px}
+  .paidOptions p{font-size:10.5px;line-height:1.4}
+  .details,.faq,.about,.directions{margin-top:27px}
+  .sectionIntro{margin-bottom:12px}
+  .sectionIntro h2,.faq h2{font-size:27px;margin-bottom:9px}
+  .sectionIntro>p:not(.eyebrow){font-size:12px;line-height:1.45}
+  .steps{gap:7px;margin-top:12px}
+  .steps li{padding:12px 14px;gap:5px}
+  .steps h3{font-size:19px}
+  .steps p{font-size:12px;line-height:1.42}
+  .advancedIntake{margin-top:11px}
+  .about{display:grid;grid-template-columns:85px minmax(0,1fr);align-items:start;gap:13px;padding:15px;background:#fff;border:1px solid #dbe6e1;border-radius:18px}
+  .aboutPhoto{aspect-ratio:1;max-height:none;border-radius:13px}
+  .about .eyebrow{font-size:10px;margin-bottom:7px}
+  .about h2{font-size:24px;line-height:1.16;margin-bottom:8px}
+  .about p:not(.eyebrow){font-size:12px;line-height:1.44;margin-bottom:8px}
+  .about a{font-size:12px;min-height:37px}
+  .faq details{border-color:#d9e4df}
+  .faq summary{min-height:48px;font-size:13.5px;padding:12px 0}
+  .faq details p{font-size:12px;line-height:1.48}
+  .finalCapture{margin-top:25px;padding:14px 12px;gap:8px}
+  .finalIntro h2{font-size:25px;line-height:1.12;margin-bottom:6px}
+  .finalIntro p:last-child{font-size:12px;line-height:1.4;margin:0}
+}
+@media(max-width:350px){
+  .heroActions a{font-size:10.5px}
+  .heroCopy h1{font-size:28px}
+  .outcomeGrid article{padding:11px}
+  .about{grid-template-columns:72px minmax(0,1fr);gap:10px;padding:12px}
+}
