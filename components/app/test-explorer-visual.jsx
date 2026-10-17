@@ -177,7 +177,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           <text x={ray.x} y={ray.y + (ray.lines.length === 1 ? 14 : 13)}
             textAnchor="start" className={styles.radarInlineLabel}>
             {ray.lines.map((line,index) => <tspan key={index} x={ray.x}
-              dy={index === 0 ? 0 : 14} textLength={line.length > 17 ? ray.width : undefined}
+              dy={index === 0 ? 0 : 14} textLength={ray.lineWidths[index]}
               lengthAdjust="spacingAndGlyphs">{line}</tspan>)}
           </text>
         </g>)}
