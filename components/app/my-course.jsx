@@ -499,6 +499,9 @@ export function MyCourse({ data, locale = 'en' }) {
           !['closed', 'archived', 'completed'].includes(item.status))
         if (activeChoices.length === 1 && activeChoices[0].id === state.course.id) selectCourse(state.course.id)
         else setShowCourse(true) // Multiple courses still offer the dashboard picker.
+      } else if (courses.length > 0) {
+        // A closed course belongs in history, not a new-course setup shortcut.
+        setShowCourse(true); changeView('list')
       } else if (canAddCourse) {
         setShowCourse(true); startAnother()
       } else {
