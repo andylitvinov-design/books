@@ -31,23 +31,29 @@ const copy = {
       image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
     },
     alchemy: {
-      eyebrow: "ONE-TO-ONE · INTEGRATED SESSION",
-      title: "Alchemy of the Soul",
-      lead: "One-to-one exploration of a personal, relationship or business question from several angles in one session. We look at what feels blocked and consider new choices, without promising a particular outcome.",
-      benefit: "A clearer map of your situation, your patterns and possible next steps.",
-      sectionsTitle: "Three approaches in one session",
+      eyebrow: "PERSONAL METHOD · CONSTELLATIONS · HYPNOTHERAPY · PSYCHO-HOMEOPATHY",
+      title: "Alchemy of the Soul · Psycho-homeopathy",
+      lead: "When a difficult situation keeps repeating, we first map its dynamics through a systemic constellation. Then, where suitable, guided imagery hypnotherapy helps explore the inner conflict or stress response beneath it. We can also discuss individually selected homeopathic symbolism and other complementary resources, without medical treatment claims.",
+      benefit: "Understand the pattern · explore the deeper mechanism · find support and a realistic next step.",
+      sectionsTitle: "One integrated approach · four connected stages",
       sections: [
-        { title: "1. Situation analysis", text: "We clarify your question, goals, perceived obstacles and what matters most." },
-        { title: "2. Systemic constellations", text: "We map roles and relationships through an exploratory symbolic exercise. This does not prove facts about other people." },
-        { title: "3. Complementary homeopathic selection", text: "If relevant to your interests, we can explore homeopathic remedy selection as a complementary personal practice, not established treatment for physical or mental illness." },
+        { title: "01 · Situation analysis through constellations", text: "We clarify your goal and map the situation, roles, relationships and obstacles with a systemic constellation. This symbolic exploration is a working hypothesis, not proof of hidden facts." },
+        { title: "02 · Hypnotherapy and guided imagery", text: "With your agreement, a gentle guided-imagery or hypnotherapy exercise explores the emotional roots of a recurring reaction, a stressed inner part or unmet need. We do not treat imagery as recovered factual memories." },
+        { title: "03 · Complementary homeopathic selection", text: "Within Andrey's psycho-homeopathy model we may explore an individual homeopathic remedy and its symbolic resonance with the present state. This is optional, not an evidence-based treatment or a medical prescription; no dosage is set." },
+        { title: "04 · Alchemical integration and follow-up", text: "Where appropriate we draw on archetypal work, the Dao / Wu Xing resource model or contemplative energy practices. We identify practical actions and, during continued support, review what has changed." },
       ],
-      action: "Ask about an Alchemy of the Soul session",
-      actionMessage: "Service: Alchemy of the Soul — integrated personal session\nRequest: I would like to discuss an individual session involving situation analysis, systemic constellations and optional complementary homeopathic selection. Please confirm format, availability and cost.",
-      note: "This is a service enquiry, not a confirmed booking. We agree the format and scope before any session.",
-      safety: "Homeopathy has no reliable evidence of effectiveness for treating health conditions. No diagnosis, dosage or medication changes are provided here. Constellations are exploratory and do not replace professional legal, financial or clinical advice.",
-      secondary: "How systemic constellations work",
-      secondaryHref: "/en/services/systemic-constellations",
+      action: "Enquire about Alchemy of the Soul",
+      actionMessage: "Service: Alchemy of the Soul / Psycho-homeopathy\nRequest: I would like to explore a personal session combining constellation work, guided imagery hypnotherapy and, if appropriate, complementary homeopathic and Dao resource practices. Please confirm the available format and time.",
+      note: "Enquiry only, not a confirmed booking. Express 30 min (€50) and full 60 min (€100) sessions; a longer support plan can be discussed separately.",
+      safety: "This is an author's reflective, psychotherapeutic-style and symbolic consultation, not medical or psychiatric diagnosis or treatment. Homeopathy has no reliable evidence of effectiveness for treating health conditions. Do not stop or change prescribed medicines; seek qualified care for illness or emergencies. Outcomes cannot be guaranteed.",
+      secondary: "Explore guided imagery hypnotherapy",
+      secondaryHref: "/en/services/hypnotherapy-course",
       image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+      supportKicker: "CONTINUED PERSONAL SUPPORT",
+      supportTitle: "A session — or a four-week process",
+      supportLead: "For an issue that needs time, the author's monthly psycho-homeopathy format brings together two personal sessions and four weeks of individual check-ins: an initial situation map, an agreed plan, observation of changes and a closing review.",
+      supportItems: ["Express personal review · 30 min · €50", "Full personal session · 60 min · €100", "Optional monthly programme · 2 sessions + 4 weeks of support · fee agreed individually"],
+      supportFootnote: "Methods and depth are agreed together. An enquiry does not start a subscription or charge.",
     },
     hypnotherapy: {
       eyebrow: "INDIVIDUAL COURSE · GUIDED IMAGERY",
@@ -90,23 +96,29 @@ const copy = {
       image: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
     },
     alchemy: {
-      eyebrow: "ЛИЧНАЯ СЕССИЯ · 3 ПОДХОДА",
-      title: "Алхимия души",
-      lead: "Индивидуальное исследование личного, семейного или делового вопроса в одной сессии: что мешает и какие другие варианты можно рассмотреть.",
-      benefit: "Больше ясности в вашей ситуации, связях и следующих шагах.",
-      sectionsTitle: "Три подхода в одной сессии",
+      eyebrow: "АВТОРСКИЙ МЕТОД · РАССТАНОВКА · ГИПНОТЕРАПИЯ · ПСИХОГОМЕОПАТИЯ",
+      title: "Алхимия души · Психогомеопатия",
+      lead: "Если ситуация повторяется, начнём с расстановочной диагностики её динамики. Затем, когда это уместно, через мягкую образную гипнотерапию исследуем возможный корень внутреннего конфликта и стрессовую часть личности. Дополнительно можно рассмотреть индивидуальный гомеопатический подбор и другие ресурсные практики — без обещаний медицинского исцеления.",
+      benefit: "Понять сценарий · исследовать внутреннюю причину · найти опору и следующий шаг.",
+      sectionsTitle: "Единый авторский подход · четыре этапа",
       sections: [
-        { title: "1. Анализ ситуации", text: "Уточняем запрос, цель, возможные препятствия и важные обстоятельства." },
-        { title: "2. Системная расстановка", text: "Исследуем роли и связи в символическом формате. Расстановка не доказывает факты о других людях." },
-        { title: "3. Дополнительный гомеопатический подбор", text: "При необходимости исследуем индивидуальный подбор гомеопатических средств как дополнительную практику, без обещаний лечебного эффекта." },
+        { title: "01 · Анализ ситуации через расстановку", text: "Уточняем запрос, цель и препятствия. Системная расстановка помогает символически увидеть отношения, роли и связи, которые могут поддерживать проблему. Это гипотеза для исследования, а не установление скрытых фактов." },
+        { title: "02 · Гипнотерапия: исследование корня", text: "С вашего согласия через направленное воображение, символдраму или мягкое гипнотерапевтическое погружение исследуем эмоциональный механизм, напряжение и внутренние части личности. Образы не принимаются за достоверно восстановленные воспоминания." },
+        { title: "03 · Дополнительный гомеопатический подбор", text: "В авторской психогомеопатической модели можем подобрать гомеопатический препарат как дополнительный символический ресурс, ориентируясь на текущее состояние и наблюдая изменения. Это необязательно и не является доказанным лечением; дозировки здесь не назначаются." },
+        { title: "04 · Алхимия, ресурсы и интеграция", text: "При необходимости подключаем архетипические подходы, даосскую модель У-Син и созерцательные энергетические практики. Фиксируем новые решения и по мере сопровождения пересматриваем актуальность поддержки." },
       ],
-      action: "Запросить сессию «Алхимия души»",
-      actionMessage: "Услуга: Алхимия души — комплексная личная сессия\nЗапрос: интересует анализ ситуации, системная расстановка и возможный дополнительный гомеопатический подбор. Подскажите формат, доступное время и стоимость.",
-      note: "Это запрос на сессию, не подтверждённая запись или оплата. Формат согласуем отдельно.",
-      safety: "Надёжных доказательств эффективности гомеопатии для лечения заболеваний нет. Эта услуга не заменяет диагностику, назначенные лекарства, медицинскую помощь или профессиональную юридическую/финансовую экспертизу.",
-      secondary: "Подробнее о расстановках",
-      secondaryHref: "/ru/services/systemic-constellations",
+      action: "Обсудить сессию «Алхимия души»",
+      actionMessage: "Услуга: Алхимия души / Психогомеопатия\nЗапрос: хочу обсудить личную сессию с диагностикой через расстановку, образной гипнотерапией и, если уместно, дополнительным гомеопатическим подбором и ресурсными практиками. Подскажите доступный формат и время.",
+      note: "Это обращение, а не подтверждённая запись. Экспресс 30 минут — €50, полная сессия 60 минут — €100; длительное сопровождение обсуждается отдельно.",
+      safety: "Это авторская консультативная, психологически ориентированная и символическая работа, не медицинская или психиатрическая диагностика и не лечение. Надёжных доказательств эффективности гомеопатии для лечения заболеваний нет. Не отменяйте назначенные лекарства; при болезни и неотложных состояниях обращайтесь к квалифицированным специалистам. Результат не гарантируется.",
+      secondary: "Подробнее об образной гипнотерапии",
+      secondaryHref: "/ru/services/hypnotherapy-course",
       image: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+      supportKicker: "ПЕРСОНАЛЬНОЕ СОПРОВОЖДЕНИЕ",
+      supportTitle: "Одна сессия или четыре недели работы",
+      supportLead: "Если тема требует времени, предусмотрен авторский формат психогомеопатического сопровождения: две личные сессии и четыре недели индивидуальной поддержки. Сначала исследуем ситуацию, затем согласуем план, отслеживаем изменения и на повторной встрече уточняем следующий шаг.",
+      supportItems: ["Экспресс-разбор · 30 минут · €50", "Полная личная сессия · 60 минут · €100", "Месячная программа · 2 сессии + 4 недели сопровождения · стоимость согласуем отдельно"],
+      supportFootnote: "Глубину и методы согласуем вместе. Обращение не оформляет подписку и не списывает оплату.",
     },
     hypnotherapy: {
       eyebrow: "ИНДИВИДУАЛЬНЫЙ КУРС · ОБРАЗЫ ПОДСОЗНАНИЯ",
@@ -170,6 +182,20 @@ export function CoreServiceDetail({ locale, kind }: { locale: Locale; kind: Deta
           {t.sections.map(step => <article key={step.title}><h3>{step.title}</h3><p>{step.text}</p></article>)}
         </div>
       </section>
+      {kind === "alchemy" ? (
+        <section className={styles.alchemySupport} aria-labelledby="alchemy-support-heading">
+          <div className={styles.alchemySupportCopy}>
+            <span className={styles.alchemySupportKicker}>{copy[locale].alchemy.supportKicker}</span>
+            <h2 id="alchemy-support-heading">{copy[locale].alchemy.supportTitle}</h2>
+            <p>{copy[locale].alchemy.supportLead}</p>
+          </div>
+          <div className={styles.alchemyOptions}>
+            <ul>{copy[locale].alchemy.supportItems.map(item => <li key={item}><Check size={17} aria-hidden="true" />{item}</li>)}</ul>
+            <p>{copy[locale].alchemy.supportFootnote}</p>
+            <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.alchemySupportAction} event="service_request_start" attributes={{ "data-service-request": kind, "data-alchemy-monthly": "true" }} />
+          </div>
+        </section>
+      ) : null}
       <section className={styles.footer}>
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>

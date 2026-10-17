@@ -12,7 +12,7 @@ const copy = {
     mobileLead: "Начните бесплатно: тесты самочувствия, письменный разбор ситуации или профиль ресурсов У-Син.",
     benefits: ["3 бесплатных направления", "Личная работа по желанию", "Торонто и онлайн"],
     cta: "Получить бесплатный письменный разбор",
-    paidCta: "Личная консультация · от €50",
+    paidCta: "Алхимия души · Психогомеопатия",
     secondary: "Все три бесплатных варианта",
     small: "Бесплатно: ваша анкета и рисунок → персональный письменный разбор. Личная встреча — отдельно и по желанию.",
     workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
@@ -27,7 +27,7 @@ const copy = {
     mobileLead: "Start free with wellbeing tests, a written situation review or a Wu Xing resource profile.",
     benefits: ["3 free starting points", "Optional one-to-one work", "Toronto & online"],
     cta: "Get a free written review",
-    paidCta: "Personal consultation · from €50",
+    paidCta: "Alchemy of the Soul · Psycho-homeopathy",
     secondary: "See all three free options",
     small: "Free: your form and drawing → personal written feedback. A live one-to-one session is separate and optional.",
     workWith: "Personal work with Andrey Litvinov, in Toronto and online",
@@ -42,7 +42,7 @@ const copy = {
     mobileLead: "Empieza gratis: cuestionarios de bienestar, revisión escrita o perfil de recursos Wu Xing.",
     benefits: ["3 maneras de empezar gratis", "Sesiones individuales opcionales", "Toronto y en línea"],
     cta: "Recibir revisión escrita gratuita",
-    paidCta: "Consulta personal · desde €50",
+    paidCta: "Alquimia del Alma · sesión personal",
     secondary: "Opciones gratuitas y cursos",
     small: "Gratis: formulario y dibujo → informe personal escrito. La sesión en directo es opcional y de pago.",
     workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
@@ -65,7 +65,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
           <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.paidLink} href={"/" + locale + "/services/free-situation-review#personal-consultation"}>
+          <Link className={styles.paidLink} href={locale === "es" ? "/en/services/alchemy-of-soul" : "/" + locale + "/services/alchemy-of-soul"}>
             {t.paidCta}<ArrowRight size={17} aria-hidden="true" />
           </Link>
           <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>

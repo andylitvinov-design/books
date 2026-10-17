@@ -96,8 +96,8 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
             : "Explore personal resources with the author-led symbolic Wu Xing five-element model. This is reflective self-exploration, not a medical diagnosis.")
           : offer.id === "alchemy"
             ? (locale === "ru"
-              ? "На личной сессии мы уточняем запрос, исследуем динамику ситуации через системную расстановку и обсуждаем возможные шаги. Символический и дополнительный гомеопатический подходы не заменяют медицинскую помощь."
-              : "We clarify your question, explore the dynamics through a personal systemic constellation and discuss possible next steps. Symbolic and complementary homeopathic approaches do not replace medical care.")
+              ? "На личной сессии начинаем с расстановочной диагностики ситуации, затем через образную гипнотерапию исследуем возможный внутренний корень проблемы. При необходимости добавляем символический гомеопатический подбор и ресурсные практики без медицинских обещаний."
+              : "We first map the situation through a systemic constellation, then use guided-imagery hypnotherapy to explore an underlying inner pattern. Optional symbolic homeopathic selection and Dao resources complement reflection, not medical care.")
             : offer.id === "hypnotherapy"
               ? (locale === "ru"
                 ? "Индивидуальная работа с внутренними образами, эмоциями и повторяющимися реакциями. Можно начать с одной встречи и затем обсудить продолжение курса; клиническую помощь это не заменяет."
