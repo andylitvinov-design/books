@@ -95,7 +95,13 @@ try {
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space'}).click()
+  // The consent transition is asynchronous: a visible tab bar may briefly
+  // precede the app's own /app/portrait or /app/tests navigation. Await the
+  // settled account landing, otherwise WebKit may interrupt the first goto.
+  await expect(page).toHaveURL(/\/en\/app\/(?:portrait|tests)(?:[?#]|$)/,{timeout:90000})
   await expect(page.locator('.hh-mobile-app-nav')).toBeVisible({timeout:90000})
+  await expect(page.locator('[data-my-tests-dashboard], [data-personal-portrait-summary]'))
+    .toBeVisible({timeout:90000})
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
