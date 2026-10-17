@@ -2053,3 +2053,14 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 @media(prefers-reduced-motion:reduce) {
   .cabinet-landing-shell .cabinet-guest-runner .cabinet-answer-list button { animation:none; transition:none; }
 }
+
+/* Public My Tests catalog uses the same sitewide ribbon and six-item bar as
+   Academy. Keep the ribbon and mobile menu away from active guest questionnaires,
+   consent steps and individual results on the same /client URL. */
+body:has(.client-entry-shell .cabinet-guest-tests) [data-sitewide-personal-review-banner],
+body:has(.client-entry-shell .cabinet-guest-tests) .ia222-bottom-navigation {
+  display: none !important;
+}
+body:has(.client-entry-shell .cabinet-guest-tests) {
+  padding-bottom: 0 !important;
+}
