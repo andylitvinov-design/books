@@ -3,12 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { activeNavigationId, getSiteNavigation } from '../lib/site-navigation-model.js';
 
-test('My Courses replaces About in six-slot public bottom menu', () => {
+test('Tests and My House replace My Courses and My tests in six-slot public bottom menu', () => {
   for (const locale of ['ru', 'en', 'es']) {
     const links = getSiteNavigation(locale).filter(item => item.id !== 'relationships');
-    assert.deepEqual(links.map(item => item.id), ['home', 'library', 'services', 'academy', 'courses', 'cabinet']);
-    assert.equal(links.find(item => item.id === 'courses').href, `/${locale}/courses`);
-    assert.equal(activeNavigationId(`/${locale}/courses`), 'courses');
+    assert.deepEqual(links.map(item => item.id), ['home', 'library', 'services', 'academy', 'tests', 'house']);
+    assert.equal(links.find(item => item.id === 'tests').href, `/${locale}/client/tests`);
+    assert.equal(links.find(item => item.id === 'house').href, `/${locale === 'es' ? 'en' : locale}/app`);
+    assert.equal(activeNavigationId(`/${locale}/academy/free-ai-courses`), 'academy');
     assert.equal(activeNavigationId(`/${locale}/about`), 'services');
   }
 });
