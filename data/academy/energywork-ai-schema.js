@@ -21,16 +21,24 @@ export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'text',
   'flight-04': 'text',
+  'flight-03': 'choice',
   'presence-03': 'scale',
+  'presence-02': 'choice',
   'intention-03': 'text',
+  'intention-04': 'choice',
   'boundaries-02': 'choice',
+  'boundaries-03': 'choice',
   'boundaries-04': 'text',
   'ygg-04': 'text',
+  'ygg-03': 'choice',
   'tan-04': 'text',
+  'tan-03': 'choice',
   'kun-04': 'text',
+  'kun-03': 'choice',
   'end-01': 'text',
 })
 export const ENERGYWORK_CHOICE_VALUES = Object.freeze(['pause','adapt','ask'])
+export const ENERGYWORK_PRACTICE_VALUES = Object.freeze(['tried','skipped'])
 export const ENERGYWORK_CHOICE_INDEX = ENERGYWORK_COMMON.indexOf('paths-04')
 export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 export function energyworkSequence(path) {
@@ -45,6 +53,8 @@ export function energyworkAnswerValid(id, answer) {
   if (!kind || typeof answer !== 'string') return false
   if (kind === 'text') return answer.length <= 1600
   if (kind === 'scale') return /^(?:[0-9]|10)$/.test(answer)
-  if (kind === 'choice') return ENERGYWORK_CHOICE_VALUES.includes(answer)
+  if (kind === 'choice') return id === 'boundaries-02'
+    ? ENERGYWORK_CHOICE_VALUES.includes(answer)
+    : ENERGYWORK_PRACTICE_VALUES.includes(answer)
   return false
 }
