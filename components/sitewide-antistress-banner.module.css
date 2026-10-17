@@ -12,28 +12,44 @@
 
 .name{text-decoration:none!important}.name:hover{color:#fff;text-decoration:underline!important;text-underline-offset:3px}.name:focus-visible{outline:3px solid #f3b5a4;outline-offset:3px}
 
-/* Responsive, non-sticky promotion after the public test chooser. */
-.courseCard{position:relative;box-sizing:border-box;isolation:isolate;width:min(1120px,calc(100% - 28px));margin:24px auto 40px;border:1px solid #c8dfe2;border-radius:24px;background:linear-gradient(115deg,#f4fcfb 0%,#eef8f8 50%,#fffbf6 100%);color:#1b394f;box-shadow:0 13px 32px rgba(25,65,78,.10);overflow:hidden}
-.courseCardInner{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(190px,.62fr);align-items:center;gap:clamp(12px,2.5vw,32px);padding:clamp(22px,3.4vw,38px);min-width:0}
+/* Course-style turquoise next steps. Two compact photo-left offers after public tests. */
+.testOffers{box-sizing:border-box;width:min(1120px,100%);margin:18px auto 32px;padding:0 clamp(12px,2.5vw,24px);display:grid;gap:13px}
+.testOffersPair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.courseCard,.reviewCard{box-sizing:border-box;min-width:0;position:relative;border:1px solid #9dd9d2;border-radius:20px;color:#16414c;box-shadow:0 5px 17px rgba(8,84,88,.075);overflow:hidden}
+.courseCard{background:linear-gradient(125deg,#e9faf7,#f7fcfa 70%)}
+.reviewCard{background:linear-gradient(125deg,#e7f8f7,#f9fdfb 78%);border-color:#b1dcda}
+.courseCardInner{box-sizing:border-box;display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;align-items:start;padding:17px;min-width:0}
+.courseVisual{position:relative;align-self:stretch;min-width:0;min-height:168px;max-height:206px;border-radius:14px;overflow:hidden;background:#c8eae5}
+.courseVisual img{display:block;object-fit:cover;object-position:center;width:100%;height:100%}
+.reviewCard .courseVisual img{object-position:50% 29%}
 .courseContent{min-width:0}
-.courseEyebrow{display:flex;align-items:center;gap:7px;margin:0 0 11px!important;color:#247f82;font-size:.76rem!important;font-weight:850;letter-spacing:.065em;line-height:1.4;text-transform:uppercase}
+.courseEyebrow{display:flex;align-items:center;gap:6px;margin:0 0 6px!important;color:#138782!important;font-size:.68rem!important;line-height:1.35!important;font-weight:850;letter-spacing:.045em;text-transform:uppercase}
 .courseEyebrow svg{flex:none}
-.courseTitle{margin:0 0 12px!important;max-width:23ch;font:700 clamp(1.6rem,3vw,2.25rem)/1.14 Georgia,serif!important;letter-spacing:-.025em;color:#18364e!important}
-.courseIntro{margin:0 0 16px!important;max-width:60ch;font-size:clamp(.93rem,1.25vw,1.02rem)!important;line-height:1.58!important;color:#456576}
-.courseBenefits{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin:0 0 20px!important;padding:0!important}
-.courseBenefits li{margin:0;padding:7px 11px;border:1px solid #d1e3e2;border-radius:99px;background:#fff9;color:#326b70;font-size:.78rem;font-weight:700;line-height:1.3}
-.courseActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
-.coursePrimary,.courseSecondary{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;max-width:100%;padding:12px 19px;border-radius:13px;font-size:.94rem;font-weight:800;line-height:1.4;text-align:center;text-decoration:none!important;white-space:normal}
-.coursePrimary{background:#873d55;border:1px solid #873d55;color:#fff!important;box-shadow:0 5px 11px rgba(100,44,64,.16)}
-.coursePrimary:hover{background:#6d2e44;color:#fff!important}
-.coursePrimary svg{flex:none}
-.courseSecondary{color:#285569!important;border:1px solid #b4ced3;background:#ffffffbd}
-.courseSecondary:hover{background:#fff;color:#173b51!important;border-color:#639cac}
-.coursePrimary:focus-visible,.courseSecondary:focus-visible{outline:3px solid #247f82;outline-offset:3px}
-.courseLanguageNote{margin:9px 0 0!important;color:#315e6d;font-size:.79rem!important;line-height:1.4!important}
-.courseNote{margin:13px 0 0!important;color:#657f8a;font-size:.75rem!important;line-height:1.45!important}
-.courseVisual{align-self:stretch;display:flex;align-items:center;justify-content:center;min-width:0;min-height:232px;border-radius:20px;background:radial-gradient(circle at 50% 53%,#d5f2ed 0%,#e7f7f4 60%,transparent 74%)}
-.courseVisual img{display:block;max-width:100%;height:255px;width:auto;object-fit:contain}
-@media(max-width:680px){.courseCard{width:calc(100% - 24px);margin:18px auto 27px;border-radius:18px}.courseCardInner{grid-template-columns:minmax(0,1fr);gap:0;padding:20px 18px}.courseTitle{font-size:clamp(1.5rem,6vw,1.85rem)!important}.courseIntro{font-size:.94rem!important}.courseVisual{display:none}.courseActions{flex-direction:column;align-items:stretch}.coursePrimary,.courseSecondary{width:100%;min-height:48px}.courseBenefits{margin-bottom:18px!important}}
-@media(max-width:350px){.courseCardInner{padding:17px 14px}.courseBenefits li{font-size:.73rem;padding:7px 9px}.coursePrimary,.courseSecondary{font-size:.88rem}}
-@media print{.courseCard{display:none!important}}
+.courseTitle{margin:0 0 6px!important;font:700 clamp(1.16rem,1.65vw,1.5rem)/1.18 Georgia,serif!important;letter-spacing:-.018em;color:#134653!important;max-width:none}
+.courseIntro{margin:0 0 12px!important;font-size:.87rem!important;line-height:1.47!important;color:#3b6970}
+.courseActions{display:flex;align-items:center;gap:6px 11px;flex-wrap:wrap;min-width:0}
+.coursePrimary,.courseSecondary{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:9px 13px;border-radius:11px;font-size:.78rem!important;line-height:1.3!important;font-weight:800;text-align:center;text-decoration:none!important;white-space:normal}
+.coursePrimary{background:#087f7c;border:1px solid #087f7c;color:#fff!important;box-shadow:0 3px 8px rgba(7,104,98,.13)}
+.coursePrimary:hover{background:#066e6c;color:#fff!important}
+.coursePrimary svg,.courseSecondary svg{flex:none}
+.courseSecondary{color:#126c70!important;padding-left:0;padding-right:0;background:transparent}
+.courseSecondary:hover{color:#094e59!important;text-decoration:underline!important;text-underline-offset:3px}
+.coursePrimary:focus-visible,.courseSecondary:focus-visible{outline:3px solid #0b9090;outline-offset:3px}
+.courseNote,.courseLanguageNote{margin:8px 0 0!important;color:#597b82;font-size:.69rem!important;line-height:1.42!important}
+.courseLanguageNote{color:#275d62}
+@media(max-width:1040px){.testOffersPair{grid-template-columns:minmax(0,1fr)}.testOffersPair .courseCardInner{grid-template-columns:122px minmax(0,1fr)}}
+@media(max-width:680px){
+  .testOffers{margin:16px auto 26px;gap:12px;padding:0 12px}
+  .courseCard,.reviewCard{border-radius:17px}
+  .courseCardInner,.testOffersPair .courseCardInner{grid-template-columns:88px minmax(0,1fr);align-items:start;gap:11px;padding:13px 12px}
+  .courseVisual{align-self:start;min-height:140px;max-height:162px;border-radius:11px}
+  .courseEyebrow{font-size:.62rem!important;letter-spacing:.025em}
+  .courseTitle{font-size:1.17rem!important;line-height:1.19!important}
+  .courseIntro{font-size:.79rem!important;line-height:1.42!important;margin-bottom:9px!important}
+  .courseActions{align-items:stretch;flex-direction:column;gap:2px}
+  .coursePrimary{width:100%;min-height:43px;padding:8px 9px;font-size:.75rem!important}
+  .courseSecondary{justify-content:flex-start;min-height:34px;padding:6px 0;font-size:.75rem!important}
+  .courseNote,.courseLanguageNote{font-size:.65rem!important;margin-top:5px!important}
+}
+@media(max-width:350px){.courseCardInner,.testOffersPair .courseCardInner{grid-template-columns:74px minmax(0,1fr);gap:9px;padding:11px 9px}.courseVisual{min-height:118px}.courseTitle{font-size:1.05rem!important}.coursePrimary{font-size:.7rem!important}}
+@media print{.testOffers{display:none!important}}
