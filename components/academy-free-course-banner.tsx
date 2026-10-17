@@ -72,19 +72,19 @@ const courses = [
     en: {
       type: "INTERACTIVE COURSE · PREVIEW",
       title: "Principles of Energywork",
-      description: "Guided slides, original videos and reflections. Private saving is coming next.",
+      description: "Guided slides, original videos and reflections. Private save and resume after Google sign-in.",
       duration: "At your own pace",
     },
     ru: {
       type: "ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ",
       title: "Основы энергетики",
-      description: "Слайды, авторские видео и рефлексия. Приватное сохранение появится позже.",
+      description: "Слайды, авторские видео и рефлексия. Сохранение и продолжение после входа через Google.",
       duration: "В своём темпе",
     },
     es: {
       type: "CURSO INTERACTIVO · VISTA PREVIA EN INGLÉS",
       title: "Principios del trabajo energético",
-      description: "Lecciones, vídeos originales y reflexión. Guardado privado próximamente.",
+      description: "Lecciones, vídeos originales y reflexiones. Guardado privado tras iniciar sesión.",
       duration: "A tu ritmo",
     },
   },
