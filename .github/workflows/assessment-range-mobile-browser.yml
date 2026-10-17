@@ -1,0 +1,61 @@
+name: Holistic House report mobile visual acceptance
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/compact-assessment-report.*'
+      - 'components/app/assessment-gauge.*'
+      - 'components/app/personal-result-report.*'
+      - 'lib/assessments/**'
+      - 'scripts/helpers/assessment-range-mobile-fixture.mjs'
+      - 'scripts/verify-assessment-range-mobile-browser.mjs'
+      - 'tests/assessment-range-mobile-fixture.test.mjs'
+      - '.github/workflows/assessment-range-mobile-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-report-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assessment-mobile:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      CI: 'true'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_TEST_BROWSER: ${{ matrix.browser }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate real-report fixture and exact source scoring
+        run: node --test tests/assessment-range-mobile-fixture.test.mjs
+      - name: Install isolated browser tools
+        run: |
+          mkdir -p /tmp/hh-assessment-browser
+          npm install --prefix /tmp/hh-assessment-browser --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-assessment-browser/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-assessment-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Check actual saved-score report on mobile and desktop
+        run: node scripts/verify-assessment-range-mobile-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assessment-range-mobile-${{ matrix.browser }}-${{ github.run_id }}
+          path: artifacts/app-r1/assessment-range-mobile-${{ matrix.browser }}/
+          retention-days: 7
