@@ -109,7 +109,7 @@ export function PersonalTestimonials({
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
         <h2 id={titleId}>{isHome || variant === "all" ? current.title : current.serviceTitle}</h2>
-        <p>{isHome || variant === "all" ? current.lead : current.serviceLead}</p>
+        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
       </header>
 
       {variant === "all" ? (
