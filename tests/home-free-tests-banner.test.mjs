@@ -31,7 +31,7 @@ test('RU and EN copy, Academy look, five topic areas and mobile width are presen
   assert.match(banner, /5 направлений/)
   assert.match(banner, /5 topic areas/)
   assert.match(banner, /academy-free-course-banner\.module\.css/)
-  assert.match(academyStyles, /@media \(max-width: 460px\)/)
+  assert.match(academyStyles, /@media \(max-width: 540px\)/)
   assert.match(layout, /max-width: 760px/)
   assert.match(banner, /не медицинская диагностика/)
 })
