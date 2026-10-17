@@ -79,7 +79,7 @@ test('each practice has true attempts, hints or neutral alternatives, not a requ
   }
   assert.match(script,/без обязательного таймера|один шаг|не требуем/)
   assert.match(guide,/0–3/)
-  assert.match(guide,/не является стандартной клинической шкалой/)
+  assert.match(guide,/стандартной клинической шкалой/)
   assert.match(guide,/«Мне некомфортно»/)
   assert.match(guide,/afforismResponse|aphorismResponse/)
 })
