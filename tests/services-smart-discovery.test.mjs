@@ -177,12 +177,12 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
   assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
   assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
-  const requestLink='<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>'
+  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>'
   const detailsToggle='<button type="button" className={styles.suggestionDetailsToggle}'
   const assertActionOrder=source=>{
     const requestIndex=source.indexOf(requestLink)
     const detailsIndex=source.indexOf(detailsToggle)
-    assert.ok(requestIndex>0 && detailsIndex>requestIndex,'Request action must precede the expandable details button')
+    assert.ok(requestIndex>0 && detailsIndex>requestIndex,'Tracked Order action must precede the expandable details button')
   }
   assertActionOrder(ui)
   assert.throws(()=>assertActionOrder('<div>'+detailsToggle+'>{t.details}</button>'+requestLink+'</div>'))

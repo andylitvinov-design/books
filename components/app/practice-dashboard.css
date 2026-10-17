@@ -534,3 +534,29 @@
 @media(prefers-reduced-motion:reduce){
   .hh-app .hh-practice-setup-progress span{transition:none}
 }
+
+/* Practitioner funnel: compact, mobile-first and scoped to My Practice. */
+.hh-app .hh-practice-analytics{margin:16px 0 22px;padding:19px;border:1px solid #ddcbb7;border-radius:20px;background:#fffcf8;color:#49382d;box-shadow:0 2px 14px #38250b08}
+.hh-app .hh-practice-analytics-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.hh-app .hh-practice-analytics-kicker{margin:0 0 5px;color:#92735e;font:650 11px/1.4 system-ui,sans-serif;letter-spacing:.055em;text-transform:uppercase}
+.hh-app .hh-practice-analytics-head h2{margin:0;color:#3d2c24;font:400 clamp(23px,3vw,30px)/1.2 Georgia,serif}
+.hh-app .hh-practice-analytics-period{display:flex;gap:3px;padding:3px;background:#f4e9de;border-radius:11px}
+.hh-app .hh-practice-analytics-period button{min-height:36px;padding:8px 13px;border:0;border-radius:8px;background:transparent;color:#6e5547;font:700 12px/1.15 system-ui,sans-serif}
+.hh-app .hh-practice-analytics-period button[aria-pressed=true]{background:#77513d;color:#fff;box-shadow:0 1px 3px #56302022}
+.hh-app .hh-practice-analytics-date{margin:13px 0 16px;color:#857260;font:400 11px/1.5 system-ui,sans-serif}
+.hh-app .hh-practice-analytics-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hh-app .hh-practice-analytics-summary>div{display:grid;gap:6px;align-content:center;min-height:91px;padding:13px 14px;border:1px solid #e6d4c4;border-radius:13px;background:#f9f2e9}
+.hh-app .hh-practice-analytics-summary strong{font:400 clamp(26px,3.4vw,37px)/1 Georgia,serif;color:#6a4633}
+.hh-app .hh-practice-analytics-summary span{font:650 12px/1.3 system-ui,sans-serif;color:#6e6054}
+.hh-app .hh-practice-analytics-channels{margin:13px 0 18px;color:#6c5b50;font:500 12px/1.5 system-ui,sans-serif}
+.hh-app .hh-practice-analytics-channels strong{color:#3d3028;font-weight:800}
+.hh-app .hh-practice-analytics-scroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;border:1px solid #e5d4c2;border-radius:12px}
+.hh-app .hh-practice-analytics-scroll table{width:100%;border-collapse:collapse;font:500 12px/1.4 system-ui,sans-serif}
+.hh-app .hh-practice-analytics-scroll th,.hh-app .hh-practice-analytics-scroll td{padding:11px 12px;border-bottom:1px solid #eddfd0;white-space:nowrap;text-align:right}
+.hh-app .hh-practice-analytics-scroll th:first-child{text-align:left;min-width:175px;white-space:normal}
+.hh-app .hh-practice-analytics-scroll thead{background:#f6ebdf;color:#7e604a}
+.hh-app .hh-practice-analytics-scroll tbody th{color:#43342b;font-weight:650}
+.hh-app .hh-practice-analytics-scroll tbody tr:last-child th,.hh-app .hh-practice-analytics-scroll tbody tr:last-child td{border-bottom:0}
+.hh-app .hh-practice-analytics-empty{margin:14px 0 3px;color:#806c5b;font-size:12px}
+.hh-app .hh-practice-analytics-note{margin:12px 0 0;color:#89786a;font:400 11px/1.45 system-ui,sans-serif}
+@media(max-width:560px){.hh-app .hh-practice-analytics{padding:13px;border-radius:16px}.hh-app .hh-practice-analytics-head{align-items:start}.hh-app .hh-practice-analytics-period{width:100%;display:grid;grid-template-columns:1fr 1fr}.hh-app .hh-practice-analytics-summary{gap:6px}.hh-app .hh-practice-analytics-summary>div{padding:9px 7px;min-height:79px}.hh-app .hh-practice-analytics-summary strong{font-size:26px}.hh-app .hh-practice-analytics-summary span{font-size:10px;line-height:1.25}}

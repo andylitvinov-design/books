@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerArticles from './practitioner-articles'
+import PracticeServiceStatistics from './practice-service-statistics'
 import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
@@ -244,6 +245,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <div><strong>{publishedCount}</strong><span>{ru?'Опубликованные услуги':'Published services'}</span></div>
       <div><strong>{pendingServices}</strong><span>{ru?'Ждут проверки':'Under review'}</span></div>
     </div>}
+    {!needsOnboarding&&<PracticeServiceStatistics analytics={data.serviceAnalytics} locale={locale} />}
     {!needsOnboarding&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
       <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>

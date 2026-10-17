@@ -9,6 +9,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicServiceDetail } from "@/lib/practitioners/public-types";
+import { ServiceFunnelImpression, TrackedServiceLink, TrackedServiceExternalLink } from "@/components/service-funnel-tracking";
 
 type PageProps={params:Promise<{locale:string;practitionerSlug:string;serviceSlug:string}>};
 export const dynamic="force-dynamic";
@@ -38,13 +39,13 @@ export default async function ServiceDetail({params}:PageProps){
   const price=isFree?(ru?"Бесплатно":es?"Gratis":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":es?"desde ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":es?"Precio acordado antes de reservar":"Price agreed before booking";
   return <main className="services-shell services-shell--studio" lang={locale}>
     <PublicSiteHeader locale={locale}/>
-    <section className="services-studio-hero">
+    <section className="services-studio-hero" data-service-funnel-card><ServiceFunnelImpression serviceId={service.id}/>
       <div className="services-studio-hero-copy">
         <p className="homeopathy-kicker">{ru?"Услуга":es?"Servicio":"Service"}</p>
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link id="request-service" className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Запросить услугу":es?"Consultar disponibilidad":"Request this service")}<span aria-hidden="true">→</span></Link>
+          <TrackedServiceLink serviceId={service.id} event="order" id="request-service" className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Заказать бесплатно":es?"Solicitar gratis":"Order free service"):(ru?"Заказать":es?"Solicitar":"Order")}<span aria-hidden="true">→</span></TrackedServiceLink>
           {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
         </div>
@@ -55,7 +56,7 @@ export default async function ServiceDetail({params}:PageProps){
       <div><p>{service.copy.description||service.copy.shortDescription}</p>
       {(service.benefits||[]).length>0&&<section><h3>{ru?'Что может дать работа':es?'Posibles beneficios':'Potential benefits'}</h3><ul>{service.benefits?.map((benefit,i)=><li key={i}>{benefit}</li>)}</ul></section>}
       {(service.faq||[]).length>0&&<details><summary>FAQ</summary><ul>{service.faq?.map((question,i)=><li key={i}>{question}</li>)}</ul></details>}
-      <div className="hh-actions">{service.whatsapp&&<a href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{service.telegram&&<a href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</a>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
+      <div className="hh-actions">{service.whatsapp&&<TrackedServiceExternalLink serviceId={service.id} event="whatsapp" href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</TrackedServiceExternalLink>}{service.telegram&&<TrackedServiceExternalLink serviceId={service.id} event="telegram" href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</TrackedServiceExternalLink>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
     <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":es?"La información ayuda a elegir una modalidad de acompañamiento; no constituye diagnóstico médico ni garantía de resultados.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
     {practitioner.slug === "andy-litvinov" ? <PublicConsultationCta locale={locale as PublicLocale}/> : null}

@@ -8,6 +8,7 @@ import {
   HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
+import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesDiscoveryFacets } from "@/lib/practitioners/discovery-intent.js";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
@@ -448,7 +449,8 @@ export function ServicesSmartDiscovery({
         {suggestions.length>0?<div className={styles.suggestionGrid}>
           {suggestions.map(({service,reasonKey})=>{
             const mainArea=DISCOVERY_AREAS.find(a=>a.key===service.areaKey);
-            return <article className={styles.suggestion} key={service.id}>
+            return <article className={styles.suggestion} key={service.id} data-service-funnel-card>
+              <ServiceFunnelImpression serviceId={service.id}/>
               <div className={styles.servicePhoto}>
                 <Image src={servicePhoto(service.imagePath,service.areaKey)} alt="" fill unoptimized loading="lazy" sizes="(max-width: 620px) 33vw, 185px" />
               </div>
@@ -457,7 +459,7 @@ export function ServicesSmartDiscovery({
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
                 <button type="button" className={styles.suggestionDetailsToggle}
                   aria-expanded={expandedCard==="listing:"+service.id}
                   aria-controls={"hh-listing-details-"+service.id}

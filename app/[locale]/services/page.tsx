@@ -18,6 +18,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { MarketplaceServiceFinder } from "@/components/master-network-explorer";
+import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
 import { coreServiceOffers } from "@/data/core-service-offers";
 
@@ -226,7 +227,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
 
         {featuredService ? (
-          <article className="services-marketplace-featured">
+          <article className="services-marketplace-featured" data-service-funnel-card><ServiceFunnelImpression serviceId={featuredService.id}/>
             <div className="services-marketplace-featured-mark" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span>
             </div>
@@ -247,12 +248,12 @@ export default async function ServicesPage({ params }: PageProps) {
                 <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
               </div>
               <div className="services-marketplace-actions">
-                <Link
+                <TrackedServiceLink serviceId={featuredService.id} event="order"
                   className="services-marketplace-request services-marketplace-request--featured"
                   href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
                 >
                   {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </Link>
+                </TrackedServiceLink>
                 <Link
                   className="services-marketplace-details"
                   href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
