@@ -35,18 +35,18 @@ const COPY = {
     noLive:"More services will appear here as practitioners are approved.",
     resultTitle:"Your options",
     resultFor:"Your request",
-    matchIntro:"Choose a service, view its details, or send a request.",
+    matchIntro:"Choose a service, explore its details, or order directly.",
     noDirect:"No services found for this topic yet. Try another area or a broader question.",
     online:"Online",
     free:"Free",
     contact:"Price on request",
     service:"Service",
-    curated:"Services you can request",
+    curated:"Services you can order",
     practitioner:"Practitioner",
     details:"Details",
-    request:"Request",
+    request:"Order",
     order:"Order",
-    freeOrder:"Get free",
+    freeOrder:"Order",
     less:"Less",
     fullPage:"Full service description",
     freeStart:"Open the free service",
@@ -86,7 +86,7 @@ const COPY = {
     noLive:"Новые услуги появятся здесь после модерации мастеров.",
     resultTitle:"Ваши варианты",
     resultFor:"Ваш запрос",
-    matchIntro:"Выберите услугу, раскройте подробности или отправьте заявку.",
+    matchIntro:"Выберите услугу, раскройте подробности или сразу закажите.",
     noDirect:"Пока нет услуг по этому запросу. Попробуйте другое направление или более общий вопрос.",
     online:"Онлайн",
     free:"Бесплатно",
@@ -95,9 +95,9 @@ const COPY = {
     curated:"Услуги, которые можно заказать",
     practitioner:"Мастер",
     details:"Подробнее",
-    request:"Оставить заявку",
+    request:"Заказать",
     order:"Заказать",
-    freeOrder:"Получить бесплатно",
+    freeOrder:"Заказать",
     less:"Свернуть",
     fullPage:"Полное описание услуги",
     freeStart:"Открыть бесплатную услугу",
@@ -137,7 +137,7 @@ const COPY = {
     noLive:"Aparecerán más servicios cuando se aprueben nuevos profesionales.",
     resultTitle:"Tus opciones",
     resultFor:"Tu búsqueda",
-    matchIntro:"Elige un servicio, abre los detalles o envía una solicitud.",
+    matchIntro:"Elige un servicio, consulta los detalles o solicítalo directamente.",
     noDirect:"Aún no hay servicios para este tema. Prueba otra categoría o una pregunta más amplia.",
     online:"En línea",
     free:"Gratis",
@@ -148,7 +148,7 @@ const COPY = {
     details:"Ver detalles",
     request:"Solicitar",
     order:"Solicitar",
-    freeOrder:"Solicitar gratis",
+    freeOrder:"Solicitar",
     less:"Cerrar",
     fullPage:"Descripción completa del servicio",
     freeStart:"Abrir el servicio gratuito",
@@ -446,13 +446,13 @@ export function ServicesSmartDiscovery({
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>
                 <button type="button" className={styles.suggestionDetailsToggle}
                   aria-expanded={expandedCard==="listing:"+service.id}
                   aria-controls={"hh-listing-details-"+service.id}
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
+                <Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug+"#service-order"}><ShoppingBag size={15} aria-hidden="true"/>{t.order}</Link>
               </div>
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
@@ -486,15 +486,15 @@ export function ServicesSmartDiscovery({
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>
               <div className={styles.editorialCardActions}>
-                <button type="button" className={styles.editorialOrderButton}
-                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
-                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
-                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
-                </button>
                 <button type="button" className={styles.editorialDetailsButton}
                   aria-expanded={expanded} aria-controls={"hh-details-"+item.id}
                   onClick={()=>setExpandedCard(current=>current===id?null:id)}>
                   {expanded?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
+                <button type="button" className={styles.editorialOrderButton}
+                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
+                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
+                  <ShoppingBag size={15} aria-hidden="true"/>{t.order}
                 </button>
               </div>
               <div id={"hh-details-"+item.id} className={styles.editorialDetailsPanel} hidden={!expanded}>
