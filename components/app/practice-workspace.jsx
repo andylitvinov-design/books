@@ -192,6 +192,29 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
+  const newServices=data.newServices
+  const recentPublicServices=(newServices?.recent||[])
+    .filter(item=>locale!=='es'||item.displayLocales?.includes('es'))
+    .slice(0,2)
+  const marketplaceCopy=ru?{
+    title:'Новые услуги на сайте',subtitle:'Новые предложения мастеров Holistic House — от заявки до публикации.',
+    submitted:'Заявлено за 7 дней',pending:'На проверке',published:'Опубликовано за 7 дней',available:'Всего доступно',
+    latest:'Недавно добавлены',noRecent:'Пока нет новых опубликованных услуг.',
+    unavailable:'Статистика сейчас недоступна.',all:'Просмотреть все услуги',
+    add:'Добавить свою услугу',limit:'Лимит 10 услуг',
+  }:locale==='es'?{
+    title:'Nuevos servicios en el sitio',subtitle:'Nuevas propuestas de profesionales, desde la solicitud hasta su publicación.',
+    submitted:'Solicitados en 7 días',pending:'En revisión',published:'Publicados en 7 días',available:'Disponibles',
+    latest:'Recién publicados',noRecent:'Todavía no hay nuevos servicios publicados.',
+    unavailable:'Las estadísticas no están disponibles.',all:'Ver todos los servicios',
+    add:'Añadir tu servicio',limit:'Límite de 10 servicios',
+  }:{
+    title:'New services on the site',subtitle:'New Holistic House offers, from submission to publication.',
+    submitted:'Submitted · 7 days',pending:'Awaiting review',published:'Published · 7 days',available:'Available now',
+    latest:'Recently added',noRecent:'No newly published services yet.',
+    unavailable:'Service statistics are temporarily unavailable.',all:'View all services',
+    add:'Add your service',limit:'10-service limit reached',
+  }
   const hasProfile=Boolean(p?.profile?.displayName||p?.draftProfile?.displayName)
   const profileLive=Boolean(p?.slug&&p.status==='approved')
   const setupSteps=[
@@ -261,24 +284,57 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
+    {!needsOnboarding&&<section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+      <div className="hh-practice-marketplace-heading">
+        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
+        <div>
+          <p className="hh-practice-marketplace-kicker">Holistic House · Marketplace</p>
+          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
+        </div>
+      </div>
+      {newServices?<div className="hh-practice-marketplace-statistics" role="list" aria-label={marketplaceCopy.title}>
+        {[
+          [newServices.submitted7d,marketplaceCopy.submitted],
+          [newServices.pendingNow,marketplaceCopy.pending],
+          [newServices.published7d,marketplaceCopy.published],
+          [newServices.availableNow,marketplaceCopy.available],
+        ].map(([value,label])=><div key={label} role="listitem">
+          <strong>{value}</strong><span>{label}</span>
+        </div>)}
+      </div>:<p className="hh-practice-marketplace-unavailable" role="status">{marketplaceCopy.unavailable}</p>}
+      {newServices&&<div className="hh-practice-marketplace-latest">
+        <strong>{marketplaceCopy.latest}</strong>
+        {recentPublicServices.length?<ul>
+          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
+            <Link href={'/'+locale+'/services/'+item.practitionerSlug+'/'+item.slug} prefetch={false}>
+              <span>{item.titles?.[locale]||item.titles?.en}</span><ChevronRight aria-hidden="true" />
+            </Link>
+          </li>)}
+        </ul>:<p>{marketplaceCopy.noRecent}</p>}
+      </div>}
+      <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
+        {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
+      </Link>
+      <div className="hh-practice-top-cta" aria-label={ru?'Добавление услуг':'Add services'}>
+        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
+          aria-pressed={activePanel==='services'} onClick={addService}>
+          <Plus aria-hidden="true" />
+          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <div className="hh-practice-top-cta-quota">
+          <strong>{ru?'Hobby · бесплатно':locale==='es'?'Hobby · Gratis':'Hobby · Free'}</strong>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+(ru?'услуг':locale==='es'?'servicios':'services')}</span>
+        </div>
+      </div>
+    </section>}
     <PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
       onViewAll={()=>{setActivePanel('requests');setError('')}} />
-    {!needsOnboarding&&requests.length>0&&<div className="hh-practice-top-cta" aria-label={ru?'Добавление услуг':'Add services'}>
-      <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
-        aria-pressed={activePanel==='services'} onClick={addService}>
-        <Plus aria-hidden="true" />
-        <span>{serviceQuota.canAdd?d.addService:(ru?'Лимит 10 услуг':'10-service limit reached')}</span>
-        <ChevronRight aria-hidden="true" />
-      </button>
-      <div className="hh-practice-top-cta-quota">
-        <strong>{ru?'Hobby · бесплатно':'Hobby · Free'}</strong>
-        <span>{ru?`${serviceQuota.used} из ${serviceQuota.limit} услуг`:`${serviceQuota.used} of ${serviceQuota.limit} services`}</span>
-      </div>
-    </div>}
     {readySteps<3&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>

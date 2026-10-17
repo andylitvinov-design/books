@@ -22,7 +22,7 @@ import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/servic
 import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
 import { coreServiceOffers } from "@/data/core-service-offers";
 
-type PageProps = { params: Promise<{ locale: string }> };
+type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ catalog?: string }> };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 // Production release marker: Wu Xing marketplace featured service.
@@ -64,10 +64,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ServicesPage({ params }: PageProps) {
+export default async function ServicesPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const current = copy[locale as Locale];
+  const catalogRequested = (await searchParams)?.catalog === '1';
   let offerings: PublicService[] = [];
   try {
     offerings = await createPractitionerRepository(getAppConfig()).listPublicServices(locale);
@@ -206,7 +207,7 @@ export default async function ServicesPage({ params }: PageProps) {
 
       <PersonalTestimonials locale={locale as Locale} variant="services" />
 
-      <details className={solutionStyles.extra} id="available-services">
+      <details className={solutionStyles.extra} id="available-services" open={catalogRequested}>
         <summary className={solutionStyles.extraSummary}>
           <span>
             <strong>{locale === "ru" ? "Ищете конкретную услугу?" : "Already know which service you need?"}</strong>

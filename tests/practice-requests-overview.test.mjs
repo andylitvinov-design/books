@@ -35,9 +35,10 @@ test('closed requests remain in history, not attention queue', () => {
 test('practice home wires authenticated requests to its first-screen module', () => {
   const source = readFileSync(new URL('../components/app/practice-workspace.jsx', import.meta.url), 'utf8')
   const moduleSource = readFileSync(new URL('../components/app/practice-requests-overview.jsx', import.meta.url), 'utf8')
-  const header = source.indexOf('</header>\n    <PracticeRequestsOverview')
+  const marketplace = source.indexOf('className="hh-practice-marketplace"')
+  const header = source.indexOf('    <PracticeRequestsOverview requests={requests}')
   const tools = source.indexOf('className="hh-practice-tools"')
-  assert.ok(header > 0 && tools > header, 'requests appear before practitioner tools')
+  assert.ok(marketplace > 0 && header > marketplace && tools > header, 'new services lead, requests remain before practitioner tools')
   assert.match(source, /<PracticeRequestsOverview requests=\{requests\} services=\{services\}/)
   assert.match(source, /onAddService=\{needsOnboarding/)
   assert.match(moduleSource, /summary\.total === 0/)
