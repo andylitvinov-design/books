@@ -98,6 +98,8 @@ try{
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space',exact:true}).click()
  }
+ // New account onboarding can land on the Profile first; open Tests explicitly.
+ await navigate(page,origin+'/en/app/tests')
  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({timeout:30000})
  for(const [i,d] of [defs[0],defs[0]].entries()){
   const locale=i?'ru':'en',mode=i?'guided':'quick'
