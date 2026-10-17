@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url)
 const ts = require(process.env.PICKER_TYPESCRIPT || 'typescript')
 const source = readFileSync(new URL('../components/app/account-test-battery.jsx', import.meta.url), 'utf8')
 const explorerSource = readFileSync(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8')
-const elements = (node) => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(elements) : [node, ...elements(node.props?.children)]
+const elements = (node) => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(elements) : [node, ...elements(node.props?.children), ...elements(node.props?.explorer)]
 test('actual easy picker clears guest scale filters by default and preserves account opt-in filters', async () => {
   const modules = {}
   const root = process.env.PICKER_LIBRARY_ROOT ? new URL('file://' + process.env.PICKER_LIBRARY_ROOT + '/') : new URL('../', import.meta.url)

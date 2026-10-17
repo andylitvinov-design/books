@@ -153,7 +153,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
   }
   const [busy, setBusy] = useState(false)
   const [initializing, setInitializing] = useState(true)
-  const [exploring, setExploring] = useState(openFromInsights)
+  const [exploring, setExploring] = useState(openFromInsights || fromCourse || Boolean(recommendedKey))
   const [explorerMounted, setExplorerMounted] = useState(false)
   const [explorerRevision, setExplorerRevision] = useState(0)
   useEffect(() => {
@@ -231,7 +231,8 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     return [...regular, ...missing].map(row => completedKeys.has(row.key)
       ? { ...row, completedInPlan: true } : row)
   }, [currentPlan, data, locale, courseState])
-  const explorerVisible = exploring || (!rows.length && !initializing && !conflict)
+  // A true disclosure: opening and closing are controlled by the visible top button.
+  const explorerVisible = exploring
   useEffect(() => {
     if (explorerVisible) setExplorerMounted(true)
   }, [explorerVisible])
@@ -355,10 +356,19 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
     await create(entriesToStart.map((entry) => entry.key), false, selectionPreferences)
   }
   function openFilters() {
-    setExploring((open) => !open)
-    if (!exploring) window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      document.getElementById('my-test-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }))
+    const opening = !exploring
+    setExploring(opening)
+    if (opening) window.requestAnimationFrame(() => {
+      const trigger = document.getElementById('my-tests-picker-toggle')
+      const y = trigger?.getBoundingClientRect().top
+      // Follow a lower "refine" link to the actual top picker, without jumping on a direct tap.
+      if (trigger && (y < 0 || y > window.innerHeight / 2)) {
+        trigger.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start',
+        })
+      }
+    })
   }
   function openList() {
     if (!rows.length) return openFilters()
@@ -492,6 +502,32 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
       setBusy(false)
     }
   }
+  // Keep unsaved filter choices mounted when collapsed, just as before.
+  const explorerPanel = (
+      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}
+        hidden={!explorerVisible} style={explorerVisible ? undefined : { display: 'none' }}>
+        {(explorerVisible || explorerMounted) && <>
+        {conflict && <aside className={styles.reviewSelection} data-pending-selection>
+          <div>
+            <strong>{c.pendingReview}</strong>
+            <p>{c.pendingDescription}</p>
+          </div>
+          <div className={styles.reviewActions}>
+            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
+            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
+          </div>
+        </aside>}
+        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
+          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
+          simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
+          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
+          pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
+          recommendedKey={recommendedKey}
+          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
+        </>}
+      </section>
+  )
+
   return <>
     <div className={styles.batteryLayout}>
       <section className={'hh-panel ' + styles.shell} aria-label={c.title}>
@@ -501,6 +537,7 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
           onOpenFilters={openFilters} filtersOpen={exploring}
           hasNewSelection={Boolean(conflict)}
           hasList={Boolean(rows.length || (statusFilter === 'completed' && pastRows.length))}
+          explorer={explorerPanel}
         >
           {(rows.length > 0 || (statusFilter === 'completed' && pastRows.length > 0)) && (
             <section className={styles.listArea} id="my-tests-list"
@@ -555,11 +592,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         <strong className={state === 'inProgress' ? styles.inProgress
                           : state === 'completed' ? styles.completed : styles.notStarted}>{status}</strong>
                       </div>
-                      <details className={styles.aboutTest}>
-                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
-                         <p>{row.description}</p>
-                         <p>{row.methodology}</p>
-                       </details>
                        {row.run && <div className={styles.draftProgress}>
                         <progress max="100" value={row.progress} aria-label={status}/>
                         <small>{row.progress}% {c.percent}</small>
@@ -585,6 +617,12 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
                         data-remove-selected-test={row.key}>
                         <Trash2 size={17} aria-hidden="true"/>
                       </button>}
+                    {/* Test evidence spans the card width instead of squeezing the title. */}
+                    <details className={styles.aboutTest}>
+                         <summary>{locale === 'ru' ? 'О тесте и научном статусе' : 'About this test & evidence'}</summary>
+                         <p>{row.description}</p>
+                         <p>{row.methodology}</p>
+                       </details>
                   </article>
                 })}
                 </div>
@@ -631,28 +669,6 @@ export function AccountTestBattery({ data, locale, requestedPlanId, recommendedK
         {notice && <p role="status" className={styles.inlineNotice}>{notice}</p>}
       </section>
     </div>
-    {/* Collapsing only hides this tab-local draft. Saving/discarding or changing
-        account, plan or category replaces it; nothing is written on collapse. */}
-    {(explorerVisible || explorerMounted) &&
-      <section id="my-test-explorer" className={styles.explorerSection} aria-label={c.filters}
-        hidden={!explorerVisible} style={explorerVisible ? undefined : { display: 'none' }}>
-        {conflict && <aside className={styles.reviewSelection} data-pending-selection>
-          <div>
-            <strong>{c.pendingReview}</strong>
-            <p>{c.pendingDescription}</p>
-          </div>
-          <div className={styles.reviewActions}>
-            <button type="button" disabled={busy} onClick={keepSavedSet}>{c.keep}</button>
-            <button type="button" disabled={busy} className="hh-primary" onClick={applyNewSelection}>{c.replace}</button>
-          </div>
-        </aside>}
-        <TestExplorer key={[data.account?.id || 'anonymous', currentPlan?.id || 'new', openFromInsights ? insightsCategory || 'all' : 'saved', fromCourse ? 'course' : 'account', requestedCourseId || '', recommendedKey || '', explorerRevision].join(':')} locale={locale}
-          audience="account" onStart={choose} explicitSelectionOnly={fromCourse} initialPreferences={explorerPreferences}
-          simpleMode={!fromCourse && !recommendedKey && !openFromInsights} initialBrowseFull={openFromInsights} preserveScaleFilters authenticated
-          openFiltersInitially={openFromInsights} initialFilterGroup={initialFilterGroup}
-          pastResults={data.results} draftRuns={data.runs} profileSnapshot={data.snapshot}
-          recommendedKey={recommendedKey}
-          onResumeRun={(run)=>router.push(root+'/runs/'+encodeURIComponent(run.id))}/>
-      </section>}
+
   </>
 }
