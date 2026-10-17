@@ -32,6 +32,7 @@ import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-e
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -2009,6 +2010,20 @@ function PortfolioPage({ data, locale }) {
   }, [])
   useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
+  const [recommendationScrollRequest, setRecommendationScrollRequest] = useState(0)
+  useEffect(() => {
+    if (!recommendationScrollRequest || activeTab !== 'values') return
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById('hh-portrait-recommendations')
+      if (!target) return
+      target.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      })
+      target.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [recommendationScrollRequest, activeTab])
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2098,7 +2113,25 @@ function PortfolioPage({ data, locale }) {
           <ChevronDown size={18} aria-hidden="true" />
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
-          portrait={buildPsychPortrait(data.results || [])} />
+          portrait={buildPsychPortrait(data.results || [])}
+          portraitActions={<nav className="hh-portrait-quick-actions"
+            aria-label={ru ? 'Действия с психологическим портретом' : 'Psychological portrait actions'}
+            data-testid="portrait-quick-actions">
+            <Link href={`/${locale}/app/tests?profile=missing`} prefetch={false}
+              className="hh-portrait-quick-primary" data-testid="portrait-completion-action">
+              <ClipboardList size={18} aria-hidden="true" />
+              {ru ? 'Пройти тесты' : 'Take tests'}
+            </Link>
+            <button type="button" className="hh-portrait-quick-secondary"
+              data-testid="portrait-recommendations-action"
+              onClick={() => {
+                chooseView('values')
+                setRecommendationScrollRequest(current => current + 1)
+              }}>
+              <Sparkles size={18} aria-hidden="true" />
+              {ru ? 'Рекомендации' : 'Recommendations'}
+            </button>
+          </nav>} />
       </details>
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
@@ -2259,6 +2292,7 @@ function PortfolioPage({ data, locale }) {
       )}
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
+      <PortraitRecommendations results={data.results || []} locale={locale} />
       {allGroups.length > 0 && (
         <details className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>

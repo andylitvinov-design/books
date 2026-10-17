@@ -17,7 +17,7 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 const PORTRAIT_COLLAPSED_COUNT = 10 // Five rows × two columns; the full list is one tap away.
 
-export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
@@ -194,6 +194,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         : <span>{ru ? 'Выберите тему слева' : es ? 'Elige un tema' : 'Choose a topic to highlight'}</span>}</div>
     </div>}
     {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
+    {portrait && !compact && portraitActions}
     {portrait && !compact && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
