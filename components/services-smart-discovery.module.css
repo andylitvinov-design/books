@@ -347,3 +347,68 @@
 .quickFacets label{font-size:12px;font-weight:650;display:grid;gap:4px;min-width:0}
 .quickFacets select{width:100%;min-width:0;border-radius:10px;border:1px solid #cfbabb;background:#fff;padding:9px;color:#301c26;font-size:14px}
 @media(max-width:620px){.quickFacets{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.quickFacets select{font-size:13px;padding:8px}}
+
+/* Compact image-left discovery cards. Only their presentation changes:
+   the inline details and messenger order panels retain their behaviour. */
+.editorialCard,.suggestion{
+  grid-template-columns:clamp(115px,18vw,185px) minmax(0,1fr);
+  column-gap:14px;row-gap:6px;padding:12px;align-items:start;
+}
+.servicePhoto{
+  position:relative;grid-column:1;min-width:0;align-self:stretch;
+  min-height:152px;overflow:hidden;border-radius:12px;background:#e7e1d9;
+}
+.servicePhoto img{object-fit:cover;object-position:center}
+.editorialCard .servicePhoto{grid-row:1/4}
+.suggestion .servicePhoto{grid-row:1/6}
+.editorialCard .editorialCardMeta,.suggestion .suggestionTop{grid-column:2;grid-row:1;min-width:0}
+.editorialCard .editorialCardCopy{grid-column:2;grid-row:2;min-width:0;align-self:start}
+.editorialCard .editorialCardActions{
+  grid-column:2;grid-row:3;display:grid;
+  grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+  align-self:end;justify-self:start;gap:7px;width:100%;max-width:360px;margin-top:5px;
+}
+.editorialCard .editorialCardActions button{min-width:0;width:100%;min-height:40px}
+.suggestion h3{grid-column:2;grid-row:2}
+.suggestion .suggestionSummary{grid-column:2;grid-row:3}
+.suggestion .practitioner{grid-column:2;grid-row:4;margin:1px 0 0}
+.suggestion .suggestionActions{
+  grid-column:2;grid-row:5;display:grid;
+  grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+  align-self:end;justify-self:start;gap:7px;width:100%;max-width:360px;margin-top:6px;
+}
+.suggestion .suggestionActions a,.suggestion .suggestionDetailsToggle{
+  box-sizing:border-box;width:100%;min-width:0;min-height:40px;
+  padding:8px 9px;border-radius:9px;white-space:normal;
+}
+.suggestion .relevance{grid-column:2;grid-row:6;justify-self:start}
+.editorialCard .editorialDetailsPanel,.editorialCard .editorialOrderPanel,
+.suggestion .suggestionDetailPanel{grid-column:1/-1}
+
+@media(max-width:620px){
+  .editorialCard,.suggestion{
+    grid-template-columns:minmax(92px,33%) minmax(0,1fr);
+    column-gap:10px;row-gap:5px;padding:10px;
+  }
+  .editorialCard .servicePhoto,.suggestion .servicePhoto{min-height:142px;border-radius:10px}
+  .editorialCard .editorialCardMeta span,.suggestion .suggestionTop span{font-size:9px;line-height:1.3}
+  .editorialCard .editorialCardCopy h4,.suggestion h3{font-size:16px;line-height:1.2}
+  .editorialCard .editorialCardCopy p,.suggestion .suggestionSummary{font-size:11px;line-height:1.4}
+  .editorialCard .editorialCardActions,.suggestion .suggestionActions{
+    grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+    width:100%;max-width:none;gap:5px;margin-top:4px;
+  }
+  .editorialCard .editorialCardActions button,
+  .suggestion .suggestionActions a,.suggestion .suggestionDetailsToggle{
+    min-height:39px;padding:6px 4px;font-size:10px;line-height:1.2;
+  }
+  .editorialCard .editorialCardActions button svg,
+  .suggestion .suggestionActions button svg{width:13px;height:13px}
+}
+@media(max-width:350px){
+  .editorialCard,.suggestion{grid-template-columns:85px minmax(0,1fr);column-gap:9px}
+  .editorialCard .servicePhoto{grid-row:1/3}
+  .suggestion .servicePhoto{grid-row:1/5}
+  .editorialCard .editorialCardActions{grid-column:1/-1;grid-row:3}
+  .suggestion .suggestionActions{grid-column:1/-1;grid-row:5}
+}
