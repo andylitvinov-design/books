@@ -143,3 +143,8 @@
 .practiceTimer > button:first-of-type { color: #fff; background: #087f7e; border-color: #087f7e; }
 .practiceTimer > button:focus-visible { outline: 3px solid #27ada7; outline-offset: 2px; }
 @media print { .practiceTimer { display: none !important; } }
+
+.guideNote { font-size: 13px; line-height: 1.55; color: #547476; }
+.highlights { margin: 13px 0 22px; padding-left: 22px; color: #255e63; font-size: 14px; line-height: 1.65; }
+.highlights li { margin: 5px 0; overflow-wrap: anywhere; }
+@media print { .highlights, .guideNote { display: block !important; } }
