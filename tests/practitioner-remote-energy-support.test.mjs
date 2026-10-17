@@ -63,7 +63,7 @@ test('Practitioners is compact, and energy support is a separate EN/RU/ES bookin
   assert.match(wizard, /America\/Toronto/)
   assert.match(wizard, /window\.sessionStorage\.setItem/)
   assert.match(wizard, /Continue to request/)
-  assert.match(wizard, /no confirmed appointment/)
+  assert.match(wizard, /not a confirmed appointment/)
   assert.match(wizard, /not medical treatment/)
   assert.match(wizard, /masters\.length === 0/)
   assert.match(cabinet, /readRemoteSupportDraft\(window\.sessionStorage, service\.id\)/)
