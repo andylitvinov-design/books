@@ -31,7 +31,7 @@ const TEXT = {
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
     courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
     why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
-    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
+    suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', details:'Details', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
     browse:'Browse full database', core100:'100 psychotherapy tests', privacy:'Results stay temporary in this browser; create or open your Cabinet for a free personal analysis.',
@@ -58,7 +58,7 @@ const TEXT = {
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
     courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
     why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
-    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
+    suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', details:'Подробнее', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
     browse:'Открыть всю базу тестов', core100:'100 тестов психотерапии', privacy:'Результаты временно сохраняются в этом браузере. Для бесплатного анализа создайте кабинет или войдите в него.',
@@ -85,7 +85,7 @@ const TEXT = {
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
     courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
     why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
-    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
+    suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', details:'Detalles', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
     browse:'Explorar base completa', core100:'100 pruebas de psicoterapia', privacy:'Los resultados son temporales en este navegador. Entra a tu espacio para el análisis gratuito.',
@@ -161,6 +161,7 @@ export function SimpleTestPicker({
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
+  const [expandedTests, setExpandedTests] = useState(() => new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
   const [problemQuery, setProblemQuery] = useState('')
@@ -357,37 +358,51 @@ export function SimpleTestPicker({
          {visibleRecommendations.map((entry, index) => {
            const checked = selectedKeys.has(entry.key)
            const inputId = `hh-public-test-${entry.key}`
+           const detailsId = `${inputId}-details`
+           const expanded = expandedTests.has(entry.key)
            return <article className={styles.testEntry} key={entry.key} data-test-match={entry.key} data-relevance={entry.matchPercent} data-selected={checked}>
              <div className={styles.testRow} data-selected={checked}>
                <input id={inputId} type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
                  aria-label={entry.title} />
-               <span className={styles.testArt} aria-hidden="true">
-                 <img src={artworkFor(entry)} alt="" width="80" height="80" loading="lazy" decoding="async" />
-               </span>
+               <div className={styles.testVisual}>
+                 <span className={styles.testArt} aria-hidden="true">
+                   <img src={artworkFor(entry)} alt="" width="104" height="112" loading="lazy" decoding="async" />
+                 </span>
+                 <div className={styles.testImageMeta}>
+                   <KindBadge entry={entry} locale={locale} />
+                   <span className={styles.imageDuration}><Clock3 size={13} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
+                 </div>
+               </div>
                <label htmlFor={inputId} className={styles.testInfo}>
                  <strong>{entry.title}</strong>
                  <small>{entry.description || entry.category}</small>
-                 <span className={styles.testTypeLine} data-test-type-line>
-                   <KindBadge entry={entry} locale={locale} />
-                 </span>
                  <span className={styles.testChips}>
                    <span className={styles.matchBadge} title={c.fitInfo} aria-label={entry.matchPercent + '% ' + c.fit}>
                      {entry.matchPercent}% <span>{c.fit}</span>
                    </span>
-                   <span className={styles.duration}><Clock3 size={13} aria-hidden="true" /> ~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
                     {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount}</span>}
                    {index === 0 && !checked && <span className={styles.suggestion}>{c.suggested}</span>}
                  </span>
                </label>
-               <button type="button" className={styles.takeTest}
-                 onClick={() => onStartSingle?.(entry)} disabled={starting || !onStartSingle}
-                 aria-label={`${c.takeTest}: ${entry.title}`}>
-                 {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
-               </button>
+               <div className={styles.testActions}>
+                 <button type="button" className={styles.testDetailsButton}
+                   aria-expanded={expanded} aria-controls={detailsId}
+                   onClick={() => setExpandedTests((current) => {
+                     const next = new Set(current)
+                     if (next.has(entry.key)) next.delete(entry.key)
+                     else next.add(entry.key)
+                     return next
+                   })}>
+                   {c.details} <ChevronDown size={15} aria-hidden="true" />
+                 </button>
+                 <button type="button" className={styles.takeTest}
+                   onClick={() => onStartSingle?.(entry)} disabled={starting || !onStartSingle}
+                   aria-label={`${c.takeTest}: ${entry.title}`}>
+                   {c.takeTest} <ArrowRight size={16} aria-hidden="true" />
+                 </button>
+               </div>
              </div>
-             <details className={styles.testDetails}>
-               <summary><Activity size={15} aria-hidden="true" />{c.expandTest}<ChevronDown size={15} aria-hidden="true" /></summary>
-               <div className={styles.testDetailsBody}>
+             <div id={detailsId} className={styles.testDetailsBody} hidden={!expanded}>
                  <p className={styles.testPurpose}>{entry.description || entry.category}</p>
                  <div className={styles.testFacts}>
                    <span><Clock3 size={14} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
@@ -408,8 +423,7 @@ export function SimpleTestPicker({
                      {entry.scaleGuide?.scales?.length > 0 && <div className={styles.testGuide}><TestScaleGuide guide={entry.scaleGuide} locale={locale} /></div>}
                    </div>
                  </details>}
-               </div>
-             </details>
+             </div>
            </article>
          })}
        </div> : <p className={styles.noMatches} role="status">{c.none}</p>}
