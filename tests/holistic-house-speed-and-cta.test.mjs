@@ -17,6 +17,11 @@ test("short-lived public video snapshot cache never includes drafts or request-s
   assert.match(publicSource, /if \(!getSiteVideoStore\(\)\)/);
   assert.match(publicSource, /return approvedBuiltInVideos\(\)/);
   assert.match(publicSource, /readStoredPublishedVideos\(\)/);
+  assert.match(publicSource, /store\.list\(\{ timeoutMs: 1200 \}\)/);
+  assert.match(publicSource, /serving an empty 60s snapshot/);
+  const storeSource = read('lib/site-videos/store.js');
+  assert.match(storeSource, /async list\(options = \{\}\)/);
+  assert.match(storeSource, /requestedTimeoutMs/);
   assert.ok(publicSource.indexOf("if (!getSiteVideoStore())") < publicSource.indexOf("return await readStoredPublishedVideos()"), "storage-off must bypass the cross-request cache");
   assert.match(actions, /revalidateTag\('holistic-house-published-site-videos'\)/);
   assert.match(actions, /await store\.save\(record, input\.expectedRevision\)/);
@@ -93,4 +98,15 @@ test("only immutable-by-name public poster folders have a bounded CDN policy", (
   assert.match(config, /public, max-age=31536000, immutable/);
   const privateMiddleware = read("middleware.ts");
   assert.match(privateMiddleware, /private, no-store, max-age=0, must-revalidate/);
+});
+
+test('private Cabinet loads heavyweight tab modules on demand', () => {
+  const workspace = read('components/app/app-workspace.jsx');
+  for (const file of ['profile-domains', 'account-test-battery', 'my-course', 'practice-workspace', 'psi-monitoring']) {
+    assert.ok(workspace.includes(`dynamic(() => import('@/components/app/${file}')`), `${file} must be split from the initial Cabinet chunk`);
+    assert.ok(!workspace.includes(`from '@/components/app/${file}'`), `${file} must not be eagerly imported`);
+  }
+  const route = read('app/[locale]/app/[[...path]]/page.jsx');
+  assert.match(route, /force-dynamic/);
+  assert.match(route, /revalidate = 0/);
 });

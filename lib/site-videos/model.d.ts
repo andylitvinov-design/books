@@ -45,7 +45,7 @@ export interface SiteVideoChange {
 }
 
 export interface SiteVideoStore {
-  list(): Promise<SiteVideoRecord[]>;
+  list(options?: { timeoutMs?: number }): Promise<SiteVideoRecord[]>;
   get(key: string): Promise<SiteVideoRecord | null>;
   save(record: SiteVideoRecord, expectedRevision: number): Promise<void>;
 }

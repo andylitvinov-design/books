@@ -24,11 +24,22 @@ const readStoredPublishedVideos = unstable_cache(
     const store = getSiteVideoStore() as SiteVideoStore | undefined;
     if (!store) throw new Error('Public video storage was disabled before cache fill');
     const videos: Record<string, PublishedSiteVideo> = {};
-    for (const record of await store.list()) {
-      const video = toPublishedSiteVideo(record);
-      if (video) videos[record.key] = video;
+    try {
+      // Video placements are optional content. Do not block public HTML for
+      // the full 5-second admin-store timeout if the Redis API is unhealthy.
+      for (const record of await store.list({ timeoutMs: 1200 })) {
+        const video = toPublishedSiteVideo(record);
+        if (video) videos[record.key] = video;
+      }
+      return videos;
+    } catch {
+      // Fail closed: never show a draft, hidden override, or unverified builtin.
+      // Cache this *empty* public result for 60 seconds rather than throwing on
+      // every stale revalidation and re-hitting an unavailable external store.
+      // A successful owner publication invalidates the tag immediately.
+      console.warn('[site-videos] Public video storage unavailable; serving an empty 60s snapshot.');
+      return {};
     }
-    return videos;
   },
   ['holistic-house:published-videos:stored:v2'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
