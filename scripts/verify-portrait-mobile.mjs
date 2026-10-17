@@ -105,7 +105,6 @@ try {
     await expect(card().locator('[class*="visualState"]')).toHaveCount(0)
     await expect(card().locator('[data-portrait-sector-all]')).toHaveCount(0)
     await expect(card().locator('[data-radar-layout="full-circle"]')).toBeVisible()
-    await expect(buttons().filter({has:page.locator('[name="nonexistent"]')})).toHaveCount(0)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       for (const sector of labels) {
