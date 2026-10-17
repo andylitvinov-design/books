@@ -483,13 +483,13 @@ export function ServicesSmartDiscovery({
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
                 <button type="button" className={styles.suggestionDetailsToggle}
                   aria-expanded={expandedCard==="listing:"+service.id}
                   aria-controls={"hh-listing-details-"+service.id}
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
               </div>
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
@@ -523,15 +523,15 @@ export function ServicesSmartDiscovery({
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>
               <div className={styles.editorialCardActions}>
-                <button type="button" className={styles.editorialOrderButton}
-                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
-                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
-                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
-                </button>
                 <button type="button" className={styles.editorialDetailsButton}
                   aria-expanded={expanded} aria-controls={"hh-details-"+item.id}
                   onClick={()=>setExpandedCard(current=>current===id?null:id)}>
                   {expanded?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
+                <button type="button" className={styles.editorialOrderButton}
+                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
+                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
+                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
                 </button>
               </div>
               <div id={"hh-details-"+item.id} className={styles.editorialDetailsPanel} hidden={!expanded}>
