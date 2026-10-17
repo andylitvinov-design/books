@@ -143,10 +143,22 @@ try {
       }
     }
     await validate('eventbrite', 'en')
-    await panel.getByLabel('Public source', { exact: true }).selectOption('meetup')
+    // Wrapping select labels contain their options in label text. Match the
+    // direct visible label exactly, and fail on duplicate labels or controls.
+    const selectByVisibleLabel = async name => {
+      const label = panel.locator('label').filter({ hasText: new RegExp('^' + name) })
+      assert.equal(await label.count(), 1)
+      assert.equal(await label.evaluate(node => [...node.childNodes]
+        .filter(child => child.nodeType === Node.TEXT_NODE)
+        .map(child => child.textContent).join('').trim()), name)
+      const control = label.locator('select')
+      assert.equal(await control.count(), 1)
+      return control
+    }
+    await (await selectByVisibleLabel('Public source')).selectOption('meetup')
     assert.equal(await page.locator('textarea[readonly]').count(), 0)
     for (const locale of ['en', 'ru', 'es']) {
-      await panel.getByLabel('Landing language', { exact: true }).selectOption(locale)
+      await (await selectByVisibleLabel('Landing language')).selectOption(locale)
       await generate.click()
       await validate('meetup', locale)
       await generate.click()
