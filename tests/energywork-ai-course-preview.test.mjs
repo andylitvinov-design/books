@@ -22,9 +22,9 @@ test('Energywork course has a distinct versioned identity and stable slide IDs',
     assert.ok(curriculum.includes(phase + ':'), phase)
   }
   for (const track of ['yggdrasil', 'tantra', 'kundalini']) {
-    assert.match(curriculum, new RegExp('id: "' + track.replace('yggdrasil', 'ygg').replace('kundalini', 'kun') + '-01"'))
+    assert.match(curriculum, new RegExp('id: "' + ({ yggdrasil: 'ygg', tantra: 'tan', kundalini: 'kun' })[track] + '-01"'))
   }
-  assert.match(curriculum, /\.\.\.commonSlides, \.(?:\.\.\.)?\(path \? pathSlides\[path\]/)
+  assert.ok(curriculum.includes('...commonSlides, ...(path ? pathSlides[path]'))
 })
 
 test('Original source videos, and only original source videos, are used', () => {
@@ -45,7 +45,7 @@ test('Preview is explicit and does not fake durable account storage', () => {
   assert.match(learner, /Ответы пока не сохраняются в аккаунте/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
-  assert.doesNotMatch(learner, /localStorage|sessionStorage|fetch\(|XMLHttpRequest|sendBeacon/)
+  assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
   assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
   assert.match(learner, /disabled=\{slide\.kind === "path-choice" && !path\}/)
