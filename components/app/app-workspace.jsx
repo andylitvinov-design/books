@@ -2098,6 +2098,18 @@ function PortfolioPage({ data, locale }) {
     <section className="hh-insights-page"
       aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
       data-testid="completed-test-insights">
+      {/* Put the same saved-result portrait at the start of Insights, open by default. */}
+      <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
+        <summary className="hh-insights-portrait-toggle">
+          <Brain size={20} aria-hidden="true" />
+          <strong>{ru ? 'Мой психологический портрет' : 'My psychological portrait'}</strong>
+          <span className="hh-insights-portrait-collapse">{ru ? 'Свернуть' : 'Collapse'}</span>
+          <span className="hh-insights-portrait-expand">{ru ? 'Раскрыть' : 'Expand'}</span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
+          portrait={buildPsychPortrait(data.results || [])} />
+      </details>
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
         {[
