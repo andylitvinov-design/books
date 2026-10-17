@@ -12,7 +12,7 @@ test("Academy videos use program → module/category → lesson, not giant showc
     file("components/academy-video-library-client.tsx"),
     file("components/academy-video-library.module.css"),
   ]);
-  assert.match(hub, /view === "videos" \? <AcademyVideoCourses locale=\{locale\} \/>/);
+  assert.match(hub, /view === "videos" \? \(\s*<section id="academy-video-courses">\s*<AcademyVideoCourses locale=\{locale\} \/>/);
   assert.doesNotMatch(hub, /<EnglishGuidedMeditations\s*\/>/);
   assert.match(server, /yggdrasilCurriculum/);
   assert.match(server, /module\.steps\.flatMap/);
