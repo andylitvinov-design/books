@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import styles from "./service-reviews.module.css";
 
 type Review={
@@ -120,7 +120,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
     setNotice("");
     setFormOpen(true);
   }
-  async function submit(event:React.FormEvent<HTMLFormElement>){
+  async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
     if(saving)return;
     setSaving(true);setError("");setNotice("");
@@ -172,7 +172,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
             <button type="button" className={styles.primary} onClick={openEditor}>{mine?t.edit:t.write}</button>}
           {mine?.status==="published"&&
             <button type="button" className={styles.secondary} disabled={saving} onClick={()=>void remove()}>{t.delete}</button>}
-          {!data.viewer.signedIn&&<Link className={styles.primary} href={"/"+language+"/app"}>{t.signin} →</Link>}
+          {!data.viewer.signedIn&&<Link className={styles.primary} href={"/"+(language==="es"?"en":language)+"/app"}>{t.signin} →</Link>}
           {data.viewer.signedIn&&!data.viewer.canReview&&<span className={styles.note}>
             {data.viewer.suggestedName?t.owner:t.inactive}</span>}
           {mine?.status==="hidden"&&<span className={styles.note}>{t.hidden}</span>}
