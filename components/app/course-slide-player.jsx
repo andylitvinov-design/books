@@ -18,7 +18,8 @@ import { DAY_ONE_SLIDES, dayOneAphorism, validateDayOneAnswers } from '@/lib/inn
 import {validateOporaStateJourney} from '@/lib/inner-growth/opora-state-journey'
 import { compareLessonMoments, changeAmount } from '@/lib/inner-growth/course-moment-trends'
 import { practiceAdjustmentSuggestion } from '@/lib/inner-growth/course-adaptation'
-import { withFinalFreeOffer } from '@/lib/inner-growth/course-slide-sequence'
+import { withFinalFreeOffer, buildCourseSlides } from '@/lib/inner-growth/course-slide-sequence'
+import { OPORA_SKILL_SLIDE_MODEL, oporaSkillCards } from '@/lib/inner-growth/anti-stress-skills-v5'
 import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth/course-welcome'
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
@@ -265,6 +266,7 @@ const INTERACTIVE_STRESS = {
   },
 }
 function buildSlides(lesson) {
+  if(lesson?.antiStress?.slideModel===OPORA_SKILL_SLIDE_MODEL)return buildCourseSlides(lesson)
   const guided = (lesson.sections || []).filter(section => ['arrive', 'meditation', 'finish'].includes(section.kind))
   // Merge a learn section into the arrival exercise; retain legacy fallback otherwise.
   const hasArrival = guided.some(section => section.kind === 'arrive')
@@ -284,6 +286,24 @@ function buildSlides(lesson) {
     { key: 'moment', kind: 'moment' },
     { key: 'feedback', kind: 'feedback' },
   ]
+}
+
+function SkillPracticeSteps({text,locale,disabled}) {
+  const parts=useMemo(()=>String(text||'').split(/(?=\\b[1-9]\\.\\s)/)
+    .map(s=>s.replace(/^\\s*[1-9]\\.\\s*/, '').trim()).filter(Boolean),[text])
+  const [stepIndex,setStepIndex]=useState(0)
+  if(parts.length===0)return null
+  return <section className={styles.skillPracticeCard} data-course-skill-guided-steps>
+    <span className={styles.skillStepCount}>{locale==='ru'?'Практика':locale==='es'?'Práctica':'Practice'} · {stepIndex+1}/{parts.length}</span>
+    <p className={styles.skillStepText}>{parts[stepIndex]}</p>
+    <div className={styles.skillStepActions}>
+      {stepIndex>0&&<button type="button" onClick={()=>setStepIndex(i=>Math.max(0,i-1))} disabled={disabled}>
+        <ArrowLeft size={15}/>{locale==='ru'?'Назад':'Back'}</button>}
+      {stepIndex<parts.length-1&&<button type="button" onClick={()=>setStepIndex(i=>Math.min(parts.length-1,i+1))} disabled={disabled}>
+        {locale==='ru'?'Следующий шаг':'Next step'}<ArrowRight size={15}/></button>}
+      {stepIndex===parts.length-1&&<span className={styles.skillStepDone}><CheckCircle2 size={16}/>{locale==='ru'?'Все шаги показаны. Отметьте фактическую попытку дальше.':'All steps shown. Report your actual attempt next.'}</span>}
+    </div>
+  </section>
 }
 
 function MomentScale({ value, onChange, words, label, disabled, lowLabel = words.low, highLabel = words.high }) {
@@ -337,7 +357,8 @@ export default function CourseSlidePlayer({
   const routePlan=lesson.antiStress?.routePlan
   const MethodActivityComponent=routePlan?RouteMethodActivity:AntiStressMethodActivity
   const PracticeLabComponent=routePlan?RoutePracticeLab:AntiStressPracticeLab
-  const isDayOne=Boolean(lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
+  const isSkillV5=Boolean(lesson.antiStress?.slideModel===OPORA_SKILL_SLIDE_MODEL && data.programme?.id==='stress')
+  const isDayOne=Boolean(!isSkillV5 && lesson.antiStress && !routePlan && cycle.day===1 && data.programme?.id === 'stress')
   // The pinned lesson body is immutable. This momentary prompt is only a
   // voluntary state-first UI observation, not an additional clinical scale.
   const baselinePrompt=isDayOne
@@ -345,13 +366,13 @@ export default function CourseSlidePlayer({
       ? 'Насколько сейчас доступна небольшая пауза, чтобы заметить себя и выбрать действие?'
       : 'How available is a small pause to notice yourself and choose a response right now?')
     : standardBaselinePrompt
-  const isExtendedStress=Boolean(lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
+  const isExtendedStress=Boolean(!isSkillV5 && lesson.antiStress && (cycle.day>=2||routePlan) && cycle.day<=14 &&
     data.programme?.id === 'stress')
   const isOporaModule=Boolean(
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015']
       .includes(lesson.oporaModule?.version) && data.programme?.id==='stress'
   )
-  const isOporaStateJourney=Boolean(!isDayOne && data.programme?.id==='stress' && (
+  const isOporaStateJourney=Boolean(!isSkillV5 && !isDayOne && data.programme?.id==='stress' && (
     lesson.antiStress ||
     ['opora-nav-2.0-20261014','opora-trauma-1.3-20261015'].includes(lesson.oporaModule?.version)
   ))
@@ -612,17 +633,17 @@ export default function CourseSlidePlayer({
     dayOne:isDayOne?(alreadyDone?session?.signals?.dayOne||null:dayOneAnswers):null,
     welcomeFeeling:alreadyDone?session?.signals?.welcomeFeeling||null:welcomeFeeling,
     stateJourney:isOporaStateJourney?(alreadyDone?session?.signals?.stateJourney||null:stateJourney):null}
-  const minutesEstimate=isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
+  const minutesEstimate=isSkillV5?'8–12':isDayOne?(cycle.preferences?.length==='quick'?'7–10':'10–16')
     :(cycle.preferences?.length==='quick'?'5–8':'9–13')
-  const scenicBaseline = !finished && !discomfortOpen &&
+  const scenicBaseline = !isSkillV5 && !finished && !discomfortOpen &&
     (slide.kind === 'baseline' || (slide.kind === 'guided' && slide.section.kind === 'arrive'))
 
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={words.day + ' ' + cycle.day + ': ' + title}
-    data-course-slide-player data-opora-first-lesson={isDayOne?"as-1.9":undefined}
+    data-course-slide-player data-course-skills-v5={isSkillV5?'true':undefined} data-opora-first-lesson={isDayOne?"as-1.9":undefined}
     data-opora-module={isOporaModule?lesson.oporaModule.id:undefined}
     data-opora-day={isOporaModule?cycle.day:undefined}
-    data-opora-state-journey={isOporaStateJourney?"v1":undefined} ref={frame}>
+    data-opora-state-journey={isOporaStateJourney?"v1":undefined} data-course-one-screen="v1" ref={frame}>
     <div className={[styles.frame, scenicBaseline ? styles.sceneFrame : ''].filter(Boolean).join(' ')}>
       {scenicBaseline && <div className={styles.fullscreenScene} aria-hidden="true" data-course-baseline-background>
         <img className={styles.fullscreenScenePhoto}
@@ -752,6 +773,14 @@ export default function CourseSlidePlayer({
               <span className={styles.welcomeKicker}><Heart size={16} aria-hidden="true"/>{words.day} {cycle.day} · Holistic House</span>
               <h2 className={styles.slideTitle} ref={headingRef} tabIndex={-1}>{words.welcome}</h2>
               {isOporaModule&&<p className={styles.welcomeModule} data-opora-welcome-theme>{lesson.oporaModule.theme}</p>}
+              {isSkillV5&&<div data-course-v5-skill-summary>
+                <strong>{lesson.antiStress.skill}</strong>
+                <p className={styles.helper}>{lesson.antiStress.learningOutcome}</p>
+                {cycle.day===1&&<details className={styles.skillMapDisclosure}>
+                  <summary>{locale==='ru'?'Семь навыков курса':'Seven course skills'}<ChevronDown size={15}/></summary>
+                  <ol>{oporaSkillCards(locale).map(item=><li key={item.id}>{item.title}</li>)}</ol>
+                </details>}
+              </div>}
               <p className={styles.welcomePrompt}>{isDayOne
                 ? (locale==='ru'?'С каким внутренним состоянием вы пришли сегодня? Ничего менять не нужно.':
                   'What inner state are you arriving with today? Nothing needs to change.')
@@ -791,16 +820,19 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
-            {!isOporaStateJourney&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
             <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
-            <p className={styles.helper}>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
             </div>
-            <p className={styles.helper}>{(lesson.antiStress?.neutralText||lesson.disclaimer)}</p>
+            <details className={styles.supportDetails} data-course-optional-explanation>
+              <summary><CircleHelp size={15} aria-hidden="true"/>{locale==='ru'?'О практике и безопасном выборе':'About this practice'}</summary>
+              <p>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+              <p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>
+            </details>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
             <p className={styles.prompt}>{data.target?.label || words.todaySkill}</p>
@@ -883,16 +915,17 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'guided' && <>
             {slide.section.kind !== 'arrive' && !isOporaStateJourney && <IllustratedMoment variant="calm" kind={slide.kind}/>}
-            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-pre>
+            {slide.section.kind==='meditation' && !isSkillV5 && <div className={styles.practiceRating} data-course-practice-pre>
               <p className={styles.prompt}>{words.practicePrePrompt}</p>
               <MomentScale value={beforeNow} onChange={setBeforeNow} words={words}
                 label={words.before + ': ' + focusLabel} disabled={locked}/>
             </div>}
-            {slide.section.kind==='meditation'&&lesson.antiStress&&(cycle.day>1||routePlan)&&
+            {slide.section.kind==='meditation'&&!isSkillV5&&lesson.antiStress&&(cycle.day>1||routePlan)&&
               data.programme?.id==='stress'&&!neutralMode&&
               <MethodActivityComponent key={String(cycle.day)} day={cycle.day} locale={locale} activity={routePlan?.methodActivity}
                 value={dailyMethodChoice} onChange={setDailyMethodChoice}
                 hintUsed={dailyMethodHintUsed} onHint={recordRouteHint} disabled={locked}/>}
+            {isSkillV5&&slide.section.kind==='meditation'&&<SkillPracticeSteps key={cycle.day} text={neutralMode?words.neutralPractice:slide.section.text} locale={locale} disabled={locked}/>}
             {slide.section.kind === 'arrive' ? <section className={styles.arrivalExercise} data-course-arrival-exercise>
               <p className={styles.arrivalKicker}><Waves size={15} aria-hidden="true"/>{words.arrivalKicker}</p>
               <p className={styles.arrivalFocus}><span>{words.arrivalFocus}</span><strong>{focusLabel}</strong></p>
@@ -937,7 +970,16 @@ export default function CourseSlidePlayer({
               <CourseGuidedTimer key={String(cycle.id) + ':' + String(cycle.day) + ':' + slide.key + ':' + (cycle.preferences?.length || 'standard')}
                 seconds={slide.section.seconds || 60} locale={locale}/>
             </details>}
-            {slide.section.kind==='meditation' && <div className={styles.practiceRating} data-course-practice-post>
+            {slide.section.kind==='meditation' && isSkillV5 && <details className={styles.timerDetails} data-course-optional-moment-ratings>
+              <summary>{locale==='ru'?'Необязательно: сравнить самочувствие до и после':'Optional: compare before and after'}<ChevronDown size={16}/></summary>
+              <div className={styles.practiceRating}>
+                <p className={styles.prompt}>{words.practicePrePrompt}</p>
+                <MomentScale value={beforeNow} onChange={setBeforeNow} words={words} label={words.before+': '+focusLabel} disabled={locked}/>
+                <p className={styles.prompt}>{words.practicePostPrompt}</p>
+                <MomentScale value={afterNow} onChange={setAfterNow} words={words} label={words.after+': '+focusLabel} disabled={locked}/>
+              </div>
+            </details>}
+            {slide.section.kind==='meditation' && !isSkillV5 && <div className={styles.practiceRating} data-course-practice-post>
               <p className={styles.prompt}>{words.practicePostPrompt}</p>
               <MomentScale value={afterNow} onChange={setAfterNow} words={words}
                 label={words.after + ': ' + focusLabel} disabled={locked}/>
@@ -991,14 +1033,14 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'transfer' && <>
-            {!isOporaStateJourney&&<IllustratedMoment kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment kind={slide.kind}/>}
             {isOporaStateJourney&&<OporaStateJourney part="plan" locale={locale}
               value={stateJourney} initialFeeling={welcomeFeeling}
               onChange={recordStateJourney} disabled={locked}/>}
             <p className={styles.prompt}>{lesson.workbook?.microPractice}</p>
             <p className={styles.helper}>{words.transferHint}</p>
             {(lesson.antiStress||isOporaModule)&&<section data-course-everyday-transfer>
-              <details className={styles.oporaExtraDetails} open={!isOporaStateJourney}>
+              <details className={styles.oporaExtraDetails} open={!isOporaStateJourney&&!isSkillV5}>
                 <summary>{locale==='ru'?'Дополнительно: как я планирую применить навык':'Optional: how I might use this skill'}<ChevronDown size={16}/></summary>
               <p className={styles.prompt}>{learning.transferTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.transferTitle}>
@@ -1033,7 +1075,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'symbol' && <>
-            {!isOporaStateJourney&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             <div className={styles.modeTabs} role="group" aria-label={words.symbol}>
               <button type="button" aria-pressed={symbolMode === 'words' || cycle.preferences?.imagery === 'no_imagery'}
                 onClick={() => setSymbolMode('words')}>{words.words}</button>
@@ -1053,7 +1095,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'reflection' && <>
-            {!isOporaStateJourney&&<IllustratedMoment kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment kind={slide.kind}/>}
             <p className={styles.prompt}>{lesson.workbook?.question || lesson.reflection}</p>
             <label className={styles.noteField}><span>{words.note}</span>
               <textarea maxLength={500} rows={4} value={reflection}
@@ -1088,7 +1130,7 @@ export default function CourseSlidePlayer({
           </>}
 
           {slide.kind === 'moment' && <>
-            {!isOporaStateJourney&&<IllustratedMoment kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment kind={slide.kind}/>}
             {isOporaStateJourney&&<OporaStateJourney part="preview" locale={locale}
               value={stateJourney} initialFeeling={welcomeFeeling}/>}
             <p className={styles.focusName}>{words.focusForToday}: <strong>{focusLabel}</strong></p>
@@ -1107,12 +1149,12 @@ export default function CourseSlidePlayer({
             onStopPractice={()=>{if(locked)return;recordDayOne('practiceAttempt','stopped');setNeutralMode(true);setSymbolMode('words');setIndex(slides.findIndex(item=>item.kind==='day1-exit'))}}
             onDiscomfort={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
           {slide.kind === 'feedback' && <>
-            {!isOporaStateJourney&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
+            {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
             {isOporaStateJourney&&<OporaStateJourney part="experience" locale={locale}
               value={stateJourney} initialFeeling={welcomeFeeling}
               onChange={recordStateJourney} disabled={locked}
               onUncomfortable={()=>{setFeedback('uncomfortable');setDiscomfortOpen(true)}}/>}
-            <details className={styles.oporaExtraDetails} open={!isOporaStateJourney}>
+            <details className={styles.oporaExtraDetails} open={!isOporaStateJourney&&!isSkillV5}>
               <summary>{isOporaStateJourney
                 ? (locale==='ru'?'Дополнительно: комфорт и пригодность практики':'Optional: comfort and usefulness')
                 : words.feedbackHint}<ChevronDown size={16}/></summary>

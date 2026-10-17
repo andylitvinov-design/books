@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "note": "Hashed public imagery generated at build time. Sources are reviewed current Git blobs. Original book reader media and publication remain unchanged.",
+  "books": {
+    "alchemy-homeopathy-foundations": {
+      "source": "source-books/book-1-alchemy-soul/media/post_10_01.jpg",
+      "sha": "09d6fa6a3a12a499f3b7b17b0a3c397b5c1d761f",
+      "bytes": 163640,
+      "url": "/images/holistic-house/static-card-media/09d6fa6a3a12a499-w720.webp"
+    },
+    "alchemy-homeopathy-remedies": {
+      "source": "source-books/book-1-alchemy-soul/media/post_18_01.jpg",
+      "sha": "b43447da27211ca42627a091a58cd4a77f1e8529",
+      "bytes": 373525,
+      "url": "/images/holistic-house/static-card-media/b43447da27211ca4-w720.webp"
+    },
+    "alchemy-naturopathy-hormones": {
+      "source": "source-books/book-1-alchemy-soul/media/post_259_01.jpg",
+      "sha": "fd3e6eb8c93bb24c9cac74d5c15330728ce9c7fa",
+      "bytes": 247864,
+      "url": "/images/holistic-house/static-card-media/fd3e6eb8c93bb24c-w720.webp"
+    },
+    "alchemy-naturopathy-oils": {
+      "source": "source-books/book-1-alchemy-soul/media/post_117_01.jpg",
+      "sha": "13723c7782ae28dfd0b56db1ca4e39bb4aa051c8",
+      "bytes": 232780,
+      "url": "/images/holistic-house/static-card-media/13723c7782ae28df-w720.webp"
+    },
+    "alchemy-bach-foundations": {
+      "source": "source-books/book-1-alchemy-soul/media/post_855_01.jpg",
+      "sha": "bdef6422e5164313d0a193e20c8797cf8b3fb052",
+      "bytes": 368280,
+      "url": "/images/holistic-house/static-card-media/bdef6422e5164313-w720.webp"
+    },
+    "alchemy-bach-cards": {
+      "source": "source-books/book-1-alchemy-soul/media/post_999_01.jpg",
+      "sha": "841b9ee8289910ef3326f83f601cccbde3fb2c05",
+      "bytes": 411789,
+      "url": "/images/holistic-house/static-card-media/841b9ee8289910ef-w720.webp"
+    },
+    "alchemy-brain-theory": {
+      "source": "source-books/book-1-alchemy-soul/media/post_897_01.jpg",
+      "sha": "1090a84e57bd6c0a33eececc88d0f7966b62b777",
+      "bytes": 102365,
+      "url": "/images/holistic-house/static-card-media/1090a84e57bd6c0a-w720.webp"
+    },
+    "alchemy-brain-protocols": {
+      "source": "source-books/book-1-alchemy-soul/media/post_294_01.jpg",
+      "sha": "62714aecc25e299bf5183004700e666240c1cd28",
+      "bytes": 160192,
+      "url": "/images/holistic-house/static-card-media/62714aecc25e299b-w720.webp"
+    },
+    "alchemy-services-workflow": {
+      "source": "source-books/book-1-alchemy-soul/media/post_997_01.jpg",
+      "sha": "6fe274731624eae7fc8d14dbfa96367ef5cb3fb8",
+      "bytes": 35331,
+      "url": "/images/holistic-house/static-card-media/6fe274731624eae7-w720.webp"
+    },
+    "dao-alchemy-intro": {
+      "source": "source-books/book-2-dao-books/photos/post_2_1.jpg",
+      "sha": "dd57db61b349c2aea1786e8e0dee553504b06626",
+      "bytes": 178556,
+      "url": "/images/holistic-house/static-card-media/dd57db61b349c2ae-w720.webp"
+    },
+    "dao-tradition-temples-symbols": {
+      "source": "source-books/book-2-dao-books/photos/post_12_1.jpg",
+      "sha": "e82d0b74205ce13153c2f9ac70f959a9279dcfd9",
+      "bytes": 63496,
+      "url": "/images/holistic-house/static-card-media/e82d0b74205ce131-w720.webp"
+    },
+    "dao-magic-basics": {
+      "source": "source-books/book-2-dao-books/photos/post_25_1.jpg",
+      "sha": "3c912da4a71e53702326a557d06590ccb9b2bc84",
+      "bytes": 125234,
+      "url": "/images/holistic-house/static-card-media/3c912da4a71e5370-w720.webp"
+    },
+    "dao-talismans-symbols": {
+      "source": "source-books/book-2-dao-books/photos/post_21_1.jpg",
+      "sha": "bfdbcf06e0d3eff1ceb60a45c83132a294974b4a",
+      "bytes": 131066,
+      "url": "/images/holistic-house/static-card-media/bfdbcf06e0d3eff1-w720.webp"
+    },
+    "dao-rituals-altars": {
+      "source": "source-books/book-2-dao-books/photos/post_129_1.jpg",
+      "sha": "8bae4c9a2de804c9931d6fbfa575fc749c91ba45",
+      "bytes": 149829,
+      "url": "/images/holistic-house/static-card-media/8bae4c9a2de804c9-w720.webp"
+    },
+    "dao-yijing-predictions": {
+      "source": "source-books/book-2-dao-books/photos/post_80_1.jpg",
+      "sha": "11e8291553fa4e73b221b2b14c7618f94d8593b1",
+      "bytes": 217542,
+      "url": "/images/holistic-house/static-card-media/11e8291553fa4e73-w720.webp"
+    },
+    "dao-healing-basics": {
+      "source": "source-books/book-2-dao-books/photos/post_338_1.jpg",
+      "sha": "3fcb1566d9bc4491487dbefa5ca7e4c8763d1934",
+      "bytes": 145383,
+      "url": "/images/holistic-house/static-card-media/3fcb1566d9bc4491-w720.webp"
+    },
+    "dao-wuxing-five-elements": {
+      "source": "source-books/book-2-dao-books/photos/post_87_1.jpg",
+      "sha": "f5ce1e4851c1e55526be9f9b29f4719377bd3521",
+      "bytes": 77648,
+      "url": "/images/holistic-house/static-card-media/f5ce1e4851c1e555-w720.webp"
+    },
+    "dao-wuxing-model-steps": {
+      "source": "source-books/book-2-dao-books/photos/post_214_1.jpg",
+      "sha": "1bdda55f40d73b5bc2cfc461888f540343d791e6",
+      "bytes": 75181,
+      "url": "/images/holistic-house/static-card-media/1bdda55f40d73b5b-w720.webp"
+    },
+    "dao-practicum-cases-remedies": {
+      "source": "source-books/book-2-dao-books/photos/post_65_1.jpg",
+      "sha": "8e38395f35627e132bfbd4d3744d237306cceb1e",
+      "bytes": 184963,
+      "url": "/images/holistic-house/static-card-media/8e38395f35627e13-w720.webp"
+    },
+    "maya-egregor-gods": {
+      "source": "source-books/book-3-maya-tradition/raw/photos/photo_100@06-01-2025_09-34-15.jpg",
+      "sha": "8d24c32eb7dad3e32a0995dbc205c8d31e215a66",
+      "bytes": 128273,
+      "url": "/images/holistic-house/static-card-media/8d24c32eb7dad3e3-w720.webp"
+    },
+    "maya-calendar": {
+      "source": "source-books/book-3-maya-tradition/raw/photos/photo_54@19-10-2024_00-05-38.jpg",
+      "sha": "c11e5a4c551ef0b0cd6e2543a1bf6796cee9f47c",
+      "bytes": 279517,
+      "url": "/images/holistic-house/static-card-media/c11e5a4c551ef0b0-w720.webp"
+    },
+    "maya-exorcism": {
+      "source": "source-books/book-3-maya-tradition/raw/photos/photo_110@06-01-2025_09-34-27.jpg",
+      "sha": "81584433d81a9a84bbffd343de14fe1660b9450f",
+      "bytes": 294628,
+      "url": "/images/holistic-house/static-card-media/81584433d81a9a84-w720.webp"
+    },
+    "maya-mysteries": {
+      "source": "source-books/book-3-maya-tradition/raw/photos/photo_105@06-01-2025_09-34-25.jpg",
+      "sha": "a112ed2e9b16f9ae0d4aaad493e400495cabe824",
+      "bytes": 231914,
+      "url": "/images/holistic-house/static-card-media/a112ed2e9b16f9ae-w720.webp"
+    }
+  },
+  "images": {
+    "/academy/reiki-yggdrasil/source/advanced-runes.png": {
+      "source": "public/academy/reiki-yggdrasil/source/advanced-runes.png",
+      "sha": "8f9beaa9f18110308b0344a433a56c8fabb0b862",
+      "bytes": 100523,
+      "thumb": "/images/holistic-house/static-card-media/8f9beaa9f1811030-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/8f9beaa9f1811030-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png": {
+      "source": "public/academy/reiki-yggdrasil/source/advanced-shamanic-therapy.png",
+      "sha": "d8d589e1dcb5a6744bbe9ccd57b88bf93b299fd3",
+      "bytes": 58053,
+      "thumb": "/images/holistic-house/static-card-media/d8d589e1dcb5a674-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/d8d589e1dcb5a674-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/basic-program.jpg": {
+      "source": "public/academy/reiki-yggdrasil/source/basic-program.jpg",
+      "sha": "517f9dd756f8964c8bf116c7684ccb13ba394ff9",
+      "bytes": 103744,
+      "thumb": "/images/holistic-house/static-card-media/517f9dd756f8964c-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/517f9dd756f8964c-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/eastern-tradition.png": {
+      "source": "public/academy/reiki-yggdrasil/source/eastern-tradition.png",
+      "sha": "f5c59f59948a2ae4dd5c95e932018c1aa5f0c54f",
+      "bytes": 48453,
+      "thumb": "/images/holistic-house/static-card-media/f5c59f59948a2ae4-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/f5c59f59948a2ae4-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/program-overview.jpg": {
+      "source": "public/academy/reiki-yggdrasil/source/program-overview.jpg",
+      "sha": "193ad1083f8011bd1585eece0178017a91170685",
+      "bytes": 52150,
+      "thumb": "/images/holistic-house/static-card-media/193ad1083f8011bd-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/193ad1083f8011bd-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/school-introduction.jpg": {
+      "source": "public/academy/reiki-yggdrasil/source/school-introduction.jpg",
+      "sha": "3e7b71f4bf3199901bc202480cdc4c05ede48317",
+      "bytes": 175409,
+      "thumb": "/images/holistic-house/static-card-media/3e7b71f4bf319990-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/3e7b71f4bf319990-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/slavic-tradition.png": {
+      "source": "public/academy/reiki-yggdrasil/source/slavic-tradition.png",
+      "sha": "e90f577638dcbfb7bd48110cd3aacb4f66dbe75b",
+      "bytes": 73144,
+      "thumb": "/images/holistic-house/static-card-media/e90f577638dcbfb7-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/e90f577638dcbfb7-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/temple-studies.png": {
+      "source": "public/academy/reiki-yggdrasil/source/temple-studies.png",
+      "sha": "2a9168974896a5e625b439183e2529130df05d9d",
+      "bytes": 62219,
+      "thumb": "/images/holistic-house/static-card-media/2a9168974896a5e6-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/2a9168974896a5e6-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/toltec-tradition.jpg": {
+      "source": "public/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
+      "sha": "7a841e3b77a7774be7dcd052e1a41b7627c2a1e2",
+      "bytes": 130890,
+      "thumb": "/images/holistic-house/static-card-media/7a841e3b77a7774b-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/7a841e3b77a7774b-w960.webp"
+    },
+    "/academy/reiki-yggdrasil/source/western-tradition.png": {
+      "source": "public/academy/reiki-yggdrasil/source/western-tradition.png",
+      "sha": "6288c13fe208130fede9ccbcebc1367e30c61115",
+      "bytes": 111898,
+      "thumb": "/images/holistic-house/static-card-media/6288c13fe208130f-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/6288c13fe208130f-w960.webp"
+    },
+    "/library/maya-mysteries/media/post-217-1.jpg": {
+      "source": "public/library/maya-mysteries/media/post-217-1.jpg",
+      "sha": "0bea0947db356415d435364153c69edb3dd774ed",
+      "bytes": 232220,
+      "thumb": "/images/holistic-house/static-card-media/0bea0947db356415-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/0bea0947db356415-w960.webp"
+    },
+    "/library/maya-mysteries/media/post-226-1.jpg": {
+      "source": "public/library/maya-mysteries/media/post-226-1.jpg",
+      "sha": "20acbb625977ccf438654f12fe6b4eb2bfd09f9a",
+      "bytes": 219545,
+      "thumb": "/images/holistic-house/static-card-media/20acbb625977ccf4-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/20acbb625977ccf4-w960.webp"
+    },
+    "/library/maya-mysteries/media/post-229-1.jpg": {
+      "source": "public/library/maya-mysteries/media/post-229-1.jpg",
+      "sha": "2e02fcfeeaae120d41e669a018e3419b33149747",
+      "bytes": 98604,
+      "thumb": "/images/holistic-house/static-card-media/2e02fcfeeaae120d-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/2e02fcfeeaae120d-w960.webp"
+    },
+    "/library/maya-mysteries/media/post-244-1.jpg": {
+      "source": "public/library/maya-mysteries/media/post-244-1.jpg",
+      "sha": "3f407a6b45a878efc9e5c2c77b78c21e2212cb57",
+      "bytes": 285382,
+      "thumb": "/images/holistic-house/static-card-media/3f407a6b45a878ef-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/3f407a6b45a878ef-w960.webp"
+    },
+    "/library/maya-mysteries/media/post-249-1.jpg": {
+      "source": "public/library/maya-mysteries/media/post-249-1.jpg",
+      "sha": "47c5ff1a1f3a8a2bbf6de0156161d78024d2f6ab",
+      "bytes": 244488,
+      "thumb": "/images/holistic-house/static-card-media/47c5ff1a1f3a8a2b-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/47c5ff1a1f3a8a2b-w960.webp"
+    },
+    "/library/maya-egregor-gods/media/post-203-1.jpg": {
+      "source": "public/library/maya-egregor-gods/media/post-203-1.jpg",
+      "sha": "463cd3231c936afadcde7ed4be39c2c68c3a05df",
+      "bytes": 20476,
+      "thumb": "/images/holistic-house/static-card-media/463cd3231c936afa-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/463cd3231c936afa-w960.webp"
+    },
+    "/academy/kundalini-reiki/kundalini-manual-level-2.jpg": {
+      "source": "public/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
+      "sha": "0f9e40b0488e66ba6206238c6b2fde78e3fc3265",
+      "bytes": 18855,
+      "thumb": "/images/holistic-house/static-card-media/0f9e40b0488e66ba-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/0f9e40b0488e66ba-w960.webp"
+    },
+    "/images/holistic-house/video-posters/constellations-en-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/constellations-en-v1.webp",
+      "sha": "5840877884a03f095f58fd62928416c1805f301c",
+      "bytes": 30342,
+      "thumb": "/images/holistic-house/static-card-media/5840877884a03f09-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/5840877884a03f09-w960.webp"
+    },
+    "/images/holistic-house/video-posters/home-en-v2.webp": {
+      "source": "public/images/holistic-house/video-posters/home-en-v2.webp",
+      "sha": "03586937393874bd394c214109235772b8919003",
+      "bytes": 30504,
+      "thumb": "/images/holistic-house/static-card-media/03586937393874bd-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/03586937393874bd-w960.webp"
+    },
+    "/images/holistic-house/video-posters/home-ru-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/home-ru-v1.webp",
+      "sha": "8d09d5eeccdc6ff148ae99c138b7af1413d18d55",
+      "bytes": 29850,
+      "thumb": "/images/holistic-house/static-card-media/8d09d5eeccdc6ff1-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/8d09d5eeccdc6ff1-w960.webp"
+    },
+    "/images/holistic-house/video-posters/homeopathy-en-v2.webp": {
+      "source": "public/images/holistic-house/video-posters/homeopathy-en-v2.webp",
+      "sha": "99c3b0a485414e7b069a8a8a629ff937721736c9",
+      "bytes": 29692,
+      "thumb": "/images/holistic-house/static-card-media/99c3b0a485414e7b-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/99c3b0a485414e7b-w960.webp"
+    },
+    "/images/holistic-house/video-posters/homeopathy-ru-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/homeopathy-ru-v1.webp",
+      "sha": "b909c149ec8ef1a7ef59d85dee45c5c2ff8afa61",
+      "bytes": 31406,
+      "thumb": "/images/holistic-house/static-card-media/b909c149ec8ef1a7-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/b909c149ec8ef1a7-w960.webp"
+    },
+    "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
+      "sha": "e7e0b46cb1055c42515e3d0e9b76d2dd464819cc",
+      "bytes": 30124,
+      "thumb": "/images/holistic-house/static-card-media/e7e0b46cb1055c42-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/e7e0b46cb1055c42-w960.webp"
+    },
+    "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
+      "sha": "4d40a1896a9522392c1d09c3310425033d5e44b4",
+      "bytes": 47848,
+      "thumb": "/images/holistic-house/static-card-media/4d40a1896a952239-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/4d40a1896a952239-w960.webp"
+    },
+    "/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/psychic-alchemy-ru-v1.webp",
+      "sha": "26614a914f783b418175d5c652395cebe6b4404b",
+      "bytes": 43452,
+      "thumb": "/images/holistic-house/static-card-media/26614a914f783b41-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/26614a914f783b41-w960.webp"
+    },
+    "/images/holistic-house/video-posters/services-en-v2.webp": {
+      "source": "public/images/holistic-house/video-posters/services-en-v2.webp",
+      "sha": "38a7ba2f8119f49e2f926d6fff8e9c69b629ded5",
+      "bytes": 30452,
+      "thumb": "/images/holistic-house/static-card-media/38a7ba2f8119f49e-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/38a7ba2f8119f49e-w960.webp"
+    },
+    "/images/holistic-house/video-posters/services-ru-v1.webp": {
+      "source": "public/images/holistic-house/video-posters/services-ru-v1.webp",
+      "sha": "8d6d2103d1a71b2b05f82b031a05a39d726c7c58",
+      "bytes": 30060,
+      "thumb": "/images/holistic-house/static-card-media/8d6d2103d1a71b2b-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/8d6d2103d1a71b2b-w960.webp"
+    },
+    "/images/holistic-house/course-focus-mountain-boy.webp": {
+      "source": "public/images/holistic-house/course-focus-mountain-boy.webp",
+      "sha": "e04bca8a7b75698dae7b860649bce39bb48d46f6",
+      "bytes": 77226,
+      "thumb": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w256.webp",
+      "feature": "/images/holistic-house/static-card-media/e04bca8a7b75698d-w960.webp"
+    }
+  }
+}

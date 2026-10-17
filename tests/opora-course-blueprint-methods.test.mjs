@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {antiStressBlueprint,OPORA_SKILLS,OPORA_TESTS,OPORA_METRICS,OPORA_APPROACHES} from '../lib/inner-growth/anti-stress-blueprint.js'
 import {antiStressDay,antiStressSkillCards} from '../lib/inner-growth/anti-stress-outcomes-v3.js'
+import {oporaSkillForDay} from '../lib/inner-growth/anti-stress-skills-v5.js'
 import {getAssessmentDefinition} from '../lib/assessments/definitions.js'
 import {antiStressMethodActivity,validateAntiStressMethodChoice,ANTI_STRESS_METHOD_ACTIVITIES} from '../lib/inner-growth/anti-stress-method-activities.js'
 
@@ -13,15 +14,15 @@ test('the public landing and the learner share exactly seven verified skills and
    const b=antiStressBlueprint(locale)
    assert.equal(b.skills.length,7)
    assert.equal(b.days.length,14)
-   assert.deepEqual(b.skills.map(s=>s.days),[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14]])
+   assert.deepEqual(b.skills.map(s=>s.days),[[1,8],[2,9],[3,10],[4,11],[5,12],[6,13],[7,14]])
    const real=antiStressSkillCards(locale==='es'?'en':locale)
    assert.deepEqual(b.skills.map(s=>s.id),real.map(s=>s.id))
    for(let day=1;day<=14;day++){
       const p=b.days[day-1]
       assert.equal(p.day,day)
-      assert.equal(p.skillId, 'S'+Math.ceil(day/2))
+      assert.equal(p.skillId, 'S'+((day-1)%7+1))
       assert.equal(p.title,day===p.day?b.days[day-1].title:'')
-      if(locale!=='es')assert.equal(p.title,antiStressDay(day,locale).title)
+      if(locale!=='es')assert.equal(p.title,oporaSkillForDay(day,locale).title)
       assert.ok(p.methodNames.length>=3)
    }
  }
@@ -52,7 +53,7 @@ test('seven approaches are transparent about educational scope and link to real 
  const evidence=source('components/public-antistress-evidence.tsx')
  const overview=source('components/app/course-14-day-overview.jsx')
  assert.match(landing,/programme.skills.map/)
- assert.match(landing,/previewDay\(index \* 2 \+ 1\)/)
+ assert.match(landing,/previewDay\(stageDays\[0\]\)/)
  assert.match(landing,/PublicAntistressEvidence/)
  assert.match(evidence,/data-antistress-measurements/)
  assert.match(evidence,/data-antistress-test=/)

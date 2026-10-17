@@ -72,9 +72,10 @@ test("Vercel source controls contain the known spend guards", () => {
   assert.equal(v.ignoreCommand, "node scripts/vercel-ignore-build.mjs");
   assert.equal(v.git.deploymentEnabled["codex/public-book-library"], true);
   assert.match(n, /deviceSizes:\s*\[640, 828, 1080, 1440, 1920, 2560\]/);
-  const ttl = n.match(/minimumCacheTTL:\s*(\d+)\s*,/);
-  assert.ok(ttl, "Image cache TTL is explicitly configured");
-  assert.ok(Number(ttl[1]) >= 86400, "Image cache TTL must not regress below one day");
+  assert.match(n, /minimumCacheTTL:\s*2678400/);
+  assert.match(n, /formats:\s*\["image\/webp"\]/);
+  assert.match(n, /qualities:\s*\[75\]/);
+  assert.ok(n.includes("static-card-media"));
   assert.doesNotMatch(n, /images:\s*\{\s*unoptimized:\s*true/);
   assert.match(n, /outputFileTracingExcludes/);
 });

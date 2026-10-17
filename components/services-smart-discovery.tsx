@@ -28,8 +28,8 @@ const COPY = {
     button:"Find my options",
     freeOnlyLabel:"Free Services Only",
     examples:"You could try",
-    exampleList:["I want more inner confidence","I'm curious about Reiki and energy practices","I'd like to explore family patterns","I want more clarity about my next step"],
-    quickExamples:["Confidence","Reiki & energy","Relationships","Life direction"],
+    exampleList:["I want more balance in my body and energy","I want support with stress and anxiety","I want clarity in my relationships","I want to explore business and money questions","I want to clarify my goals, life purpose and personal growth"],
+    quickExamples:["Body & Energy","Stress & Anxiety","Relationships","Business & Money","Goals, Meaning & Growth"],
     mobilePrivacy:"✓ Free matching · No sign-up · Private by default. Please avoid sharing personal medical details.",
     privacy:"Private by default: this text is matched locally in your browser and isn't saved.",
     caution:"Please don't include names or sensitive medical details. This is service discovery, not a diagnosis or medical recommendation.",
@@ -82,8 +82,8 @@ const COPY = {
     button:"Подобрать услуги",
     freeOnlyLabel:"Только бесплатные услуги",
     examples:"Например",
-    exampleList:["Хочу больше внутренней уверенности","Интересуют Рейки и энергетические практики","Хочу исследовать семейные сценарии","Ищу направление и ясность в целях"],
-    quickExamples:["Уверенность","Рейки и энергия","Отношения","Цели и ясность"],
+    exampleList:["Хочу больше энергии и контакта с телом","Хочу справиться со стрессом и тревогой","Хочу разобраться в отношениях","Хочу разобраться с бизнесом и деньгами","Ищу ясность в целях, смыслах и саморазвитии"],
+    quickExamples:["Тело и энергия","Стресс и тревога","Отношения","Бизнес и деньги","Цели, смыслы и развитие"],
     mobilePrivacy:"✓ Бесплатно · Без регистрации · Приватно по умолчанию. Не вводите личные медицинские данные.",
     privacy:"По умолчанию приватно: подбор выполняется в браузере, текст не сохраняется.",
     caution:"Не указывайте имена и чувствительные медицинские данные. Это поиск услуг, а не диагноз или медицинская рекомендация.",
@@ -136,8 +136,8 @@ const COPY = {
     button:"Encontrar servicios",
     freeOnlyLabel:"Solo servicios gratuitos",
     examples:"Por ejemplo",
-    exampleList:["Busco más confianza personal","Me interesa Reiki y el trabajo energético","Quiero explorar patrones familiares","Necesito claridad para una nueva etapa"],
-    quickExamples:["Confianza","Reiki y energía","Relaciones","Metas y claridad"],
+    exampleList:["Quiero sentir más energía y conexión con mi cuerpo","Busco ayuda con el estrés y la ansiedad","Quiero entender mejor mis relaciones","Quiero explorar mi negocio y mi dinero","Quiero claridad en mis metas, propósito y desarrollo personal"],
+    quickExamples:["Cuerpo y energía","Estrés y ansiedad","Relaciones","Negocios y dinero","Metas, sentido y desarrollo"],
     mobilePrivacy:"✓ Gratis · Sin registro · Privado por defecto. Evita compartir datos médicos personales.",
     privacy:"Privado por defecto: la búsqueda se realiza en tu navegador y no se guarda.",
     caution:"No incluyas nombres ni datos médicos sensibles. No es un diagnóstico ni una recomendación médica.",
@@ -483,13 +483,13 @@ export function ServicesSmartDiscovery({
               <p className={styles.suggestionSummary}>{service.copy.shortDescription}</p>
               <p className={styles.practitioner}><span className={styles.practitionerPrefix}>{t.practitioner}: </span><Link href={"/"+locale+"/masters/"+service.practitionerSlug}>{service.practitionerName}</Link></p>
               <div className={styles.suggestionActions}>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
                 <button type="button" className={styles.suggestionDetailsToggle}
                   aria-expanded={expandedCard==="listing:"+service.id}
                   aria-controls={"hh-listing-details-"+service.id}
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>
               </div>
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
@@ -523,15 +523,15 @@ export function ServicesSmartDiscovery({
                 <small>{t.practitioner}: Andrey Litvinov</small>
               </div>
               <div className={styles.editorialCardActions}>
-                <button type="button" className={styles.editorialOrderButton}
-                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
-                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
-                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
-                </button>
                 <button type="button" className={styles.editorialDetailsButton}
                   aria-expanded={expanded} aria-controls={"hh-details-"+item.id}
                   onClick={()=>setExpandedCard(current=>current===id?null:id)}>
                   {expanded?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
+                </button>
+                <button type="button" className={styles.editorialOrderButton}
+                  aria-expanded={ordering} aria-controls={"hh-order-"+item.id}
+                  onClick={()=>setOrderingCard(current=>current===id?null:id)}>
+                  <ShoppingBag size={15} aria-hidden="true"/>{item.free?t.freeOrder:t.order}
                 </button>
               </div>
               <div id={"hh-details-"+item.id} className={styles.editorialDetailsPanel} hidden={!expanded}>

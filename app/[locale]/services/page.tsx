@@ -128,6 +128,21 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       href:`/${locale}/services/systemic-constellations`,areaKey:"relationships",
     },
     {
+      id: "remote-energy-support",
+      image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+      title: locale === "ru" ? "Дистанционная энергетическая поддержка" : "Remote energy support",
+      promise: locale === "ru"
+        ? "Выберите мастера, метод Reiki и время для поддержки на расстоянии или онлайн-сеанса."
+        : "Choose a practitioner, Reiki approach and preferred time for remote or live online support.",
+      details: locale === "ru"
+        ? "Формат без видеозвонка или живой онлайн-сеанс, 20–60 минут. Заявка и стоимость подтверждаются мастером до оплаты."
+        : "Remote support without a call or a live online session, 20–60 minutes. Availability and price are confirmed before payment.",
+      label: locale === "ru" ? "Рейки · Онлайн-поддержка" : "Reiki · Remote support",
+      free: false,
+      href: `/${locale}/services/remote-energy-support`,
+      areaKey: "energy_spiritual",
+    },
+    {
       id:"yggdrasil",image:"/academy/reiki-yggdrasil/source/basic-program.jpg",title:locale==="ru"?"Рейки Иггдрасиль — бесплатная первая ступень":"Reiki Yggdrasil — free Level 1",
       promise:locale==="ru"?"Знакомство с системой Рейки, видео и материалы.":"Reiki practice, original video and study resources.",
       details:locale==="ru"?"Посмотрите вводное видео и учебные материалы, затем выберите бесплатную вводную ступень или индивидуальную инициацию.":"Watch the introductory video and study materials, then choose the free introductory level or a personal initiation.",
@@ -249,18 +264,18 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
                 <span>{locale === "ru" ? "Личный профиль У-Син" : "Personal Wu Xing profile"}</span>
               </div>
               <div className="services-marketplace-actions">
-                <TrackedServiceLink serviceId={featuredService.id} event="order"
-                  className="services-marketplace-request services-marketplace-request--featured"
-                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
-                >
-                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </TrackedServiceLink>
                 <Link
                   className="services-marketplace-details"
                   href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
                 >
                   {locale === "ru" ? "Подробнее" : "Details"}
                 </Link>
+                <TrackedServiceLink serviceId={featuredService.id} event="order"
+                  className="services-marketplace-request services-marketplace-request--featured"
+                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
+                >
+                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
+                </TrackedServiceLink>
               </div>
             </div>
           </article>

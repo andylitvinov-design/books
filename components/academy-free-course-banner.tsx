@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -171,7 +172,7 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
               return (
                 <article className={styles.course} key={course.id} data-free-course-id={course.id}>
                   <span className={styles.photo}>
-                    <Image src={course.image} alt="" fill sizes="(max-width: 540px) 96px, 132px" />
+                    <Image src={cardArtworkUrl(course.image)} unoptimized={hasCardArtwork(course.image)} alt="" fill sizes="(max-width: 540px) 96px, 132px" />
                   </span>
                   <div className={styles.courseContent}>
                     <span className={styles.courseType}>{info.type}</span>

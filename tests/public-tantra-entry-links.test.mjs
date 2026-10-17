@@ -129,10 +129,25 @@ for (const locale of ['en', 'ru', 'es']) {
   });
 }
 
-test('global review ribbon is permanently retired in every locale', () => {
-  assert.doesNotMatch(read('components/sitewide-antistress-banner.tsx'), /SitewideAntistressBanner|data-sitewide-personal-review-banner/);
-  assert.doesNotMatch(read('app/layout.tsx'), /SitewideAntistressBanner/);
-});
+for (const locale of ['en', 'ru', 'es']) {
+  test(`${locale} retains the approved screenshot banner with free-review links on both sides`, () => {
+    const banner = loadComponent('components/sitewide-antistress-banner.tsx', {
+      ...shared,
+      'next/navigation': { usePathname: () => `/${locale}/academy` },
+      './sitewide-antistress-banner.module.css': {},
+    }).SitewideAntistressBanner;
+    const pageLinks = renderLinks(banner, { initialLocale: locale });
+    assert.deepEqual(pageLinks.map((link) => link.href), [
+      `/${locale}/services/free-situation-review`,
+      `/${locale}/services/free-situation-review`,
+    ]);
+    assert.match(pageLinks[1].text, {
+      en: /Get free review/,
+      ru: /Получить разбор/,
+      es: /Solicitar gratis/,
+    }[locale]);
+  });
+}
 
 
 test('Home retains server-provided intro content and consultation CTA after contextual link addition', () => {

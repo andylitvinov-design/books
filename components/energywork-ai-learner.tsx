@@ -30,7 +30,7 @@ type SaveCommand = {
 
 const copy = {
   en: {
-    shortTitle: "Principles of Energywork",
+    shortTitle: "Reiki Practitioner",
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
@@ -48,6 +48,9 @@ const copy = {
     value: "Your choice",
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
+    welcomeOffer: "3 possible Level 1 initiations",
+    welcomeRequirement: "For each system: watch the course videos, complete the tasks and answer the questions.",
+    welcomeTeacher: "When the tasks are complete, you can request each initiation. Andrey conducts it separately by arrangement; finishing the course does not grant it automatically.",
     pathway: "Choose one system to continue",
     picked: "Selected",
     finish: "Course completed",
@@ -77,7 +80,7 @@ const copy = {
     myCourses: "My Courses",
   },
   ru: {
-    shortTitle: "Основы энергетики",
+    shortTitle: "Практик Рейки",
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
@@ -95,6 +98,9 @@ const copy = {
     value: "Ваш выбор",
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
+    welcomeOffer: "3 возможные инициации первой ступени",
+    welcomeRequirement: "По каждой системе: посмотрите учебные видео, выполните задания и ответьте на вопросы.",
+    welcomeTeacher: "После выполнения заданий можно запросить каждую инициацию. Андрей проводит её отдельно, по согласованию; завершение курса не заменяет инициацию.",
     pathway: "Выберите одно направление",
     picked: "Выбрано",
     finish: "Курс завершён",
@@ -412,7 +418,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -430,41 +436,24 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span style={{ width: ((index + 1) / total * 100) + "%" }} />
         </div>
 
-        <aside className={styles.preview} aria-live="polite">
-          <LockKeyhole size={19} aria-hidden="true" />
-          <div className={styles.syncContent}>
-            {sync === "checking" ? <strong>{t.checking}</strong> : null}
-            {sync === "guest" ? <>
-              <strong>{t.preview}</strong><p>{t.previewHelp}</p>
-              <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
-              <p>{t.guestHint}</p>
-            </> : null}
-            {sync === "consent" ? <>
-              <strong>{t.consentTitle}</strong>
-              <label className={styles.consentLabel}>
-                <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                <span>{t.consentText}</span>
-              </label>
-              <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
-              <p>{t.guestHint}</p>
-            </> : null}
-            {sync === "ready" ? <>
-              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
-              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
-              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
-            </> : null}
-            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
-            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
-              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
-          </div>
-        </aside>
 
-        <section className={styles.slide} key={slide.id} aria-labelledby="energywork-slide-title">
+
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
+              {slide.kind === "welcome" ? (
+                <div className={styles.welcomeReward} aria-label={t.welcomeOffer}>
+                  <p className={styles.welcomeRewardTitle}><Sparkles size={17} aria-hidden="true" />{t.welcomeOffer}</p>
+                  <ul className={styles.welcomeSystems}>
+                    {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
+                  </ul>
+                  <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
+                  <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
+                </div>
+              ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.kind === "path-choice" ? (
@@ -555,6 +544,40 @@ export function EnergyworkAiLearner({ locale }: Props) {
             <li key={key} aria-current={key === slide.phase ? "step" : undefined}>{title[locale]}</li>
           ))}</ol>
         </details>
+        <aside className={styles.preview} aria-live="polite">
+          <LockKeyhole size={19} aria-hidden="true" />
+          <div className={styles.syncContent}>
+            {sync === "checking" ? <strong>{t.checking}</strong> : null}
+            {sync === "guest" ? <>
+              <strong>{t.preview}</strong>
+              <details className={styles.saveDetails}>
+                <summary>{locale === "ru" ? "Сохранить в моих курсах" : "Save to My Courses"}</summary>
+                <p>{t.previewHelp}</p>
+                <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
+                <p>{t.guestHint}</p>
+              </details>
+            </> : null}
+            {sync === "consent" ? <>
+              <details className={styles.saveDetails}>
+                <summary>{t.consentTitle}</summary>
+                <label className={styles.consentLabel}>
+                  <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                  <span>{t.consentText}</span>
+                </label>
+                <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
+                <p>{t.guestHint}</p>
+              </details>
+            </> : null}
+            {sync === "ready" ? <>
+              <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
+              {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
+              <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+            </> : null}
+            {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
+            {saveError ? <p role="alert" className={styles.saveError}>{saveError}
+              <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
+          </div>
+        </aside>
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions}>

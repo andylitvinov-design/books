@@ -433,31 +433,67 @@ async function verifyPublicServiceConversionJourneys(){
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
-     const guideHeading=servicePage.locator('#distance-homeopathy-guide h1')
-     await expect(guideHeading).toBeVisible()
-     const headingSize=await guideHeading.evaluate(node=>({
-      scroll:node.scrollWidth,client:node.clientWidth,font:getComputedStyle(node).fontSize,
-     }))
-     assert.ok(headingSize.scroll<=headingSize.client+1,
-      'Distance-homeopathy heading must wrap inside its '+width+'px '+locale+' article: '+JSON.stringify(headingSize))
-     // The article itself stays on the Alchemy page, but there is no
-     // navigation link to inject into client reports or service copy.
+     const guide=servicePage.locator('details[data-alchemy-extended-guide]')
+     await expect(guide.locator('summary')).toBeVisible()
+     assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
+     await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
+     await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
+     const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
+      nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
+     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
+     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
+      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     if(width===390){
+      await guide.locator('summary').click()
+      const guideHeading=guide.locator('#distance-homeopathy-guide h1')
+      await expect(guideHeading).toBeVisible()
+      const headingSize=await guideHeading.evaluate(node=>({scroll:node.scrollWidth,client:node.clientWidth}))
+      assert.ok(headingSize.scroll<=headingSize.client+1,'Expanded guide heading must wrap')
+      await guide.locator('summary').click()
+     }
      await expect(servicePage.locator('a[href="#distance-homeopathy-guide"]')).toHaveCount(0)
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-    await capture.scrollIntoViewIfNeeded()
-    await expect(capture).toBeVisible({timeout:30000})
-    const chooser=await openContactChannelChooser(capture,expect)
-    const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-    const href=whatsappUrl.href
-    const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-    assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-    const alternative=capture.locator('details')
-    assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
-    await alternative.locator('summary').click()
-    await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    if(kind==='alchemy'){
+     const form=servicePage.locator('[data-alchemy-lead-form="single"]')
+     await form.scrollIntoViewIfNeeded()
+     await expect(form.locator('select')).toHaveCount(2)
+     await expect(form.locator('[data-contact-order]')).toBeVisible()
+     await form.locator('select').first().selectOption('30')
+     await form.locator('select').nth(1).selectOption('business')
+     await expect(form.locator('select').first()).toHaveValue('30')
+     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     const stack=servicePage.locator('[data-alchemy-review-stack]')
+     const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
+       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
+     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+     assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
+       'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
+     assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
+       'Vertical testimonial stack cannot overflow horizontally')
+     const pricing=servicePage.locator('[data-alchemy-booking-formats]')
+     await pricing.locator('[data-alchemy-format="30"]').click()
+     await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
+     const order=await openContactChannelChooser(pricing,expect)
+     const prepared=await assertPreparedContactChannels(order,expect)
+     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
+       'Selected 30-minute format must be carried into WhatsApp and Telegram')
+     await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else{
+     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
+     await capture.scrollIntoViewIfNeeded()
+     await expect(capture).toBeVisible({timeout:30000})
+     const chooser=await openContactChannelChooser(capture,expect)
+     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
+     const href=whatsappUrl.href
+     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
+     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
+     const alternative=capture.locator('details')
+     assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
+     await alternative.locator('summary').click()
+     await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
+    }
    }
    await servicePage.close()
   }

@@ -311,13 +311,26 @@ test('mobile result requirements cannot be supplied by hero rules or other break
 })
 
 
-test('Services first fold on mobile uses concise search copy, four action chips and safe 16px input',async()=>{
+test('Services first fold on mobile uses concise search copy, five action chips and safe 16px input',async()=>{
   const [ui,css]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
   ])
   for(const marker of ['Find the right support','Подберите помощь под свой запрос','Encuentra el apoyo que buscas']) assert.ok(ui.includes(marker))
   assert.equal((ui.match(/quickExamples:\[/g)||[]).length,3)
+  const samples=[...ui.matchAll(/exampleList:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const chips=[...ui.matchAll(/quickExamples:\[(.*?)\],/g)].map(match=>JSON.parse("["+match[1]+"]"))
+  const expectedAreas=['body_somatic','emotional_psychological','relationships','business_money','personal_development']
+  assert.equal(samples.length,3)
+  assert.deepEqual(chips,[["Body & Energy","Stress & Anxiety","Relationships","Business & Money","Goals, Meaning & Growth"],["Тело и энергия","Стресс и тревога","Отношения","Бизнес и деньги","Цели, смыслы и развитие"],["Cuerpo y energía","Estrés y ansiedad","Relaciones","Negocios y dinero","Metas, sentido y desarrollo"]])
+  for(const [localeIndex,examples] of samples.entries()){
+    assert.equal(examples.length,5,'each locale has exactly five searchable themes')
+    assert.equal(chips[localeIndex].length,examples.length)
+    for(const [themeIndex,query] of examples.entries()){
+      const matchingAreas=classifyDiscoveryIntent(query).map(item=>item.key)
+      assert.ok(matchingAreas.includes(expectedAreas[themeIndex]),`theme ${themeIndex+1} not matched: ${query}`)
+    }
+  }
   assert.equal((ui.match(/mobilePrivacy:/g)||[]).length,3)
   assert.match(ui,/className=\{styles\.exampleShort\}/)
   assert.match(ui,/className=\{styles\.privacyCompact\}/)
@@ -329,6 +342,7 @@ test('Services first fold on mobile uses concise search copy, four action chips 
   assert.ok(mobile.includes('@media(max-width:620px)'))
   assert.match(mobile,/\.textarea\{[^}]*font-size:16px/)
   assert.match(mobile,/\.examples\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(mobile,/\.examples button:last-child\{grid-column:1\/-1;min-height:42px\}/)
   assert.match(mobile,/\.submit\{[^}]*min-height:44px/)
   assert.ok(mobile.includes('.exampleLong,.privacyFull{display:none}'))
 })

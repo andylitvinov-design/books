@@ -49,7 +49,7 @@ export default async function ServiceDetail({params}:PageProps){
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <TrackedServiceLink serviceId={service.id} event="order" id="request-service" className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Заказать бесплатно":es?"Solicitar gratis":"Order free service"):(ru?"Заказать":es?"Solicitar":"Order")}<span aria-hidden="true">→</span></TrackedServiceLink>
+          <TrackedServiceLink serviceId={service.id} event="order" id="request-service" className="services-studio-primary" href={service.slug === "remote-energy-support" ? `/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(practitioner.slug)}` : es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Заказать бесплатно":es?"Solicitar gratis":"Order free service"):(ru?"Заказать":es?"Solicitar":"Order")}<span aria-hidden="true">→</span></TrackedServiceLink>
           {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
           <Link href="#reviews">{ru?"Отзывы":es?"Opiniones":"Reviews"} ★</Link>

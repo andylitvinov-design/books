@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, PlayCircle } from "lucide-react";
 import { getServiceVideoWatchUrl } from "@/data/service-video-library";
@@ -92,7 +94,30 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
                   {locale === "ru" ? "Смотреть видео о подходе" : "Watch a short video"}
                 </a>
               )}
-              <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"} prefetch={false}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
+              {offer.id === "alchemy" ? (
+                <div className={styles.cardActionRow} data-alchemy-service-actions>
+                  <AcquisitionEventLink className={styles.cardDetails} href={offer.href} event="service_view" prefetch={false}>
+                    {locale === "ru" ? "Детали" : "Details"}<ArrowUpRight size={15} aria-hidden="true" />
+                  </AcquisitionEventLink>
+                  <div className={styles.cardDirectOrder}>
+                    <ContactChannelChooser locale={locale} label={locale === "ru" ? "Заказать" : "Book"}
+                      className={styles.cardOrderButton} event="service_request_start"
+                      whatsappUrl={whatsappEnquiryUrl({
+                        locale,
+                        service: offer.title,
+                        request: locale === "ru"
+                          ? "Хочу заказать личный сеанс «Алхимия души». Подтвердите, пожалуйста, доступные время и условия."
+                          : "I would like to book an Alchemy of the Soul session. Please confirm a time and the terms.",
+                        option: locale === "ru" ? "60 минут · €100" : "60 min · €100",
+                        pagePath: offer.href,
+                      })}
+                      attributes={{ "data-alchemy-booking": "services-card" }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <AcquisitionEventLink className={styles.cardCta} href={offer.href} event={offer.id === "situation" || offer.id === "dao" ? "service_request_start" : "service_view"} prefetch={false}>{offer.action}<ArrowUpRight size={18} aria-hidden="true" /></AcquisitionEventLink>
+              )}
             </div>
           </article>
         ))}

@@ -22,3 +22,31 @@ test('unavailable and malformed responses leave statistics unknown',async()=>{
   const t=timers(),seen=[];await startTestCatalogStatsRequest(x=>seen.push(x),{...t,fetchImpl:async()=>response}).done;assert.deepEqual(seen,[])
  }
 })
+test('non-success headers abort an unfinished response before the deadline is cleared', async()=>{
+ let signal,aborts=0,cleared=false,jsonReads=0
+ const seen=[]
+ const request=startTestCatalogStatsRequest(x=>seen.push(x),{
+  setTimer(){return 7},clearTimer(id){assert.equal(id,7);assert.equal(signal.aborted,true);cleared=true},
+  fetchImpl:async(_url,options)=>{signal=options.signal;signal.addEventListener('abort',()=>aborts++);return {ok:false,status:503,json(){jsonReads++;return new Promise(()=>{})}}},
+ })
+ await request.done;assert.equal(aborts,1);assert.equal(cleared,true);assert.equal(jsonReads,0);assert.deepEqual(seen,[])
+})
+test('successful response body remains bounded by the original abort deadline',async()=>{
+ const t=timers();let signal,reading=false
+ const request=startTestCatalogStatsRequest(()=>assert.fail('no invented result'),{...t,fetchImpl:async(_url,options)=>{signal=options.signal;return {ok:true,json:()=>{reading=true;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('body aborted')),{once:true}))}}}})
+ for(let i=0;i<5&&!reading;i++)await Promise.resolve()
+ assert.equal(reading,true);t.fire();await request.done;assert.equal(signal.aborted,true)
+})
+test('real loopback 503 with an unfinished body is released immediately',async()=>{
+ const {createServer}=await import('node:http')
+ let closeResponse
+ const closed=new Promise(resolve=>{closeResponse=resolve})
+ const server=createServer((_req,res)=>{res.writeHead(503,{'Content-Type':'application/json'});res.flushHeaders();res.write('{');res.on('close',closeResponse)})
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+ let timer
+ try{
+  const request=startTestCatalogStatsRequest(()=>assert.fail('error response is unknown'),{fetchImpl:(_url,options)=>fetch(`http://127.0.0.1:${server.address().port}/`,options)})
+  await request.done
+  await Promise.race([closed,new Promise((_resolve,reject)=>{timer=setTimeout(()=>reject(Error('unused response was not released')),1500)})])
+ }finally{clearTimeout(timer);server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
+})
