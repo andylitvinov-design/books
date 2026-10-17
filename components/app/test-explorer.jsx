@@ -373,6 +373,44 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
+  // Start the exact cleared tests from the chosen themed collection. Do not
+  // wait for React selection state or silently add unrelated recommendations.
+  const startTantraPath = async (keys) => {
+    if (!Array.isArray(keys) || !keys.length || keys.length > 12 || starting ||
+      !(onStart || (audience === 'account' && onStartSingle))) return
+    const unique = [...new Set(keys)]
+    if (unique.length !== keys.length) return
+    const batch = unique.map((key) => entries.find((entry) =>
+      entry.key === key && entry.selectable && entry.startable &&
+      entry.rightsStatus === 'cleared' && entry.definition &&
+      (audience !== 'guest' || entry.guestEligible === true)))
+    if (batch.some((entry) => !entry)) {
+      setActionError({ code: 'GUEST_TEST_UNAVAILABLE' })
+      return
+    }
+    const preferences = {
+      focus: ['tantra'], problems: [], details: [], axes: [], areas: [],
+      styles: [], kinds: [], lengths: [], depth: 'balanced',
+      maxMinutes: 0, language: 'any', tracking: 'any', freeOnly: false,
+    }
+    setStarting(true)
+    setActionError(null)
+    try {
+      if (audience === 'account' && onStartSingle) {
+        // The draft selection contains the whole collection; launch its first
+        // test directly in the existing authenticated single-test flow.
+        await onStartSingle(batch[0], preferences)
+      } else {
+        // Guests enter the existing sequential battery/consent journey.
+        await onStart(batch, preferences)
+      }
+    } catch (error) {
+      setActionError(error)
+    } finally {
+      setStarting(false)
+    }
+  }
+
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
@@ -399,6 +437,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recommendations={simpleRecommendations}
       searchRecommendations={searchRecommendations}
       catalogEntries={entries}
+      onStartTantraPath={startTantraPath}
       onChooseTantraPath={(keys) => {
         // A named path is an explicit replacement of the unsaved local draft.
         // No automatic runner, subscription, course or account write occurs.
