@@ -230,7 +230,14 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
       s => { s.guestCount = 1 },
-    ]) { const broken = structuredClone(account); mutate(broken); assert.throws(() => assertAccountReportSnapshot(broken, result, locale)) }
+    ]) {
+      const broken = structuredClone(account)
+      mutate(broken)
+      // A replacement of a phrase absent from older report templates is a no-op,
+      // not an integrity violation. All actual mutations must still be rejected.
+      if (JSON.stringify(broken) !== JSON.stringify(account))
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
+    }
     if (account.scales.length > 1) {
       for (const field of ['scales', 'scaleKeys']) {
         const broken = structuredClone(account); [broken[field][0], broken[field][1]] = [broken[field][1], broken[field][0]]
