@@ -23,7 +23,7 @@ test('Profile leads with authorized personal reports; category details are secon
   assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
   assert.match(workspace, /embedded \/>\} \/>/)
   assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
-  assert.match(workspace, /data-testid="insights-psychological-portrait"/)
+  assert.match(workspace, /data-insights-detailed-scales/)
   assert.doesNotMatch(profile, /Math\.random\(|mockProfileScore|syntheticScores/)
 })
 
@@ -53,7 +53,7 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   const style = read('components/app/profile-assessment-overview.module.css')
   const workspace = read('components/app/app-workspace.jsx')
   assert.match(workspace, /data-insights-detailed-scales/) 
-  assert.match(workspace, /<details className="hh-insights-portrait-details">/)
+  assert.match(workspace, /<details className="hh-insights-portrait-details" data-insights-detailed-scales>/)
   assert.match(workspace, /<details className="hh-domain-psych-details" data-profile-deep-dive>/)
   assert.match(workspace, /<ProfileAssessmentOverview data=\{data\} locale=\{locale\} onBeginTest=\{beginSelectedTest\} showPortrait=\{false\}>/)
   assert.match(overview, /showPortrait=true/)
