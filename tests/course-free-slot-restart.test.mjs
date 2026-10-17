@@ -83,6 +83,10 @@ test('a free account can start its first course, but cannot start a parallel sec
     fetcher: () => snapshot(active, { ...free, activeCourseCount: 1 }),
   })
   await full.settle()
+  assert.equal(findPart(full.tree, 'CourseR3Steps')?.props.state.course.id, active.id,
+    '1/1 still opens the saved course')
+  findButton(full.tree, 'My courses').props.onClick()
+  await full.settle()
   const dashboard = findPart(full.tree, 'MyCoursesDashboard')
   assert.equal(dashboard.props.canAddCourse, false)
   assert.equal(dashboard.props.canManageCourses, true, 'free users must still be able to close their course')
