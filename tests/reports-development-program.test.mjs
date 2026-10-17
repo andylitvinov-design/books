@@ -69,7 +69,7 @@ test('largest positive personal goal gaps rank first, not clinically or by quest
     score('energy',65),
     score('focus',45),
   ],chosen)
-  assert.deepEqual(profile.priorities.map(row=>row.axis),['stress','focus','sleep'])
+  assert.deepEqual(profile.priorities.map(row=>row.axis),['stress','focus','sleep','energy'])
   assert.equal(profile.rows.find(row=>row.axis==='stress').current,20)
   assert.equal(profile.rows.find(row=>row.axis==='stress').gap,70)
   assert.equal(profile.rows.find(row=>row.axis==='energy').gap,15)
