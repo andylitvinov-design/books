@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
+import * as portraitSectors from '../lib/assessments/portrait-sectors.js'
 import * as portraitRayLabels from '../lib/assessments/portrait-ray-labels.js'
 import * as explorerModule from '../lib/assessments/test-explorer.js'
 
@@ -135,7 +136,7 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   assert.equal(starts, 0)
 })
 
-for (const locale of ['en', 'ru', 'es']) test(locale + ' explicit Tantric path clears stale facets and search while preserving every selected cross-topic card until Start', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' Tantric details are read-only and explicit Start launches only the exact cleared path with reset facets', async () => {
   const parentHooks = hooks(), pickerHooks = hooks()
   const { TestExplorer } = compile(parentSource, parentHooks, modules)
   const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
@@ -161,8 +162,20 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' explicit Tantric path c
   assert.equal(toggle.props['aria-expanded'], false)
   toggle.props.onClick(); render()
   assert.equal(nodes(tree).find(node => node.props['data-tantra-test-paths']).props['data-expanded'], 'true')
-  nodes(tree).find(node => node.props['data-tantra-path'] === path.id).props.onClick(); render()
-  assert.equal(search().props.value, '')
+  const card = () => nodes(tree).find(node => node.props['data-tantra-path'] === path.id)
+  const action = name => nodes(card()).find(node => node.props['data-tantra-action'] === name)
+  const beforeDetails = pickerProps.activeBattery.map(entry => entry.key)
+  assert.equal(action('details').props['aria-expanded'], false)
+  action('details').props.onClick(); render()
+  assert.equal(action('details').props['aria-expanded'], true)
+  assert.equal(nodes(card()).find(node => node.props.id === action('details').props['aria-controls']).props.hidden, false)
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), beforeDetails)
+  assert.equal(search().props.value, 'Love')
+  assert.deepEqual(starts, [], 'Opening Details must not select, start or save tests')
+  action('details').props.onClick(); render()
+  assert.equal(action('details').props['aria-expanded'], false)
+  assert.equal(action('start').props.disabled, false)
+  await action('start').props.onClick(); render()
   assert.deepEqual(Array.from(pickerProps.focus), ['tantra'])
   assert.equal(pickerProps.depth, 'balanced'); assert.equal(pickerProps.maxMinutes, 0)
   assert.deepEqual(Array.from(pickerProps.testKinds), [])
@@ -170,26 +183,11 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' explicit Tantric path c
   assert.ok(path.keys.every(key => pickerProps.recommendations.some(entry => entry.key === key)))
   const matching = new Set(explorerModule.filterExplorerEntries(pickerProps.catalogEntries, { availability: 'available', focus: ['tantra'] }).map(entry => entry.key))
   assert.ok(path.keys.some(key => !matching.has(key)), 'The exercised path must include a selected card outside the current topic')
-  // Follow the real disclosure until every selected card is visible. A cleared
-  // text field alone would miss a stale submitted-search filter.
-  for (let step = 0; step < pickerProps.recommendations.length; step++) {
-    const more = nodes(tree).find(node => node.type === 'button' && node.props['aria-controls'] === 'hh-public-recommended-tests')
-    if (!more) break
-    more.props.onClick(); render()
-  }
-  const shown = nodes(tree).filter(node => node.props['data-test-match'])
-  for (const key of path.keys) {
-    const card = shown.find(node => node.props['data-test-match'] === key)
-    assert.ok(card, 'Explicit cross-topic card remains reachable: ' + key)
-    assert.equal(nodes(card).find(node => node.type === 'input').props.checked, true)
-  }
-  assert.deepEqual(starts, [], 'Choosing a path and browsing never starts or saves it')
-  const start = nodes(tree).find(node => node.props['data-test-start-mode'] === 'tests')
-  assert.equal(start.props.onClick, pickerProps.onStart)
-  await start.props.onClick()
-  assert.equal(starts.length, 1, 'Only explicit Start invokes the handoff')
-  assert.deepEqual(starts[0].keys.sort(), [...path.keys].sort())
+  assert.equal(starts.length, 1, 'Only explicit path Start invokes the handoff')
+  assert.deepEqual(Array.from(starts[0].keys).sort(), [...path.keys].sort())
   assert.deepEqual(JSON.parse(JSON.stringify(starts[0].preferences)), { focus: ['tantra'], problems: [], details: [], axes: [], areas: [], styles: [], kinds: [], lengths: [], depth: 'balanced', maxMinutes: 0, language: 'any', tracking: 'any', freeOnly: false })
+  for (const invalid of [[], [path.keys[0], path.keys[0]], ['not-a-test'], Array(13).fill(path.keys[0])]) await pickerProps.onStartTantraPath(invalid)
+  assert.equal(starts.length, 1, 'Invalid or duplicate paths cannot start extra runs')
 })
 
 test('collection browser eligibility allows only actual topic matches and explicit eligible cross-topic selections', () => {
@@ -205,17 +203,23 @@ test('collection browser eligibility allows only actual topic matches and explic
   }
 })
 
-function portraitHarness(locale, mutate = source => source) {
+function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
   const react = hooks()
-  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule, '@/lib/assessments/portrait-ray-labels': portraitRayLabels })
+  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule, '@/lib/assessments/portrait-ray-labels': portraitRayLabels, '@/lib/assessments/portrait-sectors': portraitSectors })
   const axes = explorerModule.TEST_EXPLORER_AXES
-  const props = { locale, coverage: { axes: {}, coveredCount: 0 }, portrait: { axes: Object.fromEntries(axes.filter(axis => axis !== 'personality').slice(0, 8).map(axis => [axis, { percent: 50 }])) } }
-  const render = () => { react.reset(); return TestExplorerVisual(props) }
+  const props = { locale, coverage: { axes: {}, coveredCount: 0 }, portrait: { axes: Object.fromEntries(axes.filter(axis => axis !== 'personality').slice(0, measuredCount).map(axis => [axis, { percent: 50 }])) } }
+  let tree
+  const render = () => { react.reset(); tree = TestExplorerVisual(props); return tree }
   const locator = query => ({
     list: query,
     locator(selector) {
       return locator(() => query().flatMap(root => {
         const all = nodes(root)
+        if (selector === '[data-portrait-sectors]') return all.filter(node => node.props['data-portrait-sectors'])
+        if (selector === '[data-portrait-sector]') return all.filter(node => node.props['data-portrait-sector'])
+        if (selector === '[data-portrait-sector-all]') return all.filter(node => node.props['data-portrait-sector-all'])
+        const sector = selector.match(/^\[data-portrait-sector="([^" ]+)"\] input$/)
+        if (sector) return all.filter(node => node.props['data-portrait-sector'] === sector[1]).flatMap(node => nodes(node).filter(child => child.type === 'input'))
         if (selector === '[data-portrait-ray-options]') return all.filter(node => node.props['data-portrait-ray-options'])
         if (selector === 'input[type="checkbox"]') return all.filter(node => node.type === 'input')
         if (selector === 'input:checked') return all.filter(node => node.type === 'input' && node.props.checked)
@@ -230,7 +234,17 @@ function portraitHarness(locale, mutate = source => source) {
     async click() { assert.equal(query().length, 1); query()[0].props.onClick() },
     async check() { assert.equal(query().length, 1); const node = query()[0]; assert.ok(!node.props.disabled); if (!node.props.checked) node.props.onChange() },
     async uncheck() { assert.equal(query().length, 1); const node = query()[0]; assert.ok(!node.props.disabled); if (node.props.checked) node.props.onChange() },
-    async evaluateAll(fn) { return fn(query().map(node => ({ checked: node.props.checked }))) },
+    async evaluateAll(fn) {
+      const selected = query()
+      return fn(selected.map(node => ({ checked: node.props.checked, parentElement: {
+        querySelector(selector) {
+          assert.equal(selector, 'strong')
+          const label = nodes(tree).find(item => item.type === 'label' && nodes(item).includes(node))
+          const score = nodes(label).find(item => item.type === 'strong')
+          return score ? { textContent: accessibleText(score) } : null
+        },
+      } })))
+    },
   })
   const expect = value => ({
     async toHaveCount(count) { assert.equal(value.list().length, count) },
@@ -240,19 +254,24 @@ function portraitHarness(locale, mutate = source => source) {
   return { portrait: locator(() => [render()]), expect }
 }
 
-test('browser ray verifier drives real canonical handlers, selection cap, collapse persistence and restoration in EN/RU/ES', async () => {
-  for (const locale of ['en', 'ru', 'es']) {
-    const h = portraitHarness(locale)
+test('browser ray verifier exercises measured defaults, all 17 rays, sector filters and exact restoration in EN/RU/ES', async () => {
+  for (const locale of ['en', 'ru', 'es']) for (const measuredCount of [0, 8, 17]) {
+    const h = portraitHarness(locale, source => source, measuredCount)
     await exercisePortraitRays(h.portrait, h.expect, locale)
   }
 })
-test('browser ray verifier rejects no-op expansion, broken 10-ray cap and collapse state loss', async () => {
-  for (const mutate of [
-    source => source.replace('setShowAllPortraitRays(current => !current)', 'setShowAllPortraitRays(current => current)'),
-    source => source.replace('visibleRays.length >= 10', 'visibleRays.length >= 11'),
-    source => source.replace('setShowAllPortraitRays(current => !current)', '(setChosenRays(null), setShowAllPortraitRays(current => !current))'),
-  ]) {
-    const h = portraitHarness('en', mutate)
+test('browser ray verifier rejects no-op expansion, obsolete caps, fabricated defaults and lost fine selections', async () => {
+  const mutations = [
+    ['setShowAllPortraitRays(current => !current)', 'setShowAllPortraitRays(current => current)'],
+    ['[...selected, axis]', '(selected.length >= 10 ? selected : [...selected, axis])'],
+    ['const suggestedRays = measuredAxes', 'const suggestedRays = PORTRAIT_AXES.slice(0, 8)'],
+    ['setShowAllPortraitRays(current => !current)', '(setChosenRays(null), setShowAllPortraitRays(current => !current))'],
+    ['onChange={toggleAllSectors}', 'onChange={() => { setChosenRays(null); toggleAllSectors() }}'],
+    ["current.includes(key) ? current.filter((item) => item !== key) : [...current, key]", 'current'],
+  ]
+  for (const [before, after] of mutations) {
+    assert.ok(read('components/app/test-explorer-visual.jsx').includes(before), 'Mutation must alter the actual current source')
+    const h = portraitHarness('en', source => source.replace(before, after), 0)
     await assert.rejects(exercisePortraitRays(h.portrait, h.expect, 'en'))
   }
 })
