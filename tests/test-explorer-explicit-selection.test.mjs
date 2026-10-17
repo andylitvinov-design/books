@@ -1,14 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import ts from 'typescript'
 const source=readFileSync(new URL('../components/app/test-explorer.jsx',import.meta.url),'utf8')
+// Read the actual function boundary so neighboring comments and JSX cannot
+// become part of the executable fixture.
+const parsed = ts.createSourceFile('test-explorer.jsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
+function selectionFunction(name) {
+ const matches=[]
+ function visit(node) {
+  if(ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text===name) matches.push(node)
+  ts.forEachChild(node,visit)
+ }
+ visit(parsed)
+ assert.equal(matches.length,1, 'one actual '+name+' declaration is required')
+ assert.ok(ts.isArrowFunction(matches[0].initializer))
+ return 'const '+matches[0].getText(parsed)
+}
 function harness({compact=false,keys=[],simpleMode=true,changed=false,auto=['phq-9','hh-current-state']}={}){
  let selected=[...keys],manual=changed
  function toggle(key){
-  const start=source.indexOf(compact?'  const toggleSimpleSelected =':'  const toggleSelected =')
-  const end=source.indexOf(compact?'  // Keep the existing batch start':'  const toggleSimpleSelected =',start)
   const name=compact?'toggleSimpleSelected':'toggleSelected'
-  const fn=new Function('simpleMode','simpleSelectionChanged','simpleAuto','setSimpleSelectionChanged','setSelectedKeys',source.slice(start,end)+`; return ${name}`)(simpleMode,manual,auto.map(key=>({key})),v=>{manual=v},fn=>{selected=fn(selected)})
+  const fn=new Function('simpleMode','simpleSelectionChanged','simpleAuto','setSimpleSelectionChanged','setSelectedKeys',selectionFunction(name)+`; return ${name}`)(simpleMode,manual,auto.map(key=>({key})),v=>{manual=v},fn=>{selected=fn(selected)})
   fn(key)
  }
  return {toggle,get keys(){return selected},get changed(){return manual}}

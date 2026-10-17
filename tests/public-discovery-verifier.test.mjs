@@ -6,6 +6,7 @@ import ts from 'typescript'
 import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
+import * as portraitRayLabels from '../lib/assessments/portrait-ray-labels.js'
 import * as explorerModule from '../lib/assessments/test-explorer.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -206,7 +207,7 @@ test('collection browser eligibility allows only actual topic matches and explic
 
 function portraitHarness(locale, mutate = source => source) {
   const react = hooks()
-  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule })
+  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule, '@/lib/assessments/portrait-ray-labels': portraitRayLabels })
   const axes = explorerModule.TEST_EXPLORER_AXES
   const props = { locale, coverage: { axes: {}, coveredCount: 0 }, portrait: { axes: Object.fromEntries(axes.filter(axis => axis !== 'personality').slice(0, 8).map(axis => [axis, { percent: 50 }])) } }
   const render = () => { react.reset(); return TestExplorerVisual(props) }
@@ -219,7 +220,7 @@ function portraitHarness(locale, mutate = source => source) {
         if (selector === 'input[type="checkbox"]') return all.filter(node => node.type === 'input')
         if (selector === 'input:checked') return all.filter(node => node.type === 'input' && node.props.checked)
         if (selector === 'input:disabled') return all.filter(node => node.type === 'input' && node.props.disabled)
-        if (selector === 'svg[role="img"] > g') return all.filter(node => node.type === 'svg' && node.props.role === 'img').flatMap(node => [].concat(node.props.children).flat().filter(child => child?.type === 'g'))
+        if (selector === 'svg[role="img"] > g:has(> line[x1="180"][y1="182"])') return all.filter(node => node.type === 'svg' && node.props.role === 'img').flatMap(node => [].concat(node.props.children).flat().filter(child => child?.type === 'g' && [].concat(child.props.children).flat().some(line => line?.type === 'line' && String(line.props.x1) === '180' && String(line.props.y1) === '182')))
         throw new Error('Unexpected selector: ' + selector)
       }))
     },

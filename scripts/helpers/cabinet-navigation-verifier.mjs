@@ -30,6 +30,21 @@ export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'e
   const labels = locale === 'ru' ? ['Профиль', 'Тесты', 'Отчёты', 'Курсы', 'Практика'] : ['Profile', 'Tests', 'Reports', 'Courses', 'Practice']
   const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
   const links = nav.locator(':scope > a')
-  await expect(links).toHaveCount(5)
-  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current') }))), paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null })))
+  const mobile = (await nav.getAttribute('class')).split(/\s+/).includes('hh-mobile-app-nav')
+  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
+  if (mobile) expected.push({ href: locale === 'ru' ? '/ru' : '/', label: locale === 'ru' ? 'Главная' : 'Home', current: null, ariaLabel: locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage' })
+  await expect(links).toHaveCount(mobile ? 6 : 5)
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label') }))), expected)
+}
+
+export async function openCabinetHome(page, expect, { origin, locale = 'en' }) {
+  const path = locale === 'ru' ? '/ru' : '/'
+  const home = page.locator('nav.hh-mobile-app-nav:visible > a.hh-mobile-app-nav-home')
+  await expect(home).toHaveCount(1)
+  await expect(home).toBeVisible()
+  await expect(home).toHaveText(locale === 'ru' ? 'Главная' : 'Home')
+  await expect(home).toHaveAttribute('aria-label', locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage')
+  await expect(home).toHaveAttribute('href', path)
+  await home.click()
+  await expect(page).toHaveURL(origin + path)
 }

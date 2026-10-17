@@ -1,6 +1,6 @@
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
-import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation } from './helpers/cabinet-navigation-verifier.mjs'
+import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -283,7 +283,7 @@ async function openInsightsProfileTools(target=page,locale='en'){
  await expect(details).not.toHaveAttribute('open','')
  await details.locator(':scope > summary').click()
  await expect(details).toHaveAttribute('open','')
- await expect(details.getByRole('heading',{name:locale==='ru'?'Ваш профиль':'Your profile',level:1,exact:true})).toBeVisible()
+ await expect(details.getByRole('heading',{name:locale==='ru'?'Мой профиль':'My profile',level:1,exact:true})).toBeVisible()
  await details.locator('[data-profile-deep-dive] > summary').click()
  await expect(details.getByRole('heading',{name:locale==='ru'?'Шкалы профессиональных тестов':'Professional test scales',exact:true})).toBeVisible()
  return details
@@ -824,7 +824,7 @@ try {
   await expect(page.locator('[data-analysis-offer]')).toHaveCount(0)
   await expect(page.getByText('No reports yet',{exact:true})).toBeVisible()
   const primaryNav=page.getByRole('navigation',{name:'Quick navigation'})
-  await expect(primaryNav.locator('a')).toHaveCount(5)
+  await expect(primaryNav.locator(':scope > a')).toHaveCount(6)
   await expect(primaryNav.getByRole('link',{name:'Analysis'})).toHaveCount(0)
   await expect(primaryNav.getByRole('link',{name:'Profile'})).toHaveAttribute('aria-current','page')
   for(const width of [320,390,768,1280]){
@@ -834,7 +834,9 @@ try {
     await screenshotEvidence(page,{path:output+'/integrated-profile-en-'+width+'.png',fullPage:true})
   }
   await page.setViewportSize({width:390,height:844})
-  passed('legacy Analysis route opens the secure integrated Profile archive with five responsive destinations')
+  await openCabinetHome(page,expect,{origin})
+  await page.goto(origin+'/en/app/portrait');await ready()
+  passed('legacy Analysis route opens the secure integrated Profile archive with five private destinations and mobile Home navigation')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
  await enterTest();assert.equal(await page.locator('.hh-scale [aria-pressed=true]').count(),0)
  await screenshotEvidence(page,{path:output+'/current-state-runner.png',fullPage:true})

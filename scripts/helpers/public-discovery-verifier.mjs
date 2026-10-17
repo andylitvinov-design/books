@@ -198,10 +198,11 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   await inputs.nth(another).check()
   await expect(options.locator('input:checked')).toHaveCount(10)
   await expect(options.locator('input:disabled')).toHaveCount(7)
-  await expect(portrait.locator('svg[role="img"] > g')).toHaveCount(10)
+  // Count center-origin ray groups; localized caption groups are separate SVG siblings.
+  await expect(portrait.locator('svg[role="img"] > g:has(> line[x1="180"][y1="182"])')).toHaveCount(10)
   await less.click()
   await expect(inputs).toHaveCount(10)
-  await expect(portrait.locator('svg[role="img"] > g')).toHaveCount(10)
+  await expect(portrait.locator('svg[role="img"] > g:has(> line[x1="180"][y1="182"])')).toHaveCount(10)
   await portrait.getByRole('button', { name: copy.raysMore, exact: true }).click()
   await expect(inputs.nth(outside)).toBeChecked()
   await expect(inputs.nth(another)).toBeChecked()

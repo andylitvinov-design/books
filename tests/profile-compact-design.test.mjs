@@ -71,7 +71,7 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('Cabinet main mobile nav has exactly five destinations, from the shared localized private model', () => {
+test('Cabinet mobile nav retains five shared private destinations and adds localized Home', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const nav=workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}',workspace.indexOf('<nav className="hh-mobile-app-nav"')))
@@ -79,7 +79,14 @@ test('Cabinet main mobile nav has exactly five destinations, from the shared loc
   assert.match(nav, /href=\{href\} prefetch=\{false\}/)
   assert.match(nav, /aria-current=\{navIsActive\(id\)/)
   assert.doesNotMatch(nav, />Analysis</)
-  assert.match(css, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
+  const mobileGrid = [...css.matchAll(/\.hh-app \.hh-mobile-app-nav\s*\{([^}]*)\}/g)].map(([, declarations]) => declarations).find(declarations => declarations.includes('!important'))
+  assert.ok(mobileGrid, 'the scoped mobile navigation override must exist')
+  assert.match(mobileGrid, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
+  assert.equal(nav.split('className="hh-mobile-app-nav-home"').length - 1, 1)
+  assert.ok(nav.includes("href={locale === 'ru' ? '/ru' : '/'}"))
+  assert.ok(nav.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
+  assert.ok(nav.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
+  assert.ok(nav.indexOf('className="hh-mobile-app-nav-home"') > nav.indexOf('nav.map'))
   const top=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('const navIsActive'))
   const entries=[...top.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
   assert.deepEqual(entries,[

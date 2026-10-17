@@ -3,8 +3,9 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { readFileSync } from 'node:fs'
+import { COPY } from '../components/app/copy.js'
 import * as navigation from '../lib/site-navigation-model.js'
-import { assertCabinetPrimaryNavigation } from '../scripts/helpers/cabinet-navigation-verifier.mjs'
+import { assertCabinetPrimaryNavigation, openCabinetHome } from '../scripts/helpers/cabinet-navigation-verifier.mjs'
 import { assertPublicDiscoveryChrome } from '../scripts/helpers/public-discovery-verifier.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -21,6 +22,7 @@ function locator(values) {
       assert.equal(selector, 'a[aria-current="page"]')
       return locator(values.flatMap(links).filter(node => node.props['aria-current'] === 'page'))
     },
+    async getAttribute(name) { assert.equal(values.length, 1); return element(values[0]).getAttribute(name === 'class' ? 'className' : name) },
     async evaluateAll(fn) { return fn(values.map(element)) },
   }
 }
@@ -73,17 +75,25 @@ for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplic
 const workspace = read('components/app/app-workspace.jsx')
 const model = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const documentReader', workspace.indexOf('const nav = [')))
 const start = workspace.indexOf('<nav className="hh-mobile-app-nav"'), end = workspace.indexOf('</nav>', start) + '</nav>'.length
-const privateSource = "import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; " + model + 'return (' + workspace.slice(start, end) + '); }'
-const { PrivateNav } = compile(privateSource, {})
+const privateSource = "import { COPY } from './copy'; import Link from 'next/link'; import { UserRound, ClipboardList, BarChart3, BookOpen, Users, House } from 'lucide-react'; export function PrivateNav({locale,page}) { const root='/'+locale+'/app'; const c=COPY[locale]; " + model + 'return (' + workspace.slice(start, end) + '); }'
+const { PrivateNav } = compile(privateSource, { './copy': { COPY } })
+const desktopStart = workspace.indexOf('<nav className="hh-nav"')
+const desktopEnd = workspace.indexOf('</nav>', desktopStart) + '</nav>'.length
+assert.ok(desktopStart >= 0, 'actual desktop navigation exists')
+const { PrivateNav: DesktopNav } = compile(privateSource.slice(0, privateSource.indexOf('return (')) + 'return (' + workspace.slice(desktopStart, desktopEnd) + '); }', { './copy': { COPY } })
 for (const locale of ['en', 'ru']) test(locale + ' actual shared private model preserves five exact destinations and current-page aliases', async () => {
-  for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results']) {
-    const tree = PrivateNav({ locale, page })
+  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results']) {
+    const tree = Renderer({ locale, page })
     const target = { locator(selector) { assert.equal(selector, 'nav.hh-nav:visible, nav.hh-mobile-app-nav:visible'); return locator([tree]) } }
     await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page })
   }
 })
-for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars']) test('private navigation proof rejects ' + fault, async () => {
+for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
   const tree = PrivateNav({ locale: 'en', page: 'portrait' }), all = links(tree)
+  if (fault === 'wrongHomeAria') all[5].props['aria-label'] = 'Go home'
+  if (fault === 'missingHome') all[5].type = 'div'
+  if (fault === 'wrongHomeHref') all[5].props.href = '/en'
+  if (fault === 'wrongHomeLabel') all[5].props.children = 'Homepage'
   if (fault === 'wrongLabel') all[1].props.children = 'My tests'
   if (fault === 'wrongHref') all[4].props.href = '/en/app/settings'
   if (fault === 'wrongCurrent') all[0].props['aria-current'] = undefined
@@ -92,7 +102,7 @@ for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'tw
   await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { current: 'portrait' }))
 })
 
-test('core exercises accepted private labels, responsive five-tab navigation and compact account picker', () => {
+test('core exercises accepted private labels, five private destinations and mobile Home navigation and compact account picker', () => {
   const core = read('scripts/verify-app-r1.mjs')
   assert.ok(core.includes("toHaveText(locale==='ru'?'Отчёты':'Reports')"))
   assert.ok(core.includes("const practice=page.locator('.hh-master-header-link')"))
@@ -102,4 +112,22 @@ test('core exercises accepted private labels, responsive five-tab navigation and
   assert.ok(core.includes("await assertCabinetPrimaryNavigation(page,expect,{current:'portrait'})"))
   assert.ok(core.includes('await assertCompactAccountPicker(await openAccountTestPicker(page,expect),expect)'))
   for (const unchanged of ["practitionerOpen.status,404", "practitionerOpen.data.error,'NOT_FOUND'", "api('results/'+first.id,null,other)).status,404", 'exerciseAccountPickerDraftRetention(selectionPage,expect)', 'selectedPlan.definitionIds,[personalityDefinition.id]']) assert.ok(core.includes(unchanged), unchanged)
+})
+
+for (const locale of ['en', 'ru']) test(locale + ' mobile Home verifies its exact label and real click destination', async () => {
+  const tree = PrivateNav({ locale, page: 'portrait' })
+  const node = links(tree).find(node => node.props.className === 'hh-mobile-app-nav-home')
+  const events = [], origin = 'http://127.0.0.1:3100'
+  const home = { async click() { events.push('click'); page.url = origin + node.props.href } }
+  const page = { url: origin + '/' + locale + '/app/portrait', locator(selector) { assert.equal(selector, 'nav.hh-mobile-app-nav:visible > a.hh-mobile-app-nav-home'); return home } }
+  const check = value => ({
+    async toHaveCount(count) { assert.ok(node); assert.equal(count, 1) },
+    async toBeVisible() { assert.equal(value, home) },
+    async toHaveText(expected) { assert.equal(text(node), expected) },
+    async toHaveAttribute(name, expected) { assert.equal(node.props[name], expected) },
+    async toHaveURL(expected) { assert.equal(value.url, expected); events.push('url') },
+  })
+  await openCabinetHome(page, check, { origin, locale })
+  assert.deepEqual(events, ['click', 'url'])
+  assert.ok(read('scripts/verify-app-r1.mjs').includes('await openCabinetHome(page,expect,{origin})'))
 })
