@@ -900,7 +900,7 @@
   .shell .duration{font-size:.66rem}
   .shell .questionCount{display:inline-flex;font-size:.66rem}
   .shell .takeTest{
-    grid-column:3;grid-row:2;justify-self:end;min-height:44px;
+    justify-self:stretch;min-height:44px;
     min-width:108px;padding:8px 12px;border-radius:9px;
     font-size:.78rem!important;
   }
