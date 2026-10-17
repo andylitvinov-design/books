@@ -51,3 +51,24 @@ test("source-backed registered cards do not open the optimizer, original reader 
   assert.doesNotMatch(read("next.config.ts"), /images:\s*\{\s*unoptimized:\s*true/);
   assert.doesNotMatch(read("components/book-showcase.tsx"), /fetch\(|/api/admin\//);
 });
+
+test("Library and Alchemy services reuse source-pinned 256/960px artwork without paid variants", () => {
+  const paths = [
+    "/images/holistic-house/books-library.webp",
+    "/images/holistic-house/distance-homeopathy.webp",
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/media/remedies/arnica/message168-1.jpg",
+  ];
+  for (const path of paths) {
+    const item = urls.images[path];
+    assert.match(item?.thumb ?? "", /^\/images\/holistic-house\/static-card-media\/[a-f0-9]{16}-w256\.webp$/);
+    assert.match(item?.feature ?? "", /^\/images\/holistic-house\/static-card-media\/[a-f0-9]{16}-w960\.webp$/);
+  }
+  const catalog = read("components/catalog-showcase.tsx");
+  assert.match(catalog, /cardArtworkUrl\(item\.image, "feature"\)/);
+  assert.match(catalog, /unoptimized=\{hasCardArtwork\(item\.image\)\}/);
+  const service = read("components/core-service-detail.tsx");
+  assert.match(service, /cardArtworkUrl\(t\.image, "feature"\)/);
+  assert.match(service, /unoptimized=\{hasCardArtwork\(t\.image\)\}/);
+  assert.match(service, /<Image/);
+});
