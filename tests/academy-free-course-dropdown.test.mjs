@@ -38,7 +38,8 @@ test('Photo-left cards keep a visible course start link in EN RU ES and remain u
   for (const phrase of ['Start course', 'Пройти', 'Empezar', 'Бесплатные ИИ-курсы', 'Free AI courses']) {
     assert.ok(source.includes(phrase), phrase)
   }
-  assert.match(source, /<Image src=\{course\.image\} alt="" fill/)
+  assert.match(source, /<Image src=\{cardArtworkUrl\(course\.image\)\} unoptimized=\{hasCardArtwork\(course\.image\)\} alt="" fill/)
+  assert.match(source, /image: "\/academy\/reiki-yggdrasil\/source\/program-overview\.jpg"/)
   assert.match(source, /className=\{styles\.start\} href=\{href\}/)
   assert.match(styles, /grid-template-columns: 132px minmax\(0, 1fr\)/)
   assert.match(styles, /@media \(max-width: 540px\)/)
