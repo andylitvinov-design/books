@@ -150,7 +150,7 @@ const GUEST_START_NOTICE = {
   es: 'Al iniciar una prueba, confirmas que tienes 18 años o más y aceptas el tratamiento privado y temporal de tus respuestas y resultados. No necesitas registrarte.',
 }
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartSingle = null, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartSingle = null, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, initialAxis = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const socialCopy = SOCIAL_COPY[locale] || SOCIAL_COPY.en
   const guestStartNotice = GUEST_START_NOTICE[locale] || GUEST_START_NOTICE.en
@@ -663,6 +663,13 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       </section>
     </div>
     <section id="hh-test-list" className={styles.catalogTopbar} aria-label={locale === 'ru' ? 'Каталог тестов' : locale === 'es' ? 'Catálogo de pruebas' : 'Test catalog'}>
+      {initialAxis && axes.includes(initialAxis) && <div className={styles.portraitAxisBrowse} data-testid="portrait-axis-test-choices">
+        <strong>{locale === 'ru' ? 'Тесты для шкалы' : locale === 'es' ? 'Pruebas para' : 'Tests for'}: {TEST_EXPLORER_AXIS_LABELS[initialAxis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[initialAxis]?.en || initialAxis}</strong>
+        <p>{locale === 'ru'
+          ? 'Выберите один или несколько тестов, измеряющих эту шкалу. Тестирование не запускается автоматически.'
+          : locale === 'es' ? 'Elige las pruebas que miden esta escala. Ninguna comienza automáticamente.'
+            : 'Choose from tests that measure this scale. Nothing starts automatically.'}</p>
+      </div>}
       <div className={styles.catalogTopline}>
         <div className={styles.catalogHeading}>
           <p className={styles.eyebrow}>{locale === 'ru' ? 'Ваш выбор' : locale === 'es' ? 'Tu selección' : 'Make it personal'}</p>
