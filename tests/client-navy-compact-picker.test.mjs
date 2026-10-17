@@ -26,7 +26,9 @@ test('recommendation cards stay compact with separate selection, disclosure and 
 test('each Take Test button starts only that eligible test through the guest runner', () => {
   assert.match(explorer, /const startSingle = async \(entry\)/)
   assert.match(explorer, /await onStart\(activeBattery, \{/)
-  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(explorer, /if \(audience === 'account' && onStartSingle\)/)
+  assert.match(explorer, /await onStartSingle\(entry, preferences\)/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
   assert.match(explorer, /onStartSingle=\{startSingle\}/)
   assert.match(explorer, /onStart=\{start\}/)
   assert.match(publicFlow, /guestStartable\(entries\)/)
@@ -70,7 +72,9 @@ test('softer palette keeps the single-test action without mandatory sign-in', ()
   assert.match(css, /Soft navy & burgundy My Tests/)
   assert.match(css, /--ink:#172f4b/)
   assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
-  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(explorer, /if \(audience === 'account' && onStartSingle\)/)
+  assert.match(explorer, /await onStartSingle\(entry, preferences\)/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
   assert.match(publicFlow, /client\?startTests=/)
 });
 
@@ -101,7 +105,7 @@ test('full test catalog differentiates selection and save buttons from actual te
   assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=save\]/)
   assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=start\]/)
   assert.match(fullExplorerCss, /\.explorer \.battery \.primary\[data-test-action=start\]/)
-  assert.match(explorer, /onStart\(\[entry\]/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
 })
 
 
