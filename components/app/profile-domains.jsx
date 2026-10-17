@@ -5,16 +5,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Brain, ChevronDown, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
-import { ProfileServiceCards } from './profile-service-cards'
 import './profile-domains.css'
 
 const DOMAINS = PROFILE_AREAS
 const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnotherapy: HeartHandshake }
 const WORDS = {
   en: {
-    eyebrow: 'PRIVATE SPACE · HOLISTIC HOUSE',
-    title: 'Your profile',
-    reports: 'Your path to balance, awareness and a more harmonious life.',
+    eyebrow: 'YOUR CABINET · PRIVATE',
+    title: 'My personal reports',
+    reports: 'Your personal reports, practitioner recommendations and saved consultations — all in one private place.',
     intro: 'Four perspectives on your journey. Explore what is available, follow changes over time, and choose support only when you want it.',
     psychology: 'Psychological', homeopathy: 'Homeopathy', wu_xing: 'Wu Xing', hypnotherapy: 'Hypnotherapy',
     psyDetail: 'Psychological profile', homeoDetail: 'Homeopathic profile', wuDetail: 'Five-element resource profile', hypnoDetail: 'Hypnotherapist recommendations',
@@ -41,13 +40,14 @@ const WORDS = {
     visibleLimit: 'Recent saved materials are shown here. Your complete archive is in My personal reports below.',
     selected: 'selected', emptyLegacyPsy: 'Psychological test reports shared by Andy will appear here. Your Google Cabinet also keeps results from tests you complete yourself.',
     google: 'Open my Google Cabinet',
-    archiveTitle: 'My personal reports', archiveHint: 'Your specialist’s reports, recommendations and original documents are kept in one place.',
+    archiveTitle: 'My reports and recommendations', archiveHint: 'Read and download reports you have saved from your practitioner.',
+    browseTitle: 'Reports by area', browseHint: 'Psychology, homeopathy, Wu Xing and hypnotherapy', savedDocumentsLink: 'My saved documents', getReview: 'Request a free written review', noReportsHint: 'Your personal archive starts with a report shared with you.',
     overview: 'Profile at a glance', profileReports: 'Personal reports', remedyRecords: 'Remedy records', discover: 'Explore services', support: 'Personal support',
   },
   ru: {
-    eyebrow: 'ЛИЧНОЕ ПРОСТРАНСТВО · HOLISTIC HOUSE',
-    title: 'Ваш профиль',
-    reports: 'Ваш путь к балансу, осознанности и гармоничной жизни.',
+    eyebrow: 'ЛИЧНЫЙ КАБИНЕТ · ПРИВАТНО',
+    title: 'Мои личные отчёты',
+    reports: 'Ваши личные отчёты, рекомендации специалиста и сохранённые консультации — в одном приватном пространстве.',
     intro: 'Четыре стороны вашего профиля. Вы можете спокойно изучить записи, увидеть изменения и обратиться за поддержкой, когда захотите.',
     psychology: 'Психология', homeopathy: 'Гомеопатия', wu_xing: 'У-Син', hypnotherapy: 'Гипнотерапия',
     psyDetail: 'Психологический профиль', homeoDetail: 'Гомеопатический профиль', wuDetail: 'Ресурсы по пяти стихиям У-Син', hypnoDetail: 'Рекомендации гипнотерапевта',
@@ -74,7 +74,8 @@ const WORDS = {
     visibleLimit: 'Здесь показаны последние материалы. Полный архив доступен ниже в разделе «Мои личные отчёты».',
     selected: 'подобрано', emptyLegacyPsy: 'Здесь будут психологические отчёты от Andy. Результаты самостоятельно пройденных тестов сохраняются в вашем Google-кабинете.',
     google: 'Открыть Google-кабинет',
-    archiveTitle: 'Мои личные отчёты', archiveHint: 'Отчёты специалиста и оригинальные рекомендации собраны в одном месте.',
+    archiveTitle: 'Мои отчёты и рекомендации', archiveHint: 'Читать и скачивать сохранённые отчёты специалиста.',
+    browseTitle: 'Отчёты по направлениям', browseHint: 'Психология, гомеопатия, У-Син и гипнотерапия', savedDocumentsLink: 'Сохранённые документы', getReview: 'Заказать бесплатный письменный разбор', noReportsHint: 'Ваш личный архив начнётся с отчёта, которым с вами поделились.',
     overview: 'Профиль в цифрах', profileReports: 'Личные отчёты', remedyRecords: 'Подборы препаратов', discover: 'Посмотреть услуги', support: 'Личная поддержка',
   },
 }
@@ -166,6 +167,7 @@ export function ProfileDomains({
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
   const [active, setActive] = useState('psychology')
+  const [expanded, setExpanded] = useState(mode === 'legacy')
   const [interactive, setInteractive] = useState(false)
   const [fetchedReports, setFetchedReports] = useState([])
   const [fetchedDocuments, setFetchedDocuments] = useState([])
@@ -193,7 +195,7 @@ export function ProfileDomains({
   const hypnoReports = byArea('hypnotherapy')
 
   useEffect(() => {
-    if (external || active === 'psychology' || fetchState !== 'idle') return
+    if (external || !expanded || fetchState !== 'idle') return
     setFetchState('loading')
     const reportRefs = ordered(savedReports.filter(report => report.available !== false)).slice(0, 30)
     const documentRefs = ordered(savedDocuments.filter(document => document.kind === 'recommendation')).slice(0, 20)
@@ -216,12 +218,12 @@ export function ProfileDomains({
       setFetchedDocuments(d.filter(value => value.status === 'fulfilled' && value.value.valid).map(value => value.value))
       setFetchState([...r, ...d].some(value => value.status === 'rejected') ? 'partial' : 'ready')
     }).catch(() => { if (mounted.current) setFetchState('partial') })
-  }, [active, external, fetchState, locale, savedDocuments, savedReports])
+  }, [expanded, external, fetchState, locale, savedDocuments, savedReports])
 
   const entries = DOMAINS.map(key => ({
     key,
     summary: key === 'psychology'
-      ? (external ? psychologicalReports.length : recentResults.length)
+      ? psychologicalReports.length
       : key === 'homeopathy'
         ? (updates.length || homeopathicReports.length)
         : key === 'wu_xing' ? wuReports.length : hypnoReports.length,
@@ -235,11 +237,32 @@ export function ProfileDomains({
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
         <h1>{t.title}</h1>
         <p className="hh-domain-hero-subtitle">{t.reports}</p>
-        <p className="hh-domain-hero-quote">{ru ? 'Больше понимания. Больше ресурса. Более полная и гармоничная жизнь.' : 'More understanding. More resources. A fuller, more harmonious life.'}</p>
+        <div className="hh-domain-hero-actions">
+        <a href="#personal-reports">{t.archiveTitle} <ArrowRight size={16} aria-hidden="true" /></a>
+        {!external && <Link href={'/' + locale + '/app/history'} prefetch={false}>{t.savedDocumentsLink}</Link>}
+      </div>
       </div>
     </header>
-    {!external && <ProfileServiceCards locale={locale} results={results} />}
-    {overviewContent}
+    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-profile-reports-title" data-profile-report-archive>
+      <header className="hh-domain-report-archive-head">
+        <div><p className="hh-domain-eyebrow">HOLISTIC HOUSE</p><h2 id="hh-profile-reports-title">{t.archiveTitle}</h2><p>{t.archiveHint}</p></div>
+        <ArrowRight size={21} aria-hidden="true" />
+      </header>
+      {reportsContent}
+    </section>}
+    {!external && savedReports.filter(report => report.available !== false).length === 0 && (
+      <div className="hh-domain-archive-empty-help">
+        <p>{t.noReportsHint}</p>
+        <Link href={'/' + locale + '/services/free-situation-review'} prefetch={false}>{t.getReview} <ArrowRight size={15} aria-hidden="true" /></Link>
+      </div>
+    )}
+    <details className="hh-domain-more" defaultOpen={external} onToggle={event => setExpanded(event.currentTarget.open)}>
+      <summary className="hh-domain-more-toggle">
+        <span><strong>{t.browseTitle}</strong><small>{t.browseHint}</small></span>
+        <ChevronDown size={20} aria-hidden="true" />
+      </summary>
+      <div className="hh-domain-more-body">
+      {overviewContent}
     <div className="hh-domain-tabs" role="tablist" aria-label={t.title}>
       {entries.map(({ key, summary }) => {
         const Icon = ICONS[key]
@@ -271,9 +294,10 @@ export function ProfileDomains({
           <Link className="hh-domain-secondary-link" href={'/' + locale + '/app/portrait'} prefetch={false}>{t.google} <ArrowRight size={16} /></Link>
         </> : <>
           <div className="hh-domain-heading"><div><p className="hh-domain-eyebrow">{t.psychology}</p><h2>{t.psyDetail}</h2><p>{t.psyIntro}</p></div></div>
+          {fetchState === 'loading' && <p className="hh-domain-loading" role="status">{t.loading}</p>}
           {children}
-          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/tests?tab=dynamics'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link><Link href={'/' + locale + '/app/tests'} prefetch={false}>{t.assessments} <ArrowRight size={16} /></Link></div>
-          {psychologicalReports.length > 0 && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.noPsy} t={t} />}
+          {fetchState !== 'loading' && <ReportsHistory reports={psychologicalReports} locale={locale} title={t.reportHistory} empty={t.emptyLegacyPsy} t={t} />}
+          <div className="hh-domain-link-row"><Link href={'/' + locale + '/app/portfolio?tab=dynamics'} prefetch={false}>{t.compare} <ArrowRight size={16} /></Link></div>
         </>}
       </section>}
       {active !== 'psychology' && <section className="hh-domain-content" data-domain={active}>
@@ -298,13 +322,8 @@ export function ProfileDomains({
         <ProfileServiceOffer area={active} locale={locale} />
       </details>
     </div>
-    {reportsContent && <section id="personal-reports" className="hh-domain-report-archive" aria-labelledby="hh-profile-reports-title" data-profile-report-archive>
-      <header className="hh-domain-report-archive-head">
-        <div><p className="hh-domain-eyebrow">HOLISTIC HOUSE</p><h2 id="hh-profile-reports-title">{t.archiveTitle}</h2><p>{t.archiveHint}</p></div>
-        <ArrowRight size={21} aria-hidden="true" />
-      </header>
-      {reportsContent}
-    </section>}
+      </div>
+    </details>
     <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>
     <Link className="hh-domain-services-link" href={'/' + locale + '/services'} prefetch={false}>
       <Sparkles size={16} aria-hidden="true" />{t.discover}<ArrowRight size={16} aria-hidden="true" />
