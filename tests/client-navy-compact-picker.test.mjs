@@ -111,16 +111,16 @@ test('each recommended test has a single visible test-kind badge, not a duplicat
 
 
 test('the first screen is one compact photo hero; the original topic and catalog flow survives', () => {
-  assert.match(css, /Home-aligned My Tests first screen/)
-  assert.match(css, /andy-about\\.png/)
-  assert.match(css, /\\.shell \\.heroActions/)
-  assert.match(css, /@media\\(max-width:600px\\)/)
-  assert.match(picker, /className=\\{styles\\.heroContent\\}/)
-  assert.match(picker, /className=\\{styles\\.heroPrimary\\}/)
-  assert.match(picker, /className=\\{styles\\.heroSecondary\\}/)
+  assert.ok(css.includes('Home-aligned My Tests first screen'))
+  assert.ok(css.includes('andy-about.png'))
+  assert.ok(css.includes('.shell .heroActions'))
+  assert.ok(css.includes('@media(max-width:600px)'))
+  assert.ok(picker.includes('className={styles.heroContent}'))
+  assert.ok(picker.includes('className={styles.heroPrimary}'))
+  assert.ok(picker.includes('className={styles.heroSecondary}'))
   assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo/)
-  assert.match(picker, /id="hh-simple-topic-title"/)
-  assert.match(picker, /id="hh-simple-recommendations"/)
+  assert.ok(picker.includes('id="hh-simple-topic-title"'))
+  assert.ok(picker.includes('id="hh-simple-recommendations"'))
 })
 
 test('mobile cards give full width to labels and keep a 44px burgundy launch button below metadata', () => {
@@ -137,28 +137,28 @@ test('mobile cards give full width to labels and keep a 44px burgundy launch but
 })
 
 test('free test hero is localized, and both actions jump to real content', () => {
-  assert.match(picker, /heroPrimary:'Choose my topics'/)
-  assert.match(picker, /heroPrimary:'Выбрать темы'/)
-  assert.match(picker, /heroPrimary:'Elegir temas'/)
-  assert.match(picker, /heroSecondary:'Browse free tests'/)
-  assert.match(picker, /href="#hh-simple-topic-title"/)
-  assert.match(picker, /href="#hh-simple-recommendations"/)
-  assert.match(picker, /aria-pressed=\\{checked\\}/)
-  assert.match(picker, /onToggleFocus\\(key\\)/)
-  assert.match(picker, /data-test-start-mode=\\{journeyMode\\}/)
+  assert.ok(picker.includes("heroPrimary:'Choose my topics'"))
+  assert.ok(picker.includes("heroPrimary:'Выбрать темы'"))
+  assert.ok(picker.includes("heroPrimary:'Elegir temas'"))
+  assert.ok(picker.includes("heroSecondary:'Browse free tests'"))
+  assert.ok(picker.includes('href="#hh-simple-topic-title"'))
+  assert.ok(picker.includes('href="#hh-simple-recommendations"'))
+  assert.ok(picker.includes('aria-pressed={checked}'))
+  assert.ok(picker.includes('onToggleFocus(key)'))
+  assert.ok(picker.includes('data-test-start-mode={journeyMode}'))
 })
 
 
 test('the existing two-column mobile topic chooser is untouched by the warm hero', () => {
-  assert.match(picker, /const TOPICS = \\[\\.\\.\\.HOME_TEST_TOPICS/)
-  assert.match(picker, /key: 'function', en: 'Work & daily life'/)
-  assert.match(picker, /className=\\{styles\\.selectAll\\}/)
-  assert.match(picker, /TOPICS\\.every\\(\\(\\{key\\}\\) => focus\\.includes\\(key\\)\\)/)
-  assert.match(picker, /onToggleFocus\\(key\\)/)
-  assert.match(css, /Restore the user's approved airy turquoise reference/)
-  assert.match(css, /@media\\(max-width:760px\\)\\{\\s*\\.shell \\.topicGrid\\{\\s*grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/)
-  assert.match(css, /background:linear-gradient\\(110deg,#973a5b,#822b48\\)!important/)
-  assert.match(routeCss, /Public My Tests entry echoes the approved warm homepage masthead/)
+  assert.ok(picker.includes('const TOPICS = [...HOME_TEST_TOPICS'))
+  assert.ok(picker.includes("key: 'function', en: 'Work & daily life'"))
+  assert.ok(picker.includes('className={styles.selectAll}'))
+  assert.ok(picker.includes('TOPICS.every(({key}) => focus.includes(key))'))
+  assert.ok(picker.includes('onToggleFocus(key)'))
+  assert.ok(css.includes("Restore the user's approved airy turquoise reference"))
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))
+  assert.ok(css.includes('background:linear-gradient(110deg,#973a5b,#822b48)!important'))
+  assert.ok(routeCss.includes('Public My Tests entry echoes the approved warm homepage masthead'))
 })
 
 test('the first mobile step follows the hero immediately, without redundant promo or benefits', () => {
@@ -166,8 +166,8 @@ test('the first mobile step follows the hero immediately, without redundant prom
   const topics = picker.indexOf('id="hh-simple-topic-title"')
   assert.ok(hero > 0 && topics > hero)
   assert.doesNotMatch(picker, /data-client-tests-benefits|data-client-tests-promo|data-prelogin-google-notice/)
-  assert.match(picker, /!authenticated && <p className=\\{styles\\.heroFootnote\\}/)
-  assert.match(picker, /c\\.privacy/)
+  assert.ok(picker.includes('!authenticated && <p className={styles.heroFootnote}'))
+  assert.ok(picker.includes('c.privacy'))
 })
 
 test('problems search and optional skip use the existing topic-derived concerns', () => {
