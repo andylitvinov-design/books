@@ -12,3 +12,6 @@ node_modules
 
 tmp/
 output/
+
+# Generated from verified originals by scripts/build-public-card-artwork.mjs
+/public/images/holistic-house/static-card-media/
