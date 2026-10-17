@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { layoutPortraitRayLabels } from '@/lib/assessments/portrait-ray-labels'
 import styles from './test-explorer.module.css'
 
 const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
@@ -37,6 +38,9 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     return { axis, percent, end: percent === null ? null : project(12 + (percent / 100) * 119), previousEnd: measure?.previousPercent === null || measure?.previousPercent === undefined ? null : project(12 + (measure.previousPercent / 100) * 119), ideal: project(131) }
   })
   const polygon = (kind) => rays.map((ray) => `${ray[kind].x},${ray[kind].y}`).join(' ')
+  const rayLabels = portrait ? layoutPortraitRayLabels(rays.map((ray) => ({
+    axis: ray.axis, label: label(ray.axis), ideal: ray.ideal, measured: Boolean(ray.end),
+  }))) : []
   const formatDate = (value) => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat(ru ? 'ru-RU' : es ? 'es-ES' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value)) : ''
   const toggleRay = (axis) => setChosenRays((current) => {
     const selected = current === null ? suggestedRays : current
@@ -106,7 +110,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           </g>
         })}
       </svg>}
-      {portrait && <svg viewBox="0 0 360 390" className={styles.portraitRadar} role="img" aria-label={ru ? 'Измеренные шкалы психологического портрета' : 'Measured psychological portrait axes'}>
+      {portrait && <svg viewBox="0 0 360 390" className={styles.portraitRadar} role="img" aria-label={`${ru ? 'Измеренные шкалы психологического портрета' : es ? 'Escalas medidas del retrato psicológico' : 'Measured psychological portrait axes'}: ${rayLabels.map((ray) => ray.label).join(', ')}`}>
         <title>{ru ? 'Лучи психологического портрета по пройденным тестам' : 'Your tested psychological portrait rays'}</title>
         <circle cx="180" cy="182" r="131" className={styles.radarReference} />
         <circle cx="180" cy="182" r="70" className={styles.radarGrid} />
@@ -119,6 +123,16 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarArea} />}
         {rays.length >= 3 && rays.every((ray) => ray.end) && <polygon points={polygon('end')} className={styles.radarOutline} />}
         <circle cx="180" cy="182" r="7" className={styles.radarCenter} />
+        {rayLabels.map((ray) => <g key={`portrait-label-${ray.axis}`} className={`${styles.radarLabel} ${ray.measured ? '' : styles.radarLabelUnmeasured}`}>
+          <line x1={ray.tip.x} y1={ray.tip.y} x2={ray.anchor.x} y2={ray.anchor.y} className={styles.radarLabelLeader} />
+          <rect x={ray.x} y={ray.y} width={ray.width} height={ray.height} rx="8" className={styles.radarLabelPill} />
+          <text x={ray.x + ray.width / 2} y={ray.y + (ray.lines.length === 1 ? 17 : 15)}
+            textAnchor="middle" className={styles.radarLabelText}>
+            {ray.lines.map((line, index) => <tspan key={index} x={ray.x + ray.width / 2}
+              dy={index === 0 ? 0 : 14} textLength={line.length > 14 ? 106 : undefined}
+              lengthAdjust="spacingAndGlyphs">{line}</tspan>)}
+          </text>
+        </g>)}
       </svg>}
       {!portrait && !compact && <div className={styles.axisRing}>
         {PRIMARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}

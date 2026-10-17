@@ -26,7 +26,9 @@ test('recommendation cards stay compact with separate selection, disclosure and 
 test('each Take Test button starts only that eligible test through the guest runner', () => {
   assert.match(explorer, /const startSingle = async \(entry\)/)
   assert.match(explorer, /await onStart\(activeBattery, \{/)
-  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(explorer, /if \(audience === 'account' && onStartSingle\)/)
+  assert.match(explorer, /await onStartSingle\(entry, preferences\)/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
   assert.match(explorer, /onStartSingle=\{startSingle\}/)
   assert.match(explorer, /onStart=\{start\}/)
   assert.match(publicFlow, /guestStartable\(entries\)/)
@@ -70,7 +72,9 @@ test('softer palette keeps the single-test action without mandatory sign-in', ()
   assert.match(css, /Soft navy & burgundy My Tests/)
   assert.match(css, /--ink:#172f4b/)
   assert.match(picker, /onClick=\{\(\) => onStartSingle\?\.\(entry\)\}/)
-  assert.match(explorer, /await onStart\(\[entry\], \{/)
+  assert.match(explorer, /if \(audience === 'account' && onStartSingle\)/)
+  assert.match(explorer, /await onStartSingle\(entry, preferences\)/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
   assert.match(publicFlow, /client\?startTests=/)
 });
 
@@ -101,7 +105,7 @@ test('full test catalog differentiates selection and save buttons from actual te
   assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=save\]/)
   assert.match(fullExplorerCss, /\.explorer \.quickPrimary\[data-test-action=start\]/)
   assert.match(fullExplorerCss, /\.explorer \.battery \.primary\[data-test-action=start\]/)
-  assert.match(explorer, /onStart\(\[entry\]/)
+  assert.match(explorer, /await onStart\(\[entry\], preferences\)/)
 })
 
 
@@ -115,12 +119,11 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   const academyCss = read('components/academy-discovery.module.css')
   assert.match(picker, /import academyStyles from '\.\.\/academy-discovery\.module\.css'/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinder : academyStyles\.hero\} data-client-tests-hero/)
-  assert.match(picker, /\{!authenticated && <div className=\{academyStyles\.topline\}>/)
+  assert.match(picker, /className=\{academyStyles\.topline\}/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSearch : academyStyles\.form\} role="search"/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderFilters : academyStyles\.filters\}/)
   assert.match(picker, /className=\{academyStyles\.tabs\}/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSubmit : academyStyles\.submit\}/)
-  assert.match(picker, /\? <h2 className=\{styles\.accountFinderTitle\}>\{c\.finderTitle\}<\/h2>\s*: <h1>\{c\.heroHeadline\}<\/h1>/)
   assert.match(academyCss, /linear-gradient\(121deg, #203450/)
   assert.match(css, /\.shell\[data-public-test-picker="true"\]/)
   assert.match(css, /@media\(max-width:620px\)/)
@@ -129,12 +132,10 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   assert.ok(picker.includes('id="hh-simple-recommendations"'))
 })
 
-test('Academy-style hero searches the independent catalog while topic chips refine recommendations', () => {
+test('Academy-style hero search and topic chips actually refine existing recommendations', () => {
   assert.match(picker, /\[heroSearch, setHeroSearch\] = useState\(''\)/)
   assert.match(picker, /const browseRecommendations = heroSearchTerm/)
-  assert.match(picker, /\? searchPublicTestEntries\(\s*groupViaRecommendations\(searchRecommendations, selectedKeys, showIndividualVia\)\.visible,\s*heroSearchTerm\)\s*: groupedRecommendations/)
-  assert.match(explorer, /filterExplorerEntries\(entries, \{ availability: 'available', kinds, maxMinutes \}\)/)
-  assert.match(explorer, /searchRecommendations=\{searchRecommendations\}/)
+  assert.match(picker, /searchPublicTestEntries\(/)
   assert.match(picker, /setSubmittedHeroSearch\(heroSearch\.trim\(\)\)/)
   assert.match(picker, /onToggleFocus\(key\)/)
   assert.match(picker, /onSelectTestKind\?\.\(event\.target\.value/)

@@ -6,6 +6,7 @@ import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -17,8 +18,6 @@ import { profileCompletionRecommendations } from '@/lib/profile/summary'
 import { profileScreeningPresentation } from '@/lib/profile/profile-scale-presentation'
 import { AssessmentReading } from '@/components/assessment-reading'
 import { MoodCheckIn } from '@/components/app/mood-checkin'
-import PsiMonitoring from '@/components/app/psi-monitoring'
-import { AccountTestBattery } from '@/components/app/account-test-battery'
 import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
@@ -28,7 +27,6 @@ import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
-import { ProfileDomains } from '@/components/app/profile-domains'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
@@ -43,8 +41,6 @@ import {
   rankAssessmentDefinitions,
 } from '@/lib/assessments/test-recommendations'
 import { SAFETY_COPY } from '@/lib/assessments/safety'
-import PracticeWorkspace from '@/components/app/practice-workspace'
-import MyCourse from '@/components/app/my-course'
 import { SubscriptionProvider, SubscriptionSettings, useSubscription } from '@/components/app/subscription-access'
 import CommunicationPreferences from '@/components/app/communication-preferences'
 import NotificationSettings from '@/components/app/notification-settings'
@@ -58,6 +54,15 @@ import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTi
 import { appFetch } from '@/lib/app/client-fetch'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
+
+// The Cabinet shares one catch-all route, but its tabs have independent large
+// feature trees. Load only the active tab rather than hydrating every feature
+// (courses, tests, practice, and personal reports) on the first visit.
+const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
+const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
+const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
+const MyCourse = dynamic(() => import('@/components/app/my-course'))
+const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -569,6 +574,10 @@ export default function AppWorkspace({ locale, path = [] }) {
             aria-current={navIsActive(id) ? 'page' : undefined}
           ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
         ))}
+        <Link href={locale === 'ru' ? '/ru' : '/'} prefetch={false}
+          className="hh-mobile-app-nav-home"
+          aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
+        ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : 'Home'}</span></Link>
       </nav>}
     </main>
     </SubscriptionProvider>

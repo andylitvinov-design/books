@@ -143,7 +143,7 @@ const GUEST_START_NOTICE = {
   es: 'Al iniciar una prueba, confirmas que tienes 18 años o más y aceptas el tratamiento privado y temporal de tus respuestas y resultados. No necesitas registrarte.',
 }
 
-export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
+export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onStartSingle = null, onStartCourse = null, activePlan = null, onResume, embedded = false, pastResults = [], draftRuns = [], profileSnapshot = null, onResumeRun, recommendedKey = null, initialPreferences = null, initialMode = 'tests', initialBrowseFull = false, simpleMode = false, authenticated = false, preserveScaleFilters = false, openFiltersInitially = false, initialFilterGroup = null, explicitSelectionOnly = false }) {
   const c = COPY[locale] || COPY.en
   const guestStartNotice = GUEST_START_NOTICE[locale] || GUEST_START_NOTICE.en
   const advanced = ADVANCED_COPY[locale] || ADVANCED_COPY.en
@@ -346,8 +346,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     })
     setSimpleSelectionChanged(true)
   }
-  // Keep the existing batch start unchanged. Per-card actions use the same
-  // handoff with a single-item battery, without modifying the selected set.
+  // Batch selection only saves the explicitly chosen set. A signed-in card may
+  // additionally launch just that test after it is added to the account plan.
   const start = async () => {
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
@@ -357,12 +357,20 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
   const startSingle = async (entry) => {
-    if (!entry?.selectable || !onStart || starting) return
+    if (!entry?.selectable || !(onStartSingle || onStart) || starting) return
     setStarting(true); setActionError(null)
-    try { await onStart([entry], {
-      focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
-      depth, maxMinutes, language, tracking, freeOnly,
-    }) } catch (error) { setActionError(error) } finally { setStarting(false) }
+    try {
+      const preferences = {
+        focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+        depth, maxMinutes, language, tracking, freeOnly,
+      }
+      if (audience === 'account' && onStartSingle) {
+        await onStartSingle(entry, preferences)
+      } else {
+        // Public/guest flow and legacy consumers still use the existing handoff.
+        await onStart([entry], preferences)
+      }
+    } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
   if (simpleMode && !browseFull) {

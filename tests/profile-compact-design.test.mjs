@@ -71,24 +71,38 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('Cabinet mobile nav retains five shared private destinations and adds localized Home', () => {
+test('five private Cabinet tabs share menus while mobile adds a sixth public Home shortcut', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
-  const nav=workspace.slice(workspace.indexOf('<nav className="hh-mobile-app-nav"'), workspace.indexOf('</nav>}',workspace.indexOf('<nav className="hh-mobile-app-nav"')))
-  assert.match(nav, /nav\.map\(\(\{ id, label, href, icon: Icon \}\)/)
-  assert.match(nav, /href=\{href\} prefetch=\{false\}/)
-  assert.match(nav, /aria-current=\{navIsActive\(id\)/)
-  assert.doesNotMatch(nav, />Analysis</)
-  const mobileGrid = [...css.matchAll(/\.hh-app \.hh-mobile-app-nav\s*\{([^}]*)\}/g)].map(([, declarations]) => declarations).find(declarations => declarations.includes('!important'))
-  assert.ok(mobileGrid, 'the scoped mobile navigation override must exist')
-  assert.match(mobileGrid, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
-  assert.equal(nav.split('className="hh-mobile-app-nav-home"').length - 1, 1)
-  assert.ok(nav.includes("href={locale === 'ru' ? '/ru' : '/'}"))
-  assert.ok(nav.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
-  assert.ok(nav.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
-  assert.ok(nav.indexOf('className="hh-mobile-app-nav-home"') > nav.indexOf('nav.map'))
-  const top=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('const navIsActive'))
-  const entries=[...top.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
+  const navStart = workspace.indexOf('const nav = [')
+  const navEnd = workspace.indexOf('  const navIsActive =', navStart)
+  assert.ok(navStart >= 0 && navEnd > navStart, 'one shared account nav model')
+  const navModel = workspace.slice(navStart, navEnd)
+  for (const [id, title, route] of [
+    ['portrait', 'Profile', '/portrait'],
+    ['tests', 'Tests', '/tests'],
+    ['portfolio', 'Reports', '/portfolio'],
+    ['course', 'Courses', '/course'],
+    ['practice', 'Practice', '/practice'],
+  ]) {
+    assert.match(navModel, new RegExp("id: '" + id + "'"))
+    assert.ok(navModel.includes("label: locale === 'ru'"), 'EN and RU navigation labels')
+    assert.ok(navModel.includes("'" + title + "'"), title)
+    assert.ok(navModel.includes("href: root + '" + route + "'"), route)
+  }
+  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice)'/g)||[]).length,5)
+  assert.doesNotMatch(navModel, /\{ id: 'analysis'/)
+  const mobileStart=workspace.indexOf('<nav className="hh-mobile-app-nav"')
+  const mobile=workspace.slice(mobileStart,workspace.indexOf('</nav>}',mobileStart))
+  assert.ok(mobileStart>0 && mobile.length>100)
+  assert.match(mobile,/nav\.map\(\(\{ id, label, href, icon: Icon \}\) =>/)
+  assert.match(mobile,/href=\{href\} prefetch=\{false\}/)
+  assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
+  assert.match(mobile,/className="hh-mobile-app-nav-home"/)
+  assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important;/)
+  // Preserve the verifier branch's stricter exact bilingual ordering and Home contract.
+  const entries=[...navModel.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
   assert.deepEqual(entries,[
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
@@ -96,4 +110,12 @@ test('Cabinet mobile nav retains five shared private destinations and adds local
     {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
   ])
+  assert.doesNotMatch(mobile, />Analysis</)
+  assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
+  assert.ok(mobile.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
+  assert.ok(mobile.includes("<span>{locale === 'ru' ? 'Главная' : 'Home'}</span>"))
+  assert.ok(mobile.indexOf('className="hh-mobile-app-nav-home"') > mobile.indexOf('nav.map'))
+
 })
+
+
