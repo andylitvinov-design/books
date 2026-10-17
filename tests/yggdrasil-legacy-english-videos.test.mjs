@@ -46,7 +46,7 @@ test("Academy English videos preserve verified origins and load players only on 
   assert.match(page, /item\.youtubeId \? \(/);
   assert.match(page, /<AcademyVideoPlayer youtubeId=\{item\.youtubeId\}/);
   assert.match(page, /<Image src=\{item\.image\}/);
-  assert.match(hub, /view === "videos" \? <AcademyVideoCourses locale=\{locale\}/);
+  assert.match(hub, /view === "videos" \? \(\s*<section id="academy-video-courses">\s*<AcademyVideoCourses locale=\{locale\}/);
   assert.match(serverLibrary, /englishGuidedMeditations.find/);
   assert.match(serverLibrary, /validVideoId.test\(source.youtubeId\)/);
   assert.match(clientLibrary, /onClick=\{\(\) => openVideoById\(key\)\}/);

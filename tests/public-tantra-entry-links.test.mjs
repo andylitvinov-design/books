@@ -66,10 +66,21 @@ const spanishHome = loadComponent('app/es/page.tsx', {
   '@/components/public-consultation-cta': { PublicConsultationCta: empty },
   '@/lib/spanish-metadata': { spanishMetadata: empty },
 }).default;
+// Render the real interactive Academy hero, including its localized links and
+// initial unfiltered program choices. React hooks work in server rendering.
+const catalogue = { CatalogShowcase: ({ items }) => items.map((item) => React.createElement('a', { key: item.id, href: item.href }, item.title)) };
+const academyDiscovery = loadComponent('components/academy-discovery.tsx', {
+  ...shared,
+  react: React,
+  'lucide-react': { ...shared['lucide-react'], Search: empty },
+  '@/components/catalog-showcase': catalogue,
+  './academy-discovery.module.css': {},
+}).AcademyDiscovery;
 const academy = loadComponent('components/academy-hub.tsx', {
   ...shared,
+  '@/components/academy-discovery': { AcademyDiscovery: academyDiscovery },
   '@/components/academy-video-courses': { AcademyVideoCourses: empty },
-  '@/components/catalog-showcase': { CatalogShowcase: ({ items }) => items.map((item) => React.createElement('a', { key: item.id, href: item.href }, item.title)) },
+  '@/components/catalog-showcase': catalogue,
   '@/components/academy-course-capture': { AcademyCourseCapture: empty },
   '@/components/academy-free-course-banner': { AcademyFreeCourseBanner: empty },
   '@/data/academy/catalog': { academyCopy: Object.fromEntries(['en', 'ru', 'es'].map((locale) => [locale, {

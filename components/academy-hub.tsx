@@ -3,7 +3,8 @@ import { AcademyVideoCourses } from "@/components/academy-video-courses";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
+import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
+import { AcademyDiscovery } from "@/components/academy-discovery";
 import { AcademyCourseCapture } from "@/components/academy-course-capture";
 import { AcademyFreeCourseBanner } from "@/components/academy-free-course-banner";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -213,32 +214,15 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
 
   return (
     <main className="library-shell academy-shell" lang={locale}>
-      <PublicSiteHeader locale={locale} />
-      <nav className="library-media-switch" aria-label={text.title}>
-        <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{text.programs}</Link>
-        <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{text.videos}</Link>
-      </nav>
-      <header className="library-heading">
-        <p className="homeopathy-kicker">Holistic House</p>
-        <h1>{text.title}</h1>
-        <p>{view === "videos"
-          ? locale === "ru" ? "Видео по учебным программам, модулям и ступеням — с разделением по языку оригинальной записи."
-            : locale === "es" ? "Vídeos organizados por programas, módulos y niveles, separados por el idioma original."
-              : "Courses, modules and individual lessons, grouped by program and original audio language."
-          : text.lead}</p>
-      </header>
-      <p className="academy-archive-nav">
-        <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>
-          {locale === "ru"
-            ? "Начните знакомство с Тантра Рейки: бесплатная инициация 1-й ступени"
-            : locale === "es"
-              ? "Descubre Tantra Reiki: iniciación gratuita de Nivel 1"
-              : "Explore Tantra Reiki: free Level 1 initiation"}
-          <span aria-hidden="true"> →</span>
-        </Link>
-      </p>
-      <AcademyFreeCourseBanner locale={locale} />
-      {view === "videos" ? <AcademyVideoCourses locale={locale} /> : <CatalogShowcase items={items} label={text.allPrograms} />}
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <AcademyDiscovery locale={locale} view={view} items={items} label={text.allPrograms}>
+        <AcademyFreeCourseBanner locale={locale} />
+      </AcademyDiscovery>
+      {view === "videos" ? (
+        <section id="academy-video-courses">
+          <AcademyVideoCourses locale={locale} />
+        </section>
+      ) : null}
       {view === "programs" ? (
         <p className="academy-archive-nav">
           <Link href={"/" + locale + "/academy/archive"}>
