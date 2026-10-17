@@ -8,10 +8,10 @@ import styles from './cabinet-free-course-banners.module.css'
 const COURSES = [
   {
     id: 'energywork',
-    path: 'principles-of-energywork',
+    path: 'principles-of-energywork/learn',
     image: '/academy/reiki-yggdrasil/source/program-overview.jpg',
-    en: { offer: 'FREE INTRODUCTORY COURSE', title: 'Energywork Basics', description: 'Foundations and three Reiki traditions' },
-    ru: { offer: 'БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС', title: 'Основы энергетики', description: 'Основы практики и три системы Рейки' },
+    en: { offer: 'INTERACTIVE COURSE · PREVIEW', title: 'Energywork Basics', description: 'Slides and original videos; account saving in development' },
+    ru: { offer: 'ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ', title: 'Основы энергетики', description: 'Слайды и видео; сохранение в аккаунт разрабатывается' },
   },
   {
     id: 'tantra-reiki',
