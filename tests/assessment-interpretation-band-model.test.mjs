@@ -122,7 +122,7 @@ test('all 230 immutable definitions retain valid source-specific interpretation 
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>splitV2Ids.has(d.id)&&d.version==='v2').length,6)
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
   assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!appendedV2Ids.has(d.id)).length,222)
-  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!bachV2Ids.has(d.id)).length,216)
+  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>!bachV2Ids.has(d.id)).length,228)
   assert.equal(ASSESSMENT_DEFINITIONS.length,230)
   for (const definition of ASSESSMENT_DEFINITIONS) for (const position of [0,.5,1]) {
     const result = score(definition, position)

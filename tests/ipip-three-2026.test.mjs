@@ -93,7 +93,7 @@ for(const [index,d] of added.entries()) {
 test('three additive versions: 145 runnable, 72 source-backed, 73 HH after exact registration; exact registration payload',()=>{
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,67)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,73)
  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:145,registered:145,uncovered:[],obsolete:[]})
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-three-registration.json',import.meta.url))),added)
  // Exclude only the six appended split-v2 IDs from this historical baseline.
