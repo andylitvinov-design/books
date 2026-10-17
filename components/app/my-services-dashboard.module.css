@@ -123,3 +123,6 @@
   .status{max-width:70px}
 }
 @media(prefers-reduced-motion:reduce){.finderButton,.finderChevron,.cardChevron{transition:none}}
+
+.serviceIcon{overflow:hidden;flex:none}
+.serviceIcon img{display:block;width:100%;height:100%;object-fit:cover}
