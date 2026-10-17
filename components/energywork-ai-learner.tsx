@@ -142,6 +142,32 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
   return lines.filter((value) => value !== undefined).join("\n").trim();
 }
 
+function learnerHighlights(answers: AnswerMap, path: EnergyworkPath | null, locale: EnergyworkLocale) {
+  const highlights: string[] = [];
+  const present = (id: string) => answers[id]?.trim();
+  if (path) {
+    const chosen = energyworkPathChoices.find((item) => item.id === path);
+    if (chosen) highlights.push(locale === "ru"
+      ? "Вы выбрали изучение: " + chosen.title.ru + "."
+      : "You chose to explore: " + chosen.title.en + ".");
+  }
+  if (present("intention-03")) highlights.push(locale === "ru"
+    ? "Ваше собственное намерение: «" + present("intention-03") + "»."
+    : "Your own intention: “" + present("intention-03") + "”.");
+  if (present("presence-03")) highlights.push(locale === "ru"
+    ? "Вы отметили комфорт короткой паузы на " + present("presence-03") + " из 10 — это только ваша самооценка, не медицинская шкала."
+    : "You rated the comfort of a short pause " + present("presence-03") + "/10 — a personal check-in, not a medical score.");
+  const skipped = Object.entries(answers).filter(([id, value]) =>
+    /^(flight-03|presence-02|intention-04|boundaries-03|ygg-03|tan-03|kun-03)$/.test(id) && value === "skipped").length;
+  if (skipped) highlights.push(locale === "ru"
+    ? "Вы выбрали пропустить практики: " + skipped + ". Это допустимо; участие остаётся добровольным."
+    : "You chose to skip " + skipped + " practice(s). That is a valid choice; participation remains voluntary.");
+  if (present("end-01")) highlights.push(locale === "ru"
+    ? "Ваш следующий шаг: «" + present("end-01") + "»."
+    : "Your next step: “" + present("end-01") + "”.");
+  return highlights;
+}
+
 function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
   const [remaining, setRemaining] = useState(120);
   const [running, setRunning] = useState(false);
@@ -272,6 +298,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const completed = slide.kind === "finish";
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale, path);
+  const highlights = learnerHighlights(answers, path, locale);
   const source = pathData ? "/" + locale + "/academy/" + pathData.studyPath : null;
   const teacher = pathData ? "/" + locale + "/academy/" + pathData.freePath : null;
 
@@ -489,6 +516,13 @@ export function EnergyworkAiLearner({ locale }: Props) {
               {slide.kind === "finish" ? (
                 <div className={styles.final}>
                   <span className={styles.finalTag}><Check size={18} aria-hidden="true" />{t.finish}</span>
+                  <h2>{locale === "ru" ? "Ваши личные учебные итоги" : "Your personal learning highlights"}</h2>
+                  <p className={styles.guideNote}>{locale === "ru"
+                    ? "Сводка составлена только по вашим собственным ответам и выбору. Это не диагноз и не автоматическая интерпретация личности."
+                    : "A simple summary of your own recorded answers and choices. Not a diagnosis or automatic personality interpretation."}</p>
+                  {highlights.length ? <ul className={styles.highlights}>
+                    {highlights.map((point, index) => <li key={index}>{point}</li>)}
+                  </ul> : <p>{locale === "ru" ? "Вы можете вернуться к заданиям и записать наблюдения." : "You can return to the activities to add optional reflections."}</p>}
                   <h2>{t.summary}</h2>
                   <pre className={styles.notes}>{Object.values(answers).some((value) => value.trim()) ? notes : t.nothing}</pre>
                   <p>{t.finishNote}</p>
