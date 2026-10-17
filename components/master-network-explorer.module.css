@@ -107,3 +107,11 @@
   .compactMaster .energyButton { flex:1; min-height:42px; font-size:11px; }
   .compactMaster .secondary { min-height:40px; font-size:11px; }
 }
+
+/* One real practitioner: the first mobile screen should expose their service action. */
+@media (max-width:640px) {
+  .singleMaster { display:flex; flex-direction:column; }
+  .singleMaster > .cardGrid { order:0; margin-bottom:10px; }
+  .singleMaster > .filters { order:1; }
+  .singleMaster > .empty { order:0; }
+}
