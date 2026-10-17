@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
@@ -2728,27 +2728,37 @@ function ResultConsultationCta({ locale }) {
   const copy =
     locale === 'ru'
       ? {
-          kicker: 'Если хочется обсудить результат',
+          kicker: 'Личная поддержка',
           title: 'Заказать консультацию специалиста',
-          text: 'Можно выбрать подходящего специалиста и спокойно разобрать результат вместе. Ваш результат остаётся приватным и не передаётся автоматически.',
+          text: 'Разберите показатели и возможные следующие шаги вместе с практиком.',
+          privacy: 'Результаты приватны и не передаются автоматически.',
           action: 'Выбрать специалиста',
         }
       : {
-          kicker: 'If you would like to discuss your result',
+          kicker: 'Personal guidance',
           title: 'Book a consultation with a specialist',
-          text: 'Choose a practitioner and review the result together. Your result stays private and is not shared automatically.',
+          text: 'Talk through your scores and possible next steps with a practitioner.',
+          privacy: 'Your result stays private and is not shared automatically.',
           action: 'Choose a specialist',
         }
 
   return (
     <aside className="hh-result-consultation" aria-label={copy.title}>
-      <div>
+      <span className="hh-result-consultation-icon" aria-hidden="true">
+        <Sparkles size={21} strokeWidth={1.9} />
+      </span>
+      <div className="hh-result-consultation-copy">
         <p className="hh-kicker">{copy.kicker}</p>
         <h2>{copy.title}</h2>
-        <p>{copy.text}</p>
+        <p className="hh-result-consultation-description">{copy.text}</p>
+        <p className="hh-result-consultation-privacy">
+          <ShieldCheck size={15} aria-hidden="true" />
+          <span>{copy.privacy}</span>
+        </p>
       </div>
-      <Link className="hh-primary hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
-        {copy.action}
+      <Link className="hh-result-consultation-action" href={`/${locale}/services`} prefetch={false}>
+        <span>{copy.action}</span>
+        <span aria-hidden="true">→</span>
       </Link>
     </aside>
   )
@@ -2883,17 +2893,23 @@ function ResultPage({ id, locale, data }) {
 
       </details>
       <section className="hh-result-comparison" aria-label={locale === 'ru' ? 'История и повторные измерения' : 'Progress and previous assessments'}>
-        <div>
+        <span className="hh-result-comparison-icon" aria-hidden="true">
+          <BarChart3 size={21} strokeWidth={1.9} />
+        </span>
+        <div className="hh-result-comparison-copy">
           <h2>{locale === 'ru' ? 'Динамика результата' : 'Your result over time'}</h2>
           {changeSummary.previous
             ? <p>{locale === 'ru' ? 'Предыдущий совместимый замер' : 'Previous comparable assessment'}: {dateLabel(changeSummary.previous.measurementAt, locale)}</p>
-            : <p>{locale === 'ru' ? 'Это первый совместимый замер. При повторном прохождении сможете сравнить результаты.' : 'This is your first comparable baseline. Repeat the same version later to see changes.'}</p>}
+            : <p>{locale === 'ru' ? 'Это первый совместимый замер. Повторите ту же версию теста позже, чтобы увидеть изменения.' : 'Your first baseline is recorded. Repeat this version later to see changes.'}</p>}
           {changeSummary.changes.length > 0 && <ul>{changeSummary.changes.map(change => (
             <li key={change.key}>{readableScaleName({key:change.key,sourceConstruct:change.label},locale)}: {change.from} → {change.to}</li>
           ))}</ul>}
-          <small>{locale === 'ru' ? 'Числа показывают ответы по шкале теста, а не медицинский диагноз.' : 'Scores describe this questionnaire, not a medical diagnosis.'}</small>
+          <small>{locale === 'ru' ? 'Баллы описывают ответы на тест, а не медицинский диагноз.' : 'Scores reflect questionnaire answers, not a medical diagnosis.'}</small>
         </div>
-        <Link href={`/${locale}/app/portfolio`} prefetch={false}>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'} →</Link>
+        <Link className="hh-result-comparison-action" href={`/${locale}/app/portfolio`} prefetch={false}>
+          <span>{locale === 'ru' ? 'Все мои отчёты' : 'All my reports'}</span>
+          <span aria-hidden="true">→</span>
+        </Link>
       </section>
       {Object.entries(result.context || {}).length > 0 && (
         <aside className="hh-context-at-checkin hh-result-context">
