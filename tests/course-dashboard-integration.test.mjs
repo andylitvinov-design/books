@@ -102,7 +102,8 @@ test('close and primary management carry target revision and discard delayed res
     const nextEntry = findPart(h.tree, 'CourseEntrySelector')
     assert.equal(nextEntry.props.accountId, 'owner-b')
     nextEntry.props.onOpen(); await h.settle()
-    assert.equal(findPart(h.tree, 'MyCoursesDashboard').props.courses[0].id, 'owner-b-course')
+    assert.equal(findPart(h.tree, 'CourseR3Steps').props.state.course.id, 'owner-b-course',
+      'continuing the only saved course must open its setup instead of the management dashboard')
     assert.equal(h.calls.at(-1).options.headers['X-HH-Account-ID'], 'owner-b')
     h.unmount()
   }
