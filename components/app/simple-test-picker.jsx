@@ -328,11 +328,7 @@ export function SimpleTestPicker({
 
     {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
       data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
-      <div className={styles.curatedHeader}>
-        <p className={styles.curatedEyebrow}>{collectionCopy.eyebrow}</p>
-        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
-        <p className={styles.curatedIntro}>{collectionCopy.intro}</p>
-      </div>
+      <h2 id="hh-test-curated-heading" className={styles.curatedSrOnly}>{collectionCopy.title}</h2>
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
         {collections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
@@ -358,14 +354,11 @@ export function SimpleTestPicker({
                 document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               })
             }}>
-            <span className={styles.curatedIcon}><Icon size={21} strokeWidth={1.8} aria-hidden="true" /></span>
-            <span className={styles.curatedCardText}>
-              <strong>{title}</strong>
-              <small>{collection.detail[locale] || collection.detail.en}</small>
-            </span>
-            <span className={styles.curatedCardBottom}>
-              <span>{collection.count} {countLabel}</span>
-              {active ? <Check size={17} aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+            <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
+            <span className={styles.curatedCardText}><strong>{title}</strong></span>
+            <span className={styles.curatedCardBottom} aria-hidden="true">
+              <span>{collection.count}</span>
+              {active && <Check size={13} />}
             </span>
           </button>
         })}
