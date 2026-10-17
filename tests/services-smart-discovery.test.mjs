@@ -73,6 +73,36 @@ test('category selector cannot manufacture masters, offers or prices, and respec
   assert.equal(normalizeDiscoveryInput('У-Син, Ёлка'), 'у син елка')
 })
 
+test('one-tap free discovery includes all eligible free areas, without surfacing paid offers',()=>{
+  const freeWuXing={...offering('free-wuxing','homeopathy_holistic','Free Wu Xing profile','Personal resource map'),pricingMode:'free'};
+  const freeSomatic={...offering('free-somatic','body_somatic','Free somatic introduction','Body awareness'),pricingMode:'free'};
+  const paid=offering('paid-reiki','energy_spiritual','Paid Reiki session','Individual session');
+  const freeOnline=[freeWuXing,freeSomatic,paid].filter(service=>serviceMatchesDiscoveryFacets(service,{
+    format:'online',city:'toronto',language:'en',price:'free',
+  }));
+  assert.deepEqual(freeOnline.map(service=>service.id),['free-wuxing','free-somatic']);
+  const results=rankDiscoveryServices('',freeOnline,{limit:10,includeAllAreas:true});
+  assert.deepEqual(results.map(row=>row.service.id).sort(),['free-somatic','free-wuxing']);
+  assert.ok(rankDiscoveryServices('',freeOnline,{limit:10}).every(row=>row.service.areaKey!=='homeopathy_holistic'));
+});
+
+test('Find free services CTA is translated, works with empty query and shows free results',async()=>{
+  const [ui,css]=await Promise.all([
+    readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
+  ]);
+  for(const phrase of ['Find free services','Найти бесплатные услуги','Encontrar servicios gratis'])
+    assert.ok(ui.includes(phrase),phrase);
+  assert.match(ui,/<button type="button" className=\{styles\.freeSubmit\} onClick=\{findFreeServices\}>/);
+  assert.match(ui,/function findFreeServices\(\) \{[\s\S]*?setBudget\("free"\);[\s\S]*?setHasSelection\(true\)/);
+  assert.match(ui,/includeAllAreas:budget==="free"/);
+  assert.match(ui,/budget==="free"\?10:suggestions\.length\?2:4/);
+  assert.match(ui,/budget==="free"\?t\.freeResultTitle:t\.resultTitle/);
+  assert.match(css,/\.freeSubmit\{display:inline-flex;/);
+  assert.match(css,/\.form\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/@media\(max-width:350px\)\{\s*\.form\{grid-template-columns:minmax\(0,1fr\)\}/);
+});
+
 test('editorial fallback points only to source-backed known routes, never a synthetic booking',()=>{
   const curated=[
     {id:'yggdrasil',title:'Рейки Иггдрасиль',href:'/ru/academy/reiki/yggdrasil/free-initiation',areaKey:'energy_spiritual',promise:'Обучение Reiki'},
@@ -128,7 +158,7 @@ test('Service discovery scrolls to submitted and category results on mobile and 
   assert.match(ui,/window\.requestAnimationFrame/)
   assert.match(ui,/ref=\{resultsRef\} tabIndex=\{-1\}/)
   assert.match(ui,/aria-labelledby="hh-service-discovery-results-title"/)
-  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,2)
+  assert.equal((ui.match(/setScrollRequest\(\(count\) => count \+ 1\)/g)||[]).length,3)
   assert.match(css,/\.results\{[^}]*scroll-margin-top:110px\}/)
   assert.match(css,/@media\(max-width:767px\)\{\.results\{scroll-margin-top:16px\}\}/)
 })
