@@ -20,7 +20,7 @@ const copy = {
     shortTitle: "Principles of Energywork",
     eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
     preview: "Preview mode · Your answers are not stored in your account yet.",
-    previewHelp: "Only write what you are comfortable keeping on this device until you close this page. Private save & resume is being built.",
+    previewHelp: "Only enter information you are comfortable keeping in this unsaved page. Private save & resume is being built.",
     program: "Explore the programme",
     backCourse: "Course details",
     step: "Slide",
@@ -54,7 +54,7 @@ const copy = {
     shortTitle: "Основы энергетики",
     eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
     preview: "Предварительная версия · Ответы пока не сохраняются в аккаунте.",
-    previewHelp: "Пишите только то, что готовы оставить в этом браузере до закрытия страницы. Приватное сохранение и продолжение курса разрабатываются.",
+    previewHelp: "Пишите только то, что готовы оставить на этой несохранённой странице. Приватное сохранение и продолжение курса разрабатываются.",
     program: "Посмотреть программу",
     backCourse: "Описание курса",
     step: "Слайд",
@@ -199,7 +199,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
               {slide.question ? (
                 <div className={styles.question}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{t.optional}</span>
-                  <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>
+                  {slide.question.type === "choice"
+                    ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
+                    : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
                   {slide.question.type === "text" ? (
                     <textarea id={"answer-" + slide.id} value={answers[slide.id] ?? ""} onChange={(e) => setAnswer(e.target.value.slice(0, 1600))}
                       className={styles.textarea} maxLength={1600} rows={4} placeholder={t.placeholder} autoComplete="off" />
