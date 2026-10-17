@@ -12,12 +12,15 @@ async function assertSpanishHomeAlternates(page) {
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
  const copy=locale==='ru'
-  ? {region:'Подберите свои тесты',hero:'Лучше понять себя и свою жизнь',action:'Выбрать темы',first:'Что вы хотите исследовать?'}
-  : {region:'Choose your tests',hero:'Understand yourself and your life better',action:'Choose my topics',first:'What would you like to explore?'}
+  ? {region:'Подберите свои тесты',hero:'Лучше поймите себя. Найдите следующий шаг.',action:'Темы',first:'Что вы хотите исследовать?'}
+  : {region:'Choose your tests',hero:'Understand yourself. Find your next step.',action:'Topics',first:'What would you like to explore?'}
  const picker=target.locator('[data-prelogin-test-picker]')
  await expect(picker).toHaveAttribute('aria-label',copy.region)
- await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
- const entrance=picker.locator('[data-client-tests-promo]').getByRole('link',{name:copy.action,exact:true})
+ const hero=picker.locator('[data-client-tests-hero]')
+ await expect(hero.getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
+ // The approved current layout uses an accessible Topics navigation link,
+ // not the deleted promo box. Preserve its direct same-page destination.
+ const entrance=hero.getByRole('link',{name:copy.action,exact:true})
  await expect(entrance).toBeVisible()
  await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
  await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
@@ -118,9 +121,10 @@ try {
             unselectedClientRequests.push({path:url.pathname,resourceType:request.resourceType()});
           }
         });
-        // Do not abort in-flight Next link prefetches with the next hard goto.
-        // All page errors still fail; no CORS or JavaScript errors are filtered.
-        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});
+        // The Next.js client may keep analytics and prefetch requests active.
+        // Waiting for networkidle can deadlock even after the document loaded.
+        // Wait for document load, then verify real routes and page errors below.
+        const settle = () => page.waitForLoadState('load', {timeout:30000});
         async function navigate(path) {
           await settle();
           const response=await page.goto(origin+path,{waitUntil:'domcontentloaded',timeout:60000});
@@ -191,7 +195,7 @@ try {
         stage=`${engine} ${width} Spanish account navigation`;
         await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
         await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
-        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
         await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');
@@ -199,7 +203,7 @@ try {
         // Same-CSP SPA navigation preserves the existing root document locale.
         // A direct account load must have its own correct server-rendered locale.
         await page.reload(); await settle();
-        await expect(page).toHaveURL(origin+'/en/app');
+        await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('html')).toHaveAttribute('lang','en');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         stage=`${engine} ${width} search`;

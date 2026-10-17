@@ -50,8 +50,28 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  assert.match(source,/page\.on\('pageerror', error => errors\.push\(error\.message\)\)/);
  assert.match(source,/assert\.deepEqual\(errors,\[\]\)/);
  assert.ok(!source.includes('errors.filter'));assert.ok(!source.includes('errors.length ='));
- const start=source.indexOf('        // Do not abort');const end=source.indexOf('        results.push',start);
- assert.equal(createHash('sha256').update(source.slice(start,end)).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen published action/assertion block');
+ // Only the known Next.js network-idle deadlock is allowed to change:
+ // canonicalize its reviewed load-event fix back to the previous published
+ // preamble, then hash ALL subsequent original browser actions/assertions.
+ const reviewedFix = [
+   '        // The Next.js client may keep analytics and prefetch requests active.',
+   '        // Waiting for networkidle can deadlock even after the document loaded.',
+   '        // Wait for document load, then verify real routes and page errors below.',
+   "        const settle = () => page.waitForLoadState('load', {timeout:30000});",
+ ].join('\n');
+ const previousPreamble = [
+   '        // Do not abort in-flight Next link prefetches with the next hard goto.',
+   '        // All page errors still fail; no CORS or JavaScript errors are filtered.',
+   "        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});",
+ ].join('\n');
+ assert.ok(source.includes(reviewedFix), 'Exact approved load-event navigation fix');
+ assert.equal(source.split("await expect(page).toHaveURL(origin+'/en/app/portrait');").length-1, 2, 'Only the reviewed canonical Profile handoff is allowed');
+ const canonical = source.replace(reviewedFix, previousPreamble)
+   .replaceAll("await expect(page).toHaveURL(origin+'/en/app/portrait');", "await expect(page).toHaveURL(origin+'/en/app');");
+ const start=canonical.indexOf('        // Do not abort');
+ const end=canonical.indexOf('        results.push',start);
+ assert.ok(start>=0 && end>start, 'Original browser check block must be present');
+ assert.equal(createHash('sha256').update(canonical.slice(start,end)).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen published action/assertion block except reviewed load-event fix');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{

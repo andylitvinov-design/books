@@ -6,7 +6,8 @@ function harness({compact=false,keys=[],simpleMode=true,changed=false,auto=['phq
  let selected=[...keys],manual=changed
  function toggle(key){
   const start=source.indexOf(compact?'  const toggleSimpleSelected =':'  const toggleSelected =')
-  const end=source.indexOf(compact?'  // Keep the existing batch start':'  const toggleSimpleSelected =',start)
+  const end=source.indexOf(compact?'  const start = async () =>':'  const toggleSimpleSelected =',start)
+  assert.ok(start >= 0 && end > start, 'Toggle extractor must stop before JSX and preserve full function scope')
   const name=compact?'toggleSimpleSelected':'toggleSelected'
   const fn=new Function('simpleMode','simpleSelectionChanged','simpleAuto','setSimpleSelectionChanged','setSelectedKeys',source.slice(start,end)+`; return ${name}`)(simpleMode,manual,auto.map(key=>({key})),v=>{manual=v},fn=>{selected=fn(selected)})
   fn(key)

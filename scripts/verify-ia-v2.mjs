@@ -279,8 +279,12 @@ try {
           await expect(current).toHaveAttribute('href', '/' + locale + '/library')
         } else {
           // The compact mobile bar keeps six destinations; the full catalog is in Menu.
-          const mobileIds = ['home', 'library', 'services', 'academy', 'courses', 'cabinet']
-          const expectedItems = expected.filter(item => mobileIds.includes(item.id))
+          const mobileIds = ['home', 'library', 'services', 'academy']
+          const expectedItems = [
+            ...expected.filter(item => mobileIds.includes(item.id)),
+            { id: 'tests', href: `/${locale}/client/tests` },
+            { id: 'house', href: `/${locale === 'es' ? 'en' : locale}/app` },
+          ]
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)

@@ -197,7 +197,7 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
     assert.throws(() => assertGuestSnapshot(brokenGauge, result, locale))
     for (const text of [report.methodology, report.note, report.sections[0].meaning, report.sections[0].followUp, report.sections[0].steps[0]].filter(Boolean))
       assert.throws(() => assertGuestSnapshot({ ...snapshot, text: snapshot.text + ' ' + text }, result, locale))
-    for (const mutate of [
+    for (const [mutationIndex, mutate] of [
       s => { s.scales.pop() },
       s => { s.scales.push(structuredClone(s.scales[0])) },
       s => { s.scaleKeys.pop() },
@@ -225,18 +225,18 @@ for (const d of definitions) for (const locale of ['en', 'ru']) test(`${d.id}: $
       s => { s.scales[0].primaryCount = 0 },
       s => { s.scales[0].primaryCount = 2 },
       s => { s.scales[0].primaryText = 'Unrelated advice' },
-      s => { s.scales[0].text = s.scales[0].text.replace(report.sections[0].meaning, '') },
+      s => { if (report.sections[0].meaning) s.scales[0].text = s.scales[0].text.replaceAll(report.sections[0].meaning, '') },
       s => { s.scales[0].text = s.scales[0].text.replace(/(?:Score|Баллы): [^·]+· (?:range|шкала) [^ ]+/, 'Score: 999 · range 0–999') },
       s => { s.methodology = '' },
       s => { s.text = s.text.replace(report.note, '') },
       s => { s.guestCount = 1 },
-    ]) {
+    ].entries()) {
       const broken = structuredClone(account)
       mutate(broken)
       // A replacement of a phrase absent from older report templates is a no-op,
       // not an integrity violation. All actual mutations must still be rejected.
       if (JSON.stringify(broken) !== JSON.stringify(account))
-        assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale), `account mutation ${mutationIndex}: ${mutate.toString()}`)
     }
     if (account.scales.length > 1) {
       for (const field of ['scales', 'scaleKeys']) {
