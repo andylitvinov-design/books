@@ -219,8 +219,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <h2 id="services-marketplace-title">{locale === "ru" ? "Выберите услугу" : "Choose a service"}</h2>
           <p>
             {locale === "ru"
-              ? "Можно открыть подробности или сразу отправить запрос выбранному мастеру. Публичные профили и услуги проходят модерацию."
-              : "Open the details or send a request directly to the practitioner. Public profiles and services are moderated."}
+              ? "Посмотрите подробности или закажите услугу напрямую у мастера. Публичные профили и услуги проходят модерацию."
+              : "View the details or order directly from the practitioner. Public profiles and services are moderated."}
           </p>
         </div>
 
@@ -248,16 +248,16 @@ export default async function ServicesPage({ params }: PageProps) {
               </div>
               <div className="services-marketplace-actions">
                 <Link
-                  className="services-marketplace-request services-marketplace-request--featured"
-                  href={`/${locale}/app/consultations?service=${encodeURIComponent(featuredService.id)}`}
-                >
-                  {locale === "ru" ? "Пройти бесплатно" : "Start free"}<span aria-hidden="true">→</span>
-                </Link>
-                <Link
                   className="services-marketplace-details"
                   href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}`}
                 >
                   {locale === "ru" ? "Подробнее" : "Details"}
+                </Link>
+                <Link
+                  className="services-marketplace-request services-marketplace-request--featured"
+                  href={`/${locale}/services/${featuredService.practitionerSlug}/${featuredService.slug}#service-order`}
+                >
+                  {locale === "ru" ? "Заказать" : "Order"}<span aria-hidden="true">→</span>
                 </Link>
               </div>
             </div>

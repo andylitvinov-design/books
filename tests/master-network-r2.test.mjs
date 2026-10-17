@@ -93,5 +93,7 @@ test('R2 UI exposes My Practice, public Masters and moderation without changing 
   assert.match(repository,/async onboarding\(actor,input\)/)
   assert.match(repository,/pricingMode:'free'/)
   assert.match(services,/<MarketplaceServiceFinder services=/)
-  assert.match(explorer,/Request free service/)
+  assert.match(explorer,/requestFree: "Order"/)
+  assert.match(explorer,/#service-order/)
+  assert.doesNotMatch(explorer,/\/app\/consultations\?service=/)
 })

@@ -176,18 +176,21 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(ui.includes('className={styles.editorialChannels}'))
   assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
   assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
-  assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
-  const requestLink='<Link href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.request}</Link>'
+  const orderLink='<Link href={"/"+locale+"/services/"+service.practitionerSlug+"/"+service.slug+"#service-order"}>'
   const detailsToggle='<button type="button" className={styles.suggestionDetailsToggle}'
   const assertActionOrder=source=>{
-    const requestIndex=source.indexOf(requestLink)
+    const orderIndex=source.indexOf(orderLink)
     const detailsIndex=source.indexOf(detailsToggle)
-    assert.ok(requestIndex>0 && detailsIndex>requestIndex,'Request action must precede the expandable details button')
+    assert.ok(detailsIndex>0 && orderIndex>detailsIndex,'Details must precede Order; no cabinet redirect')
   }
   assertActionOrder(ui)
-  assert.throws(()=>assertActionOrder('<div>'+detailsToggle+'>{t.details}</button>'+requestLink+'</div>'))
-  assert.throws(()=>assertActionOrder(ui.replace(requestLink,'')))
+  assert.throws(()=>assertActionOrder('<div>'+orderLink+detailsToggle+'</button></div>'))
+  assert.throws(()=>assertActionOrder(ui.replace(orderLink,'')))
   assert.throws(()=>assertActionOrder(ui.replace(detailsToggle,'')))
+  assert.ok(!ui.includes('app/consultations?service='))
+  const editorialActions=ui.slice(ui.indexOf('className={styles.editorialCardActions}'),ui.indexOf('className={styles.editorialDetailsPanel}'))
+  assert.ok(editorialActions.indexOf('className={styles.editorialDetailsButton}')<editorialActions.indexOf('className={styles.editorialOrderButton}'))
+  assert.ok(editorialActions.includes('{t.order}'))
   assert.ok(matcher.includes('safePublicWhatsAppPath(pagePath)'))
   assert.ok(!ui.includes('<Link key={item.id} href={item.href}>'),"No plain editorial link tiles should remain")
   assert.ok(!ui.includes('context:submitted'),"Personal search text must not be passed to messenger URL")

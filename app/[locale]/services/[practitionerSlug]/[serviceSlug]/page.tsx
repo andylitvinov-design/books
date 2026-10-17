@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { PublicServiceOrderPanel } from "@/components/public-service-order-panel";
+import { WuXingServiceLanding } from "@/components/wu-xing-service-landing";
 import { isPublicLocale } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -33,6 +34,7 @@ export default async function ServiceDetail({params}:PageProps){
   if(!value)notFound();
   const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
+  if(isWuXingGuide && practitioner.slug==="andy-litvinov") return <WuXingServiceLanding locale={locale as PublicLocale} value={value}/>;
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
   const price=isFree?(ru?"Бесплатно":es?"Gratis":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":es?"desde ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":es?"Precio acordado antes de reservar":"Price agreed before booking";
@@ -44,7 +46,7 @@ export default async function ServiceDetail({params}:PageProps){
         <h1>{service.copy.title}</h1>
         <p>{service.copy.shortDescription}</p>
         <div className="hh-actions">
-          <Link id="request-service" className="services-studio-primary" href={es ? `/es/services/free-situation-review?topic=${isFree ? "wellbeing" : "goal"}` : `/${locale}/app/consultations?service=${encodeURIComponent(service.id)}`}>{isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Запросить услугу":es?"Consultar disponibilidad":"Request this service")}<span aria-hidden="true">→</span></Link>
+          <Link id="request-service" className="services-studio-primary" href="#service-order">{ru?"Заказать":es?"Solicitar":"Order"}<span aria-hidden="true">→</span></Link>
           {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
         </div>
@@ -58,6 +60,6 @@ export default async function ServiceDetail({params}:PageProps){
       <div className="hh-actions">{service.whatsapp&&<a href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{service.telegram&&<a href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</a>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
     <p className="remedy-disclaimer services-disclaimer">{ru?"Информация представлена для выбора формата поддержки и не является медицинской диагностикой или гарантией результата.":es?"La información ayuda a elegir una modalidad de acompañamiento; no constituye diagnóstico médico ni garantía de resultados.":"This information is for choosing a support format and is not medical diagnosis or a guarantee of outcome."}</p>
-    {practitioner.slug === "andy-litvinov" ? <PublicConsultationCta locale={locale as PublicLocale}/> : null}
+    <PublicServiceOrderPanel locale={locale as PublicLocale} service={service}/>
   </main>
 }

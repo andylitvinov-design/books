@@ -85,7 +85,9 @@ test("every applicable public route has a responsive global fallback without two
   const services = read("app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx");
   const practitioner = read("app/[locale]/masters/[slug]/page.tsx");
   assert.match(services, /id="request-service"/);
-  assert.match(services, /practitioner.slug === "andy-litvinov"/);
+  assert.match(services, /practitioner.slug==="andy-litvinov"/);
+  const orderPanel = read("components/public-service-order-panel.tsx");
+  assert.match(orderPanel, /data-consultation-cta/);
   assert.match(practitioner, /id="practitioner-services"/);
   assert.match(component, /kind === "network"/);
   assert.match(component, /networkService \? "#request-service"/);
