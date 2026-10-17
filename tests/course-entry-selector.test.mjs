@@ -13,7 +13,8 @@ test('My Course first renders the selection slide and keeps the existing course 
   // Direct banner entry skips the selector; generic My Courses still has its current-course cards.
   assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry\) return/)
   assert.match(wrapper, /personalEntry = stage === 0 &&/)
-  assert.match(wrapper, /onOpen=\{\(\) => setShowCourse\(true\)\}/)
+  assert.match(wrapper, /onOpen=\{\(\) => \{/)
+  assert.match(wrapper, /selectCourse\(state\.course\.id\)/)
   assert.match(wrapper, /stage === 0 && <header/)
   assert.match(wrapper, /programmeEntry = stage === 0 && Boolean\(requestedProgram\)/)
   assert.match(wrapper, /stage === 4 && <CourseToday/)
@@ -66,7 +67,7 @@ test('dialog is accessible and does not hide existing course navigation', () => 
 import { mount, nodes, textOf, findPart, findButton, account, course, courseView, access, deferred } from './helpers/course-ui-harness.mjs'
 
 test('canonical landing passes authoritative scope and opens an additional course without mutating before consent', async () => {
-  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, fetcher: () => courseView(course('course-a', 4)) })
+  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' }, fetcher: () => courseView(course('course-a', 2), { courses: [course('course-a', 2), course('course-b', 2)] }) })
   await h.settle()
   const entry = findPart(h.tree, 'CourseEntrySelector')
   assert.ok(entry, 'ordinary entry retains the canonical selector')
@@ -80,6 +81,32 @@ test('canonical landing passes authoritative scope and opens an additional cours
   assert.equal(findButton(h.tree, 'Agree & start').props.disabled, true)
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
+})
+
+test('free 1/1 single saved course resumes its actual setup instead of showing a disabled start-another form', async () => {
+  const current = course('course-a', 2, 'active')
+  const freeAccess = { ...access, tier: 'free', activeCourseLimit: 1, activeCourseCount: 1, multiCourseEnabled: false }
+  const h = mount('my-course', { props: { data: account('owner-a'), locale: 'en' },
+    fetcher: () => courseView(current, { courses: [current], access: freeAccess }) })
+  await h.settle()
+  assert.equal(findPart(h.tree, 'CourseEntrySelector'), undefined)
+  assert.equal(findPart(h.tree, 'MyCoursesDashboard'), undefined)
+  assert.equal(findPart(h.tree, 'CourseR3Steps')?.props.state.course.id, 'course-a')
+  assert.ok(!textOf(h.tree).includes('You have reached your active-course limit'))
+  assert.ok(!nodes(h.tree).some(node => node.props?.className === 'courseSelector'),
+    'a sole ongoing course should not display a course-selection gate')
+  assert.match(h.navigations.at(-1), /courseId=course-a/)
+  assert.equal(h.calls.filter(call => call.body).length, 0, 'continuing must not create another course')
+  h.unmount()
+})
+
+test('the current-course form is turquoise and switching never advertises a blocked new enrollment', () => {
+  const theme = read('components/app/my-course.module.css')
+  const section = wrapper.slice(wrapper.indexOf('courses.length > 1 && <section'), wrapper.indexOf('</section>}', wrapper.indexOf('courses.length > 1 && <section')))
+  assert.match(section, /t.chooseCourse/)
+  assert.doesNotMatch(section, /t.limitReached|t.multiUnavailable|t.newCourse/)
+  assert.match(theme, /\.courseSelector\{[^]*?background:linear-gradient\(110deg,#f4feff,#e2f8fa\)/)
+  assert.match(theme, /\.backCourses\{[^]*?background:#ecfafb/)
 })
 
 test('entry selector uses verified capacity and preserves informational paywall at the limit', async () => {
@@ -201,7 +228,11 @@ test('a consumed personal entry cannot populate a second separately consented co
   }
   await h.settle();findButton(h.tree,'Start course for free').props.onClick();await agree()
   entry=null
-  findButton(h.tree,'Start another course').props.onClick();await h.settle();findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
+  // The sole saved course stays accessible; a second program is selected from
+  // the explicit My courses dashboard, never the in-course limit banner.
+  findButton(h.tree,'My courses').props.onClick();await h.settle()
+  findPart(h.tree,'MyCoursesDashboard').props.onNew();await h.settle()
+  findPart(h.tree,'CoursePresetCatalog').props.onPersonal();await agree()
   const starts=h.calls.filter(c=>c.body?.action==='start'),intakes=h.calls.filter(c=>c.body?.action==='intake')
   assert.equal(starts.length,2);assert.equal(intakes.length,1)
   assert.notEqual(starts[0].body.courseId,starts[1].body.courseId)
