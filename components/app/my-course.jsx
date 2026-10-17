@@ -205,8 +205,17 @@ export function MyCourse({ data, locale = 'en' }) {
       if (courseId && response.course?.id !== courseId) throw new Error('COURSE_SELECTION_CHANGED')
       selectedCourse.current = response.course?.id || null
       setSnapshot({ accountId, value: response })
-      if (openPrimaryToday && !courseId && response.course?.stage === 4 && ['active','paused'].includes(response.course.status)) {
-        setView('detail');replaceCourseUrl(selectedCourse.current)
+      // Opening "Courses" resumes the only saved in-progress course, even at
+      // the free 1/1 limit. A full plan only restricts creating a second course.
+      const ownedCourses = Array.isArray(response.courses) ? response.courses : response.course ? [response.course] : []
+      const resumable = ownedCourses.filter(item => item && Number(item.stage || 0) > 0 &&
+        !['closed', 'archived', 'completed'].includes(item.status))
+      const selectedIsOnlyCourse = resumable.length === 1 && resumable[0].id === response.course?.id
+      if (openPrimaryToday && !courseId && response.course?.stage > 0 &&
+          !['closed', 'archived', 'completed'].includes(response.course.status) &&
+          (selectedIsOnlyCourse || response.course.stage === 4)) {
+        setShowCourse(true)
+        setView('detail'); replaceCourseUrl(selectedCourse.current)
       } else if (updateUrl) replaceCourseUrl(selectedCourse.current)
       return response
     } catch (e) { if (isCurrent()) setError(e.message); return null }
@@ -260,6 +269,7 @@ export function MyCourse({ data, locale = 'en' }) {
   function selectCourse(courseId) {
     generation.current += 1; actionLock.current = null; setBusy(false)
     selectedCourse.current = courseId
+    setShowCourse(true)
     setView('detail')
     startDialogRef.current?.close()
     void refresh(courseId)
@@ -483,7 +493,15 @@ export function MyCourse({ data, locale = 'en' }) {
     accountId={accountId} course={state.course} access={access} locale={locale}
     onAdd={() => { if (isSelected() && canAddCourse) { setShowCourse(true); startAnother() } }}
     onCloseCourse={closeCourse} closing={busy}
-    onOpen={() => setShowCourse(true)}/>
+    onOpen={() => {
+      if (state.course?.id && state.course.stage > 0 && !['closed', 'archived'].includes(state.course.status)) {
+        selectCourse(state.course.id)
+      } else if (canAddCourse) {
+        setShowCourse(true); startAnother()
+      } else {
+        setShowCourse(true); changeView('list')
+      }
+    }}/>
 
   async function confirmFastStart() {
     const intent={accountId,courseId:selectedCourse.current,epoch:viewGeneration,programId:requestedProgram?.id||ACTIVE_COURSE_PROGRAM_ID}
@@ -523,7 +541,7 @@ export function MyCourse({ data, locale = 'en' }) {
     {!showDashboard && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
       ← {ru ? 'Мои курсы' : 'My courses'}
     </button>}
-    {!showDashboard && stage !== 4 && view === 'detail' && courses.length > 0 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
+    {!showDashboard && stage !== 4 && view === 'detail' && courses.length > 1 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
       <h2 id={selectorId + '-heading'}>{t.courses}</h2>
       <label htmlFor={selectorId}>{t.chooseCourse}</label>
       <select id={selectorId} value={state.course?.id || ''} disabled={busy} onChange={event => selectCourse(event.target.value)}>
@@ -531,11 +549,7 @@ export function MyCourse({ data, locale = 'en' }) {
           {t.courseNumber} {index + 1} · {t.courseStatuses[course.status] || course.status} · {course.startedAt || course.updatedAt ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(course.startedAt || course.updatedAt)) : ''}
         </option>)}
       </select>
-      {access && <p role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit} · {access.tier}</p>}
-      {access?.overLimit ? <p className={styles.notice}>{t.overLimit}</p> : atLimit ? <p className={styles.notice}>{t.limitReached}</p> : null}
-      {!access?.multiCourseEnabled && !legacyFreeSlot && <p className={styles.small}>{t.multiUnavailable}</p>}
-      <p className={styles.small}>{t.historySafe}</p>
-      <button type="button" className="hh-primary" disabled={busy || !canAddCourse} onClick={startAnother}>{t.newCourse}</button>
+      {access && <p className={styles.courseSlotCount} role="status">{t.activeCount}: {access.activeCourseCount} / {access.activeCourseLimit}</p>}
     </section>}
     {showDashboard || courses.length === 0 ? <button type="button" className={styles.backToCourses + (stage === 3 ? ' ' + styles.routeBack : '')} onClick={() => {
       changeView('list'); setShowCourse(false); setPersonalEntryDismissed(true); setCourseEntry(null)
