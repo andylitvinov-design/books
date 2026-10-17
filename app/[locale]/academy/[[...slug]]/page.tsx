@@ -5,6 +5,7 @@ import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
+import { PublicGrowthCourses } from "@/components/public-growth-courses";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
 import { PrinciplesOfEnergywork, KundaliniFreeInitiation } from "@/components/principles-of-energywork";
 import { TempleStudies } from "@/components/temple-studies";
@@ -49,6 +50,7 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  if (routeKey(slug) === "free-ai-courses") return locale === "ru" ? "Бесплатные ИИ-курсы" : locale === "es" ? "Cursos de IA gratuitos" : "Free AI Courses";
   if (routeKey(slug) === "principles-of-energywork") return locale === "ru" ? "Принципы энергетической работы — 3 системы Рейки бесплатно" : locale === "es" ? "Principios del trabajo energético — 3 Reiki gratis" : "Principles of Energywork — FREE Initiations into 3 Reiki Systems";
   if (routeKey(slug) === "reiki/kundalini-reiki/free-initiation") return locale === "ru" ? "Кундалини Рейки — бесплатная инициация 1-й ступени" : locale === "es" ? "Kundalini Reiki — iniciación gratis Nivel 1" : "Kundalini Reiki — Free Level 1 Initiation";
   if (routeKey(slug) === "temple-studies") return locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies";
@@ -81,7 +83,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "principles-of-energywork"
+  const description = routeKey(slug) === "free-ai-courses"
+    ? locale === "ru" ? "Бесплатные образовательные курсы Holistic House: ОПОРА Антистресс, 14 занятий и личный прогресс в кабинете." : locale === "es" ? "Cursos gratuitos de Holistic House: OPORA Antiestrés, 14 lecciones y seguimiento personal." : "Free Holistic House courses: OPORA Stress Relief, 14 lessons, guided practices and your private course progress."
+    : routeKey(slug) === "principles-of-energywork"
     ? locale === "ru" ? "Бесплатный вводный курс: основы энергетической работы, отличия Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки, ссылки на программы и инициации первой ступени." : locale === "es" ? "Curso introductorio gratis: principios del trabajo energético, tres sistemas Reiki, materiales y enlaces a las iniciaciones de Nivel 1." : "Principles of Energywork: free introductory course comparing Reiki Yggdrasil, Tantra Reiki and Kundalini Reiki, with original study materials and teacher-guided Level 1 offers."
     : routeKey(slug) === "reiki/kundalini-reiki/free-initiation"
     ? locale === "ru" ? "Бесплатная вводная первая ступень Кундалини Рейки: обучение по исходной методичке Пола Крика и заявка Андрею без email и регистрации." : locale === "es" ? "Kundalini Reiki Nivel 1: materiales originales, manual de Paul Crick y solicitud gratuita de iniciación introductoria con Andrey." : "Kundalini Reiki free Level 1 introduction: study the original Paul Crick manual and ask Andrey for a teacher-guided initiation; no signup required."
@@ -149,6 +153,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "free-ai-courses") return <PublicGrowthCourses locale={locale} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
   if (key === "temple-studies") return <TempleStudies locale={locale} />;
