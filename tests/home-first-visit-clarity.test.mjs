@@ -14,27 +14,36 @@ test("all homepage locales show a free written review and a distinct free-test C
     assert.match(source, /free-tests/);
     assert.match(source, /paid-sessions/);
     assert.ok(source.indexOf("service-home-button--primary") < source.indexOf("service-home-button--secondary"));
-    assert.match(source, /HomeFreePaths/);
+    assert.doesNotMatch(source, /HomeFreePaths/);
   }
   assert.match(enRu, /Understand your situation\. Find your next step/);
   assert.match(enRu, /Разберитесь в ситуации/);
   assert.match(es, /Comprende tu situación/);
 });
 
-test("three multilingual first-visit paths target real public experiences without claiming a free call", () => {
-  const cards = read("components/home-free-paths.tsx");
-  assert.match(cards, /id="free-start"/);
-  for (const slug of ["services/free-situation-review", "wu-xing", "client/tests"]) {
-    assert.ok(cards.includes(slug), slug);
+test("photo-led service cards replace the duplicated free text cards on all homepage locales", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const es = read("app/es/page.tsx");
+  const cards = read("components/services-solutions.tsx");
+  const offers = read("data/core-service-offers.ts");
+  const navigation = read("components/site-navigation.tsx");
+  for (const source of [home, es]) {
+    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths/);
+    assert.match(source, /service-home-hero/);
   }
-  for (const locale of ["en", "ru", "es"]) assert.match(cards, new RegExp("^\\s{2}" + locale + ": \\{", "m"));
-  assert.match(cards, /not a video call/);
-  assert.match(cards, /no ofrecen diagnósticos médicos/);
-  assert.match(cards, /письменный ответ/);
-  const styles = read("components/home-free-paths.module.css");
-  assert.match(styles, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(styles, /@media\(max-width:680px\)/);
-  assert.match(styles, /:focus-visible/);
+  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.match(cards, /id=\{isHome \? "free-start" : undefined\}/);
+  assert.match(cards, /homepageMedia\[offer\.id\]/);
+  assert.match(cards, /data-core-service-id=\{offer\.id\}/);
+  for (const slug of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"]) {
+    assert.ok(offers.includes(slug), slug);
+  }
+  assert.ok(home.indexOf('<ServicesSolutions locale={locale} variant="home" />') < home.indexOf('<HomeFreeTestsBanner locale={locale} />'));
+  assert.match(es, /className="service-home-actions" id="free-start"/);
+  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('className="service-home-start"'));
+  assert.match(navigation, /#free-start/);
+  assert.match(home, /not a live call/);
+  assert.match(es, /no una llamada/);
 });
 
 test("menu keeps the original full catalog but prioritizes free entry, services, About and Cabinet", () => {

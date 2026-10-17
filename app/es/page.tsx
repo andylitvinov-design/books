@@ -5,7 +5,6 @@ import { BriefcaseBusiness, ClipboardCheck, Flower2, GraduationCap, Sparkles } f
 import { SiteVideoPlayer } from '@/components/site-video-player';
 import { PublicConsultationCta } from '@/components/public-consultation-cta';
 import { PublicSiteHeader } from '@/components/public-site-header';
-import { HomeFreePaths } from '@/components/home-free-paths';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 export const metadata = spanishMetadata('/es', 'Holistic House — autoevaluaciones gratuitas y acompañamiento personal', 'Empieza con una revisión escrita de tu situación, una guía simbólica Wu Xing o pruebas de autoobservación. Sesiones personales opcionales en Toronto y en línea.');
 const cards = [
@@ -22,7 +21,7 @@ export default function SpanishHomePage() {
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
         <h1 id="house-title"><span>Comprende tu situación.</span><span>Elige tu próximo paso.</span></h1>
         <p className="service-home-intro">Pruebas gratuitas y una revisión personal por escrito. Si lo deseas, sesiones individuales de pago con Andrey Litvinov.</p>
-        <div className="service-home-actions">
+        <div className="service-home-actions" id="free-start">
           <Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review" data-hero-cta="free-written-review">Solicitar revisión gratuita<span aria-hidden="true">→</span></Link>
           <Link className="service-home-button service-home-button--secondary" href="/es/client/tests" data-hero-cta="free-tests">Hacer pruebas gratuitas<span aria-hidden="true">→</span></Link>
         </div>
@@ -30,7 +29,7 @@ export default function SpanishHomePage() {
         <p className="service-home-offer-note">La revisión gratuita es un informe escrito, no una llamada. Las consultas individuales son de pago.</p>
       </div>
     </section>
-    <HomeFreePaths locale="es" />
+    <section className="service-home-services" aria-labelledby="service-home-services-title"><div className="service-home-section-heading"><h2 id="service-home-services-title">Tres maneras de trabajar conmigo</h2><Link href="/es/services">Ver todos los servicios<span aria-hidden="true">→</span></Link></div><div className="service-home-card-grid">{cards.map(({ icon: Icon, ...card }) => <Link className="service-home-card" href={card.href} key={card.title}><span className="service-home-card-photo" aria-hidden="true"><Image unoptimized src={card.image} alt="" fill sizes="(max-width: 640px) 100vw, 320px" loading="lazy" /></span><span className="service-home-card-symbol" aria-hidden="true"><Icon /></span><h3>{card.title}</h3><p>{card.text}</p><span className="service-home-card-action">Saber más<span aria-hidden="true">→</span></span></Link>)}</div></section>
     <section className="service-home-start" id="start-here" aria-labelledby="service-home-start-title" data-home-start>
       <header className="service-home-start__heading">
         <p className="service-home-kicker">Herramientas gratuitas y aprendizaje</p>
@@ -59,7 +58,6 @@ export default function SpanishHomePage() {
       </div>
       <p className="service-home-start__returning">¿Ya tienes resultados o un perfil? <Link href="/es/client">Abrir mi espacio <span aria-hidden="true">→</span></Link></p>
     </section>
-    <section className="service-home-services" aria-labelledby="service-home-services-title"><div className="service-home-section-heading"><h2 id="service-home-services-title">Tres maneras de trabajar conmigo</h2><Link href="/es/services">Ver todos los servicios<span aria-hidden="true">→</span></Link></div><div className="service-home-card-grid">{cards.map(({ icon: Icon, ...card }) => <Link className="service-home-card" href={card.href} key={card.title}><span className="service-home-card-photo" aria-hidden="true"><Image unoptimized src={card.image} alt="" fill sizes="(max-width: 640px) 100vw, 320px" loading="lazy" /></span><span className="service-home-card-symbol" aria-hidden="true"><Icon /></span><h3>{card.title}</h3><p>{card.text}</p><span className="service-home-card-action">Saber más<span aria-hidden="true">→</span></span></Link>)}</div></section>
     <section className="about-testimonials" aria-labelledby="home-es-testimonials-title">
       <div className="about-section-heading">
         <p className="homeopathy-kicker">Experiencias de participantes</p>

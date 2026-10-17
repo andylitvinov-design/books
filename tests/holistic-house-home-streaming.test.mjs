@@ -36,7 +36,7 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
     assert.match(page, /data-hero-cta": "free-tests"|data-hero-cta="free-tests"/);
     assert.match(page, /data-hero-cta": "paid-sessions"|data-hero-cta="paid-sessions"/);
     assert.ok(page.indexOf('service-home-button--primary') < page.indexOf('service-home-button--secondary'));
-    assert.match(page, /HomeFreePaths/);
+    assert.doesNotMatch(page, /HomeFreePaths/);
   }
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(es, /href="\/es\/services#consultation"/);

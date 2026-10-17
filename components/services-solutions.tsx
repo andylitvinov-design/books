@@ -26,7 +26,7 @@ const copy = {
     homeTitle: "How I can help",
     servicesTitle: "How I can help",
     lead: "Choose an Alchemy of the Soul session, a guided-imagery course or business consulting with constellations and goal activation.",
-    homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests above.",
+    homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests below.",
     servicesLead: "Two free starting options, Alchemy of the Soul, guided imagery and business consulting. Choose the format that fits your question.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
@@ -45,7 +45,7 @@ const copy = {
     homeTitle: "Чем я могу помочь",
     servicesTitle: "Чем я могу помочь",
     lead: "Выберите «Алхимию души», курс образной работы или бизнес-консалтинг с расстановкой и активацией цели.",
-    homeLead: "Два бесплатных письменных разбора и два формата личной работы. Выше также доступны бесплатные тесты стресса и личности.",
+    homeLead: "Два бесплатных письменных разбора и два формата личной работы. Ниже также доступны бесплатные тесты стресса и личности.",
     servicesLead: "Два бесплатных варианта начать, «Алхимия души», образная работа и бизнес-консалтинг. Выберите подходящий вашему запросу формат.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
@@ -67,7 +67,7 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
   const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;
   return (
     <section className={[styles.solutions, styles.home, !isHome ? styles.servicesPage : ""].filter(Boolean).join(" ")} id={isHome ? "core-services" : "solutions"} aria-labelledby={isHome ? "home-core-services-title" : "services-solutions-title"} data-core-service-offers={variant}>
-      <header className={styles.header}>
+      <header className={styles.header} id={isHome ? "free-start" : undefined}>
         <p className={styles.eyebrow}>{isHome ? t.homeEyebrow : t.servicesEyebrow}</p>
         <h2 id={isHome ? "home-core-services-title" : "services-solutions-title"}>{isHome ? t.homeTitle : t.servicesTitle}</h2>
         <p className={styles.intro}>{isHome ? t.homeLead : t.servicesLead}</p>
