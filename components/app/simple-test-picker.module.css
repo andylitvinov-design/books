@@ -1291,7 +1291,7 @@
   .shell .testChips .matchBadge{font-size:.64rem;padding:3px 5px}
   .shell .duration,.shell .questionCount{font-size:.61rem}
   .shell .questionCount{display:inline-flex}
-  .shell .takeTest{grid-column:3;grid-row:2;justify-self:end;min-width:90px;min-height:41px;padding:7px 9px;font-size:.73rem!important}
+  .shell .takeTest{justify-self:stretch;min-width:90px;min-height:41px;padding:7px 9px;font-size:.73rem!important}
   .shell .testDetails>summary{min-height:39px;padding:7px 10px;font-size:.73rem!important}
   .shell .testDetailsBody{padding:9px 11px 12px}
   .shell .viaFamilyActions>button{flex:1 1 100px}
@@ -2015,7 +2015,7 @@
   .shell .testEntry .testRow input{
     top:17px;left:17px;width:18px;height:18px
   }
-  .shell .testEntry .testVisual .testArt{width:100%;height:101px}
+  .shell .testEntry .testVisual .testArt{width:100%;height:94px}
   .shell .testImageMeta .testKindBadge{font-size:.62rem;padding:3px 5px}
   .shell .testImageMeta .imageDuration{font-size:.68rem}
   .shell .testEntry .testInfo{
@@ -2041,7 +2041,7 @@
     column-gap:8px;row-gap:6px;padding:8px
   }
   .shell .testEntry .testRow input{top:15px;left:15px}
-  .shell .testEntry .testVisual .testArt{height:92px}
+  .shell .testEntry .testVisual .testArt{height:85px}
   .shell .testImageMeta .testKindBadge{font-size:.58rem;padding:3px 4px}
   .shell .testImageMeta .imageDuration{font-size:.64rem}
   .shell .testEntry .testInfo strong{font-size:.85rem;line-height:1.19}
