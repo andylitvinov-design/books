@@ -323,6 +323,45 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     rightsNote: 'Publisher controlled CPI 260 forms, scoring and reports; qualification/licence required.',
   }),
 
+  // 2026-10 professional expansion - established instruments, research metadata only.
+  // None are runnable until their exact item/translation/scoring permissions and
+  // safety workflow are verified. Public PDFs describe scales only, never questions.
+  row('maia-2-37', 'interoception', 'body', 'A', 'Multidimensional Assessment of Interoceptive Awareness - Version 2', 'MAIA-2', 37, '7-10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://osher.ucsf.edu/research/maia',
+    rightsNote: 'Official UCSF PDF is free to use with source attribution and conditions; link to its original document, do not duplicate or translate it as part of this release.',
+  }),
+  row('bfne-12', 'social_evaluation', 'mood', 'A', 'Brief Fear of Negative Evaluation Scale', 'BFNE-12', 12, '2-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'No approved commercial online questionnaire or validated translations are on file.',
+  }),
+  row('fscrs-22', 'self_criticism', 'resources', 'A', 'Forms of Self-Criticizing/Attacking and Self-Reassuring Scale', 'FSCRS', 22, '4-6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'This reference introduces the three published constructs, without copying questionnaire items.',
+  }),
+  row('ras-7', 'relationship_satisfaction', 'relationships', 'A', 'Relationship Assessment Scale', 'RAS', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Only research metadata; verify permission before public self-administration.',
+  }),
+  row('cfq-7', 'psychological_flexibility', 'resources', 'A', 'Cognitive Fusion Questionnaire - 7', 'CFQ-7', 7, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    sourceUrl: 'https://doi.org/10.1371/journal.pone.0246434',
+    rightsNote: 'Open-access research does not automatically license commercial item reproduction.',
+  }),
+  row('mlq-10', 'meaning_and_values', 'resources', 'B', 'Meaning in Life Questionnaire', 'MLQ', 10, '2-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Original questionnaire and normed interpretations remain unavailable pending permission audit.',
+  }),
+  row('sdi-2-14', 'sexual_desire', 'relationships', 'B', 'Sexual Desire Inventory - 2', 'SDI-2', 14, '3-5 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Measures dyadic and solitary desire. Do not reproduce protected content or infer a diagnosis.',
+  }),
+  row('gq-6', 'gratitude', 'resources', 'B', 'Gratitude Questionnaire - 6', 'GQ-6', 6, '2 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Permission and translation review are required before any digital questionnaire.',
+  }),
+  row('uwes-9', 'work_engagement', 'stress', 'B', 'Utrecht Work Engagement Scale - 9', 'UWES-9', 9, '2-3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Professional research index only; actual form not distributed.',
+  }),
+  row('ffmq-15', 'mindfulness', 'resources', 'B', 'Five Facet Mindfulness Questionnaire - short form', 'FFMQ-15', 15, '3-4 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Multiple abbreviated forms exist; verify specific version and normed scoring before administration.',
+  }),
+  row('fss-9', 'fatigue', 'body', 'B', 'Fatigue Severity Scale', 'FSS-9', 9, '2-3 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
+    rightsNote: 'Clinically relevant fatigue impact is described, not diagnosed. Original items are not reproduced.',
+  }),
+
   // Tantra-adjacent external research references: NEVER expose protected original items
   // as Holistic House runnable questionnaires without verified digital/commercial rights.
   row('tantric-sex-scale-25', 'relationships_support', 'relationships', 'B', 'Tantric Sex Scale (Gordon, 2018)', 'TSS-25', 25, '5–7 min', RIGHTS_STATUS.PERMISSION_REQUIRED, 'research', {
@@ -333,10 +372,6 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     sourceUrl: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6640099/',
     rightsNote: 'Original wording and online/commercial administration require verification; reference only.',
   }),
-  row('maia-2-37', 'body_fatigue_cognition', 'body', 'B', 'Multidimensional Assessment of Interoceptive Awareness 2', 'MAIA-2', 37, '7–10 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
-    sourceUrl: 'https://osher.ucsf.edu/research/maia',
-    rightsNote: 'UCSF describes MAIA-2 as public domain with permission/copyright conditions on questionnaire page 2; confirm version and agreement first.',
-  }),
   row('scale-body-connection-20', 'body_fatigue_cognition', 'body', 'B', 'Scale of Body Connection', 'SBC-20', 20, '4–6 min', RIGHTS_STATUS.RIGHTS_REVIEW, 'research', {
     sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/18047441/',
     rightsNote: 'Price and Thompson research measure, 20 items; original electronic item rights and reproduction not yet cleared.',
@@ -345,6 +380,7 @@ export const MIND_BODY_MONITOR_REGISTRY = Object.freeze([
     sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/19629836/',
     rightsNote: 'Stulhofer, Busko and Brouillard 2010; 20 items. Publisher/author electronic reproduction permission not established.',
   }),
+
 
   // Additional curated research references; questionnaire access stays gated.
   ...NEW_PSYCHOTHERAPY_REFERENCES.map((item) => row(

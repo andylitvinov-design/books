@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
-import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
+import { activeNavigationId, getSiteNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
 const icons = { home: House, library: BookOpen, services: Sparkles, relationships: Heart, academy: GraduationCap, about: UserRound, courses: NotebookPen, cabinet: CircleUserRound };
@@ -13,7 +13,12 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const pathname = usePathname();
   const locale = useNavigationLocale(initialLocale);
   const nav = useRef<HTMLElement>(null);
-  const hidden = /^\/(admin(?:\/|$)|(?:ru|en|es)\/client(?:\/|$)|(?:ru|en)\/prescriptions(?:\/|$)|(?:ru|en)\/app(?:\/|$)|document-preview(?:\/|$))/.test(pathname);
+  // /client and /client/tests are public test-selection pages; other client
+  // paths, private account routes and documents must keep the bar hidden.
+  const clientRoute = /^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname);
+  const hidden = /^\/(?:admin|document-preview)(?:\/|$)/.test(pathname)
+    || /^\/(?:ru|en)\/(?:prescriptions|app)(?:\/|$)/.test(pathname)
+    || (clientRoute && !isPublicTestDiscoveryPath(pathname));
   useEffect(() => {
     const element = nav.current;
     const update = () => document.body.style.setProperty('--ia222-bottom-height', `${element?.getBoundingClientRect().height ?? 0}px`);

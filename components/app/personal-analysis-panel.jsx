@@ -33,8 +33,8 @@ const WORDS = {
     reportsTitle: 'Мои отчёты',
     reportsIntro: 'Ваши персональные разборы и документы от Andy.',
     private: 'ЛИЧНОЕ',
-    empty: 'Пока нет сохранённых отчётов',
-    emptyGoogle: 'Получив приватную ссылку, откройте отчёт и сохраните его в кабинете.',
+    empty: 'Отчётов пока нет',
+    emptyGoogle: 'Когда Андрей поделится личным отчётом, откройте приватную ссылку и сохраните его здесь. Начать также можно с консультации или бесплатного письменного разбора.',
     emptyLegacy: 'Когда Andy поделится отчётом, он появится здесь.',
     report: 'Персональный отчёт',
     open: 'Открыть',
@@ -75,8 +75,8 @@ const WORDS = {
     reportsTitle: 'My reports',
     reportsIntro: 'Personal reflections and documents Andy has shared with you.',
     private: 'PRIVATE',
-    empty: 'No saved reports yet',
-    emptyGoogle: 'When you receive a private report link, open it and save the report to your Cabinet.',
+    empty: 'No reports yet',
+    emptyGoogle: 'When Andrey shares a private report, open its link and save it here. You can also start with a consultation or a free written review.',
     emptyLegacy: 'When Andy shares a report with you, it will appear here.',
     report: 'Personal report',
     open: 'Open report',
@@ -232,8 +232,8 @@ export function PersonalAnalysisPanel({ locale = 'en', reports = [], legacyRepor
   // The unified Profile owns this archive. Legacy /analysis links may still render
   // the existing standalone experience while all report access rules remain unchanged.
   if (embedded) return <div className="hh-personal-analysis hh-personal-analysis--embedded" data-personal-reports>
-    {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>}
     <PersonalAnalysisReportList reports={[...visibleReports, ...legacyReports]} locale={locale} selector={selector} />
+    {!selector&&<SavedSessionsPanel items={savedSessions} locale={locale}/>} 
   </div>
   return <section className="hh-personal-analysis" aria-label={t.title}>
     <header className="hh-personal-analysis-header"><p>{t.eyebrow}</p><h1>{t.title}</h1><div>{t.intro}</div></header>

@@ -6,3 +6,6 @@ export const primaryNavigationIds: NavigationId[];
 export function getSiteNavigation(locale?: PublicLocale): NavigationItem[];
 export function activeNavigationId(pathname: string): NavigationId | undefined;
 export function routeLocale(pathname: string): PublicLocale | undefined;
+
+/** The public guest test chooser, not a private client session or report. */
+export function isPublicTestDiscoveryPath(pathname: string): boolean;

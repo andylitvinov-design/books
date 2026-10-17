@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
@@ -10,11 +10,14 @@ const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
 const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
+const PORTRAIT_COLLAPSED_COUNT = 10 // Five rows × two columns; the full list is one tap away.
 
 export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
+  const [showAllPortraitRays, setShowAllPortraitRays] = useState(false)
+  const portraitRayOptionsId = useId()
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
   const ru = locale === 'ru', es = locale === 'es'
@@ -23,6 +26,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const measuredAxes = portrait ? PORTRAIT_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
   const suggestedRays = portrait ? [...measuredAxes, ...PORTRAIT_AXES.filter((axis) => !measuredAxes.includes(axis))].slice(0, 8) : []
   const visibleRays = (chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))).slice(0, 10).sort((a, b) => PORTRAIT_AXES.indexOf(a) - PORTRAIT_AXES.indexOf(b))
+  // Expanding is presentation-only: checked rays and their 10-ray cap never reset.
+  const portraitOptions = showAllPortraitRays ? PORTRAIT_AXES : PORTRAIT_AXES.slice(0, PORTRAIT_COLLAPSED_COUNT)
   const rays = visibleRays.map((axis, index) => {
     // Stable positions: selecting another ray must never rotate the remaining axes.
     const angle = (-Math.PI / 2) + PORTRAIT_AXES.indexOf(axis) * (Math.PI * 2 / PORTRAIT_AXES.length)
@@ -132,12 +137,22 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <span>{visibleRays.length} / {PORTRAIT_AXES.length}</span>
       </div>
       {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
-      <div className={styles.portraitRayOptions}>{PORTRAIT_AXES.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait?.axes?.[axis] ? `${portrait.axes[axis].source} · ${formatDate(portrait.axes[axis].measuredAt)}` : (ru ? 'Нет измерения' : 'Not measured')}>
+      <div id={portraitRayOptionsId} className={styles.portraitRayOptions} data-portrait-ray-options>{portraitOptions.map((axis) => <label key={axis} className={styles.portraitRayOption} title={portrait?.axes?.[axis] ? `${portrait.axes[axis].source} · ${formatDate(portrait.axes[axis].measuredAt)}` : (ru ? 'Нет измерения' : 'Not measured')}>
           <input type="checkbox" checked={visibleRays.includes(axis)} onChange={() => toggleRay(axis)} disabled={!visibleRays.includes(axis) && visibleRays.length >= 10} />
           <span>{label(axis)}</span>
           <strong>{portrait?.axes?.[axis] ? `${portrait.axes[axis].percent}%` : '—'}</strong>
           {portrait?.axes?.[axis]?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{portrait.axes[axis].change > 0 ? '+' : ''}{portrait.axes[axis].change} {ru ? 'п.п.' : 'pp'}</small>}
         </label>)}</div>
+      {PORTRAIT_AXES.length > PORTRAIT_COLLAPSED_COUNT && <button
+        type="button" className={styles.portraitShowMore} aria-controls={portraitRayOptionsId}
+        aria-expanded={showAllPortraitRays} onClick={() => setShowAllPortraitRays(current => !current)}>
+        {showAllPortraitRays
+          ? (ru ? 'Свернуть остальные шкалы' : es ? 'Mostrar menos escalas' : 'Show fewer scales')
+          : (ru ? `Показать ещё ${PORTRAIT_AXES.length - PORTRAIT_COLLAPSED_COUNT} шкал`
+            : es ? `Ver ${PORTRAIT_AXES.length - PORTRAIT_COLLAPSED_COUNT} escalas más`
+              : `Show ${PORTRAIT_AXES.length - PORTRAIT_COLLAPSED_COUNT} more scales`)}
+        <span aria-hidden="true">{showAllPortraitRays ? '↑' : '↓'}</span>
+      </button>}
       {rays.some((ray) => ray.previousEnd) && <div className={styles.portraitLegend}><span className={styles.legendCurrent}>{ru ? 'Сейчас' : es ? 'Actual' : 'Current'}</span><span className={styles.legendPrior}>{ru ? 'Предыдущий совместимый тест' : es ? 'Medición previa compatible' : 'Previous comparable test'}</span></div>}
       {rays.some((ray) => ray.end) && <details className={styles.portraitSources}>
         <summary>{ru ? 'Данные по лучам: источник, дата и динамика' : es ? 'Fuentes, fechas y evolución' : 'Ray details: source, date and change'}</summary>

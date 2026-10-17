@@ -519,15 +519,16 @@ export function TantraReikiOverviewLinks({locale}:{locale:PublicLocale}) {
   );
 }
 const levelOneFocus: Record<PublicLocale, {
-  eyebrow: string; title: string; description: string; request: string; note: string;
+  eyebrow: string; title: string; description: string; request: string; tests: string; note: string;
   furtherEyebrow: string; furtherTitle: string; furtherDescription: string; expand: string; exploreNext: string;
 }> = {
   en: {
     eyebrow: "BEGIN HERE · LEVEL 1",
     title: "Your first step: Spring of Life",
     description: "Start with body awareness, gentle sensitivity and a respectful connection with yourself or a partner. The first level is a complete introduction; the other levels can wait until you choose to explore them.",
-    request: "Request a free Level 1 introduction",
-    note: "Introduction and initiation are arranged personally with Andrey; reading alone does not confer an initiation.",
+    request: "Get Tantra Reiki Level 1 as a gift",
+    tests: "Take free Tantra self-reflection tests",
+    note: "The free introductory initiation is confirmed personally by Andrey; tests support self-reflection, not diagnosis.",
     furtherEyebrow: "OPTIONAL · EXPLORE AT YOUR OWN PACE",
     furtherTitle: "Curious about Levels 2–9?",
     furtherDescription: "The rest of the course stays here without overwhelming the first step. Tap any level to reveal its original description, practices and attunements.",
@@ -538,8 +539,9 @@ const levelOneFocus: Record<PublicLocale, {
     eyebrow: "НАЧНИТЕ ЗДЕСЬ · ПЕРВАЯ СТУПЕНЬ",
     title: "Первый шаг: «Родник жизни»",
     description: "Начните с внимания к телу, мягкого развития чувствительности и бережного контакта с собой или партнёром. Первая ступень — самостоятельное знакомство с практикой. Остальные можно изучать позже, по желанию.",
-    request: "Запросить бесплатную инициацию 1-й ступени",
-    note: "Вводное знакомство и инициация согласовываются лично с Андреем; одно лишь чтение не является инициацией.",
+    request: "Получить 1-ю ступень Тантра Рейки в подарок",
+    tests: "Пройти бесплатные тантрические тесты",
+    note: "Бесплатная вводная инициация подтверждается лично Андреем; тесты предназначены для самопознания, не диагностики.",
     furtherEyebrow: "ПРОДОЛЖЕНИЕ · ПО ВАШЕМУ ЖЕЛАНИЮ",
     furtherTitle: "Хотите узнать о ступенях 2–9?",
     furtherDescription: "Основная информация о первой ступени уже выше. Нажмите на интересующую ступень, чтобы раскрыть её полное авторское описание, настройки и практики.",
@@ -550,8 +552,9 @@ const levelOneFocus: Record<PublicLocale, {
     eyebrow: "EMPIEZA AQUÍ · NIVEL 1",
     title: "Tu primer paso: Manantial de vida",
     description: "Empieza con la conciencia corporal, la sensibilidad suave y la conexión respetuosa contigo o con otra persona. El primer nivel es una introducción completa; los demás se pueden explorar después.",
-    request: "Solicitar una introducción gratuita al Nivel 1",
-    note: "La introducción y la iniciación se acuerdan personalmente con Andrey; leer los materiales no otorga una iniciación.",
+    request: "Recibir Tantra Reiki Nivel 1 de regalo",
+    tests: "Hacer los tests tántricos gratuitos",
+    note: "La iniciación introductoria gratuita se acuerda con Andrey; los tests son para la reflexión personal, no el diagnóstico.",
     furtherEyebrow: "OPCIONAL · A TU RITMO",
     furtherTitle: "¿Quieres explorar los niveles 2–9?",
     furtherDescription: "El primer paso es el protagonista. Pulsa cualquier otro nivel para ver su descripción original, las prácticas y las sintonizaciones.",
@@ -649,6 +652,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
           {i === 0 ? (
             <div className="tantra-journey__first-cta">
               <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
               <p>{focus.note}</p>
             </div>
           ) : null}
