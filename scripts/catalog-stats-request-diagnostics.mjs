@@ -9,7 +9,7 @@ export function installCatalogStatsDiagnostic(env = globalThis) {
       const key = '__catalogStatsDiagnostic'
       const rows = JSON.parse(env.sessionStorage.getItem(key) || '[]')
       if (rows.length >= 128) return
-      rows.push({ ...event, time: env.performance.timeOrigin + env.performance.now(), documentProbe: env.__publicAuditProbe || null })
+      rows.push({ ...event, time: env.performance.timeOrigin + env.performance.now(), documentProbe: env.__publicAuditProbe || env.__cspInitDocumentProbe || null })
       env.sessionStorage.setItem(key, JSON.stringify(rows))
     } catch { /* Observation must never change fetch behavior. */ }
   }

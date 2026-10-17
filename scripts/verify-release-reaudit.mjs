@@ -424,6 +424,14 @@ async function exercise(engine, browserType, width) {
             return state;
           };
           record('init');
+          document.addEventListener('securitypolicyviolation', event => {
+            let blockedPath = null;
+            try {
+              const blocked = new URL(event.blockedURI, location.origin);
+              if (blocked.origin === location.origin && blocked.pathname === '/api/test-catalog/stats' && !blocked.search) blockedPath = blocked.pathname;
+            } catch { /* Do not retain unrecognized URLs. */ }
+            record('policy-violation', { directive: event.effectiveDirective, disposition: event.disposition, blockedPath });
+          }, true);
           // Observe actual uncaught errors independently of WebKit's console
           // diagnostics, which Playwright also exposes through pageerror.
           window.addEventListener('error', event => {
@@ -443,8 +451,11 @@ async function exercise(engine, browserType, width) {
           window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
         });
         await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
+        await cspContext.addInitScript({ content: catalogStatsDiagnosticSource() });
         const cspPage = await cspContext.newPage();
         const requestTelemetry = [];
+        const statsResponses = [];
+        attachCatalogStatsResponseDiagnostic(cspPage, origin, statsResponses);
         attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
         const navigationTrace = [];
         const waitForDocument = async () => {
@@ -593,7 +604,8 @@ async function exercise(engine, browserType, width) {
           // Keep full structured diagnostics even when check() bounds its message.
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
           const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          const statsFetch = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []);
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ statsResponses, statsFetch, requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });
