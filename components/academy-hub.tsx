@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { AcademyVideoCourses } from "@/components/academy-video-courses";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -121,7 +122,7 @@ function AcademyRecordIndex({ items, label }: { items: AcademyItem[]; label: str
     <section className="library-index-grid" aria-label={label}>
       {items.map((item) => (
         <Link className="library-index-card academy-index-card" href={item.href} key={item.key}>
-          <span className="library-index-photo"><Image alt="" fill sizes="(max-width: 700px) 76px, 128px" src={item.image} /></span>
+          <span className="library-index-photo"><Image alt="" fill sizes="(max-width: 700px) 76px, 128px" src={cardArtworkUrl(item.image)} unoptimized={hasCardArtwork(item.image)} /></span>
           <span className="academy-index-copy">
             <span className="library-index-title">{item.title}</span>
             {item.meta ? <small>{item.meta}</small> : null}
