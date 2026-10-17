@@ -69,14 +69,18 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.match(landing, /guest\/results/)
   assert.match(landing, /save-intents/)
   assert.doesNotMatch(landing, /sessionStorage|localStorage|GUEST_RESULT_STORAGE_KEY/)
-  // PR613 stores only a short-lived session navigation target, never results.
-  // Allow exactly the two reviewed target-consumption calls; reject every
-  // other browser-storage use and retain the assessment-import prohibitions.
+  // Only reviewed session-local navigation pointers may use browser storage:
+  // two report-save targets and the separate Remote Energy Support booking
+  // draft (two reads and one explicit delete). None stores assessment answers.
   const sessionTargetCall = 'consumeSessionSaveTarget(intentId,locale,window.location.origin,window.sessionStorage)'
+  const supportDraftRead = 'readRemoteSupportDraft(window.sessionStorage, service.id)'
+  const supportDraftDelete = 'window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)'
   const assertNoAssessmentStorage = source => {
     assert.doesNotMatch(source, /guest\/import|report\/claim|GUEST_RESULT_STORAGE_KEY/)
     assert.equal(source.split(sessionTargetCall).length - 1, 2)
-    assert.doesNotMatch(source.replaceAll(sessionTargetCall, ''), /sessionStorage|localStorage/)
+    assert.equal(source.split(supportDraftRead).length - 1, 2)
+    assert.equal(source.split(supportDraftDelete).length - 1, 1)
+    assert.doesNotMatch(source.replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, ''), /sessionStorage|localStorage/)
   }
   assertNoAssessmentStorage(workspace)
   for (const forbidden of [

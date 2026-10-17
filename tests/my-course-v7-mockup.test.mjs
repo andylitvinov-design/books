@@ -34,7 +34,9 @@ test('first screen presents course identity and one focused CTA with approved or
 test('game map zigzags without overlapping absolute labels, with honest locked future state',()=>{
   assert.match(map,/data-side=\{index % 2 === 0 \? 'left' : 'right'\}/)
   assert.match(map,/\(item\.status === 'planned' \|\| item\.status === 'upcoming'\) \? <LockKeyhole/)
-  assert.match(map,/roadmap\.map/)
+  assert.match(map,/visibleRoadmap\.map/)
+  assert.match(map,/showAllDays \? roadmap : roadmap\.filter/)
+  assert.match(map,/View all 14 lessons/)
   assert.match(map,/<ol className=\{styles\.path\}>/)
   assert.match(map,/<img className=\{styles\.journeyScene\}/)
   assert.match(mapCss,/\.mapShell \.pathRow\{[^}]*grid-template-columns:minmax\(0,1fr\) 88px minmax\(0,1fr\)/s)

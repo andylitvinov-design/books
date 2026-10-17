@@ -130,10 +130,14 @@ function OptionalNumber({ label, value, onChange, t }) {
 export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], paused, finished, onPlay }) {
   const t = COPY[locale] || COPY.en
   const [selected, setSelected] = useState(null)
-  useEffect(() => { setSelected(null) }, [cycle.id, cycle.day])
+  const [showAllDays, setShowAllDays] = useState(false)
+  useEffect(() => { setSelected(null); setShowAllDays(false) }, [cycle.id, cycle.day])
   const count = Number(progress.practiceCount) || 0
   // Do not incentivize recording sensitive symptoms: only saved lessons earn XP.
   const xp = 20 * count
+  const journeyLength = cycle.durationDays || 14
+  const firstVisibleDay = Math.min(Math.max(1, cycle.day - 1), Math.max(1, journeyLength - 4))
+  const visibleRoadmap = showAllDays ? roadmap : roadmap.filter(item => item.day >= firstVisibleDay && item.day < firstVisibleDay + 5)
 
   return <section className={styles.mapShell} data-course-quest-map aria-label={t.map}>
     <header className={styles.mapHeader}>
@@ -146,7 +150,8 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
     <div className={styles.mapProgress}><span>{t.progress}: <strong>{count}/{cycle.durationDays || 14}</strong></span>
       <progress max={cycle.durationDays || 14} value={count} aria-label={t.progress}/></div>
     <ol className={styles.path}>
-      {roadmap.map((item, index) => {
+      {visibleRoadmap.map((item) => {
+        const index = roadmap.findIndex(day => day.day === item.day)
         const Icon = ICONS[index % ICONS.length]
         const active = item.status === 'today' && !finished
         const complete = item.status === 'completed'
@@ -180,6 +185,11 @@ export function CourseQuestMap({ locale = 'en', cycle, progress, roadmap = [], p
         </li>
       })}
     </ol>
+    {roadmap.length > 5 && <button className={styles.pathToggle} type="button"
+      aria-expanded={showAllDays} onClick={() => { setShowAllDays(value => !value); setSelected(null) }}>
+      {showAllDays ? (locale === 'ru' ? 'Свернуть путь' : 'Show fewer lessons')
+        : (locale === 'ru' ? 'Все 14 уроков' : 'View all 14 lessons')}
+    </button>}
     <img className={styles.journeyScene} src="/images/holistic-house/course-focus-mountain-boy.webp" alt=""
       width={860} height={245} loading="lazy" aria-hidden="true"/>
     <p className={styles.mapFootnote}><LockKeyhole size={14} aria-hidden="true"/>{t.rewardNote}</p>
@@ -293,7 +303,7 @@ export function CourseQuestPlayer({ locale = 'en', data, busy, onClose, onChecki
 
   return <div className={styles.playerOverlay} role="dialog" aria-modal="true"
     aria-label={t.lesson + ' ' + cycle.day + ': ' + headline}
-    ref={containerRef} data-course-quest-player>
+    ref={containerRef} data-course-quest-player data-course-quest-one-screen="v1">
     <div className={styles.playerFrame}>
       <header className={styles.playerHeader}>
         <button className={styles.iconButton} type="button" aria-label={t.close}
