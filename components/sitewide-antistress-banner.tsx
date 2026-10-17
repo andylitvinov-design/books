@@ -160,3 +160,4 @@ export function TestSelectionCourseBanner({ locale, showReview = false }: { loca
       )}
     </section>
   );
+}
