@@ -177,7 +177,7 @@ export function SimpleTestPicker({
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
   recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
-  matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore,
+  matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
@@ -611,6 +611,9 @@ export function SimpleTestPicker({
       {!activeBattery.length && <p className={styles.noMatches} role="status">{c.noTests}</p>}
       <button type="button" className={styles.fullDatabase} onClick={onBrowseCore}>
         <Compass size={20} aria-hidden="true"/>{c.core100}<ArrowRight size={17} aria-hidden="true" className={styles.browseArrow}/>
+      </button>
+      <button type="button" className={styles.fullDatabase} onClick={onBrowsePdf}>
+        <BookOpen size={20} aria-hidden="true"/>{locale === 'ru' ? 'Профессиональные шкалы — скачать PDF' : locale === 'es' ? 'Escalas profesionales: descargar PDF' : 'Professional scale guides - PDF'}<ArrowRight size={17} aria-hidden="true" className={styles.browseArrow}/>
       </button>
       <button type="button" className={styles.fullDatabase} onClick={onBrowseFull}>
         <Compass size={20} aria-hidden="true"/>{c.browse}<ChevronDown size={17} aria-hidden="true" className={styles.browseArrow}/>
