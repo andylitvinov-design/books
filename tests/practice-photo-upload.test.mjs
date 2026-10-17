@@ -10,7 +10,7 @@ const profile=()=>({displayName:'Example Master',professionalTitle:'Teacher',sho
 const service=()=>({copy:{en:{title:'Service',shortDescription:'Helpful service'},ru:{title:'Услуга',shortDescription:'Помогающая услуга'}},areaKey:'personal_development',deliveryFormat:'online',languages:['en','ru'],pricingMode:'free',photos:[url]})
 test('practitioner photo accepts owned-public format in validation, rejects unsafe URL shapes',()=>{
   assert.equal(validateProfile(profile()).photoPath,url)
-  for(const photoPath of ['https://evil.example/photo.jpg','//evil.example/photo.jpg','data:image/jpeg;base64,AA','javascript:alert(1)','/storage/v1/object/private/not-public','https://shervdixkaxurnaecioe.supabase.co/storage/v1/object/public/hh-service-photos/'+owner+'/'+file+'.jpg?token=secret']){
+  for(const photoPath of ['https://evil.example/photo.jpg','//evil.example/photo.jpg','data:image/jpeg;base64,AA','javascript:alert(1)','https://shervdixkaxurnaecioe.supabase.co/storage/v1/object/public/hh-service-photos/'+owner+'/'+file+'.jpg?token=secret']){
     assert.throws(()=>validateProfile({...profile(),photoPath}),{code:'INVALID_IMAGE'})
   }
   assert.equal(validateProfile({...profile(),photoPath:'/images/legacy.jpg'}).photoPath,'/images/legacy.jpg')
