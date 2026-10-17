@@ -82,3 +82,16 @@ test('Mobile-first teal learner has accessible buttons, outlines and no automati
   assert.match(css, /prefers-reduced-motion/)
   assert.doesNotMatch(learner, /autoplay|autoPlay/)
 })
+
+test('Reiki Practitioner opening slide explains all three initiation opportunities and learning tasks', () => {
+  const opening = curriculum.split('id: "welcome-01"')[1].split('id: "welcome-02"')[0]
+  assert.match(opening, /Reiki Practitioner/)
+  assert.match(opening, /Практик Рейки/)
+  assert.match(learner, /3 possible Level 1 initiations/)
+  assert.match(learner, /3 возможные инициации первой ступени/)
+  assert.match(learner, /energyworkPathChoices\.map\(\(choice\) => <li key=\{choice\.id\}>/)
+  assert.match(learner, /watch the course videos, complete the tasks and answer the questions/)
+  assert.match(learner, /посмотрите учебные видео, выполните задания и ответьте на вопросы/)
+  assert.match(learner, /finishing the course does not grant it automatically/)
+  assert.match(css, /welcomeSlide \.art/)
+})
