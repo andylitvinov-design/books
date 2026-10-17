@@ -3,6 +3,7 @@
  * RLS/immutability and the normal server loader using its committed digest allowlist.
  */
 import test from 'node:test'
+import { validateNativeV2Release, verifyNativeV2 } from './interpretation-v2-database.cases.mjs'
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { readFile, mkdir, writeFile, access } from 'node:fs/promises'
@@ -27,6 +28,7 @@ const release=JSON.parse(await readFile(new URL('data/assessments/interpretation
 const seedURL=new URL(INTERPRETATION_SEED_PATH,root)
 const seedExists=await access(seedURL).then(()=>true,()=>false)
 const gate=validateInterpretationRelease(release,APPROVED_INTERPRETATION_DIGESTS,{seedExists})
+const v2Release = gate.pending ? null : await validateNativeV2Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const digest=bytes=>'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')
 const errorCode=code=>error=>error?.code===code
 const recordColumns=['assessment_version_id','interpretation_version','report_locale','definition_content_hash','provenance','source_commit','rules_engine_version','payload_sha256','payload_canonical','payload']
@@ -106,7 +108,7 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
     assert.equal(row.payload_canonical,canonicalJSON(row.payload))
    }
    for(const definition of ASSESSMENT_DEFINITIONS)for(const locale of ['en','ru'])assert.ok(actual.has(interpretationRecordApprovalKey({definitionId:definition.id,contentHash:definition.contentHash,interpretationVersion:release.interpretationVersion,reportLocale:locale})))
-   assert.deepEqual([...actual].sort(),Object.keys(APPROVED_INTERPRETATION_DIGESTS).sort())
+   assert.deepEqual([...actual].sort(),Object.keys(gate.approvedDigests).sort())
   })
   await check('All eight English-questionnaire IPIP rows contain reviewed Russian report prose without categorical bands',async()=>{
    const expectedKeys=['ipip-locus-of-control-internality-10','ipip-locus-of-control-powerful-others-10','ipip-locus-of-control-chance-10','ipip-positive-expressivity-9','ipip-negative-expressivity-10','ipip-cognitive-failures-10','ipip-optimism-10','ipip-attending-to-emotions-10']
@@ -201,7 +203,11 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   })
   // node:test subtest failures are reflected in the parent test result. Never claim
   // success just because individual t.test promises completed.
-  proof.status=proof.checks.length===12?'passed':'failed'
+  assert.equal(proof.checks.length,12,'Every historical v1 stage must complete before v2 SQL')
+  proof.v2 = await verifyNativeV2({ t, db, root, transaction, v2Release, sourceSnapshot, sourceBefore, recordColumns })
+  proof.runtimeRegistryMode = 'approved-v2-database'
+  proof.databaseParityForRuntimeVersion = proof.v2.status === 'passed'
+  proof.status=proof.checks.length===12 && proof.v2.status==='passed'?'passed':'failed'
   assert.equal(proof.status,'passed','Every native verification stage must complete')
  }catch(error){proof.status='failed';proof.error=error.message;throw error}
  finally{

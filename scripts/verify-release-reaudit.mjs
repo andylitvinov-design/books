@@ -1,3 +1,4 @@
+import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
@@ -141,8 +142,9 @@ async function verifyCspBfcache() {
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
-  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [] };
+  const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [], statsResponses: [], statsFetch: [] };
   let publicPhase = 'initial';
+  await context.addInitScript({ content: catalogStatsDiagnosticSource() });
   await context.addInitScript(() => {
     if (window.top !== window) return;
     window.__publicAuditProbe = crypto.randomUUID();
@@ -167,6 +169,7 @@ async function exercise(engine, browserType, width) {
   const createPublicPage = async () => {
   const errors = [];
   const page = await context.newPage();
+  attachCatalogStatsResponseDiagnostic(page, origin, publicDiagnostics.statsResponses);
   page.on('pageerror', error => {
     errors.push(String(error.message).slice(0, 300));
     publicDiagnostics.pageErrors.push({ phase: publicPhase, time: Date.now(), pageUrl: page.url(), message: error.message, stack: error.stack });
@@ -231,6 +234,7 @@ async function exercise(engine, browserType, width) {
           assert.equal(await page.locator('.public-consultation-cta').count(), 0, 'About must not repeat the generic consultation CTA');
         }
         publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]'));
+        publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]'));
         publicDiagnostics.checkpoints.push({ type: 'assert', path, time: Date.now(), state: await page.evaluate(() => ({ probe: window.__publicAuditProbe, url: location.href, readyState: document.readyState, hydrated: history.pushState.toString().includes('__NA') })) });
         assert.deepEqual(errors, [], 'Unexpected page JS error');
         assert.deepEqual(publicDiagnostics.lifecycle.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught errors in public documents');
@@ -258,7 +262,7 @@ async function exercise(engine, browserType, width) {
         // routes from requests belonging to the failed, departed document.
         const lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => []);
         publicDiagnostics.retiredDocuments ??= [];
-        publicDiagnostics.retiredDocuments.push({ path, lifecycle, pendingRequests: publicPageState.pendingPublicRequests.size });
+        publicDiagnostics.retiredDocuments.push({ path, lifecycle, statsFetch: await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []), pendingRequests: publicPageState.pendingPublicRequests.size });
         await page.close();
         publicPageState = await createPublicPage();
         page = publicPageState.page;
@@ -670,6 +674,7 @@ async function exercise(engine, browserType, width) {
     }
   } finally {
     publicDiagnostics.lifecycle = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__publicAuditLifecycle') || '[]')).catch(() => publicDiagnostics.lifecycle);
+    publicDiagnostics.statsFetch = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => publicDiagnostics.statsFetch);
     writeFileSync(`${evidence}/${label}-public-${engine}-${width}-diagnostics.json`, JSON.stringify(publicDiagnostics, null, 2));
     await context.close(); await browser.close();
   }

@@ -2,6 +2,8 @@
 // Adapted from billing-database.integration.mjs: pin transport, synthetic credentials,
 // database identity, fresh PostgreSQL 17 service and explicit CI-only invocation.
 export const INTERPRETATION_SEED_PATH = 'supabase/seeds/assessment-interpretations-2026-10-17.v1.sql'
+export const INTERPRETATION_V2_SEED_PATH = 'supabase/seeds/assessment-interpretations-2026-10-17.v2.sql'
+const RELEASE_VERSIONS = ['2026-10-17.v1', '2026-10-17.v2']
 export function interpretationDatabaseOptions(env = process.env, execArgv = process.execArgv) {
   let url
   try { url = new URL(env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid') } catch { throw new Error('Isolated interpretation database required') }
@@ -20,17 +22,28 @@ export function interpretationDatabaseOptions(env = process.env, execArgv = proc
 export function validateInterpretationRelease(release, approvedDigests, { seedExists = false } = {}) {
   const plain = value => value && typeof value === 'object' && !Array.isArray(value)
   const hash = value => typeof value === 'string' && /^sha256:[a-f0-9]{64}$/.test(value)
-  if (!plain(release) || !plain(approvedDigests) || release.interpretationVersion !== '2026-10-17.v1')
+  if (!plain(release) || !plain(approvedDigests) || !RELEASE_VERSIONS.includes(release.interpretationVersion))
     throw new Error('Malformed interpretation release descriptor or approved digest manifest')
-  const entries = Object.entries(approvedDigests)
+  const allEntries = Object.entries(approvedDigests)
+  // Validate every global entry before selecting a version. Malformed, unknown
+  // or noncanonical identities must never be silently ignored by filtering.
+  for (const [key, digest] of allEntries) {
+    let identity
+    try { identity = JSON.parse(key) } catch { throw new Error('Malformed approved interpretation identity') }
+    if (!Array.isArray(identity) || identity.length !== 4 || JSON.stringify(identity) !== key ||
+        !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(identity[0] || '') ||
+        !hash(identity[1]) || !RELEASE_VERSIONS.includes(identity[2]) || !['en', 'ru'].includes(identity[3]) || !hash(digest))
+      throw new Error('Malformed approved interpretation identity or digest')
+  }
+  const entries = allEntries.filter(([key]) => JSON.parse(key)[2] === release.interpretationVersion)
   if (release.status === 'pending') {
     if (release.sourceCommit !== null || release.seedPath !== null || release.recordCount !== 0 ||
-        release.seedSha256 != null || entries.length !== 0 || seedExists)
+        release.seedSha256 != null || allEntries.length !== 0 || seedExists)
       throw new Error('Preparatory C1 must have an empty allowlist and no approved seed')
     return { pending: true, reason: 'PREPARATORY C1 ONLY: no approved interpretation seed; native database integration has NOT run.' }
   }
   if (release.status !== 'approved' || !/^[a-f0-9]{40}$/.test(release.sourceCommit || '') ||
-      release.seedPath !== INTERPRETATION_SEED_PATH || release.recordCount !== 460 || !hash(release.seedSha256) ||
+      release.seedPath !== (release.interpretationVersion === '2026-10-17.v1' ? INTERPRETATION_SEED_PATH : INTERPRETATION_V2_SEED_PATH) || release.recordCount !== 460 || !hash(release.seedSha256) ||
       entries.length !== 460 || !seedExists)
     throw new Error('C2 requires the approved source commit, exact 460-record manifest and pinned seed')
   const definitions = new Map()
@@ -47,7 +60,7 @@ export function validateInterpretationRelease(release, approvedDigests, { seedEx
   }
   if (definitions.size !== 230 || [...definitions.values()].some(locales => locales.size !== 2))
     throw new Error('C2 approved manifest must cover exactly 230 definitions in both report locales')
-  return { pending: false }
+  return { pending: false, approvedDigests: Object.fromEntries(entries) }
 }
 export async function assertFreshInterpretationDatabase(db) {
   const identity = (await db.query(`select current_database() as name,current_user as role,

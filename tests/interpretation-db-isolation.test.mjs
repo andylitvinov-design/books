@@ -31,3 +31,18 @@ test('C2 requires exact 230×2 identities, approved seed and hash, not merely a 
  const missing={...digests};delete missing[Object.keys(missing)[0]];assert.throws(()=>validateInterpretationRelease(release,missing,{seedExists:true}))
  const invalid={...digests};invalid[Object.keys(invalid)[0]]='bad';assert.throws(()=>validateInterpretationRelease(release,invalid,{seedExists:true}))
 })
+
+test('v1 and v2 gates validate exact independent 460-entry subsets without accepting malformed extra entries', () => {
+ const { release, digests } = approved()
+ const v2Entries = Object.fromEntries(Object.entries(digests).map(([key,value])=>{const id=JSON.parse(key);id[2]='2026-10-17.v2';return[JSON.stringify(id),value]}))
+ const combined = {...digests,...v2Entries}
+ const v2 = {...release,interpretationVersion:'2026-10-17.v2',seedPath:'supabase/seeds/assessment-interpretations-2026-10-17.v2.sql'}
+ assert.deepEqual(validateInterpretationRelease(release,combined,{seedExists:true}).approvedDigests,digests)
+ assert.deepEqual(validateInterpretationRelease(v2,combined,{seedExists:true}).approvedDigests,v2Entries)
+ const missing={...combined};delete missing[Object.keys(v2Entries)[0]]
+ assert.throws(()=>validateInterpretationRelease(v2,missing,{seedExists:true}))
+ for(const extra of [{'not-json':hash},{'["fake"]':hash},{[JSON.stringify(['00000000-0000-4000-8000-000000000000',hash,'future.v3','en'])]:hash}])assert.throws(()=>validateInterpretationRelease(release,{...combined,...extra},{seedExists:true}))
+ assert.throws(()=>validateInterpretationRelease(pending,combined))
+ assert.throws(()=>validateInterpretationRelease({...v2,seedPath:INTERPRETATION_SEED_PATH},combined,{seedExists:true}))
+ assert.throws(()=>validateInterpretationRelease({...v2,interpretationVersion:'future.v3'},combined,{seedExists:true}))
+})
