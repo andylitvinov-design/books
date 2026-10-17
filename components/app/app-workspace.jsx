@@ -2729,16 +2729,16 @@ function ResultConsultationCta({ locale }) {
     locale === 'ru'
       ? {
           kicker: 'Личная поддержка',
-          title: 'Обсудите свои результаты со специалистом',
+          title: 'Заказать консультацию специалиста',
           text: 'Разберите показатели и возможные следующие шаги вместе с практиком.',
           privacy: 'Результаты приватны и не передаются автоматически.',
           action: 'Выбрать специалиста',
         }
       : {
           kicker: 'Personal guidance',
-          title: 'Review your results with a specialist',
+          title: 'Book a consultation with a specialist',
           text: 'Talk through your scores and possible next steps with a practitioner.',
-          privacy: 'Your results stay private and are never shared automatically.',
+          privacy: 'Your result stays private and is not shared automatically.',
           action: 'Choose a specialist',
         }
 
