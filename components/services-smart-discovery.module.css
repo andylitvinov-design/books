@@ -343,10 +343,24 @@
   .suggestionDetailsToggle svg,.editorialDetailsButton svg{transition:none}
 }
 
-.quickFacets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
-.quickFacets label{font-size:12px;font-weight:650;display:grid;gap:4px;min-width:0}
-.quickFacets select{width:100%;min-width:0;border-radius:10px;border:1px solid #cfbabb;background:#fff;padding:9px;color:#301c26;font-size:14px}
-@media(max-width:620px){.quickFacets{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.quickFacets select{font-size:13px;padding:8px}}
+.quickFacets{display:flex;flex-wrap:nowrap;align-items:center;gap:7px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:12px 0 8px;padding:1px 0 3px}
+.quickFacets::-webkit-scrollbar{display:none}
+.quickFacets label{display:inline-flex;flex:0 0 auto;align-items:center;gap:4px;min-width:0;min-height:37px;padding:0 7px 0 9px;border:1px solid #d7c9cd;border-radius:10px;background:#f8f6f4;color:#594454;font:650 11px/1.2 system-ui,sans-serif;white-space:nowrap}
+.quickFacets select{box-sizing:border-box;border:0;min-width:0;min-height:35px;padding:7px 0;background:transparent;color:#28374a;font:750 12px/1.2 system-ui,sans-serif;cursor:pointer}
+.quickFacets select:focus-visible{outline:2px solid #9a4866;outline-offset:1px}
+.facetFormat{width:84px}
+.facetCity{width:74px}
+.facetPrice{width:66px}
+.facetLanguage{width:43px}
+@media(max-width:620px){
+  .quickFacets{gap:5px;margin:10px 0 7px}
+  .quickFacets label{min-height:34px;padding:0 5px;gap:3px;font-size:10px}
+  .quickFacets select{min-height:32px;padding:5px 0;font-size:11px}
+  .facetFormat{width:70px}
+  .facetCity{width:65px}
+  .facetPrice{width:63px}
+  .facetLanguage{width:39px}
+}
 
 /* Compact image-left discovery cards. Only their presentation changes:
    the inline details and messenger order panels retain their behaviour. */
