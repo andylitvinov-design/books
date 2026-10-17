@@ -103,7 +103,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <p className={styles.readingTitle}>{ru ? 'По ответам: ' : 'Based on your answers: '}{anchor.label}</p>
         <p>{anchor.note}</p>
       </section>}
-      {conciseMeaning && !anchor && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
+      {conciseMeaning && <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>}
       {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
         <h4>{ru ? 'Диапазоны и их значение' : 'Score ranges explained'}</h4>
         <ol className={styles.rangeList}>
