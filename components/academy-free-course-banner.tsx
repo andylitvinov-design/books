@@ -8,7 +8,7 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · FREE LEARNING",
     title: "Free AI courses & introductions",
-    subtitle: "One guided AI course and three free Reiki introductions.",
+    subtitle: "Two guided courses (one preview) and two free Reiki introductions.",
     count: "4 courses",
     open: "Choose a course",
     start: "Start course",
@@ -18,7 +18,7 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНОЕ ОБУЧЕНИЕ",
     title: "Бесплатные ИИ-курсы и вводные программы",
-    subtitle: "Один интерактивный ИИ-курс и три бесплатных знакомства с Рейки.",
+    subtitle: "Два интерактивных курса (один в предварительной версии) и два знакомства с Рейки.",
     count: "4 курса",
     open: "Выбрать курс",
     start: "Пройти",
@@ -28,7 +28,7 @@ const copy = {
   es: {
     eyebrow: "HOLISTIC HOUSE · APRENDIZAJE GRATIS",
     title: "Cursos de IA e introducciones gratis",
-    subtitle: "Un curso interactivo de IA y tres introducciones gratuitas a Reiki.",
+    subtitle: "Dos cursos interactivos (uno preliminar) y dos introducciones a Reiki.",
     count: "4 cursos",
     open: "Elegir un curso",
     start: "Empezar",
@@ -37,8 +37,8 @@ const copy = {
   },
 } as const;
 
-// Reuse published learning paths. Only OPORA is currently a self-guided AI course;
-// the Reiki entries are existing introductory lessons/materials, not AI enrolments.
+// Reuse published learning paths. OPORA is the account-saved course; Energywork
+// is an educational preview without durable answers until the secure API ships.
 const courses = [
   {
     id: "stress",
@@ -67,24 +67,24 @@ const courses = [
   {
     id: "energywork",
     image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
-    path: "principles-of-energywork",
-    detailsPath: null,
+    path: "principles-of-energywork/learn",
+    detailsPath: "academy/principles-of-energywork",
     en: {
-      type: "FREE INTRODUCTORY COURSE",
+      type: "INTERACTIVE COURSE · PREVIEW",
       title: "Principles of Energywork",
-      description: "A clear introduction to energy practices and three Reiki traditions.",
-      duration: "Study at your own pace",
+      description: "Guided slides, original videos and reflections. Private saving is coming next.",
+      duration: "At your own pace",
     },
     ru: {
-      type: "БЕСПЛАТНЫЙ ВВОДНЫЙ КУРС",
+      type: "ИНТЕРАКТИВНЫЙ КУРС · ПРЕВЬЮ",
       title: "Основы энергетики",
-      description: "Первые шаги в энергопрактиках и знакомство с тремя системами Рейки.",
+      description: "Слайды, авторские видео и рефлексия. Приватное сохранение появится позже.",
       duration: "В своём темпе",
     },
     es: {
-      type: "CURSO INTRODUCTORIO GRATIS",
+      type: "CURSO INTERACTIVO · VISTA PREVIA EN INGLÉS",
       title: "Principios del trabajo energético",
-      description: "Primeros pasos en prácticas energéticas y tres tradiciones Reiki.",
+      description: "Lecciones, vídeos originales y reflexión. Guardado privado próximamente.",
       duration: "A tu ritmo",
     },
   },
@@ -165,7 +165,9 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
               const info = course[locale];
               const href = course.id === "stress"
                 ? `/${courseLocale}/${course.path}`
-                : `/${locale}/academy/${course.path}`;
+                : course.id === "energywork"
+                  ? `/${courseLocale}/academy/${course.path}`
+                  : `/${locale}/academy/${course.path}`;
               return (
                 <article className={styles.course} key={course.id} data-free-course-id={course.id}>
                   <span className={styles.photo}>
