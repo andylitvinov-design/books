@@ -1,0 +1,41 @@
+name: HH Energywork AI Course
+
+on:
+  pull_request:
+    paths:
+      - 'components/energywork-ai-learner.*'
+      - 'components/principles-of-energywork.tsx'
+      - 'components/academy-free-course-banner.tsx'
+      - 'components/app/cabinet-free-course-banners.*'
+      - 'data/academy/energywork-ai-*'
+      - 'lib/academy/energywork-course-repository.js'
+      - 'app/api/app/[...path]/route.js'
+      - 'app/[locale]/academy/[[...slug]]/page.tsx'
+      - 'tests/energywork-ai-course-*.test.mjs'
+      - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
+      - '.github/workflows/hh-energywork-ai.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Energywork slides / private data / Next build
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Source, media, security and route contracts
+        run: node --test tests/energywork-ai-course-preview.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs
+      - name: Targeted ESLint
+        run: npx eslint components/energywork-ai-learner.tsx components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js
+      - name: TypeScript verification
+        run: npx tsc --noEmit
+      - name: Production compile
+        run: npm run build
