@@ -150,6 +150,64 @@ const UI = {
     relativePriority: 'приоритет внутри шкалы', noMedical: 'Для обучения и самонаблюдения, не диагноз и не замена психотерапии.',
   },
 }
+
+const BASELINE_COPY = {
+  en: {
+    eyebrow: 'OPORA · YOUR STARTING POINT',
+    title: 'See where you start. Notice what changes.',
+    lead: 'Before your first lesson, a short check-in records how you feel today. After the 14 lessons, you can repeat suitable questionnaires and compare your answers to see what has changed.',
+    beforeTag: 'BEFORE LESSON 1', beforeTitle: 'My starting point', beforeDetail: 'Record how I feel now',
+    afterTag: 'AFTER LESSON 14', afterTitle: 'My progress', afterDetail: 'Compare the same scales',
+    context: 'This comparison helps you reflect on your progress; it is not a diagnosis or proof that the course caused a change.',
+    listTitle: 'Choose your starting check-ins',
+    listIntro: 'Weekly Pulse is required (8 questions · about 2 minutes). The anxiety and inner-resources check-ins are optional.',
+    alreadySaved: 'Your recent Weekly Pulse result is already saved. We can use it — you do not need to repeat it.',
+    required: 'Required · 8 questions', anxiety: 'Optional · 7 questions', resources: 'Optional · 6 questions',
+    optional: 'Optional', saved: 'Result saved', repeat: 'Needs a newer starting result',
+    duration: 'min', preparing: 'Preparing…',
+    start: 'Start my starting check-in', continueTests: 'Continue my check-ins',
+    reuse: 'Use saved results & continue',
+    next: 'Continue to my course',
+    privacy: 'About these tests and privacy',
+  },
+  ru: {
+    eyebrow: 'ОПОРА · ИСХОДНОЕ СОСТОЯНИЕ',
+    title: 'Узнайте своё исходное состояние и увидьте изменения',
+    lead: 'Перед первым занятием короткий опрос поможет зафиксировать, как вы чувствуете себя сейчас. После 14 уроков можно повторить подходящие тесты и сравнить ответы, чтобы заметить перемены.',
+    beforeTag: 'ДО ПЕРВОГО УРОКА', beforeTitle: 'Точка отсчёта', beforeDetail: 'Зафиксировать своё состояние',
+    afterTag: 'ПОСЛЕ 14 УРОКОВ', afterTitle: 'Мои изменения', afterDetail: 'Сравнить те же шкалы',
+    context: 'Сравнение помогает наблюдать за собой, но не является диагнозом и не доказывает, что изменения вызваны курсом.',
+    listTitle: 'Выберите стартовые тесты',
+    listIntro: 'Weekly Pulse обязателен (8 вопросов · около 2 минут). Тесты тревожности и внутренних ресурсов — по желанию.',
+    alreadySaved: 'Ваш недавний результат Weekly Pulse уже сохранён. Мы учтём его — повторно проходить тест не нужно.',
+    required: 'Обязательный · 8 вопросов', anxiety: 'По желанию · 7 вопросов', resources: 'По желанию · 6 вопросов',
+    optional: 'По желанию', saved: 'Результат сохранён', repeat: 'Нужен более свежий замер',
+    duration: 'мин', preparing: 'Подготавливаем…',
+    start: 'Пройти стартовый тест', continueTests: 'Продолжить тестирование',
+    reuse: 'Использовать сохранённые результаты',
+    next: 'Продолжить курс',
+    privacy: 'О тестах и конфиденциальности',
+  },
+  es: {
+    eyebrow: 'OPORA · TU PUNTO DE PARTIDA',
+    title: 'Conoce tu punto de partida y observa los cambios',
+    lead: 'Antes de la primera lección, una breve evaluación registra cómo te sientes hoy. Después de las 14 lecciones, podrás repetir los cuestionarios adecuados y comparar tus respuestas.',
+    beforeTag: 'ANTES DE LA LECCIÓN 1', beforeTitle: 'Punto de partida', beforeDetail: 'Registrar mi estado actual',
+    afterTag: 'DESPUÉS DE 14 LECCIONES', afterTitle: 'Mi evolución', afterDetail: 'Comparar las mismas escalas',
+    context: 'La comparación te ayuda a reflexionar, pero no es un diagnóstico ni demuestra que el curso haya causado los cambios.',
+    listTitle: 'Elige tus evaluaciones iniciales',
+    listIntro: 'Weekly Pulse es obligatorio (8 preguntas · unos 2 minutos). Las pruebas de ansiedad y recursos internos son opcionales.',
+    alreadySaved: 'Tu resultado reciente de Weekly Pulse ya está guardado. No necesitas repetirlo.',
+    required: 'Obligatorio · 8 preguntas', anxiety: 'Opcional · 7 preguntas', resources: 'Opcional · 6 preguntas',
+    optional: 'Opcional', saved: 'Resultado guardado', repeat: 'Se necesita un resultado más reciente',
+    duration: 'min', preparing: 'Preparando…',
+    start: 'Empezar mi evaluación inicial', continueTests: 'Continuar las evaluaciones',
+    reuse: 'Usar mis resultados y continuar',
+    next: 'Continuar con mi curso',
+    privacy: 'Sobre las pruebas y la privacidad',
+  },
+}
+
 const formatDate=(date,locale)=>{
   try { return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':'en-CA',{dateStyle:'medium'}).format(new Date(date)) }
   catch { return '' }
@@ -525,49 +583,76 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
   // Default compact Anti-Stress battery; general test discovery stays in My Tests.
   // Existing confirmed extras are retained and can still be seen and edited.
   if(stage===2 && isAntistress) {
-    const defaultKeys = new Set(['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse'])
-    const visible = ranked.filter((item,index) => defaultKeys.has(item.key) ||
-      chosenTests.includes(item.key) || (showAll && index < 10))
-    const hasPending = !confirmed || pending.length > 0
+    const c=BASELINE_COPY[locale]||BASELINE_COPY.en
+    const defaultKeys=new Set(['hh-weekly-pulse','gad-7','hh-resource-pulse'])
+    const visible=ranked.filter((item,index)=>defaultKeys.has(item.key)||
+      chosenTests.includes(item.key)||(showAll&&index<10))
+    const isFreshlyCompleted=item=>{
+      const status=confirmedStatuses.find(row=>row.key===item.key)
+      const days=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
+      return status?Boolean(status.completed):
+        Boolean(item.completed&&(!days||isAntistressBaselineRecent(item.key,item.completedAt)))
+    }
+    const baselineSaved=visible.some(item=>item.key===ANTISTRESS_REQUIRED_BASELINE_KEY&&isFreshlyCompleted(item))
+    const allSelectedReady=chosenTests.length>0&&chosenTests.every(key=>{
+      const item=optionByKey.get(key)
+      return Boolean(item&&isFreshlyCompleted(item))
+    })
     return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker>
-      <p className={styles.compactEyebrow}>{ru?'ОПОРА · СТАРТОВАЯ ДИАГНОСТИКА':'OPORA · STARTING ASSESSMENT'}</p>
-      <h2>{ru?'Начните с Weekly Pulse':'Start with Weekly Pulse'}</h2>
-      <p className={styles.compactLead}>{ru
-        ? '8 вопросов · около 2 минут. Результат поможет выбрать один из 5 уровней программы.'
-        : '8 questions · about 2 minutes. Your answers help suggest one of five learning levels.'}</p>
+      <header className={styles.baselineHero} data-course-baseline-explanation>
+        <p className={styles.compactEyebrow}>{c.eyebrow}</p>
+        <h2>{c.title}</h2>
+        <p className={styles.compactLead}>{c.lead}</p>
+        <div className={styles.baselineTimeline}>
+          <div className={styles.baselineStep}>
+            <span className={styles.baselineNumber} aria-hidden="true">1</span>
+            <div><small>{c.beforeTag}</small><strong>{c.beforeTitle}</strong><span>{c.beforeDetail}</span></div>
+          </div>
+          <ArrowRight className={styles.baselineArrow} size={18} aria-hidden="true"/>
+          <div className={styles.baselineStep}>
+            <span className={styles.baselineNumber} aria-hidden="true">2</span>
+            <div><small>{c.afterTag}</small><strong>{c.afterTitle}</strong><span>{c.afterDetail}</span></div>
+          </div>
+        </div>
+        <p className={styles.baselineContext}>{c.context}</p>
+      </header>
+      <div className={styles.baselineListIntro}>
+        <h3>{c.listTitle}</h3>
+        <p>{c.listIntro}</p>
+      </div>
+      {baselineSaved&&<p className={styles.baselineSaved} data-course-baseline-reused role="status">
+        <Check size={17} aria-hidden="true"/>{c.alreadySaved}
+      </p>}
       <div className={styles.shortTestList} data-course-antistress-pretests aria-label={t.stressTestsTitle}>
         {visible.map(item=>{
           const required=item.key===ANTISTRESS_REQUIRED_BASELINE_KEY
-          const status=confirmedStatuses.find(row=>row.key===item.key)
-          const days=ANTISTRESS_BASELINE_RECENCY_DAYS[item.key]
-          const completed=status ? Boolean(status.completed) :
-            Boolean(item.completed && (!days || isAntistressBaselineRecent(item.key,item.completedAt)))
+          const completed=isFreshlyCompleted(item)
           const outdated=Boolean(item.completed&&!completed)
+          const testLabel=required?c.required:item.key==='gad-7'?c.anxiety:
+            item.key==='hh-resource-pulse'?c.resources:c.optional
           return <label key={item.key} className={styles.shortTestRow}
             data-checked={chosenTests.includes(item.key)}
+            data-completed={completed?'true':'false'}
             data-course-required-baseline={required?'true':undefined}>
             <input type="checkbox" checked={chosenTests.includes(item.key)}
               disabled={busy||localBusy||required||(!chosenTests.includes(item.key)&&chosenTests.length>=12)}
               onChange={()=>toggleTest(item.key)}/>
             <span className={styles.shortTestBody}>
               <strong>{item.title}</strong>
-              <small>{required?(ru?'Обязательный · 8 вопросов':'Required · 8 questions')
-                :item.key==='gad-7'?(ru?'По желанию · 7 вопросов':'Optional · 7 questions')
-                :item.key==='hh-resource-pulse'?(ru?'По желанию · 6 вопросов':'Optional · 6 questions')
-                :t.stressOptional}
-                {' · '}{completed ? t.completed : outdated ? t.stressRetake : ('~'+(item.durationMinutes||2)+' min')}
+              <small>{testLabel}{' · '}
+                {outdated?c.repeat:completed?c.saved:('~'+(item.durationMinutes||2)+' '+c.duration)}
               </small>
             </span>
-            {completed && <Check size={18} className={styles.shortTestCheck} aria-label={t.completed}/>}
+            {completed&&<Check size={18} className={styles.shortTestCheck} aria-label={c.saved}/>}
           </label>
         })}
       </div>
       <button type="button" className={'hh-primary '+styles.fastTestButton}
         disabled={busy||localBusy||openingTest||!chosenTests.length} onClick={startCompactTests}
         data-antistress-start-first-test>
-        {localBusy||openingTest?(ru?'Подготавливаем…':'Preparing…')
-          :hasPending?(ru?'Начать тестирование':'Start my assessment')
-            :(ru?'Подобрать мой уровень':'Find my learning level')}
+        {localBusy||openingTest?c.preparing:
+          allSelectedReady?(confirmed?c.next:c.reuse):
+            confirmed?c.continueTests:c.start}
         <ArrowRight size={19} aria-hidden="true"/>
       </button>
       <div className={styles.shortTestExtras}>
@@ -577,7 +662,7 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
           {t.editAreas}</button>
       </div>
       <details className={styles.shortTestDetails}>
-        <summary>{ru?'О тестах и конфиденциальности':'About these tests and privacy'}</summary>
+        <summary>{c.privacy}</summary>
         <p>{t.stressBaselineText} {t.stressExtraNote}</p>
         <p>{t.saveNotice}</p>
         <Link href={root+'/tests?explore=1&course=1&filters=topics'}>{t.returnTests}</Link>
