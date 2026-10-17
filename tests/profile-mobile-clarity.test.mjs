@@ -15,7 +15,7 @@ test('signed-in Profile is compact without changing the legacy private-link prof
   assert.match(profile, /\{external \? <p className="hh-domain-private"/)
   assert.match(profile, /<details className="hh-domain-privacy">/)
   assert.match(profile, /<p>\{t\.private\}<\/p>/)
-  assert.match(css, /\.hh-profile-domains\[data-profile-mode="account"\] \.hh-analysis-reports-empty/)
+  assert.match(css, /\.hh-profile-domains\[data-profile-mode="account"\] \.hh-personal-analysis--embedded \.hh-analysis-reports-empty/)
   assert.doesNotMatch(css, /^\s*\.hh-profile-domains\s*\{/m,
     'account refresh must not recolour the legacy private-link cabinet')
 })
