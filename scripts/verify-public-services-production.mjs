@@ -334,6 +334,21 @@ try {
             assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
               "No horizontal scrolling or squeezed testimonials");
             const pricing = main.locator('[data-alchemy-booking-formats]');
+            // Payments are still available after agreement, but the default
+            // 320/390px decision screen must not be extended by transfer notes.
+            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
+            if (await paymentDisclosure.count()) {
+              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
+                "Payment methods must be collapsed until explicitly requested");
+              await paymentDisclosure.locator('summary').click();
+              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
+                "Payment help can be expanded with an accessible control");
+              await paymentDisclosure.locator('summary').click();
+            }
+            await pricing.locator('[data-alchemy-format="month"]').click();
+            await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
+            assert.equal(await paymentDisclosure.count(), 0,
+              "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             const channels = await openContactChannelChooser(pricing, expect);
             const prepared = await assertPreparedContactChannels(channels, expect);

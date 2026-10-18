@@ -32,7 +32,7 @@ const copy = {
       direction: "Цели и смысл",
       other: "Другая тема",
     },
-    action: "Заказать сеанс",
+    action: "Запросить сеанс",
     note: "Выберите WhatsApp или Telegram, проверьте заявку и подтвердите отправку. Время сеанса согласуется лично, без автоматической оплаты.",
     privacy: "Не вводите здесь диагнозы или медицинские сведения — подробности обсудим лично.",
     telegram: "Или напишите мне в Telegram",
@@ -59,7 +59,7 @@ const copy = {
       direction: "Goals and meaning",
       other: "Another topic",
     },
-    action: "Book a session",
+    action: "Request a session",
     note: "Choose WhatsApp or Telegram and confirm sending. We agree the session time personally; no automatic charge.",
     privacy: "Please don't enter diagnoses or confidential health details here. We can discuss your question directly.",
     telegram: "Or message me on Telegram",
@@ -164,7 +164,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     monthText: "2 личные сессии + 4 недели сопровождения",
     monthNote: "Стоимость согласуется отдельно · без подписки",
     choice: "Выберите формат",
-    choiceHint: "Отметьте подходящий формат и нажмите «Заказать сеанс».",
+    choiceHint: "Выберите формат, затем отправьте запрос на удобное время.",
     free: "Сначала бесплатно?",
     freeAction: "Письменный разбор ситуации",
     request: "Здравствуйте! Хочу заказать выбранную услугу «Алхимия души / Психогомеопатия». Уточните, пожалуйста, доступное время и подтвердите условия.",
@@ -188,7 +188,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
     monthText: "2 personal sessions + 4 weeks of follow-up",
     monthNote: "Price agreed individually · no subscription",
     choice: "Choose a format",
-    choiceHint: "Select the format, then tap Book a session.",
+    choiceHint: "Choose your format, then ask about availability.",
     free: "Prefer to start free?",
     freeAction: "Written situation review",
     request: "Hello! I would like to book the selected Alchemy of the Soul / Psycho-homeopathy service. Please share available times and confirm the terms.",
@@ -234,49 +234,56 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           event="service_request_start" className={styles.optionsOrderButton}
           attributes={{ "data-alchemy-booking": "formats" }} />
       </div>
-      {wiseEnabled && selected !== "month" ? (
-        <div className={styles.wisePayment} data-wise-payment-link>
-          <a className={styles.wisePaymentCta}
-            href={"/api/payments/wise/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
-            target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
-          </a>
-          <small>{locale === "ru"
-            ? `После согласования времени проверьте получателя и сумму ${selected === "30" ? "€50" : "€100"} в Wise. При WiseTag нужен аккаунт Wise, сумму введите вручную. Поступление проверяется отдельно.`
-            : locale === "es"
-              ? `Después de acordar la hora, verifica el destinatario y ${selected === "30" ? "50 €" : "100 €"} en Wise. WiseTag requiere una cuenta Wise y debes escribir el importe. Comprobamos los pagos manualmente.`
-              : `After agreeing a time, check the recipient and ${selected === "30" ? "€50" : "€100"} in Wise. WiseTag requires a Wise account and manual amount entry. We verify receipt separately; no automatic booking.`}</small>
-        </div>
-      ) : null}
-      {paypalPersonalEnabled && selected !== "month" ? (
-        <div className={styles.wisePayment} data-paypal-personal-offer>
-          <a className={styles.wisePaymentCta}
-            href={"/api/payments/paypal/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
-            target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
-          </a>
-          <small>{locale === "ru"
-            ? "После согласования сеанса. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov; поступление проверяется вручную."
-            : locale === "es"
-              ? "Tras acordar la sesión, elige Productos y servicios y comprueba Andrii Litvinov. Verificación manual."
-              : "After agreeing the session, choose Goods & Services and verify Andrii Litvinov. Manual payment verification."}</small>
-          <Link href={"/" + locale + "/payments"}>
-            {locale === "ru" ? "Условия и подтверждение оплаты" : locale === "es" ? "Instrucciones y confirmación" : "Payment details & confirmation"}
-          </Link>
-        </div>
-      ) : null}
-      {zenInquiryUrl ? (
-        <div className={styles.wisePayment} data-zen-manual-request>
-          <a className={styles.wisePaymentCta} href={zenInquiryUrl}
-            target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
-          </a>
-          <small>{locale === "ru"
-            ? "Это запрос реквизитов для разовой сессии, а не оплата. Сначала согласуйте время и подтвердите возможность перевода в ZEN."
-            : locale === "es"
-              ? "Solicitud de instrucciones para transferencia, no un pago. Acuerda la sesión y verifica si ZEN está disponible."
-              : "Only a request for transfer instructions, not a completed payment. Agree a session time and confirm ZEN availability first."}</small>
-        </div>
+      {selected !== "month" && (wiseEnabled || paypalPersonalEnabled || Boolean(zenInquiryUrl)) ? (
+        <details className={styles.paymentDisclosure} data-alchemy-payment-disclosure>
+          <summary>{locale === "ru" ? "Способы оплаты — после подтверждения времени" : locale === "es" ? "Opciones de pago — tras confirmar la hora" : "Payment options — after confirming a time"}</summary>
+          <div className={styles.paymentDisclosureBody}>
+          {wiseEnabled ? (
+            <div className={styles.wisePayment} data-wise-payment-link>
+              <a className={styles.wisePaymentCta}
+                href={"/api/payments/wise/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
+                target="_blank" rel="noopener noreferrer">
+                {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
+              </a>
+              <small>{locale === "ru"
+                ? `После согласования времени проверьте получателя и сумму ${selected === "30" ? "€50" : "€100"} в Wise. При WiseTag нужен аккаунт Wise, сумму введите вручную. Поступление проверяется отдельно.`
+                : locale === "es"
+                  ? `Después de acordar la hora, verifica el destinatario y ${selected === "30" ? "50 €" : "100 €"} en Wise. WiseTag requiere una cuenta Wise y debes escribir el importe. Comprobamos los pagos manualmente.`
+                  : `After agreeing a time, check the recipient and ${selected === "30" ? "€50" : "€100"} in Wise. WiseTag requires a Wise account and manual amount entry. We verify receipt separately; no automatic booking.`}</small>
+            </div>
+          ) : null}
+          {paypalPersonalEnabled ? (
+            <div className={styles.wisePayment} data-paypal-personal-offer>
+              <a className={styles.wisePaymentCta}
+                href={"/api/payments/paypal/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
+                target="_blank" rel="noopener noreferrer">
+                {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
+              </a>
+              <small>{locale === "ru"
+                ? "После согласования сеанса. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov; поступление проверяется вручную."
+                : locale === "es"
+                  ? "Tras acordar la sesión, elige Productos y servicios y comprueba Andrii Litvinov. Verificación manual."
+                  : "After agreeing the session, choose Goods & Services and verify Andrii Litvinov. Manual payment verification."}</small>
+              <Link href={"/" + locale + "/payments"}>
+                {locale === "ru" ? "Условия и подтверждение оплаты" : locale === "es" ? "Instrucciones y confirmación" : "Payment details & confirmation"}
+              </Link>
+            </div>
+          ) : null}
+          {zenInquiryUrl ? (
+            <div className={styles.wisePayment} data-zen-manual-request>
+              <a className={styles.wisePaymentCta} href={zenInquiryUrl}
+                target="_blank" rel="noopener noreferrer">
+                {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
+              </a>
+              <small>{locale === "ru"
+                ? "Это запрос реквизитов для разовой сессии, а не оплата. Сначала согласуйте время и подтвердите возможность перевода в ZEN."
+                : locale === "es"
+                  ? "Solicitud de instrucciones para transferencia, no un pago. Acuerda la sesión y verifica si ZEN está disponible."
+                  : "Only a request for transfer instructions, not a completed payment. Agree a session time and confirm ZEN availability first."}</small>
+            </div>
+          ) : null}
+          </div>
+        </details>
       ) : null}
       <p className={styles.freeOption}>{data.free} <Link href={"/" + locale + "/services/free-situation-review"}>{data.freeAction}</Link></p>
     </div>
