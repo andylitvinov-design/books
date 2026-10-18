@@ -194,3 +194,41 @@ test('research-only and rights-gated scale metadata never silently exposes a run
     assert.ok(typeof row.rightsNotice==='string' && row.rightsNotice.length>10)
   }
 })
+
+
+test('each of the 2,000+ assigned questionnaire responses changes its intended numeric scale by the exact keyed step',()=>{
+  let checked=0,reverse=0
+  for(const d of ALL.filter(x=>['configured','pcl5-trauma','itq-adult-trauma'].includes(x.scoringKey))){
+    const specs=(d.scoring?.dimensions||[]).filter(spec=>['mean','sum','value'].includes(spec.method))
+    if(!specs.length)continue
+    const mid=Object.fromEntries(d.questions.map(q=>[q.id,Math.floor((bound(q,d,'min')+bound(q,d,'max'))/2)]))
+    const context=syntheticTraumaContext(d)
+    const baseline=scoreAssessment(d,mid,context)
+    for(const spec of specs){
+      const before=baseline.dimensions.find(x=>x.key===spec.key)
+      assert.ok(before,identity(d)+' missing dimension '+spec.key)
+      for(const id of spec.items){
+        const q=d.questions.find(q=>q.id===id)
+        const direction=mid[id]<bound(q,d,'max')?1:-1
+        const afterInputs={...mid,[id]:mid[id]+direction}
+        const scored=scoreAssessment(d,afterInputs,context)
+        const after=scored.dimensions.find(x=>x.key===spec.key)
+        const inverted=(spec.reverseItems||[]).includes(id)
+        const expectedSign=direction*(inverted?-1:1)
+        const multiplier=spec.multiplier??1
+        const expectedStep=multiplier/(spec.method==='mean'?spec.items.length:1)
+        const actual=after.value-before.value
+        assert.equal(Math.sign(actual),Math.sign(expectedSign),
+          identity(d)+' '+spec.key+'/'+id+' reverse-key direction')
+        assert.ok(Math.abs(Math.abs(actual)-expectedStep)<=.011,
+          identity(d)+' '+spec.key+'/'+id+' expected '+expectedStep+' got '+actual)
+        assert.equal(after.min,before.min)
+        assert.equal(after.max,before.max)
+        if(inverted)reverse++
+        checked++
+      }
+    }
+  }
+  assert.ok(checked>=2000,'No assigned response may be an unscored placeholder')
+  assert.ok(reverse>=200,'Reverse-keyed psychometric items must actually change direction')
+})
