@@ -12,6 +12,7 @@ import SimpleServiceEditor from './simple-service-editor'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
+import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
@@ -367,7 +368,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
           {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
             <Link className="hh-practice-marketplace-card"
-              href={'/'+locale+'/services/'+item.practitionerSlug+'/'+item.slug} prefetch={false}>
+              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
               <ShowcaseCover item={item} />
               <span className="hh-practice-marketplace-card-content">
                 <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>

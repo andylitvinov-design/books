@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
+import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import styles from "./master-network-explorer.module.css";
 
 const AREAS = [
@@ -359,7 +360,7 @@ function ServiceCard({
   const t = COPY[locale];
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
-  const detailsHref = "/" + locale + "/services/" + service.practitionerSlug + "/" + service.slug;
+  const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
   const requestHref = service.slug === "remote-energy-support"
     ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
     : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
@@ -496,7 +497,7 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
               <div className={styles.actions}>
-                {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={"/" + locale + "/services/" + master.slug + "/" + master.services[0].slug}>{t.viewService}</Link> : null}
+                {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={getPublicServiceDetailHref(locale, master.slug, master.services[0].slug)}>{t.viewService}</Link> : null}
                 <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
                 {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
               </div>

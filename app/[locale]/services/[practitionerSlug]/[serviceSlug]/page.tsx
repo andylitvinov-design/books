@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { ServiceReviews } from "@/components/service-reviews";
@@ -13,6 +13,7 @@ import type { PublicServiceDetail } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink, TrackedServiceExternalLink } from "@/components/service-funnel-tracking";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
+import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import mediaStyles from "@/components/marketplace-service-gallery.module.css";
 
 type PageProps={params:Promise<{locale:string;practitionerSlug:string;serviceSlug:string}>};
@@ -29,13 +30,16 @@ export async function generateMetadata({params}:PageProps):Promise<Metadata>{
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)return{title:"Not found",robots:{index:false,follow:false}};
   const title=value.service.copy.title+" — "+value.service.practitionerName+" | Holistic House";
-  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:`/${locale}/services/${practitionerSlug}/${serviceSlug}`,languages:Object.fromEntries((value.service.displayLocales||['en','ru']).map(lang=>[lang,`/${lang}/services/${practitionerSlug}/${serviceSlug}`]))},robots:{index:true,follow:true}};
+  return{metadataBase:metadataBaseFor(),title,description:value.service.copy.shortDescription,alternates:{canonical:getPublicServiceDetailHref(locale,practitionerSlug,serviceSlug),languages:Object.fromEntries((value.service.displayLocales||['en','ru']).map(lang=>[lang,getPublicServiceDetailHref(lang,practitionerSlug,serviceSlug)]))},robots:{index:true,follow:true}};
 }
 export default async function ServiceDetail({params}:PageProps){
   const {locale,practitionerSlug,serviceSlug}=await params;
   if(!isPublicLocale(locale))notFound();
   const value=await load(locale,practitionerSlug,serviceSlug);
   if(!value)notFound();
+  // Preserve moderation/404 checks, then redirect the published legacy offering.
+  const canonicalHref=getPublicServiceDetailHref(locale,practitionerSlug,serviceSlug);
+  if(canonicalHref!==`/${locale}/services/${practitionerSlug}/${serviceSlug}`)permanentRedirect(canonicalHref);
   const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");

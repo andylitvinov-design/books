@@ -281,7 +281,7 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
           <p className={styles.videoNote}>{t.videoNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.reviewSection].join(" ")} data-alchemy-panel="reviews" aria-labelledby="alchemy-reviews-title">
+        <section className={[styles.panel, styles.reviewSection].join(" ")} id="reviews" data-alchemy-panel="reviews" aria-labelledby="alchemy-reviews-title">
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.reviewsKicker}</span>
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
