@@ -342,3 +342,522 @@
     height:auto!important;max-height:none!important;overflow:visible!important;
   }
 }
+
+
+/* REIKI SCENIC V2 — approved Anti-Stress-inspired design for all 29
+   Reiki Practitioner screens. Same editorial, video and privacy contracts.
+   The existing locally hosted coastal photograph is the fallback scenic asset. */
+.page[data-energywork-design="scenic-v2"]{
+  --reiki-glass:rgba(1,42,62,.68);
+  --reiki-line:rgba(176,244,249,.34);
+  --reiki-muted:#d2e9f1;
+  isolation:isolate;
+  min-height:100svh;
+  color:#f8fdff;
+  background-color:#063e5b;
+  background-image:
+    linear-gradient(180deg,rgba(0,44,71,.90),rgba(3,54,85,.72) 16%,rgba(5,57,79,.32) 36%,rgba(0,39,58,.35) 55%,rgba(0,33,51,.85) 79%,rgba(0,31,48,.98)),
+    url('/images/holistic-house/course-focus-mountain-boy.webp');
+  background-size:cover;
+  background-position:center 52%;
+  background-repeat:no-repeat;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.page[data-energywork-design="scenic-v2"] .shell{
+  display:flex;flex-direction:column;gap:13px;
+  min-height:100svh;max-width:990px;
+  padding:clamp(15px,2.5vw,27px) clamp(17px,3vw,38px) calc(17px + env(safe-area-inset-bottom));
+}
+.page[data-energywork-design="scenic-v2"] .top{
+  flex:none;min-height:45px;gap:12px;
+}
+.page[data-energywork-design="scenic-v2"] .home{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;gap:9px;padding:9px 13px;
+  border:1px solid #efffff37;border-radius:999px;
+  color:#e8fcff;background:#ffffff1c;text-decoration:none;
+}
+.page[data-energywork-design="scenic-v2"] .courseMark{
+  margin-left:auto;color:#f8fcff;font-size:clamp(13px,1.8vw,19px);
+  font-weight:650;text-shadow:0 1px 9px #002c3ba3;
+}
+.page[data-energywork-design="scenic-v2"] .courseMark svg{color:#b8fbff}
+.page[data-energywork-design="scenic-v2"] .phaseLabel{display:none}
+.stageRail{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start;gap:0;flex:none;
+  margin:0;padding:7px 0 12px;list-style:none;
+  color:#effbff;
+}
+.stage{
+  position:relative;display:grid;justify-items:center;align-content:start;
+  gap:7px;min-width:0;text-align:center;
+}
+.stage:not(:first-child)::before{
+  content:"";position:absolute;top:23px;right:calc(50% + 26px);
+  width:calc(100% - 52px);height:2px;background:#c0eaf19e;
+}
+.stageCircle{
+  position:relative;z-index:1;
+  display:grid;place-items:center;width:47px;height:47px;
+  border-radius:50%;border:2px solid #d4f7ff9d;
+  color:#1b5572;background:#d2e9f5dd;
+  font-size:17px;font-weight:820;box-shadow:0 4px 12px #002f4a14;
+}
+.stage[data-highlighted="true"] .stageCircle{
+  color:#fff;border:3px solid #e3ffff;
+  background:linear-gradient(145deg,#12b8c7,#087fa3);
+  box-shadow:0 0 0 5px #1edee62b,0 0 24px #6ffaff91;
+}
+.stageName{
+  max-width:15ch;padding:0 3px;color:#d3eaf3;
+  font-size:12px;font-weight:650;line-height:1.28;text-wrap:balance;
+}
+.stage[data-highlighted="true"] .stageName{color:#fff;font-weight:800}
+.page[data-energywork-design="scenic-v2"] .slide{
+  flex:1;min-height:0;overflow:hidden;display:block;
+  border:1px solid var(--reiki-line);border-radius:25px;
+  color:#f8fdff;background:var(--reiki-glass);
+  box-shadow:0 18px 50px #001f323e;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.page[data-energywork-design="scenic-v2"] .slideMain{
+  min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;scrollbar-color:#87e5e6a8 transparent;
+  align-content:center;gap:20px;
+  padding:clamp(23px,4vw,40px);
+}
+.page[data-energywork-design="scenic-v2"] .welcomeSlide{
+  border-color:transparent;background:transparent;box-shadow:none;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeSlide .slideMain{
+  display:block;padding:clamp(8px,2.5vw,25px) 5px;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeSlide .content{max-width:910px}
+.page[data-energywork-design="scenic-v2"] .welcomeSlide .art{display:none}
+.page[data-energywork-design="scenic-v2"] .eyebrow{
+  margin:0 0 12px;color:#81e9ed;letter-spacing:.17em;
+  font-size:11px;text-transform:uppercase;text-shadow:0 1px 10px #001c2c;
+}
+.page[data-energywork-design="scenic-v2"] .eyebrow svg{color:#a3ffff}
+.page[data-energywork-design="scenic-v2"] .content h1{
+  color:#fff;margin-bottom:14px;
+  font:600 clamp(32px,4vw,53px)/1.09 Georgia,"Times New Roman",serif;
+  letter-spacing:-.028em;text-shadow:0 2px 20px #001e32a9;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeSlide .content h1{
+  max-width:630px;
+  font-size:clamp(40px,5.7vw,66px);
+}
+.page[data-energywork-design="scenic-v2"] .description{
+  color:#e2f2fa;font-size:clamp(15px,1.8vw,20px);
+  line-height:1.5;max-width:57ch;text-shadow:0 1px 12px #00223e93;
+}
+.page[data-energywork-design="scenic-v2"] .art{
+  min-height:230px;border-radius:19px;
+  border:1px solid #bfece760;background:#134c67;
+  box-shadow:0 10px 26px #001f343e;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeReward,
+.page[data-energywork-design="scenic-v2"] .welcomeBenefits{
+  border:1px solid var(--reiki-line);border-radius:23px;
+  background:rgba(2,39,56,.75);color:#fff;
+  box-shadow:0 10px 30px #00213035;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.page[data-energywork-design="scenic-v2"] .welcomeReward{
+  margin:clamp(20px,3vw,34px) 0 0;
+  padding:clamp(15px,2.2vw,23px);
+}
+.page[data-energywork-design="scenic-v2"] .welcomeRewardTitle{
+  color:#fff;font:600 clamp(19px,2.5vw,26px)/1.22 Georgia,serif;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeRewardTitle svg{color:#ebfefe}
+.page[data-energywork-design="scenic-v2"] .welcomeSystems{gap:7px;margin:13px 0 11px}
+.page[data-energywork-design="scenic-v2"] .welcomeSystems li{
+  padding:7px 13px;border:1px solid #72eaf0a8;
+  border-radius:99px;color:#eafbfe;background:#16a4bb29;
+  font-size:12px;font-weight:750;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeRequirement{
+  color:#f4fcff;font-size:clamp(12px,1.6vw,16px);line-height:1.44;
+}
+.page[data-energywork-design="scenic-v2"] .welcomeTeacher{
+  color:#c9e7ef;font-size:clamp(11px,1.35vw,13px);line-height:1.42;
+}
+.welcomeBenefits{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:13px;padding:18px 10px;
+}
+.welcomeBenefits>div{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-start;min-width:0;gap:5px;
+  padding:0 11px;text-align:center;
+}
+.welcomeBenefits>div+div{border-left:1px solid #dcf7f448}
+.benefitIcon{
+  display:grid;place-items:center;width:44px;height:44px;margin-bottom:3px;
+  border-radius:50%;border:1px solid #88f9fc54;
+  background:#09a9c34f;color:#68faff;
+}
+.welcomeBenefits>div:nth-child(2) .benefitIcon{background:#c3678b48;color:#ffd7e4}
+.welcomeBenefits>div:nth-child(3) .benefitIcon{background:#7574cb60;color:#d4c9ff}
+.welcomeBenefits strong{color:#fff;font-size:clamp(12px,1.6vw,15px);font-weight:820}
+.welcomeBenefits small{color:#cae4ee;font-size:clamp(10px,1.35vw,12px);line-height:1.35}
+.page[data-energywork-design="scenic-v2"] .question{
+  margin-top:20px;border-color:#b2edf154;
+  background:rgba(1,34,53,.48);color:#f9fdff;
+}
+.page[data-energywork-design="scenic-v2"] .questionBadge{color:#8af4f5}
+.page[data-energywork-design="scenic-v2"] .prompt{color:#fff}
+.page[data-energywork-design="scenic-v2"] .optional,
+.page[data-energywork-design="scenic-v2"] .scaleEnds{color:#d7edf4}
+.page[data-energywork-design="scenic-v2"] .choice{
+  border-color:#b8e8ef4d;background:#eefbff13;color:#f8fdff;
+}
+.page[data-energywork-design="scenic-v2"] .choice:has(input:checked){
+  border-color:#51f1f7;background:#13a7b248;box-shadow:inset 0 0 0 1px #5df0ed6b;
+}
+.page[data-energywork-design="scenic-v2"] .choice input,
+.page[data-energywork-design="scenic-v2"] .scale{accent-color:#18d4da}
+.page[data-energywork-design="scenic-v2"] .textarea{
+  border-color:#a9dde476;background:#002e4378;color:#fff;
+}
+.page[data-energywork-design="scenic-v2"] .textarea::placeholder{color:#bfdce5}
+.page[data-energywork-design="scenic-v2"] .video{
+  border:1px solid #aee2ed69;background:#002b4385;padding:9px;
+}
+.page[data-energywork-design="scenic-v2"] .videoCaption,
+.page[data-energywork-design="scenic-v2"] .missingVideo{color:#d2e9f1}
+.page[data-energywork-design="scenic-v2"] .pathCard{
+  color:#fff;border-color:#aae2ee5c;background:#06415d9e;
+}
+.page[data-energywork-design="scenic-v2"] .pathCard strong{color:#fff}
+.page[data-energywork-design="scenic-v2"] .pathCard small{color:#cbe1ef}
+.page[data-energywork-design="scenic-v2"] .pathCard svg{color:#a3f7fb}
+.page[data-energywork-design="scenic-v2"] .pathSelected,
+.page[data-energywork-design="scenic-v2"] .pathCard:focus-visible{
+  border-color:#42f3f3;background:#0c7e899a;
+}
+.page[data-energywork-design="scenic-v2"] .practiceTimer{
+  border-color:#93ddeb7e;background:#083d58ca;color:#f5feff;
+}
+.page[data-energywork-design="scenic-v2"] .practiceTimer>button{
+  color:#f3fdff;border-color:#94e2e98a;background:#ffffff16;
+}
+.page[data-energywork-design="scenic-v2"] .practiceTimer>button:first-of-type{
+  border-color:#49dfdf;background:#048da4;
+}
+.page[data-energywork-design="scenic-v2"] .final{border-color:#93d4dc87}
+.page[data-energywork-design="scenic-v2"] .final h2{color:#fff}
+.page[data-energywork-design="scenic-v2"] .final p,
+.page[data-energywork-design="scenic-v2"] .guideNote,
+.page[data-energywork-design="scenic-v2"] .highlights{color:#d6eaf1}
+.page[data-energywork-design="scenic-v2"] .finalTag{
+  color:#c2ffff;background:#04a6aa45;border:1px solid #6df0ed72;
+}
+.page[data-energywork-design="scenic-v2"] .notes{
+  color:#f2fbff;border-color:#a8e3e56e;background:#002d4285;
+}
+.page[data-energywork-design="scenic-v2"] .textLink,
+.page[data-energywork-design="scenic-v2"] .restart{
+  color:#e6fcff;border-color:#92e8ed94;background:#0b5c7599;
+}
+.page[data-energywork-design="scenic-v2"] .teacherLink{
+  border-color:#83d8e0;background:#0a7e96;
+}
+.journeyEnd{display:grid;gap:10px;flex:none;min-width:0}
+.page[data-energywork-design="scenic-v2"] .progressHeader{
+  color:#e8faff;margin:0 0 -3px;gap:10px;
+  font-size:clamp(12px,1.5vw,16px);font-weight:800;
+}
+.page[data-energywork-design="scenic-v2"] .progressHeader span:last-child{font-weight:500}
+.page[data-energywork-design="scenic-v2"] .progress{
+  height:9px;background:#caf9ff42;
+}
+.page[data-energywork-design="scenic-v2"] .progress>span{
+  background:linear-gradient(90deg,#03e5e3,#16aeca);
+}
+.page[data-energywork-design="scenic-v2"] .footer{margin:0}
+.page[data-energywork-design="scenic-v2"] .actions{flex-direction:row-reverse;gap:10px}
+.page[data-energywork-design="scenic-v2"] .next{
+  width:100%;min-height:63px;flex:1;
+  border:2px solid #53f9fa;border-bottom:5px solid #078293;
+  border-radius:22px;color:white!important;
+  background:linear-gradient(105deg,#03ccd1,#04a5ba 56%,#00bda9);
+  box-shadow:0 10px 29px #00adbd49;
+  font-size:clamp(16px,2vw,21px);font-weight:840;
+}
+.page[data-energywork-design="scenic-v2"] .next:hover{
+  background:linear-gradient(105deg,#01b6c7,#078da7 56%,#00a99d);
+}
+.page[data-energywork-design="scenic-v2"] .back{
+  min-height:46px;color:#d3f3f5;
+  border-color:#c7f7f564;background:#023f5d65;
+}
+.page[data-energywork-design="scenic-v2"]:has(.welcomeSlide) .back{display:none}
+.secondary{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:9px}
+.page[data-energywork-design="scenic-v2"] .programme,
+.page[data-energywork-design="scenic-v2"] .preview{
+  min-width:0;min-height:46px;margin:0;
+  border:1px solid #b7eff17f;border-radius:15px;
+  color:#e8fcff;background:#003b5577;
+}
+.page[data-energywork-design="scenic-v2"] .programme{
+  padding:12px 15px;font-size:13px;
+}
+.page[data-energywork-design="scenic-v2"] .programme li[aria-current="step"]{color:#7bffff}
+.page[data-energywork-design="scenic-v2"] .programme summary{color:#e8fcff}
+.page[data-energywork-design="scenic-v2"] .preview{
+  padding:11px 13px;gap:9px;
+}
+.page[data-energywork-design="scenic-v2"] .preview>svg{color:#c7f9ff}
+.page[data-energywork-design="scenic-v2"] .preview strong,
+.page[data-energywork-design="scenic-v2"] .saveDetails summary{color:#e8fcff}
+.page[data-energywork-design="scenic-v2"] .preview p,
+.page[data-energywork-design="scenic-v2"] .syncContent>small,
+.page[data-energywork-design="scenic-v2"] .consentLabel{color:#d8ebf0}
+.page[data-energywork-design="scenic-v2"] .syncContent>a{color:#b0faff}
+.page[data-energywork-design="scenic-v2"] .syncButton{background:#008ea4}
+.page[data-energywork-design="scenic-v2"] .safety{
+  margin:0;color:#bbd8e1;font-size:11px;line-height:1.35;
+  text-align:center;text-wrap:pretty;
+}
+.page[data-energywork-design="scenic-v2"] :is(button,a,summary,input,textarea):focus-visible{
+  outline:3px solid #d7ffff;outline-offset:3px;
+}
+@media(max-width:760px){
+  .page[data-energywork-design="scenic-v2"][data-course-one-screen]{
+    position:fixed;inset:0;z-index:2147483000;
+    height:100dvh;min-height:0;overflow:hidden;
+    color:#f8fdff;
+    background-image:
+      linear-gradient(180deg,#034b71ef 0%,#024769c7 16%,#0645635c 36%,#063b5299 53%,#00334ae8 74%,#002b42fa 100%),
+      url('/images/holistic-house/course-focus-mountain-boy.webp');
+    background-position:53% center;
+    background-size:cover;
+  }
+  .page[data-energywork-design="scenic-v2"] .shell{
+    width:100%;max-width:620px;min-height:0;height:100dvh;
+    display:flex;flex-direction:column;gap:7px;overflow:hidden;
+    padding:calc(6px + env(safe-area-inset-top)) 14px
+      calc(6px + env(safe-area-inset-bottom));
+  }
+  .page[data-energywork-design="scenic-v2"] .top{min-height:36px}
+  .page[data-energywork-design="scenic-v2"] .home{
+    width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;
+  }
+  .page[data-energywork-design="scenic-v2"] .home span{display:none}
+  .page[data-energywork-design="scenic-v2"] .courseMark{font-size:13px}
+  .page[data-energywork-design="scenic-v2"] .courseMark svg{width:16px}
+  .stageRail{padding:1px 0 6px;gap:0}
+  .stage{gap:5px}
+  .stageCircle{width:40px;height:40px;font-size:14px}
+  .stage:not(:first-child)::before{
+    top:19px;right:calc(50% + 23px);width:calc(100% - 46px);
+  }
+  .stageName{font-size:10px;line-height:1.22}
+  .page[data-energywork-design="scenic-v2"] .slide{
+    min-height:0;flex:1;overflow:hidden;
+    border-radius:18px;background:#002e4491;
+  }
+  .page[data-energywork-design="scenic-v2"] .slideMain{
+    display:flex;flex-direction:column;align-items:stretch;
+    justify-content:flex-start;height:100%;max-height:100%;
+    min-height:0;overflow-y:auto;
+    gap:12px;padding:17px 15px;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeSlide{
+    border-color:transparent;background:transparent;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeSlide .slideMain{
+    display:block;padding:7px 1px 5px;
+  }
+  .page[data-energywork-design="scenic-v2"] .content{min-height:0;order:2}
+  .page[data-energywork-design="scenic-v2"] .eyebrow{
+    font-size:9px;line-height:1.4;letter-spacing:.115em;margin:0 0 9px;
+  }
+  .page[data-energywork-design="scenic-v2"] .eyebrow svg{width:14px;height:14px}
+  .page[data-energywork-design="scenic-v2"] .content h1{
+    margin:0 0 11px;color:#fff;
+    font:600 clamp(26px,6.7vw,35px)/1.1 Georgia,serif;
+    letter-spacing:-.028em;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeSlide .content h1{
+    max-width:17ch;font-size:clamp(30px,8.1vw,42px);line-height:1.08;
+  }
+  .page[data-energywork-design="scenic-v2"] .description{
+    max-width:55ch;color:#ecf8fd;
+    font-size:clamp(13px,3.5vw,16px);line-height:1.44;
+  }
+  .page[data-energywork-design="scenic-v2"] .art{
+    order:1;flex:none;width:100%;height:clamp(92px,16dvh,160px);
+    min-height:0;max-height:none;border-radius:13px;
+  }
+  .page[data-energywork-design="scenic-v2"] .video{
+    order:1;flex:none;min-height:0;padding:6px;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeReward{
+    margin:clamp(12px,2dvh,20px) 0 0;
+    border-radius:17px;padding:13px 14px;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeRewardTitle{
+    font-size:clamp(16px,4.6vw,21px);line-height:1.2;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeSystems{
+    gap:5px;margin:9px 0;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeSystems li{
+    padding:6px 8px;font-size:10px;line-height:1.15;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeRequirement{
+    font-size:11px;line-height:1.36;
+  }
+  .page[data-energywork-design="scenic-v2"] .welcomeTeacher{
+    font-size:10px;line-height:1.35;margin-top:7px;
+  }
+  .welcomeBenefits{margin-top:9px;padding:10px 4px;border-radius:17px}
+  .welcomeBenefits>div{gap:3px;padding:0 5px}
+  .benefitIcon{width:31px;height:31px;margin-bottom:2px}
+  .benefitIcon svg{width:18px;height:18px}
+  .welcomeBenefits strong{font-size:10px;line-height:1.17}
+  .welcomeBenefits small{font-size:9px;line-height:1.2}
+  .page[data-energywork-design="scenic-v2"] .question{
+    margin-top:15px;padding:12px;border-radius:14px;
+  }
+  .page[data-energywork-design="scenic-v2"] .questionBadge{
+    font-size:10px;margin-bottom:8px;
+  }
+  .page[data-energywork-design="scenic-v2"] .prompt{
+    font-size:14px;line-height:1.4;margin-bottom:9px;
+  }
+  .page[data-energywork-design="scenic-v2"] .choice{
+    min-height:44px;padding:9px 10px;font-size:12px;
+  }
+  .page[data-energywork-design="scenic-v2"] .textarea{
+    min-height:82px;font-size:13px;padding:10px;
+  }
+  .page[data-energywork-design="scenic-v2"] .pathGrid{margin-top:12px}
+  .page[data-energywork-design="scenic-v2"] .pathCard{
+    grid-template-columns:48px minmax(0,1fr) 19px;
+    min-height:62px;padding:7px;
+  }
+  .page[data-energywork-design="scenic-v2"] .pathImage{
+    width:48px;height:48px;
+  }
+  .page[data-energywork-design="scenic-v2"] .pathCard strong{font-size:13px}
+  .page[data-energywork-design="scenic-v2"] .pathCard small{font-size:10px}
+  .page[data-energywork-design="scenic-v2"] .final{margin-top:12px}
+  .journeyEnd{gap:6px;flex:none;min-height:0}
+  .page[data-energywork-design="scenic-v2"] .progressHeader{
+    margin:0 0 -3px;font-size:12px;
+  }
+  .page[data-energywork-design="scenic-v2"] .progress{height:7px}
+  .page[data-energywork-design="scenic-v2"] .footer{margin:0}
+  .page[data-energywork-design="scenic-v2"] .actions{
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .page[data-energywork-design="scenic-v2"] .next{
+    min-height:54px;width:100%;flex:none;
+    padding:10px 13px;border-radius:17px;font-size:16px;
+  }
+  .page[data-energywork-design="scenic-v2"] .back{
+    align-self:flex-start;min-height:28px;
+    border:0;background:transparent;padding:1px 5px;font-size:11px;
+  }
+  .secondary{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+  .page[data-energywork-design="scenic-v2"] .programme,
+  .page[data-energywork-design="scenic-v2"] .preview{
+    min-height:37px;max-height:16dvh;overflow:auto;
+    border-radius:11px;
+  }
+  .page[data-energywork-design="scenic-v2"] .programme{
+    padding:7px 9px;font-size:11px;
+  }
+  .page[data-energywork-design="scenic-v2"] .programme summary{
+    font-size:11px;min-height:19px;line-height:1.25;
+  }
+  .page[data-energywork-design="scenic-v2"] .preview{
+    padding:6px 8px;gap:6px;
+  }
+  .page[data-energywork-design="scenic-v2"] .preview>svg{
+    width:14px;height:14px;flex:none;
+  }
+  .page[data-energywork-design="scenic-v2"] .preview strong,
+  .page[data-energywork-design="scenic-v2"] .saveDetails summary{
+    font-size:10px;line-height:1.25;
+  }
+  .page[data-energywork-design="scenic-v2"] .preview p{
+    font-size:10px;line-height:1.3;
+  }
+  .page[data-energywork-design="scenic-v2"] .preview:has(.saveDetails[open]){
+    max-height:29dvh;
+  }
+  .secondary:has(details[open]){grid-template-columns:1fr}
+  .page[data-energywork-design="scenic-v2"] .safety{
+    font-size:9px;line-height:1.2;max-width:65ch;
+    margin:0 auto;
+  }
+}
+@media(max-width:380px){
+  .page[data-energywork-design="scenic-v2"] .shell{padding-inline:10px;gap:5px}
+  .page[data-energywork-design="scenic-v2"] .welcomeSlide .content h1{font-size:29px}
+  .page[data-energywork-design="scenic-v2"] .welcomeReward{padding:10px}
+  .page[data-energywork-design="scenic-v2"] .welcomeTeacher{font-size:9px}
+  .page[data-energywork-design="scenic-v2"] .welcomeSystems li{font-size:9px}
+  .page[data-energywork-design="scenic-v2"] .benefitIcon{width:27px;height:27px}
+}
+@media(max-width:760px) and (max-height:700px){
+  .page[data-energywork-design="scenic-v2"] .stageCircle{width:34px;height:34px}
+  .page[data-energywork-design="scenic-v2"] .stage:not(:first-child)::before{top:16px}
+  .page[data-energywork-design="scenic-v2"] .stageName{font-size:9px}
+  .page[data-energywork-design="scenic-v2"] .shell{gap:5px}
+  .page[data-energywork-design="scenic-v2"] .next{min-height:47px}
+  .page[data-energywork-design="scenic-v2"] .welcomeBenefits{padding-block:7px}
+  .page[data-energywork-design="scenic-v2"] .welcomeReward{margin-top:10px}
+  .page[data-energywork-design="scenic-v2"] .welcomeSlide .content h1{font-size:28px}
+}
+@media(max-width:760px) and (max-height:470px){
+  .page[data-energywork-design="scenic-v2"][data-course-one-screen]{
+    position:relative;height:auto;min-height:100svh;overflow:auto;
+  }
+  .page[data-energywork-design="scenic-v2"] .shell{
+    height:auto;min-height:100svh;overflow:visible;
+  }
+  .page[data-energywork-design="scenic-v2"] .slide{
+    min-height:250px;overflow:visible;
+  }
+  .page[data-energywork-design="scenic-v2"] .slideMain{
+    height:auto;max-height:none;overflow:visible;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .page[data-energywork-design="scenic-v2"] :is(.progress>span,.next,.stageCircle){
+    transition:none;animation:none;
+  }
+}
+@media print{
+  .page[data-energywork-design="scenic-v2"]{
+    position:static!important;min-height:0!important;
+    background:white!important;color:#17383e!important;
+  }
+  .page[data-energywork-design="scenic-v2"] .shell{height:auto!important}
+  .page[data-energywork-design="scenic-v2"] .slide{
+    background:white!important;color:#17383e!important;
+    box-shadow:none!important;backdrop-filter:none!important;
+    border:0!important;
+  }
+  .page[data-energywork-design="scenic-v2"] .content h1,
+  .page[data-energywork-design="scenic-v2"] .final h2,
+  .page[data-energywork-design="scenic-v2"] .guideNote,
+  .page[data-energywork-design="scenic-v2"] .final p,
+  .page[data-energywork-design="scenic-v2"] .highlights{color:#17383e!important}
+  .page[data-energywork-design="scenic-v2"] .notes{
+    background:white!important;color:#17383e!important;border-color:#ccd!important;
+  }
+  .page[data-energywork-design="scenic-v2"] .stageRail,
+  .page[data-energywork-design="scenic-v2"] .journeyEnd{display:none!important}
+}
