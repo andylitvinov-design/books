@@ -671,6 +671,32 @@ test('public service funnel stores daily clicks and keeps practitioner report pr
   )
 })
 
+test('isolated service photos fixture matches the observed existing JSON-array contract', async () => {
+  const owned = (await practiceRepo.getMyPractice(a)).services.find(service => service.status === 'published')
+  assert.ok(owned, 'Use the existing synthetic published-service fixture')
+  assert.deepEqual(owned.photos, [], 'The existing column defaults to an empty JSON array')
+  const db = await adminClient()
+  try {
+    await db.query('begin')
+    const photos = Array.from({ length: 5 }, (_, index) => `https://example.invalid/synthetic-photo-${index}.jpg`)
+    const result = await db.query('update app.service_offerings set photos=$1::jsonb where id=$2 returning photos', [JSON.stringify(photos), owned.id])
+    assert.deepEqual(result.rows[0].photos, photos)
+    for (const [invalid, code] of [[{}, '23514'], [Array(6).fill('synthetic'), '23514'], [null, '23502']]) {
+      await db.query('savepoint invalid_photos')
+      await assert.rejects(
+        db.query('update app.service_offerings set photos=$1::jsonb where id=$2', [invalid === null ? null : JSON.stringify(invalid), owned.id]),
+        error => error.code === code,
+      )
+      await db.query('rollback to savepoint invalid_photos')
+      assert.deepEqual((await db.query('select photos from app.service_offerings where id=$1', [owned.id])).rows[0].photos, photos)
+    }
+  } finally {
+    await db.query('rollback')
+    await db.end()
+  }
+  assert.deepEqual((await practiceRepo.getMyPractice(a)).services.find(service => service.id === owned.id).photos, [])
+})
+
 test('requests are idempotent and share only an explicit excerpt; unshare and cancel work', async () => {
   const payload = {
       serviceId: APP_SERVICES[0].id,

@@ -458,6 +458,7 @@ export function SimpleTestPicker({
     </section>}
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
+      {!authenticated && <p className={academyStyles.subnote} data-test-access-note>{c.heroFootnote}</p>}
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>

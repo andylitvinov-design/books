@@ -20,7 +20,7 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.length, 8)
-    if (locale !== 'es') assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
+    assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
@@ -32,7 +32,7 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')
-    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
 })
@@ -66,13 +66,17 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
     readFile('app/ia-v2.css', 'utf8'),
   ])
 
-  assert.match(mobile, /getSiteNavigation/)
-  assert.match(mobile, /CircleUserRound/)
-  assert.match(mobile, /NotebookPen/)
+  assert.match(mobile, /getCompactNavigation/)
+  assert.match(mobile, /HousePlus/)
+  assert.match(mobile, /ClipboardList/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
-  assert.doesNotMatch(styles, /repeat\(3,minmax\(0,1fr\)\)/)
+  const bottomRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => /\.ia222-bottom-navigation(?![\w-])/.test(selector))
+    .map(([, , declarations]) => declarations).join('\n')
+  assert.match(bottomRules, /grid-template-columns:\s*repeat\(6,\s*minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
   assert.match(styles, /white-space: nowrap/)
   assert.match(styles, /--ia222-bottom-height,76px/)
   assert.match(styles, /safe-area-inset-bottom/)

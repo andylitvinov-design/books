@@ -45,7 +45,7 @@ for (const locale of ['en', 'ru']) test(`RSC matcher holds only the active canon
 async function chooseScenario(locale, { menus = 1, links = 1, href = homePath(locale), blocked = false } = {}) {
   let opened = false, clicked = false;
   const link = { count: links, async click() { assert.ok(opened); if (blocked) throw new Error('blocked click'); clicked = true; } };
-  const menu = { count: menus, locator(selector) {
+  const menu = { count: menus, async evaluate(fn) { return fn({open:opened}); }, locator(selector) {
     if (selector === '.site-language-menu-trigger') return { async click() { opened = true; } };
     assert.equal(selector, `a[lang="${locale}"]`);
     return link;
@@ -53,7 +53,7 @@ async function chooseScenario(locale, { menus = 1, links = 1, href = homePath(lo
   const page = { locator(selector) { assert.equal(selector, '.site-language-menu'); return menu; } };
   const expect = actual => ({
     async toHaveCount(expected) { assert.equal(actual.count, expected); },
-    async toHaveAttribute(name, expected) { assert.equal(actual, link); assert.equal(name, 'href'); assert.equal(href, expected); },
+    async toHaveAttribute(name, expected) { if(actual===menu){ assert.equal(name,'open'); assert.equal(opened,true); return; } assert.equal(actual, link); assert.equal(name, 'href'); assert.equal(href, expected); },
   });
   const choose = new Function('assert', 'origin', 'expect', `${helpers}; return chooseHomeLocale;`)(assert, origin, expect);
   await choose(page, locale);
@@ -149,15 +149,15 @@ const journeys = extract('async function exerciseFreeJourneys(', 'async function
 async function journeyScenario({ wrongBack = false, wrongDestination = false, privateRequest = false } = {}) {
   let url, home, selected, routeHandler;
   const results = [], openedHomes = [];
-  const suffixes = { situation: '/services/free-situation-review', wu: '/services/dao-health-profile', stress: '/client#cabinet-tests' };
+  const suffixes = { selfTest: '/client/tests', analysis: '/services/free-situation-review', reiki: '/academy/principles-of-energywork/learn' };
   const chooser = { locator(selector) {
-    const option = selector.match(/^button\[data-home-free-option="([a-z]+)"\]$/);
+    const option = selector.match(/^button\[data-home-free-option="([a-zA-Z]+)"\]$/);
     if (option) return { async click() { selected = option[1]; } };
     assert.equal(selector, `a[data-home-free-action="${selected}"]`);
     return { async evaluate() { return { url }; }, async click() {
       const locale = home.endsWith('/ru') ? 'ru' : 'en';
       url = origin + '/' + locale + (wrongDestination ? '/wrong' : suffixes[selected]);
-      if (privateRequest || selected === 'stress') await routeHandler({
+      if (privateRequest || selected === 'selfTest') await routeHandler({
         request: () => ({ method: () => privateRequest ? 'POST' : 'GET', url: () => origin + (privateRequest ? '/api/app/test-plans' : '/api/app/guest/bootstrap') }),
         async fulfill(response) { assert.equal(response.status, privateRequest ? 401 : 200); },
       });

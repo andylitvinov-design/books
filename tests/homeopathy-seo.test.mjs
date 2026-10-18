@@ -8,7 +8,9 @@ test('sitemap includes all localized Homeopathy indexes and all 208 paired remed
   const urls = sitemap.map(({ url }) => url)
   const remedyUrls = urls.filter((url) => url.includes('/homeopathy/remedies/'))
 
-  assert.equal(sitemap.length, 240)
+  assert.equal(sitemap.length, 286)
+  assert.equal(new Set(urls).size, urls.length)
+  assert.equal(urls.some(url => /\/books\/[^/]+$/.test(url) && !/\/(en|ru|es)\/books\//.test(url)), false)
   assert.equal(urls.filter(url => url === 'https://example.test/ru').length, 1)
   assert.equal(urls.includes('https://example.test/books'), true)
   assert.equal(remedyUrls.length, 208)

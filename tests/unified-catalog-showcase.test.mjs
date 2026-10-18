@@ -70,7 +70,7 @@ test("core offer links lead to distinct native EN/RU pages, with optional method
   for (const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) {
     assert.ok(offers.includes('route: "' + route + '"'), route);
   }
-  for (const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"]) {
+  for (const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"]) {
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'), slug);
   }
   assert.match(ui, /id="methods"/);

@@ -19,7 +19,7 @@ test('Book 02 reads the same 104 sorted canonical remedy cards as the standalone
 })
 
 test('Book 02 reference renderer provides indexed canonical cards without the archive renderer', () => {
-  const page = readFileSync('app/books/[bookId]/page.tsx', 'utf8')
+  const page = readFileSync('app/[locale]/books/[bookId]/page.tsx', 'utf8')
   const reference = readFileSync('components/book-02-reference.tsx', 'utf8')
   const styles = readFileSync('app/globals.css', 'utf8')
 

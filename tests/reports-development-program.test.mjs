@@ -127,3 +127,10 @@ test('Development programme presents two independent, collapsed links for goals 
   assert.match(css, /\.sectionLinks\{/)
   assert.match(css, /\.panel\{/)
 })
+
+test('isolated App R1 initializes the encrypted goals schema needed by export', () => {
+ const setup=file('tests/helpers/app-db-setup.mjs')
+ assert.match(setup,/20261017165000_hh_reports_development_goals\.sql/)
+ assert.match(setup,/Refusing to initialize nonempty test DB/)
+ assert.match(setup,/Isolated loopback test database required/)
+})

@@ -579,7 +579,7 @@ export default function CourseSlidePlayer({
         ...(lesson.antiStress?.probe ? {skillProbeChoice:skillProbeChoice||null,skillProbeHintUsed} : {}),
         ...(isDayOne?{dayOneAnswers:validateDayOneAnswers(dayOneAnswers,
           data.dayOneFocusOptions?.map(item=>item.id)||[])}:{}),
-        ...(lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
+        ...(!isSkillV5&&lesson.antiStress&&(cycle.day>1||routePlan)&&data.programme?.id==='stress'
           ? {dailyMethodChoice:dailyMethodChoice||null,dailyMethodHintUsed}
           : {}),
         ...(isExtendedStress ? {practiceLab} : {}),

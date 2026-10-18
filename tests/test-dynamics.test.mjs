@@ -93,8 +93,9 @@ test('test dynamics shows only the current published score interval and hides it
 })
 
 test('unpublished reading aids remain explicitly descriptive and current-only', () => {
-  const cbi = base('cbi', '2026-10-17T12:00:00Z', 45, { definitionKey: 'cbi-personal' })
+  const cbi = base('cbi', '2026-10-17T12:00:00Z', 50, { definitionKey: 'cbi-personal' })
   const current = visibleTestDynamicsBand(cbi.dimensions[0], cbi, 'en')
+  assert.equal(visibleTestDynamicsBand({...cbi.dimensions[0],value:45},cbi,'en'),null,'Off-lattice CBI values cannot acquire an interpretation')
   assert.equal(current?.kind, 'descriptive')
   assert.equal(current?.others.length, 4)
   assert.ok(current.caveat.includes('not published norms'))

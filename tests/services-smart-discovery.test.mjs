@@ -230,10 +230,10 @@ test('service match results use full-width orderable cards with accessible detai
   const assertActionOrder=source=>{
     const requestIndex=source.indexOf(requestLink)
     const detailsIndex=source.indexOf(detailsToggle)
-    assert.ok(requestIndex>0 && detailsIndex>requestIndex,'Tracked Order action must precede the expandable details button')
+    assert.ok(detailsIndex>0 && requestIndex>detailsIndex,'Details must precede the tracked Order action, as approved by the owner')
   }
   assertActionOrder(ui)
-  assert.throws(()=>assertActionOrder('<div>'+detailsToggle+'>{t.details}</button>'+requestLink+'</div>'))
+  assert.throws(()=>assertActionOrder('<div>'+requestLink+detailsToggle+'>{t.details}</button></div>'))
   assert.throws(()=>assertActionOrder(ui.replace(requestLink,'')))
   assert.throws(()=>assertActionOrder(ui.replace(detailsToggle,'')))
   assert.ok(matcher.includes('safePublicWhatsAppPath(pagePath)'))

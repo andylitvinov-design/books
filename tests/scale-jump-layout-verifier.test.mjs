@@ -25,12 +25,15 @@ const sections = locale => {
 
 function harness(expected, fault) {
   let viewport = { width: 390, height: 844 }, active = 8, focused = false
+  let disclosureOpen = false
   const transitions = [], screenshots = [], screenshotWidths = [], keyboard = []
   const wrap = (kind, index = 0) => ({ kind, index,
     locator(selector) {
       if (kind === 'report' && selector === '[data-assessment-scale-picker] select') return wrap('select')
       if (kind === 'report' && selector === 'article[data-active-scale]') return wrap('panel')
       if (kind === 'report' && selector.includes('aria-pressed')) return wrap('pressed')
+      if (kind === 'panel' && selector === 'details:has([data-scale-limitation])') return wrap('disclosure')
+      if (kind === 'disclosure' && selector === 'summary') return wrap('summary')
       if (kind === 'panel' && selector === 'h3') return wrap('title')
       if (kind === 'panel' && selector === '[data-scale-limitation]') return wrap('limitations')
       if (kind === 'select' && selector === 'option') return { async evaluateAll(fn) {
@@ -42,6 +45,9 @@ function harness(expected, fault) {
       } }
       assert.fail('Unexpected locator: ' + kind + '/' + selector)
     },
+    async count() { assert.equal(kind, 'disclosure'); return ['collapsed warnings','broken disclosure'].includes(fault) ? 1 : 0 },
+    async evaluate(fn) { assert.equal(kind, 'disclosure'); return fn({open: disclosureOpen}) },
+    async click() { assert.equal(kind, 'summary'); if(fault !== 'broken disclosure') disclosureOpen = true },
     nth: next => wrap(kind, next),
     async selectOption(value) { if (fault !== 'stuck selection') active = Number(value); transitions.push([viewport.width, active]) },
     async focus() { focused = true },
@@ -86,7 +92,7 @@ function harness(expected, fault) {
       assert.equal(node.kind === 'title' ? expected[active].construct || expected[active].title
         : fault === 'missing warning' ? '' : expected[active].limitations[node.index], value)
     },
-    async toBeVisible() { assert.notEqual(fault, 'hidden warning') },
+    async toBeVisible() { assert.notEqual(fault, 'hidden warning'); if(fault === 'collapsed warnings' && node.kind === 'limitations') assert.equal(disclosureOpen,true) },
   })
   return { page, expect, transitions, screenshots, screenshotWidths, keyboard }
 }
@@ -201,4 +207,11 @@ test('failure evidence is written at the actual320 viewport before restoration',
     assert.deepEqual(h.screenshotWidths, [320, 320])
     assert.deepEqual(h.page.viewportSize(), { width: 390, height: 844 })
   } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('native picker opens ordinary collapsed source notes and still checks their full text', async()=>{
+ const expected=sections('en').map(s=>({...s,limitations:['Synthetic source limitation.']}));const h=harness(expected,'collapsed warnings');await assertAccountScaleJumpLayout(h.page,h.expect,expected)
+})
+test('native picker rejects a broken source-note disclosure', async()=>{
+ const expected=sections('en').map(s=>({...s,limitations:['Synthetic source limitation.']}));const h=harness(expected,'broken disclosure');await assert.rejects(()=>assertAccountScaleJumpLayout(h.page,h.expect,expected),/disclosure must open/)
 })

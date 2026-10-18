@@ -41,7 +41,7 @@ test("remedy and book descriptions are sentence-aware; no old fixed-length trunc
     assert.match(read(file), /remedySeoDescription/);
     assert.doesNotMatch(read(file), /description\.slice\(0, 155\)/);
   }
-  assert.match(read("app/books/[bookId]/page.tsx"), /bookSeoDescription/);
+  assert.match(read("app/[locale]/books/[bookId]/page.tsx"), /bookSeoDescription/);
 });
 
 test("SEO sitemap includes canonical locale pages and derives actual reciprocal peer groups", () => {
@@ -57,7 +57,7 @@ test("SEO sitemap includes canonical locale pages and derives actual reciprocal 
 
 test("localized 404 recovery, old campaign aliases and privacy policy remain intact", () => {
   const missing = read("app/not-found.tsx");
-  for (const p of ["/es", "/ru", "description", "404 — Holistic House", "homeopathy/remedies"]) {
+  for (const p of ["/es", "/ru", "description", "404 — ${c.heading} | Holistic House", "homeopathy/remedies"]) {
     assert.ok(missing.includes(p), p);
   }
   const nextConfig = read("next.config.ts");

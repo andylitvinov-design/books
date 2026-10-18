@@ -11,7 +11,7 @@ test('guest test-selection routes reuse public site chrome in EN and RU', () => 
       assert.equal(isPublicTestDiscoveryPath(route), true, route)
       assert.equal(activeNavigationId(route), 'cabinet', route)
     }
-    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 6)
+    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 7)
   }
 })
 
@@ -34,7 +34,10 @@ test('Academy and My Tests keep navigation and the restored top consultation ban
   assert.match(ribbon, /export function SitewideAntistressBanner/)
   assert.match(bottom, /!isPublicTestDiscoveryPath\(pathname\)/)
   assert.match(ribbon, /data-sitewide-personal-review-banner/)
-  assert.ok(bottom.includes("getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id))"))
+  assert.match(bottom, /getCompactNavigation\(locale\)/)
+  const model = source('lib/site-navigation-model.js')
+  assert.ok(model.includes('/client/tests'))
+  assert.ok(model.includes("selected === 'es' ? 'en' : selected"))
   assert.match(landing, /<PublicSiteHeader locale=\{typedLocale\}/)
   assert.match(explorer, /<PublicSiteHeader locale=\{locale as Locale\}/)
   assert.match(bottom, /aria-current=\{current === item.id \? 'page'/)

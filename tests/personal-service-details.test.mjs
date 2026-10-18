@@ -31,7 +31,7 @@ test("three free paths and two personal cards retain all core service detail pag
   assert.match(services, /<ServicesSolutions locale=/);
   for(const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + slug + '"'));
-  for(const slug of ["psychohomeopathy","imagery-therapy","systemic-constellations"])
+  for(const slug of ["alchemy-of-soul","imagery-therapy","systemic-constellations"])
     assert.ok(ui.includes('href:"' + slug + '"') || ui.includes('href: "' + slug + '"'));
   const freePaths = read("components/free-insights-paths.tsx");
   assert.match(freePaths, /free-situation-review/);

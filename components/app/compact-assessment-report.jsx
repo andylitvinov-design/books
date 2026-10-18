@@ -256,9 +256,9 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       {!rangeReading && model?.bands?.length > 0 && <div className={styles.bandStrip} data-score-band-strip
         aria-label={ru ? 'Диапазоны скрининга и ваш результат' : 'Screening intervals and your result'}>
         {model.bands.map(band => <span key={band.code}
-          className={band.current ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
-          aria-current={band.current ? 'true' : undefined}>
-          <b>{band.from}–{band.to}</b> {band.label}{band.current ? (ru ? ' · ваш' : ' · yours') : ''}
+          className={(band.code === model.currentBand?.code) ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
+          aria-current={(band.code === model.currentBand?.code) ? 'true' : undefined}>
+          <b>{band.from}–{band.to}</b> {band.label}{(band.code === model.currentBand?.code) ? (ru ? ' · ваш' : ' · yours') : ''}
           <small>{explainPublishedLevel(band.code, locale)}</small>
         </span>)}
       </div>}

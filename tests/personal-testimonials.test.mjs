@@ -22,7 +22,7 @@ test("home and services render the same first-party testimonial component", () =
 test("published compact home shows two sourced videos while preserving all six originals per language", () => {
   const component = read("components", "personal-testimonials.tsx");
   const ru = component.match(/  ru: \[([\s\S]*?)\],\n  en: \[/)?.[1] ?? "";
-  const en = component.match(/  en: \[([\s\S]*?)\],\n\} as const;/)?.[1] ?? "";
+  const en = component.match(/  en: \[([\s\S]*?)\],\n  es: \[/)?.[1] ?? "";
   const ruIds = [...ru.matchAll(/id: "([\w-]{11})"/g)].map((match) => match[1]);
   const enIds = [...en.matchAll(/id: "([\w-]{11})"/g)].map((match) => match[1]);
   assert.equal(ruIds.length, 6);

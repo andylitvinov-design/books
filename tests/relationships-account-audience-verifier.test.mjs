@@ -1,3 +1,4 @@
+import { openAccountTestPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -43,12 +44,13 @@ async function openScenario({openCount=1,wrongAudience=false,wrongRemoval=false,
   assert.equal(name,'← Back to easy selection')
   return {count:1,click:async()=>{assert.equal(reset,true);assert.deepEqual(selected,[]);back=true}}
  }}
- const dashboard={visible:true,getByRole(role,{name}){assert.equal(role,'button');assert.equal(String(name),'/^(Open test filters|Review test filters)/');return {count:openCount,click:async()=>{opened=true}}}}
- const target={locator:selector=>selector==='#my-test-explorer'?explorer:(assert.equal(selector,'[data-my-tests-dashboard]'),dashboard)}
+ const toggle={count:openCount,visible:true,getAttribute:async key=>key==='aria-controls'?'my-test-explorer':String(opened),click:async()=>{opened=true}}
+ const dashboard={count:1,visible:true,locator:selector=>{assert.ok(['#my-tests-picker-toggle','#my-test-explorer'].includes(selector));return selector==='#my-tests-picker-toggle'?toggle:explorer}}
+ const target={locator:selector=>(assert.equal(selector,'[data-my-tests-dashboard]'),dashboard)}
  const navigate=async(page,url)=>{assert.equal(page,target);assert.equal(url,origin+'/en/app/tests')}
- const expect=locator=>({toHaveURL:async url=>{assert.equal(url,origin+'/en/app/tests');assert.equal(wrongAudience,false)},toBeVisible:async()=>assert.equal(locator.visible,true),toHaveCount:async n=>assert.equal(locator===checked?selected.length:locator.count,n)})
+ const expect=locator=>({toHaveURL:async url=>{assert.equal(url,origin+'/en/app/tests');assert.equal(wrongAudience,false)},toBeVisible:async()=>assert.equal(locator.visible,true),toBeHidden:async()=>assert.equal(opened,false),toHaveCount:async n=>assert.equal(locator===checked?selected.length:locator.count,n),toHaveAttribute:async(key,value)=>assert.equal(await locator.getAttribute(key),value),toHaveAccessibleName:async expected=>{const name=opened?'Hide test picker Tap to collapse the selection panel':'Choose matching tests Topics, concerns & recommended tests';if(expected instanceof RegExp)assert.match(name,expected);else assert.equal(name,expected)}})
  expect.poll=fn=>({toEqual:async expected=>assert.deepEqual(await fn(),expected)})
- const result=await load(openSource,'openAccountRelationshipPicker',{navigate,origin,expect})(target)
+ const result=await load(openSource,'openAccountRelationshipPicker',{navigate,origin,expect,openAccountTestPicker})(target)
  assert.equal(result,picker);assert.equal(opened&&browsed&&reset&&back,true)
 }
 test('actual relationship verifier opens authenticated My Tests and clears only its draft through real controls',()=>openScenario())
@@ -56,12 +58,13 @@ for(const option of ['wrongAudience','wrongRemoval','unchanged','duplicateChoice
 for(const count of [0,2])test('account picker rejects '+count+' opening controls',async()=>{await assert.rejects(openScenario({openCount:count}))})
 
 test('actual relationship choice expands its scoped five-item list before checking the exact card',async()=>{
- for(const options of [{},{duplicates:true},{missingMore:true},{neverFound:true}]){
+ for(const options of [{},{duplicates:true},{missingMore:true},{neverFound:true},{stalled:true}]){
   let batches=0
   const choice={count:async()=>batches>=2&&!options.neverFound?(options.duplicates?2:1):0,visible:true}
-  const picker={locator:selector=>{assert.equal(selector,'[data-test-match="hh-love-affection"] input[type="checkbox"]');return choice},getByRole(role,{name}){assert.equal(role,'button');assert.equal(String(name),'/^Show \\d+ more tests$/');return {count:options.missingMore?0:1,click:async()=>{batches++}}}}
-  const expect=target=>({toHaveCount:async n=>assert.equal(typeof target.count==='function'?await target.count():target.count,n),toBeVisible:async()=>assert.equal(target.visible,true)})
-  const run=load(choiceSource,'relationshipChoice',{expect,MONITORING_CATALOG:Array(15)})(picker,'hh-love-affection')
+  const list={getAttribute:async()=>String(5+batches*5)}
+  const picker={locator:selector=>{if(selector==='#hh-public-recommended-tests')return list;assert.equal(selector,'[data-test-match="hh-love-affection"] input[type="checkbox"]');return choice},getByRole(role,{name}){assert.equal(role,'button');assert.equal(String(name),'/^Show \\d+ more tests$/');return {count:options.missingMore?0:1,innerText:async()=>'Show 5 more tests',click:async()=>{if(!options.stalled)batches++}}}}
+  const expect=target=>({toHaveCount:async n=>assert.equal(typeof target.count==='function'?await target.count():target.count,n),toBeVisible:async()=>assert.equal(target.visible,true),toHaveAttribute:async(key,value)=>assert.equal(await target.getAttribute(key),value)})
+  const run=load(choiceSource,'relationshipChoice',{expect,assert,MONITORING_CATALOG:Array(15)})(picker,'hh-love-affection')
   if(Object.keys(options).length)await assert.rejects(run);else{assert.equal(await run,choice);assert.equal(batches,2)}
  }
 })

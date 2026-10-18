@@ -42,9 +42,7 @@ test("homepage prioritizes free written review and tests while preserving access
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
-  assert.match(freeCapture, /selected === "situation" \? \x60\/\$\{locale\}\/services\/free-situation-review\x60/);
-  assert.match(freeCapture, /selected === "wu" \? \x60\/\$\{locale\}\/services\/dao-health-profile\x60/);
-  assert.match(freeCapture, /\x60\/\$\{locale\}\/client#cabinet-tests\x60/);
+  for (const target of ['/client/tests','/services/free-situation-review','/academy/principles-of-energywork/learn']) assert.ok(freeCapture.includes(target));
   assert.match(freeCapture, /href=\{href\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services\/free-situation-review\x60\}/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);

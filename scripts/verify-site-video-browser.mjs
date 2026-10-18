@@ -144,8 +144,8 @@ try {
       ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/en/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/ILyRWyHtJoE?'],
-      ['/ru/services/psychohomeopathy', 'homeopathy', 'https://www.youtube-nocookie.com/embed/Q9NvYECKWuc?'],
+      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
+      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
       ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
       ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
       ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
@@ -153,11 +153,16 @@ try {
     ]
     for (const [route, topic, expectedUrl] of detailRoutes) {
       await navigate(route)
-      const block = page.locator(`[data-service-video="${topic}"]`)
+      if (route.endsWith('/psychohomeopathy')) {
+        assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
+      }
+      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
       await expect(block).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
       assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
+      const transcript = block.locator('details.site-video-transcript')
+      if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
       await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
       await block.locator('.site-video-play').click()
       await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
@@ -177,7 +182,7 @@ try {
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
   assert.ok(remedyPath)
   await navigate('/en/books')
-  const bookPath = await page.locator('a[href^="/books/"]').first().getAttribute('href')
+  const bookPath = await page.locator('a[href^="/en/books/"]').first().getAttribute('href')
   assert.ok(bookPath)
   const paths = ['/?lang=en', '/?lang=ru', '/en/about', '/ru/about', '/en/services', '/ru/services', '/en/homeopathy', '/ru/homeopathy', '/en/homeopathy/remedies', '/ru/homeopathy/remedies', '/en/books', '/ru/books', remedyPath, bookPath]
   for (const width of [1365, 390]) {

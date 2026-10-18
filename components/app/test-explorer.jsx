@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { startTestCatalogStatsRequest } from '@/lib/assessments/test-catalog-stats-client'
 import Link from 'next/link'
 import { Activity, ArrowLeft, Brain, ChevronRight, Clock3, Compass, Heart, Languages, Layers, MessageCircle, Moon, Shield, Sparkles, Zap, GraduationCap, FileDown } from 'lucide-react'
 import { assessmentHistoryGroups, interpretConcern, nextPersonalRecommendation } from '@/lib/assessments/personal-guidance'
@@ -225,15 +226,10 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [sort, setSort] = useState('recommended')
   const [socialStats, setSocialStats] = useState({})
   useEffect(() => {
-    let live = true
-    // Best-effort anonymous statistics. If unavailable, keep the catalog usable.
-    fetch('/api/test-catalog/stats', { credentials: 'same-origin' })
-      .then((response) => response.ok ? response.json() : { stats: [] })
-      .then(({ stats }) => {
-        if (live && Array.isArray(stats)) setSocialStats(Object.fromEntries(stats.map((item) => [item.key, item])))
-      })
-      .catch(() => {})
-    return () => { live = false }
+    const request = startTestCatalogStatsRequest(stats => {
+      setSocialStats(Object.fromEntries(stats.map(item => [item.key, item])))
+    })
+    return request.cancel
   }, [])
   const [selectedKeys, setSelectedKeys] = useState(() => recommendedKey ? [recommendedKey] : [])
   const [axisFilter, setAxisFilter] = useState(null)

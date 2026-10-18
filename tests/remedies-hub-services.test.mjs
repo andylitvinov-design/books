@@ -36,7 +36,7 @@ test('Remedies landing combines remedy search, free consultation and book covers
 test('public navigation groups existing remedies inside Library and keeps bilingual Services', async () => {
   const navigation = await readFile('components/site-navigation.tsx', 'utf8')
   const { getSiteNavigation } = await import('../lib/site-navigation-model.js')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.find((item) => item.id === 'library').href, `/${locale}/library`)
@@ -84,7 +84,7 @@ test('remedy pages build related links from exact mentions in source articles', 
 
 test('mobile navigation uses the shared Library and Services routes', async () => {
   const navigation = await readFile('components/mobile-bottom-navigation.tsx', 'utf8')
-  assert.match(navigation, /getSiteNavigation/)
+  assert.match(navigation, /getCompactNavigation/)
   assert.match(navigation, /data-nav-item/)
   assert.match(navigation, /aria-current/)
 })

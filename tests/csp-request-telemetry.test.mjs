@@ -145,3 +145,13 @@ test('pinned Next prefetch URL construction retains fragment before native fetch
   assert.match(construction, /setCacheBustingSearchParam/);
   assert.doesNotMatch(construction, /hash\s*=/);
 });
+
+
+test('stats diagnostics retain only exact public aggregate path without query values', () => {
+  assert.deepEqual(sanitizeCspRequest('/api/test-catalog/stats', origin), { path: '/api/test-catalog/stats', rsc: false });
+  for (const path of ['/api/test-catalog/stats?token=secret', '/api/test-catalog/stats?_rsc=secret', '/api/test-catalog/stats/client', '/api/test-catalog/results']) assert.equal(sanitizeCspRequest(path, origin), null);
+  const source = readFileSync(new URL('../scripts/verify-release-reaudit.mjs', import.meta.url), 'utf8');
+  assert.match(source, /cspContext.addInitScript\(\{ content: catalogStatsDiagnosticSource\(\) \}\)/);
+  assert.match(source, /record\('policy-violation'/);
+  assert.match(source, /JSON.stringify\(\{ statsResponses, statsFetch, requestTelemetry, fetchTelemetry/);
+});

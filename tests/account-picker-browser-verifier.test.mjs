@@ -8,24 +8,24 @@ for (const initial of ['compact', 'collapsed', 'full']) test(`browser verifier s
   let state = initial, open = false, checked = false
   const actions = []
   const control = name => ({
-    count: async () => name instanceof RegExp ? Number(state === 'full') : Number(name === 'Choose or change tests' && state === 'collapsed'),
+    count: async () => name instanceof RegExp ? Number(state === 'full') : 0,
     isVisible: async () => name === 'Browse full database' ? state === 'compact' : state === 'full',
     getAttribute: async () => String(open),
     click: async () => {
       actions.push(String(name))
-      if (name === 'Choose or change tests') { assert.equal(state, 'collapsed'); state = 'compact' }
-      else if (name === 'Browse full database') { assert.equal(state, 'compact'); state = 'full' }
+      if (name === 'Browse full database') { assert.equal(state, 'compact'); state = 'full' }
       else { assert.equal(state, 'full'); open = true }
     },
   })
   const card = { count: async () => Number(state === 'full' && open), filter() { return this }, first() { return this }, isVisible: async () => state === 'full' && open,
     getByRole(role, { name, exact }) { assert.ok(['heading','checkbox'].includes(role)); assert.equal(exact,true); assert.equal(name, 'Current State Check'); return { count: async () => 1, check: async () => { assert.equal(state, 'full'); assert.equal(open, true); checked = true } } } }
-  const page = { getByRole: (_, { name }) => control(name), locator: selector => selector.startsWith('button[')?control(/customizer/):card }
+  const page = { getByRole: (_, { name }) => control(name), locator: selector => selector === '#my-tests-picker-toggle' ? { count: async () => Number(state === 'collapsed') } : selector.startsWith('button[')?control(/customizer/):card }
   const expect = locator => ({ toBeVisible: async () => assert.equal(await locator.isVisible(), true), toHaveCount: async count => assert.equal(await locator.count(),count), toBeChecked: async () => assert.equal(checked,true), toHaveAttribute: async (key,value) => {assert.equal(key,'aria-expanded');assert.equal(await locator.getAttribute(key),value)} })
-  await new Function('expect', `${helper}; return chooseVisibleTest`)(expect)(page, 'Current State Check')
+  const openAccountTestPicker = async (target, matcher) => { assert.equal(target,page); assert.equal(matcher,expect); assert.equal(state,'collapsed'); actions.push('top-picker'); state='compact' }
+  await new Function('expect', 'openAccountTestPicker', `${helper}; return chooseVisibleTest`)(expect,openAccountTestPicker)(page, 'Current State Check')
   assert.equal(checked, true)
   assert.equal(actions.filter(x => x === 'Browse full database').length, initial === 'full' ? 0 : 1)
-  assert.equal(actions.filter(x => x === 'Choose or change tests').length, initial === 'collapsed' ? 1 : 0)
+  assert.equal(actions.filter(x => x === 'top-picker').length, initial === 'collapsed' ? 1 : 0)
 })
 
 const selectSource = source.slice(source.indexOf('function unsavedPublicTest('), source.indexOf('async function chooseVisibleTest('))

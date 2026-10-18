@@ -202,7 +202,7 @@ function assertLandingContract(tree, locale) {
   assert.equal(byClass("scope"), undefined, "No duplicated free scope");
   assert.equal(byClass("directions")?.type, "details");
   const alchemyLink = nodes(byClass("alchemy")).find(node => typeof node.props?.href === "string" && node.props.href.endsWith("/services/alchemy-of-soul"));
-  assert.equal(alchemyLink?.props.href, "/" + (locale === "es" ? "en" : locale) + "/services/alchemy-of-soul");
+  assert.equal(alchemyLink?.props.href, "/" + locale + "/services/alchemy-of-soul");
   assert.ok(!textOf(tree).includes("€50") && !textOf(tree).includes("€100"), "No paid prices in editorial content");
   const faq = textOf(byClass("faq"));
   const clauses = {

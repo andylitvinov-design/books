@@ -72,7 +72,7 @@
 
 /* One full-width testimonial row per person, stacked vertically. */
 .reviewStack{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;max-width:750px}
-.reviewCard{display:grid;grid-template-columns:minmax(132px,185px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
+.reviewCard{display:grid;grid-template-columns:minmax(132px,160px) minmax(0,1fr);align-items:center;gap:16px;min-width:0;padding:10px;border:1px solid #cde6e2;border-radius:17px;background:#f7fcfa}
 .reviewVideo{min-width:0;position:relative;border-radius:11px;overflow:hidden;align-self:center;background:#e7f4f1}
 .reviewVideo :global(.site-video-player){width:100%;min-width:0;margin:0}
 .reviewVideo :global(.site-video-frame){aspect-ratio:16/9;min-height:0;height:auto}

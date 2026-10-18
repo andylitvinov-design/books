@@ -1,3 +1,4 @@
+import { whatsappEnquiryUrl } from '../lib/whatsapp-enquiry.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -45,6 +46,8 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   ...common,
   'next/image': { default: props => jsx('img', props) },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
+  '@/components/contact-channel-chooser': { ContactChannelChooser: () => jsx('button', {}) },
+  '@/lib/whatsapp-enquiry': { whatsappEnquiryUrl },
   '@/data/core-service-offers': { coreServiceOffers },
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
   './services-solutions.module.css': { default: {} },
@@ -148,7 +151,7 @@ test('header matrix preserves all widths and tests direct links against the actu
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getSiteNavigation(locale).map(item => item.id === 'cabinet' ? '/' + (locale === 'es' ? 'en' : locale) + '/app' : item.href), '/' + locale + '/about'];
+  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['events','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');

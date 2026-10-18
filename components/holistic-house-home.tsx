@@ -96,7 +96,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
   return (
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
-        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel}>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel} prefetch={false}>
           Holistic House
           <span>{text.wordmark}</span>
         </Link>
@@ -123,7 +123,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
               href={`/${locale}/services/free-situation-review`}
               event="service_request_start"
               attributes={{ "data-hero-cta": "free-written-review" }}
-            >
+             prefetch={false}>
               {text.heroPrimary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
             <AcquisitionEventLink
@@ -131,7 +131,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
               href={`/${locale}/client/tests`}
               event="self_check_start"
               attributes={{ "data-hero-cta": "free-tests" }}
-            >
+             prefetch={false}>
               {text.heroSecondary}<span aria-hidden="true">→</span>
             </AcquisitionEventLink>
           </div>
@@ -140,7 +140,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             href={`/${locale}/services#consultation`}
             event="service_view"
             attributes={{ "data-hero-cta": "paid-sessions" }}
-          >
+           prefetch={false}>
             {text.heroBook}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
           <p className="service-home-offer-note">
@@ -167,7 +167,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             className="service-home-start-card"
             href={entry.selfCheck.href}
             event="self_check_start"
-          >
+           prefetch={false}>
             <span className="service-home-start-card__icon" aria-hidden="true"><ClipboardCheck /></span>
             <span className="service-home-start-card__eyebrow">{text.checkEyebrow}</span>
             <h3>{text.checkTitle}</h3>
@@ -181,15 +181,15 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             <h3>{text.learnTitle}</h3>
             <p>{text.learnText}</p>
             <div className="service-home-start-card__actions">
-              <Link href={`/${locale}/academy`}>{text.academyAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/library`}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
-              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/academy`} prefetch={false}>{text.academyAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/library`} prefetch={false}>{text.libraryAction}<span aria-hidden="true">→</span></Link>
+              <Link href={`/${locale}/academy/reiki/tantra-reiki/free-initiation`} prefetch={false}>{text.tantraAction}<span aria-hidden="true">→</span></Link>
             </div>
           </article>
         </div>
 
         <p className="service-home-start__returning">
-          {text.returning} <Link href={`/${locale}/client`}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
+          {text.returning} <Link href={`/${locale}/client`} prefetch={false}>{text.cabinetAction}<span aria-hidden="true">→</span></Link>
         </p>
       </section>
 
@@ -202,7 +202,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
           <p className="service-home-kicker">{text.aboutKicker}</p>
           <h2 id="service-home-about-title">Andrey Litvinov</h2>
           <p>{text.aboutIntro}</p>
-          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view">
+          <AcquisitionEventLink href={entry.practitioner.href} event="practitioner_view" prefetch={false}>
             {text.aboutAction}<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
         </div>
@@ -225,13 +225,13 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomepageContactCta locale={locale} />
 
       <footer className="service-home-footer">
-        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"}>Holistic House</Link>
+        <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>
         <p>{text.footer}</p>
-        <Link href={`/${locale}/services`}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
+        <Link href={`/${locale}/services`} prefetch={false}>{entry.hero.servicesLabel}<span aria-hidden="true">→</span></Link>
         <p className="service-home-footer__legal">
-          <Link href="/privacy">Privacy</Link>
+          <Link href="/privacy" prefetch={false}>Privacy</Link>
           <span aria-hidden="true"> · </span>
-          <Link href="/terms">Terms</Link>
+          <Link href="/terms" prefetch={false}>Terms</Link>
         </p>
       </footer>
     </main>

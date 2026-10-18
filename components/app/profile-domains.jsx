@@ -298,7 +298,7 @@ export function ProfileDomains({
       )}
     </section>}
     {!external && footerActions}
-    <details className="hh-domain-more" defaultOpen={external} onToggle={event => setExpanded(event.currentTarget.open)}>
+    <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
           <span className="hh-domain-topic-pills" aria-hidden="true">{DOMAINS.map(key => <span key={key}>{t[key]}</span>)}</span>

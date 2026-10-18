@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { HOME_TEST_TOPICS } from '../lib/assessments/insights-categories.js'
+import { buildPublicStarterBattery } from '../lib/assessments/test-explorer.js'
 
 const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 
@@ -55,7 +56,21 @@ test('preview and selected time are derived from live executable test definition
   assert.match(explorer, /const simpleRecommendations = useMemo/)
   assert.match(explorer, /buildPublicStarterBattery\(simpleRecommendations\)/)
   assert.match(explorer, /recommendations=\{simpleRecommendations\}/)
-  assert.match(explorer, /matching\.filter\(\(entry\) => entry\.selectable\)/)
+  // Explicit selections may span beyond the current topic. Verify the actual
+  // recommendation declaration and its selected-aware candidate set.
+  const recommendations = explorer.slice(explorer.indexOf('  const simpleRecommendations ='), explorer.indexOf('  // Only explicit duration/type options'))
+  assert.match(recommendations, /\) : filtered\)\.filter\(\(entry\) => entry\.selectable\)/)
+  assert.match(recommendations, /\), \[entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems/)
+  assert.match(explorer, /const filtered = useMemo\(\(\) => filterExplorerEntries\(entries, \{ \.\.\.facets, selectedKeys \}\)/)
+  // Keeping an explicitly chosen card visible must not put opt-in, excluded
+  // or unavailable cards into the automatic starter selection.
+  const starter = { key: 'eligible-starter', selectable: true }
+  assert.deepEqual(buildPublicStarterBattery([
+    { key: 'explicit-only', selectable: true, explicitOptIn: true },
+    { key: 'not-a-starter', selectable: true, starterEligible: false },
+    { key: 'unavailable', selectable: false },
+    starter,
+  ]), [starter])
   assert.match(explorer, /onToggleTest=\{toggleSimpleSelected\}/)
   assert.match(explorer, /onResetSuggested=\{\(\) => \{ setSelectedKeys\(\[\]\); setSimpleSelectionChanged\(false\) \}\}/)
   assert.match(picker, /activeBattery\.reduce\(\(total, item\) => total \+ \(item\.durationMinutes \|\| 0\), 0\)/)

@@ -31,13 +31,16 @@ function loadComponent(path, imports) {
   return exports;
 }
 
+const publicArtwork = loadComponent('lib/public-card-artwork.ts', { '@/data/public-card-artwork-urls.json': JSON.parse(read('data/public-card-artwork-urls.json')) });
 const shared = {
+  '@/lib/public-card-artwork': publicArtwork,
   'next/link': anchor,
   'next/image': empty,
   'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
   '@/components/static-portrait': { StaticPortrait: empty },
   '@/components/public-site-header': { PublicSiteHeader: empty },
 };
+shared['@/components/discovery-section-tabs']=loadComponent('components/discovery-section-tabs.tsx',{'next/link':anchor,'./discovery-section-tabs.module.css':{}});
 const freePaths = loadComponent('components/home-free-paths.tsx', {
   ...shared,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },

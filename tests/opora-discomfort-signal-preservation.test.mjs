@@ -1,3 +1,4 @@
+import * as skillV5 from '../lib/inner-growth/anti-stress-skills-v5.js'
 import * as phaseCatalog from '../lib/inner-growth/trauma-phase-catalog.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -27,7 +28,7 @@ function mount(_name,{props}){
   }
   const dependencies={'@/lib/inner-growth/trauma-phase-catalog':phaseCatalog,react:hooks,'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'Fragment'},
     'lucide-react':new Proxy({},{get:(_,key)=>String(key)}),'./course-guided-timer':{default:()=>null},'./course-practice-voice':{default:()=>null},
-    '@/lib/inner-growth/course-slide-sequence':courseSequence,'@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'@/lib/inner-growth/opora-state-journey':oporaStateJourney,'./opora-state-journey':{default:()=>null},'./opora-module-activity':{default:()=>null},'./anti-stress-practice-lab':{default:'AntiStressPracticeLab'},'./course-lesson-result':{default:'CourseLessonResult'},'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
+    '@/lib/inner-growth/anti-stress-skills-v5':skillV5,'@/lib/inner-growth/course-slide-sequence':courseSequence,'@/lib/inner-growth/course-adaptation':adaptation,'@/lib/inner-growth/course-moment-trends':moments,'@/lib/inner-growth/course-welcome':welcome,'@/lib/inner-growth/anti-stress-day-one':dayOne,'@/lib/inner-growth/opora-state-journey':oporaStateJourney,'./opora-state-journey':{default:()=>null},'./opora-module-activity':{default:()=>null},'./anti-stress-practice-lab':{default:'AntiStressPracticeLab'},'./course-lesson-result':{default:'CourseLessonResult'},'./anti-stress-method-activity':{default:()=>null},'./anti-stress-day-one':{default:()=>null,DayOneChoices:()=>null,DayOneFocusPicker:()=>null},'./course-slide-player.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}}
   const runtime={exports:{},require:name=>{assert.ok(dependencies[name],name);return dependencies[name]},
     document:{body:{style:{overflow:''}},addEventListener(){},removeEventListener(){}},
     crypto:{randomUUID:()=>`synthetic-${++serial}`},fetch(){network++;throw Error('No network in player fixture')},console}

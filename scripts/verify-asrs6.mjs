@@ -1,3 +1,4 @@
+import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
 import { guestFinishLabel, assertGuestScaleResult, assertAccountScaleReport } from './helpers/guest-scale-verifier.mjs'
 // Prepared synthetic loopback-only ASRS6 browser checks. Never run against production.
@@ -132,12 +133,20 @@ async function assertReport(target, definition, locale, expected) {
   const labels = locale === 'ru'
     ? ['Ниже скринингового порога', 'На уровне или выше скринингового порога']
     : ['Below the screening threshold', 'At or above the screening threshold']
-  await expect(count.locator(':scope > ol > li')).toHaveText(['0–3', '4–6'].map((range, index) =>
-    range + ' ' + labels[index] + (index === Number(expected >= 4) ? locale === 'ru' ? ' · Ваш диапазон' : ' · Your range' : '')))
-  const currentBand = count.locator(':scope > ol > li[data-current-band]')
+  const bands = report.locator('[data-all-score-ranges] > li')
+  await expect(bands).toHaveCount(2)
+  const publishedBands = await bands.evaluateAll(nodes => nodes.map(node => ({
+    range: node.querySelector('b')?.textContent,
+    label: node.querySelector('span')?.textContent.trim(),
+    current: node.getAttribute('aria-current') === 'true',
+  })))
+  assert.deepEqual(publishedBands, ['0–3', '4–6'].map((range, index) => ({
+    range, label: labels[index], current: index === Number(expected >= 4),
+  })), 'Published ASRS bands retain exact source bounds, labels and current range')
+  for (const band of await bands.all()) await expect(band).toBeVisible()
+  const currentBand = report.locator('[data-all-score-ranges] > li[aria-current="true"]')
   await expect(currentBand).toHaveCount(1)
-  await expect(currentBand).toHaveAttribute('aria-current', 'true')
-  await expect(currentBand.locator('strong')).toHaveText(expected >= 4 ? '4–6' : '0–3')
+  await expect(currentBand.locator('b')).toHaveText(expected >= 4 ? '4–6' : '0–3')
   for (const detail of await report.locator('details').all()) {
     if (await detail.getAttribute('open') === null) await detail.locator(':scope > summary').click()
   }
@@ -221,13 +230,14 @@ try {
   await navigate(page, origin + '/en/app')
   await page.getByRole('button', { name: 'Continue with Google', exact: true }).click()
   const onboarding = page.getByRole('heading', { name: 'Create my private space', exact: true })
-  await expect(onboarding.or(page.locator('[data-my-tests-dashboard]')).first()).toBeVisible({ timeout: 60000 })
+  await expect(onboarding.or(page.locator('[data-profile-domains]')).first()).toBeVisible({ timeout: 60000 })
   if (await onboarding.isVisible()) {
     await page.getByLabel('I am 18 or older.').check()
     await page.getByLabel('I agree to private processing', { exact: false }).check()
     await page.getByRole('button', { name: 'Create my private space', exact: true }).click()
   }
-  await expect(page.locator('[data-my-tests-dashboard]')).toBeVisible({ timeout: 30000 })
+  await assertCabinetPortrait(page, expect, { origin })
+  await openCabinetMyTests(page, expect, { origin })
   for (const definition of definitions) for (const mode of ['quick', 'guided']) {
     const locale = definition.instrumentLocale, values = mode === 'quick' ? Array(6).fill(0) : mixed, expected = mode === 'quick' ? 0 : 4
     const run = await api(account, 'runs', { definitionKey: definition.key, definitionVersion: definition.version, instrumentLocale: locale, operationId: randomUUID() })
