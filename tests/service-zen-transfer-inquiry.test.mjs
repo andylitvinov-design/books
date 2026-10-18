@@ -18,7 +18,7 @@ test('ZEN enquiry uses existing fixed-price server catalog and WhatsApp recipien
   assert.match(decoded(combined), /60 min/)
   assert.match(decoded(combined), /30 min/)
   assert.match(decoded(single), /have not paid yet/i)
-  assert.match(decoded(single), /confirm the appointment/i)
+  assert.match(decoded(single), /confirm a convenient appointment time/i)
   assert.doesNotMatch(decoded(single), /bank account number:|password|CVV|payment successful/i)
 })
 
@@ -60,7 +60,7 @@ test('ZEN is only an enquiry alongside existing PayPal; no API charge or receipt
   assert.match(paymentPage, /data-paypal-personal-link/)
   assert.match(cart, /serviceCommerceRuntime|\/api\/app\/commerce\/checkout/)
   assert.doesNotMatch(library, /fetch\(|post\(|update |deposit|markPaid|paymentIntent|ZEN_TERMINAL|secret|redirectUrl|acceptFunds/i)
-  assert.match(paymentPage, /not a payment/i)
+  assert.match(paymentPage, /No payment is collected here/i)
 })
 
 test('no card top-up or unverified ZEN payee link is exposed', () => {
