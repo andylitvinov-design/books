@@ -312,23 +312,24 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <span aria-hidden="true">{showAllPortraitRays ? '↑' : '↓'}</span>
       </button>}
       {rays.some((ray) => ray.previousEnd) && <div className={styles.portraitLegend}><span className={styles.legendCurrent}>{ru ? 'Сейчас' : es ? 'Actual' : 'Current'}</span><span className={styles.legendPrior}>{ru ? 'Предыдущий совместимый тест' : es ? 'Medición previa compatible' : 'Previous comparable test'}</span></div>}
-      {rays.some((ray) => ray.end) && <details className={styles.portraitSources}>
+      {visibleRays.some(axis => portrait?.axes?.[axis] || portrait?.staleAxes?.[axis]) && <details className={styles.portraitSources}>
         <summary>{ru ? 'Данные по лучам: источник, дата и динамика' : es ? 'Fuentes, fechas y evolución' : 'Ray details: source, date and change'}</summary>
         <div>
-          {visibleRays.filter((axis) => portrait?.axes?.[axis]).map((axis) => {
-            const item = portrait.axes[axis]
+          {visibleRays.filter((axis) => portrait?.axes?.[axis] || portrait?.staleAxes?.[axis]).map((axis) => {
+            const item = portrait.axes[axis] || portrait.staleAxes[axis]
             return <div key={axis} className={styles.portraitSourceRow}>
-              <strong>{label(axis)} · {item.percent}%</strong>
-              <span>{item.source} · {formatDate(item.measuredAt)}</span>
-              <span>{item.change === null
-                ? (ru ? 'Первый совместимый замер' : 'First comparable measurement')
-                : (ru ? 'От предыдущего: ' : 'Since previous: ') + (item.change > 0 ? '+' : '') + item.change + (ru ? ' п.п.' : ' pp')}</span>
-              {item.resultId && <Link href={'/' + locale + '/app/results/' + encodeURIComponent(item.resultId)}>{ru ? 'Открыть результат' : 'View result'} →</Link>}
+              <strong>{label(axis)} · {item.rawValue} ({item.min}–{item.max})</strong>
+              <span>{item.sourceTitle || item.definitionKey} · {item.source} · {formatDate(item.measuredAt)}</span>
+              <span>{item.mode === 'descriptive' ? (ru ? 'Описательные ответы, без идеального уровня' : es ? 'Respuesta descriptiva sin nivel ideal' : 'Descriptive score without an ideal level') : (ru ? 'Позиция внутри этого теста: ' : es ? 'Posición dentro de esta prueba: ' : 'Within-test position: ') + item.percent + '/100'}</span>
+              <span>{item.change == null
+                ? (ru ? 'Нет подтверждённой сопоставимой динамики' : es ? 'Sin cambio comparable verificado' : 'No verified comparable change')
+                : (ru ? 'Изменение позиции: ' : es ? 'Cambio de posición: ' : 'Position change: ') + (item.change > 0 ? '+' : '') + item.change + '/100'}</span>
+              {item.resultId && <Link href={'/' + locale + '/app/results/' + encodeURIComponent(item.resultId) + '?scale=' + encodeURIComponent(item.dimensionKey) + '#hh-assessment-scale-panel'} prefetch={false}>{ru ? 'Подробности исходной шкалы' : es ? 'Detalles de la escala' : 'Exact scale details'} →</Link>}
             </div>
           })}
         </div>
       </details>}
-      <p>{ru ? 'Процент — положение на шкале с учётом её направления, а не процент здоровья. Личностные черты без направления «лучше/хуже» сюда не включаются.' : es ? 'El porcentaje representa la posición orientada en la escala, no un porcentaje de salud.' : 'Each percentage is a direction-adjusted scale position, not a health score. Non-normative personality traits are excluded.'}</p>
+      <p>{ru ? 'Крупное число — исходный балл теста. Позиция /100 лишь помогает нарисовать луч внутри именно этого опросника; это не процент здоровья, клинический уровень или сравнение с другим тестом. Описательные показатели не имеют идеального значения.' : es ? 'El número principal es la puntuación original. La posición /100 no mide salud ni permite comparar pruebas; una escala descriptiva no tiene valor ideal.' : 'The primary number is the original test score. Position /100 only draws this questionnaire’s scale, never health, clinical severity or comparison across tests. Descriptive measures have no ideal endpoint.'}</p>
     </section>}
     {!portrait && !compact && activeAxes.length > 0 && <div className={styles.axisMeters} aria-label={ru ? 'Активные оси' : es ? 'Ejes activos' : 'Active axes'}>
       {activeAxes.map((axis) => <div key={axis} className={styles.axisMeter}>
