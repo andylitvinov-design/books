@@ -164,3 +164,6 @@
 .programTabs a[aria-current="page"] { background: #fff9f3; color: #243854; }
 .programTabs a:focus-visible { outline: 3px solid #f3b4c9; outline-offset: 3px; }
 @media(max-width:620px){.programTabs{gap:5px;margin-bottom:13px}.programTabs a{font-size:10px;padding:6px 9px;min-height:32px}}
+
+/* Preserve every translated label without clipping on compact phones. */
+@media(max-width:400px){.topline{flex-wrap:wrap}.eyebrow{max-width:100%}}

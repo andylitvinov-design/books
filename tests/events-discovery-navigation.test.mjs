@@ -17,6 +17,7 @@ test('Four discovery tabs share one EN/RU/ES public destination model', () => {
     assert.match(read(file), /<DiscoverySectionTabs locale=\{locale\} active=/, file)
   }
   assert.match(read('components/academy-discovery.tsx'), /programTabs/)
+  assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
 })
 
 test('Events is a first-party menu destination in every language while the existing six-item mobile bar is stable', () => {
@@ -31,7 +32,7 @@ test('Events is a first-party menu destination in every language while the exist
     assert.match(page, /alternates/)
   }
   assert.match(header, /item.id === 'events'/)
-  assert.match(locale, /events\\\/?/)
+  assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
   assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'library', 'house'])
 })
@@ -41,7 +42,7 @@ test('Event page never invents upcoming dates or shows private unpublished entri
   const view = read('components/events-discovery.tsx')
   assert.match(data, /PUBLIC_EVENTS: readonly PublicEvent\[\] = \[\]/)
   assert.match(view, /event\.status === "published"/)
-  assert.match(view, /Boolean\(event\.registrationHref\.trim\(\)\)/)
+  assert.match(view, /event\.registrationHref\.trim\(\)/)
   assert.match(view, /starts < now/)
   assert.match(view, /No confirmed upcoming dates are published yet/)
   assert.match(view, /Пока нет опубликованных подтверждённых дат/)

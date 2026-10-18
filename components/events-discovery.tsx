@@ -93,7 +93,12 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
   const [format, setFormat] = useState<FormatChoice>("all");
   const [past, setPast] = useState(false);
   const filtersActive = Boolean(search.trim()) || category !== "all" || format !== "all";
-  const verified = events.filter(event => event.status === "published" && !Number.isNaN(Date.parse(event.startsAt)) && Boolean(event.registrationHref.trim()));
+  const verified = useMemo(() => events.filter(event =>
+    event.status === "published"
+    && /(?:Z|[+-]\d\d:\d\d)$/.test(event.startsAt)
+    && !Number.isNaN(Date.parse(event.startsAt))
+    && /^(?:\/(?!\/)|https:\/\/[^\s]+$)/.test(event.registrationHref.trim())
+  ), [events]);
   const filtered = useMemo(() => {
     const now = Date.now();
     const term = search.trim().toLocaleLowerCase(locale);
