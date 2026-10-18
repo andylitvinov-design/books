@@ -130,10 +130,12 @@ test('legacy quick-add logic remains scoped but no generic create button is moun
   assert.match(quick,/expectedRevision:session\.draftRevision,draft/)
   assert.doesNotMatch(quick,/action:'publish'|youtube\.com\/upload|uploadToSignedUrl/)
   assert.doesNotMatch(studio,/SessionAudioRecorder|showYouTubeQuickAdd|changeResource/)
-  assert.doesNotMatch(report,/SessionAudioRecorder|addYoutube|parseSessionYouTubeUrl|newUrl/)
+  assert.doesNotMatch(report,/addYoutube|parseSessionYouTubeUrl|newUrl/)
+   assert.match(report,/SessionAudioRecorder[^\n]*sessionId=\{sessionId\|\|null\}/)
+   assert.match(report,/locale=\{locale\} audioOnly/)
 })
 
-test('report editor selects from the central library; personal recording uploads moved to separate screen',()=>{
+test('report editor selects shared resources centrally and offers only private inline audio recording',()=>{
   const edit=readFileSync(new URL('../app/admin/consultations/[id]/edit/page.js',import.meta.url),'utf8')
   const standalone=readFileSync(new URL('../app/admin/prescriptions/[id]/page.js',import.meta.url),'utf8')
   const materials=readFileSync(new URL('../components/report-video-materials-editor.jsx',import.meta.url),'utf8')
@@ -143,7 +145,9 @@ test('report editor selects from the central library; personal recording uploads
   assert.match(materials,/materialIds:ids/)
   assert.match(materials,/expectedRevision:owner\.draftRevision/)
   assert.match(materials,/\/admin\/materials/)
-  assert.doesNotMatch(materials,/SessionAudioRecorder|addYoutube|placePrivateVideo|type="file"|ownerMaterialsAdd/)
+  assert.doesNotMatch(materials,/addYoutube|placePrivateVideo|type="file"|ownerMaterialsAdd/)
+   assert.match(materials,/SessionAudioRecorder[^\n]*sessionId=\{sessionId\|\|null\}/)
+   assert.match(materials,/audioOnly/)
   assert.match(privatePage,/requireAdminRequest\(\)/)
   assert.match(privatePage,/getOwnerSession/)
   assert.match(privatePage,/SessionAudioRecorder/)
