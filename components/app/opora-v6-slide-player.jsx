@@ -457,6 +457,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 :(lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
                   'Now report whether you actually tried the step.')}</small>
             </div>}
+            {role==='transfer'&&picked&&authored?.transferBackup&&<p className={styles.gentle}>
+              <ShieldCheck size={17} aria-hidden="true"/>{authored.transferBackup}
+            </p>}
             {role==='act'&&picked&&['tried','partly'].includes(chosen)&&<div className={styles.ease}>
               <span>{t.easyTitle} <small>({lang==='ru'?'по желанию':'optional'})</small></span>
               <div className={styles.easeOptions} role="group" aria-label={t.easyTitle}>
