@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -70,7 +70,22 @@ const copy = {
     fiveLessons: "Five sequential lessons",
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
-    optionalForLearning: "Optional to continue learning. A written answer is required for personal initiation review.",
+    optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
+    feedbackBadge: "Your meditation feedback",
+    feelingPrompt: "How strongly did you experience this meditation?",
+    feelingLow: "0 · Not at all",
+    feelingHigh: "10 · Very clearly",
+    feelingMissing: "Choose a feeling level and write one short sentence to continue.",
+    feelingPlaceholder: "What did you notice, even if nothing? One sentence is enough…",
+    feedbackPrivacy: "A personal reflection, not a test. Your notes are never published automatically.",
+    voicesLabel: "From the community",
+    voicesNoQuote: "No verified participant quote for this exact recording is available here yet.",
+    voicesSource: "See the published testimonial",
+    voicesComments: "View original video & any public comments",
+    voicesNote: "Other people's experiences are not a standard to meet.",
+    milestoneLabel: "Lovely progress",
+    milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
+    committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
     reviewDone: "Your five lesson reports and answers are ready to review.",
@@ -148,7 +163,22 @@ const copy = {
     fiveLessons: "Пять последовательных уроков",
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
-    optionalForLearning: "Можно пропустить и продолжить обучение. Письменный ответ нужен для рассмотрения заявки на личную инициацию.",
+    optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
+    feedbackBadge: "Ваш отзыв о медитации",
+    feelingPrompt: "Насколько удалось прочувствовать медитацию?",
+    feelingLow: "0 · Ничего",
+    feelingHigh: "10 · Очень ярко",
+    feelingMissing: "Выберите степень ощущений и напишите одно короткое предложение.",
+    feelingPlaceholder: "Что вы заметили, даже если ничего? Достаточно одного предложения…",
+    feedbackPrivacy: "Это личное наблюдение, не экзамен. Ваш отзыв не публикуется автоматически.",
+    voicesLabel: "Опыт других практиков",
+    voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет в материалах курса.",
+    voicesSource: "Посмотреть опубликованный отзыв",
+    voicesComments: "Открыть видео и доступные комментарии",
+    voicesNote: "Ваш опыт не обязан совпадать с чужим.",
+    milestoneLabel: "Прекрасный прогресс",
+    milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
+    committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
     reviewDone: "Отчёты и ответы по пяти урокам готовы к просмотру.",
@@ -187,6 +217,16 @@ const copy = {
     myCourses: "Мои курсы",
   },
 } as const;
+
+const MEDITATION_REPORT_IDS = new Set(["flight-04", "tan-04", "kun-04", "ygg-04"]);
+const feedbackPattern = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/;
+function splitMeditationFeedback(value: string) {
+  const match = feedbackPattern.exec(value);
+  return { rating: match?.[1] ?? "", note: match?.[2] ?? value };
+}
+function joinMeditationFeedback(rating: string, note: string) {
+  return (rating ? "Feeling:" + rating + "/10\n" : "") + note;
+}
 
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   en: {
@@ -366,6 +406,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const total = slides.length;
   const completed = slide.kind === "finish";
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
+  const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
+  const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
+  const feedbackMissing = isMeditationFeedback && (!meditationFeedback.rating || !meditationFeedback.note.trim());
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -418,7 +461,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing) return;
+    if (busy || experienceMissing || feedbackMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
