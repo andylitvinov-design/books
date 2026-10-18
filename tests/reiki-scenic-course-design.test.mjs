@@ -69,7 +69,7 @@ test('Course has teacher initiation readiness checklist with five private report
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
   assert.match(learner, /jumpToSlide\(item\.reportId\)/)
   assert.match(learner, /jumpToSlide\(item\.questionId\)/)
-  assert.match(learner, /initiationReady \? t\.reviewDone : t\.reviewNeeded/)
+  assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
 test('Bottom progress and mobile viewport safe-area fit remain approved', () => {
@@ -98,4 +98,14 @@ test('Private consent and optimistic saving survive the visual design transition
   assert.match(learner, /t\.consentText/)
   assert.match(learner, /t\.stop/)
   assert.match(learner, /setSaveError\(t\.saveFailed\)/)
+})
+
+test('Public catalogue systems and descriptions match the interactive learning order', () => {
+  const landing = read('components/principles-of-energywork.tsx')
+  const paths = landing.split('const paths = [')[1].split('] as const;')[0]
+  const order = [...paths.matchAll(/key: "(tantra|kundalini|yggdrasil)"/g)].map(x => x[1])
+  assert.deepEqual(order, ['tantra','kundalini','yggdrasil'])
+  assert.match(landing, /systemsTitle: "Three Reiki systems\. One learning journey\."/)
+  assert.match(landing, /systemsTitle: "Три системы Рейки\. Один путь обучения\."/)
+  assert.match(landing, /systemsTitle: "Tres sistemas de Reiki\. Un solo curso\."/)
 })
