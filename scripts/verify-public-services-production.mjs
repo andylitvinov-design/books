@@ -272,7 +272,11 @@ try {
       "Business practitioner portrait should load: " + label);
     const free = main.locator('a[data-business-cta="free-hero"]');
     const href = await free.getAttribute("href");
-    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business");
+    assert.equal(href, "#business-direct-request");
+    const requestForm = main.locator("[data-business-website-enquiry]");
+    await visible(requestForm);
+    assert.equal(await requestForm.locator("select[data-business-field=\"format\"]").count(),1);
+    await expect(requestForm.locator("button[type=submit]")).toBeDisabled();
     const offers = main.locator("#business-offers");
     for (const kind of ["free", "express", "full"]) {
       await visible(offers.locator('[data-business-offer="' + kind + '"]'));
