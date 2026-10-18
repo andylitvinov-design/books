@@ -304,8 +304,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     // available further down; respect explicit time, kind and other facets.
     (activeCollection ? filterExplorerEntries(entries, { ...facets, focus: [], problems: [] }) : filtered)
       .filter((entry) => entry.selectable),
-    { focus: activeCollection ? activeCollection.focus : focus,
-      problems: activeCollection ? [] : problems,
+    { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
       details, axes, depth, styles: stylesFilter, lengths },
   ), [entries, filtered, activeCollection, activeCollectionId, availability, focus, problems, details, axes, areas,
