@@ -61,7 +61,7 @@ test('reported tension and social support are consistently assigned without clai
   assert.equal(scorePortraitDimension(resource.dimensions.find(d=>d.key==='resource.support'),resource).axis,'relationships')
   assert.equal(value.axes.relationships.dimensionKey,'resource.connection')
   assert.equal(value.axes.self_support.rawValue,0)
-  assert.ok(value.axes.relationships.source.toLowerCase().includes('support'))
+  assert.ok(value.axes.relationships.source.toLowerCase().includes('connection'))
 })
 test('dedicated sources fill focus, embodiment, boundaries and emotional awareness without inventing norms',()=>{
   const keys=['hh-focus-mode','hh-body-signals','hh-boundary-radar','hh-emotion-clarity']
