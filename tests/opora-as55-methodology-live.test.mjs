@@ -8,7 +8,7 @@ import {opora55CasesValid} from '../lib/inner-growth/opora-as55-learning-cases.j
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
-import {mount,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
+import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const keys=['welcome','baseline','pace','focus','aphorism','demo','prepare','notice','act','rehearse','scenario','transfer','reflection','save']
 
@@ -139,7 +139,10 @@ test('new scenario and transfer copy stays educational, mobile, accessible and n
  assert.match(js,/scenario\?\.feedback\?\./)
  assert.match(js,/authored\?\.hints\?\.\[role\]/)
  assert.match(js,/role==='transfer'&&picked&&authored\?\.transferBackup/)
- assert.match(js,/\['not_attempted','uncomfortable'\]/)
+ assert.match(js,/\['not_yet','not_attempted','uncomfortable'\]/)
+ assert.match(js,/role==='transfer'\?\['not_planning'\]/)
+ assert.match(js,/inert=\{safety\}/)
+ assert.match(js,/ref=\{safetyFirstAction\}/)
  assert.match(js,/setBeforeNow\(v=>v===i\?null:i\)/)
  assert.doesNotMatch(js,/\['skip',/)
  assert.match(js,/setSafety\(true\)/)
@@ -148,4 +151,67 @@ test('new scenario and transfer copy stays educational, mobile, accessible and n
  assert.match(css,/prefers-reduced-motion/)
  const parsed=ts.createSourceFile('opora-v6-slide-player.jsx',js,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
  assert.deepEqual(parsed.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[])
+})
+
+test('V7 can report not-yet, not-attempted and no future plan before picking any action',async()=>{
+ const day=1,locale='ru'
+ const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+ let submitted=null
+ const data={cycle:{id:'00000000-0000-4000-8000-000000008191',day,preferences:{}},
+   programme:{id:'stress'},lesson,currentSession:null}
+ const h=mount('opora-v6-slide-player',{locale,data,onClose(){},onFinish(){},
+   onSession:async body=>{submitted=structuredClone(body);return true}})
+ for(let i=0;i<7;i++)await click(h,'Далее')
+ assert.ok(findButton(h.tree,'Пока нет'))
+ assert.ok(findButton(h.tree,'Не пробовал(а)'))
+ assert.ok(findButton(h.tree,'Некомфортно'))
+ await click(h,'Пока нет')
+ assert.match(textOf(h.tree),/Пока не получилось|это допустимо/)
+ await click(h,'Далее')
+ assert.ok(findButton(h.tree,'Не пробовал(а)'))
+ await click(h,'Не пробовал(а)')
+ for(let i=0;i<3;i++)await click(h,'Далее')
+ assert.ok(findButton(h.tree,'Сегодня не планирую'))
+ await click(h,'Сегодня не планирую')
+ assert.match(textOf(h.tree),/Планировать на сегодня необязательно/)
+ await click(h,'Далее')
+ await click(h,'Далее')
+ await click(h,'Сохранить практику')
+ assert.ok(submitted)
+ assert.equal(submitted.opora54.answers.notice,'not_yet')
+ assert.equal(submitted.opora54.answers.act,'not_attempted')
+ assert.equal(submitted.opora54.answers.transfer,'not_planning')
+ assert.equal(submitted.opora54.answers.noticeChoice,undefined)
+ assert.equal(submitted.opora54.answers.actChoice,undefined)
+ assert.equal(submitted.opora54.answers.transferChoice,undefined)
+ assert.equal(submitted.practiceAttempt,null)
+ assert.equal(submitted.transferStage,null)
+ assert.match(textOf(h.tree),/Практика сохранена/)
+ h.unmount()
+})
+
+test('V7 pauses accessibly: focus goes to safe action, background becomes inert and no session saves',async()=>{
+ const day=3,locale='en'
+ const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+ let saves=0
+ const data={cycle:{id:'00000000-0000-4000-8000-000000008192',day,preferences:{}},
+   programme:{id:'stress'},lesson,currentSession:null}
+ const h=mount('opora-v6-slide-player',{locale,data,onClose(){},onFinish(){},
+   onSession:async()=>{saves++;return true}})
+ await click(h,'Pause')
+ assert.equal(saves,0)
+ const dialog=nodes(h.tree).find(n=>n.props?.role==='alertdialog')
+ assert.ok(dialog)
+ const background=nodes(h.tree).find(n=>n.type==='div'&&n.props?.inert===true)
+ assert.ok(background)
+ assert.equal(background.props['aria-hidden'],'true')
+ assert.ok(findButton(h.tree,'Continue with a neutral anchor'))
+ dialog.props.onKeyDown({key:'Escape',preventDefault(){}})
+ await h.settle()
+ assert.equal(nodes(h.tree).some(n=>n.props?.role==='alertdialog'),false)
+ await click(h,'Pause')
+ await click(h,'Continue with a neutral anchor')
+ assert.equal(nodes(h.tree).some(n=>n.props?.role==='alertdialog'),false)
+ assert.equal(saves,0)
+ h.unmount()
 })
