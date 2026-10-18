@@ -20,6 +20,10 @@ const approaches = [
   { id: "imagery", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", title: "Psicoterapia con imágenes", situation: "¿Tristeza, soledad o falta de claridad sobre qué hacer después?", detail: "En las sesiones individuales trabajaremos con imágenes del inconsciente, emociones y patrones para desarrollar apoyo interior, estabilidad y claridad.", action: "Conocer las sesiones", href: "/es/services/imagery-therapy" },
   { id: "business", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Consultoría de negocios y activación de metas", situation: "¿Tu negocio tiene una meta, pero el próximo paso no está claro?", detail: "Explora un mapa simbólico de tu negocio, activa una meta concreta y crea un plan de acción de 14 días. Sin promesas financieras.", action: "Explorar consultoría empresarial", href: "/es/services/business-consulting" },
   { id: "constellations", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Constelaciones y acompañamiento arquetípico", situation: "¿Tienes objetivos, pero no sabes cómo llegar a ellos?", detail: "Exploramos las dinámicas de tu situación mediante constelaciones sistémicas e imágenes arquetípicas para descubrir nuevas perspectivas y pasos prácticos.", action: "Ver sesiones de constelaciones", href: "/es/services/systemic-constellations" },
+  { id: "wu-xing", image: "/academy/reiki-yggdrasil/source/eastern-tradition.png", title: "Perfil gratuito de recursos Wu Xing", situation: "¿Quieres observar tus recursos y tu equilibrio actual?", detail: "Una exploración simbólica y gratuita sobre recursos personales mediante el modelo Dao / Wu Xing. No es un diagnóstico de salud.", action: "Explorar perfil gratuito Wu Xing", href: "/es/services/dao-health-profile" },
+  { id: "alchemy", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Alquimia del Alma · sesión personal", situation: "¿Se repite una situación y quieres comprenderla de otra manera?", detail: "Sesiones personales de constelaciones e imágenes guiadas con recursos complementarios opcionales, sin prometer resultados clínicos.", action: "Conocer Alquimia del Alma", href: "/es/services/alchemy-of-soul" },
+  { id: "hypnotherapy", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", title: "Hipnoterapia con imágenes guiadas", situation: "¿Quieres explorar tus emociones y recursos a tu propio ritmo?", detail: "Trabajo individual con imágenes y diálogo para observar patrones y opciones de cambio. No sustituye la atención de salud mental.", action: "Ver el proceso de imágenes guiadas", href: "/es/services/hypnotherapy-course" },
+  { id: "remote", image: "/academy/reiki-yggdrasil/source/eastern-tradition.png", title: "Apoyo energético a distancia", situation: "¿Buscas una práctica de acompañamiento energético?", detail: "Selecciona un método, profesional y horario preferido. La solicitud necesita confirmación y no sustituye la atención sanitaria.", action: "Elegir apoyo energético", href: "/es/services/remote-energy-support" },
 ] as const;
 
 export default async function SpanishServicesPage() {
@@ -29,14 +33,15 @@ export default async function SpanishServicesPage() {
  const areas: Record<string,string> = {
    situation:"emotional_psychological", psychohomeopathy:"homeopathy_holistic",
    imagery:"personal_development", business:"business_money", constellations:"relationships",
+   "wu-xing":"energy_spiritual", alchemy:"homeopathy_holistic", hypnotherapy:"personal_development", remote:"energy_spiritual",
  };
  const editorial = [
    ...approaches.map(({id,image,title,situation,detail,href})=>({
      id,image,title,promise:situation,details:detail,href,areaKey:areas[id],
-     label:id==="situation"?"Revisión gratuita":"Sesión personal",
-     price:id==="situation"?"Gratis":id==="business"||id==="constellations"||id==="imagery"||id==="psychohomeopathy"
+     label:id==="situation"?"Revisión gratuita":id==="wu-xing"?"Perfil gratuito":id==="remote"?"Apoyo a distancia":"Sesión personal",
+     price:id==="situation"||id==="wu-xing"?"Gratis":id==="remote"?undefined:id==="business"||id==="constellations"||id==="imagery"||id==="psychohomeopathy"||id==="alchemy"||id==="hypnotherapy"
        ?"€50 / 30 min · €100 / 60 min":undefined,
-     free:id==="situation",
+     free:id==="situation"||id==="wu-xing",
    })),
    {id:"yggdrasil",image:"/academy/reiki-yggdrasil/source/basic-program.jpg",title:"Reiki Yggdrasil — iniciación gratuita",promise:"Meditación, Reiki y materiales para comenzar.",
      details:"Consulta los vídeos originales, los materiales de estudio y las opciones de iniciación gratuita o personal.",
