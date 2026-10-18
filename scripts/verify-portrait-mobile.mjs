@@ -28,8 +28,8 @@ const labels = ['body','work','relationships','growth']
 const expected = { body: 5, work: 3, relationships: 4, growth: 5 }
 
 function assertMobileEvidence({ locale, width, sector, data }) {
-  assert.equal(data.buttonCount, 4, 'Four category buttons')
-  assert.ok(data.fourInRow, `${locale} ${width}px: category buttons must share one row`)
+  assert.equal(data.buttonCount, 5, 'All and four category buttons')
+  assert.ok(data.fiveInRow, `${locale} ${width}px: five portrait buttons must share one row`)
   assert.ok(data.minTapHeight >= 44, `${locale} ${width}px: all category buttons need >=44px tap height`)
   assert.ok(data.overflow <= 1, `${locale} ${width}px: no horizontal document overflow`)
   assert.ok(data.radarWidth > 0 && data.ringWidth / data.radarWidth > .78,
@@ -48,7 +48,7 @@ async function measure(locale, width, sector) {
   const data = await card().evaluate(cardEl => {
     const rect = element => element.getBoundingClientRect()
     const header = cardEl.querySelector('[data-portrait-sectors]')
-    const buttons = [...header.querySelectorAll('button[data-portrait-sector]')]
+    const buttons = [...header.querySelectorAll('button[data-portrait-sector-all], button[data-portrait-sector]')]
     const tops = buttons.map(button => rect(button).top)
     const svg = cardEl.querySelector('svg[data-radar-layout="full-circle"]')
     const outer = svg.querySelector('circle[class*="radarReference"]')
@@ -70,7 +70,7 @@ async function measure(locale, width, sector) {
     const pressed = buttons.filter(button => button.getAttribute('aria-pressed') === 'true')
     return {
       buttonCount: buttons.length,
-      fourInRow: tops.length === 4 && Math.max(...tops)-Math.min(...tops)<2,
+      fiveInRow: tops.length === 5 && Math.max(...tops)-Math.min(...tops)<2,
       minTapHeight: Math.min(...buttons.map(button=>rect(button).height)),
       pressedCount: pressed.length, pressedKey: pressed[0]?.getAttribute('data-portrait-sector'),
       overflow: document.documentElement.scrollWidth-innerWidth,
@@ -116,8 +116,13 @@ try {
     await expect(card()).toBeVisible({timeout:90000})
     await expect(buttons()).toHaveCount(4,{timeout:30000})
     await expect(card().locator('[class*="visualState"]')).toHaveCount(0)
-    await expect(card().locator('[data-portrait-sector-all]')).toHaveCount(0)
-    await expect(card().locator('[data-radar-layout="full-circle"]')).toBeVisible()
+    const all = card().locator('[data-portrait-sector-all]')
+    await expect(all).toHaveCount(1)
+    await expect(all).toHaveAttribute('aria-pressed','true')
+    const overview = card().locator('svg[data-radar-mode="summary"]')
+    await expect(overview).toBeVisible()
+    await expect(overview.locator('[data-summary-sector]')).toHaveCount(4)
+    await expect(card().locator('[data-detail-axis]')).toHaveCount(0)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       for (const sector of labels) {
@@ -128,9 +133,25 @@ try {
         await measure(locale,width,sector)
       }
     }
-    await expect(card().locator('[data-testid="portrait-quick-actions"]')).toBeVisible()
+    await all.click()
+    await expect(all).toHaveAttribute('aria-pressed','true')
+    await expect(card().locator('svg[data-radar-mode="summary"]')).toBeVisible()
+    await expect(card().locator('[data-summary-sector]')).toHaveCount(4)
+    await expect(card().locator('[data-portrait-ray-options]')).toHaveCount(0)
+    const actions = card().locator('[data-testid="portrait-quick-actions"]')
+    await expect(actions).toBeVisible()
+    await expect(actions.locator('a, button')).toHaveCount(3)
+    await expect(actions.locator('[data-testid="portrait-completion-action"]')).toContainText(locale === 'ru' ? 'Тесты' : 'Tests')
+    await expect(actions.locator('[data-testid="portrait-analyses-action"]')).toContainText(locale === 'ru' ? 'Анализы' : 'Analyses')
+    await expect(actions.locator('[data-testid="portrait-recommendations-action"]')).toContainText(locale === 'ru' ? 'Рекомендации' : 'Recommendations')
   }
-  assert.equal(problems.length,0,'Browser script errors: '+problems.join('; '))
+  // Next's development error-overlay may emit a blocked /__nextjs_original-stack-frames
+  // request (plus an opaque Event) under the isolated loopback/CSP browser.
+  // Ignore only that known tooling noise; real application pageerrors still fail.
+  const devOverlayBlocked = problems.some(item => item.includes('/__nextjs_original-stack-frames'))
+  const appProblems = problems.filter(item => !item.includes('/__nextjs_original-stack-frames') &&
+    !(devOverlayBlocked && item === '[object Event]'))
+  assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
   console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
 } finally {
   await context.close()
