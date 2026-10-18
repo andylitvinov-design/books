@@ -1,4 +1,4 @@
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 
 export type CoreServiceId = "situation" | "dao" | "alchemy" | "hypnotherapy" | "business";
 
@@ -126,9 +126,61 @@ const offers = {
       action: "Подробнее о бизнес-сессии",
     },
   ],
-} as const satisfies Record<Locale, readonly (Omit<CoreServiceOffer, "href"> & { route: string })[]>;
+  es: [
+    {
+      id: "situation",
+      label: "Gratis · Revisión escrita",
+      title: "Revisión gratuita de tu situación",
+      promise: "Observa tu pregunta, los obstáculos y los posibles siguientes pasos desde otra perspectiva.",
+      benefit: "Reflexión personal por escrito",
+      image: images.situation,
+      route: "free-situation-review",
+      action: "Empezar gratis",
+    },
+    {
+      id: "dao",
+      label: "Gratis · DAO / Wu Xing",
+      title: "Perfil gratuito de recursos Wu Xing",
+      promise: "Explora tus recursos personales mediante un modelo taoísta simbólico.",
+      benefit: "Perspectiva sobre recursos personales, no diagnóstico médico",
+      image: images.dao,
+      route: "dao-health-profile",
+      action: "Explorar el perfil gratuito",
+    },
+    {
+      id: "alchemy",
+      label: "Sesión personal · método integrado",
+      title: "Alquimia del Alma · Psicohomeopatía",
+      promise: "Explora tu situación mediante constelaciones, hipnoterapia con imágenes guiadas y psicohomeopatía opcional.",
+      benefit: "Constelaciones · hipnoterapia · apoyo homeopático complementario",
+      image: images.alchemy,
+      route: "alchemy-of-soul",
+      action: "Conocer la sesión",
+    },
+    {
+      id: "hypnotherapy",
+      label: "Curso individual",
+      title: "Hipnoterapia con imágenes guiadas",
+      promise: "Explora imágenes interiores y preguntas difíciles de resolver solo con el pensamiento.",
+      benefit: "Recursos internos · patrones emocionales · respuestas personales",
+      image: images.hypnotherapy,
+      route: "hypnotherapy-course",
+      action: "Conocer el curso",
+    },
+    {
+      id: "business",
+      label: "Negocios · Sesión personal",
+      title: "Consultoría de negocios y activación de metas",
+      promise: "Explora el sistema de tu negocio mediante una constelación y concreta un próximo paso.",
+      benefit: "Mapa del sistema · activación de metas · plan de acción de 14 días",
+      image: images.business,
+      route: "business-consulting",
+      action: "Conocer la consultoría",
+    },
+  ],
+} as const satisfies Record<PublicLocale, readonly (Omit<CoreServiceOffer, "href"> & { route: string })[]>;
 
-export function coreServiceOffers(locale: Locale): CoreServiceOffer[] {
+export function coreServiceOffers(locale: PublicLocale): CoreServiceOffer[] {
   return offers[locale].map((item) => ({
     ...item,
     href: "/" + locale + "/services/" + item.route,
