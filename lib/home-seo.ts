@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 
 const homeCopy = {
   en: {
-    title: "Holistic House — free self-checks and personal guidance in Toronto",
-    description: "Explore free self-check tests, a written situation review or a Wu Xing resource profile. Optional personal sessions with Andrey Litvinov in Toronto and online.",
+    title: "Personal Sessions in Toronto & Online | Holistic House",
+    description: "Explore one real question with Andrey Litvinov through guided imagery and systemic constellations. Personal consultations in Toronto or online, from €50. Free written review available.",
   },
   ru: {
-    title: "Holistic House — бесплатные тесты и личная работа в Торонто",
-    description: "Начните с бесплатных тестов, письменного разбора ситуации или профиля ресурсов У-Син. Личные консультации Андрея Литвинова в Торонто и онлайн — по желанию.",
+    title: "Личные консультации в Торонто и онлайн | Holistic House",
+    description: "Личные консультации Андрея Литвинова по вопросам отношений, работы и жизненных решений в Торонто и онлайн, от €50. Можно начать с бесплатного письменного разбора.",
   },
 } as const;
 

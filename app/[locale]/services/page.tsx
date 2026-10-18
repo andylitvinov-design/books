@@ -113,7 +113,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       label:offer.label,
       price: offer.id === "situation" || offer.id === "dao"
         ? (locale === "ru" ? "Бесплатно" : "Free")
-        : offer.id === "alchemy" || offer.id === "business"
+        : offer.id === "alchemy" || offer.id === "business" || offer.id === "hypnotherapy"
           ? "€50 / 30 min · €100 / 60 min"
           : undefined,
       free:offer.id === "situation" || offer.id === "dao",
@@ -168,8 +168,14 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <ServicesConversionHero locale={locale as Locale} />
       <ServicesQuickStart locale={locale} />
-
+      <ServicesSolutions locale={locale as Locale} />
+      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+      <ServicesAboutEntry locale={locale as Locale} />
+      <PersonalTestimonials locale={locale as Locale} variant="services" />
+      <ServicesTestsIntro locale={locale as Locale} />
+      {/* Optional marketplace finder comes after Andrey's personal offers and booking. */}
       <ServicesSmartDiscovery
         locale={locale}
         services={offerings}
@@ -177,11 +183,6 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
         aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
           && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)}
       />
-
-      <ServicesConversionHero locale={locale as Locale} />
-      <ServicesTestsIntro locale={locale as Locale} />
-      <ServicesSolutions locale={locale as Locale} />
-      <ServicesAboutEntry locale={locale as Locale} />
 
       <details className={solutionStyles.extra} id="method-videos" open>
         <summary className={solutionStyles.extraSummary}>
@@ -223,8 +224,6 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
           </p>
         </div>
       </details>
-
-      <PersonalTestimonials locale={locale as Locale} variant="services" />
 
       <details className={solutionStyles.extra} id="available-services" open={catalogRequested}>
         <summary className={solutionStyles.extraSummary}>
@@ -303,7 +302,6 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
 
 
 
-      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
       <div style={{ textAlign: "center", padding: "6px 14px 25px" }}>
         <Link href={`/${locale}/payments`} style={{ color: "#0b7881", fontWeight: 700, fontSize: 13, textDecoration: "underline", textUnderlineOffset: 3 }}>
           {locale === "ru" ? "PayPal / ZEN.COM · Способы оплаты консультации" : "PayPal / ZEN.COM · Consultation payment options"} →

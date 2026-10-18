@@ -25,10 +25,10 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx"), esServices = read("app/es/services/page.tsx");
   const seo = read("lib/home-seo.ts"), css = read("app/holistic-house-home.css");
-  assert.match(home, /heroTitle: "Free self-checks\. Find your next step\."/);
-  assert.match(home, /heroTitle: "Бесплатные тесты\. Найдите следующий шаг\."/);
-  assert.match(es, /Autoevaluaciones gratuitas\./);
-  assert.match(seo, /free self-checks and personal guidance in Toronto/);
+  assert.match(home, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
+  assert.match(home, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
+  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
+  assert.match(seo, /Personal Sessions in Toronto & Online/);
   assert.match(seo, /openGraph:/);
   assert.match(seo, /twitter:/);
   for (const page of [home, es]) {

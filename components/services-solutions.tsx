@@ -28,7 +28,7 @@ const copy = {
     homeTitle: "How I can help",
     servicesTitle: "How I can help",
     lead: "Alchemy of the Soul brings together systemic constellations, guided imagery hypnotherapy and optional psycho-homeopathy. Or explore a separate guided-imagery course or practical business strategy and founder coaching.",
-    homeLead: "Two free written reviews and two personal-work options. You can also explore free stress and personality tests below.",
+    homeLead: "A free written situation review, a free symbolic Wu Xing profile and personal sessions. Explore self-checks below if you prefer.",
     servicesLead: "Start free or explore Alchemy of the Soul (constellations, hypnotherapy and psycho-homeopathy), individual guided imagery and business sessions.",
     more: "Curious about the methods?",
     moreText: "Systemic constellations, guided imagery and homeopathy are approaches used in specific sessions, not extra services you must choose on this page.",
@@ -47,7 +47,7 @@ const copy = {
     homeTitle: "Чем я могу помочь",
     servicesTitle: "Чем я могу помочь",
     lead: "«Алхимия души» объединяет расстановки, образную гипнотерапию и дополнительную психогомеопатию. Есть также отдельные курсы, бизнес-стратегия и коучинг предпринимателей.",
-    homeLead: "Два бесплатных письменных разбора и два формата личной работы. Ниже также доступны бесплатные тесты стресса и личности.",
+    homeLead: "Бесплатный письменный разбор ситуации, символический профиль У-Син и личные сессии. Ниже — тесты самонаблюдения.",
     servicesLead: "Начните бесплатно или выберите «Алхимию души» (расстановка, гипнотерапия, психогомеопатия), индивидуальную образную работу либо бизнес-сессию.",
     more: "Хотите подробнее о методах?",
     moreText: "Системные расстановки, образная работа и гомеопатия — инструменты отдельных сессий, а не обязательные дополнительные услуги.",
@@ -105,6 +105,13 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Pu
               <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
               <p className={styles.cardSummary}>{offer.promise}</p>
               <p className={styles.cardBenefit}>{offer.benefit}</p>
+              {(['alchemy', 'hypnotherapy', 'business'] as const).some(id => id === offer.id) ? (
+                <p className={styles.cardPrice} data-personal-session-price>
+                  {locale === "ru" ? "Личная сессия · €50 / 30 мин · €100 / 60 мин"
+                    : locale === "es" ? "Sesión personal · €50 / 30 min · €100 / 60 min"
+                    : "Personal session · €50 / 30 min · €100 / 60 min"}
+                </p>
+              ) : null}
               {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
                 <a className={styles.cardVideo} href={getServiceVideoWatchUrl(offer.id, locale)}
                   target="_blank" rel="noopener noreferrer" data-service-card-video={offer.id}
