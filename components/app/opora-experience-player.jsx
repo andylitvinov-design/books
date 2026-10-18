@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect,useRef,useState} from 'react'
-import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Heart,Pause,ShieldCheck,X} from 'lucide-react'
+import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
 import {oporaExperienceGuide} from '@/lib/inner-growth/opora-as56-experience-guides'
@@ -84,7 +84,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [step,setStep]=useState(hasSaved?OPORA_EXPERIENCE_PRE_SAVE_KEYS.length:0)
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
-  const [actionIndex,setActionIndex]=useState(0)
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -98,8 +97,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=OPORA_EXPERIENCE_PRE_SAVE_KEYS.length
   const moment=receipt?'receipt':SCENES[step]
-  const actions=authored.exercises?.act?.choices||[]
-  const activity=actions[actionIndex]||actions[0]||lesson?.antiStress?.skill||''
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=authored.quote||lesson.aphorism||''
@@ -122,11 +119,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     const at=nodes.indexOf(event.target)
     if(event.shiftKey&&at<=0){event.preventDefault();nodes[nodes.length-1]?.focus?.()}
     else if(!event.shiftKey&&at===nodes.length-1){event.preventDefault();nodes[0]?.focus?.()}
-  }
-  function selectAction(index){
-    if(locked)return
-    setActionIndex(index)
-    setPracticeReport(null)
   }
   function tryStatus(value){
     if(locked)return
@@ -219,12 +211,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {moment==='practice'&&<>
             <p className={styles.lead}>{practiceGuide}</p>
-            <p className={styles.action}>{activity}</p>
-            {actions.length>1&&<div className={styles.choiceRow}>
-              <button type="button" className={styles.plain}
-                disabled={locked} onClick={()=>selectAction((actionIndex+1)%Math.min(2,actions.length))}>
-                {t.alternative}</button>
-            </div>}
             <p className={styles.miniLabel}>{t.tryAfter}</p>
             <div className={styles.chips} role="group" aria-label={t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
