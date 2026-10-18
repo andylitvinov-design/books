@@ -301,6 +301,11 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
 
 
       <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} />
+      <div style={{ textAlign: "center", padding: "22px 14px 30px" }}>
+        <Link href={`/${locale}/payments`} className="services-marketplace-details">
+          {locale === "ru" ? "Стоимость и оплата консультаций" : "Consultation prices & payment"} →
+        </Link>
+      </div>
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
     </main>
   );
