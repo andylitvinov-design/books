@@ -591,6 +591,34 @@ export function EnergyworkAiLearner({ locale }: Props) {
                     <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
+              {slide.kind === "milestone" ? (
+                <div className={styles.milestoneCard}>
+                  <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
+                  <strong>{t.milestoneLabel}</strong>
+                  <p>{t.milestoneNote}</p>
+                </div>
+              ) : null}
+              {slide.kind === "voices" ? (
+                <div className={styles.voicesCard} data-meditation-voices>
+                  <span className={styles.voicesEyebrow}><MessageCircle size={18} aria-hidden="true" />{t.voicesLabel}</span>
+                  {slide.testimonial ? (
+                    <blockquote className={styles.voiceQuote}>
+                      <p>“{slide.testimonial.quote[locale]}”</p>
+                      <cite>{slide.testimonial.attribution[locale]}</cite>
+                    </blockquote>
+                  ) : <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>}
+                  {slide.testimonial ? (
+                    <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + slide.testimonial.sourcePath}>
+                      {t.voicesSource}<ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                  {media?.youtubeId ? (
+                    <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + media.youtubeId}
+                      target="_blank" rel="noopener noreferrer">{t.voicesComments}<ExternalLink size={15} aria-hidden="true" /></a>
+                  ) : null}
+                  <p className={styles.voicesNote}>{t.voicesNote}</p>
+                </div>
+              ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.id === "paths-04" ? (
@@ -623,14 +651,35 @@ export function EnergyworkAiLearner({ locale }: Props) {
               {slide.question ? (
                 <div className={styles.question}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
+                     isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
                      initiationItems.some((item) => item.questionId === slide.id) ? t.lessonQuestion : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
+                  {isMeditationFeedback ? (
+                    <div className={styles.meditationFeeling} data-meditation-feeling>
+                      <label htmlFor={"feeling-" + slide.id}>{t.feelingPrompt}</label>
+                      <div className={styles.feelingValue}>
+                        <span>{t.feelingLow}</span>
+                        <strong aria-live="polite">{meditationFeedback.rating ? meditationFeedback.rating + " / 10" : "— / 10"}</strong>
+                        <span>{t.feelingHigh}</span>
+                      </div>
+                      <input id={"feeling-" + slide.id} type="range" min="0" max="10" step="1"
+                        value={meditationFeedback.rating || "5"}
+                        onChange={(event) => setAnswer(joinMeditationFeedback(event.target.value, meditationFeedback.note).slice(0, 1600))}
+                        onClick={(event) => { if (!meditationFeedback.rating) setAnswer(joinMeditationFeedback(event.currentTarget.value, meditationFeedback.note).slice(0, 1600)); }}
+                        aria-label={t.feelingPrompt} />
+                    </div>
+                  ) : null}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={answers[slide.id] ?? ""} onChange={(e) => setAnswer(e.target.value.slice(0, 1600))}
-                      className={styles.textarea} maxLength={1600} rows={4} placeholder={t.placeholder} autoComplete="off" />
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationFeedback.note : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer((isMeditationFeedback
+                        ? joinMeditationFeedback(meditationFeedback.rating, e.target.value)
+                        : e.target.value).slice(0, 1600))}
+                      className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
+                      maxLength={1600} rows={isMeditationFeedback ? 3 : 4}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
@@ -660,10 +709,12 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote :
+                  <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
+                    role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
+                    isMeditationFeedback ? (feedbackMissing ? t.feelingMissing : t.feedbackPrivacy) :
                     initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
                     ? t.optionalForLearning : t.blank}</p>
-                  {reviewReturn && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
+                  {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
                     <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
@@ -795,8 +846,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing} className={styles.next} data-energywork-next>
-                {slide.kind === "welcome" ? t.startFree : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
+                {slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
