@@ -3,6 +3,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 import { ConsultationForm } from '@/components/consultation-form'
+import { getRecommendedTestOptions } from '@/lib/consultations/recommended-tests'
 import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-editor'
 import { deliveryEnabled } from '@/lib/clients/delivery-model'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
@@ -21,5 +22,5 @@ export default async function EditConsultation({ params }) {
     <ReportVideoMaterialsEditor clientId={consultation.clientId} documentId={consultation.id}
       sourceConsultationId={consultation.consultationId||consultation.id}
       locale={consultation.languagePreference==='ru'?'ru':'en'}/>
-  </div>}<ConsultationForm action={updateConsultationAction.bind(null, id)} remedies={getConsultationRemedyOptions()} consultation={consultation} payment={payment} /></main>
+  </div>}<ConsultationForm action={updateConsultationAction.bind(null, id)} remedies={getConsultationRemedyOptions()} consultation={consultation} payment={payment} recommendedTestOptions={{ en: getRecommendedTestOptions('en'), ru: getRecommendedTestOptions('ru') }} /></main>
 }
