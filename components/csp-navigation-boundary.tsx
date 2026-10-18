@@ -6,7 +6,6 @@ import { isNativePsiAlchemy } from "@/lib/native/client";
 
 declare global {
   interface Window {
-    __hhCspHardDestination?: string;
     __cspPreHydration?: { destination: string | null; dispose: () => void };
   }
 }
@@ -62,21 +61,9 @@ export function CspNavigationBoundary() {
       if (!crossesPolicy(url)) return;
       // Capture before Next's link handler commits a page under the old policy.
       event.preventDefault();
-      // Pin the deliberate exit before WebKit or an interrupted router can
-      // replay this document's old hash/canonical URL during teardown.
-      window.__hhCspHardDestination = url.href;
-      event.stopImmediatePropagation();
       window.location.assign(url.href);
     };
     const onPopState = (event?: Event) => {
-      // A restored document is a new visit, not a still-pending departure.
-      if (event?.type === "pageshow" && (event as PageTransitionEvent).persisted)
-        delete window.__hhCspHardDestination;
-      if (window.__hhCspHardDestination) {
-        event?.stopImmediatePropagation();
-        window.location.replace(window.__hhCspHardDestination);
-        return;
-      }
       const url = new URL(window.location.href);
       const restoresInterruptedRouter = event?.type === "pageshow"
         && (event as PageTransitionEvent).persisted && interruptedRouterNavigation.current;
@@ -97,7 +84,7 @@ export function CspNavigationBoundary() {
     delete window.__cspPreHydration;
     if (earlyNavigation?.destination) {
       interruptedRouterNavigation.current = true;
-      window.location.replace(window.__hhCspHardDestination || earlyNavigation.destination);
+      window.location.replace(earlyNavigation.destination);
     } else {
       onPopState();
     }
@@ -110,10 +97,6 @@ export function CspNavigationBoundary() {
 
   useEffect(() => {
     documentClass.current ??= document.body.dataset.cspClass;
-    if (window.__hhCspHardDestination) {
-      window.location.replace(window.__hhCspHardDestination);
-      return;
-    }
     if (documentClass.current && documentClass.current !== cspClassForPath(window.location.pathname)) {
       // Programmatic router/history navigation also needs a fresh document.
       // Replace preserves the history entry and pins the destination before

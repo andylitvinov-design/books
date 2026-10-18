@@ -48,3 +48,16 @@ export async function openCabinetHome(page, expect, { origin, locale = 'en' }) {
   await home.click()
   await expect(page).toHaveURL(origin + path, { timeout: 30000 })
 }
+
+// Only the isolated dev-server harness needs this. Cold Home compilation can
+// emit a full Fast Refresh reload that cancels WebKit's actual navigation.
+export async function warmCabinetExitDocument(context, origin) {
+  assert.match(origin, /^http:\/\/(localhost|127\.0\.0\.1):\d+$/)
+  const response = await context.request.get(origin + '/')
+  try {
+    assert.equal(response.status(), 200, 'isolated public Home must compile successfully')
+    await response.body()
+  } finally {
+    await response.dispose()
+  }
+}

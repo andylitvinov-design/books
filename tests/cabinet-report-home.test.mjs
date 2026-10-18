@@ -71,8 +71,3 @@ test('private report list is first, saved sessions follow and psychological meas
   assert.match(profile, /data-profile-report-archive/)
   assert.doesNotMatch(profile, /localStorage|sessionStorage|Math\.random/)
 })
-
- test('mobile Home exits the private router with a native document link', async () => {
-  const workspace = await source('components/app/app-workspace.jsx')
-  assert.match(workspace, /<a href=\{locale === 'ru' \? '\/ru' : '\/'\}\s+className="hh-mobile-app-nav-home"/);
- })

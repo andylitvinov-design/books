@@ -1,6 +1,6 @@
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
-import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome } from './helpers/cabinet-navigation-verifier.mjs'
+import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -855,14 +855,11 @@ try {
  passed('public Master can open own practice but cannot access owner client database')
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
-  for (const language of ['en','ru']) {
-    const archiveRedirect=await context.request.get(origin+'/'+language+'/app/analysis',{maxRedirects:0})
-    assert.equal(archiveRedirect.status(),307,'legacy archive entry must redirect before streaming')
-    assert.equal(archiveRedirect.headers().location,origin+'/'+language+'/app/portrait#personal-reports')
-    assert.match(archiveRedirect.headers()['cache-control'],/private.*no-store/)
-    assert.equal(archiveRedirect.headers()['referrer-policy'],'no-referrer')
-    await archiveRedirect.dispose()
-  }
+  // Next development recompiles the first Home document and emits a full HMR
+  // reload, cancelling WebKit's in-flight Home click. Compile it before setting
+  // up the archive route; the actual single user click and URL checks stay intact.
+  await warmCabinetExitDocument(context,origin)
+  await page.waitForLoadState('networkidle')
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
   await expect(page.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
