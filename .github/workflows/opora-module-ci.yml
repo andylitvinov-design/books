@@ -41,4 +41,4 @@ jobs:
       - name: Verify AS-5.5 keyboard focus trap, process honesty, no-plan and individual exercise cases
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
-        run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs
+        run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
