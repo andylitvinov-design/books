@@ -36,9 +36,9 @@ async function scenario(locale, surface, fault, visible = true) {
   assert.ok(anchors.every(node => node.props.prefetch === false), 'No speculative tests or cabinet navigation');
   if (fault === 'old courses slot') { anchors[4].props['data-nav-item'] = 'courses'; anchors[4].props.href = '/' + locale + '/courses'; }
   if (fault === 'old cabinet slot') { anchors[5].props['data-nav-item'] = 'cabinet'; anchors[5].props.href = '/' + locale + '/client'; }
-  if (fault === 'wrong tests destination') anchors[4].props.href = '/' + locale + '/client';
+  if (fault === 'wrong events destination') anchors[4].props.href = '/' + locale + '/client';
   if (fault === 'wrong house destination') anchors[5].props.href = '/es/app';
-  if (fault === 'wrong tests label') anchors[4].props.children = 'My tests';
+  if (fault === 'wrong events label') anchors[4].props.children = 'My tests';
   if (fault === 'wrong house label') anchors[5].props.children = 'Cabinet';
   if (fault === 'wrong accessible name') anchors[4].props['aria-label'] = 'Wrong';
   if (fault === 'missing link') anchors.pop();
@@ -65,12 +65,12 @@ async function scenario(locale, surface, fault, visible = true) {
   await verify(bottom, { locale, surface: surface.startsWith('client') ? 'tests' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'library', 'services', 'academy', 'client', 'client/tests']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
-  for (const fault of ['old courses slot', 'old cabinet slot', 'wrong tests destination', 'wrong house destination', 'wrong tests label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
+  for (const surface of ['home', 'library', 'services', 'academy', 'events', 'client', 'client/tests']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
+  for (const fault of ['old courses slot', 'old cabinet slot', 'wrong events destination', 'wrong house destination', 'wrong events label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
     test(locale + ' exact mobile verifier rejects ' + fault, () => assert.rejects(scenario(locale, 'client/tests', fault)));
   }
   test(locale + ' hidden desktop bottom bar retains exact labels without requiring hidden accessible names', () => scenario(locale, 'client/tests', undefined, false));
-  test(locale + ' hidden desktop bottom bar rejects a stale label', () => assert.rejects(scenario(locale, 'client/tests', 'wrong tests label', false)));
+  test(locale + ' hidden desktop bottom bar rejects a stale label', () => assert.rejects(scenario(locale, 'client/tests', 'wrong events label', false)));
   for (const suffix of ['client/private-selector', 'client/tests/hidden', 'client/session']) test(locale + '/' + suffix + ' retains no public navigation', () => assert.equal(render(locale, '/' + locale + '/' + suffix), null));
 }
 for (const locale of ['en', 'ru']) test(locale + ' private account hides the public navigation', () => {

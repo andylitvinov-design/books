@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, House, Sparkles, GraduationCap, ClipboardList, HousePlus } from 'lucide-react';
+import { CalendarDays, House, Sparkles, GraduationCap, ClipboardList, HousePlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -7,7 +7,7 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, library: BookOpen, house: HousePlus };
+const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, events: CalendarDays, house: HousePlus };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
@@ -31,8 +31,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Keep the six high-priority destinations on the compact bottom bar. The
-        new love/intimacy hub remains prominent in the desktop menu and homepage. */}
+    {/* Keep six high-priority destinations on the bottom bar. Events is here;
+        Library lives beside the language picker and in the expanded menu. */}
     {mobileItems.map(item => {
       const Icon = icons[item.id as keyof typeof icons];
       const content = <><Icon aria-hidden="true" /><span>{item.label}</span></>;

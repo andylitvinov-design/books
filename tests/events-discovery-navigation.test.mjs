@@ -20,7 +20,7 @@ test('Four discovery tabs share one EN/RU/ES public destination model', () => {
   assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
 })
 
-test('Events is a first-party menu destination in every language while the existing six-item mobile bar is stable', () => {
+test('Events is a first-party mobile destination in all languages and Library stays in header', () => {
   const header = read('components/site-navigation.tsx')
   const locale = read('lib/public-locales.ts')
   const page = read('app/[locale]/events/page.tsx')
@@ -34,7 +34,7 @@ test('Events is a first-party menu destination in every language while the exist
   assert.match(header, /item.id === 'events'/)
   assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
-  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'library', 'house'])
+  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'events', 'house'])
 })
 
 test('Event page never invents upcoming dates or shows private unpublished entries', () => {
