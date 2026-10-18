@@ -1,0 +1,59 @@
+name: Holistic House growth journeys and safe sharing
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'data/growth-guides.ts'
+      - 'components/topic-growth-guide.tsx'
+      - 'components/topic-growth-guide.module.css'
+      - 'components/topic-journey-selector.tsx'
+      - 'components/topic-journey-selector.module.css'
+      - 'components/library-hub.tsx'
+      - 'components/app/portrait-recommendations.jsx'
+      - 'components/app/portrait-recommendations.module.css'
+      - 'components/app/development-program.jsx'
+      - 'app/[locale]/explore/[theme]/page.tsx'
+      - 'app/sitemap.ts'
+      - 'tests/growth-journey-public.test.mjs'
+      - '.github/workflows/hh-growth-journey.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-growth-journeys-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  growth-content-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Educational copy, privacy and cross-route integration tests
+        run: node --test tests/growth-journey-public.test.mjs
+      - name: Lint changed JS and TypeScript
+        run: >-
+          npx --no-install eslint
+          data/growth-guides.ts
+          components/topic-growth-guide.tsx
+          components/topic-journey-selector.tsx
+          components/library-hub.tsx
+          components/app/portrait-recommendations.jsx
+          components/app/development-program.jsx
+          'app/[locale]/explore/[theme]/page.tsx'
+          app/sitemap.ts
+      - name: TypeScript compatibility
+        run: npx --no-install tsc --noEmit
+      - name: Production build
+        run: npm run build

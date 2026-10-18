@@ -5,6 +5,7 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
 import type { PublicLocale } from "@/lib/public-locales";
+import { growthGuideFor } from "@/data/growth-guides";
 
 export type LibraryView = "latest" | "books" | "videos";
 
@@ -224,13 +225,27 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
       youtubeId, href: youtubeId ? "https://www.youtube.com/watch?v=" + youtubeId : video.href,
     }];
   });
+  const topicPictures: Record<string,string> = {
+    stress: '/images/holistic-house/hero-olive-incense.webp',
+    relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
+    business: '/images/holistic-house/course-focus-mountain-boy.webp',
+    energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
+    effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+  };
+  const growthFeed: LibraryFeedItem[] = ['stress','relationships','business','energy','effectiveness'].flatMap(theme => {
+    const guide = growthGuideFor(theme,locale);
+    return guide ? [{
+      id:'public-growth-'+theme,kind:'guide' as const,title:guide.title,
+      description:guide.lead,image:topicPictures[theme],href:'/'+locale+'/explore/'+theme,
+    }] : [];
+  });
   const guideFeed: LibraryFeedItem[] = guides.map(guide => ({
     id: guide.id, kind: "guide", title: guide.title,
     description: guide.description, image: guide.image, href: guide.href,
   }));
   const dated = [...publicFeed, ...articleFeed].sort((a, b) =>
     (Date.parse(b.publishedAt || "") || 0) - (Date.parse(a.publishedAt || "") || 0));
-  const feedItems = [...dated, ...siteVideoFeed, ...guideFeed];
+  const feedItems = [...dated, ...siteVideoFeed, ...growthFeed, ...guideFeed];
 
   return (
     <main className="library-shell" lang={locale}>
