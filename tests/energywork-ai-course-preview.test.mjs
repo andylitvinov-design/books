@@ -111,7 +111,7 @@ test('Mobile course uses teal five-step rail and remains accessible', () => {
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)
   assert.match(learner, /type="range" min="0" max="10"/)
   assert.match(learner, /type="radio"/)
-  assert.match(css, /\.lessonSteps/)
+  assert.match(css, /\.page\[data-course-theme\] \.journey/)
   assert.match(css, /\.reviewChecklist/)
   assert.match(css, /@media \(max-width: 760px\)/)
   assert.match(css, /@media \(max-width: 380px\)/)
