@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
+      - 'scripts/verify-public-assets.mjs'
+      - 'data/academy/catalog.ts'
+      - 'tests/seo-nightly-crawl.test.mjs'
       - 'app/sitemap.ts'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
@@ -16,6 +19,9 @@ on:
     paths:
       - '.github/workflows/hh-live-seo-audit.yml'
       - 'scripts/verify-live-sitemap.mjs'
+      - 'scripts/verify-public-assets.mjs'
+      - 'data/academy/catalog.ts'
+      - 'tests/seo-nightly-crawl.test.mjs'
       - 'data/seo.js'
       - 'app/[locale]/books/**'
       - 'app/books/**'

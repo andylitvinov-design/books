@@ -15,3 +15,16 @@ test('live sitemap monitor differentiates rate limit and en ru es missing page t
   assert.match(s,/statuses\.rateLimited/);
   assert.match(s,/translatedNotFound/);
 });
+
+test('public media crawler retries transport failures and validates remote HTTP 404',()=>{
+  const script=read('scripts/verify-public-assets.mjs'), academy=read('data/academy/catalog.ts');
+  assert.match(script,/requestWithRetry/);
+  assert.match(script,/attempt < 3/);
+  assert.match(script,/but GET/);
+  assert.match(script,/networkUnverified/);
+  assert.match(script,/passed_with_warnings/);
+  assert.match(script,/result.rateLimited\+\+/);
+  assert.match(academy,/unavailablePublicYouTubeIds/);
+  assert.match(academy,/OrdMvKn2Zg8/);
+  assert.match(academy,/!unavailablePublicYouTubeIds.has/);
+});
