@@ -85,13 +85,13 @@ try {
       await pause(5000)
     }
   }
-  for (const [target, slot, locale, id] of [
-    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34'],
-    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b'],
-    ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a'],
-    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847'],
-    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a'],
-    ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9'],
+  for (const [target, slot, locale, id, youtubeId] of [
+    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'Y4K4piEwwA8'],
+    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
+    ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
+    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847', 'AE8Pelpo424'],
+    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'Cz6SxXJNZbw'],
+    ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
     await navigate(target)
     if (slot === 'services-intro' && await page.locator('#method-videos').count()) {
@@ -114,9 +114,10 @@ try {
       await pause(1200)
       if (await play.count()) await play.click()
     }
-    await expect(block.locator('iframe')).toHaveAttribute('src', `https://app.heygen.com/embeds/${id}`, { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
+    await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
-  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos load exact HeyGen embeds on click`)
+  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos use their exact YouTube mirrors on click`)
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
