@@ -4,6 +4,7 @@ import { ReportVideoMaterialsEditor } from '@/components/report-video-materials-
 import { notFound, redirect } from 'next/navigation'
 
 import { PrescriptionForm } from '@/components/prescription-form'
+import { getReportTestOptions } from '@/lib/assessments/report-recommended-tests'
 import { AdminDocumentPanels } from '@/components/admin-document-panels'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { requireAdminRequest } from '@/lib/prescriptions/admin'
@@ -38,5 +39,5 @@ export default async function EditPrescriptionPage({ params }) {
 
   </section>}{deliveryEnabled() && prescription.clientId && prescription.kind !== 'report' && prescription.status === 'active' && <ReportVideoMaterialsEditor key={prescription.id} clientId={prescription.clientId}
   documentId={prescription.id} sourceConsultationId={prescription.consultationId||prescription.id}
-  locale={prescription.languagePreference==='ru'?'ru':'en'} />}<AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getConsultationRemedyOptions()} /></section></main>
+  locale={prescription.languagePreference==='ru'?'ru':'en'} />}<AdminDocumentPanels prescription={prescription} payment={payment} /><section id="edit-recommendation"><h2>Edit recommendation</h2><PrescriptionForm action={action} prescription={prescription} remedies={getConsultationRemedyOptions()} testOptions={getReportTestOptions()} /></section></main>
 }
