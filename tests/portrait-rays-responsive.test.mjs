@@ -174,9 +174,9 @@ test('missing scales keep actual test links and source data stays private',()=>{
     const missing=sector.axes.filter(axis=>!app.measured.includes(axis))
     assert.equal(testItLinks(tree).length,missing.length)
     for(const link of testItLinks(tree)){
-      const axis=link.props.href.split('axis=')[1]
+      const axis=new URL('https://holistichouse.vercel.app'+link.props.href).searchParams.get('axis')
       assert.ok(missing.includes(axis))
-      assert.equal(link.props.href,`/en/app/tests?explore=1&axis=${axis}`)
+      assert.equal(link.props.href,`/en/app/tests?explore=1&axis=${axis}&suggest=${encodeURIComponent(app.portrait.axisCandidates[axis].testKey)}`)
       assert.equal(link.props.prefetch,false)
     }
   }
