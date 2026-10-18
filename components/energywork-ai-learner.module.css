@@ -888,3 +888,15 @@
  .page[data-course-theme] .journey ol::before { top:14px; }
  .page[data-course-theme] .journeyLabel { font-size:8px;max-width:65px; }
 }
+
+.page[data-course-theme] .returnToReview {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  margin-top:10px;min-height:38px;padding:8px 11px;
+  border:1px solid rgba(110,237,232,.7);border-radius:12px;
+  background:rgba(8,106,115,.55);color:#eaffff;
+  font-size:12px;font-weight:750;cursor:pointer;
+}
+.page[data-course-theme] .returnToReview:disabled {opacity:.5;cursor:not-allowed;}
+.page[data-course-theme] .returnToReview:hover,
+.page[data-course-theme] .returnToReview:focus-visible {background:rgba(20,148,152,.68);}
+@media print { .returnToReview {display:none!important;} }
