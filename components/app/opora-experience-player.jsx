@@ -97,10 +97,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const moment=receipt?'receipt':SCENES[step]
   const actions=authored.exercises?.act?.choices||[]
   const activity=actions[actionIndex]||actions[0]||lesson?.antiStress?.skill||''
+  const practiceGuide=authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=authored.quote||lesson.aphorism||''
   const rating=answers.reflection
   const vote=answers.aphorism
+  const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
+    rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
     if(!receipt)visited.current.add(OPORA_EXPERIENCE_PRE_SAVE_KEYS[step])
     heading.current?.focus?.()
@@ -210,7 +213,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.soft}>{t.arriveHint}</p>
           </>}
           {moment==='practice'&&<>
-            <p className={styles.lead}>{t.practiceText}</p>
+            <p className={styles.lead}>{practiceGuide}</p>
             <p className={styles.action}>{activity}</p>
             <div className={styles.choiceRow}>
               <button type="button" className={styles.actionButton} disabled={locked}
@@ -267,14 +270,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </>}
           {receipt&&<>
             <p className={styles.lead}>{t.savedText}</p>
-            <div className={styles.receipt}>
+            <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
-            {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {{
-              useful:t.feelingBetter,partly:t.feelingPartial,unchanged:t.feelingSame,
-              uncomfortable:t.feelingHard,
-            }[rating]}</p>}
+            {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
           <small className={styles.disclaimer}>{t.noMedical}</small>
