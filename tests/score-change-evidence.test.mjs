@@ -93,3 +93,11 @@ test('reports make the distinction visible and nonzero questionnaire minima expl
   assert.match(dynamics,/Numeric differences describe self-reports/)
   assert.match(dynamics,/Разница баллов отражает самоотчёты/)
 })
+
+test('malformed historical dimension arrays are safely guarded in result components', () => {
+  const root = new URL('../', import.meta.url)
+  const trend = readFileSync(new URL('components/app/assessment-gauge.jsx', root), 'utf8')
+  const report = readFileSync(new URL('components/app/compact-assessment-report.jsx', root), 'utf8')
+  assert.match(trend, /Array\.isArray\(current\?\.dimensions\)/)
+  assert.match(report, /Array\.isArray\(result\?\.dimensions\)/)
+})
