@@ -405,6 +405,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const slide = slides[index] ?? slides[0]!;
   const total = slides.length;
   const completed = slide.kind === "finish";
+  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
+  const artSource = portraitArt ? "/images/holistic-house/reiki-practitioner-sunrise.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
@@ -538,7 +540,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
@@ -776,8 +778,13 @@ export function EnergyworkAiLearner({ locale }: Props) {
                 </div>
               ) : null}
             </div>
-            {slide.image ? (
-              <div className={styles.art}><Image src={slide.image} alt="" fill priority={index === 0} sizes="(max-width: 720px) 100vw, 42vw" /></div>
+            {artSource ? (
+              <div className={styles.art} data-reiki-person={portraitArt ? "true" : undefined}>
+                <Image src={artSource}
+                  alt={portraitArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
+                  fill priority={index === 0} unoptimized={portraitArt}
+                  sizes="(max-width: 720px) 100vw, 42vw" />
+              </div>
             ) : null}
             {slide.kind === "video" ? (
               <div className={styles.video}>
