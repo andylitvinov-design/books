@@ -183,7 +183,9 @@ export default async function BookReaderPage({ params }: PageProps) {
 
   const display = locale === "es" ? spanishBookText(book) : localizedBookText(book, locale);
   const document = await loadReaderDocument(book);
-  const readerHtml = document.content + (book.id === "alchemy-homeopathy-foundations" ? latestAlchemyBook01Html() : "");
+  const sourceHtml = document.content + (book.id === "alchemy-homeopathy-foundations" ? latestAlchemyBook01Html() : "");
+  // Localized header owns the sole H1; preserve the manuscript's title and anchors as H2.
+  const readerHtml = sourceHtml.replace(/<h1\b([^>]*)>/gi, "<h2$1>").replace(/<\/h1\s*>/gi, "</h2>");
   const coverUrl = "/media/" + book.mediaSeries + "/" + book.cover;
 
   return (

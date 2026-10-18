@@ -30,3 +30,19 @@ test("book routes expose locale canonical and a genuine legacy 301", () => {
  assert.match(reader,/se conserva en ruso/);
  assert.match(file("app/sitemap.ts"),/!pathname.startsWith\('\/books\/'\)/);
 });
+
+test("source sitemap excludes known 301 redirects without removing the canonical service", () => {
+  const sitemap = file("app/sitemap.ts");
+  for (const p of ["/en/services/psychohomeopathy", "/ru/services/psychohomeopathy",
+      "/en/services/andy-litvinov/homeopathy-consultation", "/ru/services/andy-litvinov/homeopathy-consultation"]) {
+    assert.ok(sitemap.includes("'" + p + "'"), p);
+  }
+  assert.match(sitemap, /knownServiceRedirects\.has\(pathname\)/);
+  assert.match(sitemap, /alchemy-of-soul/);
+});
+test("localized book has one page-level H1 and nested manuscript H1 demoted", () => {
+  const reader = file("app/[locale]/books/[bookId]/page.tsx");
+  assert.match(reader, /<h1>\{display\.title\}<\/h1>/);
+  assert.match(reader, /sourceHtml\.replace/);
+  assert.match(reader, /h2\$1/);
+});
