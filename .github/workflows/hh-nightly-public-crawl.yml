@@ -1,0 +1,56 @@
+name: Holistic House nightly public URL / media crawl
+on:
+  schedule:
+    # GitHub schedules run only from the DEFAULT branch, so this lives there.
+    # 07:15 UTC is 03:15 EDT / 02:15 EST in Toronto.
+    - cron: '15 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-nightly-public-crawl
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout canonical production sources (not the historical default branch)
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify full sitemap (200, hreflang, canonical, 404, 429)
+        run: node scripts/verify-live-sitemap.mjs
+      - name: Verify public HTML links and image sources
+        if: always()
+        run: node scripts/verify-public-assets.mjs
+      - name: Publish issue counts in Actions summary
+        if: always()
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, existsSync, appendFileSync } from "node:fs";
+            const lines = ["## Holistic House nightly public link audit", "Date (UTC): "+new Date().toISOString()];
+            for (const [p,label] of [["artifacts/seo-live-audit.json","Sitemap"],["artifacts/seo-nightly-links.json","Links and images"]]) {
+              if (!existsSync(p)) { lines.push(label+": not produced (check job logs)"); continue; }
+              const d=JSON.parse(readFileSync(p,"utf8"));
+              lines.push(label+": "+(d.passed===false||d.status==="failed"?"FAILED":"completed"));
+              lines.push("URLs/pages checked: "+(d.urlsChecked??d.pages??"n/a")+", errors: "+(d.errors?.length??d.errorCount??0));
+              lines.push("429 responses: "+(d.statuses?.rateLimited??d.rateLimited??0));
+              if(d.images!==undefined) lines.push("Images: "+d.images+", internal: "+d.internalLinks+", external: "+d.externalLinks);
+              for (const error of (d.errors||[]).slice(0,15)) lines.push("- "+JSON.stringify(error));
+            }
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n")+"\n");
+          '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-nightly-site-crawl-${{ github.run_id }}
+          path: |
+            artifacts/seo-live-audit.json
+            artifacts/seo-nightly-links.json
+          if-no-files-found: warn
+          retention-days: 14
