@@ -85,6 +85,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [actionIndex,setActionIndex]=useState(0)
+  const [practiceReport,setPracticeReport]=useState(
+    data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
+    data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
   const [showHelp,setShowHelp]=useState(false)
   const [safety,setSafety]=useState(false)
   const [error,setError]=useState('')
@@ -123,15 +126,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   function selectAction(index){
     if(locked)return
     setActionIndex(index)
-    setAnswers(a=>({...a,actChoice:['one','two','three'][index],act:undefined}))
+    setPracticeReport(null)
   }
   function tryStatus(value){
     if(locked)return
-    // The displayed, version-pinned exercise is the one being reported.
-    // A positive self-report includes its precise chosen card; merely
-    // reading or opening the screen never implies that practice happened.
-    setAnswers(a=>({...a,act:value,
-      actChoice:['tried','partly'].includes(value)?['one','two','three'][actionIndex]:undefined}))
+    // Report the guide as an experience, NOT as having executed the
+    // original AS-5.5 multiple-choice exercise. The old exercise answers
+    // remain absent so neither the receipt nor analytics invents an action.
+    setPracticeReport(value)
   }
   function next(){
     if(locked)return
@@ -164,14 +166,14 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     setSaving(true);setError('')
     try{
       if(!operation.current)operation.current=crypto.randomUUID()
-      const attempted=['tried','partly'].includes(safe.answers.act)
+      const attempted=['tried','partly'].includes(practiceReport)
       const response=await onSession({
         day:cycle.day,lessonId:lesson.id,operationId:operation.current,
         feedback:rating==='uncomfortable'?'uncomfortable':rating==='unchanged'?'neutral':
           rating==='useful'||rating==='partly'?'helped':'skip',
         beforeNow:null,afterNow:null,practiceWindow:'practice_v6',
         aphorismResponse:safe.answers.aphorism||null,
-        practiceAttempt:attempted?(safe.answers.act==='tried'?'tried':'simplified'):null,
+        practiceAttempt:attempted?(practiceReport==='tried'?'tried':'simplified'):null,
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
         opora54:safe,visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
@@ -186,7 +188,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='practice'?t.learn:
     moment==='feel'?t.feel:
     moment==='affirmation'?t.quote:t.keep
-  const reportedAttempt=['tried','partly'].includes(answers.act)
+  const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-experience-first="as-5.6" data-course-one-screen="v3">
@@ -227,7 +229,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.chips} role="group" aria-label={t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
-                  aria-pressed={answers.act===value} onClick={()=>tryStatus(value)}>{label}</button>)}
+                  aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
             </div>
             <button type="button" className={styles.linkHint} disabled={locked}
               onClick={()=>setShowHelp(s=>!s)} aria-expanded={showHelp}>
