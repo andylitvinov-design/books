@@ -218,7 +218,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const [saving,setSaving]=useState(false)
   const saveOp=useRef(null),visited=useRef(new Set([OPORA54_PRE_SAVE_KEYS[0]]))
   const heading=useRef(null),scroller=useRef(null)
-  const safetyTrigger=useRef(null),safetyFirstAction=useRef(null),safetyWasOpened=useRef(false)
+  const safetyTrigger=useRef(null),safetyFirstAction=useRef(null),safetyReturnAction=useRef(null),safetyExitAction=useRef(null),safetyWasOpened=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=slides.length
   const slide=receipt?null:slides[step]
   const role=slide?.kind
@@ -240,6 +240,15 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(safety){safetyWasOpened.current=true;safetyFirstAction.current?.focus?.()}
     else if(safetyWasOpened.current)safetyTrigger.current?.focus?.()
   },[safety])
+  function handleSafetyKeyDown(event){
+    if(event.key==='Escape'){event.preventDefault();setSafety(false);return}
+    if(event.key!=='Tab')return
+    // Tab stays within the 3 safe actions; no invisible exercise buttons.
+    const controls=[safetyFirstAction.current,safetyReturnAction.current,safetyExitAction.current].filter(Boolean)
+    const focused=controls.indexOf(event.target)
+    if(event.shiftKey&&focused<=0){event.preventDefault();controls[controls.length-1]?.focus?.()}
+    else if(!event.shiftKey&&focused===controls.length-1){event.preventDefault();controls[0]?.focus?.()}
+  }
   function back(){if(!locked){setError('');setStep(i=>Math.max(0,i-1))}}
   function next(){
     if(locked)return
@@ -517,13 +526,13 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       </footer>
     </div>
     {safety&&<div className={styles.safetyShade} role="alertdialog" aria-modal="true" aria-label={t.safetyTitle}
-      onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();setSafety(false)}}}>
+      onKeyDown={handleSafetyKeyDown}>
       <div className={styles.safetyCard}>
         <ShieldCheck size={35} color="#008d9e"/>
         <h2>{t.safetyTitle}</h2><p>{t.safetyBody}</p>
         <button type="button" ref={safetyFirstAction} onClick={neutralChoice}>{t.safetyNeutral}</button>
-        <button type="button" onClick={()=>setSafety(false)}>{t.safetyReturn}</button>
-        <button type="button" className={styles.exit} onClick={onClose}>{t.safetyFinish}</button>
+        <button type="button" ref={safetyReturnAction} onClick={()=>setSafety(false)}>{t.safetyReturn}</button>
+        <button type="button" ref={safetyExitAction} className={styles.exit} onClick={onClose}>{t.safetyFinish}</button>
       </div>
     </div>}
   </div>
