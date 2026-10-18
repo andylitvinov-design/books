@@ -114,3 +114,216 @@
 .changeChoice{justify-self:start;min-height:36px;padding:6px 11px;border-radius:10px;
   background:#fff;border:1px solid #b6dcdf;color:#216d7e;font-size:12px;
   font-weight:750;cursor:pointer}
+
+
+/* OPORA scenic lesson system · 2026-10-18
+   One approved natural photograph throughout every 15-step AS2 lesson.
+   The image is decorative; tasks, answer semantics, pause and private
+   progress remain in the original component. Small-screen content always
+   retains scrolling as an accessible fallback instead of clipping. */
+.overlay{background:#0a5366}
+.frame{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:#124e64;
+}
+.scenicBackdrop{
+  position:absolute;inset:0;z-index:0;overflow:hidden;
+  pointer-events:none;background:#326b79;
+}
+.scenicPhoto{
+  display:block;width:100%;height:100%;
+  object-fit:cover;object-position:59% 45%;
+  filter:saturate(.93) contrast(1.015);
+}
+.scenicBackdrop::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(6,42,65,.54) 0%,
+    rgba(10,70,79,.12) 29%,
+    rgba(3,55,70,.23) 59%,
+    rgba(5,38,57,.62) 100%);
+}
+.header,.scroll,.footer{position:relative;z-index:1}
+.header{
+  min-height:60px;
+  border-bottom:1px solid rgba(225,252,250,.26);
+  background:linear-gradient(180deg,rgba(6,47,68,.82),rgba(13,69,84,.60));
+  color:#f3ffff;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.progressLabel{color:#f4ffff;text-shadow:0 1px 4px #1038488c}
+.track{background:rgba(237,255,253,.29)}
+.fill{background:linear-gradient(90deg,#83e8dd,#17b8c4);box-shadow:0 0 12px #5fe5d84a}
+.controlIcon,.safetyButton{
+  border:1px solid rgba(240,255,253,.47);
+  background:rgba(241,255,254,.86);
+  color:#234c5f;
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+}
+.scroll{padding:clamp(8px,2.3vw,18px) clamp(10px,3vw,23px) 10px;scrollbar-width:thin}
+.card{
+  min-height:100%;
+  padding:clamp(13px,3vw,22px);
+  gap:clamp(7px,1.2vh,11px);
+  border:1px solid rgba(247,255,255,.67);
+  border-radius:24px;
+  background:linear-gradient(155deg,rgba(241,253,252,.84),rgba(227,249,248,.72));
+  box-shadow:0 13px 36px rgba(0,34,53,.27),inset 0 1px 0 #ffffffba;
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+}
+.heroIcon{
+  position:relative;display:flex;align-items:flex-end;justify-content:flex-end;
+  align-self:stretch;flex:none;box-sizing:border-box;
+  width:100%;height:clamp(64px,11dvh,115px);
+  margin:0;padding:9px 11px;
+  border:1px solid rgba(246,255,254,.5);
+  border-radius:16px;border-bottom:0;
+  background:linear-gradient(180deg,rgba(4,50,68,.06),rgba(5,52,75,.42)),
+    url('/images/holistic-house/course-focus-mountain-boy.webp') center 42%/cover no-repeat;
+  color:#fbffff;
+  box-shadow:0 7px 20px rgba(9,58,75,.22);
+}
+.heroIcon svg{width:20px;height:20px;filter:drop-shadow(0 1px 5px #063246)}
+.eyebrow{color:#327b88;font-size:10px;letter-spacing:.065em}
+.title{
+  color:#153b55;font-family:Georgia,'Times New Roman',serif;
+  font-weight:700;letter-spacing:-.025em;line-height:1.2;
+  font-size:clamp(23px,4.9vw,31px);
+}
+.prompt{color:#224e66;line-height:1.46;margin:0;font-size:clamp(14px,3.5vw,16px)}
+.options{gap:7px}
+.options button{
+  min-height:46px;border:1px solid rgba(196,226,231,.88);
+  border-radius:15px;background:rgba(255,255,255,.89);
+  color:#1e4b63;box-shadow:0 3px 0 rgba(119,177,183,.31);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.options button.selected{
+  background:rgba(219,252,243,.97);border-color:#0ea5a9;
+  box-shadow:0 3px 0 #7ad1c6;color:#006b7b;
+}
+.aphorism{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(22px,5.4vw,33px);
+  font-style:italic;font-weight:400;
+  letter-spacing:-.014em;line-height:1.37;
+}
+.disclaimer{padding-top:5px;color:#477485;font-size:10px}
+.footer{
+  border-top:1px solid rgba(246,255,255,.36);
+  background:linear-gradient(180deg,rgba(238,251,250,.91),rgba(241,255,253,.97));
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  gap:9px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+}
+.back{min-height:46px;border-color:#b4dbe0;background:#ffffffbb;color:#285a6f}
+.primary{
+  min-height:48px;
+  border-bottom:3px solid #057a8b;border-radius:14px;
+  background:linear-gradient(105deg,#1babb9,#047e9f);
+  box-shadow:0 4px 13px rgba(4,93,112,.17);
+}
+
+/* The quotation is editorial text on the photograph, not a pastel inset.
+   Use a gentle dark scrim only on that step to maintain legibility. */
+.frame[data-scene-role="aphorism"] .card{
+  justify-content:flex-end;
+  background:linear-gradient(180deg,
+    rgba(10,62,77,.08) 0%,
+    rgba(9,57,75,.24) 39%,
+    rgba(5,42,64,.79) 100%);
+  border-color:rgba(231,255,254,.34);
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+}
+.frame[data-scene-role="aphorism"] .heroIcon{
+  margin-top:auto;align-self:center;justify-content:center;
+  width:38px;height:38px;padding:7px;
+  border:1px solid rgba(243,255,255,.55);
+  border-radius:50%;background:rgba(230,252,250,.16);
+  box-shadow:0 5px 20px rgba(0,35,53,.22);
+}
+.frame[data-scene-role="aphorism"] .eyebrow{color:#d3f7f1;text-shadow:0 1px 5px #173c50}
+.frame[data-scene-role="aphorism"] .title{
+  color:#ffffff;font-weight:650;text-shadow:0 2px 12px rgba(0,29,49,.48);
+}
+.frame[data-scene-role="aphorism"] .aphorism{
+  color:#fffdf1;background:transparent;border:0;border-radius:0;
+  padding:4px 4px 9px;margin:0 auto;max-width:580px;
+  text-align:center;text-wrap:balance;
+  font-size:clamp(24px,5.8vw,36px);
+  text-shadow:0 2px 13px rgba(0,28,47,.78);
+}
+.frame[data-scene-role="aphorism"] .aphorism::before{
+  content:"“";display:block;margin-bottom:-15px;
+  font:italic 50px/.9 Georgia,serif;color:#b7f1e2;
+}
+.frame[data-scene-role="aphorism"] .options button{
+  background:rgba(246,255,255,.89);
+  border-color:rgba(244,255,255,.75);
+  color:#17475f;
+}
+.frame[data-scene-role="aphorism"] .options button.selected{
+  background:#c7f4e8;color:#066374;border-color:#42c5be;
+}
+.frame[data-scene-role="aphorism"] .feedback{
+  background:rgba(225,252,243,.94);color:#145d5b;
+}
+.frame[data-scene-role="aphorism"] .disclaimer{
+  color:#e0f2f3;margin-top:0;
+  text-shadow:0 1px 7px rgba(0,26,43,.7);
+}
+.frame[data-scene-role="complete"] .heroIcon{
+  background-position:center 60%;
+}
+
+/* One step per mobile viewport, including Safari browser chrome.
+   Longer translated copy / large text may scroll inside .scroll without
+   hiding answers, the footer action or the safe-pause control. */
+@media(max-width:430px){
+  .header{min-height:54px;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 7px}
+  .controlIcon{width:37px;height:39px;border-radius:11px}
+  .safetyButton{height:39px;padding:0 9px;border-radius:12px;font-size:11px}
+  .progressWrap{gap:5px}
+  .progressLabel{font-size:10px}
+  .track{height:7px}
+  .scroll{padding:7px 9px 8px}
+  .card{gap:7px;padding:12px 12px 10px;border-radius:21px}
+  .heroIcon{height:clamp(55px,9dvh,82px);padding:7px 9px;border-radius:13px}
+  .heroIcon svg{width:18px;height:18px}
+  .eyebrow{font-size:9px;line-height:1.3}
+  .title{font-size:clamp(22px,5.5vw,27px);line-height:1.16}
+  .prompt{font-size:clamp(13px,3.4vw,15px);line-height:1.38}
+  .options{gap:6px}
+  .options button{min-height:43px;padding:9px 11px;font-size:13px;line-height:1.3;border-radius:12px}
+  .rating,.ease{padding:9px;gap:6px}
+  .ratingGrid button,.easeOptions button{min-height:35px}
+  .activityPrompt{font-size:12px}
+  .hintToggle{min-height:38px;padding:7px 10px}
+  .gentle,.feedback{font-size:11px;line-height:1.35}
+  .disclaimer{font-size:9px;line-height:1.3;padding-top:2px}
+  .footer{gap:7px;padding:7px 10px calc(7px + env(safe-area-inset-bottom))}
+  .back{min-height:43px;padding:0 12px;font-size:13px}
+  .primary{min-height:45px;font-size:14px;border-radius:13px}
+  .frame[data-scene-role="aphorism"] .heroIcon{width:33px;height:33px;padding:5px}
+  .frame[data-scene-role="aphorism"] .aphorism{
+    padding:0 3px 4px;font-size:clamp(22px,5.7vw,28px);line-height:1.34;
+  }
+  .frame[data-scene-role="aphorism"] .aphorism::before{
+    font-size:40px;margin-bottom:-11px;
+  }
+}
+@media(max-height:680px){
+  .scroll{padding-top:5px;padding-bottom:5px}
+  .card{gap:6px;padding-top:9px;padding-bottom:8px}
+  .heroIcon{height:48px}
+  .title{line-height:1.13}
+  .options button{min-height:40px;padding-block:8px}
+  .frame[data-scene-role="aphorism"] .heroIcon{height:27px;width:27px}
+  .frame[data-scene-role="aphorism"] .aphorism{font-size:clamp(20px,5.2vw,26px)}
+  .disclaimer{font-size:9px}
+}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more){
+  .card{background:#f4fdfc;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .frame[data-scene-role="aphorism"] .card{background:#174d62}
+  .options button{background:#fff}
+  .header,.footer{-webkit-backdrop-filter:none;backdrop-filter:none}
+}
