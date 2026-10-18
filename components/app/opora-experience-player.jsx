@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
-import {oporaExperienceGuide} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -17,22 +17,22 @@ const WORDS={
     minute:'Один спокойный момент',learn:'Маленькая практика',feel:'Что изменилось?',
     quote:'Мысль сегодняшнего дня',keep:'Возьмите с собой',
     arriveTitle:'Можно просто побыть здесь',
-    arriveText:'Оглянитесь. Найдите один приятный или нейтральный цвет рядом. Не спешите — вы уже начали.',
+    arriveText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     stepLabel:'Сегодня можно попробовать',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
-    gentle:'Ничего не нужно делать идеально. Можно остановиться в любой момент.',
-    feelText:'Побудьте несколько мгновений. Не нужно специально добиваться спокойствия. Просто сравните ощущения, если хочется.',
+    gentle:'Если некомфортно, просто посмотрите на нейтральный предмет.',
+    feelText:'Заметьте, изменилось ли что-то хотя бы немного.',
     feelingBetter:'Стало немного легче',feelingSame:'Примерно так же',feelingPartial:'Есть небольшие изменения',feelingHard:'Стало некомфортно',
     feelingThanks:'Спасибо, что заметили. Любой ответ подходит; состояние не оценивается баллами.',
-    quoteText:'Это не правило и не экзамен. Какая реакция ближе именно вам?',
+    quoteText:'Откликается ли вам эта мысль?',
     agree:'Откликается',unsure:'Пока не уверен(а)',disagree:'Не согласен(на)',
     quoteThanks:'Это только ваша позиция, правильного ответа нет.',
-    keepText:'Одной маленькой опоры достаточно. Можно ничего не планировать.',
+    keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
-    saved:'Ваш момент сохранён',savedText:'Вы уделили себе время. Даже если состояние не изменилось, это не ошибка.',
+    saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
     takeaway:'Ваш возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
@@ -41,7 +41,8 @@ const WORDS={
     safetyTitle:'Здесь можно остановиться',
     safetyBody:'Не нужно продолжать через дискомфорт. По желанию найдите взглядом обычный предмет вокруг. Дышите естественно.',
     safetyNeutral:'Вернуться с нейтральной опорой',safetyBack:'Вернуться',safetyEnd:'Закончить без сохранения',
-    learnMore:'Показать мягкую подсказку',noMedical:'Самостоятельная образовательная практика, не лечение и не диагностика.',
+    ideaTitle:'Бережная мысль',reminderTitle:'Одно напоминание',feelTitle:'Как сейчас?',
+    learnMore:'Показать мягкую подсказку',noMedical:'Самостоятельная практика, не диагностика и не лечение.',
   },
   en:{
     day:'Day',of:'of',pause:'Pause',close:'End lesson',back:'Back',next:'Continue',
@@ -49,22 +50,22 @@ const WORDS={
     minute:'One quiet moment',learn:'A small practice',feel:'What do you notice?',
     quote:'A thought for today',keep:'Take this with you',
     arriveTitle:'You can arrive just as you are',
-    arriveText:'Look around. Find one pleasant or neutral colour nearby. There is no hurry — you have already begun.',
+    arriveText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
     stepLabel:'A gentle step for today',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
-    gentle:'Nothing needs to be done perfectly. You can stop at any moment.',
-    feelText:'Stay here a few moments. You do not have to make yourself calm. Just notice what is here, if you wish.',
+    gentle:'If uncomfortable, simply look at a neutral object instead.',
+    feelText:'Notice whether anything feels a little different.',
     feelingBetter:'A little easier',feelingSame:'About the same',feelingPartial:'A small shift',feelingHard:'Uncomfortable',
     feelingThanks:'Thank you for noticing. There is no score or right answer.',
-    quoteText:'This is not a rule or a test. What feels true for you?',
+    quoteText:'Does this idea resonate with you?',
     agree:'This resonates',unsure:'Not sure yet',disagree:'I disagree',
     quoteThanks:'Your response is yours. There is no correct answer.',
-    keepText:'One small source of support is enough. You do not need a plan.',
+    keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
-    saved:'Your moment is saved',savedText:'You made time for yourself. No change in how you feel is not a failure.',
+    saved:'Your moment is saved',savedText:'You made a little space for yourself.',
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
     takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
@@ -72,13 +73,41 @@ const WORDS={
     safetyTitle:'You may stop here',
     safetyBody:'You do not need to push through discomfort. If you wish, look for an ordinary object around you. Let your breath remain natural.',
     safetyNeutral:'Return with a neutral anchor',safetyBack:'Go back',safetyEnd:'End without saving',
-    learnMore:'Show gentle guidance',noMedical:'Self-guided education, not treatment or diagnosis.',
+    ideaTitle:'A gentle idea',reminderTitle:'One reminder',feelTitle:'How do you feel now?',
+    learnMore:'Show gentle guidance',noMedical:'Self-guided learning, not diagnosis or treatment.',
   },
+}
+WORDS.es = {
+  ...WORDS.en,
+  day:'Día',pause:'Pausa',close:'Cerrar lección',back:'Atrás',next:'Continuar',
+  save:'Guardar mi práctica',saving:'Guardando…',finish:'Mapa del curso',
+  minute:'UN MOMENTO TRANQUILO',learn:'Una práctica pequeña',feel:'¿Qué notas?',
+  quote:'UNA IDEA PARA HOY',keep:'LLÉVATE ESTO',
+  arriveTitle:'Puedes llegar tal como estás',
+  arriveText:'Encuentra con la mirada un detalle agradable o neutro.',
+  practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
+  stepLabel:'UN PASO AMABLE',tryAfter:'¿Cómo te fue?',
+  tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
+  gentle:'Si te incomoda, mira un objeto neutro.',
+  feelText:'Nota si algo cambió, aunque sea un poco.',
+  feelingBetter:'Un poco mejor',feelingSame:'Más o menos igual',feelingPartial:'Un pequeño cambio',feelingHard:'Incómodo',
+  quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
+  keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
+  saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
+  attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
+  takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
+  noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
+  incomplete:'Abre los momentos restantes antes de guardar.',
+  safetyTitle:'Puedes parar aquí',
+  safetyBody:'No tienes que seguir si te incomoda. Mira un objeto neutro y respira con naturalidad.',
+  safetyNeutral:'Volver con una referencia neutra',safetyBack:'Volver',safetyEnd:'Salir sin guardar',
+  learnMore:'Ver una pista suave',noMedical:'Aprendizaje personal, no diagnóstico ni tratamiento.',
+  ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
 const SCENES=['arrive','practice','feel','affirmation','save']
 
 export default function OporaExperiencePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
-  const lang=locale==='ru'?'ru':'en',t=WORDS[lang]
+  const lang=locale==='ru'?'ru':locale==='es'?'es':'en',t=WORDS[lang]
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
   const [step,setStep]=useState(hasSaved?OPORA_EXPERIENCE_PRE_SAVE_KEYS.length:0)
@@ -97,9 +126,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=OPORA_EXPERIENCE_PRE_SAVE_KEYS.length
   const moment=receipt?'receipt':SCENES[step]
+  const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
-  const plan=authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
-  const originalQuote=authored.quote||lesson.aphorism||''
+  const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
+  const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
   const rating=answers.reflection
   const vote=answers.aphorism
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
@@ -177,13 +207,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   const title=receipt?t.saved:
     moment==='arrive'?t.arriveTitle:
-    moment==='practice'?t.learn:
-    moment==='feel'?t.feel:
-    moment==='affirmation'?t.quote:t.keep
+    moment==='practice'?dayCopy?.title||t.learn:
+    moment==='feel'?t.feelTitle:
+    moment==='affirmation'?t.ideaTitle:t.reminderTitle
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
-    data-opora-experience-first="as-5.6" data-course-one-screen="v3">
+    data-opora-experience-first="as-5.6" data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
@@ -207,7 +237,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
           {moment==='arrive'&&<>
             <p className={styles.lead}>{t.arriveText}</p>
-            <p className={styles.soft}>{t.arriveHint}</p>
           </>}
           {moment==='practice'&&<>
             <p className={styles.lead}>{practiceGuide}</p>
@@ -230,7 +259,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={rating===value} onClick={()=>changeFeeling(value)}>{label}</button>)}
             </div>
-            {rating&&<p className={styles.soft} role="status">{t.feelingThanks}</p>}
           </>}
           {moment==='affirmation'&&<>
             <blockquote className={styles.quotation}>{originalQuote}</blockquote>
@@ -240,7 +268,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={vote===value} onClick={()=>setAnswers(a=>({...a,aphorism:value}))}>{label}</button>)}
             </div>
-            {vote&&<p className={styles.soft} role="status">{t.quoteThanks}</p>}
           </>}
           {moment==='save'&&<>
             <p className={styles.lead}>{t.keepText}</p>
@@ -262,7 +289,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
-          <small className={styles.disclaimer}>{t.noMedical}</small>
+          {(moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
