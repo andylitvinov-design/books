@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import type { BusinessLocale } from "@/data/business-consulting-copy";
@@ -73,7 +74,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     if(chosen==="free"||chosen==="express"||chosen==="full"||chosen==="mentoring") setFormat(chosen);
   },[]);
   function edit() {setSuccess(false);setError("");operation.current=null}
-  async function submit(event:React.FormEvent<HTMLFormElement>) {
+  async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if(busy||success)return;
     if(!email.trim()&&!phone.trim()){setError(t.contactError);return}
