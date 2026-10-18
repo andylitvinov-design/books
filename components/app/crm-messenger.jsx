@@ -85,7 +85,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
       requestId:crypto.randomUUID(),purpose:'customer_reply'})
     if(!result)return
     setText('')
-    setStatus(result.status==='accepted'?t.accepted:t.unknown)
+    setStatus(result.status==='accepted'?t.accepted:result.status==='failed'?t.sendError:t.unknown)
   }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
@@ -127,7 +127,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
       <div className={styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
           <div className={styles.chatHeader}><strong>{selected.name}</strong>
-            <span>{names[selected.channel]} · {selected.reply.ok?'Reply available':replyReason(selected.reply.reason,lang)}</span>
+            <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
               onClick={async()=>{await action('read',{threadId:selected.id});await refresh(selected.id)}}>{t.read}</button>}
           </div>
