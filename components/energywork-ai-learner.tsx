@@ -655,7 +655,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <p>{t.milestoneNote}</p>
                 </div>
               ) : null}
-              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId} /> : null}
+              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.id === "paths-04" ? (
