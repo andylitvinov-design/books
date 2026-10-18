@@ -109,3 +109,17 @@ test('Results mobile view collapses extra measured scales and score intervals by
   assert.match(view, /data-current-score-band/)
   assert.match(view, /<details className=\{styles\.levelDetails\} data-other-score-bands>/)
 })
+
+test('unverified saved history is labelled and cannot masquerade as a validated score', () => {
+  const verified = base('verified', '2026-09-20T12:00:00Z', 4)
+  const rejected = { ...base('rejected', '2026-10-15T12:00:00Z', 7), contentHash: 'wrong-sha' }
+  const view = buildTestDynamicsGroups([verified, rejected], 'ru')
+  assert.equal(view.groups.length, 1)
+  assert.equal(view.groups[0].count, 2, 'the original raw records remain visible')
+  assert.equal(view.groups[0].unverifiedCount, 1, 'the rejected record is explicitly marked')
+  assert.equal(view.groups[0].scales[0].delta, null, 'invalid source must not establish a trend')
+  assert.equal(buildTestDynamicsGroups([verified], 'en').groups[0].unverifiedCount, 0)
+  const page = readFileSync(new URL('../components/app/test-dynamics.jsx', import.meta.url), 'utf8')
+  assert.match(page, /data-dynamics-unverified-history/)
+  assert.match(page, /не считаются подтверждёнными психологическими измерениями/)
+})
