@@ -62,6 +62,7 @@ test('missing and unsafe scores do not become gaps or fabricated zeroes', () => 
 test('largest positive personal goal gaps rank first, not clinically or by questionnaire total', () => {
   const chosen=goals()
   chosen.targets.body=90
+  chosen.targets.work=90 // Explicitly opted-in work target, not an assumed 80% clinical norm.
   chosen.details.energy=50
   const profile=rankDevelopmentGaps([
     score('sleep',35),
