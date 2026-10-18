@@ -130,17 +130,17 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
       <p>{c.privacy} {c.noConsent}</p>
     </div>}
-    {!data&&<div className={styles.unavailable} role={notice?'alert':'status'}>
+    {!data&&activeSection!=='messages'&&<div className={styles.unavailable} role={notice?'alert':'status'}>
       <p>{notice||c.loading}</p>
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
+    {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />}
     {data&&<>
       {activeSection==='overview'&&<>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
       <CrmBusinessEnquiries locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
       <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
       </>}
-      {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />}
       {activeSection==='contacts'&&<>
       <div className={styles.formCard}>
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
