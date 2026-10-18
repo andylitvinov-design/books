@@ -18,12 +18,21 @@ function localizedEntry(baseUrl, pathname) {
 
 export function getSitemapEntries(baseUrl) {
   const base = new URL(baseUrl).toString()
-  const booksEntries = books.map((book) => ({
-    url: at(base, `/books/${book.id}`),
-    lastModified: new Date('2026-09-04T00:00:00.000Z'),
-    changeFrequency: 'monthly',
-    priority: 0.6,
-  }))
+  const bookLocales = ['en', 'ru', 'es']
+  const booksEntries = books
+    .filter(book => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(book.id))
+    .flatMap(book => bookLocales.map(locale => ({
+      url: at(base, `/${locale}/books/${book.id}`),
+      lastModified: new Date('2026-10-17T00:00:00.000Z'),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+      alternates: { languages: {
+        en: at(base, `/en/books/${book.id}`),
+        ru: at(base, `/ru/books/${book.id}`),
+        es: at(base, `/es/books/${book.id}`),
+        'x-default': at(base, `/en/books/${book.id}`),
+      } },
+    })))
   const homeopathyIndexes = ['/ru/homeopathy', '/en/homeopathy', '/ru/homeopathy/remedies', '/en/homeopathy/remedies']
     .map((pathname) => localizedEntry(base, pathname))
   const servicesIndexes = ['/ru/services', '/en/services'].map((pathname) => localizedEntry(base, pathname))

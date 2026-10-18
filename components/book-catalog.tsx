@@ -129,7 +129,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
               if (!book) return null;
               const display = localizedBookText(book, locale);
               return (
-                <Link href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+                <Link href={"/" + locale + "/books/" + book.id} key={book.id}>
                   <small>{readingStepLabel(locale, index)}</small>
                   <strong>{display.title}</strong>
                 </Link>
@@ -175,7 +175,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
             const display = localizedBookText(book, locale);
             const role = materialRoleLabel(locale, getBookMaterialRole(book.id));
             return (
-              <Link className="catalog-card" href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+              <Link className="catalog-card" href={"/" + locale + "/books/" + book.id} key={book.id}>
                 <figure className="catalog-cover">
                   <Image
                     alt={locale === "ru" ? "Обложка: " + display.title : "Cover: " + display.title}

@@ -76,7 +76,7 @@ for (const item of entries) {
 // Never request private or non-canonical URL families.
 const publicEntries = entries.filter(e => !privatePattern.test(e.path));
 const routesToCheck = sampleLimit > 0 ? publicEntries.slice(0, sampleLimit) : publicEntries;
-const statuses = { ok: 0, redirect: 0, invalid: 0, network: 0 };
+const statuses = { ok: 0, redirect: 0, invalid: 0, network: 0, rateLimited: 0 };
 let cursor = 0;
 async function worker() {
   while (cursor < routesToCheck.length) {
@@ -89,6 +89,7 @@ async function worker() {
         logError("Sitemap URL redirects: " + entry.path + " -> " + (response.headers.get("location") ?? "?"));
       } else {
         statuses.invalid++;
+        if (response.status === 429) statuses.rateLimited++;
         logError("Sitemap URL HTTP " + response.status + ": " + entry.path);
       }
     } catch (e) {
@@ -107,6 +108,8 @@ const spotlight = [
   "/es/homeopathy/remedies/arnica", "/en/services",
   "/es/services", "/en/services/free-situation-review",
   "/es/services/free-situation-review", "/es/about",
+  "/en/books/alchemy-homeopathy-foundations", "/ru/books/alchemy-homeopathy-foundations",
+  "/es/books/alchemy-homeopathy-foundations",
 ];
 const pageReport = [];
 for (const path of spotlight) {
@@ -133,6 +136,8 @@ for (const path of spotlight) {
   } catch (e) { logError("Spotlight request error " + path + ": " + e.message); }
 }
 for (const [old, target] of [
+  ["/books/alchemy-homeopathy-foundations", "/ru/books/alchemy-homeopathy-foundations"],
+  ["/books/alchemy-homeopathy-foundations?lang=en", "/en/books/alchemy-homeopathy-foundations"],
   ["/en/tests", "/en/client/tests"], ["/ru/cabinet", "/ru/client"],
   ["/es/review", "/es/services/free-situation-review"],
 ]) {
@@ -141,6 +146,7 @@ for (const [old, target] of [
   if (![301, 308].includes(response.status) || !location.endsWith(target)) logError("Legacy redirect " + old + ": " + response.status + " " + location);
 }
 const notFound = [];
+const translatedNotFound = { en: "Page not found", ru: "Страница не найдена", es: "Página no encontrada" };
 for (const locale of ["en", "ru", "es"]) {
   const path = "/" + locale + "/seo-audit-missing-route-20261016";
   const response = await fetchWithTimeout(path);
@@ -150,7 +156,7 @@ for (const locale of ["en", "ru", "es"]) {
   const h1 = [...html.matchAll(/<h1(?:\s|>)/g)].length;
   const noindex = /<meta[^>]*name="robots"[^>]*noindex/.test(html);
   notFound.push({ path, status: response.status, lang, title, h1, noindex });
-  if (response.status !== 404 || lang !== locale || h1 !== 1 || !title.includes("404")) logError("Localized 404 incomplete: " + JSON.stringify(notFound.at(-1)));
+  if (response.status !== 404 || lang !== locale || h1 !== 1 || !title.includes(translatedNotFound[locale])) logError("Localized 404 incomplete: " + JSON.stringify(notFound.at(-1)));
 }
 const result = {
   timestamp: new Date().toISOString(), origin,
