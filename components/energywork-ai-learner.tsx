@@ -657,8 +657,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
         <details className={styles.programme}>
           <summary>{t.program}</summary>
-          <ol>{Object.entries(energyworkPhases).map(([key, title]) => (
-            <li key={key} aria-current={key === slide.phase ? "step" : undefined}>{title[locale]}</li>
+          <ol>{energyworkLessons.map((lesson) => (
+            <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
           ))}</ol>
         </details>
         <aside className={styles.preview} aria-live="polite">
@@ -699,8 +699,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
-                {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing} className={styles.next} data-energywork-next>
+                {t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
