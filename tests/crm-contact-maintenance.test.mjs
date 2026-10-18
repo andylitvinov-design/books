@@ -18,7 +18,7 @@ test('signed pagination cursor preserves microsecond timestamp and owner scope',
  assert.deepEqual(parseCrmContactCursor(token,owner,key),{createdAt,id})
  assert.throws(()=>parseCrmContactCursor(token,other,key),/INVALID_CURSOR/)
  assert.throws(()=>parseCrmContactCursor(token,owner,randomBytes(32)),/INVALID_CURSOR/)
- assert.throws(()=>parseCrmContactCursor(token.slice(0,-3)+'abc',owner,key),/INVALID_CURSOR/)
+ assert.throws(()=>parseCrmContactCursor('z'+token.slice(1),owner,key),/INVALID_CURSOR/)
  assert.throws(()=>parseCrmContactCursor('not-a-cursor',owner,key),/INVALID_CURSOR/)
  assert.equal(CRM_CONTACT_PAGE_SIZE,50)
 })
@@ -61,7 +61,7 @@ test('page endpoint is authenticated, owner-scoped, bounded and stable',()=>{
  assert.match(repo,/where owner_id=\$1/)
 })
 test('DB grants restrict edited columns and activity remains immutable',()=>{
- const sql=read('supabase/migrations/20261018195800_hh_crm_contact_corrections.sql')
+ const sql=read('supabase/migrations/20261018200343_hh_crm_contact_corrections_20261018.sql')
  assert.match(sql,/GRANT UPDATE\(contact_ciphertext,email_hash,phone_hash,locale,source\)/)
  assert.match(sql,/contact_updated/)
  assert.doesNotMatch(sql,/GRANT UPDATE\([^)]*email_verified|GRANT UPDATE\([^)]*suppressed/i)

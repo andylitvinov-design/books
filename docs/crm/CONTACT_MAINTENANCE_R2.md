@@ -7,6 +7,8 @@ Each update locks the owner-owned record and checks its expected revision, re-en
 
 The contact list now loads 50 at a time with a signed owner-bound HMAC keyset cursor, preserving PostgreSQL microseconds and sort order (created_at DESC, id DESC). The dashboard shows full owner contact counts and the UI discloses that filters/search cover loaded contacts only.
 
+Applied Supabase migration 20261018200343; SQL source: supabase/migrations/20261018200343_hh_crm_contact_corrections_20261018.sql.
+
 ## Security and release gates
 No clinical records, assessments, reports, marketing sends, messenger sends, paid entitlements or customer imports. The migration only grants narrowly scoped contact column UPDATE to the existing hh_crm_backend restricted role, not email_verified, suppressed or owner_id. The activity kind whitelist adds contact_updated but no free text.
 
