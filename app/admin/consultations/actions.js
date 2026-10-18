@@ -16,6 +16,9 @@ function input(formData) {
   data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
   data.items = JSON.parse(String(formData.get('itemsJson') ?? '[]'))
+  const testsJson = String(formData.get('recommendedTestsJson') ?? '[]')
+  if (testsJson.length > 4000) throw new Error('Invalid recommended tests')
+  data.recommendedTestKeys = JSON.parse(testsJson)
   return data
 }
 
