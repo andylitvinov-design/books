@@ -40,7 +40,8 @@ test("personal services retain source images and nine compact Spanish image-left
   assert.match(shared, /styles\.servicePhoto/);
   const images = [...es.matchAll(/image: "(\/[^"]+\.(?:jpg|png|webp))"/g)].map(m => m[1]);
   assert.equal(images.length, 9);
-  assert.equal(new Set(images).size, 5); // Business and constellations share the same approved photographic still.
+  assert.equal(new Set(images).size, 6); // Owner Business landing now uses its approved practitioner portrait.
+  assert.match(es, /id: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
   assert.ok(es.includes("/es/services/business-consulting"));
   for (const image of images) assert.ok(readImage(image), "Missing Spanish service image: " + image);
   assert.ok(es.includes("className={offerStyles.photo}"));

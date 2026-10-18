@@ -356,9 +356,9 @@ const initiationSlides: EnergyworkSlide[] = [
 
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
-    title: l("My final learning report", "Мой итоговый отчёт"),
-    body: l("Write what you have learned and what you would like to explore further. This can be completed later, but it is needed before requesting review for a personal initiation.", "Запишите, что вы узнали и что хотите изучить дальше. Это можно сделать позже, но перед заявкой на личную инициацию нужен итоговый отчёт."),
-    question: { type: "text", prompt: l("My final report after the course…", "Мой итоговый отчёт после курса…") } },
+    title: l("My personal initiation letter", "Моё письмо перед инициацией"),
+    body: l("Tell Andrey what you learned and why you would like a personal Reiki initiation.", "Напишите Андрею, что вы узнали и почему хотите пройти личную инициацию Рейки."),
+    question: { type: "text", prompt: l("Why would I like to receive a personal initiation?", "Почему я хочу пройти личную инициацию?") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Your five Reiki lessons", "Ваши пять уроков Рейки"),
     body: l("You have explored Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and personal initiation preparation. This course does not grant Level 1 initiation or certification.", "Вы прошли «Полёт к Солнцу», Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовку к личной инициации. Учебный курс сам по себе не предоставляет инициацию первой ступени или сертификат.") },

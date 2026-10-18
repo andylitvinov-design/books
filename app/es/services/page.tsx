@@ -4,6 +4,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesQuickStart } from "@/components/services-quick-start";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
@@ -18,13 +19,13 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicService } from "@/lib/practitioners/public-types";
 
-export const metadata = spanishMetadata("/es/services", "Servicios y evaluación gratuita mediante dibujo — Holistic House", "Explora servicios personales, constelaciones, terapia con imágenes y revisión escrita gratuita de tu situación. Sesiones en Toronto o en línea.");
+export const metadata = spanishMetadata("/es/services", "Sesiones personales con Andrey Litvinov | Holistic House", "Constelaciones, trabajo con imágenes y consultoría en Toronto y en línea. Sesiones desde €50 y revisión escrita gratuita opcional.");
 
 const approaches = [
   { id: "situation", image: "/images/holistic-house/hero-olive-incense.webp", title: "Revisión gratuita de tu situación", situation: "¿Quieres comprender mejor tu problema y tus próximos pasos?", detail: "Completa un cuestionario breve y comparte un dibujo YO / META / PROBLEMA. Puedes solicitar una reflexión personal por escrito. No es una llamada gratuita ni un diagnóstico médico.", action: "Solicitar revisión escrita gratuita", href: "/es/services/free-situation-review" },
   { id: "psychohomeopathy", image: "/images/holistic-house/distance-homeopathy.webp", title: "Psicohomeopatía", situation: "¿Cansancio, falta de energía, molestias físicas o síntomas psicosomáticos?", detail: "Puedes empezar con el formulario y un dibujo a mano para recibir un informe gratuito; las sesiones individuales de psicohomeopatía son de pago. No sustituyen la atención médica.", action: "Ver sesiones de psicohomeopatía", href: "/es/services/psychohomeopathy" },
-  { id: "imagery", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", title: "Psicoterapia con imágenes", situation: "¿Tristeza, soledad o falta de claridad sobre qué hacer después?", detail: "En las sesiones individuales trabajaremos con imágenes del inconsciente, emociones y patrones para desarrollar apoyo interior, estabilidad y claridad.", action: "Conocer las sesiones", href: "/es/services/imagery-therapy" },
-  { id: "business", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Consultoría de negocios y activación de metas", situation: "¿Tu negocio tiene una meta, pero el próximo paso no está claro?", detail: "Explora un mapa simbólico de tu negocio, activa una meta concreta y crea un plan de acción de 14 días. Sin promesas financieras.", action: "Explorar consultoría empresarial", href: "/es/services/business-consulting" },
+  { id: "imagery", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", title: "Trabajo con imágenes guiadas", situation: "¿Tristeza, soledad o falta de claridad sobre qué hacer después?", detail: "En las sesiones individuales trabajaremos con imágenes del inconsciente, emociones y patrones para desarrollar apoyo interior, estabilidad y claridad.", action: "Conocer las sesiones", href: "/es/services/imagery-therapy" },
+  { id: "business", image: "/images/holistic-house/andy-about.png", title: "Estrategia de negocios y coaching para emprendedores", situation: "¿Tienes una decisión de negocio, pero no está claro el siguiente paso?", detail: "Revisión escrita gratis, sesión de claridad de 30 min (€50) o estrategia de 60 min (€100), con coaching y mapa simbólico opcional. Sin garantías de ingresos.", action: "Ver formatos de coaching", href: "/es/services/business-consulting" },
   { id: "constellations", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Constelaciones y acompañamiento arquetípico", situation: "¿Tienes objetivos, pero no sabes cómo llegar a ellos?", detail: "Exploramos las dinámicas de tu situación mediante constelaciones sistémicas e imágenes arquetípicas para descubrir nuevas perspectivas y pasos prácticos.", action: "Ver sesiones de constelaciones", href: "/es/services/systemic-constellations" },
   { id: "wu-xing", image: "/academy/reiki-yggdrasil/source/eastern-tradition.png", title: "Perfil gratuito de recursos Wu Xing", situation: "¿Quieres observar tus recursos y tu equilibrio actual?", detail: "Una exploración simbólica y gratuita sobre recursos personales mediante el modelo Dao / Wu Xing. No es un diagnóstico de salud.", action: "Explorar perfil gratuito Wu Xing", href: "/es/services/dao-health-profile" },
   { id: "alchemy", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", title: "Alquimia del Alma · sesión personal", situation: "¿Se repite una situación y quieres comprenderla de otra manera?", detail: "Sesiones personales de constelaciones e imágenes guiadas con recursos complementarios opcionales, sin prometer resultados clínicos.", action: "Conocer Alquimia del Alma", href: "/es/services/alchemy-of-soul" },
@@ -60,13 +61,16 @@ export default async function SpanishServicesPage() {
  ];
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" showAssessmentStrip={false} />
+  <ServicesConversionHero locale="es" />
+  <ServicesQuickStart locale="es" />
+  <ServicesSolutions locale="es" />
+  <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+  <ServicesAboutEntry locale="es" />
+  <PersonalTestimonials locale="es" variant="services" />
+  <ServicesTestsIntro locale="es" />
   <ServicesSmartDiscovery locale="es" services={published} editorialOffers={editorial}
     aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
       && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)} />
-  <ServicesConversionHero locale="es" />
-  <ServicesTestsIntro locale="es" />
-  <ServicesSolutions locale="es" />
-  <ServicesAboutEntry locale="es" />
 
   <details className={solutionStyles.extra} id="method-videos" open>
     <summary className={solutionStyles.extraSummary}>
@@ -82,8 +86,6 @@ export default async function SpanishServicesPage() {
       <ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations" />
     </div>
   </details>
-
-  <PersonalTestimonials locale="es" variant="services" />
 
   <details className={solutionStyles.extra} id="available-services">
     <summary className={solutionStyles.extraSummary}>
@@ -119,7 +121,6 @@ export default async function SpanishServicesPage() {
     </section>
   </details>
 
-  <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
   <div style={{ textAlign: "center", padding: "6px 14px 25px" }}>
     <Link href="/es/payments" style={{ color: "#0b7881", fontWeight: 700, fontSize: 13, textDecoration: "underline", textUnderlineOffset: 3 }}>
       PayPal · Pago y confirmación de consulta →

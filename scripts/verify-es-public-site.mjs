@@ -234,10 +234,12 @@ try {
         const accountMenu = page.locator('.site-navigation details.site-main-menu');
         await expect(accountMenu).toHaveCount(1);
         await expect(accountMenu).toHaveJSProperty('open', false);
-        await accountMenu.locator('summary').click();
+        await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = accountMenu.getByRole('link', { name: 'Mi Casa', exact: true });
+        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
         await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Mi Casa');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);

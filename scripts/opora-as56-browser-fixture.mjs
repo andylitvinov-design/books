@@ -23,7 +23,7 @@ const productionInputs = [
   'lib/inner-growth/course-slide-sequence.js',
 ]
 export function oporaFixturePath(locale) {
-  assert.ok(['en', 'ru'].includes(locale), 'Unsupported OPORA fixture locale')
+  assert.ok(['en', 'ru', 'es'].includes(locale), 'Unsupported OPORA fixture locale')
   return oporaFixturePrefix + locale
 }
 export function requireHostedOporaBrowser(env) {

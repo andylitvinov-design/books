@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceGuidance } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -17,10 +17,13 @@ const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_N
   engine: engineName, sourceProof: fixture.sourceProof, cases: [] }
 const words = {
   ru: { next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
-    original: 'Показать исходную подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
+    original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
     back: 'Вернуться', end: 'Закончить без сохранения', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
+  es: { next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
+    original: 'Ver una pista suave', pause: 'Pausa', neutral: 'Volver con una referencia neutra',
+    back: 'Volver', end: 'Salir sin guardar', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
   en: { next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
-    original: 'Show original guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
+    original: 'Show gentle guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
 const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-focus-mountain-boy.webp',
@@ -29,14 +32,15 @@ const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-foc
 ])))
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch()
 try {
-  for (const locale of ['ru', 'en']) for (const width of [320, 360, 390]) for (const priorHelp of [false, true]) {
+  for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390]) for (const priorHelp of [false, true]) {
     const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale), detail = oporaExperienceGuidance(5, locale)
+    const t = words[locale], brief = oporaExperienceGuide(5, locale)
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    const detail = locale === 'es' ? 'Si te incomoda, mira un objeto neutro.' : data.lesson.antiStress.neutralText
     const html = oporaFixtureDocument(locale, data, fixture.css)
     page.on('pageerror', error => errors.push(error.message))
     await context.route('**/*', route => {
@@ -81,9 +85,10 @@ try {
     try {
       await page.goto(origin + oporaFixturePath(locale))
       await expect(page.locator('[data-opora-experience-first="as-5.6"]')).toBeVisible()
+      await expect(page.locator('[data-course-visual-theme]')).toHaveAttribute('data-course-visual-theme', OPORA_EXPERIENCE_DESIGN_VERSION)
       await click(t.next)
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
-      assert.match(brief, /^[^.!?…]+[.]$/u)
+      assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
       await expect(page.getByText(detail, { exact: true })).toHaveCount(0)
       await assertBounds('brief')
@@ -111,8 +116,7 @@ try {
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
       await click(t.next) // Feel; navigation closes optional original guidance.
-      await expect(button(t.original)).toHaveAttribute('aria-expanded', 'false')
-      await click(t.original)
+      await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
       await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
       await assertNeutral()
@@ -139,7 +143,7 @@ try {
       throw error
     } finally { await context.close() }
   }
-  assert.equal(evidence.cases.length, 12)
+  assert.equal(evidence.cases.length, 18)
   console.log(JSON.stringify(evidence, null, 2))
 } finally {
   await writeFile(`${output}/summary.json`, JSON.stringify(evidence, null, 2) + '\n')

@@ -50,6 +50,9 @@
 .secondaryActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .secondaryLink{display:flex;align-items:flex-start;gap:11px;padding:16px;border:1px solid #d5e8eb;border-radius:14px;background:#fff;color:#0a7d90;text-decoration:none}
 .secondaryLink:hover{background:#f0fbfc;border-color:#98ced5}
+.paidServiceLink{grid-column:1/-1;background:linear-gradient(110deg,#ecf8f8,#fff);border-color:#9ad0d5}
+.paidServiceLink:hover{background:#e3f5f6;border-color:#4caeba}
+.paidServiceLink strong{color:#145b69}
 .secondaryLink>svg:first-child{flex:0 0 22px;margin-top:2px}
 .secondaryLink>span{display:grid;gap:5px;flex:1}
 .secondaryLink strong{font-size:.91rem;line-height:1.27;color:#225566}

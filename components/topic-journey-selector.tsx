@@ -3,10 +3,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
+import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 
 type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
@@ -41,6 +42,7 @@ const copy = {
     options: 'How else would you like to continue?',
     course: 'Free support course', courseDetail: 'Start with tests, then explore a self-guided daily programme. One free course at a time.',
     review: 'Personal situation review', reviewDetail: 'A free written review of your form and ME–GOAL–PROBLEM drawing; no live session is included.',
+    personal: 'Discuss this topic with Andrey', personalDetail: 'Optional personal session, independent of your test scores. €50 / 30 min or €100 / 60 min.', remoteDetail: 'Optional Reiki support. Practitioner, availability and fee are confirmed before booking; no test results are shared.',
     share:'Share this public guide', copied:'Public guide link copied. Your personal results are not included.', shared:'Public guide shared without your results.', manual:'Copy this public link manually. It does not contain your test answers.',
     safety: 'These questionnaires are for self-reflection, not medical diagnosis or treatment.',
     error: 'Could not open your tests. Check your connection and try again.',
@@ -53,6 +55,7 @@ const copy = {
     start:'Realizar las dos pruebas sugeridas',starting:'Abriendo las pruebas…',browse:'Explorar el catálogo de más de 100 pruebas',
     options:'¿Cómo deseas continuar?',course:'Curso gratuito de apoyo',courseDetail:'Empieza con pruebas y después descubre prácticas breves a tu ritmo. Un curso gratuito a la vez.',
     review:'Revisión escrita de tu situación',reviewDetail:'Reflexión personal gratuita sobre tu formulario y dibujo YO–META–PROBLEMA; no incluye una sesión en directo.',
+    personal:'Hablar personalmente con Andrey',personalDetail:'Sesión opcional, independiente de los resultados. €50 / 30 min o €100 / 60 min.',remoteDetail:'Apoyo Reiki opcional. Profesional, horario y precio se confirman antes de reservar; no enviamos tus resultados.',
     share:'Compartir esta guía pública',copied:'Enlace copiado. Tus resultados personales no se incluyen.',shared:'Guía compartida sin tus resultados.',manual:'Copia este enlace público. No contiene respuestas personales.',
     safety:'Estos cuestionarios son para la autoobservación y no ofrecen diagnóstico ni tratamiento médico.',error:'No se pudieron abrir las pruebas. Comprueba la conexión e inténtalo de nuevo.',signinError:'El acceso con Google no está disponible en este momento. Inténtalo más tarde.',
   },
@@ -68,12 +71,22 @@ const copy = {
     options: 'Как ещё хотите продолжить?',
     course: 'Бесплатный курс поддержки', courseDetail: 'После тестов — самостоятельная ежедневная программа. Бесплатно доступен один курс одновременно.',
     review: 'Личная диагностика (расстановка)', reviewDetail: 'Бесплатный письменный разбор; живая расстановка в бесплатный формат не входит. Заполните анкету и пришлите рисунок «Я — цель — проблема».',
+    personal: 'Обсудить тему лично с Андреем', personalDetail: 'Необязательная сессия независимо от баллов теста: €50 / 30 мин или €100 / 60 мин.', remoteDetail: 'Необязательная Рейки-поддержка: мастер, время и цена согласуются до записи; ответы тестов не передаются.',
     share:'Поделиться публичным материалом',copied:'Ссылка скопирована. В ней нет ваших результатов.',shared:'Публичный материал отправлен без ваших результатов.',manual:'Скопируйте эту ссылку вручную. Она не содержит ваших ответов.',
     safety: 'Опросники предназначены для самонаблюдения, не для медицинской диагностики или лечения.',
     error: 'Не удалось открыть тесты. Проверьте соединение и повторите попытку.',
     signinError: 'Вход через Google сейчас недоступен. Попробуйте позже.',
   },
 } as const
+
+// Maps public topic interests to public paid offers. No test answers or scores enter these URLs.
+const personalServiceForJourney: Record<string, string> = {
+  relationships: 'systemic-constellations',
+  business: 'business-consulting',
+  stress: 'imagery-therapy',
+  energy: 'remote-energy-support',
+  effectiveness: 'imagery-therapy',
+}
 
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
 
@@ -345,6 +358,14 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
+        <AcquisitionEventLink onClick={cancelStart}
+          href={'/' + language + '/services/' + (personalServiceForJourney[journey.id] || 'alchemy-of-soul')}
+          event="service_view" className={[styles.secondaryLink, styles.paidServiceLink].join(' ')}
+          attributes={{ 'data-topic-action': 'consultation', 'data-topic-service': journey.id }} prefetch={false}>
+          <CalendarDays size={21} aria-hidden="true" />
+          <span><strong>{c.personal}</strong><small>{journey.id === 'energy' ? c.remoteDetail : c.personalDetail}</small></span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </AcquisitionEventLink>
       </div>
       <div className={styles.shareArea} data-topic-safe-sharing>
         <button type="button" className={styles.shareButton} onClick={shareJourney}>

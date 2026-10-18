@@ -17,7 +17,7 @@ test("home presents four photo-left offer cards before videos", () => {
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with free-test banner and five compact photo offers, with a separately priced optional consultation action", () => {
+test("Services leads with five compact photo offers and enquiry, retaining optional free tests", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
   const offers = source("data", "core-service-offers.ts");
   const ui = source("components", "services-solutions.tsx");
@@ -41,7 +41,7 @@ test("Services leads with free-test banner and five compact photo offers, with a
   const renderStart = page.indexOf("  return (");
   assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
   assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices remain in metadata; paid card prices are rendered in ServicesSolutions");
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -96,28 +96,28 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("Services hero sells the options and points to free review without diagnostic steps", () => {
+test("Services hero separates paid enquiry from free written review without diagnostic steps", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  // Canonical #979 (bb1fd1ec) deliberately rewrote these exact copy fields.
+  // Owner #996 (f3b6edefc) deliberately rewrote headings and paid enquiry labels.
   // Keep the free written path, optional paid support and prior agreement explicit.
   const approvedCopy = {
     ru: {
-      heading: "Начните с вашего вопроса — найдём подходящий путь",
+      heading: "Личная работа с вашим вопросом: отношения, работа и решения",
       lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
-      paidCta: "Посмотреть личные сессии · от €50",
+      paidCta: "Запросить личную сессию · от €50",
       small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
     },
     en: {
-      heading: "Start with your question. Find a way forward.",
+      heading: "Personal guidance for relationships, work and life decisions",
       lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
-      paidCta: "Alchemy of the Soul · Psycho-homeopathy",
+      paidCta: "Ask about a personal session · from €50",
       small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
     },
     es: {
-      heading: "Empieza con tu pregunta y encuentra tu próximo paso",
+      heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
       lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
-      paidCta: "Explorar sesiones personales · desde €50",
+      paidCta: "Solicitar sesión personal · desde €50",
       small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
     },
   };
@@ -129,8 +129,9 @@ test("Services hero sells the options and points to free review without diagnost
         assert.ok(block.includes(field + ": " + JSON.stringify(value)), locale + "." + field);
       }
     }
-    assert.match(input, /className=\{styles\.cta\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\}/);
-    assert.match(input, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/alchemy-of-soul"\}/);
+    assert.match(input, /<Link className=\{styles\.cta\} href="#consultation" data-service-hero-cta="paid">\s*\{t\.paidCta\}/);
+    assert.match(input, /<Link className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\} data-service-hero-cta="free-written-review">\s*\{t\.cta\}/);
+    assert.ok(input.indexOf('data-service-hero-cta="paid"') < input.indexOf('data-service-hero-cta="free-written-review"'));
     assert.match(input, /See all three free options/);
     assert.match(input, /href="#free-insights"/);
     assert.match(input, /<p className=\{styles\.small\}>\{t\.small\}<\/p>/);
@@ -139,7 +140,9 @@ test("Services hero sells the options and points to free review without diagnost
   assertHeroContract(hero);
   for (const [before, after] of [
     ["/services/free-situation-review", "/services/alchemy-of-soul"],
-    ["/services/alchemy-of-soul", "/services/free-situation-review"],
+    ['href="#consultation"', 'href="/en/services/free-situation-review"'],
+    ["{t.paidCta}", "{t.cta}"],
+    ["{t.cta}", "{t.paidCta}"],
     ["Session time and payment are agreed separately.", "Session time is automatically confirmed."],
     ["Личная запись и оплата только после согласования.", "Запись подтверждается автоматически."],
     ["Las sesiones se acuerdan por separado.", "La sesión se confirma automáticamente."],

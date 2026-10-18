@@ -200,14 +200,20 @@ test('Spanish account handoff opens the real menu and follows its unique visible
       assert.equal(role, 'link'); assert.deepEqual(options, { name: 'Mi Casa', exact: true });
       return account;
     } };
-    const page = { locator(selector) { assert.equal(selector, '.site-navigation details.site-main-menu'); return menu; } };
+    const trigger = { trigger: true };
+    const page = { locator(selector) {
+      if (selector === '.site-navigation details.site-main-menu') return menu;
+      if (selector === '.site-main-menu-trigger') return trigger;
+      assert.equal(selector, '.site-main-menu-panel > a[href="/en/app"]'); return account;
+    } };
     const expect = actual => ({
       async toHaveCount(count) { assert.equal(actual.count, count); },
+      async toHaveAccessibleName(name) { assert.equal(actual, account); assert.equal(name, 'Mi Casa'); assert.equal(textOf(links[0]), name); },
       async toHaveJSProperty(name, value) { assert.equal(actual, menu); assert.equal(name, 'open'); assert.equal(open, value); },
       async toBeVisible() { assert.equal(actual, account); assert.equal(open, true); assert.notEqual(fault, 'hidden link'); },
       async toHaveAttribute(name, value) { assert.equal(actual, account); assert.equal(name, 'href'); assert.equal(links[0].props.href, value); },
     });
-    const click = async target => { assert.equal(target, account); assert.equal(open, true); clicked = true; };
+    const click = async target => { if (target === trigger) { open = fault !== 'cannot open'; return; } assert.equal(target, account); assert.equal(open, true); clicked = true; };
     await new Function('page', 'expect', 'click', `return (async()=>{${handoff}})()`)(page, expect, click);
     assert.equal(clicked, true);
   }

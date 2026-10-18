@@ -7,12 +7,12 @@ import styles from "./services-conversion-hero.module.css";
 const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ЛИЧНАЯ РАБОТА",
-    heading: "Начните с вашего вопроса — найдём подходящий путь",
+    heading: "Личная работа с вашим вопросом: отношения, работа и решения",
     lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
     mobileLead: "Бесплатный письменный разбор или личная сессия с Андреем — выберите удобный первый шаг.",
     benefits: ["Бесплатный письменный старт", "Личные сессии от €50 · время согласуем", "Торонто и онлайн"],
     cta: "Получить бесплатный письменный разбор",
-    paidCta: "Посмотреть личные сессии · от €50",
+    paidCta: "Запросить личную сессию · от €50",
     secondary: "Все три бесплатных варианта",
     small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
     workWith: "Личная работа с Андреем Литвиновым, в Торонто и онлайн",
@@ -22,12 +22,12 @@ const copy = {
   },
   en: {
     eyebrow: "HOLISTIC HOUSE · PERSONAL SUPPORT",
-    heading: "Start with your question. Find a way forward.",
+    heading: "Personal guidance for relationships, work and life decisions",
     lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
     mobileLead: "A free written review or a personal session with Andrey — choose your first step.",
     benefits: ["Free written first step", "Personal sessions from €50 · time confirmed", "Toronto & online"],
     cta: "Get a free written review",
-    paidCta: "Alchemy of the Soul · Psycho-homeopathy",
+    paidCta: "Ask about a personal session · from €50",
     secondary: "See all three free options",
     small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
     workWith: "Personal work with Andrey Litvinov, in Toronto and online",
@@ -37,12 +37,12 @@ const copy = {
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · ACOMPAÑAMIENTO PERSONAL",
-    heading: "Empieza con tu pregunta y encuentra tu próximo paso",
+    heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
     lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
     mobileLead: "Revisión escrita gratuita o sesión con Andrey: elige cómo empezar.",
     benefits: ["Primera revisión escrita gratuita", "Sesiones desde €50 · horario a confirmar", "Toronto y en línea"],
     cta: "Recibir revisión escrita gratuita",
-    paidCta: "Explorar sesiones personales · desde €50",
+    paidCta: "Solicitar sesión personal · desde €50",
     secondary: "Opciones gratuitas y cursos",
     small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
     workWith: "Trabajo individual con Andrey Litvinov, en Toronto y en línea",
@@ -62,11 +62,11 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
         <p className={styles.lead}>{t.lead}</p>
         <p className={styles.mobileLead}>{t.mobileLead}</p>
         <div className={styles.actions}>
-          <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
-            {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
+          <Link className={styles.cta} href="#consultation" data-service-hero-cta="paid">
+            {t.paidCta}<ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.paidLink} href={"/" + locale + "/services/alchemy-of-soul"}>
-            {t.paidCta}<ArrowRight size={17} aria-hidden="true" />
+          <Link className={styles.paidLink} href={"/" + locale + "/services/free-situation-review"} data-service-hero-cta="free-written-review">
+            {t.cta}<ArrowRight size={17} aria-hidden="true" />
           </Link>
           <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>
           <Link className={styles.secondary} href="#solutions">{t.solutions}<ArrowRight size={17} aria-hidden="true" /></Link>

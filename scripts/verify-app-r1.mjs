@@ -1,3 +1,4 @@
+import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
@@ -441,11 +442,14 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
+     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
+      'Default payment details are collapsed before geometry measurement')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
       'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
       const guideHeading=guide.locator('#distance-homeopathy-guide h1')
@@ -1046,7 +1050,22 @@ try {
   }
  } finally { await recoveryContext.close() }
  passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
- await page.goto(origin+'/en/app/history');await ready();await expect(page.locator('.hh-change')).toContainText('7 → 4');await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true});passed('history compares real results and exact point differences')
+ // Technical-only markers isolate the existing history wait without changing it.
+ const historyDiagnosticStartedAt=performance.now()
+ const historyDiagnostic=stage=>console.log('SYNTHETIC_HISTORY_STAGE',JSON.stringify({stage,elapsedMs:Math.max(0,Math.round(performance.now()-historyDiagnosticStartedAt))}))
+ historyDiagnostic('goto-start')
+ await page.goto(origin+'/en/app/history')
+ historyDiagnostic('goto-complete')
+ historyDiagnostic('ready-start')
+ await ready()
+ historyDiagnostic('ready-complete')
+ historyDiagnostic('assertion-start')
+ await expect(page.locator('.hh-change')).toContainText('7 → 4')
+ historyDiagnostic('assertion-complete')
+ historyDiagnostic('screenshot-start')
+ await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true})
+ historyDiagnostic('screenshot-complete')
+ passed('history compares real results and exact point differences')
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
  await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})

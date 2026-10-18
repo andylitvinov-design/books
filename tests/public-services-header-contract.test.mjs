@@ -16,8 +16,11 @@ function fixture(locale, width, changes = {}) {
     item.getAttribute = async () => item.href;
     item.boundingBox = async () => item.bounds;
   }
+  const trigger = { visible: true, bounds: { x: 230, width: 70 }, ...changes.trigger };
+  trigger.boundingBox = async () => trigger.bounds;
+  trigger.click = async () => { open = !open; };
   const menu = { locator(selector) {
-    if (selector === 'summary.site-main-menu-trigger') return { click: async () => { open = !open; } };
+    if (selector === 'summary.site-main-menu-trigger') return trigger;
     assert.equal(selector, `.site-main-menu-panel a[href="/${locale}/app"]`);
     return cabinet;
   } };
@@ -40,6 +43,8 @@ for (const locale of ['en', 'ru']) for (const width of [320, 360, 390, 1188]) {
   test(`canonical header retains Library and reachable My House ${locale}/${width}`, fixture(locale, width));
 }
 for (const [name, changes] of [
+  ['hidden menu trigger', { trigger: { visible: false } }],
+  ['overflowing menu trigger', { trigger: { bounds: { x: 300, width: 70 } } }],
   ['missing Library', { library: { count: 0 } }],
   ['wrong Library locale', { library: { href: '/ru/library' } }],
   ['hidden Library', { library: { visible: false } }],

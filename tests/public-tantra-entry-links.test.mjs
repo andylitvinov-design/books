@@ -65,6 +65,7 @@ const home = loadComponent('components/holistic-house-home.tsx', {
 }).HolisticHouseHome;
 const spanishHome = loadComponent('app/es/page.tsx', {
   ...shared,
+  '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
   '@/components/site-video-player': { SiteVideoPlayer: ({ video }) => React.createElement('span', { 'data-video-id': video.youtubeId }) },
   '@/components/public-consultation-cta': { PublicConsultationCta: empty },
   '@/lib/spanish-metadata': { spanishMetadata: empty },
@@ -178,7 +179,7 @@ test('Spanish Tantra link belongs to the new learning card and preserves current
 });
 
 for (const locale of ['en', 'ru', 'es']) {
-  test(`${locale} preserves the three free paths and free-first hero while keeping Tantra in learning`, () => {
+  test(`${locale} preserves the three free paths and owner-approved personal-session-first hero while keeping Tantra in learning`, () => {
     const options = renderLinks(freePaths, { locale });
     assert.deepEqual(options.map((link) => link.href), [
       `/${locale}/services/free-situation-review`, `/${locale}/wu-xing`, `/${locale}/client/tests`,
@@ -187,7 +188,7 @@ for (const locale of ['en', 'ru', 'es']) {
     const hero = html.match(/<section class="service-home-hero"[\s\S]*?<\/section>/)?.[0];
     assert.ok(hero);
     assert.deepEqual(links(hero).map((link) => link.href), [
-      `/${locale}/services/free-situation-review`, `/${locale}/client/tests`, `/${locale}/services#consultation`,
+      `/${locale}/services#consultation`, `/${locale}/services/free-situation-review`, `/${locale}/client/tests`,
     ]);
     const learning = html.match(/<article class="service-home-start-card service-home-start-card--learning">([\s\S]*?)<\/article>/)?.[1];
     assert.ok(learning);

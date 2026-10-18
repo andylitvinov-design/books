@@ -1,6 +1,6 @@
 # Holistic House SEO #306 — execution manifest (living)
 
-**Last checked:** 2026-10-16 · **Strategic master:** [Holistic House SEO Master Plan v3](./holistic-house-seo-master-plan.md) · **Issue owner/tracker:** [#306](https://github.com/andylitvinov-design/books/issues/306).
+**Last checked:** 2026-10-18 (source changes only; see dated verification below) · **Strategic master:** [Holistic House SEO Master Plan v3](./holistic-house-seo-master-plan.md) · **Issue owner/tracker:** [#306](https://github.com/andylitvinov-design/books/issues/306).
 **Actual production branch:** `codex/public-book-library` · **Observed READY before this PR:** `holistichouse.vercel.app` / `8c6506155e094e47800a395735d3f4130cab5644` (verify newest production SHA after merge). GitHub default branch is not production source.
 
 | ID | Deliverable | State 2026-10-16 | Evidence, acceptance or blocker |
@@ -24,6 +24,15 @@
 | T7 | Master SEO strategy + 90-day roadmap + Codex acceptance criteria | **DONE** | PR #714 merged, v3 strategy + #306 + manifest saved; GSC baseline now included |
 | T8 | Public masters/Test SEO privacy and crawl control | **NEXT** | Only finished published public pages indexable, private cabinet/report/noindex protected |
 | T9 | Speed/Core Web Vitals mobile baseline | **NEXT** | Dated PageSpeed/CrUX test; no invented metrics |
+
+
+### 2026-10-18 — SEO-18 implementation checkpoint (PR not yet merged)
+
+- Strategic master updated with date-specific v3.1 addendum: organic → genuinely useful free entrance → consented verified CRM lead → appointment/sale, plus 90-day sprints and SEO-18-01…06 acceptance.
+- **Source verified:** `next.config.ts` redirected `/{en,ru,es}/tests` to `/{locale}/client/tests` (robots-blocked and `noindex`). New public informational `app/[locale]/tests/page.tsx` has 3 independent localized texts, descriptive headings, canonical/hreflang and visible CTAs; interactivity still at private `/client/tests`. `data/seo.js` now adds 3 EN/RU/ES public test URLs and reciprocal alternates, no private URLs. Added `tests/public-tests-seo-landing.test.mjs` source guard.
+- **Release:** branch `seo/public-test-discovery-20261018` only; **NOT YET VERIFIED live**. Mandatory next: CI/checks, 320/390/430 browser, 3× production HTTP 200/self canonical, private noindex, exact release SHA/alias. Do not call these three pages indexed.
+- **GSC access:** GSC Wizard connector returned `payment_required / subscription_required` on 2026-10-18; Google ownership from earlier verification is not undone. Live GSC index/CTR cannot be refreshed through this connection. Legacy 601/19/1 figures remain explicitly 2026-10-17 snapshots.
+- **Risk:** active PRs modifying Home, Courses and CRM; do not overwrite concurrent work. Production deployment list during audit had a BUILDING newest commit with previous READY, so no new production revision is claimed.
 
 ## Next work following Google's acceptance
 

@@ -20,7 +20,7 @@ export function collectAlchemyPanelGeometry() {
     };
   };
   const main = document.querySelector('main[data-core-service-detail="alchemy"]');
-  const paymentOptions = main?.querySelector("[data-alchemy-payment-options]");
+  const paymentOptions = main?.querySelector("[data-alchemy-payment-disclosure] > div");
   return {
     documentLocale: document.documentElement.lang,
     viewport: {

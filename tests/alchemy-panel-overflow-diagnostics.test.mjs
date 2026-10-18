@@ -152,7 +152,7 @@ test("Geometry captures panel/card/payment boxes and computed spacing without co
   const panel = element("section", { "data-alchemy-panel": "formats" }, [element("h2"), paymentOptions]);
   const main = {
     querySelector: selector => {
-      assert.equal(selector, "[data-alchemy-payment-options]");
+      assert.equal(selector, "[data-alchemy-payment-disclosure] > div");
       return paymentOptions;
     },
     querySelectorAll: selector => selector === "[data-alchemy-panel]" ? [panel] : [card, ...card.children],

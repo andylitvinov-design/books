@@ -1,3 +1,4 @@
+import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
@@ -59,11 +60,64 @@ try {
     return page;
   };
 
+  // Spanish Alchemy has its own route. Check its untouched default state too;
+  // do not navigate payment links or enable optional payment providers.
+  {
+    const locale = "es";
+    for (const width of [320, 360, 390, 1188]) {
+      const page = await createPage(width);
+      const pageErrorStart = diagnostics.pageErrors.length;
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      const main = page.locator('main[data-core-service-detail="alchemy"]');
+      await visible(main.locator("h1"));
+      await expect(main).toHaveAttribute("lang", "es");
+      await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
+      await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
+      await assertViewport(page, "es/alchemy-of-soul/" + width);
+      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
+        "Default Spanish payment details are collapsed before geometry measurement");
+      const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
+        nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
+      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      if (width <= 390) {
+        if (panelHeights.some(p => p.height > p.max)) {
+          try {
+            await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
+          } catch (error) {
+            console.error("Alchemy overflow diagnostics could not be saved:", error);
+          }
+        }
+        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+          "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
+      }
+      assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
+      assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate Spanish global enquiry panel");
+      assert.equal(await main.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one Spanish enquiry form");
+      await main.locator('[data-alchemy-panel="formats"]').screenshot({
+        path: output + "/alchemy-es-formats-default-" + width + ".png",
+      });
+      await assertAlchemyPaymentsExpanded(main, expect, width);
+      assert.deepEqual(diagnostics.pageErrors.slice(pageErrorStart), [], "Unexpected Spanish Alchemy browser page errors: " + width);
+      await page.close();
+    }
+  }
+
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
+      const quick = page.locator("[data-services-quick-start]");
+      await visible(quick);
+      const freeDirect = quick.locator('[data-services-quick-action="free-written-review"]');
+      const paidDirect = quick.locator('[data-services-quick-action="personal-session"]');
+      assert.equal(await freeDirect.getAttribute("href"), "/" + locale + "/services/free-situation-review");
+      assert.equal(await paidDirect.getAttribute("href"), "/" + locale + "/services/alchemy-of-soul");
+      for (const action of [freeDirect, paidDirect]) {
+        const bounds = await action.boundingBox();
+        assert.ok(bounds && bounds.width >= 105 && bounds.height >= 44,
+          "Services first-screen actions must be usable at " + locale + "/" + width);
+      }
       const banner = page.locator('[data-services-tests-intro]#free-insights');
       assert.equal(await banner.count(), 1, "one free tests/course banner");
       await visible(banner);
@@ -77,13 +131,12 @@ try {
       await visible(banner.locator('a[href="#solutions"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1, "restored hero has one primary heading");
       assert.equal(await page.evaluate(() => {
-        const hero = document.querySelector("#services-conversion-title");
-        const intro = document.querySelector("[data-services-tests-intro]#free-insights");
-        const solutions = document.querySelector("#solutions");
-        return Boolean(hero && intro && solutions &&
-          (hero.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING) &&
-          (intro.compareDocumentPosition(solutions) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "photographed hero precedes tests/course banner and service offers");
+        const selectors = ["#services-conversion-title", "#solutions", "#consultation", '[data-personal-testimonials="services"]', "[data-services-tests-intro]#free-insights"];
+        const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
+        if (sections.some(matches => matches.length !== 1)) return false;
+        return sections.every((matches, index) => index === 0 ||
+          Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+      }), true, "Owner conversion order: hero, service offers, enquiry, testimonials, optional tests");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
       // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
@@ -96,6 +149,11 @@ try {
       assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
+      const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
+      await visible(menuTrigger);
+      const menuBounds = await menuTrigger.boundingBox();
+      assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
+        "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
       const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
@@ -196,12 +254,99 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
+    const quick = page.locator("[data-services-quick-start]");
+    await visible(quick);
+    assert.equal(await quick.locator('[data-services-quick-action="free-written-review"]').getAttribute("href"), "/es/services/free-situation-review");
+    assert.equal(await quick.locator('[data-services-quick-action="personal-session"]').getAttribute("href"), "/es/services/alchemy-of-soul");
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
     await expect(freeOnly).not.toBeChecked();
     await freeOnly.check();
     await page.locator('#find-your-service form[role="search"] button[type="submit"]').click();
     await expect(page.locator("#hh-service-discovery-results-title")).toHaveText("Servicios gratuitos");
+    await page.close();
+  }
+
+  // Real hydrated, non-submitting conversion journey for ALL personal service
+  // landing variants, including Spanish. Verify navigation, pricing, live
+  // thumbnails and message drafts; NEVER follow or send any messenger URL.
+  for (const locale of ["en", "ru", "es"]) {
+    for (const service of ["imagery-therapy", "systemic-constellations"]) {
+      const width = 390;
+      const page = await createPage(width);
+      const label = locale + "/" + service + "/" + width;
+      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "networkidle", timeout: 60000 });
+      assert.equal(response?.status(), 200, "Personal landing should render: " + label);
+      const main = page.locator('main[data-personal-service="' + service + '"]');
+      await visible(main.locator('h1#personal-service-title'));
+      assert.equal(await main.locator("h1").count(), 1, "One personal landing title: " + label);
+      const photo = main.locator('section[aria-labelledby="personal-service-title"] img').first();
+      assert.ok(await photo.evaluate(image => image.complete && image.naturalWidth > 100), "Approved hero photo loads: " + label);
+      assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
+      const facts = await main.locator('[class*="heroFacts"]').innerText();
+      assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
+      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      await visible(free);
+      const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
+      await visible(primary);
+      const primaryBounds = await primary.boundingBox();
+      assert.ok(primaryBounds && primaryBounds.height >= 44, "Large primary CTA: " + label);
+      await assertViewport(page, "personal/" + label);
+      await assertNoDevIssueOverlay(page, label);
+      await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-hero-390.png", fullPage: false, animations: "disabled" });
+      await primary.click();
+      await page.waitForURL(/#request-session$/);
+      const target = main.locator('aside#request-session [data-consultation-capture="service"]');
+      await visible(target);
+      assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
+        "Paid format selector must be present after anchor navigation: " + label);
+      const choices = target.locator('[data-choice-layout="service"] button');
+      assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
+      await choices.nth(1).click();
+      await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
+      const chooser = await openContactChannelChooser(target, expect);
+      const prepared = await assertPreparedContactChannels(chooser, expect);
+      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
+        "Express rate preserved in approved draft: " + label);
+      await assertViewport(page, "personal-request/" + label);
+      await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
+      await page.close();
+    }
+  }
+
+  // Business Strategy & Founder Coaching has its own separate source-backed
+  // landing (PR #993); verify all three locales without assuming it uses
+  // PersonalServiceLanding's generic consultation choice component.
+  for (const locale of ["en", "ru", "es"]) {
+    const page = await createPage(390);
+    const label = locale + "/business-consulting/390";
+    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"networkidle",timeout:60000});
+    assert.equal(response?.status(), 200, "Business service must render: " + label);
+    const main = page.locator("main[data-business-consulting]");
+    await visible(main.locator('h1#business-hero-title'));
+    assert.equal(await main.locator("h1").count(), 1);
+    const portrait = main.locator('.person img, img[alt="Andrey Litvinov"]').first();
+    assert.ok(await portrait.evaluate(img => img.complete && img.naturalWidth > 20),
+      "Business practitioner portrait should load: " + label);
+    const free = main.locator('a[data-business-cta="free-hero"]');
+    const href = await free.getAttribute("href");
+    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business");
+    const offers = main.locator("#business-offers");
+    for (const kind of ["free", "express", "full"]) {
+      await visible(offers.locator('[data-business-offer="' + kind + '"]'));
+    }
+    assert.ok((await offers.innerText()).includes("€50") && (await offers.innerText()).includes("€100"));
+    await visible(main.locator('a[href="#business-offers"]'));
+    await main.locator('a[href="#business-offers"]').click();
+    await page.waitForURL(/#business-offers$/);
+    const express = offers.locator('[data-business-offer="express"]');
+    const chooser = await openContactChannelChooser(express, expect);
+    const prepared = await assertPreparedContactChannels(chooser, expect);
+    assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
+      "Business express €50 must survive messenger selection: " + label);
+    await assertViewport(page, "business/" + label);
+    await assertNoDevIssueOverlay(page, label);
+    await page.screenshot({path: output + "/business-" + locale + "-express-request-390.png",fullPage:false,animations:"disabled"});
     await page.close();
   }
 
@@ -222,6 +367,10 @@ try {
         if (width === 390 || width === 1188) {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
+        if (kind === "alchemy") {
+          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
+            "Default payment details are collapsed before geometry measurement");
+        }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
@@ -240,6 +389,7 @@ try {
           assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
           assert.equal(await page.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one enquiry form");
         }
+        if (kind === "alchemy") await assertAlchemyPaymentsExpanded(main, expect, width);
         if (width === 390) {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
@@ -255,7 +405,23 @@ try {
             assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
               "No horizontal scrolling or squeezed testimonials");
             const pricing = main.locator('[data-alchemy-booking-formats]');
+            // Payments are still available after agreement, but the default
+            // 320/390px decision screen must not be extended by transfer notes.
+            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
+            if (await paymentDisclosure.count()) {
+              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
+                "Payment methods must be collapsed until explicitly requested");
+              await paymentDisclosure.locator('summary').click();
+              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
+                "Payment help can be expanded with an accessible control");
+              await paymentDisclosure.locator('summary').click();
+            }
+            await pricing.locator('[data-alchemy-format="month"]').click();
+            await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
+            assert.equal(await paymentDisclosure.count(), 0,
+              "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
+            await assertAlchemyPaymentsExpanded(main, expect, width);
             const channels = await openContactChannelChooser(pricing, expect);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
@@ -278,60 +444,6 @@ try {
         }
         await page.close();
       }
-    }
-  }
-
-  // Spanish Alchemy has its own route. Check its untouched default state too;
-  // do not navigate payment links or enable optional payment providers.
-  {
-    const locale = "es";
-    for (const width of [320, 360, 390, 1188]) {
-      const page = await createPage(width);
-      const pageErrorStart = diagnostics.pageErrors.length;
-      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
-      const main = page.locator('main[data-core-service-detail="alchemy"]');
-      await visible(main.locator("h1"));
-      await expect(main).toHaveAttribute("lang", "es");
-      await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
-      await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
-      await assertViewport(page, "es/alchemy-of-soul/" + width);
-      const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
-        nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
-      if (width <= 390) {
-        if (panelHeights.some(p => p.height > p.max)) {
-          try {
-            await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
-          } catch (error) {
-            console.error("Alchemy overflow diagnostics could not be saved:", error);
-          }
-        }
-        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
-          "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
-      }
-      assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
-      assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate Spanish global enquiry panel");
-      assert.equal(await main.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one Spanish enquiry form");
-      // Every mobile payment link, including the terms link, is a touch target.
-      // Desktop retains its existing 44px primary-CTA contract.
-      const paymentAnchors = main.locator("[data-alchemy-payment-options]")
-        .locator(width <= 390 ? "a" : ":scope > div > a:first-child");
-      const paymentAnchorCount = await paymentAnchors.count();
-      assert.ok(paymentAnchorCount > 0, "Spanish default payment options render");
-      for (let index = 0; index < paymentAnchorCount; index++) {
-        const anchor = paymentAnchors.nth(index);
-        await visible(anchor);
-        const bounds = await anchor.boundingBox();
-        assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44,
-          "Spanish payment anchor has a 44px touch target: " + width + "/" + index + " " + JSON.stringify(bounds));
-        assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
-          "Spanish payment anchor fits the viewport: " + width + "/" + index);
-      }
-      await main.locator('[data-alchemy-panel="formats"]').screenshot({
-        path: output + "/alchemy-es-formats-default-" + width + ".png",
-      });
-      assert.deepEqual(diagnostics.pageErrors.slice(pageErrorStart), [], "Unexpected Spanish Alchemy browser page errors: " + width);
-      await page.close();
     }
   }
 

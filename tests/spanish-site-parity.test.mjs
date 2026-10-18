@@ -8,7 +8,8 @@ test('Spanish service funnel has real pages and localized form without EN fallba
  for (const path of ['app/es/page.tsx','app/es/services/page.tsx','components/free-situation-review-form.tsx','app/[locale]/services/free-situation-review/page.tsx','app/[locale]/services/imagery-therapy/page.tsx']) assert.ok(exists(path),path);
  const services=content('app/es/services/page.tsx');
  assert.match(services,/Psicohomeopatía/);
- assert.match(services,/Psicoterapia con imágenes/);
+ assert.match(services,/title: "Trabajo con imágenes guiadas"/);
+ assert.match(services,/href: "\/es\/services\/imagery-therapy"/);
  assert.match(services,/Constelaciones y acompañamiento arquetípico/);
  assert.match(services,/\/es\/services\/free-situation-review/);
  const form=content('components/free-situation-review-form.tsx');
