@@ -41,7 +41,7 @@ export function BookRelatedMaterials({ bookId, locale }: { bookId: string; local
           const display = localizedBookText(book, locale);
           const role = materialRoleLabel(locale, getBookMaterialRole(book.id));
           return (
-            <Link href={"/books/" + book.id + (locale === "en" ? "?lang=en" : "")} key={book.id}>
+            <Link href={"/" + locale + "/books/" + book.id} key={book.id}>
               <small>{display.category} · {role}</small>
               <strong>{display.title}</strong>
               <span>{locale === "ru" ? "Открыть →" : "Open →"}</span>

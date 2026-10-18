@@ -119,12 +119,14 @@ const nextConfig: NextConfig = {
     "/document-preview/[kind]": ["./assets/documents/andrii-signature-left-90.png"],
     // Tracing keys are route globs, not literal Next.js dynamic-segment names.
     // Readers load these existing HTML files dynamically at request time.
-    "/books/*": [
+    ...["/books/*", "/[locale]/books/*"].map((route) => [route, [
       "./source-books/book-1-alchemy-soul/*.html",
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
-    ],
+    ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
+      all[route] = [...files]; return all;
+    }, {}),
     "/[locale]/homeopathy/remedies/[slug]": ["./content/remedies/**/*.md"],
     "/api/prescriptions/[selector]/pdf": reportPdfAssets,
     "/document-preview/[kind]/pdf": reportPdfAssets,
