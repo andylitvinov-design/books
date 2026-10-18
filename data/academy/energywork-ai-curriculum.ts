@@ -89,9 +89,15 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
     body: l("Explore three Reiki traditions and the opportunity to receive an introductory Level 1 initiation in each one.", "Познакомьтесь с тремя направлениями Рейки и возможностью получить инициацию первой ступени по каждому из них.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
-    title: l("What brings you here?", "Что привело вас сюда?"),
-    body: l("There is no right answer. Notice what you hope to learn. This opening reflection is optional.", "Правильного ответа нет. Заметьте, что вы хотите изучить. Отвечать необязательно."),
-    question: { type: "text", prompt: l("I would like to explore…", "Я хотел(а) бы исследовать…") } },
+    title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
+    body: l("A quick introduction, not a test. Choose the experience that best describes you.",
+      "Это короткое знакомство, а не тест. Выберите вариант, который лучше всего описывает ваш опыт."),
+    question: { type: "choice", prompt: l("My experience so far", "Мой опыт"), options: [
+      { id: "beginner", label: l("I'm new to Reiki", "Пока не знаком(а) с Рейки") },
+      { id: "energywork", label: l("I have energy-work experience, but not Reiki", "Есть опыт энергетических практик, но не Рейки") },
+      { id: "reiki-1-2", label: l("I have Reiki Level 1 or 2", "У меня уже есть 1-я или 2-я ступень Рейки") },
+      { id: "master", label: l("I'm a Reiki Master", "Я мастер Рейки") },
+    ] } },
 
   { id: "flight-01", phase: "flight", kind: "lesson", image: image.sun,
     title: l("A symbolic flight", "Символический полёт"),
