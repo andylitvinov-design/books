@@ -117,7 +117,8 @@ function harness(){
     throw new Error('Unexpected synthetic SQL: '+sql.slice(0,100))
   }})
   const imports={
-    randomUUID,createClient:()=>({storage:{from:bucket=>{assert.equal(bucket,PRIVATE_MEDIA_BUCKET);return storage}}}),
+    randomUUID,createClient:()=>({storage:{getBucket:storage.getBucket,
+      from:bucket=>{assert.equal(bucket,PRIVATE_MEDIA_BUCKET);return storage}}}),
     AppError,transaction,PRIVATE_MEDIA_BUCKET,SESSION_MEDIA_TYPES,validUuid,getOwnerSession,
     attachSessionAsset,getSessionAsset,configuredVideoUploadStore:()=>null,
     OWNER_AUDIO_MIME_TYPES,OWNER_AUDIO_PROXY_MAX_BYTES,fetch:fakeFetch,
