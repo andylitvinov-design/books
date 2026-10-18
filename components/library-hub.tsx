@@ -8,8 +8,8 @@ import type { PublicLocale } from "@/lib/public-locales";
 
 export type LibraryView = "latest" | "books" | "videos";
 
-type PublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string };
-type PublicArticle = {
+export type LibraryPublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string };
+export type LibraryPublicArticle = {
   id: string; slug: string; practitionerName: string; publishedAt: string | null;
   published: { title: string; excerpt: string; coverPath?: string };
 };
@@ -197,8 +197,8 @@ const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [] }: {
   locale: PublicLocale;
   view?: LibraryView;
-  publishedVideos?: PublicVideo[];
-  articles?: PublicArticle[];
+  publishedVideos?: LibraryPublicVideo[];
+  articles?: LibraryPublicArticle[];
 }) {
   const text = libraryCopy[locale];
   const guides = bookItems(locale);

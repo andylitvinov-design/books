@@ -4,7 +4,7 @@ import { listPublicLibraryVideos } from "@/lib/clients/material-library";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
 import { notFound } from "next/navigation";
 
-import { LibraryHub, libraryCopy, type LibraryView } from "@/components/library-hub";
+import { LibraryHub, libraryCopy, type LibraryView, type LibraryPublicVideo, type LibraryPublicArticle } from "@/components/library-hub";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
 
@@ -40,8 +40,8 @@ export default async function LibraryPage({ params, searchParams }: Props) {
 
   const rawView = Array.isArray(query.view) ? query.view[0] : query.view;
   const view: LibraryView = rawView === "videos" || rawView === "books" ? rawView : "latest";
-  let videos = [];
-  let articles = [];
+  let videos: LibraryPublicVideo[] = [];
+  let articles: LibraryPublicArticle[] = [];
   if (view !== "books") {
     try {
       const config = getAppConfig();
