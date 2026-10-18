@@ -40,6 +40,10 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
      assert.match(textOf(h.tree),/Сомневаться нормально/)
    }
    if(i===7){
+     const opts=buttons(h)
+     assert.ok(opts.includes(lesson.opora54.exercises.notice.a[0]),
+       'Notice action buttons='+JSON.stringify(opts)+'; expected='+JSON.stringify(lesson.opora54.exercises.notice.a)+
+       '; keys='+JSON.stringify(Object.keys(lesson.opora54.exercises)))
      await click(h,lesson.opora54.exercises.notice.a[0])
      assert.ok(textOf(h.tree).includes(lesson.opora54.exercises.notice.f[0]),'feedback follows the selected detail')
      await click(h,'Не пробовал(а)')
@@ -93,6 +97,10 @@ test('EN V6 player: empty optional answers are not invented, safe pause never sa
    assert.doesNotMatch(buttons(h).join(' | '),/Skip this step|Skip this check-in|Skip$/)
    if(i===4){assert.ok(findButton(h.tree,'I disagree'));await click(h,'I disagree')}
    if(i===7){
+     const opts=buttons(h)
+     assert.ok(opts.includes(lesson.opora54.exercises.notice.a[0]),
+       'Notice action buttons='+JSON.stringify(opts)+'; expected='+JSON.stringify(lesson.opora54.exercises.notice.a)+
+       '; keys='+JSON.stringify(Object.keys(lesson.opora54.exercises)))
      await click(h,lesson.opora54.exercises.notice.a[0])
      assert.ok(textOf(h.tree).includes(lesson.opora54.exercises.notice.f[0]),'feedback follows actual bilingual day activity')
      await click(h,'I did not try')
