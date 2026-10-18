@@ -21,11 +21,11 @@ const locallyArchivedVideoPosterIds = new Set([
 
 const testimonialVideos = {
   ru: [
+    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
     { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", language: "ru" },
     { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", language: "ru" },
     { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о бизнес-консультации", language: "ru" },
     { id: "muOnIHllI7E", title: "Экспресс-диагностика — отзыв", language: "ru" },
-    { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
     { id: "5oj0BIbLT4w", title: "Елена Бахтина — отзыв клиента", language: "ru" },
   ],
   en: [
