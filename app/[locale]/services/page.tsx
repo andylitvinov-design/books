@@ -304,7 +304,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
       <div style={{ textAlign: "center", padding: "6px 14px 25px" }}>
         <Link href={`/${locale}/payments`} style={{ color: "#0b7881", fontWeight: 700, fontSize: 13, textDecoration: "underline", textUnderlineOffset: 3 }}>
-          {locale === "ru" ? "PayPal · Оплата и подтверждение консультации" : "PayPal · Consultation payment and confirmation"} →
+          {locale === "ru" ? "PayPal / ZEN.COM · Способы оплаты консультации" : "PayPal / ZEN.COM · Consultation payment options"} →
         </Link>
       </div>
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
