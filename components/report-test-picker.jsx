@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 
 const MAX_SELECTION = 12
 
-export function ReportTestPicker({ options = [], locale = 'en', selectedKeys = [], onChange }) {
+export function ReportTestPicker({ options = [], locale = 'en', reportLocale = locale, selectedKeys = [], onChange }) {
   const ru = locale === 'ru'
   const [search, setSearch] = useState('')
   const [showAll, setShowAll] = useState(false)
@@ -46,7 +46,7 @@ export function ReportTestPicker({ options = [], locale = 'en', selectedKeys = [
     <div className="consultation-report-test-options">
       {visible.map(option => {
         const active = selected.has(option.key)
-        const availableInLanguage = option.availableLocales.includes(locale)
+        const availableInLanguage = option.availableLocales.includes(reportLocale)
         return <label key={option.key} className="consultation-report-test-option" data-selected={active}>
           <input type="checkbox" checked={active}
             disabled={!active && selectedKeys.length >= MAX_SELECTION}
