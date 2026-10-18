@@ -1,3 +1,4 @@
+import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
@@ -45,6 +46,7 @@ const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due
 page.on('pageerror',capturePageError)
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
+let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false
 function passed(name){checks.push(name);console.log('PASS '+name)}
 /**
  * Playwright/WebKit cannot screenshot a full page taller than 32767 device pixels.
@@ -1051,8 +1053,8 @@ try {
  } finally { await recoveryContext.close() }
  passed('invalid HTTP 200 bootstrap bodies show retry and recover without uncaught browser errors')
  // Technical-only markers isolate the existing history wait without changing it.
- const historyDiagnosticStartedAt=performance.now()
- const historyDiagnostic=stage=>console.log('SYNTHETIC_HISTORY_STAGE',JSON.stringify({stage,elapsedMs:Math.max(0,Math.round(performance.now()-historyDiagnosticStartedAt))}))
+ historyDiagnosticStartedAt=performance.now()
+ const historyDiagnostic=stage=>{historyDiagnosticStage=stage;console.log('SYNTHETIC_HISTORY_STAGE',JSON.stringify({stage,elapsedMs:Math.max(0,Math.round(performance.now()-historyDiagnosticStartedAt))}))}
  historyDiagnostic('goto-start')
  await page.goto(origin+'/en/app/history')
  historyDiagnostic('goto-complete')
@@ -1066,6 +1068,7 @@ try {
  await screenshotEvidence(page,{path:output+'/history-en.png',fullPage:true})
  historyDiagnostic('screenshot-complete')
  passed('history compares real results and exact point differences')
+ historyDiagnosticStage=null;historyDiagnosticStartedAt=null
  await page.goto(origin+'/en/app/monitoring/hh-current-state');await ready();await expect(page.getByRole('heading',{name:'Current State Check',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Measurement history',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Compare measurements',exact:true})).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-trend.png',fullPage:true});passed('Psi-Monitoring trend view compares compatible repeated measurements')
  await enterTest('Personality Baseline');await expect(page.getByText('In general, not only today',{exact:false})).toBeVisible()
  await screenshotEvidence(page,{path:output+'/personality-runner.png',fullPage:true})
@@ -1477,7 +1480,17 @@ try {
  assert.deepEqual(errors,[]);passed('no uncaught browser errors')
  await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,realPostgreSQL:true,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE',production:'UNCHANGED'},null,2))
  await other.close();await admin.close()
-} catch(error){await screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}).catch(()=>{});await writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure:error.message,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2));throw error}
-finally{await browser.close()}
-
-
+ } catch(error){
+ primaryFailure=true
+ try { await preserveBrowserFailure({
+  error, stage:historyDiagnosticStage,
+  elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
+  log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
+  write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
+  screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
+ }) } finally { throw error }
+} finally {
+ const outcome=await boundedBestEffort(()=>browser.close())
+ console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
+ if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
+}
