@@ -9,6 +9,7 @@ type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -394,7 +395,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
           </header>
-          <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} />
+          <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         </section>
 
         <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
