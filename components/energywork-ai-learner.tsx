@@ -406,7 +406,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const total = slides.length;
   const completed = slide.kind === "finish";
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
-  const artSource = portraitArt ? "/images/holistic-house/reiki-practitioner-sunrise.webp" : slide.image;
+  const artSource = portraitArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
