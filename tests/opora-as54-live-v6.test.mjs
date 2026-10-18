@@ -96,13 +96,13 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
  }
 })
 
-test('V6 is new-cycle only, server validates pinned content, 14 pre-save screens and private signal data',()=>{
+test('V7 is used for new AS2 cycles while V6 retains its version-pinned signal schema',()=>{
  const server=read('lib/app/growth-daily.js')
  assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
  assert.match(server,/value === COURSE_ANTISTRESS_SKILLS_V6/)
  assert.match(server,/validateOpora54Signals\(input\.opora54\)/)
  assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
- assert.match(server,/opora54,interactionSchema:'as-5\.4-fifteen-screens-v1'/)
+ assert.match(server,/opora54,interactionSchema:version===COURSE_ANTISTRESS_SKILLS_V7\?'as-5\.5-fifteen-screens-v1':'as-5\.4-fifteen-screens-v1'/)
  assert.match(server,/!\[COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7\]\.includes\(version\) && input\.opora54!==undefined/)
  assert.match(server,/INVALID_OPORA54_INDEPENDENCE/)
  assert.match(server,/INVALID_OPORA54_APHORISM/)
