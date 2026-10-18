@@ -92,6 +92,6 @@ test('Reiki-specific clean mobile sunrise artwork is local and shipped without U
   assert.equal(image.subarray(0, 4).toString('ascii'), 'RIFF')
   assert.equal(image.subarray(8, 12).toString('ascii'), 'WEBP')
   assert.ok(image.length > 3000 && image.length < 50000, 'photographic asset should be present and mobile efficient')
-  assert.match(css, /reiki-practitioner-sunrise\\.webp/)
-  assert.match(css, /course-focus-mountain-boy\\.webp/)
+  assert.match(css, /reiki-practitioner-sunrise\.webp/)
+  assert.match(css, /course-focus-mountain-boy\.webp/)
 })
