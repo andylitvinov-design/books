@@ -62,6 +62,10 @@ test('new and edited master reports include picker, stable key persistence and d
   const newPage = source('app/admin/consultations/new/page.js')
   const editPage = source('app/admin/consultations/[id]/edit/page.js')
   const picker = source('components/report-test-picker.jsx')
+  const legacy = source('components/prescription-form.jsx')
+  const legacyNew = source('app/admin/prescriptions/new/page.js')
+  const legacyEdit = source('app/admin/prescriptions/[id]/page.js')
+  const legacyAction = source('app/admin/prescriptions/actions.js')
   assert.match(form, /<ReportTestPicker options=\{testOptions\}/)
   assert.match(form, /name="recommendedTestKeysJson"/)
   assert.match(form, /consultation\?\.recommendedTestKeys/)
@@ -75,6 +79,11 @@ test('new and edited master reports include picker, stable key persistence and d
   assert.match(model, /recommendedTestKeys: Array\.isArray\(record\.recommendedTestKeys\)/)
   assert.match(picker, /type="search"/)
   assert.match(picker, /type="checkbox"/)
+  assert.match(legacy, /<ReportTestPicker options=\\{testOptions\\}/)
+  assert.match(legacy, /name="recommendedTestKeysJson"/)
+  assert.match(legacyNew, /testOptions=\\{getReportTestOptions\\(\\)\\}/)
+  assert.match(legacyEdit, /testOptions=\\{getReportTestOptions\\(\\)\\}/)
+  assert.match(legacyAction, /recommendedTestKeys = JSON\\.parse/)
 })
 
 test('client HTML and standard/mobile PDFs include recommended tests only when selected', () => {
