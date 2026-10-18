@@ -71,7 +71,11 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)
-  assert.doesNotMatch(styles, /repeat\(3,minmax\(0,1fr\)\)/)
+  const bottomRules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => /\.ia222-bottom-navigation(?![\w-])/.test(selector))
+    .map(([, , declarations]) => declarations).join('\n')
+  assert.match(bottomRules, /grid-template-columns:\s*repeat\(6,\s*minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
   assert.match(styles, /white-space: nowrap/)
   assert.match(styles, /--ia222-bottom-height,76px/)
   assert.match(styles, /safe-area-inset-bottom/)
