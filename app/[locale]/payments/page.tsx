@@ -22,7 +22,7 @@ const copy = {
     help: "Ask about availability first", contact: "Contact on WhatsApp",
     instructions: "If PayPal does not offer Goods & Services, don't send a personal Friends & Family transfer for a service. Contact us instead.",
     zenTitle: "Prefer ZEN.COM?",
-    zenIntro: "Request a EUR bank transfer without entering card details on this site. This is an enquiry, not a payment. Recipient eligibility and transfer details must be confirmed before sending money.",
+    zenIntro: "Ask whether you can pay by EUR bank transfer. No payment is collected here; we first confirm the appointment and verified recipient details.",
     zenRequest: "Ask for ZEN.COM transfer details",
   },
   ru: {
@@ -37,7 +37,7 @@ const copy = {
     help: "Сначала уточнить время", contact: "Написать в WhatsApp",
     instructions: "Если PayPal не предлагает «Товары и услуги», не переводите оплату за услугу как «Друзьям и семье». Свяжитесь с нами.",
     zenTitle: "Предпочитаете ZEN.COM?",
-    zenIntro: "Запросите перевод EUR без ввода карты на сайте. Это запрос, не платёж. Возможность приёма оплаты и реквизиты подтверждаются до перевода.",
+    zenIntro: "Узнайте, можно ли оплатить переводом EUR. Здесь деньги не списываются: сначала согласуем время и проверим реквизиты получателя.",
     zenRequest: "Запросить реквизиты ZEN.COM",
   },
   es: {
@@ -52,7 +52,7 @@ const copy = {
     help: "Primero consultar disponibilidad", contact: "Contactar por WhatsApp",
     instructions: "Si PayPal no ofrece Productos y servicios, no pagues mediante Amigos y familiares por una consulta. Contáctanos.",
     zenTitle: "¿Prefieres ZEN.COM?",
-    zenIntro: "Solicita los datos para una transferencia bancaria en EUR sin introducir tu tarjeta aquí. Es una consulta, no un pago. Hay que verificar al destinatario antes de transferir.",
+    zenIntro: "Consulta si puedes pagar mediante transferencia en EUR. Aquí no se cobra: primero confirmamos la cita y los datos del destinatario.",
     zenRequest: "Solicitar datos para ZEN.COM",
   },
 } as const;
