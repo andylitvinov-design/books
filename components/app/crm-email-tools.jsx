@@ -30,10 +30,11 @@ export default function CrmEmailTools({ contact, locale='en', enabled=false, bus
    onAction('record_consent',{id:crypto.randomUUID(),contactId:contact.id,channel:'email',purpose:'product_updates',
      decision:'granted',occurredAt:new Date().toISOString(),source:proof.trim().replace(/\s+/g,' '),textVersion:'crm-marketing-v1'})
  }
- function send(event) {
+ async function send(event) {
    event.preventDefault()
    if(!canSend||!subject.trim()||!body.trim()||!requestId||!window.confirm(c.conf))return
-   onAction('send_email',{requestId,contactId:contact.id,subject:subject.trim(),body:body.trim()})
+   const response=await onAction('send_email',{requestId,contactId:contact.id,subject:subject.trim(),body:body.trim()})
+   if(response?.accepted===true){setExpanded(false);setRequestId('')}
  }
  return <details className={styles.panel}>
    <summary>{'✉ '}{c.label}{contact.emailVerified?' ✓':''}</summary>
