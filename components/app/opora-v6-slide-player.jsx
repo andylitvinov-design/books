@@ -140,6 +140,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const slide=receipt?null:slides[step]
   const role=slide?.kind
   const chosen=answers[role]||null
+  const choiceField=role==='notice'?'noticeChoice':role==='act'?'actChoice':null
+  const activeActivity=choiceField?authored?.exercises?.[role]||null:null
+  const picked=choiceField?answers[choiceField]||null:null
+  const chosenActivityIndex=picked?['one','two','three'].indexOf(picked):-1
   const Icon=SCENES[step%SCENES.length]
   useEffect(()=>{
     if(slide?.key)visited.current.add(slide.key)
@@ -155,6 +159,12 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function record(value){
     if(locked)return
+    // The learner actually chooses a relevant detail/action first. Only a
+    // separate later response may state that they tried the exercise.
+    if(choiceField&&!answers[choiceField]){
+      setAnswers(a=>({...a,[choiceField]:value}))
+      return
+    }
     setAnswers(a=>({...a,[role]:value}))
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
     if(value==='uncomfortable')setSafety(true)
@@ -203,6 +213,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
+    if(choiceField&&activeActivity&&!picked)
+      return (role==='notice'?activeActivity.a:activeActivity.choices)
+        .map((label,i)=>({value:['one','two','three'][i],label}))
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     if(role==='aphorism')return ['agree','unsure','disagree'].map((value,index)=>({value,
       label:(lang==='ru'?['Да, откликается','Пока сомневаюсь','Не согласен(на)']:
@@ -214,11 +227,19 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
     return (ROLE_OPTIONS[role]||[]).map(value=>({value,label:t.response[value]||value}))
   }
-  const optionsAvailable=options(),extraFeedback=chosen
-    ? role==='scenario'
-      ? (authored?.scenario?.explanation||t.feedback.other)
-      : chosen==='disagree'?t.feedback.disagree+' '+(authored?.neutralQuote||'')
-      : t.feedback[chosen]||t.feedback.other:null
+  const optionsAvailable=options()
+  const choiceFeedback=choiceField&&chosenActivityIndex>=0
+    ?role==='notice'?activeActivity?.f?.[chosenActivityIndex]
+      :(lang==='ru'?'Вы выбрали один посильный вариант. Это ещё не означает, что упражнение выполнено.':
+        'You chose a possible step. Choosing does not yet mean you performed it.')
+    :null
+  const extraFeedback=chosen
+    ?role==='scenario'
+      ? (lang==='ru'?'Вы выбрали один из доступных вариантов. ': 'You chose one possible option. ')+
+        (authored?.scenario?.explanation||t.feedback.other)
+      :chosen==='disagree'?t.feedback.disagree+' '+(authored?.neutralQuote||'')
+      :t.feedback[chosen]||t.feedback.other
+    :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
   const guidanceText=role==='scenario'?authored?.scenario?.explanation
     :role==='aphorism'?authored?.neutralQuote
@@ -283,14 +304,28 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
-              <div className={styles.options} role="group" aria-label={role==='aphorism'?t.aphorism:role==='scenario'?t.case:role==='demo'?t.example:PRACTICE_KINDS.has(role)?t.realAttempt:t.comfort}>
+              <div className={styles.options} role="group" aria-label={choiceField&&!picked
+                ?(role==='notice'?activeActivity?.q:slide?.text)
+                :role==='aphorism'?t.aphorism:role==='scenario'?t.case:role==='demo'?t.example:PRACTICE_KINDS.has(role)?t.realAttempt:t.comfort}>
                 {optionsAvailable.map(option=><button type="button" key={option.value} disabled={locked}
                   className={chosen===option.value?styles.selected:''}
                   aria-pressed={chosen===option.value} onClick={()=>record(option.value)}>
                   <span>{option.label}</span>{chosen===option.value?<CheckCircle2 size={19}/>:<ArrowRight size={15}/>}
                 </button>)}
               </div>}
-            {role==='act'&&<div className={styles.ease}>
+            {choiceField&&picked&&<div className={styles.activityChoice}>
+              <span>{lang==='ru'?'Ваш учебный выбор':'Your learning choice'}: <strong>{
+                role==='notice'?activeActivity?.a?.[chosenActivityIndex]
+                  :activeActivity?.choices?.[chosenActivityIndex]
+              }</strong></span>
+              <button type="button" className={styles.changeChoice} disabled={locked}
+                onClick={()=>setAnswers(a=>{
+                  const next={...a};delete next[choiceField];delete next[role];return next
+                })}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
+              <small>{lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
+                'Now report whether you actually tried the step.'}</small>
+            </div>}
+            {role==='act'&&picked&&['tried','partly'].includes(chosen)&&<div className={styles.ease}>
               <span>{t.easyTitle} <small>({lang==='ru'?'по желанию':'optional'})</small></span>
               <div className={styles.easeOptions} role="group" aria-label={t.easyTitle}>
                 {[0,1,2,3].map(i=><button type="button" key={i} disabled={locked}
