@@ -305,6 +305,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(role==='aphorism')return lang==='ru'
       ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
       : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
+    if(role==='focus')return (ROLE_OPTIONS[role]||[]).map(value=>({
+      value,label:value==='unsure'?(lang==='ru'?'Пока не уверен(а)':'Not sure about this focus'):t.response[value]||value,
+    }))
     return (ROLE_OPTIONS[role]||[]).map(value=>({value,label:t.response[value]||value}))
   }
   const optionsAvailable=options()
