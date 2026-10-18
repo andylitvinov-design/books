@@ -165,6 +165,29 @@ if (!process.execArgv.includes('--conditions=react-server')) {
     f.details.items[0].price='0.50'
     await assert.rejects(f.provider.reconcile(f.order),/SERVICE_PROVIDER_MISMATCH/)
   })
+  test('refund event reference is verified through the refund transaction before the original order', async () => {
+    const f=fixture(); await f.ready()
+    const merchantRefundId='merchant-refund-42'
+    const refund={ id:'88888888-8888-4888-8888-888888888888', type:'TRT_REFUND',
+      merchantTransactionId:merchantRefundId, originMerchantTransactionId:orderId,
+      currency:'EUR',amount:'20.00',status:'ACCEPTED' }
+    const purchase=f.details
+    const apiCalls=[]
+    const provider=createZenCommerceProvider(config,{fetcher:async(url) => {
+      apiCalls.push(url)
+      return new Response(JSON.stringify(url.includes(merchantRefundId) ? refund : purchase),{status:200})
+    }})
+    const event=verifyZenIpnPayload(fakeIpn({
+      type:'TRT_REFUND',merchantTransactionId:merchantRefundId,
+      originMerchantTransactionId:orderId, amount:'20.00',
+    }),secret)
+    const reference=await provider.eventReference(event)
+    assert.equal(reference.orderId,orderId)
+    assert.equal(reference.customerId,f.order.customerId)
+    assert.equal(apiCalls.length,2)
+    refund.originMerchantTransactionId='99999999-9999-4999-8999-999999999999'
+    await assert.rejects(provider.eventReference(event),/SERVICE_PROVIDER_MISMATCH/)
+  })
   test('ZEN 404 on initiated checkout fails closed rather than permitting duplicate charge', async () => {
     const f=fixture()
     assert.equal(await f.provider.findCheckout(f.order),null)
