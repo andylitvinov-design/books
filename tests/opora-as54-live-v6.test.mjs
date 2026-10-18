@@ -106,6 +106,10 @@ test('V6 is new-cycle only, server validates pinned content, 14 pre-save screens
  assert.match(server,/version!==COURSE_ANTISTRESS_SKILLS_V6 && input\.opora54!==undefined/)
  assert.match(server,/INVALID_OPORA54_INDEPENDENCE/)
  assert.match(server,/INVALID_OPORA54_APHORISM/)
+ // A reported try is not proof of independent competence, while real hints
+ // must be shown from the version-pinned owner's response.
+ assert.match(server,/isAntiStressV6\|\|\(isOporaNav2/)
+ assert.match(server,/Array\.isArray\(row\?\.signals\?\.opora54\?\.hints\)/)
 })
 
 test('independent mobile component has safe stop, 3 aphorism answers, hints and save-before-receipt',()=>{
