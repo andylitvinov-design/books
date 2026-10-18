@@ -116,6 +116,23 @@ test('stale and future-dated results never appear as a current strength or troub
   assert.equal(newer.staleAxes.energy,null)
   assert.equal(portrait([saved('hh-weekly-pulse','2026-10-20T12:00:00Z')]).answeredCount,0)
 })
+test('invalid latest instrument attempt cannot resurrect a misleading older score',()=>{
+  const old=saved('hh-weekly-pulse','2026-10-10T12:00:00Z',{'weekly.energy':8},{id:'valid-earlier'})
+  const invalid={...saved('hh-weekly-pulse','2026-10-16T12:00:00Z',{'weekly.energy':2},{id:'tampered-latest'}),contentHash:'wrong'}
+  const view=portrait([old,invalid])
+  assert.equal(view.axes.energy,null)
+  assert.equal(view.staleAxes.energy,null)
+  assert.equal(view.answeredCount,0)
+})
+test('active Current State v2 and older v1 are both valid, without rewriting either',()=>{
+  const v2=saved('hh-current-state','2026-10-16T12:00:00Z',{'state.tension':8},{id:'v2-current',version:'v2'})
+  const v1=saved('hh-current-state','2026-10-10T12:00:00Z',{'state.tension':2},{id:'v1-historical',version:'v1'})
+  const view=portrait([v1,v2])
+  assert.equal(view.axes.anxiety.definitionVersion,'v2')
+  assert.equal(view.axes.anxiety.resultId,'v2-current')
+  assert.equal(view.axes.anxiety.previousPercent,null) // Different pinned definition versions.
+  assert.equal(portraitAxisChoices().resource.sourceVersion,'v2')
+})
 test('unrelated questionnaires are not joined as repeated measures or silently substituted for a fresher primary',()=>{
   const weekly=saved('hh-weekly-pulse','2026-10-12T12:00:00Z',{'weekly.energy':6},{id:'weekly'})
   const other=saved('hh-resource-pulse','2026-10-16T12:00:00Z',{'resource.energy':9},{id:'other'})
