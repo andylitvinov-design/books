@@ -5,6 +5,7 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
+import {oporaExperienceGuide,oporaExperienceGuidesValid} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -37,6 +38,7 @@ async function click(h,label){
 
 test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful result',async()=>{
   assert.deepEqual([...OPORA_EXPERIENCE_PRE_SAVE_KEYS],['arrive','practice','feel','affirmation','save'])
+  assert.equal(oporaExperienceGuidesValid(),true)
   for(const lang of ['ru','en'])for(let day=1;day<=14;day++){
     const f=fixture(lang,day),h=f.h,d=t[lang]
     assert.match(textOf(h.tree),lang==='ru'?/Можно просто побыть здесь/:/You can arrive just as you are/)
@@ -44,8 +46,7 @@ test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful resul
     await click(h,d.next)
     // The participant sees concrete day-specific ACTION guidance, not a quiz
     // about correctly interpreting hypothetical answers.
-    assert.ok(textOf(h.tree).includes(f.lesson.opora54.screens.find(s=>s.key==='act').text))
-    await click(h,d.start)
+    assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
     await click(h,d.try)
     await click(h,d.next)
     await click(h,d.unchanged)
@@ -125,7 +126,7 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(css,/reiki-practitioner-sunrise\.webp/)
   assert.match(css,/prefers-reduced-motion/)
   assert.match(js,/inert=\{safety\}/)
-  assert.match(js,/actionStarted&&/)
+  assert.match(js,/onClick=\{\(\)=>tryStatus\(value\)\}/)
   const parsed=ts.createSourceFile('opora-experience-player.jsx',js,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.deepEqual(parsed.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[])
   for(const lang of ['ru','en']){
