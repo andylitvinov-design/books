@@ -93,7 +93,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
         body:JSON.stringify({action:name,payload})})
       const value=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(value.error||'UNAVAILABLE')
-      await refresh(name==='send'?active:'')
+      await refresh(name==='send'||name==='read'?active:'')
       return value
     }catch(e){setStatus(replyReason(e.message,lang)||t.sendError);return null}
     finally{setBusy(false)}
