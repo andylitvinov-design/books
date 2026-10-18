@@ -42,3 +42,5 @@ jobs:
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
         run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
+      - name: Verify calm photo-first mobile anti-stress screen and no duplicated response choices
+        run: node --test tests/opora-calm-day-one-mobile.test.mjs
