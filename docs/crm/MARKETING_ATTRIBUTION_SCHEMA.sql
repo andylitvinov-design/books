@@ -6,7 +6,7 @@ create table if not exists app.crm_marketing_opportunities (
   owner_id uuid not null references app.accounts(id) on delete cascade,
   contact_id uuid not null,
   source text not null default 'unknown' check (source in (
-    'instagram','facebook','google_ads','google_organic','youtube','telegram',
+    'instagram','facebook','google_ads','google_organic','google_maps','youtube','telegram',
     'eventbrite','meetup','website','academy','referral','event','direct',
     'offline','manual','other','unknown'
   )),
