@@ -217,10 +217,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       return (role==='notice'?activeActivity.a:activeActivity.choices)
         .map((label,i)=>({value:['one','two','three'][i],label}))
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
-    if(role==='aphorism')return ['agree','unsure','disagree'].map((value,index)=>({value,
-      label:(lang==='ru'?['Да, откликается','Пока сомневаюсь','Не согласен(на)']:
-        ['This resonates','Not sure yet','I disagree'])[index]}))
-    // The aphorism is a personal reflection, not a correct/incorrect quiz.
+    // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
     if(role==='aphorism')return lang==='ru'
       ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
