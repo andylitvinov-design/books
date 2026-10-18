@@ -8,6 +8,8 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import * as gaugeModule from '../lib/assessments/dashboard-gauges.js'
 import * as guideModule from '../lib/assessments/scale-guides.js'
 import * as overviewModule from '../lib/assessments/result-overview.js'
+import * as evidenceModule from '../lib/assessments/assessment-evidence-status.js'
+import * as scoreChangeModule from '../lib/assessments/score-change-reading.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -27,6 +29,7 @@ runInNewContext(ts.transpileModule(read('components/app/assessment-gauge.jsx'), 
 }).outputText, { exports: loaded.exports, require: name => {
   if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
   if (name === '@/lib/assessments/dashboard-gauges') return gaugeModule
+  if (name === '@/lib/assessments/score-change-reading') return scoreChangeModule
   if (name.endsWith('.module.css')) return { default: new Proxy({}, { get: (_, key) => key }) }
   assert.fail('Unexpected gauge dependency: ' + name)
 } })
@@ -41,6 +44,7 @@ runInNewContext(ts.transpileModule(read('components/app/compact-assessment-repor
   if (name === '@/lib/assessments/dashboard-gauges') return gaugeModule
   if (name === '@/lib/assessments/scale-guides') return guideModule
   if (name === '@/lib/assessments/result-overview') return overviewModule
+  if (name === '@/lib/assessments/assessment-evidence-status') return evidenceModule
   if (name.endsWith('.module.css')) return { default: new Proxy({}, { get: (_, key) => key }) }
   assert.fail('Unexpected compact report dependency: ' + name)
 } })
