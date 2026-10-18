@@ -16,6 +16,7 @@ import {
 } from '../lib/inner-growth/course-model.js'
 import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus, courseNextCycleScaleKeys } from '../lib/inner-growth/course-strategy.js'
 import { getAssessmentDefinition, provenance } from '../lib/assessments/definitions.js'
+import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -41,6 +42,20 @@ function weeklyResult(values = {}) {
         'weekly.connection': 'higher-reported-support',
       })[key],
     })),
+  }
+}
+
+// Unlike the lightweight marketing fixture, an automatic course priority MUST
+// receive the complete immutable scorer output, including every dimension,
+ // exact shape and metadata. Never weaken the source validator for synthetic tests.
+function scoredWeeklyResult(values = {}) {
+  const def = getAssessmentDefinition('hh-weekly-pulse','v1','en')
+  const answers = Object.fromEntries(def.questions.map(question =>
+    [question.id, Object.hasOwn(values,question.id) ? values[question.id] : 5]))
+  return {
+    ...scoreAssessment(def,answers),
+    id:'36c5b778-74ba-4487-bfb9-5ed44ed95710',
+    measurementAt:new Date().toISOString(),
   }
 }
 
@@ -198,14 +213,9 @@ test('five auto-proposed test choices credit compatible historical results, but 
 })
 
 test('measured profile prioritizes high difficulties and low resources without ranking traits as deficits', () => {
-  const history=weeklyResult({
+  const history=scoredWeeklyResult({
     'weekly.tension': 8,'weekly.recovery': 2,'weekly.clarity': 3,'weekly.connection': 4,
   })
-  const direction={
-    'weekly.tension':'lower-reported-tension','weekly.recovery':'higher-reported-recovery',
-    'weekly.clarity':'higher-reported-clarity','weekly.connection':'higher-reported-support',
-  }
-  history.dimensions.forEach(d=>{d.direction=direction[d.key]})
   const profile=courseMeasuredProfile({results:[history],testKeys:['hh-weekly-pulse']})
   const tension=profile.scales.find(item=>item.id==='hh-weekly-pulse::weekly.tension')
   const recovery=profile.scales.find(item=>item.id==='hh-weekly-pulse::weekly.recovery')
@@ -218,8 +228,9 @@ test('measured profile prioritizes high difficulties and low resources without r
   assert.equal(goalForChosenScale(tension.id),'calm_regulation')
   const traits=courseMeasuredProfile({results:[{...history,definitionKey:'mini-ipip-20'}],testKeys:['mini-ipip-20']})
   assert.equal(traits.eligible.length,0)
-  const wrong=weeklyResult({'weekly.tension':8})
-  wrong.dimensions[0].direction='higher-reported-wellbeing'
+  const wrong=scoredWeeklyResult({'weekly.tension':8})
+  wrong.dimensions=wrong.dimensions.map(d => d.key==='weekly.tension'
+    ? {...d,direction:'higher-reported-wellbeing'} : d)
   assert.equal(courseMeasuredProfile({results:[wrong],testKeys:['hh-weekly-pulse']}).eligible.length,0)
 })
 
@@ -235,7 +246,7 @@ test('previously consented relationship focus can continue without becoming an a
 })
 
 test('top-three focus recommendations use only genuine eligible scales in direction-aware order', () => {
-  const input = weeklyResult({
+  const input = scoredWeeklyResult({
     'weekly.tension': 7, 'weekly.recovery': 2, 'weekly.clarity': 4,
     'weekly.connection': 6,
   })
