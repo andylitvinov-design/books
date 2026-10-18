@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesQuickStart } from "@/components/services-quick-start";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -167,6 +168,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <ServicesQuickStart locale={locale} />
 
       <ServicesSmartDiscovery
         locale={locale}
