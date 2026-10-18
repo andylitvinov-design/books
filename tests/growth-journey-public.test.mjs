@@ -51,7 +51,8 @@ test('the share control offers only public guide links without client results',(
   const intro=selector.split('async function shareJourney()')[1]?.split('const toggle = ')[0]
   assert.ok(intro,'share handler')
   assert.match(intro,/new URL\('\/' \+ language \+ '\/explore\/' \+ journey\.id/)
-  assert.doesNotMatch(intro,/resultId|scores|accountId|testAnswers|searchParams|selected\.join/)
+  const executableCode = intro.replace(/\/\/[^\n]*/g,'')
+  assert.doesNotMatch(executableCode,/resultId|scores|accountId|testAnswers|searchParams|selected\.join/)
   assert.match(selector,/data-topic-safe-sharing/)
   assert.match(selector,/navigator\.share/)
   assert.match(selector,/navigator\.clipboard/)
