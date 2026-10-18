@@ -93,7 +93,7 @@ test('Telegram connection registers a signed webhook and refuses another applica
   assert.match(api,/ensureTelegramWebhook\(\)/)
 })
 test('signed early WhatsApp receipts survive out-of-order events with owner-scoped RLS',()=>{
-  const sql=source('supabase/migrations/20261018192900_hh_crm_messenger_early_receipts_20261018.sql')
+  const sql=source('supabase/migrations/20261018193024_hh_crm_messenger_early_receipts_20261018.sql')
   const store=source('lib/crm/messenger-store.js')
   assert.match(sql,/FORCE ROW LEVEL SECURITY/)
   assert.match(sql,/ON CONFLICT\(account_id,provider_hash\)/)
