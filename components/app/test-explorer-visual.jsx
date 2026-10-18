@@ -7,7 +7,7 @@ import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments
 import { layoutPortraitRayLabels } from '@/lib/assessments/portrait-ray-labels'
 import {
   PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors, portraitSectorMidAngle, summarizePortraitSectors,
+  portraitAxesForSectors, portraitFullCircleAngleForAxis,
 } from '@/lib/assessments/portrait-sectors'
 import styles from './test-explorer.module.css'
 
@@ -21,7 +21,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
-  const [selectedSector, setSelectedSector] = useState('all')
+  const [selectedSector, setSelectedSector] = useState('body')
   const [showAllPortraitRays, setShowAllPortraitRays] = useState(false)
   const portraitRayOptionsId = useId()
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
@@ -30,26 +30,21 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","intimacy":"Intimidad","boundaries":"Límites y consentimiento","sexual_wellbeing":"Bienestar sexual","embodiment":"Presencia corporal","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
   const measuredAxes = portrait ? PORTRAIT_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
-  // All is a real four-sector overview; detail uses only the selected sector.
-  // No measurement is fabricated and individual ray choices survive a switch.
-  const suggestedRays = measuredAxes
+  // The chosen category always unfolds across the full circumference. Show
+  // every defined scale in that category, including scales not yet measured.
+  // Missing scores remain empty; fine-grained visibility choices are optional.
+  const suggestedRays = PORTRAIT_AXES
   const checkedRays = chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))
-  const sectorAxes = selectedSector === 'all' ? [] : portraitAxesForSectors([selectedSector])
+  const sectorAxes = portraitAxesForSectors([selectedSector])
   const sectorAxisSet = new Set(sectorAxes)
   const focusOptions = PORTRAIT_AXES.filter((axis) => sectorAxisSet.has(axis))
   const visibleRays = checkedRays.filter((axis) => sectorAxisSet.has(axis))
     .sort((a, b) => PORTRAIT_AXIS_ORDER.indexOf(a) - PORTRAIT_AXIS_ORDER.indexOf(b))
-  const summarySectors = portrait ? summarizePortraitSectors(portrait) : []
-  const summaryPoints = summarySectors.map(sector => {
-    const angle = portraitSectorMidAngle(sector.key)
-    const radius = sector.percent === null ? 146 : 14 + sector.percent * 1.32
-    return { ...sector, point: { x: 180 + Math.cos(angle) * radius, y: 182 + Math.sin(angle) * radius } }
-  })
   // Expanding the 2-column list never resets the current sector or ray choices.
   const portraitOptions = showAllPortraitRays ? focusOptions : focusOptions.slice(0, PORTRAIT_COLLAPSED_COUNT)
   const rays = visibleRays.map((axis) => {
-    // Every sector gets exactly one quarter; positions never change on filtering.
-    const angle = portraitAngleForAxis(axis)
+    // Selected sector's own scales now evenly span all 360 degrees.
+    const angle = portraitFullCircleAngleForAxis(axis, selectedSector)
     const measure = portrait?.axes?.[axis] || null
     const percent = measure?.percent ?? null
     const project = (r) => ({ x: 180 + Math.cos(angle) * r, y: 182 + Math.sin(angle) * r })
@@ -62,7 +57,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const polygon = (kind) => rays.map((ray) => `${ray[kind].x},${ray[kind].y}`).join(' ')
   const rayLabels = portrait ? layoutPortraitRayLabels(rays.map((ray) => ({
     axis: ray.axis, label: label(ray.axis), ideal: ray.ideal,
-    end: ray.end, measured: Boolean(ray.end),
+    // Captions stay on the OUTER ring even when a measured dot is near center.
+    end: null, measured: Boolean(ray.end),
   }))) : []
   const formatDate = (value) => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat(ru ? 'ru-RU' : es ? 'es-ES' : 'en-CA', { dateStyle: 'medium' }).format(new Date(value)) : ''
   const toggleRay = (axis) => setChosenRays((current) => {
@@ -94,7 +90,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         {['female', 'male'].map((key) => <button type="button" key={key} aria-pressed={variant === key} onClick={() => setVariant(key)}>{key === 'female' ? (ru ? 'Женская' : es ? 'Femenino' : 'Female') : (ru ? 'Мужская' : es ? 'Masculino' : 'Male')}</button>)}
       </div>}
     </header>
-    {!compact && <div className={styles.visualState} role="status" aria-live="polite">
+    {!compact && !portrait && <div className={styles.visualState} role="status" aria-live="polite">
       <strong>{portrait ? (ru ? `${portrait.measuredCount} измеренных шкал` : es ? `${portrait.measuredCount} escalas medidas` : `${portrait.measuredCount} measured scales`) : mode === 'selected'
         ? (ru ? `${selectedCount} тестов · ${coverage.coveredCount} осей покрыто` : es ? `${selectedCount} pruebas · ${coverage.coveredCount} ejes cubiertos` : `${selectedCount} tests · ${coverage.coveredCount} axes covered`)
         : (ru ? `${topicCount} тем · ${coverage.coveredCount} связанных осей` : es ? `${topicCount} temas · ${coverage.coveredCount} ejes relacionados` : `${topicCount} topics · ${coverage.coveredCount} related axes`)}</strong>
@@ -103,11 +99,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
     </div>}
     {portrait && !compact && <div className={styles.portraitSectorPicker} data-portrait-sectors
-      role="group" aria-label={ru ? 'Секторы портрета' : es ? 'Sectores del retrato' : 'Portrait sectors'}>
-      <button type="button" className={styles.portraitSectorAll} data-portrait-sector-all
-        aria-pressed={selectedSector === 'all'} onClick={() => setSelectedSector('all')}>
-        {ru ? 'Все 4 сектора' : es ? 'Los 4 sectores' : 'All 4 sectors'}
-      </button>
+      role="group" aria-label={ru ? 'Четыре категории портрета' : es ? 'Cuatro categorías del retrato' : 'Four portrait categories'}>
       <div className={styles.portraitSectorGrid}>
         {PORTRAIT_SECTORS.map((sector) => <button type="button" key={sector.key}
           className={styles.portraitSectorChip} data-portrait-sector={sector.key}
@@ -151,87 +143,46 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         })}
       </svg>}
       {portrait && <svg viewBox="0 0 360 390" preserveAspectRatio="xMidYMid meet"
-        className={styles.portraitRadar} data-radar-mode={selectedSector === 'all' ? 'summary' : 'detail'}
-        role="img"
-        aria-label={selectedSector === 'all'
-          ? (ru ? 'Четыре сектора портрета' : es ? 'Cuatro sectores del retrato' : 'Four portrait sectors') + ': ' +
-            summarySectors.map(sector => `${sector.label[locale] || sector.label.en}: ${sector.percent === null ? '—' : sector.percent + '%'} (${sector.measured}/${sector.total})`).join(', ')
-          : (ru ? 'Шкалы выбранного сектора' : es ? 'Escalas del sector seleccionado' : 'Scales in selected sector') + ': ' + rayLabels.map(ray => ray.label).join(', ')}>
-        <title>{selectedSector === 'all'
-          ? (ru ? 'Четыре измеряемых сектора' : es ? 'Cuatro sectores medibles' : 'Four measured sectors')
-          : (ru ? 'Измеренные шкалы выбранного сектора' : es ? 'Escalas medidas del sector' : 'Measured scales of selected sector')}</title>
+        className={styles.portraitRadar} data-radar-mode="detail" data-radar-layout="full-circle"
+        data-active-portrait-sector={selectedSector} role="img"
+        aria-label={(ru ? 'Шкалы категории' : es ? 'Escalas de la categoría' : 'Category scales') + ': ' +
+          rays.map(ray => `${label(ray.axis)}: ${ray.percent === null ? '—' : ray.percent + '%'}`).join(', ')}>
+        <title>{ru ? 'Показатели выбранной категории по всей окружности' :
+          es ? 'Escalas de la categoría alrededor de todo el círculo' : 'Selected category scales around the full circle'}</title>
         <circle cx="180" cy="182" r="146" className={styles.radarReference} />
         <circle cx="180" cy="182" r="73" className={styles.radarGrid} />
-        {PORTRAIT_SECTORS.map((sector, index) => {
-          const first = -Math.PI / 2 + index * Math.PI / 2
-          const last = first + Math.PI / 2
-          const startX = 180 + Math.cos(first) * 149, startY = 182 + Math.sin(first) * 149
-          const endX = 180 + Math.cos(last) * 149, endY = 182 + Math.sin(last) * 149
-          return <path key={sector.key} data-radar-sector={sector.key}
-            data-selected={selectedSector === 'all' || selectedSector === sector.key}
-            d={`M ${startX} ${startY} A 149 149 0 0 1 ${endX} ${endY}`}
-            className={styles.radarSectorArc} />
-        })}
-        {[0, 1, 2, 3].map(index => {
-          const angle = -Math.PI / 2 + index * Math.PI / 2
-          return <line key={index} x1="180" y1="182"
-            x2={180 + Math.cos(angle) * 146} y2={182 + Math.sin(angle) * 146}
-            className={styles.radarSectorDivider} />
-        })}
-        {selectedSector === 'all' ? <>
-          {summaryPoints.every(sector => sector.percent !== null) &&
-            <polygon points={summaryPoints.map(sector => `${sector.point.x},${sector.point.y}`).join(' ')}
-              className={styles.radarArea}/>}
-          {summaryPoints.map((sector,index) => {
-            const measured = sector.percent !== null
-            const captions = {
-              body: ru ? 'Тело' : es ? 'Cuerpo' : 'Body',
-              work: ru ? 'Дело' : es ? 'Trabajo' : 'Work',
-              relationships: ru ? 'Отношения' : es ? 'Relaciones' : 'Relations',
-              growth: ru ? 'Дух' : es ? 'Espíritu' : 'Spirit',
-            }
-            const positions = [{ x:315,y:40 },{ x:315,y:327 },{ x:45,y:327 },{ x:45,y:40 }]
-            const anchor = index < 2 ? 'end' : 'start'
-            return <g key={sector.key} data-summary-sector={sector.key}
-              data-measured={measured} className={styles.radarSummarySector}>
-              <line x1="180" y1="182" x2={sector.point.x} y2={sector.point.y}
-                className={measured ? styles.radarRay : styles.radarSummaryMissingRay}/>
-              <circle data-sector-point={sector.key} data-measured={measured}
-                cx={sector.point.x} cy={sector.point.y} r={measured ? 7 : 5.5}
-                className={measured ? styles.radarPoint : styles.radarSummaryMissingPoint}/>
-              <text x={positions[index].x} y={positions[index].y} textAnchor={anchor}
-                className={styles.radarSummaryLabel}>
-                <tspan x={positions[index].x}>{captions[sector.key]}</tspan>
-                <tspan x={positions[index].x} dy="16" className={styles.radarSummaryValue}>
-                  {measured ? `${sector.percent}%` : '—'}
-                </tspan>
-              </text>
-            </g>
-          })}
-        </> : <>
-          {rays.map(ray => <g key={ray.axis}>
-            <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y} className={styles.radarGuide}/>
-            {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y} className={styles.radarRay}/>}
-            {ray.end && <circle cx={ray.end.x} cy={ray.end.y} r="6" className={styles.radarPoint}/>}
-            {ray.previousEnd && <circle cx={ray.previousEnd.x} cy={ray.previousEnd.y} r="3.8" className={styles.radarPrior}/>}
-          </g>)}
-          {rays.length >= 3 && rays.every(ray => ray.end) && <polygon points={polygon('end')} className={styles.radarArea}/>}
-          {rays.length >= 3 && rays.every(ray => ray.end) && <polygon points={polygon('end')} className={styles.radarOutline}/>}
-          {rayLabels.map(ray => <g key={`portrait-label-${ray.axis}`}
-            className={`${styles.radarLabel} ${ray.measured ? '' : styles.radarLabelUnmeasured}`}>
-            {ray.showLeader && <line x1={ray.tip.x} y1={ray.tip.y} x2={ray.anchor.x} y2={ray.anchor.y}
-              className={styles.radarInlineLeader}/>}
-            <text x={ray.x} y={ray.y + (ray.lines.length === 1 ? 14 : 13)}
-              textAnchor="start" className={styles.radarInlineLabel}>
-              {ray.lines.map((line,index) => <tspan key={index} x={ray.x}
-                dy={index === 0 ? 0 : 14} textLength={line.length > 17 ? ray.width : undefined}
-                lengthAdjust="spacingAndGlyphs">{line}</tspan>)}
-            </text>
-          </g>)}
-        </>}
-        <circle cx="180" cy="182" r="7" className={styles.radarCenter}/>
+        {rays.length >= 3 && <polygon
+          points={rays.map(ray => `${ray.ideal.x},${ray.ideal.y}`).join(' ')}
+          className={styles.radarContourPolygon} />}
+        {rays.map(ray => <g key={ray.axis} data-detail-axis={ray.axis} data-measured={ray.end !== null}>
+          <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y}
+            className={styles.radarGuide} />
+          {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y} className={styles.radarRay}/>}
+          {ray.end && <circle cx={ray.end.x} cy={ray.end.y} r="5.7" className={styles.radarPoint}/>}
+          {ray.previousEnd && <circle cx={ray.previousEnd.x} cy={ray.previousEnd.y}
+            r="3.6" className={styles.radarPrior}/>}
+          <circle cx={ray.ideal.x} cy={ray.ideal.y} r="6"
+            data-contour-axis={ray.axis} data-measured={ray.end !== null}
+            className={ray.end ? styles.radarContourMeasured : styles.radarContourUnmeasured}/>
+        </g>)}
+        {rays.length >= 3 && rays.every(ray => ray.end) &&
+          <polygon points={polygon('end')} className={styles.radarArea}/>}
+        {rays.length >= 3 && rays.every(ray => ray.end) &&
+          <polygon points={polygon('end')} className={styles.radarOutline}/>}
+        <circle cx="180" cy="182" r="7" className={styles.radarCenter} />
+        {rayLabels.map(ray => <g key={`portrait-label-${ray.axis}`}
+          className={`${styles.radarLabel} ${ray.measured ? '' : styles.radarLabelUnmeasured}`}>
+          {ray.showLeader && <line x1={ray.tip.x} y1={ray.tip.y}
+            x2={ray.anchor.x} y2={ray.anchor.y} className={styles.radarInlineLeader}/>}
+          <text x={ray.x} y={ray.y + (ray.lines.length === 1 ? 14 : 13)}
+            textAnchor="start" className={styles.radarInlineLabel}>
+            {ray.lines.map((line,index) => <tspan key={index} x={ray.x}
+              dy={index === 0 ? 0 : 14} textLength={ray.lineWidths[index]}
+              lengthAdjust="spacingAndGlyphs">{line}</tspan>)}
+          </text>
+        </g>)}
       </svg>}
-            {!portrait && !compact && <div className={styles.axisRing}>
+      {!portrait && !compact && <div className={styles.axisRing}>
         {PRIMARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}
       </div>}
     </div>
@@ -243,7 +194,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     </div>}
     {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
     {portrait && !compact && portraitActions}
-    {portrait && !compact && selectedSector !== 'all' && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
+    {portrait && !compact && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
         <span>{visibleRays.length} / {focusOptions.length}</span>
@@ -305,6 +256,6 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
       </div>)}
     </div>}
-    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (ru ? 'Все: среднее положение только измеренных шкал каждой категории (не показатель здоровья). Непройденные шкалы не получают баллов. Данные приватны.' : es ? 'Todos: media descriptiva de las escalas medidas, no porcentaje de salud. Los datos ausentes no se estiman.' : 'All: a descriptive mean of measured within-test scales, not a health score. Missing scales are never estimated. Results remain private.') : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
+    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (ru ? 'Шкалы выбранной категории равномерно расположены по кругу. Тёмные точки — только сохранённые измерения; пустые контуры — неизмеренные шкалы. Это не процент здоровья.' : es ? 'Las escalas se distribuyen por todo el círculo. Solo los puntos medidos muestran resultados. No es un porcentaje de salud.' : 'Scales span the full circle. Only saved measurements have filled data points; hollow ring markers show unmeasured scales. These are not health percentages.') : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
   </section>
 }

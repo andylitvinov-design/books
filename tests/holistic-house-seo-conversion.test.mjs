@@ -54,7 +54,8 @@ test("home SEO preserves visible photo offers and bottom blue free capture in EN
   assert.ok(home.indexOf("<ServicesSolutions locale={locale} variant=\"home\" />") < home.indexOf("<HomepageContactCta locale={locale} />"));
   assert.doesNotMatch(home, /data-home-path|data-home-extra-paths|service-home-more|service-home-progress/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/client\/tests\x60\}/);
-  for (const comp of ["HomeFreeTestsBanner", "ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
+  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
+  for (const comp of ["ServicesSolutions", "HomepageTopicJourneys", "PersonalTestimonials"]) {
     assert.ok(home.includes("<" + comp), comp);
   }
   assert.match(spanish, /href="\/es\/services\/free-situation-review"/);

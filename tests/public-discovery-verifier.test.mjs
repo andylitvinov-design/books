@@ -265,9 +265,9 @@ test('browser ray verifier rejects no-op expansion, obsolete caps, fabricated de
   const mutations = [
     ["setSelectedSector(sector.key)", "setSelectedSector('all')"],
     ['[...selected, axis]', '(selected.length >= 10 ? selected : [...selected, axis])'],
-    ['const suggestedRays = measuredAxes', 'const suggestedRays = PORTRAIT_AXES.slice(0, 8)'],
+    ['const suggestedRays = PORTRAIT_AXES', 'const suggestedRays = measuredAxes'],
     ['setSelectedSector(sector.key)', '(setChosenRays(null), setSelectedSector(sector.key))'],
-    ['summarySectors.map(sector => {', 'summarySectors.slice(0, 3).map(sector => {'],
+    ['portraitAxesForSectors([selectedSector])', "portraitAxesForSectors(['body'])"],
   ]
   for (const [before, after] of mutations) {
     assert.ok(read('components/app/test-explorer-visual.jsx').includes(before), 'Mutation must alter the actual current source')

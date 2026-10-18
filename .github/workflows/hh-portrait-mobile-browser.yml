@@ -1,0 +1,79 @@
+name: Reports portrait mobile browser QA
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/app/test-explorer-visual.jsx'
+      - 'components/app/test-explorer.module.css'
+      - 'lib/assessments/portrait-ray-labels.js'
+      - 'lib/assessments/portrait-sectors.js'
+      - 'scripts/verify-portrait-mobile.mjs'
+      - '.github/workflows/hh-portrait-mobile-browser.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-mobile:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      HH_TEST_BROWSER: ${{ matrix.browser }}
+      CI: 'true'
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_APP_ENABLED: 'true'
+      HH_APP_SIGNUPS_ENABLED: 'true'
+      HH_APP_GUEST_ENABLED: 'true'
+      HH_APP_REPORTS_ENABLED: 'true'
+      HH_APP_SUPABASE_URL: http://127.0.0.1:54329
+      HH_APP_SUPABASE_PUBLISHABLE_KEY: synthetic-publishable-key
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+      HH_APP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      HH_APP_ALLOWED_ORIGINS: http://127.0.0.1:3100
+      HH_TEST_APP_ORIGIN: http://127.0.0.1:3100
+      PRESCRIPTIONS_ADMIN_TOKEN: synthetic-ci-admin-access-only
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Isolated Playwright browser
+        run: |
+          mkdir -p /tmp/hh-portrait-playwright
+          npm install --prefix /tmp/hh-portrait-playwright --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-portrait-playwright/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-portrait-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Initialize isolated synthetic database
+        run: node --conditions=react-server tests/helpers/app-db-setup.mjs
+      - name: Four category mobile browser QA in EN/RU at 320, 390, 430
+        run: |
+          node tests/helpers/app-auth-double.mjs > /tmp/hh-portrait-auth.log 2>&1 & PROVIDER_PID=$!
+          npm run dev -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-portrait-next.log 2>&1 & APP_PID=$!
+          trap 'kill "$PROVIDER_PID" "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 110); do
+            if curl --silent --fail http://127.0.0.1:54329/health >/dev/null && curl --silent --fail http://127.0.0.1:3100/en/app >/dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-portrait-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portrait-mobile-${{ matrix.browser }}
+          path: artifacts/portrait-mobile/
+          retention-days: 5

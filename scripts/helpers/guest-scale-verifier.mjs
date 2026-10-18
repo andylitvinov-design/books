@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { buildAssessmentResultReport } from '../../lib/assessments/result-report.js'
+import { gaugeModel } from '../../lib/assessments/dashboard-gauges.js'
 import { interpretationBandModel } from '../../lib/assessments/interpretation-registry.js'
 
 const normalized = value => String(value ?? '').replace(/\s+/g, ' ').trim()
@@ -173,10 +174,17 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     assertScoredGaugeSnapshot(actual, result, section, locale, true)
     const dimension = result.dimensions.find(item => item.key === section.key)
     const model = interpretationBandModel(result, dimension, locale)
-    assert.deepEqual(actual.publishedBands, model.bands.map(band => ({
-      range: `${band.from}–${band.to}`, label: band.label, current: band.code === model.currentBand?.code,
-    })), 'Moved published strip retains every exact source range, label and current marker')
-    const anchor = model.currentAnswerBand
+    const reading = gaugeModel(dimension, result, locale)?.rangeReading
+    assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => ({
+      range: band.displayRange, label: band.label, current: band.current,
+    })) : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows and current selection')
+    if (reading) {
+      assert.equal(normalized(actual.rangeHeading), normalized(reading.heading))
+      assert.equal(normalized(actual.rangeNarrative), normalized(reading.narrative))
+      assert.deepEqual(actual.rangeDetails, reading.rows.length > 1 ? reading.rows.map(row => ({code:row.code,heading:row.displayRange+' — '+row.label,note:row.note,current:row.current})) : [], 'Exact complete explanation of every source-aware interval')
+      for (const text of [reading.narrative, reading.caution, ...reading.rows.map(row => row.note)]) assert.ok(normalized(actual.text).includes(normalized(text)), 'Every range explanation remains available')
+    }
+    const anchor = reading ? null : model.currentAnswerBand
     assert.equal(actual.answerReadingCount, anchor ? 1 : 0)
     assert.equal(actual.answerRangesCount, anchor ? 1 : 0)
     assert.deepEqual(actual.answerRanges, (anchor ? model.answerBands : []).map((band, index) => ({
@@ -267,9 +275,12 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
         activeCount: root.querySelectorAll('[data-active-scale]').length,
         pressedKeys: [...root.querySelectorAll('[data-assessment-scale-trigger][aria-pressed="true"]')].map(node => node.getAttribute('data-assessment-scale-trigger')),
         rootGaugeCount: root.querySelectorAll('[data-assessment-gauge]').length,
-        publishedBands: [...element.querySelectorAll('[data-score-band-strip] > span')].map(node => ({
+        rangeHeading: element.querySelector('[data-assessment-range-report] > h4')?.textContent,
+        rangeNarrative: element.querySelector('[data-range-characterization]')?.textContent,
+        rangeDetails: [...element.querySelectorAll('[data-score-range-description]')].map(node => ({code:node.getAttribute('data-score-range-description'),heading:node.querySelector('strong')?.textContent,note:node.querySelector('p')?.textContent,current:node.hasAttribute('data-selected-score-description')})),
+        publishedBands: [...element.querySelectorAll('[data-all-score-ranges] > li, [data-score-band-strip] > span')].map(node => ({
           range: node.querySelector('b')?.textContent,
-          label: [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/ · (?:ваш|yours)$/, '').trim(),
+          label: node.querySelector(':scope > span')?.textContent.trim() || [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/ · (?:ваш|yours)$/, '').trim(),
           current: node.getAttribute('aria-current') === 'true',
         })),
         primaryCount: element.querySelectorAll('[data-primary-support]').length,

@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { buildTestDynamicsGroups } from '../lib/assessments/test-dynamics.js'
+import { buildTestDynamicsGroups, visibleTestDynamicsBand } from '../lib/assessments/test-dynamics.js'
+import { readFileSync } from 'node:fs'
 
 const base = (id, at, value, extra = {}) => {
   const definition = getAssessmentDefinition(extra.definitionKey || 'hh-current-state', 'v1', 'en')
@@ -75,4 +76,36 @@ test('retained histories remain visible even when there is no active test plan',
   const view = buildTestDynamicsGroups([result], 'en')
   assert.equal(view.groups.length, 1)
   assert.equal(view.groups[0].latest.definitionId, getAssessmentDefinition('hh-current-state','v1','en').id)
+})
+
+test('test dynamics shows only the current published score interval and hides its peers', () => {
+  const phq4 = base('phq4', '2026-10-17T12:00:00Z', 6, { definitionKey: 'phq-4' })
+  const current = visibleTestDynamicsBand(phq4.dimensions[0], phq4, 'ru')
+  assert.ok(current, 'the published PHQ-4 result must have an active range')
+  assert.equal(current.kind, 'published')
+  assert.equal(current.current.from, 6)
+  assert.equal(current.current.to, 8)
+  assert.equal(current.others.length, 3)
+  assert.ok(current.others.every(band => band.code !== current.current.code))
+  const low = visibleTestDynamicsBand({ ...phq4.dimensions[0], value: 0 }, phq4, 'ru')
+  assert.equal(low.current.from, 0)
+  assert.equal(low.current.to, 2)
+})
+
+test('unpublished reading aids remain explicitly descriptive and current-only', () => {
+  const cbi = base('cbi', '2026-10-17T12:00:00Z', 50, { definitionKey: 'cbi-personal' })
+  const current = visibleTestDynamicsBand(cbi.dimensions[0], cbi, 'en')
+  assert.equal(visibleTestDynamicsBand({...cbi.dimensions[0],value:45},cbi,'en'),null,'Off-lattice CBI values cannot acquire an interpretation')
+  assert.equal(current?.kind, 'descriptive')
+  assert.equal(current?.others.length, 4)
+  assert.ok(current.caveat.includes('not published norms'))
+})
+
+test('Results mobile view collapses extra measured scales and score intervals by default', () => {
+  const view = readFileSync(new URL('../components/app/test-dynamics.jsx', import.meta.url), 'utf8')
+  assert.match(view, /group\.scales\.slice\(0,1\)/)
+  assert.match(view, /group\.scales\.slice\(1\)/)
+  assert.match(view, /showLegend=\{false\}/)
+  assert.match(view, /data-current-score-band/)
+  assert.match(view, /<details className=\{styles\.levelDetails\} data-other-score-bands>/)
 })

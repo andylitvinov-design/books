@@ -113,6 +113,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null
   const scoreLevelGuide = model?.scoreLevelGuide || null
+  const rangeReading = model?.rangeReading || null
   const situationObservation = model?.observation || null
   const hasPlainLanguageGuide = Boolean(
     (scoreLevelGuide || anchor) && (result?.definitionKey?.startsWith('hh-') || result?.definitionKey?.startsWith('cbi-'))
@@ -195,8 +196,12 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         <ScoreGauge dimension={dimension} locale={locale} result={result} showLegend={false} showScaleNote={false}/>
         <div className={styles.summary}>
           <h3>{phq4ShortName(section.key, locale) || section.construct || section.title}</h3>
-          {scoreLevelGuide && <p className={styles.band} data-descriptive-score-current>{scoreLevelGuide.current.label}</p>}
-          {section.band && section.bandBasis !== 'descriptive' && <p className={styles.band + (section.recommendedReview ? ' ' + styles.bandNeedsReview : '')}>{section.band}</p>}
+          {rangeReading && <p className={styles.currentScoreRange} data-current-score-range>
+            <strong>{rangeReading.selectedCaption}:</strong> {rangeReading.current.label}
+            <span>{rangeReading.current.displayRange}</span>
+          </p>}
+          {!rangeReading && scoreLevelGuide && <p className={styles.band} data-descriptive-score-current>{scoreLevelGuide.current.label}</p>}
+          {!rangeReading && section.band && section.bandBasis !== 'descriptive' && <p className={styles.band + (section.recommendedReview ? ' ' + styles.bandNeedsReview : '')}>{section.band}</p>}
           {canShowScore && <p className={styles.scale}>{section.bandBasis === 'unavailable'
             ? (ru ? 'Сохранённое значение' : 'Saved value') : (ru ? 'Баллы' : 'Score')}: {section.value} · {section.bandBasis === 'unavailable'
               ? (ru ? 'непроверенный сохранённый диапазон' : 'unverified saved range') : (ru ? 'шкала' : 'range')} {section.min}–{section.max}</p>}
@@ -204,7 +209,49 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
-      {model?.bands?.length > 0 && <div className={styles.bandStrip} data-score-band-strip
+      {rangeReading && <section className={styles.rangeReport} data-assessment-range-report
+        data-range-kind={rangeReading.kind}
+        aria-label={ru ? 'Шкала, диапазоны и характеристика результата' : 'Scale, ranges and score interpretation'}>
+        <p className={styles.rangeEyebrow}>{ru ? 'ХАРАКТЕРИСТИКА РЕЗУЛЬТАТА' : 'YOUR SCORE INTERPRETATION'}</p>
+        <h4 className={styles.rangeHeading}>{rangeReading.heading}</h4>
+        <p className={styles.rangeNarrative} data-current-score-position data-range-characterization>
+          {rangeReading.narrative}
+        </p>
+        {rangeReading.contextual && <p className={styles.rangeContext} data-range-context>
+          <strong>{ru ? 'Что можно заметить:' : 'What to look for:'}</strong> {rangeReading.contextual}
+        </p>}
+        {rangeReading.trait && conciseMeaning && <p className={styles.traitReading} data-personality-scale-characterization>
+          <strong>{ru ? 'В каких особенностях это проявляется:' : 'How this trait may appear:'}</strong> {conciseMeaning}
+        </p>}
+        <div className={styles.rangeHeader}>
+          <h5>{rangeReading.rangeTitle}</h5>
+          <span>{ru ? 'Ваш уровень выделен' : 'Your range is highlighted'}</span>
+        </div>
+        <ol className={styles.rangeMap} data-all-score-ranges aria-label={rangeReading.rangeTitle}>
+          {rangeReading.rows.map((band, index) => <li key={band.code}
+            data-score-range={band.code} data-selected-score-range={band.current || undefined}
+            aria-current={band.current ? 'true' : undefined}>
+            <small className={styles.rangePosition}>{rangeReading.rows.length > 1 ? index + 1 : (ru ? 'Шкала' : 'Scale')}</small>
+            <b>{band.displayRange}</b>
+            <span>{band.label}</span>
+            {band.current && <em>{ru ? 'Ваш' : 'Yours'}</em>}
+          </li>)}
+        </ol>
+        {rangeReading.rows.length > 1 && <details className={styles.rangeDescriptions} data-score-range-descriptions>
+          <summary>{ru ? 'Пояснения всех диапазонов' : 'What every range means'}</summary>
+          <ol className={styles.rangeDetailsList}>
+            {rangeReading.rows.map(band => <li key={band.code}
+              data-score-range-description={band.code}
+              data-selected-score-description={band.current || undefined}>
+              <strong>{band.displayRange} — {band.label}</strong>
+              <p>{band.note}</p>
+              {band.current && <small>{ru ? 'Ваш текущий диапазон' : 'Your current range'}</small>}
+            </li>)}
+          </ol>
+        </details>}
+        <p className={styles.rangeCaveat} data-range-evidence-status>{rangeReading.caution}</p>
+      </section>}
+      {!rangeReading && model?.bands?.length > 0 && <div className={styles.bandStrip} data-score-band-strip
         aria-label={ru ? 'Диапазоны скрининга и ваш результат' : 'Screening intervals and your result'}>
         {model.bands.map(band => <span key={band.code}
           className={(band.code === model.currentBand?.code) ? (section.recommendedReview ? styles.reviewInterval : styles.currentInterval) : ''}
@@ -213,7 +260,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <small>{explainPublishedLevel(band.code, locale)}</small>
         </span>)}
       </div>}
-      {scoreLevelGuide && <section className={styles.levelGuide} data-descriptive-score-guide
+      {!rangeReading && scoreLevelGuide && <section className={styles.levelGuide} data-descriptive-score-guide
         aria-label={ru ? 'Пояснение вашего результата и уровней шкалы' : 'Explanation of your result and scale levels'}>
         <p className={styles.levelEyebrow}>{ru ? 'ПОНЯТНЫЙ РАЗБОР РЕЗУЛЬТАТА' : 'YOUR SCORE EXPLAINED'}</p>
         <h4 className={styles.levelTitle}>{scoreLevelGuide.title}: {scoreLevelGuide.current.label}</h4>
@@ -247,7 +294,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         </details>
         <p className={styles.levelCaveat}>{scoreLevelGuide.caveat}</p>
       </section>}
-      {anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
+      {!rangeReading && anchor && <section className={styles.answerReading} data-answer-interpretation aria-label={ru ? 'Оценка результата' : 'Your score in context'}>
         <p className={styles.readingLabel}>{ru ? 'Что означает ваш результат' : 'What your result means'}</p>
         <p className={styles.readingTitle}>{anchor.levelLabel ? anchor.levelLabel + ' · ' : ''}{anchor.label}</p>
         <p>{anchor.note}</p>
@@ -255,19 +302,19 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <strong>{ru ? 'Что заметить:' : 'What to notice:'}</strong> {situationObservation}
         </p>}
       </section>}
-      {section.responseAnchors && <div className={styles.responseEndpoints} data-questionnaire-anchors>
+      {!rangeReading && section.responseAnchors && <div className={styles.responseEndpoints} data-questionnaire-anchors>
         <span><strong>{section.min}</strong> {section.responseAnchors.low}</span>
         <span><strong>{section.max}</strong> {section.responseAnchors.high}</span>
       </div>}
-      {conciseMeaning && !hasPlainLanguageGuide && <section className={styles.interpretation} aria-label={ru ? 'Что показывают ваши ответы' : 'What your answers show'}>
+      {conciseMeaning && !hasPlainLanguageGuide && !rangeReading && <section className={styles.interpretation} aria-label={ru ? 'Что показывают ваши ответы' : 'What your answers show'}>
         <h4>{ru ? 'Что показывают ваши ответы' : 'What your answers show'}</h4>
         <p className={styles.explanation} data-scale-meaning>{conciseMeaning}</p>
       </section>}
-      {conciseMeaning && hasPlainLanguageGuide && <details className={styles.measureDetails} data-technical-score-reading>
+      {conciseMeaning && (hasPlainLanguageGuide || rangeReading) && <details className={styles.measureDetails} data-technical-score-reading>
         <summary>{ru ? 'Точная методика расчёта результата' : 'How the questionnaire score is calculated'}</summary>
         <p>{conciseMeaning}</p>
       </details>}
-      {anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
+      {!rangeReading && anchor && <section className={styles.answerRanges} data-answer-ranges aria-label={ru ? 'Пояснение диапазонов ответов' : 'Explanation of response ranges'}>
         <h4>{ru ? 'Пять описательных диапазонов' : 'Five descriptive response ranges'}</h4>
         <ol className={styles.rangeList}>
           {model.answerBands.map((band, index) => <li key={band.code}
@@ -309,13 +356,16 @@ export function CompactAssessmentReport({ result, previous = null, report, local
       </details>
     </article>
 
-    {report.personalityType && <details className={styles.typeSummary} data-personality-type-summary>
-      <summary>{ru ? 'Личностный профиль для размышления' : 'Personal pattern for reflection'}</summary>
+    {report.personalityType && <section className={styles.typeSummary} data-personality-type-summary>
+      <p className={styles.rangeEyebrow}>{ru ? 'ЛИЧНОСТНЫЙ ПРОФИЛЬ ПО ОТВЕТАМ' : 'PERSONALITY PATTERN FROM RESPONSES'}</p>
       <h3>{report.personalityType.headline}</h3>
       <p>{report.personalityType.description}</p>
-      {report.personalityType.alternatives?.map(alternative => <p key={alternative}>{alternative}</p>)}
+      {report.personalityType.alternatives?.length > 0 && <details>
+        <summary>{ru ? 'Другие возможные интерпретации' : 'Other possible interpretations'}</summary>
+        {report.personalityType.alternatives.map(alternative => <p key={alternative}>{alternative}</p>)}
+      </details>}
       <small>{report.personalityType.warning}</small>
-    </details>}
+    </section>}
     {report.contextNote && !anchor && <p className={styles.contextNote} data-assessment-context>{report.contextNote}</p>}
     {report.instrumentText && <aside className={styles.instrumentText} data-asrs6-instrument-text>
       <div lang={report.instrumentText.instrumentLocale}>

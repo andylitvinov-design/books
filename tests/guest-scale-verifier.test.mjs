@@ -130,9 +130,12 @@ function accountFixture(result, locale, component = CompactAssessmentReport) {
       activeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-active-scale')).length,
       pressedKeys: scaleTriggers(tree).filter(node => node.props['aria-pressed'] === true).map(node => node.props['data-assessment-scale-trigger']),
       rootGaugeCount: elements(tree).filter(node => Object.hasOwn(node.props, 'data-assessment-gauge')).length,
-      publishedBands: [].concat(marked(card, 'data-score-band-strip')?.props.children || []).flat().filter(n => n?.type === 'span').map(node => ({
+      rangeHeading: textOf(tagged(marked(card, 'data-assessment-range-report'), 'h4')),
+      rangeNarrative: textOf(marked(card, 'data-range-characterization')),
+      rangeDetails: elements(card).filter(node => Object.hasOwn(node.props, 'data-score-range-description')).map(node => ({code:node.props['data-score-range-description'],heading:textOf(tagged(node,'strong')),note:textOf(tagged(node,'p')),current:node.props['data-selected-score-description'] === true})),
+      publishedBands: [].concat((marked(card, 'data-all-score-ranges') || marked(card, 'data-score-band-strip'))?.props.children || []).flat().filter(n => n?.type === 'span' || n?.type === 'li').map(node => ({
         range: textOf(tagged(node, 'b')),
-        label: [].concat(node.props.children).filter(n => typeof n === 'string').join('').replace(/ · (?:ваш|yours)$/, '').trim(),
+        label: textOf([].concat(node.props.children).find(n => n?.type === 'span')) || [].concat(node.props.children).filter(n => typeof n === 'string').join('').replace(/ · (?:ваш|yours)$/, '').trim(),
         current: node.props['aria-current'] === 'true',
       })),
       primaryCount: elements(card).filter(node => Object.hasOwn(node.props, 'data-primary-support')).length,
@@ -465,20 +468,17 @@ test('Tantric reports retain all five source-bound descriptive levels on every r
     const result = scored(definition, 'mixed'), snapshot = accountFixture(result, locale)
     assertAccountReportSnapshot(snapshot, result, locale)
     for (const [index, scale] of snapshot.scales.entries()) {
-      assert.equal(scale.answerRanges.length, 5, 'Every Tantric scale retains its full five-level grid')
-      assert.deepEqual(scale.answerRanges.map(range => range.level), ['1', '2', '3', '4', '5'])
-      assert.equal(scale.answerRanges.filter(range => range.current).length, 1)
-      for (const field of ['level', 'range', 'levelLabel', 'label', 'note', 'marker']) for (let level = 0; level < 5; level++) {
+      assert.equal(scale.rangeDetails.length, 5)
+      assert.equal(scale.rangeDetails.filter(range => range.current).length, 1)
+      for (const field of ['code', 'heading', 'note', 'current']) for (let level = 0; level < 5; level++) {
         const broken = structuredClone(snapshot)
-        broken.scales[index].answerRanges[level][field] = 'tampered-' + field
-        assert.throws(() => assertAccountReportSnapshot(broken, result, locale), definition.key + ': every scale and response level must retain ' + field)
+        broken.scales[index].rangeDetails[level][field] = 'tampered-' + field
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale), definition.key + ': exact range ' + field)
       }
-      const staleTitle = structuredClone(snapshot)
-      staleTitle.scales[index].answerReadingTitle = (locale === 'ru' ? 'По ответам: ' : 'Based on your answers: ') + scale.answerRanges.find(range => range.current).label
-      assert.throws(() => assertAccountReportSnapshot(staleTitle, result, locale), 'Reject the retired selected-response title')
-      const staleHeading = structuredClone(snapshot)
-      staleHeading.scales[index].answerRangesHeading = locale === 'ru' ? 'Все диапазоны ответов' : 'All response ranges'
-      assert.throws(() => assertAccountReportSnapshot(staleHeading, result, locale), 'Reject the retired range heading')
+      for (const field of ['rangeHeading','rangeNarrative']) {
+        const broken = structuredClone(snapshot); broken.scales[index][field] = 'retired reading'
+        assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
+      }
     }
   }
 })

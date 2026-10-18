@@ -133,18 +133,18 @@ async function assertReport(target, definition, locale, expected) {
   const labels = locale === 'ru'
     ? ['Ниже скринингового порога', 'На уровне или выше скринингового порога']
     : ['Below the screening threshold', 'At or above the screening threshold']
-  const bands = report.locator('[data-score-band-strip] > span')
+  const bands = report.locator('[data-all-score-ranges] > li')
   await expect(bands).toHaveCount(2)
   const publishedBands = await bands.evaluateAll(nodes => nodes.map(node => ({
     range: node.querySelector('b')?.textContent,
-    label: [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/ · (?:ваш|yours)$/, '').trim(),
+    label: node.querySelector('span')?.textContent.trim(),
     current: node.getAttribute('aria-current') === 'true',
   })))
   assert.deepEqual(publishedBands, ['0–3', '4–6'].map((range, index) => ({
     range, label: labels[index], current: index === Number(expected >= 4),
   })), 'Published ASRS bands retain exact source bounds, labels and current range')
   for (const band of await bands.all()) await expect(band).toBeVisible()
-  const currentBand = report.locator('[data-score-band-strip] > span[aria-current="true"]')
+  const currentBand = report.locator('[data-all-score-ranges] > li[aria-current="true"]')
   await expect(currentBand).toHaveCount(1)
   await expect(currentBand.locator('b')).toHaveText(expected >= 4 ? '4–6' : '0–3')
   for (const detail of await report.locator('details').all()) {

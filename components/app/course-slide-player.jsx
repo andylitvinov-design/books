@@ -802,8 +802,8 @@ export default function CourseSlidePlayer({
                 ? (locale==='ru'?'Сегодня вы потренируетесь замечать состояние и выбирать небольшую поддержку. Можно пропускать любые наблюдения.':
                   'Today you can notice your state and choose a small support. Any observation may be skipped.')
                 : words.welcomeNote}</p>
-              <button type="button" className={styles.welcomeSkip} disabled={locked}
-                onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>
+              {!isSkillV5&&<button type="button" className={styles.welcomeSkip} disabled={locked}
+                onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>}
             </div>
           </section>}
 
@@ -951,7 +951,9 @@ export default function CourseSlidePlayer({
                 <div><p>{neutralMode ? words.neutralPractice : slide.section.text}</p></div>
               </details>
             </>}
-            <p className={styles.helper}>{words.gentle}</p>
+            <p className={styles.helper}>{isSkillV5
+              ? (locale==='ru'?'Можно остановить упражнение в любой момент. Глаза остаются открытыми по выбору, дыхание — естественным.':'You may stop the exercise at any time. Eyes may stay open and breathing can be natural.')
+              : words.gentle}</p>
             {!neutralMode && <details className={styles.timerDetails}>
               <summary><Compass size={16}/>{words.adjustPace}<ChevronDown size={15}/></summary>
               <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
@@ -1001,11 +1003,13 @@ export default function CourseSlidePlayer({
               <p className={styles.prompt}>{learning.practiceTitle}</p>
               <div className={styles.feedbackOptions} role="group" aria-label={learning.practiceTitle}>
                 {[['tried',learning.tried],['simplified',learning.simplified],
-                  ['neutral',learning.neutral],['skip',learning.practiceSkip]].map(([key,label])=>
+                  ['neutral',learning.neutral],...(!isSkillV5?[['skip',learning.practiceSkip]]:[])].map(([key,label])=>
                   <button type="button" key={key} disabled={locked} aria-pressed={practiceAttempt===key}
                     onClick={()=>setPracticeAttempt(key)}>{label}</button>)}
               </div>
-              <p className={styles.helper}>{learning.practiceNote}</p>
+              <p className={styles.helper}>{isSkillV5
+                ? (locale==='ru'?'Это честный отчёт об учебной попытке, не оценка здоровья. Ответ необязателен.':'This is your learning-attempt report, not a health score. A response is optional.')
+                : learning.practiceNote}</p>
             </section>}
             {lesson.antiStress?.probe && <section className={styles.antiStressProbe} data-antistress-skill-probe>
               <p className={styles.antiStressProbeTag}>{locale==='ru'?'Практический выбор · навык '+lesson.antiStress.skillId:'Practice choice · skill '+lesson.antiStress.skillId}</p>
@@ -1163,7 +1167,7 @@ export default function CourseSlidePlayer({
             <div className={styles.feedbackOptions} role="group" aria-label={words.comfortTitle} data-course-comfort>
               {[
                 ['comfortable',words.comfortableChoice],['neutral',words.neutralComfort],
-                ['uncomfortable',words.uncomfortable],['skip',words.preferNot],
+                ['uncomfortable',words.uncomfortable],...(!isSkillV5?[['skip',words.preferNot]]:[]),
               ].map(([key,label])=><button type="button" key={key} disabled={locked}
                 aria-pressed={comfort===key} onClick={()=>{setComfort(key);if(key==='uncomfortable'){setFeedback('uncomfortable');setDiscomfortOpen(true)}}}>
                 <span>{label}</span>{comfort===key&&<Check size={18} aria-hidden="true"/>}
@@ -1173,7 +1177,7 @@ export default function CourseSlidePlayer({
             <div className={styles.feedbackOptions} role="group" aria-label={words.usefulTitle} data-course-usefulness>
               {[
                 ['useful',words.usefulChoice],['unchanged',words.unchangedChoice],
-                ['unsure',words.unsureChoice],['skip',words.preferNot],
+                ['unsure',words.unsureChoice],...(!isSkillV5?[['skip',words.preferNot]]:[]),
               ].map(([key,label])=><button type="button" key={key} disabled={locked}
                 aria-pressed={usefulness===key} onClick={()=>setUsefulness(key)}>
                 <span>{label}</span>{usefulness===key&&<Check size={18} aria-hidden="true"/>}
@@ -1183,7 +1187,7 @@ export default function CourseSlidePlayer({
             <div className={styles.feedbackOptions} role="group" aria-label={words.flexibilityTitle} data-course-flexibility>
               {[
                 ['more_choice',words.moreChoice],['same',words.sameChoice],
-                ['unsure',words.unsureChoice],['skip',words.preferNot],
+                ['unsure',words.unsureChoice],...(!isSkillV5?[['skip',words.preferNot]]:[]),
               ].map(([key,label])=><button type="button" key={key} disabled={locked}
                 aria-pressed={flexibility===key} onClick={()=>setFlexibility(key)}>
                 <span>{label}</span>{flexibility===key&&<Check size={18} aria-hidden="true"/>}
@@ -1215,7 +1219,7 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
+          {!isSkillV5&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
             || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}

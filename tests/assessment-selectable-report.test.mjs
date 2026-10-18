@@ -136,16 +136,23 @@ function assertSelected(h, result, report, section, locale) {
   if (!model) return
   const gauge = renderedGauges[0]
   assert.equal(gauge.props['data-assessment-gauge'], model.displayKind === 'screening-count' ? model.displayKind : model.orientation)
-  const strip = nodes(panel).find(node => own(node, 'data-score-band-strip'))
-  const legend = [].concat(strip?.props.children || []).flat().filter(node => node?.type === 'span')
-  assert.equal(legend.length, model.bands.length)
+  // The compact dial intentionally hides its internal list; the readable
+  // source-aware report must expose the exact intervals with one selection.
+  assert.equal(nodes(gauge).filter(node => node.type === 'li').length, 0)
+  const rangeRows = nodes(panel).filter(node => own(node, 'data-score-range'))
+  assert.equal(rangeRows.length, model.rangeReading?.rows.length || 0)
+  const reading = model.rangeReading
+  if (reading) {
+    assert.equal(rangeRows.filter(row => row.props['aria-current'] === 'true').length, 1)
+    reading.rows.forEach((band, index) => {
+      assert.equal(rangeRows[index].props['data-score-range'], band.code)
+      assert.ok(text(rangeRows[index]).includes(band.displayRange),
+        result.definitionKey + ': exact displayed source/response range')
+      assert.ok(text(rangeRows[index]).includes(band.label))
+      assert.equal(rangeRows[index].props['aria-current'] === 'true', band.current)
+    })
+  }
   const numeral = value => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
-  model.bands.forEach((band, index) => {
-    assert.ok(text(legend[index]).replace(/\s*–\s*/g, '–').includes(`${numeral(band.from)}–${numeral(band.to)}`), result.definitionKey + ': exact legend interval')
-    assert.ok(text(legend[index]).includes(band.label))
-    assert.equal(legend[index].props['aria-current'] === 'true', band.code === model.currentBand?.code)
-  })
-  assert.equal(legend.filter(node => node.props['aria-current'] === 'true').length, model.currentBand ? 1 : 0)
   if (model.displayKind !== 'screening-count') {
     assert.ok(gauge.props['aria-label'].includes(`${numeral(dimension.min)}–${numeral(dimension.max)}`))
     assert.equal(gauge.props['data-gauge-scale'], model.continuous ? 'continuous' : 'published-bands')

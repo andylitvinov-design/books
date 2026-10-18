@@ -104,7 +104,7 @@ function fixture(locale, value) {
   assert.equal(result.dimensions[0].value, value)
   const tree = compact.exports.CompactAssessmentReport({ result, report: buildAssessmentResultReport(result, locale), locale })
   const gauge = walk(tree).find(node => node.props['data-assessment-gauge'] === 'screening-count')
-  const strip = walk(tree).find(node => Object.hasOwn(node.props, 'data-score-band-strip'))
+  const strip = walk(tree).find(node => Object.hasOwn(node.props, 'data-all-score-ranges'))
   return { gauge, strip, report: locator([tree]) }
 }
 for (const locale of ['en', 'ru']) for (const value of [0, 3, 4, 6]) {
