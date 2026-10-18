@@ -100,7 +100,7 @@ const copy = {
     reportReady: "Report recorded",
     questionReady: "Answer recorded",
     readyCount: "items completed",
-    initiateRequest: "Discuss personal initiation in",
+    initiateRequest: "Request free Level 1 introduction in",
     finish: "Course completed",
     finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
     summary: "Your personal course journal",
@@ -196,7 +196,7 @@ const copy = {
     reportReady: "Отчёт есть",
     questionReady: "Ответ есть",
     readyCount: "пунктов заполнено",
-    initiateRequest: "Обсудить личную инициацию:",
+    initiateRequest: "Запросить бесплатную вводную инициацию I ступени —",
     finish: "Курс завершён",
     finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
     summary: "Ваш личный учебный дневник",
@@ -815,7 +815,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.initiationLinks}>
                       {energyworkPathChoices.map((choice) => (
                         <Link key={choice.id} className={styles.teacherLink}
-                          href={"/" + locale + "/academy/" + choice.freePath}>
+                          href={"/" + locale + "/academy/" + choice.freePath + (choice.id === "tantra" ? "#apply-free" : "")}>
                           {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
                         </Link>
                       ))}
