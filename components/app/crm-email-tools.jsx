@@ -19,6 +19,11 @@ export default function CrmEmailTools({ contact, locale='en', enabled=false, bus
  const blocked=contact.suppressed||contact.lifecycle==='archived'
  const canSend=enabled&&!blocked&&contact.emailEligibility?.allowed
  const related=messages.filter(m=>m.contactId===contact.id).slice(0,3)
+ const deliveryLabel={
+   en:{accepted:'Accepted by provider — awaiting delivery',delivered:'Delivered',delivery_delayed:'Delivery delayed',bounced:'Bounced — sending blocked',complained:'Complaint — sending blocked',failed:'Failed — sending blocked',suppressed:'Suppressed — sending blocked',unknown:'Delivery unknown',blocked:'Blocked',dispatching:'Sending',reserved:'Preparing'},
+   ru:{accepted:'Принято сервисом, доставка не подтверждена',delivered:'Доставлено',delivery_delayed:'Доставка задерживается',bounced:'Возврат — отправка заблокирована',complained:'Жалоба — отправка заблокирована',failed:'Ошибка — отправка заблокирована',suppressed:'Заблокировано почтой',unknown:'Статус доставки неизвестен',blocked:'Заблокировано',dispatching:'Отправляется',reserved:'Подготовка'},
+   es:{accepted:'Aceptado; entrega pendiente',delivered:'Entregado',delivery_delayed:'Entrega demorada',bounced:'Rebotado — bloqueado',complained:'Reclamación — bloqueado',failed:'Fallido — bloqueado',suppressed:'Suprimido — bloqueado',unknown:'Entrega desconocida',blocked:'Bloqueado',dispatching:'Enviando',reserved:'Preparando'},
+ }[locale]||{} 
  function selectTemplate(id) {
    const preset=CRM_TEMPLATES[id]?.[locale]||CRM_TEMPLATES[id]?.en
    setTemplate(id);setSubject(preset.subject);setBody(preset.body)
@@ -66,7 +71,7 @@ export default function CrmEmailTools({ contact, locale='en', enabled=false, bus
    </>}
    {!!related.length&&<ul className={styles.history}>{related.map(m=><li key={m.id}>
      <time dateTime={m.createdAt}>{new Date(m.createdAt).toLocaleDateString(locale)}</time>
-     {' · '}{m.status==='accepted'?c.sent:c.unknown}
+     {' · '}{deliveryLabel[m.status]||c.unknown}
    </li>)}</ul>}
  </details>
 }
