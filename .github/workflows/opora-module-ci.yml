@@ -38,3 +38,5 @@ jobs:
         run: node --test tests/opora-as54-live-v6.test.mjs tests/opora-as54-live-player-journey.test.mjs
       - name: Verify AS5.5 distinct scenarios, if-then plans, truthful attempts and pinned previous cycles
         run: node --test tests/opora-as55-methodology-live.test.mjs
+      - name: Verify AS5.5 keyboard-safe pause, no-action honesty and fourteen-day practical teaching
+        run: node --test tests/opora-as55-safe-learning-live.test.mjs
