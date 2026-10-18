@@ -15,7 +15,7 @@ import {
 } from "@/data/academy/energywork-ai-curriculum";
 import styles from "./energywork-ai-learner.module.css";
 
-type Props = { locale: EnergyworkLocale };
+type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
 type AnswerMap = Record<string, string>;
 type StoredProgress = {
   accountId: string; enrolled: boolean; courseVersion: string;
@@ -395,9 +395,11 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   );
 }
 
-export function EnergyworkAiLearner({ locale }: Props) {
+export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
   const t = copy[locale];
-  const [index, setIndex] = useState(0);
+  // Direct referral entrants already read the programme overview; start with the approved
+  // experience-choice screen. Any saved account progress still wins during hydration.
+  const [index, setIndex] = useState(startAtExperience ? 1 : 0);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
