@@ -79,11 +79,11 @@ test('new and edited master reports include picker, stable key persistence and d
   assert.match(model, /recommendedTestKeys: Array\.isArray\(record\.recommendedTestKeys\)/)
   assert.match(picker, /type="search"/)
   assert.match(picker, /type="checkbox"/)
-  assert.match(legacy, /<ReportTestPicker options=\\{testOptions\\}/)
+  assert.match(legacy, /<ReportTestPicker options=\{testOptions\}/)
   assert.match(legacy, /name="recommendedTestKeysJson"/)
-  assert.match(legacyNew, /testOptions=\\{getReportTestOptions\\(\\)\\}/)
-  assert.match(legacyEdit, /testOptions=\\{getReportTestOptions\\(\\)\\}/)
-  assert.match(legacyAction, /recommendedTestKeys = JSON\\.parse/)
+  assert.match(legacyNew, /testOptions=\{getReportTestOptions\(\)\}/)
+  assert.match(legacyEdit, /testOptions=\{getReportTestOptions\(\)\}/)
+  assert.match(legacyAction, /recommendedTestKeys = JSON\.parse/)
 })
 
 test('client HTML and standard/mobile PDFs include recommended tests only when selected', () => {
