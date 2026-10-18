@@ -11,6 +11,7 @@ import { PSYCHOTHERAPY_CORE_CATEGORIES } from '@/data/assessments/psychotherapy-
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS, TEST_EXPLORER_DETAIL_TOPICS, buildExplorerEntries, buildStarterBattery, buildPublicStarterBattery, coverageForSelection, coverageForFilters, filterExplorerEntries, rankExplorerEntries, rankPublicTestMatches } from '@/lib/assessments/test-explorer'
 import { TestExplorerVisual } from './test-explorer-visual'
 import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
+import { TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
 import { SimpleTestPicker } from './simple-test-picker'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
@@ -196,6 +197,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
   const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
+  const [activeCollectionId, setActiveCollectionId] = useState(null)
+  const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId) || null
+  const selectionFocus = activeCollection ? [...new Set([...focus, ...activeCollection.focus])] : focus
   const [problems, setProblems] = useState(() => normalizeProblemsForTopics(
     initialPreferences?.problems ?? [], initialPreferences?.focus ?? [],
   ))
@@ -296,9 +300,17 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // topics outside the current focus. This pins the actual selected cards in
   // the recommendation list without broadening automatic starter tests.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
-    filtered.filter((entry) => entry.selectable),
-    { focus, problems, details, axes, depth, styles: stylesFilter, lengths },
-  ), [filtered, focus, problems, details, axes, depth, stylesFilter, lengths])
+    // Collections change recommendation weights, not the entire card format.
+    // Remove only the topic/concern hard filter so non-collection tests remain
+    // available further down; respect explicit time, kind and other facets.
+    (activeCollection ? filterExplorerEntries(entries, { ...facets, focus: [], problems: [] }) : filtered)
+      .filter((entry) => entry.selectable),
+    { focus: activeCollection ? activeCollection.focus : focus,
+      problems: activeCollection ? [] : problems,
+      collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
+      details, axes, depth, styles: stylesFilter, lengths },
+  ), [entries, filtered, activeCollection, activeCollectionId, availability, focus, problems, details, axes, areas,
+      kinds, maxMinutes, language, tracking, freeOnly, query, depth, stylesFilter, lengths, selectedKeys])
   // Only explicit duration/type options restrict catalog search.
   // Topic and concern selections still drive recommendations, not searches.
   const searchRecommendations = useMemo(() => rankPublicTestMatches(
@@ -373,7 +385,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
-      focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+      focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
@@ -382,7 +394,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setStarting(true); setActionError(null)
     try {
       const preferences = {
-        focus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+        focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
         depth, maxMinutes, language, tracking, freeOnly,
       }
       if (audience === 'account' && onStartSingle) {
@@ -394,50 +406,12 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
 
-  // Start the exact cleared tests from the chosen themed collection. Do not
-  // wait for React selection state or silently add unrelated recommendations.
-  const startTantraPath = async (keys) => {
-    if (!Array.isArray(keys) || !keys.length || keys.length > 12 || starting ||
-      !(onStart || (audience === 'account' && onStartSingle))) return
-    const unique = [...new Set(keys)]
-    if (unique.length !== keys.length) return
-    const batch = unique.map((key) => entries.find((entry) =>
-      entry.key === key && entry.selectable && entry.startable &&
-      entry.rightsStatus === 'cleared' && entry.definition &&
-      (audience !== 'guest' || entry.guestEligible === true)))
-    if (batch.some((entry) => !entry)) {
-      setActionError({ code: 'GUEST_TEST_UNAVAILABLE' })
-      return
-    }
-    const preferences = {
-      focus: ['tantra'], problems: [], details: [], axes: [], areas: [],
-      styles: [], kinds: [], lengths: [], depth: 'balanced',
-      maxMinutes: 0, language: 'any', tracking: 'any', freeOnly: false,
-    }
-    setStarting(true)
-    setActionError(null)
-    try {
-      if (audience === 'account' && onStartSingle) {
-        // The draft selection contains the whole collection; launch its first
-        // test directly in the existing authenticated single-test flow.
-        await onStartSingle(batch[0], preferences)
-      } else {
-        // Guests enter the existing sequential battery/consent journey.
-        await onStart(batch, preferences)
-      }
-    } catch (error) {
-      setActionError(error)
-    } finally {
-      setStarting(false)
-    }
-  }
-
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
       initialMode={initialMode}
       focus={focus}
-      onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
+      onToggleFocus={(key) => { setActiveCollectionId(null); setFocus((current) => toggle(current, key)); setAvailability('available') }}
       problems={problems}
       onToggleProblem={(key) => {
         const allowed = normalizeProblemsForTopics([key], focus)
@@ -458,52 +432,14 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recommendations={simpleRecommendations}
       searchRecommendations={searchRecommendations}
       catalogEntries={entries}
-      onStartTantraPath={startTantraPath}
-      onChooseTantraPath={(keys) => {
-        // A named path is an explicit replacement of the unsaved local draft.
-        // No automatic runner, subscription, course or account write occurs.
-        const distinct = [...new Set(keys)]
-        if (!distinct.length || distinct.length > 12 ||
-          distinct.some(key => !entries.some(entry =>
-            entry.key === key && entry.selectable && entry.rightsStatus === 'cleared'))) return
-        setSelectedKeys(distinct)
-        setSimpleSelectionChanged(true)
-        setFocus(['tantra'])
-        setProblems([])
+      activeCollectionId={activeCollectionId}
+      onChooseCollection={(id) => {
+        setActiveCollectionId(id)
         setAvailability('available')
-        setStylesFilter([])
-        setKinds([])
-        setLengths([])
-        setDepth('balanced')
-        setAreas([])
-        setDetails([])
-        setAxes([])
-        setMaxMinutes(0)
-        setLanguage('any')
-        setTracking('any')
-        setFreeOnly(false)
         setQuery('')
         setSort('recommended')
         setAxisFilter(null)
         setActionError(null)
-      }}
-      onChooseCollection={(keys) => {
-        // Keep visible time/type/depth preferences when browsing a collection.
-        // Only remove concerns no longer relevant to its selected topics.
-        setFocus(keys)
-        setProblems((current) => normalizeProblemsForTopics(current, keys))
-        setAvailability('available')
-        setStylesFilter([])
-        setLengths([])
-        setAreas([])
-        setDetails([])
-        setAxes([])
-        setLanguage('any')
-        setTracking('any')
-        setFreeOnly(false)
-        setQuery('')
-        setSort('recommended')
-        setAxisFilter(null)
       }}
       viaProfileEntry={entries.find((entry) => entry.key === 'ipip-via-r-strengths-96' && entry.selectable) || null}
       activeBattery={activeBattery}
