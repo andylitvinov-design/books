@@ -12,12 +12,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 45 stable editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 53 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-18.p1"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0])
-  assert.equal(ids.length, 45)
+  assert.equal(ids.length, 53)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -32,6 +32,16 @@ test('Unified Reiki Practitioner course has 45 stable editorial screens and five
   assert.doesNotMatch(curriculum, /\.\.\.\(path \? pathSlides\[path\]/)
   assert.match(curriculum, /slide\.id !== "paths-04"/)
   assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "paths-04"\)/)
+})
+
+test('New peer voices and celebrations appear between the existing lessons', () => {
+  for(const id of ['flight-voices','tan-voices','kun-voices','ygg-voices','flight-done','tan-done','kun-done','ygg-done'])
+    assert.ok(curriculum.includes('id: "'+id+'"'),id)
+  assert.match(learner,/data-meditation-voices/)
+  assert.match(learner,/t\.committed/)
+  assert.match(learner,/t\.voicesComments/)
+  assert.match(learner,/data-meditation-feeling/)
+  assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)
 })
 
 test('Videos reuse the four approved original source recordings; no render or autoplay', () => {
@@ -50,10 +60,11 @@ test('Videos reuse the four approved original source recordings; no render or au
 test('Sun meditation is followed by gentle warmth-and-light pause, observations, and a lesson question', () => {
   const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
   assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
-  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-04"'))
+  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
+  assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-04"'))
   assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-05"'))
   assert.match(lesson, /warmth or light/)
-  assert.match(lesson, /отчёт понадобится/)
+  assert.match(lesson, /Насколько удалось прочувствовать/)
   assert.match(lesson, /question: \{ type: "text"/)
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
@@ -92,7 +103,7 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing\}/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/)
 })
 
 test('Course remains available in Academy, guest cabinet and course page routes', () => {

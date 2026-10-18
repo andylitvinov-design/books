@@ -1480,7 +1480,7 @@
   .page[data-course-visual] .progress {height:6px;}
   .page[data-course-visual] .footer {margin:0;flex:none;}
   .page[data-course-visual] .actions {
-    flex-direction:row-reverse;align-items:stretch;gap:7px;
+    flex-direction:row;align-items:stretch;gap:7px;
   }
   .page[data-course-visual] .next {
     flex:1; width:auto; align-self:stretch;
@@ -1565,4 +1565,87 @@
   .page[data-course-visual] .notes {
     color:#173c4b!important;text-shadow:none!important;
   }
+}
+
+/* REIKI MEDITATION JOURNAL · 2026-10-18
+   Real sourced community feedback, short written feeling check-ins and warm
+   chapter celebrations stay within the approved airy one-screen course. */
+.page[data-course-visual] .voicesCard,
+.page[data-course-visual] .milestoneCard {
+  width:100%;border-radius:22px;border:1px solid rgba(255,255,255,.95);
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(229,248,253,.8));
+  box-shadow:0 12px 32px rgba(37,115,145,.12);
+  padding:clamp(15px,3.5vw,25px);
+  color:#16485c;
+}
+.page[data-course-visual] .voicesEyebrow {
+  display:flex;align-items:center;gap:8px;
+  color:#098a9c;font-size:14px;font-weight:800;margin-bottom:10px;
+}
+.page[data-course-visual] .voiceQuote {
+  border-left:3px solid #19c2c8;
+  margin:0 0 12px;padding:7px 0 7px 14px;
+  color:#1b5263;
+}
+.page[data-course-visual] .voiceQuote p {
+  margin:0 0 8px;font:italic 500 clamp(16px,3.6vw,21px)/1.42 Georgia,serif;
+  overflow-wrap:anywhere;
+}
+.page[data-course-visual] .voiceQuote cite {
+  font-style:normal;font-weight:700;font-size:12px;color:#4c7381;
+}
+.page[data-course-visual] .voicesEmpty {font-size:14px;line-height:1.5;color:#456f7d;}
+.page[data-course-visual] .voicesLink {
+  display:inline-flex;align-items:center;gap:7px;min-height:37px;
+  margin:5px 12px 5px 0;color:#076e85;font-size:13px;font-weight:800;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.page[data-course-visual] .voicesLink:hover {color:#0a9ca7;}
+.page[data-course-visual] .voicesNote {margin:7px 0 0;color:#507686;font-size:12px;}
+.page[data-course-visual] .milestoneCard {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:10px;min-height:150px;
+}
+.page[data-course-visual] .milestoneSymbol {
+  display:grid;place-items:center;width:68px;height:68px;border-radius:50%;
+  background:linear-gradient(135deg,#d9f8ef,#99e8de);color:#048c94;
+  box-shadow:0 5px 17px rgba(22,173,176,.14);
+}
+.page[data-course-visual] .milestoneCard strong {
+  color:#0e7587;font-size:18px;
+}
+.page[data-course-visual] .milestoneCard p {
+  max-width:45ch;margin:0;font-size:12px;line-height:1.5;color:#547685;
+}
+.page[data-course-visual] .meditationFeeling {
+  display:flex;flex-direction:column;gap:6px;
+  margin:5px 0 11px;min-width:0;
+}
+.page[data-course-visual] .meditationFeeling label {
+  font-size:14px;color:#165c70;font-weight:750;
+}
+.page[data-course-visual] .feelingValue {
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+}
+.page[data-course-visual] .feelingValue span {color:#557d8b;font-size:11px;}
+.page[data-course-visual] .feelingValue strong {
+  white-space:nowrap;font-size:16px;color:#087c92;
+}
+.page[data-course-visual] .meditationFeeling input[type="range"] {
+  accent-color:#03a9b9;width:100%;min-height:38px;cursor:pointer;
+}
+.page[data-course-visual] .feedbackTextarea {
+  min-height:85px;resize:vertical;
+}
+.page[data-course-visual] .feedbackRequired {
+  font-size:12px;color:#316b78;line-height:1.4;
+}
+@media (max-width:760px) {
+  .page[data-course-visual] .voicesCard {padding:14px;border-radius:16px;}
+  .page[data-course-visual] .voiceQuote p {font-size:17px;}
+  .page[data-course-visual] .milestoneCard {padding:13px;min-height:128px;gap:6px;}
+  .page[data-course-visual] .milestoneSymbol {width:55px;height:55px;}
+  .page[data-course-visual] .milestoneCard strong {font-size:15px;}
+  .page[data-course-visual] .feelingValue span {font-size:10px;}
+  .page[data-course-visual] .feedbackRequired {font-size:11px;}
 }

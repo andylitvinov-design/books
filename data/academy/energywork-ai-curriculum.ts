@@ -22,7 +22,8 @@ export type EnergyworkQuestion = {
 export type EnergyworkSlide = {
   id: string;
   phase: EnergyworkPhase;
-  kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "path-choice" | "finish";
+  kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
+  testimonial?: { quote: Localized; attribution: Localized; sourcePath: string };
   title: Localized;
   body: Localized;
   image?: string;
@@ -57,8 +58,9 @@ export const energyworkLessons: Array<{ phase: EnergyworkPhase; firstSlideId: st
   { phase: "initiation", firstSlideId: "paths-01", title: energyworkPhases.initiation },
 ];
 
-// These observations and course answers are optional for study progress,
-// but required before a learner can request review for a PERSONAL initiation.
+// A short written response and a 0–10 feeling check-in follow each meditation.
+// Lesson questions and the fifth final report remain optional during study,
+// but all five reports and five answers are required for personal-initiation review.
 export const energyworkInitiationRequirements = [
   { lesson: "flight", reportId: "flight-04", questionId: "flight-05" },
   { lesson: "tantra", reportId: "tan-04", questionId: "tan-06" },
@@ -126,14 +128,20 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
     body: l("After the meditation, pause for a moment. Notice any imagined warmth or light, or simply the contact with your chair. No warmth needs to appear. You may stop at any time.", "После медитации сделайте мягкую паузу. Обратите внимание на образ тепла или света либо просто на опору стула. Тепло не обязательно должно ощущаться. Можно остановиться в любой момент.") },
+  { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
+    title: l("What do other viewers say?", "Что пишут другие?"),
+    body: l("Open the original recording to explore any public viewer comments before sharing your own experience.", "Посмотрите комментарии под оригинальной записью, если они открыты, а затем поделитесь своим впечатлением.") },
   { id: "flight-04", phase: "flight", kind: "reflection",
-    title: l("What did you notice?", "Что вы заметили?"),
-    body: l("Record what you noticed after the meditation. 'Nothing in particular' is a valid observation. You may leave this blank and continue, but a report is needed before requesting a personal initiation.", "Запишите, что заметили после медитации. «Ничего особенного» — полноценное наблюдение. Можно пропустить и продолжить, но для заявки на личную инициацию отчёт понадобится."),
-    question: { type: "text", prompt: l("My observation after the meditation…", "Мои наблюдения после медитации…") } },
+    title: l("Your meditation feedback", "Ваш отзыв о медитации"),
+    body: l("How much did you feel, if anything? Even noticing nothing is a useful response.", "Насколько удалось прочувствовать медитацию? Если ничего не почувствовали — так тоже бывает."),
+    question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun symbol mean?", "Что означает образ Солнца?"),
     body: l("There is no right feeling to achieve. Describe the difference between a symbolic image and a required physical result.", "Здесь не требуется определённое ощущение. Расскажите, чем символический образ отличается от обязательного физического результата."),
     question: { type: "text", prompt: l("My answer to the lesson question…", "Мой ответ на вопрос урока…") } },
+  { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
+    title: l("First lesson completed!", "Первый урок пройден!"),
+    body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
 
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
@@ -148,6 +156,9 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "presence-04", phase: "tantra", kind: "lesson",
     title: l("Presence is a choice", "Присутствие — это выбор"),
     body: l("There is no need to reproduce someone else's sensations. You can return to simple awareness at your own pace.", "Не нужно воспроизводить чужие ощущения. К простому наблюдению можно возвращаться в своём темпе.") },
+  { id: "tan-done", phase: "tantra", kind: "milestone", image: image.tantra,
+    title: l("Second lesson completed!", "Второй урок пройден!"),
+    body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
 
   { id: "intention-01", phase: "initiation", kind: "lesson", image: image.sun,
     title: l("What is intention?", "Что такое намерение?"),
@@ -188,7 +199,7 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("You have learned about all three Reiki systems within one course. Personal Level 1 initiation is a separate, teacher-led process that requires your informed choice and Andrey's confirmation.", "Вы познакомились со всеми тремя системами в одном курсе. Личная инициация первой ступени — отдельный процесс с преподавателем: нужен ваш осознанный выбор и подтверждение Андрея.") },
   { id: "paths-02", phase: "initiation", kind: "lesson", image: image.tree,
     title: l("What your learning journal needs", "Что нужно для учебного дневника"),
-    body: l("Before requesting a personal initiation, record your observations after each meditation and answer the lesson questions. You can skip either while studying and return later.", "Для заявки на личную инициацию запишите наблюдения после каждой медитации и ответы на вопросы уроков. Во время обучения всё это можно пропускать и возвращаться позже.") },
+    body: l("After each meditation, add a short review to continue. You may return to the separate lesson questions later; all five are needed before personal initiation review.", "После каждой медитации оставьте короткий отзыв для продолжения. К отдельным вопросам уроков можно вернуться позже — все пять понадобятся перед рассмотрением личной инициации.") },
   { id: "paths-03", phase: "initiation", kind: "lesson", image: image.tantra,
     title: l("One course, several initiation options", "Один курс — несколько вариантов инициации"),
     body: l("You may discuss initiation in any of the three traditions, one at a time. Completion of this educational course does not mean an initiation has taken place.", "Вы можете обсудить инициацию в любой из трёх традиций, по очереди. Прохождение учебного курса само по себе не означает получения инициации.") },
@@ -208,10 +219,15 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "ygg-03", phase: "yggdrasil", kind: "practice", question: practiceQuestion,
       title: l("Draw or imagine a tree", "Нарисуйте или представьте дерево"),
       body: l("On paper, draw roots, a trunk and a crown — or imagine them. Keep the drawing for yourself; image upload is not enabled in this preview.", "Нарисуйте на бумаге корни, ствол и крону — либо представьте их. Рисунок остаётся у вас; загрузка изображений пока недоступна.") },
+    { id: "ygg-voices", phase: "yggdrasil", kind: "voices", videoKey: "reiki-yggdrasil", image: image.tree,
+      title: l("Reiki Yggdrasil: other experiences", "Рейки Иггдрасиль: опыт других"),
+      body: l("A published learner comment about Reiki Yggdrasil, not a claim about this particular meditation.", "Опубликованный отзыв об обучении Рейки Иггдрасиль, а не обещание ощущений от этой медитации."),
+      testimonial: { quote: l("From level 2 on I began to feel my being becoming more and more saturated with runic energy.", "Со второго уровня я стал(а) ощущать всё более сильное наполнение рунической энергией."),
+        attribution: l("Reiki Yggdrasil learner · original course feedback", "Участник Рейки Иггдрасиль · отзыв с сайта"), sourcePath: "reiki/yggdrasil" } },
     { id: "ygg-04", phase: "yggdrasil", kind: "reflection",
-      title: l("Your World Tree reflection", "Ваш образ Мирового Древа"),
-      body: l("There is no prescribed interpretation of your drawing.", "У рисунка нет обязательной трактовки."),
-      question: { type: "text", prompt: l("What does your tree mean to you?", "Что ваше дерево значит лично для вас?") } },
+      title: l("Your meditation feedback", "Ваш отзыв о медитации"),
+      body: l("How much did you feel, if anything? Not feeling anything is also a valid observation.", "Насколько удалось прочувствовать медитацию? Если ничего не почувствовали — это тоже нормально."),
+      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
     { id: "ygg-05", phase: "yggdrasil", kind: "lesson",
       title: l("Continue with the first-level materials", "Продолжите изучение первой ступени"),
       body: l("The introductory streams and source materials are on the separate Yggdrasil course page. A teacher-guided initiation must be arranged with Andrey.", "Вводные потоки и источники — на отдельной странице Иггдрасиля. Инициацию с преподавателем необходимо согласовать с Андреем.") },
@@ -219,6 +235,9 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("What is the World Tree used for?", "Для чего нужен образ Мирового Древа?"),
       body: l("Describe how a symbol can support reflection without being a diagnosis or a promised outcome.", "Расскажите, как символ помогает размышлять, не являясь диагнозом или обещанием результата."),
       question: { type: "text", prompt: l("My answer about Reiki Yggdrasil…", "Мой ответ о Рейки Иггдрасиль…") } },
+    { id: "ygg-done", phase: "yggdrasil", kind: "milestone", image: image.tree,
+      title: l("Fourth lesson completed!", "Четвёртый урок пройден!"),
+      body: l("One lesson remains. Complete it to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Остался один урок! Завершите его, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки.") },
   ],
   tantra: [
     { id: "tan-01", phase: "tantra", kind: "lesson", image: image.tantra,
@@ -230,10 +249,15 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "tan-03", phase: "tantra", kind: "practice", question: practiceQuestion,
       title: l("Notice connection and space", "Заметьте связь и пространство"),
       body: l("Notice where you feel comfortable sitting or standing. You can practise simple awareness without any touch or physical contact.", "Заметьте, где вам удобно сидеть или стоять. Можно просто наблюдать ощущения без прикосновений и физического контакта.") },
+    { id: "tan-voices", phase: "tantra", kind: "voices", videoKey: "tantra-reiki", image: image.tantra,
+      title: l("What others noticed in Tantra Reiki", "Что ощущали другие в Тантра Рейки"),
+      body: l("An existing learner testimonial about Tantra Reiki; everyone can have a different experience.", "Опубликованный отзыв о Тантра Рейки — ваши ощущения могут быть совсем другими."),
+      testimonial: { quote: l("It was also a shift in perception and it felt like flowing energy as I went on my day.", "Я заметила изменение восприятия и ощущение потока, которое сохранялось в течение дня."),
+        attribution: l("Margaret · published Tantra Reiki testimonial", "Маргарет · опубликованный отзыв о Тантра Рейки"), sourcePath: "reiki/tantra-reiki" } },
     { id: "tan-04", phase: "tantra", kind: "reflection",
-      title: l("A personal observation", "Личное наблюдение"),
-      body: l("Reflect on presence, connection or your own boundaries.", "Подумайте о присутствии, связи или собственных границах."),
-      question: { type: "text", prompt: l("I noticed…", "Я заметил(а)…") } },
+      title: l("Your meditation feedback", "Ваш отзыв о медитации"),
+      body: l("How much did you feel, if anything? Even 'nothing yet' is an honest answer.", "Насколько удалось прочувствовать медитацию? «Пока ничего» — тоже честный ответ."),
+      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
     { id: "tan-05", phase: "tantra", kind: "lesson",
       title: l("Continue with Tantra Reiki Level 1", "Продолжите первую ступень Тантра Рейки"),
       body: l("Read the first-level course materials. Any initiation requires a separate teacher-led arrangement.", "Изучите материалы первой ступени. Любая инициация согласуется с преподавателем отдельно.") },
@@ -252,10 +276,13 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "kun-03", phase: "kundalini", kind: "practice", question: practiceQuestion,
       title: l("A moment of grounding", "Момент опоры"),
       body: l("Notice the ground beneath your feet or the support of your chair. This is an optional everyday awareness exercise.", "Заметьте пол под ногами или опору стула. Это необязательное упражнение на повседневное внимание.") },
+    { id: "kun-voices", phase: "kundalini", kind: "voices", videoKey: "kundalini-reiki", image: image.kundalini,
+      title: l("What do other viewers say?", "Что пишут другие?"),
+      body: l("Open the original Kundalini Reiki recording to explore any public viewer comments before sharing your own experience.", "Посмотрите комментарии под оригинальной медитацией Кундалини Рейки, если они открыты, а затем поделитесь своим впечатлением.") },
     { id: "kun-04", phase: "kundalini", kind: "reflection",
-      title: l("What felt supportive?", "Что помогло почувствовать опору?"),
-      body: l("Keep the observation simple. There is no special outcome expected.", "Запишите простое наблюдение. Особого результата не требуется."),
-      question: { type: "text", prompt: l("For me…", "Для меня…") } },
+      title: l("Your meditation feedback", "Ваш отзыв о медитации"),
+      body: l("How much did you feel, if anything? A quiet or neutral experience is just as valid.", "Насколько удалось прочувствовать медитацию? Спокойное или нейтральное состояние — тоже нормальный результат."),
+      question: { type: "text", prompt: l("What did you notice? One sentence is enough.", "Что вы заметили? Достаточно одного предложения.") } },
     { id: "kun-05", phase: "kundalini", kind: "lesson",
       title: l("Explore the original manual", "Изучите оригинальную методичку"),
       body: l("The public Kundalini Reiki course offers the source manual and instructions to request teacher-guided Level 1.", "На публичной странице Кундалини Рейки есть исходная методичка и информация о согласовании первой ступени с преподавателем.") },
@@ -263,6 +290,9 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("A question about Kundalini Reiki", "Вопрос по Кундалини Рейки"),
       body: l("How is noticing support and grounding different from needing a particular energy sensation?", "Чем ощущение опоры и заземления отличается от требования почувствовать особую энергию?"),
       question: { type: "text", prompt: l("My answer about Kundalini Reiki…", "Мой ответ о Кундалини Рейки…") } },
+    { id: "kun-done", phase: "kundalini", kind: "milestone", image: image.kundalini,
+      title: l("Third lesson completed!", "Третий урок пройден!"),
+      body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
   ],
 };
 

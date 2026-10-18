@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf, MessageCircle, ExternalLink } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -70,7 +70,22 @@ const copy = {
     fiveLessons: "Five sequential lessons",
     meditationReport: "Meditation report",
     lessonQuestion: "Course question",
-    optionalForLearning: "Optional to continue learning. A written answer is required for personal initiation review.",
+    optionalForLearning: "Optional for now. A written answer is required for personal initiation review.",
+    feedbackBadge: "Your meditation feedback",
+    feelingPrompt: "How strongly did you experience this meditation?",
+    feelingLow: "0 · Not at all",
+    feelingHigh: "10 · Very clearly",
+    feelingMissing: "Choose a feeling level and write one short sentence to continue.",
+    feelingPlaceholder: "What did you notice, even if nothing? One sentence is enough…",
+    feedbackPrivacy: "A personal reflection, not a test. Your notes are never published automatically.",
+    voicesLabel: "From the community",
+    voicesNoQuote: "No verified participant quote for this exact recording is available here yet.",
+    voicesSource: "See the published testimonial",
+    voicesComments: "View original video & any public comments",
+    voicesNote: "Other people's experiences are not a standard to meet.",
+    milestoneLabel: "Lovely progress",
+    milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
+    committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
     reviewDone: "Your five lesson reports and answers are ready to review.",
@@ -148,7 +163,22 @@ const copy = {
     fiveLessons: "Пять последовательных уроков",
     meditationReport: "Отчёт после медитации",
     lessonQuestion: "Вопрос по уроку",
-    optionalForLearning: "Можно пропустить и продолжить обучение. Письменный ответ нужен для рассмотрения заявки на личную инициацию.",
+    optionalForLearning: "Пока можно пропустить. Письменный ответ понадобится для рассмотрения личной инициации.",
+    feedbackBadge: "Ваш отзыв о медитации",
+    feelingPrompt: "Насколько удалось прочувствовать медитацию?",
+    feelingLow: "0 · Ничего",
+    feelingHigh: "10 · Очень ярко",
+    feelingMissing: "Выберите степень ощущений и напишите одно короткое предложение.",
+    feelingPlaceholder: "Что вы заметили, даже если ничего? Достаточно одного предложения…",
+    feedbackPrivacy: "Это личное наблюдение, не экзамен. Ваш отзыв не публикуется автоматически.",
+    voicesLabel: "Опыт других практиков",
+    voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет в материалах курса.",
+    voicesSource: "Посмотреть опубликованный отзыв",
+    voicesComments: "Открыть видео и доступные комментарии",
+    voicesNote: "Ваш опыт не обязан совпадать с чужим.",
+    milestoneLabel: "Прекрасный прогресс",
+    milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
+    committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
     reviewDone: "Отчёты и ответы по пяти урокам готовы к просмотру.",
@@ -187,6 +217,16 @@ const copy = {
     myCourses: "Мои курсы",
   },
 } as const;
+
+const MEDITATION_REPORT_IDS = new Set(["flight-04", "tan-04", "kun-04", "ygg-04"]);
+const feedbackPattern = /^Feeling:(10|[0-9])\/10\n([\s\S]*)$/;
+function splitMeditationFeedback(value: string) {
+  const match = feedbackPattern.exec(value);
+  return { rating: match?.[1] ?? "", note: match?.[2] ?? value };
+}
+function joinMeditationFeedback(rating: string, note: string) {
+  return (rating ? "Feeling:" + rating + "/10\n" : "") + note;
+}
 
 const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   en: {
@@ -366,6 +406,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const total = slides.length;
   const completed = slide.kind === "finish";
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
+  const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
+  const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
+  const feedbackMissing = isMeditationFeedback && (!meditationFeedback.rating || !meditationFeedback.note.trim());
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
@@ -418,7 +461,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
     setIndex(target);
   }
   async function next() {
-    if (busy || experienceMissing) return;
+    if (busy || experienceMissing || feedbackMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -548,6 +591,34 @@ export function EnergyworkAiLearner({ locale }: Props) {
                     <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
+              {slide.kind === "milestone" ? (
+                <div className={styles.milestoneCard}>
+                  <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
+                  <strong>{t.milestoneLabel}</strong>
+                  <p>{t.milestoneNote}</p>
+                </div>
+              ) : null}
+              {slide.kind === "voices" ? (
+                <div className={styles.voicesCard} data-meditation-voices>
+                  <span className={styles.voicesEyebrow}><MessageCircle size={18} aria-hidden="true" />{t.voicesLabel}</span>
+                  {slide.testimonial ? (
+                    <blockquote className={styles.voiceQuote}>
+                      <p>“{slide.testimonial.quote[locale]}”</p>
+                      <cite>{slide.testimonial.attribution[locale]}</cite>
+                    </blockquote>
+                  ) : <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>}
+                  {slide.testimonial ? (
+                    <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + slide.testimonial.sourcePath}>
+                      {t.voicesSource}<ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                  {media?.youtubeId ? (
+                    <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + media.youtubeId}
+                      target="_blank" rel="noopener noreferrer">{t.voicesComments}<ExternalLink size={15} aria-hidden="true" /></a>
+                  ) : null}
+                  <p className={styles.voicesNote}>{t.voicesNote}</p>
+                </div>
+              ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.id === "paths-04" ? (
@@ -580,14 +651,35 @@ export function EnergyworkAiLearner({ locale }: Props) {
               {slide.question ? (
                 <div className={styles.question}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
+                     isMeditationFeedback ? t.feedbackBadge :
                      initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
                      initiationItems.some((item) => item.questionId === slide.id) ? t.lessonQuestion : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
+                  {isMeditationFeedback ? (
+                    <div className={styles.meditationFeeling} data-meditation-feeling>
+                      <label htmlFor={"feeling-" + slide.id}>{t.feelingPrompt}</label>
+                      <div className={styles.feelingValue}>
+                        <span>{t.feelingLow}</span>
+                        <strong aria-live="polite">{meditationFeedback.rating ? meditationFeedback.rating + " / 10" : "— / 10"}</strong>
+                        <span>{t.feelingHigh}</span>
+                      </div>
+                      <input id={"feeling-" + slide.id} type="range" min="0" max="10" step="1"
+                        value={meditationFeedback.rating || "5"}
+                        onChange={(event) => setAnswer(joinMeditationFeedback(event.target.value, meditationFeedback.note).slice(0, 1600))}
+                        onClick={(event) => { if (!meditationFeedback.rating) setAnswer(joinMeditationFeedback(event.currentTarget.value, meditationFeedback.note).slice(0, 1600)); }}
+                        aria-label={t.feelingPrompt} />
+                    </div>
+                  ) : null}
                   {slide.question.type === "text" ? (
-                    <textarea id={"answer-" + slide.id} value={answers[slide.id] ?? ""} onChange={(e) => setAnswer(e.target.value.slice(0, 1600))}
-                      className={styles.textarea} maxLength={1600} rows={4} placeholder={t.placeholder} autoComplete="off" />
+                    <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationFeedback.note : (answers[slide.id] ?? "")}
+                      onChange={(e) => setAnswer((isMeditationFeedback
+                        ? joinMeditationFeedback(meditationFeedback.rating, e.target.value)
+                        : e.target.value).slice(0, 1600))}
+                      className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
+                      maxLength={1600} rows={isMeditationFeedback ? 3 : 4}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : t.placeholder} autoComplete="off" />
                   ) : null}
                   {slide.question.type === "scale" ? (
                     <div className={styles.scaleWrap}>
@@ -617,10 +709,12 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote :
+                  <p className={styles.optional + (isMeditationFeedback ? " " + styles.feedbackRequired : "")}
+                    role={feedbackMissing ? "status" : undefined}>{slide.id === "welcome-02" ? t.experienceNote :
+                    isMeditationFeedback ? (feedbackMissing ? t.feelingMissing : t.feedbackPrivacy) :
                     initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
                     ? t.optionalForLearning : t.blank}</p>
-                  {reviewReturn && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
+                  {reviewReturn && !feedbackMissing && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
                     <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
                       disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
@@ -752,8 +846,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing} className={styles.next} data-energywork-next>
-                {slide.kind === "welcome" ? t.startFree : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing} className={styles.next} data-energywork-next>
+                {slide.kind === "welcome" ? t.startFree : slide.kind === "milestone" ? t.committed : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}

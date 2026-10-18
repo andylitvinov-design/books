@@ -15,8 +15,8 @@ const browser = await (engineName === "webkit" ? webkit : chromium).launch();
 const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
-assert.equal(expectedSequence.length, 45, "One consecutive course must have 45 screens");
-const milestones = new Set([1,2,4,6,8,13,20,26,34,40,44,45]);
+assert.equal(expectedSequence.length, 53, "One consecutive course must have 53 screens");
+const milestones = new Set([1,2,4,6,8,13,20,26,34,40,44,45,53]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -59,7 +59,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   assert.equal(data.id, id, where + ": slide ID");
   assert.ok(data.title.length > 3, where + ": readable title");
   assert.equal(data.progressCurrent, index, where + ": actual slide progress");
-  assert.equal(data.progressMax, 45, where + ": total");
+  assert.equal(data.progressMax, expectedSequence.length, where + ": total");
   assert.equal(data.stageCount, 5, where + ": five true lesson circles");
   assert.equal(data.activeStage, 1, where + ": one highlighted current stage, including course welcome");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
@@ -73,7 +73,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind !== "welcome") {
     assert.ok(data.slideBackground.includes("gradient") || data.slideFill.includes("rgba("), where + ": glass panel background");
   }
-  if (index < 45) {
+  if (index < expectedSequence.length) {
     assert.ok(data.ctaTop >= -1 && data.ctaBottom <= data.viewportHeight + 2,
       where + ": action stays reachable above mobile browser safe area; " + JSON.stringify(data));
   }
@@ -81,6 +81,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
   if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
+  if (data.kind === "voices") await expect(page.locator("[data-meditation-voices]")).toBeVisible();
+  if (data.kind === "milestone") await expect(page.locator("button[data-energywork-next]")).toHaveText(/I'm committed!/);
   if (screenshot) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
   }
@@ -106,12 +108,23 @@ async function exerciseJourney(page, locale, width) {
     if (id==="welcome-02") {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
     }
+    if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
+      // No bypass without a feeling score AND a short written observation.
+      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
+      const slider = page.locator('[data-meditation-feeling] input[type="range"]');
+      await slider.focus();
+      await slider.press("ArrowRight");
+      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
+      await page.locator('textarea[id="answer-'+id+'"]').fill(locale==="ru"
+        ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
+      await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+    }
     if (index===expectedSequence.length) break;
     const next = page.locator("button[data-energywork-next]");
     await expect(next).toBeEnabled({timeout:30000});
     await next.click();
   }
-  assert.deepEqual(journey,expectedSequence,locale+": all 45 sequential slides reached without picking branches");
+  assert.deepEqual(journey,expectedSequence,locale+": all 53 sequential slides reached without picking branches");
   await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
   await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
@@ -133,7 +146,7 @@ try {
     await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
   }
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
-  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:45,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:53,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
   await browser.close();
 }
