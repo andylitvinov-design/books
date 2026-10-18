@@ -64,20 +64,20 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
     await expect(links.nth(index)).toHaveText(expected[index].label)
     if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].label)
   }
-  await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
-  await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
+  await expect(bottom.locator('[aria-current="page"]')).toHaveCount(surface === 'library' ? 0 : 1)
+  if (surface !== 'library') await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
   return expected
 }
 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
-  const cabinetHref = '/' + (locale === 'es' ? 'en' : locale) + '/app'
+  const libraryHref = '/' + locale + '/library'
   const freeStartHref = (locale === 'en' ? '/' : '/' + locale) + '#free-start'
-  const expectedHeader = expected.filter(item => ['services', 'cabinet'].includes(item.id)).map(item => ({ id: item.id, href: item.id === 'cabinet' ? cabinetHref : item.href }))
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeStartHref, '/' + locale + '/services', '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
+  const expectedHeader = ['services', 'library'].map(id => { const item = expected.find(entry => entry.id === id); return { id, href: item.href } })
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeStartHref, '/' + locale + '/services', '/' + locale + '/about', libraryHref], label + ': exact direct header destinations')
   assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
-  await expect(current).toHaveCount(surface === 'services' ? 1 : 0)
-  if (surface === 'services') await expect(current).toHaveAttribute('href', '/' + locale + '/services')
+  await expect(current).toHaveCount(surface === 'services' || surface === 'library' ? 1 : 0)
+  if (surface === 'services' || surface === 'library') await expect(current).toHaveAttribute('href', '/' + locale + '/' + surface)
 }
 
 async function verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport }) {
@@ -132,15 +132,15 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['events','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
-        const cabinet = header.locator('a.site-cabinet-entry')
+        const libraryEntry = header.locator('a.site-library-entry')
         const menu = header.locator('details.site-language-menu')
         const trigger = menu.locator('summary')
         await expect(trigger).toHaveText(locale.toUpperCase())
-        await expect(cabinet).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
+        await expect(libraryEntry).toHaveAttribute('href', '/' + locale + '/library')
         await expect(menu).toHaveJSProperty('open', false)
-        await inViewport(cabinet, label + '/cabinet')
+        await inViewport(libraryEntry, label + '/library')
         await inViewport(trigger, label + '/language')
         if (width > 1140) {
           for (const link of await header.locator('.site-navigation > a').all()) {
@@ -149,13 +149,13 @@ async function verifyPublicHeaderMatrix(page, engine) {
             assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ': desktop navigation link must remain in bounds')
           }
         } else {
-          for (const link of await header.locator('.site-navigation > a:not(.site-cabinet-entry)').all()) await expect(link).toBeHidden()
+          for (const link of await header.locator('.site-navigation > a:not(.site-library-entry)').all()) await expect(link).toBeHidden()
         }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Closed menu overflow: ' + label)
         // Use the real keyboard sequence; opening details alone does not test
         // the React Escape handler or its focus-return behavior after hydration.
-        await cabinet.focus()
-        await cabinet.press('Tab')
+        await libraryEntry.focus()
+        await libraryEntry.press('Tab')
         await expect(trigger).toBeFocused()
         await trigger.press('Enter')
         await expect(menu).toHaveJSProperty('open', true)
@@ -175,8 +175,8 @@ async function verifyPublicHeaderMatrix(page, engine) {
         const bottomLinks = bottom.locator('[data-nav-item]')
         assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact six bottom destinations')
         await expect(bottomLinks).toHaveCount(6)
-        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
-        await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
+        await expect(bottom.locator('[aria-current="page"]')).toHaveCount(surface === 'library' ? 0 : 1)
+        if (surface !== 'library') await expect(bottom.locator('[data-nav-item="' + surface + '"]')).toHaveAttribute('aria-current', 'page')
         if (width < 768) {
           await inViewport(bottom, label + '/bottom-navigation')
           await bottomLinks.first().focus()
@@ -202,7 +202,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible cabinet/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
+  pass(engine + ': public header Home/Services/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible Library/language controls, open-menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation and keyboard order')
   } finally { diagnostic.stop() }
 }
 async function verifyPublicDiscoveryNavigation(page, engine) {
@@ -337,12 +337,12 @@ try {
           await expect(current).toHaveCount(1)
           await expect(current).toHaveAttribute('href', '/' + locale + '/library')
         } else {
-          // The compact mobile bar keeps six destinations; the full catalog is in Menu.
+          // Library is in the public header; Events uses the fifth bottom-navigation slot.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
-          await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
-          await expect(nav.locator('[data-nav-item="library"]')).toHaveAttribute('aria-current', 'page')
+          await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
+          await expect(nav.locator('[data-nav-item="events"]')).toHaveAttribute('href', '/' + locale + '/events')
         }
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)

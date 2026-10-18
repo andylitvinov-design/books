@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { CircleUserRound, Menu } from 'lucide-react';
+import { BookOpen, Menu } from 'lucide-react';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
@@ -11,10 +11,10 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
-const cabinetEntryCopy = {
-  en: { full: 'My cabinet', compact: 'Cabinet', aria: 'Open personal cabinet' },
-  ru: { full: 'Личный кабинет', compact: 'Кабинет', aria: 'Открыть личный кабинет' },
-  es: { full: 'Mi espacio', compact: 'Espacio', aria: 'Abrir mi espacio personal (en inglés)' },
+const libraryEntryCopy = {
+  en: { full: 'Library', compact: 'Library', aria: 'Open library' },
+  ru: { full: 'Библиотека', compact: 'Библиотека', aria: 'Открыть библиотеку' },
+  es: { full: 'Biblioteca', compact: 'Biblioteca', aria: 'Abrir biblioteca' },
 } as const;
 
 const siteMenuCopy = {
@@ -30,7 +30,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
   const text = navigationCopy[activeLocale];
-  const cabinet = cabinetEntryCopy[activeLocale];
+  const library = libraryEntryCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const menuCurrent = activeCompactNavigationId(pathname);
@@ -97,7 +97,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Preserve the additional editorial destinations afterwards.
   const menuItems = [
     ...getCompactNavigation(activeLocale),
-    ...getSiteNavigation(activeLocale).filter(item => item.id === 'relationships' || item.id === 'courses' || item.id === 'events'),
+    ...getSiteNavigation(activeLocale).filter(item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses'),
   ];
 
   return <nav aria-label={text.navigation} className="site-navigation">
@@ -107,16 +107,16 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <Link
-      className="site-cabinet-entry"
-      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
+      className="site-library-entry"
+      href={`/${activeLocale}/library`}
       prefetch={false}
-      data-nav-item="cabinet"
-      aria-current={current === 'cabinet' ? 'page' : undefined}
-      aria-label={cabinet.aria}
+      data-nav-item="library"
+      aria-current={current === 'library' ? 'page' : undefined}
+      aria-label={library.aria}
     >
-      <CircleUserRound aria-hidden="true" />
-      <span className="site-cabinet-entry__full">{cabinet.full}</span>
-      <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
+      <BookOpen aria-hidden="true" />
+      <span className="site-library-entry__full">{library.full}</span>
+      <span className="site-library-entry__compact">{library.compact}</span>
     </Link>
     <span className="site-language-switch"><details className="site-language-menu" ref={languageRef}>
       <summary className="site-language-menu-trigger" aria-label={text.language}>{activeLocale.toUpperCase()}</summary>
