@@ -238,7 +238,15 @@ export async function assertAccountScaleReport(page, expect, result, locale) {
     await expect(card).toBeVisible()
     await expect(card).toHaveAttribute('data-active-scale', section.key)
     const dimension = result.dimensions.find(item => item.key === section.key)
-    const anchor = interpretationBandModel(result, dimension, locale).currentAnswerBand
+    const reading = gaugeModel(dimension, result, locale)?.rangeReading
+    const anchor = reading ? null : interpretationBandModel(result, dimension, locale).currentAnswerBand
+    if (reading) {
+      await expect(card.locator('[data-assessment-range-report]')).toBeVisible()
+      await expect(card.locator('[data-range-characterization]')).toBeVisible()
+      await expect(card.locator('[data-all-score-ranges] > li')).toHaveCount(reading.rows.length)
+      for (const row of await card.locator('[data-all-score-ranges] > li').all()) await expect(row).toBeVisible()
+      await expect(card.locator('[data-range-evidence-status]')).toBeVisible()
+    }
     if (anchor) {
       await expect(card.locator('[data-answer-interpretation]')).toBeVisible()
       await expect(card.locator('[data-answer-ranges]')).toBeVisible()
