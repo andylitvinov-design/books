@@ -113,11 +113,14 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Pu
                 </p>
               ) : null}
               {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
-                <a className={styles.cardVideo} href={getServiceVideoWatchUrl(offer.id, locale)}
-                  target="_blank" rel="noopener noreferrer" data-service-card-video={offer.id}
-                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : locale === "es" ? "Ver el vídeo del método en otra pestaña (en inglés)" : "Watch the method video in a new tab"}>
+                <a className={styles.cardVideo}
+                  href={locale === "ru" ? getServiceVideoWatchUrl(offer.id, locale) : `${offer.href}#service-video`}
+                  target={locale === "ru" ? "_blank" : undefined}
+                  rel={locale === "ru" ? "noopener noreferrer" : undefined}
+                  data-service-card-video={offer.id}
+                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : locale === "es" ? "Ver el vídeo y su transcripción en la página del servicio (audio en inglés)" : "Open the original method video and transcript on the service page"}>
                   <PlayCircle size={18} aria-hidden="true" />
-                  {locale === "ru" ? "Смотреть видео о подходе" : locale === "es" ? "Ver vídeo (en inglés)" : "Watch a short video"}
+                  {locale === "ru" ? "Смотреть видео о подходе" : locale === "es" ? "Vídeo y texto (en inglés)" : "Video & transcript"}
                 </a>
               )}
               {offer.id === "alchemy" ? (
