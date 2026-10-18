@@ -28,13 +28,17 @@ async function handle(request) {
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       data = await repo.withOwner(actor, (store) => {
         if (body.action === 'create_contact') return store.createContact(body.payload)
         if (body.action === 'record_consent') return store.recordConsent(body.payload)
         if (body.action === 'suppress_contact') {
           onlyKeys(body.payload, ['id'])
           return store.suppressContact(body.payload.id)
+        }
+        if (body.action === 'set_lifecycle') {
+          onlyKeys(body.payload, ['id','lifecycle','expectedRevision'])
+          return store.setLifecycle(body.payload)
         }
         return store.createDraft(body.payload)
       })

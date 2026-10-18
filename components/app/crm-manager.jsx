@@ -13,9 +13,9 @@ const BILLING_COPY = {
   es: { title: 'Registro de suscripciones', note: 'Hasta 100 registros técnicos de cuentas. La vinculación con contactos no está verificada.', off: 'El registro aún no está conectado.', until: 'Pagado hasta', cancel: 'Renovación cancelada' },
 }
 const EXTRA_COPY = {
-  en: { all: 'All', leads: 'Interested', clients: 'Clients', archived: 'Archived', suppress: 'Do not contact', suppressConfirm: 'Stop promotional contact with this person? This cannot be undone on this screen.', duplicate: 'This email is already in your contacts.', showing: 'Showing up to 100 recent contacts.' },
-  ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Показаны до 100 последних контактов.' },
-  es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'Se muestran hasta 100 contactos recientes.' },
+  en: { all: 'All', leads: 'Interested', clients: 'Clients', archived: 'Archived', suppress: 'Do not contact', suppressConfirm: 'Stop promotional contact with this person? This cannot be undone on this screen.', duplicate: 'This email is already in your contacts.', showing: 'Showing up to 100 recent contacts.', stage: 'Contact stage', conflict: 'Contact changed in another tab. Refresh and retry.' },
+  ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Показаны до 100 последних контактов.', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
+  es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'Se muestran hasta 100 contactos recientes.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
@@ -54,12 +54,12 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(result.error === 'CONTACT_ALREADY_EXISTS' ? 'CONTACT_ALREADY_EXISTS' : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
       await load(session).catch(() => {})
-    } catch (error) { if (sessionRef.current === session) setNotice(error?.message === 'CONTACT_ALREADY_EXISTS' ? c.duplicate : c.error) } finally { if (sessionRef.current === session) setBusy(false) }
+    } catch (error) { if (sessionRef.current === session) setNotice(error?.message === 'CONTACT_ALREADY_EXISTS' ? c.duplicate : error?.message === 'CONFLICT' ? c.conflict : c.error) } finally { if (sessionRef.current === session) setBusy(false) }
   }
   if (!accountId) return null
   const contacts=(data?.contacts||[]).filter(contact=>{
@@ -121,7 +121,12 @@ export default function CrmManager({ locale = 'en', accountId }) {
         {contacts.length?contacts.map(contact=><li key={contact.id}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
           <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
-          <small className={styles.tag}>{contact.suppressed?c.suppressed:contact.lifecycle==='client'?c.clients:contact.lifecycle==='archived'?c.archived:c.leads}</small>
+          <label className={styles.stageLabel}><span>{c.stage}</span>
+            <select aria-label={c.stage+' — '+contact.displayName} disabled={busy} value={contact.lifecycle} onChange={(event)=>save('set_lifecycle',{id:contact.id,lifecycle:event.target.value,expectedRevision:contact.revision})}>
+              <option value="lead">{c.leads}</option><option value="client">{c.clients}</option><option value="archived">{c.archived}</option>
+            </select>
+          </label>
+          {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
