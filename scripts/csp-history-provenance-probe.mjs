@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 
 export function assertHistoryProvenanceEvidence(result) {
-  const { home, about, repeated, hashes, reloadedHome, foreignAbout, errors } = result;
+  const { home, about, repeated, hashes, reloadedHome, foreignAbout, events, errors } = result;
   for (const snapshot of [home, about, ...repeated, ...hashes, reloadedHome, foreignAbout]) {
     assert.equal(typeof snapshot.key, 'string', 'Native Navigation entry keys must be supported');
     assert.ok(snapshot.key, 'Native entry key must be nonempty');
@@ -25,6 +25,11 @@ export function assertHistoryProvenanceEvidence(result) {
   assert.notEqual(reloadedHome.document, home.document, 'Reload creates a fresh document');
   assert.notEqual(foreignAbout.document, reloadedHome.document, 'Foreign history entry must load a fresh document');
   assert.equal(foreignAbout.pathname, '/en/about');
+  const foreignRestore = events?.find(event =>
+    (event.type === 'popstate' || (event.type === 'pageshow' && event.persisted === true))
+    && event.document === reloadedHome.document && event.owned === false
+    && event.key === about.key && new URL(event.url).pathname === '/en/about');
+  assert.ok(foreignRestore, 'Guard proof requires an unowned About restore observed inside the reloaded Home document');
   assert.deepEqual(errors, [], 'No browser JavaScript errors in provenance journey');
   return { foreignHistoryReloadVerified: true, ownedHistoryVerified: true, hashHistoryVerified: true };
 }
@@ -86,6 +91,7 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
     await expect.poll(async () => (await snapshot()).document).not.toBe(result.reloadedHome.document);
     await page.waitForLoadState('networkidle'); await ready('/en/about');
     result.foreignAbout = await snapshot();
+    result.events = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__historyProofEvents') || '[]'));
     // Authoritative persisted restoration is covered separately by raw CDP.
     return assertHistoryProvenanceEvidence(result);
   } finally {
