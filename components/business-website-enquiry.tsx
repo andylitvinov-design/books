@@ -73,6 +73,15 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     const chosen=new URLSearchParams(window.location.search).get("businessFormat");
     if(chosen==="free"||chosen==="express"||chosen==="full"||chosen==="mentoring") setFormat(chosen);
   },[]);
+  useEffect(()=>{
+    const choose=(event:MouseEvent)=>{
+      if(!(event.target instanceof Element))return;
+      const value=event.target.closest("[data-business-direct-option]")?.getAttribute("data-business-direct-option");
+      if(value==="free"||value==="express"||value==="full"||value==="mentoring")setFormat(value);
+    };
+    document.addEventListener("click",choose);
+    return ()=>document.removeEventListener("click",choose);
+  },[]);
   function edit() {setSuccess(false);setError("");operation.current=null}
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
