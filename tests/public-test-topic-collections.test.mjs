@@ -75,7 +75,8 @@ test('collection suggestions appear after detailed filters and before test recom
   const collectionHandler = parent.split('onChooseCollection={(id) => {')[1]?.split('viaProfileEntry=')[0]
   assert.ok(collectionHandler)
   assert.doesNotMatch(collectionHandler, /setKinds\(\[\]\)|setMaxMinutes\(0\)|setDepth\('balanced'\)|setFocus\(/)
-  assert.match(parent, /focus: \[\], problems: \[\]/)
+  assert.match(parent, /activeCollection \? filterExplorerEntries\(entries, \{/)
+  assert.match(parent, /maxMinutes, language, tracking, freeOnly, search: query, selectedKeys/)
   assert.match(picker, /data-test-collection-marker/)
   assert.match(css, /\.collectionMarker/)
   assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none;/)
@@ -120,8 +121,12 @@ test('collection membership and boosted ranking use real test topics, without ex
   const inBaseline = baseline.find((entry) => entry.key === love.key)
   const inBoosted = boosted.find((entry) => entry.key === love.key)
   assert.ok(inBaseline && inBoosted)
-  assert.ok(inBoosted.matchPercent > inBaseline.matchPercent,
-    'explicit collection selection raises matching test relevance')
+  assert.ok(inBoosted.matchPercent >= inBaseline.matchPercent,
+    'collection selection cannot reduce matching test relevance')
+  assert.ok(baseline.some((entry) => testCollectionAffinity(entry, 'relationships') > 0 &&
+    entry.matchPercent < 99 &&
+    boosted.find((candidate) => candidate.key === entry.key)?.matchPercent > entry.matchPercent),
+    'explicit collection selection increases relevant scores when they are not capped')
   assert.ok(boosted.some((entry) => testCollectionAffinity(entry, 'relationships') === 0),
     'unrelated tests remain in the standard list')
   assert.ok(boosted.every((entry, i) =>
