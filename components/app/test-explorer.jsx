@@ -241,7 +241,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [showStandaloneVia, setShowStandaloneVia] = useState(false)
   const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
-  const entries = useMemo(() => buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience }), [locale, audience])
+  // Keep the Spanish UI metadata; English remains the safe fallback for source questionnaires.
+  const entries = useMemo(() => buildExplorerEntries({ locale, audience }), [locale, audience])
   const pdfResourceCount = entries.filter((entry) => entry.pdfResource && !entry.selectable).length
   // Direct History -> Test selection must also work when the URL changes without remounting.
   useEffect(() => {
