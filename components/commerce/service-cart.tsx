@@ -91,8 +91,11 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     const guard = accountGuard.current;
     const generation = guard.mount();
     let mounted = true;
-    try { setSelected(restoreServiceCart(window.sessionStorage.getItem(SERVICE_CART_STORAGE_KEY))); }
+    let restoredItems: string[] = [];
+    try { restoredItems = restoreServiceCart(window.sessionStorage.getItem(SERVICE_CART_STORAGE_KEY)); }
     catch { /* Storage can be disabled; the cart still works in this page. */ }
+    const requestedService = new URLSearchParams(window.location.search).get("service");
+    setSelected(requestedService && products.some((product) => product.id === requestedService) ? [requestedService] : restoredItems);
     setRestored(true);
     const abort = new AbortController();
     fetch("/api/app/commerce/status", { credentials: "same-origin", cache: "no-store", signal: abort.signal })
