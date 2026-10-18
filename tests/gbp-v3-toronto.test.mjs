@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { validateMarketingLead, MARKETING_SOURCES, marketingSnapshot } from '../lib/crm/marketing.js'
+import { safePublicWhatsAppPath } from '../lib/whatsapp-enquiry.js'
 
 const source = relative => readFileSync(new URL('../' + relative, import.meta.url), 'utf8')
 const contactId = '123e4567-e89b-42d3-a456-426614174000'
@@ -52,6 +53,9 @@ test('dedicated Toronto landing gives three localized routes with truthful reque
   const siteMap = source('app/sitemap.ts')
   assert.match(route, /data-gbp-toronto-entry/)
   assert.match(route, /<FreeReviewQuickRequest locale=\{locale\}/)
+  assert.match(route, /pagePath=\{\"\/\" \+ locale \+ \"\/toronto\"\}/)
+  assert.equal(safePublicWhatsAppPath('/en/toronto?private=something'), '/en/toronto')
+  assert.equal(safePublicWhatsAppPath('/en/client/private'), '')
   assert.match(route, /<PublicSiteHeader locale=\{locale\}/)
   assert.match(route, /"x-default": "\/en\/toronto"/)
   assert.match(route, /en: \{/)
