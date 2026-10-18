@@ -311,3 +311,6 @@
  .monthlyCard{padding:10px 11px}
  .paymentDisclosure summary{padding-inline:11px}
 }
+
+/* Keep every revealed payment link, including terms, comfortably tappable. */
+.paymentDisclosureBody .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}

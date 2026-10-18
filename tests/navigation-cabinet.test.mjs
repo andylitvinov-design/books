@@ -56,7 +56,8 @@ test('the umbrella homepage can render Russian and English chrome and copy', asy
   assert.match(page, /redirect\(`\/\$\{requested\}`\)/)
   assert.match(russianPage, /locale="ru"/)
   assert.match(russianPage, /locale !== "ru"\) notFound\(\)/)
-  assert.match(metadata, /Holistic House — free self-checks and personal guidance in Toronto/)
+  assert.match(metadata, /Personal Sessions in Toronto & Online \| Holistic House/)
+  assert.match(metadata, /Личные консультации в Торонто и онлайн \| Holistic House/)
   assert.match(metadata, /languages: \{ en: "\/", ru: "\/ru", es: "\/es", "x-default": "\/" \}/)
 })
 

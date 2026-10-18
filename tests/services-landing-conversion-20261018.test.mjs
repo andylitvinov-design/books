@@ -57,12 +57,12 @@ test("practitioner landing retains moderated service selection and correct Spani
   assert.match(styles, /@media\(max-width:760px\)/);
 });
 
-test("services overview keeps free first choice and paid details separately", () => {
+test("services overview leads to paid enquiry and retains a separate free written review", () => {
   const hero = read("components/services-conversion-hero.tsx");
   assert.match(hero, /services\/free-situation-review/);
-  assert.match(hero, /services\/alchemy-of-soul/);
-  assert.match(hero, /Start with your question/);
-  assert.match(hero, /paidCta: "Alchemy of the Soul · Psycho-homeopathy"/);
+  assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
+  assert.match(hero, /heading: "Personal guidance for relationships, work and life decisions"/);
+  assert.match(hero, /paidCta: "Ask about a personal session · from €50"/);
   assert.doesNotMatch(hero, /€100/);
   assert.match(read("app/[locale]/services/free-situation-review/review.module.css"), /linear-gradient/);
 });

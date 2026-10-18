@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("services starts with compact free tests and five image-left cards while all EN/RU routes remain", () => {
+test("services starts with personal offers and booking, retaining free tests and all EN/RU routes", () => {
   const page = read("app/[locale]/services/page.tsx");
   const ui = read("components/services-solutions.tsx");
   const offers = read("data/core-service-offers.ts");
@@ -18,7 +18,7 @@ test("services starts with compact free tests and five image-left cards while al
   assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
   assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"), "Green hero precedes blue tests and course");
   assert.match(read("components/services-tests-intro.tsx"), /data-services-course-action/);
-  assert.ok(page.indexOf("<ServicesTestsIntro locale={locale as Locale} />") < page.indexOf("<ServicesSolutions locale={locale as Locale} />"), "Tests banner must precede service photos");
+  assert.ok(page.indexOf("<ServicesTestsIntro locale={locale as Locale} />") > page.indexOf("<ServicesSolutions locale={locale as Locale} />"), "Owner #996 puts personal service photos before optional tests");
   assert.ok(page.indexOf("<ServicesSolutions locale={locale as Locale} />") < page.indexOf("<ServicesAboutEntry locale={locale as Locale} />"), "Service photos must remain above the practitioner section");
   assert.doesNotMatch(page, /ServiceCart|service-cart/);
   assert.match(ui, /: allOffers;/);
@@ -45,10 +45,10 @@ test("services starts with compact free tests and five image-left cards while al
   const renderStart = page.indexOf("  return (");
   assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
   assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Paid prices belong in explicit offer metadata, not the free overview layout");
-  assert.doesNotMatch(offers, /€50|€100/);
-  assert.match(hero, /paidCta: "Alchemy of the Soul · Psycho-homeopathy"/);
-  assert.match(hero, /\/services\/alchemy-of-soul/);
+  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices are metadata; visible cards render separately scoped paid session prices");
+  assertBusinessPriceScope(offers);
+  assert.match(hero, /paidCta: "Ask about a personal session · from €50"/);
+  assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /min-height:44px/);
@@ -117,4 +117,26 @@ test("free diagnostic retains private-data-safe channel choice, explicit copying
   assert.match(freePage, /sampleCopy/);
   assert.match(freePage, /not a real client's drawing or results/);
   assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
+});
+
+function assertBusinessPriceScope(source) {
+  const blocks = [...source.matchAll(/\{\s*id: "business",[\s\S]*?\n    \},/g)].map(match => match[0]);
+  assert.equal(blocks.length, 3, "Exactly one Business offer per locale");
+  const benefits = ["Free written review · €50 express · €100 strategy session", "Бесплатный разбор · экспресс €50 · стратегия €100", "Revisión gratuita · sesión exprés €50 · estrategia €100"];
+  blocks.forEach((block, index) => {
+    assert.ok(block.includes('benefit: "' + benefits[index] + '"'));
+    assert.match(block, /route: "business-consulting"/);
+    assert.match(block, /image: images\.business/);
+  });
+  assert.doesNotMatch(source.replace(/\{\s*id: "business",[\s\S]*?\n    \},/g, ""), /€50|€100/, "Existing non-Business card copy remains unchanged by Business prices");
+}
+
+test("Business card price scope rejects missing prices, wrong destination and price leakage", () => {
+  const source = read("data/core-service-offers.ts");
+  assertBusinessPriceScope(source);
+  for (const [before, after] of [["€50 express", "express"], ['route: "business-consulting"', 'route: "wrong"'], ['id: "situation"', 'id: "situation", injectedPrice: "€50"']]) {
+    const mutation = source.replace(before, after);
+    assert.notEqual(mutation, source);
+    assert.throws(() => assertBusinessPriceScope(mutation));
+  }
 });

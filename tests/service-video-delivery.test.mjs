@@ -24,11 +24,11 @@ test("all approved service videos reuse exactly reviewed EN/RU sources, never ge
   }
 });
 
-test("the Services video gallery is expanded by default and appears before testimonials", () => {
+test("the Services video gallery is expanded by default after booking and testimonials", () => {
   const page = read("app/[locale]/services/page.tsx");
   const begin = page.indexOf('id="method-videos" open');
   const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
-  assert.ok(begin > 0 && begin < testimonials, "Visible videos should be before testimonials");
+  assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
   assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
   assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
   assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);

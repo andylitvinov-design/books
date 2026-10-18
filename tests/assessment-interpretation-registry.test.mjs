@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { CFPB_SHORT_2017_LOOKUP } from '../lib/assessments/cfpb-short-scoring.js'
 import { safetySignal } from '../lib/assessments/safety.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import {
@@ -93,11 +94,14 @@ test('every score dimension in each runnable test has a localized report at vali
 
 test('synthetic scores across instrument ranges have an unambiguous supported or unavailable interpretation', () => {
   let checked = 0
+  let cfpbValid = 0, cfpbInvalid = 0
   for (const def of runnable) {
     const scored = scoreAssessment(def, answersFor(def, 'min'), syntheticTraumaContext(def))
     for (const d of scored.dimensions) {
       const min = d.min, max = d.max
       const spec = def.scoring?.dimensions?.find(item => item.key === d.key)
+      const attainableLookup = def.scoringKey === 'cfpb-short-2017'
+        ? new Set(CFPB_SHORT_2017_LOOKUP.flat()) : null
       let attainableMeans = null
       if (spec?.method === 'mean') {
         const questions = spec.items.map(id => def.questions.find(question => question.id === id))
@@ -118,10 +122,18 @@ test('synthetic scores across instrument ranges have an unambiguous supported or
           const info = interpretationForDimension(interpretationResult, dimension, locale)
           assert.ok(info.code && info.meaning && info.label, def.key + '/' + d.key + '/' + value)
           assert.ok(['screening','published-reference','descriptive','unavailable'].includes(info.basis))
+          if (attainableLookup) {
+            const valid = attainableLookup.has(value)
+            assert.equal(info.basis, valid ? 'descriptive' : 'unavailable',
+              'CFPB lookup membership: ' + value + '/' + locale)
+            if (valid) cfpbValid++
+            else cfpbInvalid++
+          }
           // Summed scales cannot emit fractional values. Rounded means also
           // have discrete outputs; CBI's multiplier makes some integers impossible.
           if (info.basis === 'unavailable')
-            assert.ok(!Number.isInteger(value) || (attainableMeans && !attainableMeans.has(value)))
+            assert.ok(!Number.isInteger(value) || (attainableMeans && !attainableMeans.has(value)) ||
+              (attainableLookup && !attainableLookup.has(value)))
           else {
             assert.ok(info.meaning.length > 35)
             if (attainableMeans) assert.ok(attainableMeans.has(value))
@@ -140,6 +152,8 @@ test('synthetic scores across instrument ranges have an unambiguous supported or
     }
   }
   assert.ok(checked > 1200, 'Coverage must exercise a broad set of score/locale combinations')
+  assert.equal(cfpbValid, 56 * 2, 'Every valid CFPB lookup value is interpreted in EN/RU')
+  assert.equal(cfpbInvalid, 45 * 2, 'Every off-table CFPB integer remains unavailable in EN/RU')
 })
 
 test('Bach weighted profiles keep 38 separately authored themes instead of converting weighted matches into clinical thresholds', () => {

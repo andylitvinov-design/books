@@ -8,7 +8,11 @@ test('sitemap includes all localized Homeopathy indexes and all 208 paired remed
   const urls = sitemap.map(({ url }) => url)
   const remedyUrls = urls.filter((url) => url.includes('/homeopathy/remedies/'))
 
-  assert.equal(sitemap.length, 286)
+  const publicTests = urls.filter(url => /\/(en|ru|es)\/tests$/.test(url))
+  assert.deepEqual(publicTests.sort(), ['https://example.test/en/tests', 'https://example.test/es/tests', 'https://example.test/ru/tests'])
+  assert.equal(sitemap.length - publicTests.length, 286, 'All original public entries remain alongside the three editorial test landings')
+  assert.equal(sitemap.length, 289)
+  assert.ok(!urls.some(url => /\/client(?:\/|$)|\/app(?:\/|$)/.test(url)), 'Interactive/private routes remain excluded')
   assert.equal(new Set(urls).size, urls.length)
   assert.equal(urls.some(url => /\/books\/[^/]+$/.test(url) && !/\/(en|ru|es)\/books\//.test(url)), false)
   assert.equal(urls.filter(url => url === 'https://example.test/ru').length, 1)

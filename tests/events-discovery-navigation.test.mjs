@@ -31,7 +31,10 @@ test('Events is a first-party mobile destination in all languages and Library st
     assert.ok(navigationCopy[language].events)
     assert.match(page, /alternates/)
   }
-  assert.match(header, /item.id === 'events'/)
+  assert.match(header, /getCompactNavigation\(activeLocale\)/)
+  assert.match(header, /item.id === 'library'/)
+  assert.match(header, /className="site-library-entry"/)
+  assert.match(header, /data-nav-item="library"/)
   assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
   assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'events', 'house'])

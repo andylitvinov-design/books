@@ -2,6 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
+import {oporaNoticeActivity} from '../lib/inner-growth/opora-v6-exercise-cards.js'
+import {oporaCompactDay} from '../lib/inner-growth/opora-compact-copy-v6.js'
+import {opora55Case} from '../lib/inner-growth/opora-as55-learning-cases.js'
 import {validateOpora54Signals,opora54BlueprintValid} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -21,6 +24,15 @@ async function click(h,label){
  await h.settle()
 }
 const answerButtons=h=>nodes(h.tree).filter(n=>n.type==='button').map(textOf)
+function assertConcreteChoices(options,context){
+ assert.equal(options.length,3,context)
+ assert.ok(options.every(x=>typeof x==='string'&&x.trim().length>0),context+' needs nonempty labels')
+ const normalized=options.map(x=>x.trim().toLocaleLowerCase())
+ assert.equal(new Set(normalized).size,3,context+' needs distinct choices')
+ for(const label of options)assert.doesNotMatch(label.trim(),
+   /^(?:[abc123]|one|two|three|skip|пропустить|todo|placeholder|lorem ipsum|(?:option|choice|вариант|ответ)\s*(?:[abc123]|one|two|three|один|два|три))$/i,
+   context+' must name a concrete detail, action or plan rather than a placeholder')
+}
 
 test('V7 14-day curriculum still has three meaningful exercise cards and an honest attempt validator',()=>{
  assert.equal(opora54BlueprintValid(),true)
@@ -31,17 +43,54 @@ test('V7 14-day curriculum still has three meaningful exercise cards and an hone
    for(const kind of ['notice','act','transfer']){
      const exercise=v.opora54.exercises[kind]
      const options=kind==='notice'?exercise.a:exercise.choices
-     assert.equal(options.length,3,'day '+day+' '+locale+' '+kind)
-     // Single-word feeling labels (e.g. "Досада", "Relief") are
-     // intentional low-load responses to a prompt, not broken content.
-     // Action and transfer choices must remain concrete sentences.
+     assertConcreteChoices(options,'day '+day+' '+locale+' '+kind)
+     // Single-word feeling labels are intentional low-load responses.
+     // Keep the owner's sentence-length guard for action and transfer choices.
      const minLength=kind==='notice'?3:12
-     assert.ok(options.every(x=>typeof x==='string'&&x.trim().length>=minLength),
+     assert.ok(options.every(x=>x.trim().length>=minLength),
        'Expected meaningful '+kind+' labels on '+locale+' day '+day)
+     const authored=kind==='notice'?oporaNoticeActivity(day,locale).a
+       :kind==='act'?oporaCompactDay(day,locale).choices:opora55Case(day,locale).transfer
+     assert.deepEqual(options,authored,'The actual lesson retains the reviewed exercise choices')
+     if(kind==='notice'){
+       assert.ok(exercise.q.trim().length>0,'A short choice is explained by its actual question')
+       assert.equal(exercise.f.length,3)
+       assert.ok(exercise.f.every(feedback=>typeof feedback==='string'&&feedback.trim().length>0))
+       assert.equal(new Set(exercise.f).size,3,'Each concrete choice has its own contextual explanation')
+     }
    }
    assert.equal(v.opora54.scenario.choices.length,3)
    assert.equal(v.opora54.scenario.feedback.length,3)
  }
+ assert.deepEqual(oporaNoticeActivity(4,'en').a,['Disappointment','Sadness','Relief'])
+ assert.deepEqual(oporaNoticeActivity(6,'ru').a,['Время','Силы','Возможность сразу ответить'])
+})
+
+test('choice content guards reject blank, duplicate and generic labels while honest short vocabulary remains valid',()=>{
+ assertConcreteChoices(['Sadness','Relief','Disappointment'],'Emotion names')
+ for(const invalid of [['','Relief','Sadness'],['Sadness','sadness ','Relief'],
+   ['Choice one','Choice two','Choice three'],['A','B','C'],['TODO','Relief','Sadness'],
+   ['Пропустить','Грусть','Досада'],[null,'Relief','Sadness']]){
+   assert.throws(()=>assertConcreteChoices(invalid,'negative fixture'))
+ }
+})
+
+test('positive attempts and future plans require a selected exercise; non-attempts never invent one',()=>{
+ for(const [role,states,choiceField] of [
+   ['notice',['tried','partly'],'noticeChoice'],['act',['tried','partly'],'actChoice'],
+   ['transfer',['planned','imagined'],'transferChoice'],
+ ])for(const state of states){
+   assert.throws(()=>validateOpora54Signals({answers:{[role]:state}}),/INVALID_OPORA54_(ATTEMPT|TRANSFER)/)
+   const valid=validateOpora54Signals({answers:{[role]:state,[choiceField]:'one'}})
+   assert.equal(valid.answers[role],state)
+   assert.equal(valid.answers[choiceField],'one')
+ }
+ for(const role of ['notice','act'])for(const state of ['not_yet','not_attempted','uncomfortable']){
+   const result=validateOpora54Signals({answers:{[role]:state}})
+   assert.equal(result.answers[role],state)
+   assert.equal(result.answers[role+'Choice'],undefined)
+ }
+ assert.deepEqual(validateOpora54Signals({answers:{transfer:'not_planning'}}).answers,{transfer:'not_planning'})
 })
 
 test('Pause makes underlying V7 exercise inert, keeps safe controls keyboard-accessible and does not save',async()=>{

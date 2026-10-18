@@ -2,8 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
+import { verifiedHistoryResult } from '../lib/assessments/verified-history.js'
 import { buildTestDynamicsGroups, visibleTestDynamicsBand } from '../lib/assessments/test-dynamics.js'
 import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
 const base = (id, at, value, extra = {}) => {
   const definition = getAssessmentDefinition(extra.definitionKey || 'hh-current-state', 'v1', 'en')
@@ -188,3 +191,221 @@ test('the dynamics UI bases each repeat indicator on comparable scale history', 
   assert.match(component, /Первый сопоставимый балл/)
   assert.match(component, /First comparable score/)
 })
+
+// Render the real component/model/gauge in ordinary Node so the test also works
+// when its parent runs with --conditions=react-server. Only framework links,
+// CSS and decorative icons are substituted; all data is synthetic.
+const renderDynamics = String.raw`
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { runInNewContext } from 'node:vm'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import ts from 'typescript'
+import * as dynamics from './lib/assessments/test-dynamics.js'
+import * as gauges from './lib/assessments/dashboard-gauges.js'
+import * as changes from './lib/assessments/score-change-reading.js'
+import * as copy from './components/app/copy.js'
+const require = createRequire(import.meta.url)
+const empty = () => null
+const styles = new Proxy({}, { get: (_, key) => key === '__esModule' ? false : String(key) })
+const imports = {
+  react: React,
+  'react/jsx-runtime': require('react/jsx-runtime'),
+  'next/link': ({ children, href }) => React.createElement('a', { href }, children),
+  'lucide-react': { ArrowRight: empty, BarChart3: empty, CalendarDays: empty, RotateCcw: empty, TrendingUp: empty },
+  '@/lib/assessments/test-dynamics': dynamics,
+  '@/lib/assessments/dashboard-gauges': gauges,
+  '@/lib/assessments/score-change-reading': changes,
+  './copy': copy,
+  './test-dynamics.module.css': styles,
+  './assessment-gauge.module.css': styles,
+}
+const load = (path, source = readFileSync(path, 'utf8')) => {
+  const exports = {}
+  const compiled = ts.transpileModule(source, { fileName: path, compilerOptions: {
+    module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
+  } }).outputText
+  runInNewContext(compiled, { exports, require(name) {
+    assert.ok(Object.hasOwn(imports, name), 'Unexpected render dependency: ' + name)
+    return imports[name]
+  } })
+  return exports
+}
+imports['./assessment-gauge'] = load('components/app/assessment-gauge.jsx')
+const input = JSON.parse(readFileSync(0, 'utf8'))
+const before = JSON.stringify(input.cases)
+const component = load('components/app/test-dynamics.jsx', input.source).TestDynamics
+const output = input.cases.map(({ results, locale }) => renderToStaticMarkup(React.createElement(component, {
+  results, locale, canRetake: () => false,
+  onRetake: () => { throw new Error('Rendering must not start a retake') },
+})))
+assert.equal(JSON.stringify(input.cases), before, 'Rendering must not mutate raw history')
+process.stdout.write(JSON.stringify(output))
+`
+const renderCases = (cases, source) => JSON.parse(execFileSync(process.execPath,
+  ['--input-type=module', '-e', renderDynamics], {
+    cwd: fileURLToPath(new URL('..', import.meta.url)),
+    input: JSON.stringify({ cases, source }), encoding: 'utf8', maxBuffer: 2 * 1024 * 1024,
+  }))
+const scoredAttempt = (version, id, day, value) => {
+  const definition = getAssessmentDefinition('hh-current-state', version, 'en')
+  const answers = Object.fromEntries(definition.questions.map(q => [q.id, q.min ?? definition.answerScale.min]))
+  answers[definition.questions[0].id] = value
+  return { ...scoreAssessment(definition, answers), id, accountId: 'synthetic-private-owner',
+    measurementAt: day + 'T12:00:00Z' }
+}
+const archivedAttempt = scoredAttempt('v1', 'archived', '2026-09-01', 9)
+const baselineAttempt = scoredAttempt('v2', 'baseline', '2026-10-01', 2)
+const latestAttempt = scoredAttempt('v2', 'latest', '2026-10-14', 6)
+const rejectedAttempt = { ...latestAttempt, id: 'rejected', contentHash: 'unverified-source' }
+const renderFixtures = ['en', 'ru'].flatMap(locale => [
+  { locale, comparable: 0, results: [archivedAttempt, baselineAttempt, rejectedAttempt] },
+  { locale, comparable: 1, results: [archivedAttempt, baselineAttempt] },
+  { locale, comparable: 2, results: [latestAttempt, archivedAttempt, baselineAttempt] },
+])
+const dateLabel = (value, locale) => new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-CA',
+  { dateStyle: 'medium' }).format(new Date(value))
+function assertRenderedDynamics(html, fixture) {
+  const { locale, comparable, results } = fixture
+  const ru = locale === 'ru'
+  const firstLabel = ru ? 'Первый сопоставимый балл' : 'First comparable score'
+  const lastLabel = ru ? 'Последний сопоставимый балл' : 'Latest comparable score'
+  const firstAttemptLabel = ru ? 'Первое сохранённое прохождение' : 'First recorded attempt'
+  const lastAttemptLabel = ru ? 'Последнее сохранённое прохождение' : 'Latest recorded attempt'
+  const latest = [...results].sort((a, b) => a.measurementAt.localeCompare(b.measurementAt)).at(-1)
+  const history = html.match(/<div class="dateRow">([\s\S]*?)<\/div>/)?.[1]
+  assert.ok(history, 'historical date row remains available')
+  assert.ok(history.includes(firstAttemptLabel + ': ' + dateLabel(archivedAttempt.measurementAt, locale)))
+  assert.ok(history.includes(lastAttemptLabel + ': ' + dateLabel(latest.measurementAt, locale)))
+  assert.ok(!history.includes(firstLabel) && !history.includes(lastLabel), 'raw dates cannot claim comparable scores')
+  const values = html.match(/<div class="values">([\s\S]*?)<\/div>/)?.[1]
+  assert.ok(values)
+  assert.ok(values.includes('<small>' + firstLabel + '</small><strong>' + (comparable ? '2' : '—') + '</strong>'))
+  if (comparable > 1) {
+    assert.ok(values.includes('<small>' + lastLabel + '</small><strong>6</strong>'))
+    assert.match(values, /class="delta"[^>]*>\+4<\/span>/)
+    assert.match(html, /class="sparkline"[^>]*role="img" aria-label="2 → 6"/)
+    assert.doesNotMatch(values, /aria-label="(?:No retest|Повторного замера)/)
+  } else {
+    assert.match(values, /<strong class="awaiting" aria-label="[^"]+">\?<\/strong>/)
+    assert.doesNotMatch(html, /class="sparkline"|class="delta"/)
+  }
+  const repeatedLabel = ru ? 'Сопоставимых повторов' : 'Comparable retests'
+  assert.ok(html.includes('<strong>' + (comparable > 1 ? 1 : 0) + '</strong><span>' + repeatedLabel + '</span>'))
+  assert.ok(html.includes('<strong>' + results.length + '</strong><span>' + (ru ? 'Всего прохождений' : 'Total attempts') + '</span>'))
+  assert.ok(html.includes('href="/' + locale + '/app/results/' + latest.id + '"'), 'raw latest report remains accessible')
+  assert.equal(html.includes('data-dynamics-unverified-history'), comparable === 0)
+  assert.doesNotMatch(html, /synthetic-private-owner|unverified-source/, 'private provenance is not rendered')
+}
+const renderedFixtures = renderCases(renderFixtures)
+for (const [index, fixture] of renderFixtures.entries()) {
+  test(`real ${fixture.locale} dynamics render separates raw dates with ${fixture.comparable} comparable measurements`, () => {
+    assertRenderedDynamics(renderedFixtures[index], fixture)
+  })
+}
+test('a single raw attempt renders one historical date without inventing a latest retest date in EN/RU', () => {
+  const cases = ['en', 'ru'].map(locale => ({ locale, results: [baselineAttempt] }))
+  renderCases(cases).forEach((html, index) => {
+    const locale = cases[index].locale
+    const history = html.match(/<div class="dateRow">([\s\S]*?)<\/div>/)?.[1]
+    assert.ok(history)
+    assert.equal([...history.matchAll(/<time\b/g)].length, 1)
+    const label = locale === 'ru' ? 'Первое сохранённое прохождение' : 'First recorded attempt'
+    assert.ok(history.includes(label + ': ' + dateLabel(baselineAttempt.measurementAt, locale)))
+    assert.doesNotMatch(history, /Latest recorded attempt|Последнее сохранённое прохождение|\?/)
+    assert.match(html, /<strong class="awaiting" aria-label="[^"]+">\?<\/strong>/)
+    assert.doesNotMatch(html, /class="sparkline"|class="delta"/)
+  })
+})
+test('render checks reject comparable date labels on raw history and raw-attempt repeat indicators', () => {
+  const source = readFileSync(new URL('../components/app/test-dynamics.jsx', import.meta.url), 'utf8')
+  for (const mutation of [
+    text => text.replaceAll('{c.firstAttempt}:', '{c.first}:').replaceAll('{c.latestAttempt}:', '{c.latest}:'),
+    text => text.replaceAll('hasRepeat={item.track.length > 1}', 'hasRepeat={group.count > 1}'),
+  ]) {
+    const changed = mutation(source)
+    assert.notEqual(changed, source, 'negative mutation must alter the rendered component')
+    const cases = renderFixtures.filter(fixture => fixture.comparable === 1)
+    const html = renderCases(cases, changed)
+    cases.forEach((fixture, index) => assert.throws(() => assertRenderedDynamics(html[index], fixture)))
+  }
+})
+
+
+// Verification and the latest-record exception must use object identity. A
+// duplicated storage ID must not borrow another record's validity or ownership.
+const identityResult = (version, at, value, extra = {}) => {
+  const definition = getAssessmentDefinition('hh-current-state', version, 'en')
+  const answers = Object.fromEntries(definition.questions.map(question =>
+    [question.id, question.min ?? definition.answerScale.min]))
+  answers[definition.questions[0].id] = value
+  return { ...scoreAssessment(definition, answers), id: 'duplicate-id',
+    accountId: 'synthetic-owner-a', measurementAt: at, ...extra }
+}
+const freezeHistory = value => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freezeHistory(child)
+    Object.freeze(value)
+  }
+  return value
+}
+for (const locale of ['en', 'ru']) {
+  for (const scenario of ['invalid earlier', 'invalid latest', 'different owner', 'different version', 'equal timestamp']) {
+    test(`${locale} duplicate IDs cannot bypass ${scenario} verification or comparison gates`, () => {
+      const earlier = identityResult(scenario === 'different version' ? 'v1' : 'v2',
+        scenario === 'equal timestamp' ? '2026-10-14T12:00:00Z' : '2026-09-01T12:00:00Z', 2,
+        scenario === 'different owner' ? { accountId: 'synthetic-owner-b' } : {})
+      const latest = identityResult('v2', '2026-10-14T12:00:00Z', 6)
+      if (scenario === 'invalid earlier') earlier.contentHash = 'rejected-source'
+      if (scenario === 'invalid latest') latest.contentHash = 'rejected-source'
+      assert.equal(verifiedHistoryResult(earlier), scenario !== 'invalid earlier')
+      assert.equal(verifiedHistoryResult(latest), scenario !== 'invalid latest')
+      const input = [earlier, latest], before = structuredClone(input)
+      freezeHistory(input)
+      const view = buildTestDynamicsGroups(input, locale), group = view.groups[0]
+      assert.equal(view.attempts, 2, 'both raw records remain counted')
+      assert.equal(group.count, 2)
+      assert.equal(group.first, earlier, 'the original historical record remains available')
+      assert.equal(group.latest, latest)
+      assert.equal(group.unverifiedCount, scenario.startsWith('invalid') ? 1 : 0)
+      assert.equal(view.repeated, 0)
+      for (const scale of group.scales) {
+        assert.deepEqual(scale.track.map(point => point.at), scenario === 'invalid latest' ? [] : [latest.measurementAt])
+        assert.equal(scale.firstValue, scenario === 'invalid latest' ? null : latest.dimensions.find(row => row.key === scale.key).value)
+        assert.equal(scale.lastValue, null)
+        assert.equal(scale.delta, null)
+      }
+      assert.deepEqual(input, before, 'no raw record, dimension or ordering is rewritten')
+    })
+  }
+  test(`${locale} fully compatible duplicate IDs still require and pass the non-self comparison gate`, () => {
+    const earlier = identityResult('v2', '2026-09-01T12:00:00Z', 2)
+    const latest = identityResult('v2', '2026-10-14T12:00:00Z', 6)
+    const input = [latest, earlier], before = structuredClone(input)
+    freezeHistory(input)
+    const view = buildTestDynamicsGroups(input, locale), scale = view.groups[0].scales[0]
+    assert.equal(view.attempts, 2)
+    assert.equal(view.groups[0].unverifiedCount, 0)
+    assert.equal(view.repeated, 1)
+    assert.deepEqual(scale.track.map(point => point.at), [earlier.measurementAt, latest.measurementAt])
+    assert.deepEqual([scale.firstValue, scale.lastValue, scale.delta], [2, 6, 4])
+    assert.deepEqual(input, before)
+  })
+  test(`${locale} absent or empty result IDs retain the existing exclusion contract without mutating history`, () => {
+    const latest = identityResult('v2', '2026-10-14T12:00:00Z', 6)
+    const malformed = [undefined, null, ''].map(id => identityResult('v2', '2026-09-01T12:00:00Z', 2, { id }))
+    delete malformed[0].id
+    const input = [...malformed, latest], before = structuredClone(input)
+    freezeHistory(input)
+    const view = buildTestDynamicsGroups(input, locale)
+    assert.equal(view.attempts, 1)
+    assert.equal(view.groups[0].count, 1)
+    assert.equal(view.groups[0].latest, latest)
+    assert.equal(view.groups[0].unverifiedCount, 0)
+    assert.equal(view.repeated, 0)
+    assert.ok(view.groups[0].scales.every(scale => scale.track.length === 1 && scale.lastValue === null && scale.delta === null))
+    assert.deepEqual(input, before)
+  })
+}

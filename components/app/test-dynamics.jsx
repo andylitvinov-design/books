@@ -16,6 +16,7 @@ const TEXT = {
     period: 'Date range', all: 'All time', week: '7 days', month: '30 days',
     quarter: '3 months', custom: 'Custom dates', from: 'From', to: 'To',
     first: 'First comparable score', latest: 'Latest comparable score', change: 'Raw score difference',
+    firstAttempt: 'First recorded attempt', latestAttempt: 'Latest recorded attempt',
     attemptsLabel: 'attempts', retake: 'Retake this test', report: 'Last result',
     more: 'More measured scales', noResults: 'No completed tests in this range',
     noResultsHelp: 'Choose a longer period or complete your first test to start tracking changes.',
@@ -36,6 +37,7 @@ const TEXT = {
     period: 'Диапазон', all: 'Весь период', week: '7 дней', month: '30 дней',
     quarter: '3 месяца', custom: 'Свои даты', from: 'С', to: 'По',
     first: 'Первый сопоставимый балл', latest: 'Последний сопоставимый балл', change: 'Разница баллов',
+    firstAttempt: 'Первое сохранённое прохождение', latestAttempt: 'Последнее сохранённое прохождение',
     attemptsLabel: 'прохождений', retake: 'Пройти тест повторно', report: 'Последний результат',
     more: 'Остальные шкалы', noResults: 'За этот период нет пройденных тестов',
     noResultsHelp: 'Выберите более длинный период или пройдите первый тест, чтобы отслеживать динамику.',
@@ -179,10 +181,9 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
               </Link>
             </header>
             <div className={styles.dateRow}>
-              <time dateTime={group.first.measurementAt}>{c.first}: {date(group.first.measurementAt, locale)}</time>
-              {group.count > 1
-                ? <time dateTime={group.latest.measurementAt}>{c.latest}: {date(group.latest.measurementAt, locale)}</time>
-                : <span>{c.latest}: ?</span>}
+              <time dateTime={group.first.measurementAt}>{c.firstAttempt}: {date(group.first.measurementAt, locale)}</time>
+              {group.count > 1 &&
+                <time dateTime={group.latest.measurementAt}>{c.latestAttempt}: {date(group.latest.measurementAt, locale)}</time>}
             </div>
             <div className={styles.scales}>
               {group.scales.slice(0,1).map(item => <ScaleRow item={item} result={group.latest} c={c} locale={locale} hasRepeat={item.track.length > 1} key={item.key} />)}

@@ -86,7 +86,7 @@ function visibleNodes(tree, width) {
     if (!node || typeof node !== 'object') return;
     const classes = String(node.props.className || '').split(' ');
     const compactDirect = width <= 1140 && parent?.props.className === 'site-navigation'
-      && node.type === 'a' && !classes.includes('site-cabinet-entry');
+      && node.type === 'a' && !classes.includes('site-library-entry');
     hidden ||= Boolean(node.props.hidden) || node.props['aria-hidden'] === 'true' || compactDirect;
     if (!hidden) visible.add(node);
     const children = [node.props.children].flat(Infinity);
@@ -180,7 +180,7 @@ test('desktop free-start verifier rejects a wrong accessible name', () => assert
 test('fixture compact-header breakpoint agrees with actual source CSS', () => {
   const css = read('app/holistic-house-home.css');
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.house-header--services \.site-navigation > a \{ display: none; \}/);
-  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-cabinet-entry\) \{ display: none; \}/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-library-entry\) \{ display: none; \}/);
 });
 for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'wrong active', 'duplicate active', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
   test(width + 'px actual Spanish catalog verifier rejects ' + fault, () => assert.rejects(scenario(fault, { width })));
