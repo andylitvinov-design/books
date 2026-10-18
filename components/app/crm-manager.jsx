@@ -43,6 +43,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [filter, setFilter] = useState('all')
   const [lifecycle, setLifecycle] = useState('lead')
   const [source, setSource] = useState('manual')
+  const [activeSection, setActiveSection] = useState('overview')
   async function load(session) {
     const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
     if (!response.ok) throw new Error('unavailable')
@@ -53,7 +54,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual')
+    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
     fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
       .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
@@ -116,19 +117,31 @@ export default function CrmManager({ locale = 'en', accountId }) {
     <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
       {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
     </a></p>
-    <div className={styles.privacy}>
+    <nav className={styles.sectionTabs} aria-label={language==='ru'?'Разделы CRM':language==='es'?'Secciones CRM':'CRM sections'}>
+      {[
+        ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
+        ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
+        ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
+      ].map(([id,label])=><button key={id} type="button" aria-pressed={activeSection===id}
+        className={activeSection===id?styles.sectionTabActive:styles.sectionTab}
+        onClick={()=>setActiveSection(id)}>{label}</button>)}
+    </nav>
+    {activeSection!=='messages'&&<div className={styles.privacy}>
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
       <p>{c.privacy} {c.noConsent}</p>
-    </div>
+    </div>}
     {!data&&<div className={styles.unavailable} role={notice?'alert':'status'}>
       <p>{notice||c.loading}</p>
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
     {data&&<>
+      {activeSection==='overview'&&<>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
       <CrmBusinessEnquiries locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
       <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
-      <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />
+      </>}
+      {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />}
+      {activeSection==='contacts'&&<>
       <div className={styles.formCard}>
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
         <form className={styles.form} onSubmit={(event) => {
@@ -200,6 +213,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         <button disabled={busy} type="button" onClick={()=>save('create_draft',{templateId,locale:language,channel:'email',segment:'all_opted_in'})}>{c.saveDraft}</button>
         <h3>{c.drafts}</h3><ul>{data.drafts?.map(draft=><li key={draft.id}>{CRM_TEMPLATES[draft.definition?.templateId]?.[draft.definition?.locale]?.subject||draft.status}</li>)}</ul>
       </details>
+      </>}
     </>}
   </section>
 }
