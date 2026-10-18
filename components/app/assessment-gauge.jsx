@@ -142,7 +142,8 @@ export function ScoreTrend({ current, previous, dimensionKey, locale = 'en', com
   const change = gaugeChange(current, previous, dimensionKey)
   const dimension = Array.isArray(current?.dimensions)
     ? current.dimensions.find(item => item?.key === dimensionKey) : null
-  const reading = scoreChangeReading(change, dimension, locale)
+  const verifiedOrientation = gaugeModel(dimension, current, locale)?.orientation || 'neutral'
+  const reading = scoreChangeReading(change, dimension, locale, verifiedOrientation)
   const ru = locale === 'ru'
   const shortCaveat = change.state === 'unchanged'
     ? ru ? 'Отдельные ответы могли отличаться' : 'Individual responses may differ'
