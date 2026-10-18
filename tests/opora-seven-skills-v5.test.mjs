@@ -78,7 +78,7 @@ test('V5 remains version-pinned while new AS2 cycles select V6 and keep old modu
  const server=read('lib/app/growth-daily.js')
  const player=read('components/app/course-slide-player.jsx')
  const passport=read('docs/myspace/HOLISTIC_HOUSE_OPORA_ANTISTRESS_7_SKILLS_COURSE_PASSPORT_AS5_2026-10-17.md')
- assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V6 : COURSE_CONTENT_V4/)
+ assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
  assert.match(server,/const firstStressDay=Boolean\(version===COURSE_ANTISTRESS_OUTCOME_V3/)
  assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input.visitedSlideKeys\)/)
  assert.match(player,/const isSkillV5=Boolean\(lesson\.antiStress\?\.slideModel===OPORA_SKILL_SLIDE_MODEL/)
