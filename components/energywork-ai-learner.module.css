@@ -1941,54 +1941,321 @@
   .page[data-course-portrait="v3"] .feedbackRequired {font-size:13px;}
 }
 
-/* Reiki verified learner reviews: switch quotes within the current meditation slide. */
-.page[data-course-portrait="v3"] .voiceQuote {
-  min-height:112px;
-  margin-bottom:5px;
+/*
+ * REIKI REVIEW V4 · polished meditation sequence.
+ * Scoped to review screens and adjoining feedback/milestones. Preserve all
+ * approved V3 course typography, photo assets, touch targets and 53 steps.
+ */
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] {
+  --review-ink: #17485d;
+  --review-teal: #078c9a;
 }
-.page[data-course-portrait="v3"] .voiceQuote p {
-  max-height:min(19dvh,164px);
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .slideMain {
+  background: radial-gradient(ellipse at 95% 3%, rgba(241,216,165,.24), transparent 42%),
+    linear-gradient(155deg,rgba(255,255,255,.8),rgba(228,247,252,.42));
+}
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .content h1 {
+  color:#123f55;
+  font-size:clamp(30px,3.45vw,43px);
+  line-height:1.1;
+  letter-spacing:-.036em;
+  margin-bottom:10px;
+  text-wrap:balance;
+}
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .description {
+  color:#436e80;
+  max-width:51ch;
+  font-size:clamp(14px,1.4vw,17px);
+  line-height:1.42;
+}
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art {
+  min-height:0;
+  background:linear-gradient(90deg,rgba(243,252,255,.68),rgba(255,250,233,.1) 78%),
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp") 72% 44% / cover;
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 8px 25px rgba(23,114,142,.11);
+}
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art img {
+  object-position:72% 43%;
+}
+.page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art::after {
+  background:linear-gradient(90deg,rgba(243,252,255,.39),rgba(255,255,255,0) 70%);
+}
+.page[data-reiki-reviews="v4"] .voicesCard {
+  width:100%;
+  border:1px solid rgba(179,223,232,.9);
+  border-radius:23px;
+  padding:18px 19px 16px;
+  margin-top:14px;
+  color:var(--review-ink,#17485d);
+  background:linear-gradient(157deg,rgba(255,255,255,.98),rgba(237,250,252,.92));
+  box-shadow:0 13px 30px rgba(22,110,140,.1), inset 0 1px 0 #fff;
+}
+.page[data-reiki-reviews="v4"] .voicesHeading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-bottom:10px;
+  margin-bottom:9px;
+  border-bottom:1px solid rgba(116,183,199,.23);
+}
+.page[data-reiki-reviews="v4"] .voicesEyebrow {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:0;
+  color:#087b8e;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.01em;
+  line-height:1.2;
+}
+.page[data-reiki-reviews="v4"] .voicesEyebrow svg {
+  flex:0 0 auto;
+  color:#0c9aaa;
+}
+.page[data-reiki-reviews="v4"] .voicesIndex {
+  flex:0 0 auto;
+  padding:5px 8px;
+  border-radius:20px;
+  color:#24647a;
+  background:#e8f6f8;
+  border:1px solid #c9e8ed;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.05em;
+  font-variant-numeric:tabular-nums;
+}
+.page[data-reiki-reviews="v4"] .voiceQuote {
+  position:relative;
+  border:0;
+  border-left:2px solid rgba(15,170,183,.36);
+  margin:0;
+  padding:7px 1px 2px 22px;
+  color:#16475b;
+  min-height:0;
+}
+.page[data-reiki-reviews="v4"] .voicesQuoteMark {
+  position:absolute;
+  top:-5px;
+  left:4px;
+  color:rgba(11,153,171,.3);
+  font:normal 58px/.85 Georgia,"Times New Roman",serif;
+  pointer-events:none;
+}
+.page[data-reiki-reviews="v4"] .voiceQuote p {
+  margin:0 0 9px;
+  font:italic 500 clamp(18px,1.95vw,22px)/1.37 Georgia,"Times New Roman",serif;
+  color:#19495c;
   overflow-y:auto;
   overscroll-behavior:contain;
+  overflow-wrap:anywhere;
+  scrollbar-width:thin;
+  scrollbar-color:#add9df transparent;
+  max-height:175px;
 }
-.page[data-course-portrait="v3"] .voicesControls {
+.page[data-reiki-reviews="v4"] .voiceQuote cite {
+  display:block;
+  max-width:38ch;
+  color:#547b8d;
+  font-size:12px;
+  line-height:1.35;
+  font-style:normal;
+  font-weight:700;
+}
+.page[data-reiki-reviews="v4"] .voicesControls {
   display:grid;
-  grid-template-columns:44px minmax(55px,1fr) 44px;
+  grid-template-columns:44px minmax(50px,1fr) 44px;
   align-items:center;
-  gap:10px;
-  max-width:220px;
-  margin:5px auto 7px;
+  gap:12px;
+  max-width:178px;
+  margin:8px auto 3px;
 }
-.page[data-course-portrait="v3"] .voicesControls button {
-  width:44px;
-  height:44px;
+.page[data-reiki-reviews="v4"] .voicesControls button {
   display:grid;
   place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
   border-radius:50%;
-  border:1px solid rgba(11,135,157,.33);
-  color:#0a7285;
-  background:linear-gradient(140deg,#ffffff,#d9f5f8);
-  box-shadow:0 3px 11px rgba(27,112,146,.12);
+  color:#0a7890;
+  background:rgba(255,255,255,.95);
+  border:1px solid #b9dfe8;
+  box-shadow:0 4px 12px rgba(26,114,146,.08);
   cursor:pointer;
+  transition:background .18s ease,transform .18s ease;
 }
-.page[data-course-portrait="v3"] .voicesControls button:hover,
-.page[data-course-portrait="v3"] .voicesControls button:focus-visible {
-  background:#c5eef2;
-  outline:2px solid #087e9a;
+.page[data-reiki-reviews="v4"] .voicesControls button:hover {
+  background:#ddf5f8;
+  transform:translateY(-1px);
+}
+.page[data-reiki-reviews="v4"] .voicesControls button:focus-visible {
+  outline:3px solid #087e9a;
   outline-offset:2px;
 }
-.page[data-course-portrait="v3"] .voicesCount {
-  text-align:center;
-  font-variant-numeric:tabular-nums;
-  color:#18576c;
-  font-size:14px;
-  font-weight:800;
+.page[data-reiki-reviews="v4"] .voicesCount {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  min-width:0;
+}
+.page[data-reiki-reviews="v4"] .voiceDot,
+.page[data-reiki-reviews="v4"] .voiceDotActive {
+  height:6px;
+  width:6px;
+  border-radius:100px;
+  background:#bfdce3;
+  flex:0 0 auto;
+  transition:width .15s ease,background .15s ease;
+}
+.page[data-reiki-reviews="v4"] .voiceDotActive {
+  width:17px;
+  background:linear-gradient(90deg,#16b6c4,#07879b);
+}
+.page[data-reiki-reviews="v4"] .voicesReferences {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:7px;
+  padding-top:10px;
+  margin-top:10px;
+  border-top:1px solid rgba(127,187,200,.23);
+}
+.page[data-reiki-reviews="v4"] .voicesLink {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin:0;
+  padding:7px 9px;
+  min-height:36px;
+  border-radius:11px;
+  border:1px solid rgba(177,218,226,.9);
+  background:rgba(239,249,251,.94);
+  color:#11738a;
+  text-decoration:none;
+  font-size:12px;
+  line-height:1.2;
+  font-weight:750;
+  white-space:nowrap;
+}
+.page[data-reiki-reviews="v4"] .voicesLink svg {flex:0 0 auto;}
+.page[data-reiki-reviews="v4"] .voicesLink:hover {
+  border-color:#6dbfcb;
+  background:#e2f7f9;
+  color:#095d71;
+}
+.page[data-reiki-reviews="v4"] .voicesEmpty {
+  margin:0;
+  padding:16px;
+  border-radius:16px;
+  border:1px solid rgba(183,224,232,.8);
+  background:rgba(239,249,251,.87);
+  color:#477082;
+  font-size:15px;
+  line-height:1.5;
+}
+/* Refinement of adjacent meditation feedback and lesson celebration panels. */
+.page[data-reiki-reviews="v4"] .meditationFeeling input[type="range"] {
+  min-height:43px;
+  accent-color:#079bb0;
+}
+.page[data-reiki-reviews="v4"] .feedbackTextarea {
+  border-radius:14px;
+  background:rgba(255,255,255,.9);
+  border-color:#acd8e2;
+}
+.page[data-reiki-reviews="v4"] .milestoneCard {
+  background:linear-gradient(155deg,rgba(255,255,255,.95),rgba(231,250,249,.88));
+  border:1px solid rgba(186,227,229,.9);
+  box-shadow:0 12px 27px rgba(31,117,139,.09);
+}
+.page[data-reiki-reviews="v4"] .milestoneSymbol {
+  background:linear-gradient(145deg,#fff3d1,#d2faf3);
+  color:#178e94;
+  border:2px solid rgba(255,255,255,.98);
+}
+@media(max-width:760px) {
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .slideMain {
+    gap:7px;
+    padding:9px 11px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art {
+    order:-1;
+    width:100%;
+    height:clamp(80px,11.7dvh,102px);
+    max-height:102px;
+    min-height:0;
+    flex:0 0 auto;
+    border-radius:15px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .content h1 {
+    font-size:clamp(28px,7.5vw,34px);
+    line-height:1.09;
+    margin-bottom:7px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .eyebrow {
+    font-size:11px;
+    letter-spacing:.045em;
+    margin-bottom:5px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .description {
+    font-size:14px;
+    line-height:1.36;
+  }
+  .page[data-reiki-reviews="v4"] .voicesCard {
+    padding:12px 13px 11px;
+    margin-top:10px;
+    border-radius:18px;
+  }
+  .page[data-reiki-reviews="v4"] .voicesHeading {padding-bottom:7px;margin-bottom:7px;}
+  .page[data-reiki-reviews="v4"] .voicesEyebrow {font-size:13px;}
+  .page[data-reiki-reviews="v4"] .voiceQuote {padding:5px 0 0 20px;}
+  .page[data-reiki-reviews="v4"] .voicesQuoteMark {font-size:50px;top:-5px;left:3px;}
+  .page[data-reiki-reviews="v4"] .voiceQuote p {
+    font-size:clamp(17px,4.75vw,19px);
+    line-height:1.36;
+    margin-bottom:7px;
+    max-height:min(14dvh,122px);
+  }
+  .page[data-reiki-reviews="v4"] .voiceQuote cite {font-size:11.5px;line-height:1.3;}
+  .page[data-reiki-reviews="v4"] .voicesControls {margin:5px auto 0;gap:9px;}
+  .page[data-reiki-reviews="v4"] .voicesReferences {padding-top:7px;margin-top:6px;gap:6px;}
+  .page[data-reiki-reviews="v4"] .voicesLink {font-size:11.5px;min-height:36px;padding:6px 8px;}
+  .page[data-reiki-reviews="v4"] .voicesEmpty {font-size:14px;padding:13px;line-height:1.4;}
 }
 @media(max-width:380px) {
-  .page[data-course-portrait="v3"] .voiceQuote {min-height:96px;}
-  .page[data-course-portrait="v3"] .voiceQuote p {max-height:17dvh;}
-  .page[data-course-portrait="v3"] .voicesControls {margin:3px auto 4px;}
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art {
+    height:72px;
+    max-height:72px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .content h1 {
+    font-size:27px;
+    margin-bottom:5px;
+  }
+  .page[data-reiki-reviews="v4"] .voicesCard {padding:11px 12px 10px;margin-top:8px;}
+  .page[data-reiki-reviews="v4"] .voiceQuote p {
+    max-height:min(13dvh,110px);
+    font-size:17px;
+  }
+  .page[data-reiki-reviews="v4"] .voicesIndex {padding:4px 6px;}
+}
+@media(max-width:760px) and (max-height:700px) {
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art {
+    height:59px;max-height:59px;
+  }
+  .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .content h1 {font-size:26px;}
+  .page[data-reiki-reviews="v4"] .voiceQuote p {max-height:85px;}
+  .page[data-reiki-reviews="v4"] .voicesCard {margin-top:6px;}
 }
 @media(prefers-reduced-motion:reduce) {
-  .page[data-course-portrait="v3"] .voicesControls button {transition:none;}
+  .page[data-reiki-reviews="v4"] .voicesControls button,
+  .page[data-reiki-reviews="v4"] .voiceDot,
+  .page[data-reiki-reviews="v4"] .voiceDotActive {transition:none;transform:none;}
+}
+@media print {
+  .page[data-reiki-reviews="v4"] .voicesControls {display:none!important;}
+  .page[data-reiki-reviews="v4"] .voiceQuote p {max-height:none!important;overflow:visible!important;}
 }
