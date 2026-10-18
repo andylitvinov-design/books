@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, SlidersHorizontal, Sparkles, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -359,8 +359,15 @@ export function ServicesSmartDiscovery({
   return (
     <section className={styles.discovery} id="find-your-service" aria-labelledby="hh-service-discovery-title">
       <div className={styles.hero}>
+        <div className={styles.topline}>
+          <p className={styles.kicker}><Sparkles size={16} aria-hidden="true"/>{t.kicker}</p>
+          <nav className={styles.tabs} aria-label={locale==="ru"?"Тесты, курсы и помощь":locale==="es"?"Pruebas, cursos y ayuda":"Tests, courses and assistance"}>
+            <Link href={locale==="es"?"/es/client":"/"+locale+"/client/tests"}>{locale==="ru"?"Тесты":locale==="es"?"Pruebas":"Tests"}</Link>
+            <Link href={"/"+locale+"/academy/free-ai-courses"}>{locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}</Link>
+            <Link href={"/"+locale+"/services"} aria-current="page">{locale==="ru"?"Помощь":locale==="es"?"Ayuda":"Assist"}</Link>
+          </nav>
+        </div>
         <div className={styles.heroCopy}>
-          <p className={styles.kicker}><Sparkles size={15} aria-hidden="true"/>{t.kicker}</p>
           <h2 id="hh-service-discovery-title">{t.title}</h2>
           <p className={styles.intro}>{t.description}</p>
         </div>
@@ -373,6 +380,37 @@ export function ServicesSmartDiscovery({
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
         </form>
+
+      </div>
+
+      <div className={styles.categorySection} id="browse-service-categories" data-services-filter-below-search aria-labelledby="hh-service-category-title">
+        <div className={styles.categoryHead}>
+          <div className={styles.stepHeader}>
+            <span className={styles.stepBadge} aria-hidden="true">1</span>
+            <div>
+              <h2 id="hh-service-category-title">{t.categories}</h2>
+              <p>{t.categoriesIntro}</p>
+            </div>
+          </div>
+          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
+        </div>
+        <div className={styles.categoryGrid}>
+          {DISCOVERY_AREAS.map((area,i)=>{
+            const Icon=ICONS[i];
+            const count=services.filter(s=>s.areaKey===area.key).length;
+            const active=activeCategory===area.key;
+            return <button type="button" key={area.key}
+              className={active?styles.categoryActive:styles.category}
+              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
+              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
+              <span className={styles.categoryName}>{area.label[locale]}</span>
+              {count>0
+                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
+                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
+            </button>;
+          })}
+        </div>
+        <div className={styles.filterControls}>
         <label className={styles.freeOnlyToggle}>
           <input
             type="checkbox"
@@ -387,6 +425,13 @@ export function ServicesSmartDiscovery({
           />
           <span>{t.freeOnlyLabel}</span>
         </label>
+          <details className={styles.extraFilters} data-services-extra-filters>
+            <summary>
+              <span className={styles.extraIcon}><SlidersHorizontal size={19} aria-hidden="true"/></span>
+              <span className={styles.extraLabel}><strong>{locale==="ru"?"Дополнительные фильтры":locale==="es"?"Filtros adicionales":"Additional filters"}</strong><small>{locale==="ru"?"Формат, цена и язык":locale==="es"?"Modalidad, precio e idioma":"Format, price and language"}</small></span>
+              <ChevronDown className={styles.extraChevron} size={19} aria-hidden="true"/>
+            </summary>
+            <div className={styles.extraBody}>
         <div className={styles.quickFacets} role="group" aria-label={locale==="ru"?"Фильтры поиска":locale==="es"?"Filtros de búsqueda":"Search filters"}>
           <label>
             <span>{locale==="ru"?"Формат":locale==="es"?"Modalidad":"Format"}</span>
@@ -419,6 +464,13 @@ export function ServicesSmartDiscovery({
             </select>
           </label>
         </div>
+        {aiAvailable&&<label className={styles.aiOption}>
+          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
+          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
+        </label>}
+            </div>
+          </details>
+        </div>
         <div className={styles.examples}>
           <span>{t.examples}:</span>
           {t.exampleList.map((text,index)=><button type="button" key={text} aria-label={text} onClick={()=>runExample(text)}>
@@ -426,37 +478,10 @@ export function ServicesSmartDiscovery({
             <span className={styles.exampleShort} aria-hidden="true">{t.quickExamples[index]}</span>
           </button>)}
         </div>
-        {aiAvailable&&<label className={styles.aiOption}>
-          <input type="checkbox" checked={useExternalAi} onChange={event=>setUseExternalAi(event.target.checked)}/>
-          <span>{t.aiToggle}<small>{t.aiConsent}</small></span>
-        </label>}
         <p className={styles.privacy}>
           <span className={styles.privacyFull}><span aria-hidden="true">◦</span> {t.privacy} {t.caution}</span>
           <span className={styles.privacyCompact}>{t.mobilePrivacy}</span>
         </p>
-      </div>
-
-      <div className={styles.categorySection} id="browse-service-categories">
-        <div className={styles.categoryHead}>
-          <div><h2>{t.categories}</h2></div>
-          <Link href={"/"+locale+"/masters"} className={styles.allMasters}>{t.browse}<ArrowRight size={16} aria-hidden="true"/></Link>
-        </div>
-        <div className={styles.categoryGrid}>
-          {DISCOVERY_AREAS.map((area,i)=>{
-            const Icon=ICONS[i];
-            const count=services.filter(s=>s.areaKey===area.key).length;
-            const active=activeCategory===area.key;
-            return <button type="button" key={area.key}
-              className={active?styles.categoryActive:styles.category}
-              aria-pressed={active} onClick={()=>chooseCategory(area.key)}>
-              <span className={styles.categoryIcon}><Icon size={21} strokeWidth={1.75} aria-hidden="true"/></span>
-              <span className={styles.categoryName}>{area.label[locale]}</span>
-              {count>0
-                ? <small className={styles.categoryCount} aria-label={`${count} ${t.categoryCount}`}>{count}</small>
-                : <ArrowRight className={styles.categoryArrow} size={15} aria-hidden="true" />}
-            </button>;
-          })}
-        </div>
       </div>
 
       {hasSelection&&<div ref={resultsRef} tabIndex={-1} className={styles.results} id="service-discovery-results" aria-live="polite" aria-labelledby="hh-service-discovery-results-title">

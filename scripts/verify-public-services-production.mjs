@@ -123,6 +123,12 @@ try {
       await findOptions.click();
       await expect(discovery.locator("#hh-service-discovery-results-title"))
         .toHaveText(locale === "ru" ? "Бесплатные услуги" : "Free services");
+      // Services now follows Tests: advanced facets live below the search
+      // inside a collapsed accessible panel. Open it before using Price.
+      const additionalFilters = discovery.locator("details[data-services-extra-filters]");
+      await additionalFilters.locator("summary").click();
+      await expect(additionalFilters).toHaveAttribute("open", "");
+      await expect(price).toBeVisible();
       await price.selectOption("");
       await expect(freeOnly).not.toBeChecked();
       await expect(findOptions).toBeDisabled();
