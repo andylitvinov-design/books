@@ -3411,3 +3411,151 @@
   .consultation-result .consultation-publication-state{padding:15px}
   .consultation-result .consultation-publication-retry{width:100%}
 }
+
+
+/* Practitioner-selected tests: one compact, accessible picker in the report. */
+.consultation-studio .consultation-recommended-tests {
+  margin: 20px 0 14px;
+  padding: clamp(16px, 3vw, 22px);
+  border: 1px solid #c7dedd;
+  border-radius: 17px;
+  background: linear-gradient(145deg, #f0f9f7, #fffdf9);
+  color: #254f59;
+}
+.consultation-recommended-tests-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consultation-recommended-tests-heading h3 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  color: #184e5b;
+}
+.consultation-recommended-tests-heading > span {
+  color: #46686d;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.consultation-recommended-tests > p {
+  max-width: 65ch;
+  margin: 8px 0 14px;
+  color: #526b6c;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.consultation-recommended-tests > label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.consultation-recommended-tests > input,
+.consultation-recommended-tests > select {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #b2d1ce;
+  border-radius: 10px;
+  background: #fff;
+  color: #234955;
+  font: inherit;
+  font-size: 16px;
+}
+.consultation-recommended-tests > select { margin-top: 9px; }
+.consultation-recommended-tests :is(input,select,button):focus-visible {
+  outline: 3px solid #73b5b9;
+  outline-offset: 2px;
+}
+.consultation-recommended-tests > small {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+  color: #657c7e;
+}
+.consultation-recommended-tests-selection {
+  padding: 0;
+  margin: 13px 0 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+.consultation-recommended-tests-selection > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid #d4e5e3;
+  border-radius: 10px;
+  background: #fff;
+}
+.consultation-recommended-tests-selection > li span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.consultation-recommended-tests-selection > li small { color: #617a7a; }
+.consultation-recommended-tests-selection button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 6px 11px;
+  border: 1px solid #d1dcdf;
+  border-radius: 8px;
+  background: #f7f9f9;
+  color: #723d50;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.canonical-document .canonical-recommended-tests {
+  margin: 22px 0;
+  padding: 18px 20px;
+  border: 1px solid #cfe0df;
+  border-left: 4px solid #398a90;
+  border-radius: 13px;
+  background: #f3f9f8;
+  break-inside: avoid;
+}
+.canonical-document .canonical-recommended-tests h2 {
+  margin: 0 0 7px;
+  color: #1c5564;
+  font-size: 20px;
+}
+.canonical-document .canonical-recommended-tests p {
+  margin: 0 0 12px;
+  color: #536a6d;
+  line-height: 1.5;
+}
+.canonical-document .canonical-recommended-tests ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 23px;
+}
+.canonical-document .canonical-recommended-tests li {
+  padding-left: 3px;
+  color: #23545d;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-recommended-tests a {
+  color: #205a6d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 700;
+}
+.canonical-document .canonical-recommended-tests small {
+  display: block;
+  margin-top: 3px;
+  color: #657579;
+}
+@media (max-width: 680px) {
+  .consultation-recommended-tests-selection > li { align-items: flex-start; }
+  .canonical-document .canonical-recommended-tests { padding: 15px; }
+}
