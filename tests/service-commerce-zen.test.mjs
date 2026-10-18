@@ -136,6 +136,8 @@ if (!process.execArgv.includes('--conditions=react-server')) {
     const body=JSON.parse(req.options.body)
     assert.equal(body.amount,'50.00');assert.equal(body.currency,'EUR');assert.equal(body.language,'ru');assert.equal(body.merchantTransactionId,orderId)
     assert.equal(body.customer.id,f.order.customerId)
+    assert.match(body.urlSuccess,/\/ru\/services\/checkout\?serviceOrder=/)
+    assert.equal(body.customIpnUrl,'https://holistic.example/api/billing/zen/ipn')
     assert.deepEqual(body.items,[{code:'express-consultation-30',name:'Express consultation',price:'50.00',quantity:1,lineAmountTotal:'50.00'}])
     const {signature,...unsigned}=body
     assert.equal(signature,zenCheckoutSignature(unsigned,config.zenPaywallSecret))
