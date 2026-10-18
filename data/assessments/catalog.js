@@ -62,7 +62,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'relationships', weight: 0.65 },
       { key: 'self_support', weight: 0.6 },
     ],
-    title: { en: 'Bach Flower Emotional Profile', ru: 'Эмоциональный профиль по Баху', es: 'Perfil emocional de flores de Bach' },,
+    title: { en: 'Bach Flower Emotional Profile', ru: 'Эмоциональный профиль по Баху', es: 'Perfil emocional de flores de Bach' },
     description: {
       en: 'An in-depth reflection on 115 emotional statements across situation, recurring patterns and support, with traditional Bach flower-theme matches. Not a medical test or prescription.',
       ru: '115 утверждений о текущей ситуации, устойчивых паттернах и эмоциональной поддержке с сопоставлением традиционных тем 38 эссенций Баха. Не является диагностикой или назначением.',
@@ -93,7 +93,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'stress', weight: 0.85 }, { key: 'mood', weight: 0.7 }, { key: 'energy', weight: 0.75 },
       { key: 'functioning', weight: 0.65 }, { key: 'clarity', weight: 0.45 }, { key: 'resource', weight: 0.55 },
     ],
-    title: { en: 'Current State Check', ru: 'Состояние сейчас', es: 'Chequeo del estado actual' },,
+    title: { en: 'Current State Check', ru: 'Состояние сейчас', es: 'Chequeo del estado actual' },
     description: {
       en: 'A short check of difficulty, resource, tension, fatigue and daily-life impact.',
       ru: 'Короткий замер трудности, ресурса, напряжения, усталости и влияния на повседневную жизнь.',
@@ -124,7 +124,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'personality', weight: 1 }, { key: 'relationships', weight: 0.55 }, { key: 'emotional_regulation', weight: 0.55 },
       { key: 'focus', weight: 0.5 }, { key: 'functioning', weight: 0.45 },
     ],
-    title: { en: 'Personality Baseline', ru: 'Личностный baseline', es: 'Perfil inicial de personalidad' },,
+    title: { en: 'Personality Baseline', ru: 'Личностный baseline', es: 'Perfil inicial de personalidad' },
     description: {
       en: 'A separate baseline of broad personality tendencies using the English Mini-IPIP original.',
       ru: 'Отдельный baseline общих личностных тенденций по английскому оригиналу Mini-IPIP.',
@@ -156,7 +156,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'energy', weight: 0.85 }, { key: 'relationships', weight: 0.5 }, { key: 'resource', weight: 0.7 },
       { key: 'functioning', weight: 0.65 }, { key: 'emotional_regulation', weight: 0.55 },
     ],
-    title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю', es: 'Estado psicológico de la semana' },,
+    title: { en: 'Weekly Psychic Health', ru: 'Психическое состояние за неделю', es: 'Estado psicológico de la semana' },
     description: {
       en: 'Original Holistic House weekly self-monitoring across state, symptoms, function and resources.',
       ru: 'Оригинальный еженедельный Holistic House check-in состояния, симптомов, функционирования и ресурсов.',
@@ -186,7 +186,7 @@ export const MONITORING_CATALOG = deepFreeze([
     analysisAxes: [
       { key: 'mood', weight: 0.95 }, { key: 'anxiety', weight: 0.95 }, { key: 'stress', weight: 0.55 }, { key: 'functioning', weight: 0.35 },
     ],
-    title: { en: 'Mood & Anxiety — 1 Minute', ru: 'Настроение и тревога — 1 минута · EN', es: 'Ánimo y ansiedad — 1 minuto · EN' },,
+    title: { en: 'Mood & Anxiety — 1 Minute', ru: 'Настроение и тревога — 1 минута · EN', es: 'Ánimo y ansiedad — 1 minuto · EN' },
     description: {
       en: 'A very short professional screening signal for mood and anxiety. Not a diagnosis.',
       ru: 'Очень короткий профессиональный скрининг настроения и тревоги. Не диагноз; вопросы на английском.',
@@ -217,7 +217,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'stress', weight: 0.9 }, { key: 'mood', weight: 0.75 }, { key: 'functioning', weight: 0.6 },
       { key: 'energy', weight: 0.45 }, { key: 'emotional_regulation', weight: 0.45 },
     ],
-    title: { en: 'Mental Load', ru: 'Психологическая нагрузка · EN', es: 'Malestar psicológico · EN' },,
+    title: { en: 'Mental Load', ru: 'Психологическая нагрузка · EN', es: 'Malestar psicológico · EN' },
     description: {
       en: 'A short K6 measure of non-specific psychological distress over the past 30 days.',
       ru: 'Короткая шкала K6 общей психологической нагрузки за последние 30 дней; вопросы на английском.',
@@ -248,7 +248,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'mood', weight: 1 }, { key: 'sleep', weight: 0.65 }, { key: 'energy', weight: 0.7 },
       { key: 'focus', weight: 0.6 }, { key: 'self_support', weight: 0.45 }, { key: 'functioning', weight: 0.7 },
     ],
-    title: { en: 'Mood Deep Dive', ru: 'Глубокая проверка настроения · EN', es: 'Síntomas del ánimo en profundidad · EN' },,
+    title: { en: 'Mood Deep Dive', ru: 'Глубокая проверка настроения · EN', es: 'Síntomas del ánimo en profundidad · EN' },
     description: {
       en: 'A deeper PHQ-9 mood symptom check with an explicit safety question. Not a diagnosis.',
       ru: 'Более глубокая шкала PHQ-9 с прямым вопросом безопасности. Не диагноз; вопросы на английском.',
@@ -279,7 +279,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'anxiety', weight: 1 }, { key: 'stress', weight: 0.75 }, { key: 'emotional_regulation', weight: 0.6 },
       { key: 'sleep', weight: 0.35 }, { key: 'focus', weight: 0.35 },
     ],
-    title: { en: 'Anxiety Deep Dive', ru: 'Тревожность · GAD-7 · 7 вопросов', es: 'Ansiedad en profundidad · GAD-7' },,
+    title: { en: 'Anxiety Deep Dive', ru: 'Тревожность · GAD-7 · 7 вопросов', es: 'Ansiedad en profundidad · GAD-7' },
     description: {
       en: 'A GAD-7 check of anxiety symptom intensity over the past two weeks.',
       ru: 'GAD-7 за последние две недели. Русская версия Holistic House — отдельный перевод, не прошедший самостоятельную психометрическую валидацию.',
@@ -310,7 +310,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'resource', weight: 1 }, { key: 'energy', weight: 0.85 }, { key: 'self_support', weight: 0.9 },
       { key: 'relationships', weight: 0.65 }, { key: 'meaning', weight: 0.85 }, { key: 'emotional_regulation', weight: 0.5 },
     ],
-    title: { en: 'Resources & Inner Support', ru: 'Ресурс и внутренняя опора', es: 'Recursos y apoyo personal' },,
+    title: { en: 'Resources & Inner Support', ru: 'Ресурс и внутренняя опора', es: 'Recursos y apoyo personal' },
     description: {
       en: 'Original Holistic House self-monitoring of energy, support, connection, agency and meaning.',
       ru: 'Оригинальный Holistic House замер энергии, внутренней опоры, связи, влияния и смысла.',
@@ -341,7 +341,7 @@ export const MONITORING_CATALOG = deepFreeze([
       { key: 'functioning', weight: 0.9 }, { key: 'relationships', weight: 0.85 }, { key: 'energy', weight: 0.65 },
       { key: 'resource', weight: 0.75 }, { key: 'meaning', weight: 0.8 }, { key: 'clarity', weight: 0.55 }, { key: 'self_support', weight: 0.45 },
     ],
-    title: { en: 'Monthly Life Profile', ru: 'Профиль месяца', es: 'Perfil mensual de vida' },,
+    title: { en: 'Monthly Life Profile', ru: 'Профиль месяца', es: 'Perfil mensual de vida' },
     description: {
       en: 'A broader monthly Holistic House profile of self, relationships, body, work, meaning and support.',
       ru: 'Более широкий месячный профиль Holistic House: я, отношения, тело, работа, смысл и поддержка.',
@@ -750,7 +750,7 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: true,
     access: 'account',
     rightsStatus: 'cleared',
-    title: { en: 'Social Support Profile', ru: 'Социальная поддержка · EN', es: 'Perfil de apoyo social · EN' },,
+    title: { en: 'Social Support Profile', ru: 'Социальная поддержка · EN', es: 'Perfil de apoyo social · EN' },
     description: {
       en: 'Professional MSPSS profile of perceived support from family, friends and a significant person.',
       ru: 'Профессиональный MSPSS-профиль воспринимаемой поддержки; вопросы на английском.',
@@ -775,7 +775,7 @@ export const MONITORING_CATALOG = deepFreeze([
     startable: false,
     access: 'account',
     rightsStatus: 'review_required',
-    title: { en: 'Daily Functioning', ru: 'Повседневное функционирование', es: 'Funcionamiento cotidiano' },,
+    title: { en: 'Daily Functioning', ru: 'Повседневное функционирование', es: 'Funcionamiento cotidiano' },
     description: {
       en: 'Reserved for a rights-cleared functioning measure; no questionnaire is exposed yet.',
       ru: 'Место для проверенной шкалы функционирования; опросник пока не публикуется.',
