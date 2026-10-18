@@ -6,6 +6,7 @@ import { recordingUpload, saveRecording } from '../lib/clients/recording-upload'
 import { canProxyOwnerAudio } from '../lib/clients/owner-audio-upload'
 import { getRecorderReadiness } from '../lib/clients/recording-readiness'
 import { normalizePhoneVideoFile,isQuickTimeVideo } from '../lib/clients/phone-video-file'
+import { normalizePhoneAudioFile } from '../lib/clients/phone-audio-file'
 import { SessionPhotoUploader } from './session-photo-uploader'
 import { SessionYouTubeQuickAdd } from './session-youtube-quick-add'
 import styles from './client-session.module.css'
@@ -273,13 +274,15 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     r.stop()
   }
   async function chooseFile(event) {
-    const file=normalizePhoneVideoFile(event.target.files?.[0])
+    const file=normalizePhoneAudioFile(normalizePhoneVideoFile(event.target.files?.[0]))
     if(!file||busyRef.current||jobRef.current)return
     busyRef.current=true;setStage('preparing')
     try {
       const availability=await checkReady()
       const video=file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name)
       if(audioOnly&&!file.type.startsWith('audio/'))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+      if(audioOnly&&!['audio/mp4','audio/x-m4a','audio/mpeg','audio/webm'].includes(file.type.split(';')[0].toLowerCase()))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+      if(audioOnly&&(file.size<128||file.size>20_000_000))throw new Error('MEDIA_SIZE_NOT_ALLOWED')
       if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')
       if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
         throw new Error(ru?('Видео превышает лимит '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' МБ.'):
@@ -334,12 +337,15 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {!audioOnly&&<button type="button" onClick={()=>startRecording('video')}
           disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
           <Video size={20}/>{ru?'Записать видео':'Record video'}</button>}
-        <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить из телефона':'Choose from phone'}
+        <label className={styles.filePicker}><UploadCloud size={18}/>{audioOnly?(ru?'Загрузить аудиофайл':'Import an audio file'):(ru?'Загрузить из телефона':'Choose from phone')}
           <input type="file" accept={audioOnly?'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,.m4a,.mp3,.webm':
             'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf'}
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
+    {audioOnly&&<p className={styles.photoHint}>{ru?
+      'Готовая запись с iPhone: «Диктофон» → «Поделиться» → «Сохранить в Файлы», затем загрузите M4A (также MP3/WebM, до 20 МБ). Запись будет доступна клиенту только после публикации отчёта.':
+      'Already recorded on your phone? In Voice Memos choose Share → Save to Files, then import M4A (also MP3/WebM, up to 20 MB). Only a published report makes it visible to your client.'}</p>}
     {!audioOnly&&showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId}
       ensureSession={ensureSession} locale={locale} onSaved={onSaved}/>}
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}
