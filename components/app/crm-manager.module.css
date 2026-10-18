@@ -73,3 +73,6 @@
 .form label:nth-child(4){grid-column:auto}
 .form label:nth-child(5){grid-column:auto}
 @media(max-width:600px){.form label:nth-child(3),.form label:nth-child(4),.form label:nth-child(5){grid-column:auto}}
+
+.loadMore{display:block;margin:14px auto;padding:11px 18px!important;min-height:44px!important;background:#1b7283!important;color:#fff!important;border-radius:12px!important;font-weight:750!important}
+.loadError{font:600 12px/1.5 system-ui,sans-serif;color:#8d3039;margin:10px 0}
