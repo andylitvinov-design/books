@@ -267,7 +267,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             {ru ? 'Архивная версия ' : 'Archived version '}{rangeReading.legacyVersion}
             {ru ? ' · новая версия ' : ' · current version '}{rangeReading.newerVersion}
             {ru ? '. Общие баллы разных версий напрямую не сравниваются.' : '. Scores are not directly comparable across these versions.'}
-          </p>
+          </p>}
           <ol className={styles.rangeDetailsList} data-author-cluster-items>
             {rangeReading.sourceQuestions.map(question => <li key={question.id}>
               {question.domain && <strong>{question.domain}: </strong>}{question.text}
