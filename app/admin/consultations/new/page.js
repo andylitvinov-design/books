@@ -8,6 +8,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getConsultationRemedyOptions } from '@/lib/remedies/registry'
 import { uiLocaleCookie } from '@/lib/ui-locale'
 import { ConsultationForm } from '@/components/consultation-form'
+import { getReportTestOptions } from '@/lib/assessments/report-recommended-tests'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
 import { createConsultationAction } from '../actions'
 
@@ -65,6 +66,7 @@ export default async function NewConsultation({ searchParams }) {
       selectedClientId={selectedClientId}
       action={createConsultationAction}
       remedies={getConsultationRemedyOptions()}
+      testOptions={getReportTestOptions()}
       requestId={randomUUID()}
     />
   </main>

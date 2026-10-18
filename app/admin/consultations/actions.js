@@ -16,6 +16,7 @@ function input(formData) {
   data.includeDistanceHomeopathy = formData.get('includeDistanceHomeopathy') === 'on'
   data.consultationDate = formData.get('dateIssued')
   data.items = JSON.parse(String(formData.get('itemsJson') ?? '[]'))
+  data.recommendedTestKeys = JSON.parse(String(formData.get('recommendedTestKeysJson') ?? '[]'))
   return data
 }
 

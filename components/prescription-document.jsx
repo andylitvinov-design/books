@@ -9,6 +9,7 @@ import { PrescriptionActions } from './prescription-actions'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
 import { clientReportHeading } from '@/lib/documents/report-heading'
+import { recommendedTestsForReport } from '@/lib/assessments/report-recommended-tests'
 import './consultation-report.css'
 
 export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
@@ -17,6 +18,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
   const progress = extractReportProgress(document.analysis)
   const reportHeading = clientReportHeading(locale, document.recommendationType)
   const followUpSession = reportFollowUpDetails(document.followUpDate, locale)
+  const recommendedTests = recommendedTestsForReport(document.recommendedTestKeys, locale)
   const alternateLocale = locale === 'ru' ? 'en' : 'ru'
   const seenProfiles = new Set()
   const selectedProfiles = document.items.map(item => ({ item, remedy: item.remedySlug ? getRemedy(locale, item.remedySlug) : undefined }))
@@ -137,6 +139,16 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
         <p>{followUpSession.description}</p>
       </section>}
       {document.followUp && <div className="canonical-follow-up"><span>{labels.followUp}</span><strong>{document.followUp}</strong></div>}
+      {recommendedTests.length > 0 && <section className="canonical-recommended-tests" aria-label={locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}>
+        <h2>{locale === 'ru' ? 'Рекомендуемые тесты' : 'Recommended tests'}</h2>
+        <p>{locale === 'ru'
+          ? 'Вы можете пройти эти тесты по рекомендации мастера.'
+          : 'You may take these self-checks recommended by your practitioner.'}</p>
+        <ul>{recommendedTests.map(test => <li key={test.key}>
+          <span>{test.title}{test.testLocale !== locale && <small>{locale === 'ru' ? ' · Вопросы на английском' : ' · Questions in Russian'}</small>}</span>
+          <Link href={test.href} prefetch={false}>{locale === 'ru' ? 'Пройти тест →' : 'Take test →'}</Link>
+        </li>)}</ul>
+      </section>}
       <DocumentSignature date={document.dateIssued} locale={locale} compact />
       <p className="canonical-disclaimer">{labels.disclaimer}</p>
 

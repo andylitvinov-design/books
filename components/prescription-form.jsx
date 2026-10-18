@@ -6,6 +6,8 @@ import { Plus, X, Check, Loader2 } from 'lucide-react'
 
 import { PrescriptionTextImport } from './prescription-text-import'
 import { ReportLanguagePicker } from './report-language-picker'
+import { ReportTestPicker } from './report-test-picker'
+import './consultation-report.css'
 import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search'
 import { initialPrescriptionRows, serializePrescriptionRows } from '@/lib/prescriptions/editor'
@@ -21,7 +23,7 @@ function SaveButton({ editing, status }) {
   </button>
 }
 
-export function PrescriptionForm({ action, prescription, remedies }) {
+export function PrescriptionForm({ action, prescription, remedies, testOptions = [] }) {
   const [items, setItems] = useState(() => initialPrescriptionRows(prescription, remedies))
   const [focused, setFocused] = useState(null)
   const [error, setError] = useState('')
@@ -30,6 +32,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
   const [generalInstructions, setGeneralInstructions] = useState(prescription?.generalInstructions ?? '')
   const [includeDistanceHomeopathy, setIncludeDistanceHomeopathy] = useState(prescription?.includeDistanceHomeopathy === true)
   const [reportLocale, setReportLocale] = useState(prescription?.languagePreference === 'ru' ? 'ru' : 'en')
+  const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => Array.isArray(prescription?.recommendedTestKeys) ? prescription.recommendedTestKeys : [])
   const [importUndo, setImportUndo] = useState(null)
   const update = (index, changes) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...changes } : item))
   const selectedCount = items.filter((item) => item.remedySlug || item.displayNameOverride).length
@@ -43,6 +46,7 @@ export function PrescriptionForm({ action, prescription, remedies }) {
       } else setError('')
     }}>
       <input type="hidden" name="itemsJson" value={serializePrescriptionRows(items)} />
+       <input type="hidden" name="recommendedTestKeysJson" value={JSON.stringify(recommendedTestKeys)} />
       <input type="hidden" name="internalNotes" value={prescription?.internalNotes ?? ''} />
       <input type="hidden" name="recommendationType" value={prescription?.recommendationType ?? 'homeopathy'} />
       <PrescriptionTextImport remedies={remedies.filter((remedy) => remedy.slug)} canUndo={Boolean(importUndo)} onUndo={() => {
@@ -106,7 +110,9 @@ export function PrescriptionForm({ action, prescription, remedies }) {
 
       <label className="prescription-instructions">Analysis <span className="prescription-form-hint">Measurements and state observations · included in the client report</span><textarea name="analysis" defaultValue={prescription?.analysis ?? ''} maxLength={5000} placeholder="Record measurements, state and progress…" rows={4} /></label>
       <label className="prescription-instructions">Notes <span className="prescription-form-hint">Additional practical guidance · included in the client report</span><textarea name="additionalNotes" defaultValue={prescription?.additionalNotes ?? ''} maxLength={5000} placeholder="Additional tips and next steps…" rows={4} /></label>
-      <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
+      <ReportTestPicker options={testOptions} locale={reportLocale} reportLocale={reportLocale}
+         selectedKeys={recommendedTestKeys} onChange={setRecommendedTestKeys} />
+       <label className="prescription-instructions">General instructions <span className="prescription-form-hint">Optional · included on the client page and PDF</span><textarea name="generalInstructions" value={generalInstructions} onChange={(event) => setGeneralInstructions(event.target.value)} placeholder="Instructions for the client…" rows={3} /></label>
       <label className="prescription-distance-homeopathy-choice" data-selected={includeDistanceHomeopathy}>
         <input name="includeDistanceHomeopathy" type="checkbox" checked={includeDistanceHomeopathy} onChange={event => setIncludeDistanceHomeopathy(event.target.checked)} />
         <span><strong>Distance homeopathy · Дистанционная гомеопатия</strong>

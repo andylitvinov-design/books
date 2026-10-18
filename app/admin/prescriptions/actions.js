@@ -7,8 +7,12 @@ import { createPrescription, updatePrescription } from '@/lib/prescriptions/serv
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
 
 function formInput(formData) {
-  let items
+  let items, recommendedTestKeys
   try { items = JSON.parse(String(formData.get('itemsJson') ?? '[]')) } catch { throw new Error('Invalid remedy item data') }
+  if (formData.has('recommendedTestKeysJson')) {
+    try { recommendedTestKeys = JSON.parse(String(formData.get('recommendedTestKeysJson'))) }
+    catch { throw new Error('Invalid recommended tests') }
+  }
   return {
     patientName: formData.get('patientName'), patientDob: formData.get('patientDob'), dateIssued: formData.get('dateIssued'), recommendationType: formData.get('recommendationType'),
     languagePreference: formData.get('languagePreference'), practitionerName: formData.get('practitionerName'), practitionerRole: formData.get('practitionerRole'),
@@ -16,7 +20,7 @@ function formInput(formData) {
     analysis: formData.get('analysis'), additionalNotes: formData.get('additionalNotes'),
     includeDistanceHomeopathy: formData.get('includeDistanceHomeopathy') === 'on',
     recommendationNumber: formData.get('recommendationNumber'), followUp: formData.get('followUp'), followUpDate: formData.get('followUpDate'),
-    internalNotes: formData.get('internalNotes'), status: formData.get('status'), items,
+    internalNotes: formData.get('internalNotes'), status: formData.get('status'), items, recommendedTestKeys,
   }
 }
 
