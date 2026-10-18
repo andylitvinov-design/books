@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FreeCourseBanner } from './free-course-banner'
 import { ScoreGauge, ScoreTrend } from './assessment-gauge'
 import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
+import { assessmentEvidenceStatus } from '@/lib/assessments/assessment-evidence-status'
 import { gaugeModel } from '@/lib/assessments/dashboard-gauges'
 import { assessmentResultOverview } from '@/lib/assessments/result-overview'
 import styles from './compact-assessment-report.module.css'
@@ -110,6 +111,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   </section>
   const selectedIndex = activeIndex < sections.length ? activeIndex : 0
   const section = sections[selectedIndex]
+  const evidence = assessmentEvidenceStatus({ result, section, report, locale })
   const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
   const guide = section.bandBasis === 'unavailable' ? null : guideByScale.get(section.key)
   const model = gaugeModel(dimension, result, locale)
@@ -175,7 +177,7 @@ export function CompactAssessmentReport({ result, previous = null, report, local
             onClick={() => setActiveIndex(index)}>
             <span className={styles.tabName}>{phq4ShortName(item.key, locale) || item.construct || item.title}</span>
             <span className={styles.tabMeta}>
-              {validScore ? item.value + ' / ' + item.max : (item.band || (ru ? 'Без числового балла' : 'No numeric score'))}
+              {validScore ? (item.min === 0 ? item.value + ' / ' + item.max : item.value + ' · ' + item.min + '–' + item.max) : (item.band || (ru ? 'Без числового балла' : 'No numeric score'))}
               {item.recommendedReview && <span className={styles.reviewDot} aria-label={ru ? 'Рекомендовано профессиональное обсуждение' : 'Professional follow-up suggested'}>!</span>}
             </span>
           </button>
@@ -211,6 +213,9 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <ScoreTrend current={result} previous={previous} dimensionKey={section.key} locale={locale}/>
         </div>
       </div>
+      <p className={styles.evidenceStatus} data-assessment-evidence-status={evidence.kind} role="note">
+        <strong>{evidence.label}:</strong> {evidence.summary}
+      </p>
       {rangeReading && <section className={styles.rangeReport} data-assessment-range-report
         data-range-kind={rangeReading.kind}
         aria-label={ru ? 'Шкала, диапазоны и характеристика результата' : 'Scale, ranges and score interpretation'}>
@@ -389,6 +394,8 @@ export function CompactAssessmentReport({ result, previous = null, report, local
         {report.purpose && <p>{report.purpose}</p>}
         {report.contextNote && anchor && <p data-assessment-context>{report.contextNote}</p>}
         {report.methodology && <p>{report.methodology}</p>}
+        {evidence.limitations && <p data-assessment-reliability-caveat>{evidence.limitations}</p>}
+        {evidence.languageNote && <p data-assessment-language-caveat>{evidence.languageNote}</p>}
         {section.source && <a href={section.source} target="_blank" rel="noopener noreferrer">{ru ? 'Исходный источник' : 'Original reference'} ↗</a>}
         {report.note && <p>{report.note}</p>}
         {report.seekSupport && report.seekSupport !== primarySupport && <p>{report.seekSupport}</p>}

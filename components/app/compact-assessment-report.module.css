@@ -272,6 +272,9 @@
 .currentScoreRange span{display:inline-flex;max-width:100%;padding:2px 7px;
   border-radius:7px;background:#f5edf0;color:#7b4053;font-size:.78rem;
   font-weight:780;font-variant-numeric:tabular-nums;white-space:normal}
+.evidenceStatus{box-sizing:border-box;max-width:100%;margin:8px 0 10px;padding:9px 11px;border-left:3px solid #89aca7;border-radius:8px;background:#f1f6f3;color:#425c59;font:500 .8rem/1.45 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}
+.evidenceStatus strong{font-weight:760;color:#335e5d}
+.evidenceStatus[data-assessment-evidence-status="unverified"]{border-left-color:#b77b63;background:#fbf4ef;color:#765446}
 .rangeReport{box-sizing:border-box;max-width:100%;min-width:0;margin:12px 0;padding:clamp(11px,2.2vw,16px);
   border-radius:15px;border:1px solid #d3e2df;background:#fafcfb;color:#31545a;overflow-wrap:anywhere}
 .rangeReport :where(*){box-sizing:border-box;min-width:0}
