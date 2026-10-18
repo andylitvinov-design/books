@@ -47,6 +47,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
     <article className="canonical-document canonical-document--editorial">
       {selectedProfiles.length > 0 && <ReportAppendixPrintExpander />}
       <DocumentAutoPrint enabled={admin && autoPrint} />
+      <div className="canonical-report-cover">
       <div className="canonical-report-brandline">
         <div className="canonical-editorial-brand">
           <strong>HOLISTIC HOUSE</strong>
@@ -87,6 +88,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           </div>
         </section>}
       </header>
+      </div>
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
