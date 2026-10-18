@@ -130,6 +130,8 @@ test('CRM owner has separate three-section mobile navigation and never mounts me
   assert.match(ui,/aria-pressed=\{activeSection===id\}/)
   assert.match(ui,/activeSection==='overview'/)
   assert.match(ui,/activeSection==='messages'&&<CrmMessengerPanel/)
+  assert.ok(ui.indexOf("activeSection==='messages'&&<CrmMessengerPanel")<ui.indexOf('{data&&<>'),
+    'inbox must mount independently when overview API is unavailable')
   assert.match(ui,/activeSection==='contacts'&&<>/)
   assert.match(ui,/\['messages',language==='ru'\?'Сообщения'/)
   assert.match(css,/min-height:44px/)
