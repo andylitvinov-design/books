@@ -98,17 +98,17 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
 
 test('V6 is new-cycle only, server validates pinned content, 14 pre-save screens and private signal data',()=>{
  const server=read('lib/app/growth-daily.js')
- assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V6 : COURSE_CONTENT_V4/)
+ assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
  assert.match(server,/value === COURSE_ANTISTRESS_SKILLS_V6/)
  assert.match(server,/validateOpora54Signals\(input\.opora54\)/)
  assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
  assert.match(server,/opora54,interactionSchema:'as-5\.4-fifteen-screens-v1'/)
- assert.match(server,/version!==COURSE_ANTISTRESS_SKILLS_V6 && input\.opora54!==undefined/)
+ assert.match(server,/!\[COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7\]\.includes\(version\) && input\.opora54!==undefined/)
  assert.match(server,/INVALID_OPORA54_INDEPENDENCE/)
  assert.match(server,/INVALID_OPORA54_APHORISM/)
  // A reported try is not proof of independent competence, while real hints
  // must be shown from the version-pinned owner's response.
- assert.match(server,/isAntiStressV6\|\|\(isOporaNav2/)
+ assert.match(server,/isAntiStressV6\|\|isAntiStressV7/)
  assert.match(server,/Array\.isArray\(row\?\.signals\?\.opora54\?\.hints\)/)
 })
 

@@ -254,7 +254,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(locked)return
     // Feedback is a separate voluntary report AFTER the learner chooses a
     // concrete micro-action. No visit or scenario click can forge practice.
-    if(choiceField&&!answers[choiceField])return
+    if(choiceField&&!answers[choiceField]&&!['not_attempted','uncomfortable'].includes(value))return
     setAnswers(a=>({...a,[role]:value}))
     if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
@@ -304,13 +304,24 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
-    if(choiceField&&!picked)return []
+    // No learner must choose an action just to report not trying or discomfort.
+    // A positive attempt remains impossible until a concrete action is chosen.
+    if(choiceField&&!picked)return role==='notice'||role==='act'
+      ?['not_attempted','uncomfortable'].map(value=>({value,label:t.response[value]}))
+      :[]
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
     if(role==='aphorism')return lang==='ru'
       ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
       : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
+    if(role==='prepare'&&authored?.lessonMethodVersion==='AS-5.5')return lang==='ru'
+      ?[{value:'try',label:'Мягко попробую в своей обстановке'},
+        {value:'simple',label:'Только безопасный учебный пример'},
+        {value:'read',label:'Только посмотрю или прочитаю'}]
+      :[{value:'try',label:'Gently try in my own surroundings'},
+        {value:'simple',label:'Use only a safe fictional example'},
+        {value:'read',label:'Just watch or read'}]
     if(role==='focus')return (ROLE_OPTIONS[role]||[]).map(value=>({
       value,label:value==='unsure'?(lang==='ru'?'Пока не уверен(а)':'Not sure about this focus'):t.response[value]||value,
     }))
@@ -331,17 +342,17 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     :null
   const extraFeedback=chosen
     ?role==='scenario'
-      ? (lang==='ru'?'Вы выбрали один из доступных вариантов. ': 'You chose one possible option. ')+
-        (authored?.scenario?.explanation||t.feedback.other)
+      ? (authored?.scenario?.feedback?.[['one','two','three'].indexOf(chosen)]||
+        (lang==='ru'?'Это один возможный выбор. ':'This is one possible choice. ')+(authored?.scenario?.explanation||t.feedback.other))
       :role==='aphorism'&&chosen==='disagree'
         ?t.feedback.disagree+' '+(authored?.neutralQuote||'')
         :role==='aphorism'?t.feedback[chosen]||t.feedback.other
         :CONTEXT_FEEDBACK[lang]?.[role]?.[chosen]||t.feedback[chosen]||t.feedback.other
     :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
-  const guidanceText=role==='scenario'?authored?.scenario?.explanation
+  const guidanceText=role==='scenario'?authored?.scenario?.hint||authored?.scenario?.explanation
     :role==='aphorism'?authored?.neutralQuote
-    :authored?.hint||lesson?.antiStress?.neutralText||t.nudge
+    :authored?.hints?.[role]||authored?.hint||lesson?.antiStress?.neutralText||t.nudge
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
@@ -385,14 +396,16 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               ? <blockquote className={styles.aphorism}>{authored?.quote}</blockquote>
               : <p className={styles.prompt}>{neutral&&PRACTICE_KINDS.has(role)
                 ? (lang==='ru'?'Можно попробовать только нейтральную внешнюю опору или просто прочитать инструкцию.':'You can use a neutral visible object, or read only.')
-                :slide?.text}</p>}
+                :answers.prepare==='simple'&&PRACTICE_KINDS.has(role)
+                  ?(lang==='ru'?'Можно остаться на вымышленном учебном примере. ':'You may stay with the fictional example. ')+(slide?.text||'')
+                  :slide?.text}</p>}
             {role==='baseline'||role==='reflection'?
               <div className={styles.rating}>
                 <span>{t.rating}</span>
                 <div className={styles.ratingGrid} role="group" aria-label={t.rating}>
                   {Array.from({length:11},(_,i)=><button type="button" key={i} disabled={locked}
                     aria-pressed={(role==='baseline'?beforeNow:afterNow)===i}
-                    onClick={()=>role==='baseline'?setBeforeNow(i):setAfterNow(i)}>{i}</button>)}
+                    onClick={()=>role==='baseline'?setBeforeNow(v=>v===i?null:i):setAfterNow(v=>v===i?null:i)}>{i}</button>)}
                 </div>
                 <div className={styles.ends}><span>{t.ratingLow}</span><span>{t.ratingHigh}</span></div>
                 <small>{t.noRating}</small>
@@ -405,7 +418,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <strong>{t.review}</strong>
               <p>{authored?.screens?.[13]?.text}</p>
               <small>{answers.aphorism?(lang==='ru'?'Мнение об установке сохранится как ваш выбор.':'Your opinion of the idea will be recorded.'):t.without}</small>
-              <small>{answers.act||answers.notice||answers.rehearse
+              <small>{[answers.act,answers.notice,answers.rehearse].some(v=>['tried','partly','guided','independent'].includes(v))
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
             {activityOptions.length>0&&<>
@@ -453,6 +466,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 :(lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
                   'Now report whether you actually tried the step.')}</small>
             </div>}
+            {role==='transfer'&&picked&&authored?.transferBackup&&<p className={styles.gentle}>
+              <ShieldCheck size={17} aria-hidden="true"/>{authored.transferBackup}
+            </p>}
             {role==='act'&&picked&&['tried','partly'].includes(chosen)&&<div className={styles.ease}>
               <span>{t.easyTitle} <small>({lang==='ru'?'по желанию':'optional'})</small></span>
               <div className={styles.easeOptions} role="group" aria-label={t.easyTitle}>
