@@ -1,0 +1,33 @@
+name: Holistic House CRM source checks
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/crm/**'
+      - 'app/api/app/crm/**'
+      - 'components/app/crm-manager.*'
+      - 'tests/crm-*.test.mjs'
+      - 'docs/crm/**'
+      - '.github/workflows/hh-crm-source-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  crm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned packages
+        run: npm ci --no-audit --no-fund
+      - name: Verify consent, ownership, actions and fail-closed client requests
+        run: node --test tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-client-request.test.mjs
+      - name: Lint changed CRM runtime and UI
+        run: npx eslint lib/crm/repository.js app/api/app/crm/route.js components/app/crm-manager.jsx
