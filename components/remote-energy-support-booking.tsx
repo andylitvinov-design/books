@@ -38,6 +38,9 @@ const WORDS = {
     send: "Continue to request",
     noMasters: "No practitioners are currently taking remote energy support requests. Please check back or explore their other services.",
     more: "See practitioners",
+    freeReiki: "Explore the free Reiki introduction",
+    durations: "20, 30 or 60 minutes",
+    pending: "Availability and price confirmed before any payment",
     steps: "Choose a practice · Pick a time · Send your request",
     safety: "An optional complementary wellbeing practice, not medical treatment, diagnosis or emergency care.",
     needsStorage: "This browser could not hold your choices. Please allow temporary session storage and try again.",
@@ -63,6 +66,9 @@ const WORDS = {
     send: "Перейти к заявке",
     noMasters: "Сейчас нет мастеров, принимающих заявки на дистанционную поддержку. Посмотрите другие услуги.",
     more: "Посмотреть мастеров",
+    freeReiki: "Открыть бесплатное знакомство с Рейки",
+    durations: "20, 30 или 60 минут",
+    pending: "Наличие времени и стоимость уточняются до оплаты",
     steps: "Выберите практику · Время · Отправьте заявку",
     safety: "Дополнительная практика для самочувствия, не замена медицинской помощи, диагностики или неотложной помощи.",
     needsStorage: "Не удалось сохранить выбор в браузере. Разрешите временное хранение данных и попробуйте ещё раз.",
@@ -88,6 +94,9 @@ const WORDS = {
     send: "Continuar con la solicitud",
     noMasters: "Actualmente no hay profesionales que acepten solicitudes de apoyo a distancia.",
     more: "Ver profesionales",
+    freeReiki: "Explorar la introducción gratuita a Reiki",
+    durations: "20, 30 o 60 minutos",
+    pending: "Disponibilidad y precio confirmados antes del pago",
     steps: "Elige la práctica · La hora · Envía la solicitud",
     safety: "Práctica complementaria de bienestar, no diagnóstico ni sustituto de atención médica o urgente.",
     needsStorage: "No se pudieron guardar tus preferencias temporalmente. Permite el almacenamiento de sesión e inténtalo de nuevo.",
@@ -167,12 +176,16 @@ export function RemoteEnergySupportBooking({
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{t.title}</h1>
         <p>{t.intro}</p>
+        <div className={styles.introHighlights} aria-label={t.steps}>
+          <span>{t.durations}</span><span>{t.pending}</span>
+        </div>
         <p className={styles.steps}>{t.steps}</p>
       </div>
       {masters.length === 0 ? (
         <div className={styles.empty} role="status">
           <p>{t.noMasters}</p>
           <Link href={`/${locale}/masters`}>{t.more} →</Link>
+          <Link href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{t.freeReiki} →</Link>
         </div>
       ) : (
         <form className={styles.form} onSubmit={submit}>
