@@ -1,4 +1,4 @@
-name: Reiki Practitioner — all 45 slides browser QA
+name: Reiki Practitioner — all 53 slides browser QA
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   guest-all-slides:
-    name: 45 slides — ${{ matrix.browser }}
+    name: 53 slides — ${{ matrix.browser }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -69,7 +69,7 @@ jobs:
           /tmp/hh-reiki-playwright/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
       - name: Initialize synthetic isolated account database
         run: node --conditions=react-server tests/helpers/app-db-setup.mjs
-      - name: Walk 45 screens in EN/RU and check mobile design
+      - name: Walk 53 screens in EN/RU and check mobile design
         run: |
           mkdir -p artifacts/reiki-all-slides
           node tests/helpers/app-auth-double.mjs > /tmp/hh-reiki-provider.log 2>&1 & PROVIDER_PID=$!
@@ -83,6 +83,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reiki-45-screens-${{ matrix.browser }}
+          name: reiki-53-screens-${{ matrix.browser }}
           path: artifacts/reiki-all-slides/
           retention-days: 7
