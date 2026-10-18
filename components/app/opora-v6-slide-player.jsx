@@ -196,6 +196,9 @@ const ROLE_OPTIONS={
 }
 const HINT_KINDS=new Set(['demo','notice','act','rehearse','scenario'])
 const PRACTICE_KINDS=new Set(['notice','act','rehearse'])
+// Familiar real scenery lets lessons breathe instead of feeling like a quiz.
+const SCENIC_ROLES=new Set(['welcome','pace','demo','prepare','notice','act','rehearse'])
+const SCENIC_PHOTO='/images/holistic-house/course-focus-mountain-boy.webp'
 const SCENES=[Heart,Leaf,ShieldCheck,BookOpen,Lightbulb,Sparkles]
 // A personal learning receipt must be built ONLY from explicit answers.
 // A chosen exercise is not an attempt; a future plan is not a completed action.
@@ -432,7 +435,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       </header>
       <main className={styles.scroll} ref={scroller}>
         <section className={styles.card} aria-live="off">
-          <div className={styles.heroIcon} aria-hidden="true"><Icon size={40} strokeWidth={1.75}/></div>
+          {SCENIC_ROLES.has(role)?<div className={styles.scenicPhoto} aria-hidden="true">
+            <img src={SCENIC_PHOTO} width={705} height={411} alt="" loading="eager" decoding="async"/>
+          </div>:<div className={styles.heroIcon} aria-hidden="true"><Icon size={28} strokeWidth={1.75}/></div>}
           <span className={styles.eyebrow}>{t.map} · {lesson.antiStress?.skillId}</span>
           <h2 className={styles.title} tabIndex={-1} ref={heading}>{afterSave?t.saved:slide?.title}</h2>
           {afterSave?<>
@@ -457,7 +462,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                   ?(lang==='ru'?'Можно остаться на вымышленном учебном примере. ':'You may stay with the fictional example. ')+(slide?.text||'')
                   :slide?.text}</p>}
             {role==='baseline'||role==='reflection'?
-              <div className={styles.rating}>
+              <details className={styles.ratingDisclosure}>
+                <summary>{lang==='ru'?'Отметить самочувствие (по желанию)':'Check in with myself (optional)'}</summary>
+                <div className={styles.rating}>
                 <span>{t.rating}</span>
                 <div className={styles.ratingGrid} role="group" aria-label={t.rating}>
                   {Array.from({length:11},(_,i)=><button type="button" key={i} disabled={locked}
@@ -470,7 +477,8 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                   <small role="status">{lang==='ru'
                     ?'Отметка записана как ваше наблюдение. Она не определяет успешность упражнения.'
                     :'This is your own momentary observation, not a performance score.'}</small>}
-              </div>:null}
+                </div>
+              </details>:null}
             {role==='save'&&<section className={styles.result} data-opora-save-preview>
               <strong>{t.review}</strong>
               <p>{authored?.screens?.[13]?.text}</p>
@@ -481,7 +489,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 ?(lang==='ru'?'Мнение об афоризме сохраняется отдельно от попытки.':'Your opinion of the aphorism is separate from your practice attempt.')
                 :t.without}</small>
             </section>}
-            {activityOptions.length>0&&<>
+            {activityOptions.length>0&&!picked&&<>
               <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q
                 :role==='transfer'?
                   (lang==='ru'?'Какую поддержку вам было бы удобно сохранить как возможный план?':
@@ -489,7 +497,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                   :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>
               <div className={styles.options} role="group"
                 aria-label={lang==='ru'?'Выберите один конкретный шаг':'Choose one concrete step'}
-                data-opora-as54-action-choice>
+                data-opora-as54-action-choice data-opora-answer-kind="action">
                 {activityOptions.map(option=><button type="button" key={option.value}
                   disabled={locked} className={picked===option.value?styles.selected:''}
                   aria-pressed={picked===option.value} onClick={()=>selectActivity(option.value)}>
@@ -499,7 +507,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               </div>
             </>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
-              <div className={styles.options} role="group" aria-label={choiceField&&!picked
+              <div className={styles.options} role="group" data-opora-answer-kind={PRACTICE_KINDS.has(role)?'experience':role} aria-label={choiceField&&!picked
                 ?(role==='notice'?activeActivity?.q:slide?.text)
                 :role==='aphorism'?t.aphorism:role==='scenario'?t.case:role==='demo'?t.example:PRACTICE_KINDS.has(role)?t.realAttempt:t.comfort}>
                 {optionsAvailable.map(option=><button type="button" key={option.value} disabled={locked}
@@ -551,7 +559,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <ShieldCheck size={17}/>{showingReading?(lang==='ru'?'Вы выбрали режим чтения: выполнение необязательно.':'Read-only mode: practice is optional.'):t.personal}
             </p>}
           </>}
-          <p className={styles.disclaimer}>{t.source}</p>
+          {(role==='welcome'||role==='save'||afterSave)&&<p className={styles.disclaimer}>{t.source}</p>}
         </section>
         {error&&<p role="alert" className={styles.error}>{error}</p>}
       </main>
