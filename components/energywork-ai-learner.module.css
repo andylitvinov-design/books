@@ -1940,3 +1940,55 @@
   .page[data-course-portrait="v3"] .feelingValue span {font-size:12px;}
   .page[data-course-portrait="v3"] .feedbackRequired {font-size:13px;}
 }
+
+/* Reiki verified learner reviews: switch quotes within the current meditation slide. */
+.page[data-course-portrait="v3"] .voiceQuote {
+  min-height:112px;
+  margin-bottom:5px;
+}
+.page[data-course-portrait="v3"] .voiceQuote p {
+  max-height:min(19dvh,164px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.page[data-course-portrait="v3"] .voicesControls {
+  display:grid;
+  grid-template-columns:44px minmax(55px,1fr) 44px;
+  align-items:center;
+  gap:10px;
+  max-width:220px;
+  margin:5px auto 7px;
+}
+.page[data-course-portrait="v3"] .voicesControls button {
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1px solid rgba(11,135,157,.33);
+  color:#0a7285;
+  background:linear-gradient(140deg,#ffffff,#d9f5f8);
+  box-shadow:0 3px 11px rgba(27,112,146,.12);
+  cursor:pointer;
+}
+.page[data-course-portrait="v3"] .voicesControls button:hover,
+.page[data-course-portrait="v3"] .voicesControls button:focus-visible {
+  background:#c5eef2;
+  outline:2px solid #087e9a;
+  outline-offset:2px;
+}
+.page[data-course-portrait="v3"] .voicesCount {
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  color:#18576c;
+  font-size:14px;
+  font-weight:800;
+}
+@media(max-width:380px) {
+  .page[data-course-portrait="v3"] .voiceQuote {min-height:96px;}
+  .page[data-course-portrait="v3"] .voiceQuote p {max-height:17dvh;}
+  .page[data-course-portrait="v3"] .voicesControls {margin:3px auto 4px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .page[data-course-portrait="v3"] .voicesControls button {transition:none;}
+}
