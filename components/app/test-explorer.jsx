@@ -296,9 +296,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const collapsedViaCount = visible.length - visibleCatalog.length
   const selected = entries.filter((entry) => selectedKeys.includes(entry.key) && entry.selectable)
   // Public browsing uses its own match-based order, unaffected by checkbox toggles.
-  // Include explicitly selected tests even when a curated Tantra path spans
-  // topics outside the current focus. This pins the actual selected cards in
-  // the recommendation list without broadening automatic starter tests.
+  // Explicitly selected tests stay available across filter changes; discovery
+  // ordering itself is not driven by checkbox state or saved health results.
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
     // Collections change recommendation weights, not the entire card format.
     // Remove only the topic/concern hard filter so non-collection tests remain
@@ -315,8 +314,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // Topic and concern selections still drive recommendations, not searches.
   const searchRecommendations = useMemo(() => rankPublicTestMatches(
     filterExplorerEntries(entries, { availability: 'available', kinds, maxMinutes }),
-    { depth },
-  ), [entries, kinds, maxMinutes, depth])
+    { depth, focus: activeCollection?.focus || [], collectionId: activeCollectionId,
+      collectionFocus: activeCollection?.focus || [] },
+  ), [entries, kinds, maxMinutes, depth, activeCollection, activeCollectionId])
   const simpleAuto = useMemo(() => buildPublicStarterBattery(simpleRecommendations), [simpleRecommendations])
   const coverage = useMemo(() => coverageForSelection(entries, selectedKeys), [entries, selectedKeys])
   // The start button works without requiring a visitor to select any filters.
@@ -448,7 +448,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       matchCount={simpleRecommendations.length}
       onStart={start}
       onStartSingle={startSingle}
-      onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus, problems }) : null}
+      onStartCourse={onStartCourse ? () => onStartCourse(activeBattery, { focus: selectionFocus, problems }) : null}
       onBrowseCore={() => { setBrowseFull(true); setAvailability('core') }}
       onBrowsePdf={() => {
         setBrowseFull(true); setAvailability('pdf')
