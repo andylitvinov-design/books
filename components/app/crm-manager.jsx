@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
+import CrmContactEditor from './crm-contact-editor'
 import CrmMessengerPanel from './crm-messenger'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
@@ -23,9 +24,9 @@ const BILLING_COPY = {
   es: { title: 'Registro de suscripciones', note: 'Hasta 100 registros técnicos de cuentas. La vinculación con contactos no está verificada.', off: 'El registro aún no está conectado.', until: 'Pagado hasta', cancel: 'Renovación cancelada' },
 }
 const EXTRA_COPY = {
-  en: { all: 'All', leads: 'Interested', clients: 'Clients', archived: 'Archived', suppress: 'Do not contact', suppressConfirm: 'Stop promotional contact with this person? This cannot be undone on this screen.', duplicate: 'This email is already in your contacts.', showing: 'Showing up to 100 recent contacts.', stage: 'Contact stage', conflict: 'Contact changed in another tab. Refresh and retry.' },
-  ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Показаны до 100 последних контактов.', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
-  es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'Se muestran hasta 100 contactos recientes.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
+  en: { all: 'All', leads: 'Interested', clients: 'Clients', archived: 'Archived', suppress: 'Do not contact', suppressConfirm: 'Stop promotional contact with this person? This cannot be undone on this screen.', duplicate: 'This email is already in your contacts.', showing: 'Search and filters apply to loaded contacts. Load more to review the full list.', stage: 'Contact stage', conflict: 'Contact changed in another tab. Refresh and retry.' },
+  ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
+  es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
@@ -35,6 +36,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const sessionRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
+  const [pageBusy, setPageBusy] = useState(false)
+  const [pageError, setPageError] = useState(false)
   const [displayName, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -54,7 +57,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
+    setData(null); setNotice(''); setBusy(false); setPageBusy(false); setPageError(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual'); setActiveSection('overview')
     fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
       .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
@@ -67,7 +70,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY','INVALID_BUSINESS_LEAD','INVALID_CONTACT_EDIT','EMAIL_CHANGE_REQUIRES_NEW_CONTACT','PHONE_LINKED_TO_MESSAGES','CONTACT_ARCHIVED'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
@@ -88,6 +91,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
           CRM_CONTACT_ARCHIVED:language==='ru'?'Контакт в архиве; новые действия недоступны.':'Archived contact cannot receive new tasks.',
           INVALID_CRM_ACTIVITY:language==='ru'?'Действие не поддерживается.':'This activity is not supported.',
           INVALID_BUSINESS_LEAD:language==='ru'?'Проверьте статус заявки.':'Check the business enquiry status.',
+          INVALID_CONTACT_EDIT:language==='ru'?'Проверьте исправленные контактные данные.':'Check the contact details.',
+          EMAIL_CHANGE_REQUIRES_NEW_CONTACT:language==='ru'?'Этот email уже имеет историю согласий или подтверждения. Создайте отдельный контакт для нового адреса.':'This email has verification or consent history. Create a separate contact for the new address.',
+          PHONE_LINKED_TO_MESSAGES:language==='ru'?'Телефон связан с историей переписки. Изменять его здесь нельзя.':'Phone is linked to message history and cannot be changed here.',
+          CONTACT_ARCHIVED:language==='ru'?'Сначала верните контакт из архива.':'Reopen this contact before editing.',
           INVALID_PHONE:language==='ru'?'Укажите телефон в международном формате, например +14165551234.':'Use an international phone number, e.g. +14165551234.',
           CONTACT_CHANNEL_REQUIRED:language==='ru'?'Нужен email или телефон.':'Enter an email or phone number.',
           EMAIL_ADDRESS_REQUIRED:language==='ru'?'У контакта нет email для подтверждения.':'This contact has no email address.',
@@ -96,6 +103,32 @@ export default function CrmManager({ locale = 'en', accountId }) {
       }
       return null
     } finally { if (sessionRef.current === session) setBusy(false) }
+  }
+  async function loadMoreContacts() {
+    const session=sessionRef.current
+    const cursor=data?.contactsNextCursor
+    if (!session||!cursor||pageBusy||busy||session.accountId!==accountId)return
+    setPageBusy(true);setPageError(false)
+    try {
+      const res=await fetch('/api/app/crm?contactsCursor='+encodeURIComponent(cursor),{
+        credentials:'same-origin',cache:'no-store',signal:session.controller.signal,
+        headers:{'X-HH-Account-Id':session.accountId},
+      })
+      if(!res.ok)throw new Error('CONTACT_PAGE_UNAVAILABLE')
+      const page=await res.json()
+      if(!page.pageOnly||!Array.isArray(page.contacts)||page.contacts.length>50)
+        throw new Error('CONTACT_PAGE_UNAVAILABLE')
+      if(sessionRef.current!==session)return
+      setData(previous=>{
+        if(!previous||previous.contactsNextCursor!==cursor)return previous
+        const seen=new Set(previous.contacts.map(contact=>contact.id))
+        const added=page.contacts.filter(contact=>!seen.has(contact.id))
+        return {...previous,contacts:[...previous.contacts,...added],
+          contactsNextCursor:page.nextCursor||null}
+      })
+    } catch(error) {
+      if(sessionRef.current===session&&error?.name!=='AbortError')setPageError(true)
+    } finally {if(sessionRef.current===session)setPageBusy(false)}
   }
   if (!accountId) return null
   const contacts=(data?.contacts||[]).filter(contact=>{
@@ -114,7 +147,6 @@ export default function CrmManager({ locale = 'en', accountId }) {
         <p>{language==='ru'?'Все деловые контакты в одном месте.':language==='es'?'Tus contactos profesionales en un solo lugar.':'Keep your business contacts in one place.'}</p>
       </div>
     </header>
-
     <nav className={styles.sectionTabs} aria-label={language==='ru'?'Разделы CRM':language==='es'?'Secciones CRM':'CRM sections'}>
       {[
         ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
@@ -135,7 +167,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     {activeSection==='messages'&&<CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />}
     {data&&<>
       {activeSection==='overview'&&<>
-    <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
+      <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
       {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
     </a></p>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
@@ -173,7 +205,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         {notice&&<p role="status" className={styles.notice}>{notice}</p>}
       </div>
       <div className={styles.contactsHead}>
-        <h3>{language==='ru'?'Ваши контакты':'Your contacts'} ({data.contacts?.length||0})</h3>
+        <h3>{language==='ru'?'Ваши контакты':language==='es'?'Tus contactos':'Your contacts'} ({data.contacts?.length||0} / {data.overview?.total??data.contacts?.length??0})</h3>
         <input aria-label={language==='ru'?'Поиск контактов':'Search contacts'} type="search"
           placeholder={language==='ru'?'Поиск…':'Search contacts…'} value={search} onChange={(event)=>setSearch(event.target.value)} />
       </div>
@@ -193,10 +225,19 @@ export default function CrmManager({ locale = 'en', accountId }) {
           </label>
           {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>}
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
-          <CrmContactWorkflow contact={contact} locale={language} busy={busy} onAction={save} followups={data.followups||[]} activity={data.activity||[]} />
+          <CrmContactEditor contact={contact} locale={language} busy={busy||pageBusy} onAction={save} />
+          <CrmContactWorkflow contact={contact} locale={language} busy={busy||pageBusy} onAction={save} followups={data.followups||[]} activity={data.activity||[]} />
           <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
+      {data.contactsNextCursor&&<button className={styles.loadMore} type="button"
+        disabled={busy||pageBusy} onClick={loadMoreContacts}>
+        {pageBusy?(language==='ru'?'Загрузка…':language==='es'?'Cargando…':'Loading…'):
+          (language==='ru'?'Загрузить ещё контакты':language==='es'?'Cargar más contactos':'Load more contacts')}
+      </button>}
+      {pageError&&<p role="alert" className={styles.loadError}>
+        {language==='ru'?'Не удалось загрузить следующую страницу. Повторите.':language==='es'?'No se pudo cargar la página. Inténtalo de nuevo.':'Could not load more contacts. Please retry.'}
+      </p>}
       <details className={styles.advanced}>
         <summary>{language==='ru'?'Подписки и подготовка писем':'Subscriptions & prepared updates'}</summary>
         <h3>{billing.title}</h3><p>{data.subscriberRegistryEnabled?billing.note:billing.off}</p>
