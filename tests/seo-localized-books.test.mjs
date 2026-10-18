@@ -46,3 +46,9 @@ test("localized book has one page-level H1 and nested manuscript H1 demoted", ()
   assert.match(reader, /sourceHtml\.replace/);
   assert.match(reader, /h2\$1/);
 });
+
+test("legacy book paths default to English and respect explicit Russian/Spanish query language",()=>{
+  const middleware=file("middleware.ts"), fallback=file("app/books/[bookId]/page.tsx");
+  assert.match(middleware,/requested === 'ru' \|\| requested === 'es' \? requested : 'en'/);
+  assert.match(fallback,/lang === "ru" \|\| lang === "es" \? lang : "en"/);
+});
