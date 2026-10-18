@@ -83,9 +83,9 @@ const copy = {
 const personalServiceForJourney: Record<string, string> = {
   relationships: 'systemic-constellations',
   business: 'business-consulting',
-  stress: 'hypnotherapy-course',
+  stress: 'imagery-therapy',
   energy: 'remote-energy-support',
-  effectiveness: 'business-consulting',
+  effectiveness: 'imagery-therapy',
 }
 
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
