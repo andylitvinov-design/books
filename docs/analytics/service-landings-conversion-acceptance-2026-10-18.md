@@ -7,7 +7,7 @@ Direct EN/RU/ES entry immediately above the optional Services discovery finder:
 
 The core Services hero, existing tests, five editorial service cards, free insights, original video/testimonials, moderated practitioner directory, privacy disclosures and academy routes remain in place.
 
-Standalone personal service pages (imagery, systemic constellations, business consulting) share:
+Standard personal service pages (imagery and systemic constellations) share:
 - one benefit-led hero, approved photograph and truthful price/formats;
 - paid primary request and clearly separate free written entry;
 - real existing WhatsApp/Telegram selection with a prepared message, **not** a sent message;
@@ -33,9 +33,9 @@ The CRM follow-up/source-label work in #986 is owner-entered attribution; its mi
 ## Automated acceptance
 Production-mode Next app is run locally on isolated loopback; browser tests inspect public pages only:
 1. Services quick-start link destinations in EN/RU/ES, first-screen tap targets, prices and unchanged catalogue discovery.
-2. The real hydrated standalone personal-service routes in EN/RU/ES at 390px; screenshot per route.
-3. One visible H1, approved image loads, no horizontal overflow, ≥44px primary CTA, correct anchor to the existing consultation selector.
-4. Express selection changes prepared WhatsApp **and** Telegram drafts to €50. Both links are only inspected; no external URL is followed.
+2. Six real hydrated personal-service journeys (guided imagery and systemic constellations × EN/RU/ES) at 390px, plus three separate Business Strategy & Founder Coaching journeys from PR #993; screenshots per journey.
+3. One visible H1, approved image loads, no horizontal overflow, ≥44px primary CTA, correct anchor to the existing consultation selector; business uses its own distinct free / €50 / €100 offer cards rather than the generic form.
+4. Express selection or business €50 offer prepares matching WhatsApp **and** Telegram drafts. Both links are only inspected; no external URL is followed.
 5. Existing Alchemy, Wu Xing and free written-review regression suite remains active, with source-backed videos/reviews unmodified.
 6. Dedicated source contract asserts analytics privacy hold, never bypassed by conversion optimization.
 
