@@ -38,7 +38,10 @@ test("photo-led service cards replace the duplicated free text cards on all home
   for (const slug of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"]) {
     assert.ok(offers.includes(slug), slug);
   }
-  assert.ok(home.indexOf('<ServicesSolutions locale={locale} variant="home" />') < home.indexOf('<HomeFreeTestsBanner locale={locale} />'));
+  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
+  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />');
+  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Photo service cards must precede topic journeys");
+  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
   assert.match(es, /className="service-home-actions" id="free-start"/);
   assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('className="service-home-start"'));
   assert.match(navigation, /#free-start/);
