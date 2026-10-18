@@ -4,6 +4,6 @@ import { notFound, redirect } from 'next/navigation'
 // links, but the guided pathway now lives at /explore/relationships.
 export default async function RelationshipsPage({ params }: {params: Promise<{locale:string}>}) {
   const {locale} = await params
-  if (locale !== 'en' && locale !== 'ru') notFound()
+  if (!['en', 'ru', 'es'].includes(locale)) notFound()
   redirect(`/${locale}/explore/relationships`)
 }
