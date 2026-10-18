@@ -303,6 +303,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <small>{answers.act||answers.notice||answers.rehearse
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
+            {choiceField&&!picked&&activeActivity&&
+              <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q
+                :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
               <div className={styles.options} role="group" aria-label={choiceField&&!picked
                 ?(role==='notice'?activeActivity?.q:slide?.text)
