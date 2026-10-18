@@ -85,7 +85,7 @@ const programmeText = {
     ru: { title: 'Внутренняя уверенность', detail: 'Опора на себя, отношения и личные границы.' },
   },
   focus: {
-    en: { title: 'Focus & Energy', detail: 'Clarity, sustained attention and manageable daily actions.' },
+    en: { title: 'Focus & Energy', detail: 'Sustainable energy, attention and a calmer mind.' },
     ru: { title: 'Фокус и энергия', detail: 'Ясность, концентрация и посильные шаги в ежедневных делах.' },
   },
 }
@@ -111,7 +111,7 @@ function TargetSlider({ title, value, onChange, compact = false }) {
 export default function DevelopmentProgram({ results = [], accountId, locale = 'en' }) {
   const lang = locale === 'ru' ? 'ru' : 'en'
   const t = words[lang]
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [loaded, setLoaded] = useState(false)
   const [goals, setGoals] = useState(initialGoals)
   const [revision, setRevision] = useState(0)
@@ -134,6 +134,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         setGoals(value.goals)
         setRevision(value.revision)
         setLoaded(true)
+        if (value.revision > 0) setActivePanel(current => current ?? 'plan')
         setError('')
       })
       .catch(() => { if (active) setError(t.loadError) })
@@ -212,10 +213,10 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           <span className={styles.sectionLinkCopy}><strong>{t.planLink}</strong><small>{t.planLinkHint}</small></span>
           <ChevronDown size={18} className={activePanel === 'plan' ? styles.rotated : ''} aria-hidden="true" />
         </button>
+        {(savedMessage || (loaded && revision > 0 && !dirty)) && !dirty && <p className={styles.success} role="status"><CheckCircle2 size={16} aria-hidden="true" />{savedMessage || t.saved}</p>}
       </div>
       {loading && <p className={styles.status} role="status">{lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…'}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
-      {savedMessage && !dirty && <p className={styles.success} role="status"><CheckCircle2 size={16} aria-hidden="true" />{savedMessage}</p>}
       {activePanel === 'goals' && <div id="hh-development-goals-panel" className={styles.panel}>
       <div className={styles.sectionHeading}>
         <span className={styles.pill}><SlidersHorizontal size={15} aria-hidden="true" /> {t.goals}</span>
@@ -266,14 +267,14 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         </button>
       </div>
       </div>}
-      {activePanel === 'plan' && <div id="hh-development-recommendations-panel" className={styles.panel}>
+      {activePanel === 'plan' && <div id="hh-development-recommendations-panel" className={`${styles.panel} ${styles.planPanel}`}>
         {!loaded ? <p className={styles.status}>{loading ? (lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…') : t.loadError}</p> : <>
         {revision === 0 && !dirty && <p className={styles.previewNote}>{t.defaultGoalsPreview}</p>}
         {dirty && <p className={styles.previewNote}>{t.unsavedGoalsPreview}</p>}
         <div className={styles.plan} data-testid="development-recommendations">
         <header className={styles.planHeading}><span className={styles.pill}><Target size={15} aria-hidden="true" /> {t.results}</span><p>{t.resultsDesc}</p></header>
         {revision === 0 && !dirty ? <p className={styles.empty}>{t.defaultGoalsPreview}</p> : plan.priorities.length > 0 ? <div className={styles.priorityList}>
-          {(allRows ? plan.priorities : plan.priorities.slice(0, 5)).map((item, index) => <article key={item.id} className={styles.priorityCard}>
+          {(allRows ? plan.priorities : plan.priorities.slice(0, 3)).map((item, index) => <article key={item.id} className={styles.priorityCard}>
             <div className={styles.priorityIndex}>{index + 1}</div>
             <div className={styles.priorityMain}>
               <strong>{axisLabel(item.axis, lang)} <span>· {item.label}</span></strong>
@@ -290,26 +291,29 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
             <span className={styles.gapValue}>+{percent(item.gap)}</span>
           </article>)}
         </div> : <p className={styles.empty}>{plan.rows.length ? t.noGap : t.noTests}</p>}
-        {plan.priorities.length > 5 && <button type="button" className={styles.textButton} onClick={() => setAllRows(value => !value)}>
+        {plan.priorities.length > 3 && <button type="button" className={styles.textButton} onClick={() => setAllRows(value => !value)}>
           {allRows ? t.less : t.allScales}<ChevronDown size={15} aria-hidden="true" />
         </button>}
-        {missing.length > 0 && <div className={styles.missing}>
+        <div className={styles.courseSection}>
+          <div className={styles.sectionHeading}><span className={styles.pill}><BookOpen size={16} aria-hidden="true" />{t.courses}</span><p>{t.courseHint}</p></div>
+          {missing.length > 0 && <div className={styles.missing}>
           <div><CircleHelp size={17} aria-hidden="true" /><strong>{t.missing} ({missing.length})</strong></div>
           <p>{missing.map(axis => axisLabel(axis, lang)).join(' · ')}</p>
           <small>{t.missingHint}</small>
           <Link href={'/' + lang + '/app/tests?profile=missing'} prefetch={false}>{t.tests}<ArrowRight size={15} aria-hidden="true" /></Link>
         </div>}
-        <div className={styles.courseSection}>
-          <div className={styles.sectionHeading}><span className={styles.pill}><BookOpen size={16} aria-hidden="true" />{t.courses}</span><p>{t.courseHint}</p></div>
           {(revision > 0 || dirty) && plan.courses.length ? <div className={styles.courses}>
             {plan.courses.map(course => {
               const copy = programmeText[course.id]?.[lang]
               return <article key={course.id} className={styles.courseCard}>
-                <div className={styles.courseTop}><span className={course.available ? styles.available : styles.planned}>
-                  {course.available ? t.now : t.planned}</span><strong>{copy?.title || course.id}</strong></div>
-                <p>{copy?.detail}</p>
-                <small>{course.matchedAxes.map(axis => axisLabel(axis, lang)).join(' · ')}</small>
-                {course.available && <Link href={'/' + lang + '/app/course?program=' + course.id} prefetch={false}>
+                <span className={`${styles.courseArtwork} ${styles[course.id + 'Artwork'] || ''}`} aria-hidden="true" />
+                <div className={styles.courseContent}>
+                  <div className={styles.courseTop}><span className={course.available ? styles.available : styles.planned}>
+                    {course.available ? t.now : t.planned}</span><strong>{copy?.title || course.id}</strong></div>
+                  <p>{copy?.detail}</p>
+                  <small>{course.matchedAxes.map(axis => axisLabel(axis, lang)).join(' · ')}</small>
+                </div>
+                {course.available && <Link className={styles.courseAction} href={'/' + lang + '/app/course?program=' + course.id} prefetch={false}>
                   {t.start}<ArrowRight size={16} aria-hidden="true" /></Link>}
               </article>
             })}
