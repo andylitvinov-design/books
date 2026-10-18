@@ -35,4 +35,4 @@ jobs:
       - name: Verify online learning methodology and no-Skip answers
         run: node --test tests/opora-as5-2-methodology-contract.test.mjs tests/opora-as53-210-guided-feedback-contract.test.mjs tests/opora-as54-online-learning-no-skip-contract.test.mjs
       - name: Verify versioned V6 fifteen-screen lessons, safe mobile player, strict evidence and V3/V5 compatibility
-        run: node --test tests/opora-as54-live-v6.test.mjs
+        run: node --test tests/opora-as54-live-v6.test.mjs tests/opora-as54-live-player-journey.test.mjs
