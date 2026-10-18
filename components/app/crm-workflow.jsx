@@ -7,7 +7,7 @@ const COPY={
   overview:'Practice overview',manual:'Stages and sources are recorded manually; they are not verified bookings or revenue.',
   leads:'Interested',clients:'Clients',open:'Open follow-ups',overdue:'Overdue',today:'Due today',
   queue:'Next actions',empty:'No follow-ups yet. Add one from a contact below.',more:'Showing the first 12 open actions',
-  history:'Recent activity',historyEmpty:'No business activity recorded yet.',done:'Done',cancel:'Cancel',
+  history:'Recent activity',historyEmpty:'No business activity recorded yet.',done:'Done',cancel:'Cancel',cancelConfirm:'Cancel this scheduled action?',showMore:'Show more actions',
   move:'Move date',date:'Due date',source:'How they found you',sourceNote:'Source entered manually',
   followup:'Plan next action',add:'Add follow-up',activity:'Record activity',record:'Save activity',
   dateRequired:'Choose a valid date.',privacy:'Business actions only; do not write symptoms, health information or consultation notes.',
@@ -20,7 +20,7 @@ const COPY={
   overview:'Обзор работы с клиентами',manual:'Этапы и источники указаны вручную. Это не подтверждённые оплаты или бронирования.',
   leads:'Интересуются',clients:'Клиенты',open:'Открытые задачи',overdue:'Просрочено',today:'На сегодня',
   queue:'Следующие действия',empty:'Пока нет задач. Добавьте действие из карточки контакта.',more:'Показаны первые 12 открытых задач',
-  history:'История взаимодействий',historyEmpty:'Деловых действий пока нет.',done:'Выполнено',cancel:'Отменить',
+  history:'История взаимодействий',historyEmpty:'Деловых действий пока нет.',done:'Выполнено',cancel:'Отменить',cancelConfirm:'Отменить запланированное действие?',showMore:'Показать ещё задачи',
   move:'Перенести',date:'Дата действия',source:'Откуда узнали о вас',sourceNote:'Источник указан вручную',
   followup:'Запланировать действие',add:'Добавить задачу',activity:'Записать действие',record:'Сохранить',
   dateRequired:'Выберите корректную дату.',privacy:'Только деловые действия. Не записывайте сюда симптомы, диагнозы или подробности консультаций.',
@@ -33,7 +33,7 @@ const COPY={
   overview:'Resumen de contactos',manual:'Las etapas y fuentes se introducen manualmente; no son reservas ni pagos verificados.',
   leads:'Interesados',clients:'Clientes',open:'Tareas pendientes',overdue:'Atrasadas',today:'Para hoy',
   queue:'Próximas acciones',empty:'Todavía no hay tareas. Añade una desde un contacto.',more:'Se muestran las primeras 12 tareas abiertas',
-  history:'Actividad reciente',historyEmpty:'Aún no hay actividad.',done:'Hecho',cancel:'Cancelar',
+  history:'Actividad reciente',historyEmpty:'Aún no hay actividad.',done:'Hecho',cancel:'Cancelar',cancelConfirm:'¿Cancelar esta acción?',showMore:'Mostrar más tareas',
   move:'Cambiar fecha',date:'Fecha',source:'Cómo te conocieron',sourceNote:'Fuente indicada manualmente',
   followup:'Planificar acción',add:'Añadir tarea',activity:'Registrar actividad',record:'Guardar',
   dateRequired:'Elige una fecha válida.',privacy:'Solo acciones comerciales; no incluyas datos clínicos o notas de consulta.',
@@ -49,7 +49,7 @@ const showDay = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))) return ''
   return value
 }
-function Action({item,locale,t,busy,onAction,today}) {
+function Action({item,t,busy,onAction,today}) {
  const [nextDue,setNextDue]=useState(item.dueOn)
  const state=dueStyle(item.dueOn,today)
  return <li className={styles.actionRow} key={item.id}>
@@ -64,18 +64,20 @@ function Action({item,locale,t,busy,onAction,today}) {
        <input aria-label={t.move+' — '+item.contactName} type="date" value={nextDue} min="2020-01-01" max="2100-12-31" onChange={event=>setNextDue(event.target.value)} />
      </label>
      <button type="button" className={styles.quiet} disabled={busy||nextDue===item.dueOn||!nextDue} onClick={()=>onAction('change_followup',{id:item.id,action:'reschedule',expectedRevision:item.revision,dueOn:nextDue})}>{t.move}</button>
-     <button type="button" className={styles.quiet} disabled={busy} onClick={()=>onAction('change_followup',{id:item.id,action:'cancel',expectedRevision:item.revision})}>{t.cancel}</button>
+     <button type="button" className={styles.quiet} disabled={busy} onClick={()=>{if(window.confirm(t.cancelConfirm))onAction('change_followup',{id:item.id,action:'cancel',expectedRevision:item.revision})}}>{t.cancel}</button>
    </div>
  </li>
 }
 
 export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=[],busy=false,onAction}) {
  const t=COPY[locale]||COPY.en
+ const [showAll,setShowAll]=useState(false)
  const counts=overview?.stages||{}
  const follow=overview?.followups||{}
  const today=overview?.asOf||''
  const open=followups.filter(x=>x.status==='open').sort((a,b)=>a.dueOn.localeCompare(b.dueOn))
  const recent=activity.slice(0,8)
+ const sources=Object.entries(overview?.sources||{}).filter(([,n])=>Number(n)>0)
  return <section className={styles.overview} aria-labelledby="crm-workflow-title">
    <div className={styles.sectionHeader}>
      <h3 id="crm-workflow-title">{t.overview}</h3>
@@ -86,12 +88,14 @@ export function CrmWorkflowOverview({locale='en',overview,followups=[],activity=
        <div className={styles.metric} key={label}><strong>{num}</strong><span>{label}</span></div>)}
    </div>
    <div className={styles.subMetrics}><span>{t.today}: <strong>{follow.today||0}</strong></span><span>{t.sourceNote}</span></div>
-   <details className={styles.section} open={false}>
+   {!!sources.length&&<div className={styles.sources} aria-label={t.source}>{sources.map(([key,num])=>
+     <span key={key}>{t.sources[key]||key}: <strong>{num}</strong></span>)}</div>}
+   <details className={styles.section} open>
      <summary>{t.queue} ({follow.open||0})</summary>
      <p className={styles.fine}>{t.noReminders}</p>
-     {open.length?<><ol className={styles.actionList}>{open.slice(0,12).map(x=>
-       <Action key={x.id} item={x} locale={locale} t={t} busy={busy} onAction={onAction} today={today} />)}</ol>
-       {open.length>12&&<p className={styles.fine}>{t.more}</p>}
+     {open.length?<><ol className={styles.actionList}>{open.slice(0,showAll?300:12).map(x=>
+       <Action key={x.id} item={x} t={t} busy={busy} onAction={onAction} today={today} />)}</ol>
+       {open.length>12&&!showAll&&<button className={styles.showMore} type="button" onClick={()=>setShowAll(true)}>{t.showMore} ({open.length-12})</button>}
      </>:<p className={styles.fine}>{t.empty}</p>}
    </details>
    <details className={styles.section}>
