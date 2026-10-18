@@ -64,11 +64,12 @@ test('a change in test definition never produces a fabricated comparable delta',
   const first = base('first', '2026-09-01T12:00:00Z', 4)
   const changed = base('new', '2026-10-01T12:00:00Z', 8, { contentHash: 'new-hash' })
   const view = buildTestDynamicsGroups([first, changed])
-  assert.equal(view.groups[0].scales[0].firstValue, 4)
-  assert.equal(view.groups[0].scales[0].lastValue, 8)
-  assert.equal(view.groups[0].scales[0].gaugeDimension.value, 8)
+  assert.equal(view.groups[0].scales[0].firstValue, null, 'invalid latest source must not have a verified baseline')
+  assert.equal(view.groups[0].scales[0].lastValue, null, 'never pair a valid prior with a rejected latest')
+  assert.equal(view.groups[0].scales[0].gaugeDimension.value, 8, 'historical raw record is retained')
   assert.equal(view.groups[0].scales[0].delta, null)
-  assert.equal(view.groups[0].scales[0].track.length, 1)
+  assert.equal(view.groups[0].scales[0].track.length, 0)
+  assert.equal(view.repeated, 0)
 })
 
 test('retained histories remain visible even when there is no active test plan', () => {
@@ -139,4 +140,51 @@ test('Results dynamics reuses the exact authored subscale intervals from full re
     assert.match(active.current.note,/среднему ответу/)
     assert.match(active.caveat,/не медицинские нормы/)
   }
+})
+
+test('original v1 and revised v2 are not two comparable measurements even if their numeric bounds match', () => {
+  const scored = (version, id, at, value) => {
+    const def = getAssessmentDefinition('hh-current-state', version, 'en')
+    const answers = Object.fromEntries(def.questions.map(q => [q.id, q.min ?? def.answerScale.min]))
+    answers[def.questions[0].id] = value
+    return { ...scoreAssessment(def, answers), id, accountId: 'private-account-1', measurementAt: at }
+  }
+  const archived = scored('v1', 'archived', '2026-09-01T12:00:00Z', 9)
+  const current = scored('v2', 'current', '2026-10-01T12:00:00Z', 7)
+  const view = buildTestDynamicsGroups([archived, current])
+  const scale = view.groups[0].scales.find(item => item.key === current.dimensions[0].key)
+  assert.equal(view.groups[0].count, 2, 'both raw attempts are kept in the history')
+  assert.equal(view.repeated, 0, 'a version change is not a comparable retest')
+  assert.deepEqual(scale.track.map(item => item.id), ['current'])
+  assert.equal(scale.firstValue, 7, 'the new version starts its own baseline')
+  assert.equal(scale.lastValue, null)
+  assert.equal(scale.delta, null)
+})
+
+test('the first comparable baseline is from the current version, never an older version', () => {
+  const scored = (version, id, at, value) => {
+    const def = getAssessmentDefinition('hh-current-state', version, 'en')
+    const answers = Object.fromEntries(def.questions.map(q => [q.id, q.min ?? def.answerScale.min]))
+    answers[def.questions[0].id] = value
+    return { ...scoreAssessment(def, answers), id, accountId: 'private-account-1', measurementAt: at }
+  }
+  const archived = scored('v1', 'archived', '2026-09-01T12:00:00Z', 9)
+  const firstCurrent = scored('v2', 'first-current', '2026-10-01T12:00:00Z', 2)
+  const lastCurrent = scored('v2', 'last-current', '2026-10-14T12:00:00Z', 6)
+  const view = buildTestDynamicsGroups([lastCurrent, archived, firstCurrent], 'ru')
+  const scale = view.groups[0].scales.find(item => item.key === lastCurrent.dimensions[0].key)
+  assert.equal(view.groups[0].count, 3)
+  assert.equal(view.repeated, 1)
+  assert.deepEqual(scale.track.map(item => item.id), ['first-current', 'last-current'])
+  assert.equal(scale.firstValue, 2)
+  assert.equal(scale.lastValue, 6)
+  assert.equal(scale.delta, 4)
+})
+
+test('the dynamics UI bases each repeat indicator on comparable scale history', () => {
+  const component = readFileSync(new URL('../components/app/test-dynamics.jsx', import.meta.url), 'utf8')
+  assert.match(component, /hasRepeat=\\{item\\.track\\.length > 1\\}/)
+  assert.doesNotMatch(component, /hasRepeat=\\{group\\.count > 1\\}/)
+  assert.match(component, /Первый сопоставимый балл/)
+  assert.match(component, /First comparable score/)
 })
