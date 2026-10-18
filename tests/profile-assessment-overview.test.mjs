@@ -148,7 +148,7 @@ test('Profile result cards open the exact private analysis and recommendations p
   assert.match(overview, /tests\?filter=completed/)
   assert.match(overview, /tests\?filter=remaining/)
   assert.match(report, /generateClientPdf/)
-  assert.match(workspace, /<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\} \/>/)
+  assert.match(workspace, /<PersonalResultReport result=\{result\} locale=\{locale\} previous=\{previous\} focusScaleKey=\{focusScaleKey\} \/>/)
   assert.match(workspace, /initialStatusFilter=\{searchParams\.get\('filter'\)\}/)
   assert.match(battery, /const completedRuns = new Set\(plan\?\.completedRunIds \|\| \[\]\)/)
   assert.match(battery, /statusFilter === 'remaining'/)

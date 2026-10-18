@@ -145,16 +145,16 @@ async function chooseVisibleTest(testPage,name){
 // Exact approved public hero and its real topic-selection anchor, in each tested locale.
 async function assertPublicPickerEntrance(target,locale){
  const copy=locale==='ru'
-  ? {region:'Подберите свои тесты',hero:'Лучше поймите себя. Найдите следующий шаг.',action:'Темы',first:'Что вы хотите исследовать?'}
+  ? {region:'Подберите свои тесты',hero:'Лучше поймите себя. Найдите следующий шаг.',action:'Тесты',first:'Что вы хотите исследовать?'}
   : locale==='es'
-    ? {region:'Elige tus pruebas',hero:'Conócete mejor. Descubre tu próximo paso.',action:'Temas',first:'¿Qué te gustaría explorar?'}
-  : {region:'Choose your tests',hero:'Understand yourself. Find your next step.',action:'Topics',first:'What would you like to explore?'}
+    ? {region:'Elige tus pruebas',hero:'Conócete mejor. Descubre tu próximo paso.',action:'Pruebas',first:'¿Qué te gustaría explorar?'}
+  : {region:'Choose your tests',hero:'Understand yourself. Find your next step.',action:'Tests',first:'What would you like to explore?'}
  const picker=target.locator('[data-prelogin-test-picker]')
  await expect(picker).toHaveAttribute('aria-label',copy.region)
  await expect(picker.locator('[data-client-tests-hero]').getByRole('heading',{name:copy.hero,level:1,exact:true})).toBeVisible()
  const entrance=picker.locator('[data-client-tests-hero]').getByRole('navigation').getByRole('link',{name:copy.action,exact:true})
  await expect(entrance).toBeVisible()
- await expect(entrance).toHaveAttribute('href','#hh-simple-topic-title')
+ await expect(entrance).toHaveAttribute('href',`/${locale}/client/tests`)
  await expect(entrance).toHaveAttribute('aria-current','page')
  await expect(picker.getByRole('heading',{name:copy.first,level:2,exact:true})).toHaveAttribute('id','hh-simple-topic-title')
 }

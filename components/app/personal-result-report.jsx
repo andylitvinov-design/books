@@ -4,7 +4,7 @@ import { getTestScaleGuide } from '@/lib/assessments/scale-guides'
 import styles from './personal-result-report.module.css'
 import { CompactAssessmentReport } from './compact-assessment-report'
 
-export function PersonalResultReport({ result, locale = 'en', previous = null }) {
+export function PersonalResultReport({ result, locale = 'en', previous = null, focusScaleKey = null }) {
   const report = buildAssessmentResultReport(result, locale)
   if (!report.sections.length) return <section data-personal-result-report data-unverified-assessment-result>
     <p role="note">{report.intro}</p>
@@ -13,7 +13,7 @@ export function PersonalResultReport({ result, locale = 'en', previous = null })
   const bach = report.reportKind === 'bach'
   const verified = report.verified !== false
   // Keep the bespoke Bach ranking presentation; numeric tests use the concise dial layout.
-  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} />
+  if (!bach) return <CompactAssessmentReport result={result} previous={previous} report={report} locale={locale} focusScaleKey={focusScaleKey} />
   const scaleGuide = getTestScaleGuide(result?.definitionKey, locale)
   const byScale = new Map((scaleGuide?.scales || []).map(scale=>[scale.key,scale]))
   const hasTrainableSkills = Boolean(scaleGuide?.skillAxes?.length)

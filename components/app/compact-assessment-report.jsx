@@ -81,7 +81,7 @@ function explainPublishedLevel(code, locale) {
 
 // Only presentation changes here: instrument scores, banding and recommendations
 // are still sourced from the existing versioned result-report registry.
-export function CompactAssessmentReport({ result, previous = null, report, locale = 'en' }) {
+export function CompactAssessmentReport({ result, previous = null, report, locale = 'en', focusScaleKey = null }) {
   const ru = locale === 'ru'
   const sections = Array.isArray(report?.sections) ? report.sections : []
   const phq4 = result?.definitionKey === 'phq-4' && report?.verified !== false &&
@@ -92,8 +92,10 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const total = phq4 ? sections.find(section => section.key === 'symptoms.phq4.total') : null
   const guideByScale = new Map((getTestScaleGuide(result.definitionKey, locale)?.scales || []).map(scale => [scale.key, scale]))
   const overview = assessmentResultOverview(report, result, locale)
-  const initialIndex = overview.initialIndex ?? 0
-  const resultKey = result.id || JSON.stringify(result)
+  // Details from a portrait select the exact saved source scale, never an unrelated test scale.
+  const focusedIndex = typeof focusScaleKey === 'string' ? sections.findIndex(item => item.key === focusScaleKey) : -1
+  const initialIndex = focusedIndex >= 0 ? focusedIndex : (overview.initialIndex ?? 0)
+  const resultKey = (result.id || JSON.stringify(result)) + ':' + (focusScaleKey || '')
   const [selection, setSelection] = useState(() => ({ resultKey, index: initialIndex }))
   // Navigating to another saved result must surface its own review notice,
   // while ordinary rerenders of the same result retain the chosen scale.

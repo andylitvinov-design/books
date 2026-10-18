@@ -203,6 +203,9 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
       <div id={portraitRayOptionsId} className={styles.portraitRayOptions} data-portrait-ray-options>{portraitOptions.map((axis) => {
         const measure = portrait?.axes?.[axis] || null
+        const detailHref = measure?.resultId
+          ? `/${locale}/app/results/${encodeURIComponent(measure.resultId)}${measure.dimensionKey ? `?scale=${encodeURIComponent(measure.dimensionKey)}` : ''}#hh-assessment-scale-panel`
+          : null
         return <div key={axis} className={styles.portraitRayItem} data-portrait-ray={axis} data-measured={Boolean(measure)}>
           <label className={styles.portraitRayOption} title={measure ? `${measure.source} · ${formatDate(measure.measuredAt)}` : (ru ? 'Нет измерения' : es ? 'Sin medición' : 'Not measured')}>
             <input type="checkbox" checked={checkedRays.includes(axis)} onChange={() => toggleRay(axis)} />
@@ -210,6 +213,14 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
             <strong>{measure ? `${measure.percent}%` : '—'}</strong>
             {measure?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{measure.change > 0 ? '+' : ''}{measure.change} {ru ? 'п.п.' : 'pp'}</small>}
           </label>
+          {detailHref && <Link
+            href={detailHref}
+            prefetch={false}
+            className={styles.portraitRayDetailsLink}
+            data-portrait-scale-details={axis}
+            aria-label={`${ru ? 'Пояснение шкалы' : es ? 'Detalles de la escala' : 'Scale details'}: ${label(axis)}`}>
+            {ru ? 'Подробнее' : es ? 'Detalles' : 'Details'} <span aria-hidden="true">→</span>
+          </Link>}
           {!measure && <Link
             href={`/${locale}/app/tests?explore=1&axis=${encodeURIComponent(axis)}`}
             prefetch={false}

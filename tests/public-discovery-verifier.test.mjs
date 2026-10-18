@@ -52,7 +52,7 @@ const modules = {}
 for (const source of [parentSource, pickerSource])
   for (const [, name] of source.matchAll(/from ['"](@\/[^'"]+)['"]/g)) modules[name] = await import(new URL('../' + name.slice(2) + '.js', import.meta.url))
 
-for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handlers reset stale facets, preserve manual selections and never start tests', () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handlers preserve chosen facets, preserve manual selections and never start tests', () => {
   const parentHooks = hooks(), pickerHooks = hooks()
   let starts = 0, tree, pickerProps
   const frames = [], scrolls = []
@@ -98,8 +98,14 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   const preserved = pickerProps.activeBattery.map(entry => entry.key)
   assert.equal(preserved.length, selected.length + 1)
   assert.ok(preserved.includes(candidate.key))
-  // Seed stale facets so collection reset is an exercised contract.
+  // Explicit collection changes retain the owner-approved visible preferences.
   pickerProps.onDepth('deep'); pickerProps.onMaxMinutes(5); pickerProps.onSelectTestKind('professional'); render()
+  pickerProps.onChooseCollection(['stress']); render()
+  assert.equal(pickerProps.depth, 'deep'); assert.equal(pickerProps.maxMinutes, 5)
+  assert.deepEqual(Array.from(pickerProps.testKinds), ['professional'])
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
+  // The user explicitly clears these facets before browsing every collection.
+  pickerProps.onDepth('balanced'); pickerProps.onMaxMinutes(0); pickerProps.onClearTestKinds(); pickerProps.onChooseCollection([]); render()
   for (const id of ['stress', 'relationships', 'tantra', 'sexuality']) {
     const collection = collections.find(item => item.id === id)
     chooseCollection(id)
@@ -433,7 +439,8 @@ for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 128
   await assert.rejects(h.expect(hidden).toHaveAccessibleName('A CSS-hidden chip cannot expose its aria-label'))
   await h.expect(hidden).toHaveAccessibleName('')
   await assertPublicCollectionChips(h.root, h.expect, locale, h.collections, h.width)
-  assert.equal(h.heading().props.className, 'curatedSrOnly')
+  assert.notEqual(h.heading().props.className, 'curatedSrOnly')
+  await h.expect(h.root.getByRole('heading', {name: h.heading().props.children, level: 2, exact: true})).toBeVisible()
   assert.equal(h.clicks(), 2, 'Real expansion and collapse handlers must both run')
 })
 for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongHiddenName', 'wrongCount', 'wrongTitle', 'description', 'missingCard', 'expandedHidden', 'expandedInaccessible', 'wrongCollapsedOrder', 'blockedExpansion', 'blockedCollapse']) test('compact collection proof rejects ' + fault, async () => {

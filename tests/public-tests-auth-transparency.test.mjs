@@ -6,9 +6,9 @@ const read = (name) => readFileSync(new URL('../' + name, import.meta.url), 'utf
 
 test('public picker transparently offers tests without registration and advertises scale-first results', () => {
   const source = read('components/app/simple-test-picker.jsx')
-  const note = source.indexOf('className={academyStyles.subnote}')
-  const firstTopic = source.indexOf('id="hh-simple-topic-title"')
-  assert.ok(note > 0 && firstTopic > note, 'access information must precede topic selection')
+  const note = source.indexOf('data-test-access-note>{c.heroFootnote}')
+  const firstTopic = source.indexOf('className={styles.testEntry}')
+  assert.ok(note > 0 && firstTopic > note, 'access information must precede the test cards')
   assert.match(source, /heroFootnote:'Available tests and sets start without registration/)
   assert.match(source, /heroFootnote:'Доступные тесты и наборы проходятся без регистрации/)
   assert.match(source, /heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte/)

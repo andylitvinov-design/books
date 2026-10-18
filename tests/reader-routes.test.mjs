@@ -85,13 +85,13 @@ test('reads known image assets with a cacheable MIME type only', async () => {
 
 test('provides the server reader, not-found, and strict media route modules', async () => {
   const [readerPage, notFoundPage, mediaRoute] = await Promise.all([
-    readFile('app/books/[bookId]/page.tsx', 'utf8').catch(() => ''),
+    readFile('app/[locale]/books/[bookId]/page.tsx', 'utf8').catch(() => ''),
     readFile('app/books/[bookId]/not-found.tsx', 'utf8').catch(() => ''),
     readFile('app/media/[series]/[file]/route.ts', 'utf8').catch(() => ''),
   ])
 
   await Promise.all([
-    access('app/books/[bookId]/page.tsx'),
+    access('app/[locale]/books/[bookId]/page.tsx'),
     access('app/books/[bookId]/not-found.tsx'),
     access('app/media/[series]/[file]/route.ts'),
   ])

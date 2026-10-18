@@ -484,18 +484,16 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         setActionError(null)
       }}
       onChooseCollection={(keys) => {
-        // Switching collections resets stale facets but never discards manually selected tests.
+        // Keep visible time/type/depth preferences when browsing a collection.
+        // Only remove concerns no longer relevant to its selected topics.
         setFocus(keys)
-        setProblems([])
+        setProblems((current) => normalizeProblemsForTopics(current, keys))
         setAvailability('available')
         setStylesFilter([])
-        setKinds([])
         setLengths([])
-        setDepth('balanced')
         setAreas([])
         setDetails([])
         setAxes([])
-        setMaxMinutes(0)
         setLanguage('any')
         setTracking('any')
         setFreeOnly(false)

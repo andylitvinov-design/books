@@ -12,13 +12,13 @@ for(const file of ['scripts/verify-app-r1.mjs','scripts/verify-es-public-site.mj
   const fragment=source.slice(start,source.indexOf('\n}',start)+2)
   assert.doesNotMatch(fragment,/data-client-tests-promo|Understand yourself and your life better|Лучше понять себя и свою жизнь/)
   for(const [locale,region,headline,topics,first] of [
-   ['en','Choose your tests','Understand yourself. Find your next step.','Topics','What would you like to explore?'],
-   ['ru','Подберите свои тесты','Лучше поймите себя. Найдите следующий шаг.','Темы','Что вы хотите исследовать?'],
-   ...(file==='scripts/verify-app-r1.mjs'?[['es','Elige tus pruebas','Conócete mejor. Descubre tu próximo paso.','Temas','¿Qué te gustaría explorar?']]:[]),
+   ['en','Choose your tests','Understand yourself. Find your next step.','Tests','What would you like to explore?'],
+   ['ru','Подберите свои тесты','Лучше поймите себя. Найдите следующий шаг.','Тесты','Что вы хотите исследовать?'],
+   ...(file==='scripts/verify-app-r1.mjs'?[['es','Elige tus pruebas','Conócete mejor. Descubre tu próximo paso.','Pruebas','¿Qué te gustaría explorar?']]:[]),
   ]){
    assert.ok(picker.includes("heroHeadline:'"+headline+"'"))
-   assert.ok(picker.includes("heroTabTopics:'"+topics+"'"))
-   assert.match(picker,/<a href="#hh-simple-topic-title" aria-current="page">\{c\.heroTabTopics\}<\/a>/)
+   assert.ok(picker.includes("heroTabTests:'"+topics+"'"))
+   assert.ok(picker.includes('<Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>'))
    const seen=[]
    const locator=path=>({path,locator:selector=>locator([...path,['selector',selector]]),getByRole:(role,options)=>locator([...path,['role',role,options]])})
    const expect=target=>({toBeVisible:async()=>seen.push(['visible',target.path]),toHaveAttribute:async(name,value)=>seen.push(['attribute',target.path,name,value])})
@@ -31,7 +31,7 @@ for(const file of ['scripts/verify-app-r1.mjs','scripts/verify-es-public-site.mj
     ['attribute',root,'aria-label',region],
     ['visible',[...hero,['role','heading',{name:headline,level:1,exact:true}]]],
     ['visible',link],
-    ['attribute',link,'href','#hh-simple-topic-title'],
+    ['attribute',link,'href',`/${locale}/client/tests`],
     ['attribute',link,'aria-current','page'],
     ['attribute',[...root,['role','heading',{name:first,level:2,exact:true}]],'id','hh-simple-topic-title'],
    ])

@@ -18,6 +18,15 @@ function privatePath(pathname: string) {
 export function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
+  // Legacy book URLs are 301, preserving the former ?lang= selection.
+  // The Maya collection hub is a separate route, not an individual book.
+  const oldBook = request.nextUrl.pathname.match(/^\/books\/([a-z0-9-]+)\/?$/)
+  if (oldBook && oldBook[1] !== 'maya-tradition' && ['GET', 'HEAD'].includes(request.method)) {
+    const requested = request.nextUrl.searchParams.get('lang')
+    const locale = requested === 'en' || requested === 'es' ? requested : 'ru'
+    const destination = new URL(`/${locale}/books/${oldBook[1]}`, request.url)
+    return NextResponse.redirect(destination, 301)
+  }
   const bridgeNonce = crypto.randomUUID().replaceAll('-', '')
   const bridge = privateMigrationBridge(request.url, bridgeNonce)
   if (bridge && ['GET', 'HEAD'].includes(request.method)) return new NextResponse(request.method === 'HEAD' ? null : bridge, { headers: {

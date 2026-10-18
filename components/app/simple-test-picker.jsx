@@ -21,7 +21,7 @@ const TEXT = {
     heroDescription:'Explore stress, mood, sleep and inner resources with free self-checks. See your results as soon as you finish.',
     heroPrimary:'Choose my topics', heroSecondary:'Browse free tests',
     heroFootnote:'Available tests and sets start without registration. Sign in for a free personal analysis.',
-    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTopics:'Topics', heroTabTests:'Tests', heroPicks:'You could try', heroSearchClear:'Clear search',
+    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTests:'Tests', heroTabCourses:'Courses', heroTabAssist:'Assist', heroPicks:'You could try', heroSearchClear:'Clear search',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
@@ -49,7 +49,7 @@ const TEXT = {
     heroDescription:'Исследуйте стресс, настроение, сон и внутренние ресурсы с помощью бесплатных тестов. Результаты доступны сразу после прохождения.',
     heroPrimary:'Выбрать темы', heroSecondary:'Посмотреть тесты',
     heroFootnote:'Доступные тесты и наборы проходятся без регистрации. После входа — бесплатные пояснения и анализ.',
-    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTopics:'Темы', heroTabTests:'Тесты', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
+    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTests:'Тесты', heroTabCourses:'Курсы', heroTabAssist:'Помощь', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
@@ -77,7 +77,7 @@ const TEXT = {
     heroDescription:'Explora el estrés, el ánimo, el sueño y tus recursos internos con pruebas gratuitas. Consulta tus resultados al terminar.',
     heroPrimary:'Elegir temas', heroSecondary:'Ver pruebas gratuitas',
     heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte. Entra para recibir un análisis personal gratuito.',
-    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTopics:'Temas', heroTabTests:'Pruebas', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
+    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTests:'Pruebas', heroTabCourses:'Cursos', heroTabAssist:'Ayuda', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
@@ -163,15 +163,15 @@ const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
     test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
-    open: 'Browse collection' },
+    open: 'Browse collection', personalized: 'Prioritized from your selected topics and concerns. Test counts reflect your time and type filters.' },
   ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
     intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
     test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
-    open: 'Открыть подборку' },
+    open: 'Открыть подборку', personalized: 'Подборки упорядочены по выбранным темам и проблемам. Количество тестов учитывает время и тип.' },
   es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
     intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
     test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
-    open: 'Explorar colección' },
+    open: 'Explorar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales respetan los filtros de tiempo y tipo.' },
 }
 
 // Always display the explicit assessment type, including on narrow phones.
@@ -226,7 +226,7 @@ export function SimpleTestPicker({
   const [collectionsOpen, setCollectionsOpen] = useState(false)
   const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
   const [expandedTantraPaths, setExpandedTantraPaths] = useState(() => new Set())
-  const collections = availableTestCollections(catalogEntries)
+  const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
   const tantraPaths = availableTantraTestPaths(catalogEntries)
   const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
   const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
@@ -280,9 +280,10 @@ export function SimpleTestPicker({
     <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
       {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
-        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
-          <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
-          <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
+        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Тесты, курсы и помощь' : locale === 'es' ? 'Pruebas, cursos y ayuda' : 'Tests, courses and assistance'}>
+          <Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>
+          <Link href={`/${locale}/academy/free-ai-courses`}>{c.heroTabCourses}</Link>
+          <Link href={`/${locale}/services/free-situation-review`}>{c.heroTabAssist}</Link>
         </nav>
       </div>}
       {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
@@ -304,7 +305,7 @@ export function SimpleTestPicker({
           placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
         <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      <div className={authenticated ? styles.accountFinderFilters : academyStyles.filters}>
+      {authenticated && <div className={styles.accountFinderFilters}>
         <label>{c.heroTopicFilter}
           <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
             onChange={(event) => {
@@ -327,21 +328,133 @@ export function SimpleTestPicker({
               <option value={item.key} key={item.key}>{testKindShortLabel({ testKind: item.key }, locale)}</option>)}
           </select>
         </label>
-      </div>
-      {!authenticated && <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
-        <span>{c.heroPicks}:</span>
-        {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
-          const topic = TOPICS.find((item) => item.key === key)
-          return <button key={key} type="button" aria-pressed={focus.includes(key)}
-            onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
-        })}
       </div>}
-      {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
+
+    <section className={styles.section} aria-labelledby="hh-simple-topic-title">
+      <div className={styles.topicHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">1</span>
+          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+        </div>
+        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
+          onClick={() => {
+            const all = TOPICS.every(({key}) => focus.includes(key))
+            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
+          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
+      </div>
+      <div className={styles.topicGrid} role="group" aria-label={c.first}>
+        {TOPICS.map(({ key, Icon, ...labels }) => {
+          const checked = focus.includes(key)
+          return <button key={key} type="button" aria-pressed={checked}
+            className={styles.topic} onClick={() => onToggleFocus(key)}>
+            <Icon size={20} aria-hidden="true" strokeWidth={1.9}/>
+            <span>{labels[locale] || labels.en}</span>
+            {checked && <Check size={16} className={styles.topicCheck} aria-hidden="true"/>}
+          </button>
+        })}
+      </div>
+      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
+        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
+        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
+          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
+          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
+        </button>)}
+      </div>}
+    </section>
+
+    <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
+      <div className={styles.problemHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">2</span>
+          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+        </div>
+        <button type="button" className={styles.skipProblems}
+          onClick={() => (document.getElementById('hh-test-curated-heading') || document.getElementById('hh-simple-recommendations'))?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
+      </div>
+      <label className={styles.problemSearch}>
+        <Search size={19} aria-hidden="true" />
+        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+      </label>
+      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
+        {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
+        <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
+          {visibleProblems.map((problem) => {
+            const checked = problems.includes(problem.key)
+            return <button key={problem.key} type="button" className={styles.problemChip}
+              aria-pressed={checked} data-problem-key={problem.key} onClick={() => onToggleProblem(problem.key)}>
+              {checked && <Check size={15} aria-hidden="true" />}
+              <span>{problem.label[locale] || problem.label.en}</span>
+            </button>
+          })}
+        </div>
+        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
+      {focus.length > 0 && <div className={styles.problemActions}>
+        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
+          aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
+          {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
+        </button>}
+        {problems.length > 0 && <button type="button" className={styles.problemClear}
+          onClick={onClearProblems}>{c.problemsClear} ({problems.length})</button>}
+      </div>}
+    </section>
+
+    <details className={styles.advanced} id="hh-more-test-filters">
+      <summary>
+        <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
+        <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
+        {hasExtraFilters && <span className={styles.appliedMark} title={c.activeFilters} aria-label={c.activeFilters}>{appliedFilterCount}</span>}
+        <ChevronDown aria-hidden="true" size={20} className={styles.chevron}/>
+      </summary>
+      <div className={styles.advancedBody}>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
+          <h3 id="hh-test-depth-title">{c.depth}</h3>
+          <p>{c.depthHelp}</p>
+          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
+            {[
+              {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
+              {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
+              {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
+            ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
+              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
+              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
+              {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
+            </button>)}
+          </div>
+        </section>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-time-title">
+          <h3 id="hh-test-time-title">{c.time}</h3>
+          <div className={styles.timeButtons} role="group" aria-label={c.time}>
+            {[[0,c.anyTime],[5,c.shortTime],[10,c.mediumTime]].map(([minutes,label]) =>
+              <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
+            )}
+          </div>
+        </section>
+        <fieldset className={styles.kindFilters} data-test-kind-filter>
+          <legend>{c.kindsTitle}</legend>
+          <p>{c.kindsHelp}</p>
+          <div className={styles.kindChoices}>
+            {TEST_KINDS.map((kind) => {
+              const Icon = TEST_KIND_ICONS[kind.key]
+              return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
+                <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
+                <Icon size={19} aria-hidden="true" />
+                <span>{kind.label[locale] || kind.label.en}</span>
+              </label>
+            })}
+          </div>
+        </fieldset>
+        {hasExtraFilters && <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>}
+      </div>
+    </details>
 
     {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
       data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
-      <h2 id="hh-test-curated-heading" className={styles.curatedSrOnly}>{collectionCopy.title}</h2>
+      <header className={styles.curatedHeading}>
+        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
+        <p>{focus.length || problems.length ? collectionCopy.personalized : collectionCopy.intro}</p>
+      </header>
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
         {collections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
@@ -457,125 +570,8 @@ export function SimpleTestPicker({
       </button>}
     </section>}
 
-    <section className={styles.section} aria-labelledby="hh-simple-topic-title">
-      <div className={styles.topicHeading}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.step} aria-hidden="true">1</span>
-          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
-        </div>
-        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
-          onClick={() => {
-            const all = TOPICS.every(({key}) => focus.includes(key))
-            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
-          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
-      </div>
-      <div className={styles.topicGrid} role="group" aria-label={c.first}>
-        {TOPICS.map(({ key, Icon, ...labels }) => {
-          const checked = focus.includes(key)
-          return <button key={key} type="button" aria-pressed={checked}
-            className={styles.topic} onClick={() => onToggleFocus(key)}>
-            <Icon size={20} aria-hidden="true" strokeWidth={1.9}/>
-            <span>{labels[locale] || labels.en}</span>
-            {checked && <Check size={16} className={styles.topicCheck} aria-hidden="true"/>}
-          </button>
-        })}
-      </div>
-      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
-        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
-        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
-          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
-          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
-        </button>)}
-      </div>}
-    </section>
-
-    <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
-      <div className={styles.problemHeading}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.step} aria-hidden="true">2</span>
-          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
-        </div>
-        <button type="button" className={styles.skipProblems}
-          onClick={() => document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
-      </div>
-      <label className={styles.problemSearch}>
-        <Search size={19} aria-hidden="true" />
-        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
-          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
-      </label>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
-        {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
-        <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
-          {visibleProblems.map((problem) => {
-            const checked = problems.includes(problem.key)
-            return <button key={problem.key} type="button" className={styles.problemChip}
-              aria-pressed={checked} data-problem-key={problem.key} onClick={() => onToggleProblem(problem.key)}>
-              {checked && <Check size={15} aria-hidden="true" />}
-              <span>{problem.label[locale] || problem.label.en}</span>
-            </button>
-          })}
-        </div>
-        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
-      {focus.length > 0 && <div className={styles.problemActions}>
-        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
-          aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
-          {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
-        </button>}
-        {problems.length > 0 && <button type="button" className={styles.problemClear}
-          onClick={onClearProblems}>{c.problemsClear} ({problems.length})</button>}
-      </div>}
-    </section>
-
-    <details className={styles.advanced} id="hh-more-test-filters">
-      <summary>
-        <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
-        <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
-        {hasExtraFilters && <span className={styles.appliedMark} title={c.activeFilters} aria-label={c.activeFilters}>{appliedFilterCount}</span>}
-        <ChevronDown aria-hidden="true" size={20} className={styles.chevron}/>
-      </summary>
-      <div className={styles.advancedBody}>
-        <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
-          <h3 id="hh-test-depth-title">{c.depth}</h3>
-          <p>{c.depthHelp}</p>
-          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
-            {[
-              {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
-              {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
-              {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
-            ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
-              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
-              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
-              {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
-            </button>)}
-          </div>
-        </section>
-        <section className={styles.filterGroup} aria-labelledby="hh-test-time-title">
-          <h3 id="hh-test-time-title">{c.time}</h3>
-          <div className={styles.timeButtons} role="group" aria-label={c.time}>
-            {[[0,c.anyTime],[5,c.shortTime],[10,c.mediumTime]].map(([minutes,label]) =>
-              <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
-            )}
-          </div>
-        </section>
-        <fieldset className={styles.kindFilters} data-test-kind-filter>
-          <legend>{c.kindsTitle}</legend>
-          <p>{c.kindsHelp}</p>
-          <div className={styles.kindChoices}>
-            {TEST_KINDS.map((kind) => {
-              const Icon = TEST_KIND_ICONS[kind.key]
-              return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
-                <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
-                <Icon size={19} aria-hidden="true" />
-                <span>{kind.label[locale] || kind.label.en}</span>
-              </label>
-            })}
-          </div>
-        </fieldset>
-        {hasExtraFilters && <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>}
-      </div>
-    </details>
-
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
+      {!authenticated && <p className={academyStyles.subnote} data-test-access-note>{c.heroFootnote}</p>}
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>

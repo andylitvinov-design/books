@@ -127,7 +127,7 @@ test('locale selection and site-menu links close their own disclosures immediate
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');
   assert.match(hub, /localizedBookText\(volume, locale\)/);
-  assert.match(hub, /lang=\$\{locale\}/);
+  assert.ok(hub.includes('href={`/${locale}/books/${volume.id}`}'));
   assert.match(hub, /generateMetadata/);
   assert.match(read('components/site-navigation.tsx'), /pathname === "\/books\/maya-tradition"/);
 });

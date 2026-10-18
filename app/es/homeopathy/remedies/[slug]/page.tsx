@@ -8,6 +8,7 @@ import { getSpanishRemedy, getSpanishRemedySlugs } from '@/data/remedies-es';
 import { spanishMetadata } from '@/lib/spanish-metadata';
 import { remedySeoDescription } from '@/lib/seo-descriptions';
 type Props = { params: Promise<{ slug: string }> };
+export const revalidate = 3600;
 export const dynamicParams = false;
 export function generateStaticParams() { return getSpanishRemedySlugs().map(slug => ({ slug })); }
 export async function generateMetadata({ params }: Props) {
