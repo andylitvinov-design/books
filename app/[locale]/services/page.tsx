@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PageVideo } from "@/components/page-video";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesQuickStart } from "@/components/services-quick-start";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
@@ -167,15 +168,14 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-
       <ServicesConversionHero locale={locale as Locale} />
+      <ServicesQuickStart locale={locale} />
       <ServicesSolutions locale={locale as Locale} />
       <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
       <ServicesAboutEntry locale={locale as Locale} />
       <PersonalTestimonials locale={locale as Locale} variant="services" />
       <ServicesTestsIntro locale={locale as Locale} />
-
-      {/* Optional marketplace discovery sits after personal services and booking. */}
+      {/* Optional marketplace finder comes after Andrey's personal offers and booking. */}
       <ServicesSmartDiscovery
         locale={locale}
         services={offerings}
