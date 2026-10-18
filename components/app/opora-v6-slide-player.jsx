@@ -333,9 +333,12 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                   :activeActivity?.choices?.[chosenActivityIndex]
               }</strong></span>
               <button type="button" className={styles.changeChoice} disabled={locked}
-                onClick={()=>setAnswers(a=>{
-                  const next={...a};delete next[choiceField];delete next[role];return next
-                })}{...(role==='act'?{onClick:()=>{setAnswers(a=>{const next={...a};delete next[choiceField];delete next[role];return next});setEase(null)}}:{})}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
+                onClick={()=>{
+                  setAnswers(a=>{
+                    const next={...a};delete next[choiceField];delete next[role];return next
+                  })
+                  if(role==='act')setEase(null)
+                }}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
               <small>{role==='transfer'
                 ?(lang==='ru'?'Теперь отметьте: вы только представили план или хотите его сохранить?':
                   'Now choose whether you imagined this plan or want to keep it.')
