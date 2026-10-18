@@ -57,8 +57,9 @@ export function energyworkSequence(_legacyPath = null) {
     ...ENERGYWORK_BRANCH.yggdrasil,
     'intention-01','intention-02','intention-03','intention-04',
     'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
-    'paths-01','paths-02','paths-03','paths-04',
-    ...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH,
+    'paths-01','paths-02','paths-03',
+    ...ENERGYWORK_INITIATION,
+    'end-01','paths-04','end-02',
   ]
 }
 // Keep encrypted private answers. Legacy progress returns to the introductory
