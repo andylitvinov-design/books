@@ -1,0 +1,48 @@
+name: Client report coastal v2 scoped verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/client-session-page.jsx'
+      - 'components/client-session.module.css'
+      - 'components/prescription-document.jsx'
+      - 'public/images/holistic-house/report-lighthouse-coast.svg'
+      - 'tests/client-report-coastal-v2.test.mjs'
+      - '.github/workflows/hh-client-report-coastal-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: report-coastal-v2-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  report-reader-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Private reader, signed HTML, PDF, media and coastal regression
+        run: |
+          node --test \
+            tests/client-report-coastal-v2.test.mjs \
+            tests/client-session-html-report.test.mjs \
+            tests/client-report-design.test.mjs \
+            tests/client-report-premium-v3.test.mjs \
+            tests/client-report-mobile-layout.test.mjs \
+            tests/client-session-save-to-google.test.mjs \
+            tests/client-session-youtube-resource.test.mjs \
+            tests/client-session-video-poster.test.mjs \
+            tests/consultation-recommended-tests.test.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit
+      - name: Production Next.js build
+        run: npm run build
