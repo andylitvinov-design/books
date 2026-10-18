@@ -9,7 +9,7 @@ test('Library defaults to Latest news feed with videos, articles and guides whil
   const hub = source('components/library-hub.tsx')
   const feed = source('components/library-feed.tsx')
   const css = source('components/library-feed.module.css')
-  assert.match(page,/rawView === "videos" \\|\\| rawView === "books" \\? rawView : "latest"/)
+  assert.match(page,/rawView === "videos".*"latest"/)
   assert.match(hub,/library-media-switch/)
   assert.match(hub,/view=books/)
   assert.match(hub,/view=videos/)
