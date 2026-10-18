@@ -32,7 +32,8 @@ function shouldHoldHomeRsc(request, delayedLocale) {
 async function chooseHomeLocale(page, locale) {
   const menu = page.locator('.site-language-menu');
   await expect(menu).toHaveCount(1);
-  await menu.locator('.site-language-menu-trigger').click();
+  if (!(await menu.evaluate(node => node.open))) await menu.locator('.site-language-menu-trigger').click();
+  await expect(menu).toHaveAttribute('open', '');
   const link = menu.locator(`a[lang="${locale}"]`);
   await expect(link).toHaveCount(1);
   await expect(link).toHaveAttribute('href', homePath(locale));

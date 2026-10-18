@@ -3,7 +3,8 @@
 // database identity, fresh PostgreSQL 17 service and explicit CI-only invocation.
 export const INTERPRETATION_SEED_PATH = 'supabase/seeds/assessment-interpretations-2026-10-17.v1.sql'
 export const INTERPRETATION_V2_SEED_PATH = 'supabase/seeds/assessment-interpretations-2026-10-17.v2.sql'
-const RELEASE_VERSIONS = ['2026-10-17.v1', '2026-10-17.v2']
+export const INTERPRETATION_V3_SEED_PATH = 'supabase/seeds/assessment-interpretations-2026-10-17.v3.sql'
+const RELEASE_VERSIONS = ['2026-10-17.v1', '2026-10-17.v2', '2026-10-17.v3']
 export function interpretationDatabaseOptions(env = process.env, execArgv = process.execArgv) {
   let url
   try { url = new URL(env.HH_TEST_ADMIN_DATABASE_URL || 'http://invalid') } catch { throw new Error('Isolated interpretation database required') }
@@ -43,7 +44,7 @@ export function validateInterpretationRelease(release, approvedDigests, { seedEx
     return { pending: true, reason: 'PREPARATORY C1 ONLY: no approved interpretation seed; native database integration has NOT run.' }
   }
   if (release.status !== 'approved' || !/^[a-f0-9]{40}$/.test(release.sourceCommit || '') ||
-      release.seedPath !== (release.interpretationVersion === '2026-10-17.v1' ? INTERPRETATION_SEED_PATH : INTERPRETATION_V2_SEED_PATH) || release.recordCount !== 460 || !hash(release.seedSha256) ||
+      release.seedPath !== (release.interpretationVersion === '2026-10-17.v1' ? INTERPRETATION_SEED_PATH : release.interpretationVersion === '2026-10-17.v2' ? INTERPRETATION_V2_SEED_PATH : INTERPRETATION_V3_SEED_PATH) || release.recordCount !== 460 || !hash(release.seedSha256) ||
       entries.length !== 460 || !seedExists)
     throw new Error('C2 requires the approved source commit, exact 460-record manifest and pinned seed')
   const definitions = new Map()

@@ -64,3 +64,24 @@ test('pagehide fallback cancels the request and removes every observer',async()=
  const request=startTestCatalogStatsRequest(()=>assert.fail('cancelled'),{...t,lifecycleTarget,fetchImpl:(_url,options)=>{signal=options.signal;return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}))}})
  await Promise.resolve();events.get('pagehide')();await request.done;assert.equal(signal.aborted,true);assert.equal(events.size,0)
 })
+
+
+test('late hydration in a departing document never starts optional network work', async () => {
+ const lifecycleTarget = { __hhOptionalReadsDeparting: true }
+ let calls = 0, timers = 0
+ const r = startTestCatalogStatsRequest(() => assert.fail('No invented stats'), { lifecycleTarget, fetchImpl: () => { calls++; return Promise.reject(Error('late fetch')) }, setTimer: () => { timers++; } })
+ await r.done; r.cancel(); assert.equal(calls, 0); assert.equal(timers, 0)
+})
+test('cancellation or departing marker before the first microtask prevents fetch', async () => {
+ for (const mode of ['cancel', 'depart']) {
+  const lifecycleTarget = {}, t = timers(); let calls = 0
+  const r = startTestCatalogStatsRequest(() => assert.fail('No stale callback'), { ...t, lifecycleTarget, fetchImpl: () => { calls++; return Promise.resolve({ok: false}) } })
+  if (mode === 'cancel') r.cancel(); else lifecycleTarget.__hhOptionalReadsDeparting = true
+  await r.done; assert.equal(calls, 0)
+ }
+})
+test('a restored document may make its normal optional request', async () => {
+ const lifecycleTarget = { __hhOptionalReadsDeparting: false }, t = timers(); let calls = 0
+ const r = startTestCatalogStatsRequest(() => {}, { ...t, lifecycleTarget, fetchImpl: async () => { calls++; return {ok: true, json: async () => ({stats: []})} } })
+ await r.done; assert.equal(calls, 1)
+})

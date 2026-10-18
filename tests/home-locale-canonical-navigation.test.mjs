@@ -45,7 +45,7 @@ for (const locale of ['en', 'ru']) test(`RSC matcher holds only the active canon
 async function chooseScenario(locale, { menus = 1, links = 1, href = homePath(locale), blocked = false } = {}) {
   let opened = false, clicked = false;
   const link = { count: links, async click() { assert.ok(opened); if (blocked) throw new Error('blocked click'); clicked = true; } };
-  const menu = { count: menus, locator(selector) {
+  const menu = { count: menus, async evaluate(fn) { return fn({open:opened}); }, locator(selector) {
     if (selector === '.site-language-menu-trigger') return { async click() { opened = true; } };
     assert.equal(selector, `a[lang="${locale}"]`);
     return link;
@@ -53,7 +53,7 @@ async function chooseScenario(locale, { menus = 1, links = 1, href = homePath(lo
   const page = { locator(selector) { assert.equal(selector, '.site-language-menu'); return menu; } };
   const expect = actual => ({
     async toHaveCount(expected) { assert.equal(actual.count, expected); },
-    async toHaveAttribute(name, expected) { assert.equal(actual, link); assert.equal(name, 'href'); assert.equal(href, expected); },
+    async toHaveAttribute(name, expected) { if(actual===menu){ assert.equal(name,'open'); assert.equal(opened,true); return; } assert.equal(actual, link); assert.equal(name, 'href'); assert.equal(href, expected); },
   });
   const choose = new Function('assert', 'origin', 'expect', `${helpers}; return chooseHomeLocale;`)(assert, origin, expect);
   await choose(page, locale);

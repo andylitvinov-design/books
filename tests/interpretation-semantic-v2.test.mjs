@@ -170,7 +170,7 @@ test('current reports reject old v1, missing and relabeled v10 rules and fall ba
     const definition = get(key), result = scoreAt(definition), payload = payloadFor(definition, result, locale)
     const current = { ...result, interpretationRecords: { [locale]: payload } }
     assert.equal(storedResultInterpretation(current, current.dimensions[0], locale).registrySource, 'database')
-    for (const changed of [{ ...payload, interpretationVersion: '2026-10-17.v1' }, { ...payload, rulesEngineVersion: '2026-10-16.v10' }, { ...payload, rulesEngineVersion: '2026-10-17.v11' }, { ...payload, rulesEngineVersion: undefined }]) {
+    for (const changed of [{ ...payload, interpretationVersion: '2026-10-17.v2' }, { ...payload, rulesEngineVersion: '2026-10-17.v12' }, { ...payload, interpretationVersion: '2026-10-17.v1' }, { ...payload, rulesEngineVersion: '2026-10-16.v10' }, { ...payload, rulesEngineVersion: '2026-10-17.v11' }, { ...payload, rulesEngineVersion: undefined }]) {
       const stale = { ...result, interpretationRecords: { [locale]: changed } }
       for (const dimension of stale.dimensions) {
         assert.equal(storedResultInterpretation(stale, dimension, locale), null)

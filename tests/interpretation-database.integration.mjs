@@ -3,6 +3,7 @@
  * RLS/immutability and the normal server loader using its committed digest allowlist.
  */
 import test from 'node:test'
+import { validateNativeV3Release, verifyNativeV3 } from './interpretation-v3-database.cases.mjs'
 import { validateNativeV2Release, verifyNativeV2 } from './interpretation-v2-database.cases.mjs'
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
@@ -29,6 +30,7 @@ const seedURL=new URL(INTERPRETATION_SEED_PATH,root)
 const seedExists=await access(seedURL).then(()=>true,()=>false)
 const gate=validateInterpretationRelease(release,APPROVED_INTERPRETATION_DIGESTS,{seedExists})
 const v2Release = gate.pending ? null : await validateNativeV2Release(root, APPROVED_INTERPRETATION_DIGESTS)
+const v3Release = gate.pending ? null : await validateNativeV3Release(root, APPROVED_INTERPRETATION_DIGESTS)
 const digest=bytes=>'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')
 const errorCode=code=>error=>error?.code===code
 const recordColumns=['assessment_version_id','interpretation_version','report_locale','definition_content_hash','provenance','source_commit','rules_engine_version','payload_sha256','payload_canonical','payload']
@@ -135,13 +137,13 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
    for(const row of stored){const payload=await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:row.definition_content_hash,interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale});assert.deepEqual(payload,row.payload)}
    const row=stored[0];assert.equal(await loadInterpretationRecord(db,{definitionId:row.assessment_version_id,contentHash:'sha256:'+'0'.repeat(64),interpretationVersion:release.interpretationVersion,reportLocale:row.report_locale}),null)
   },'hh_app_backend'))
-  await check('Historical v1 receipts render explicitly; current v2 rejects stale prose and uses verified code for all 230 synthetic results',()=>transaction(async()=>{
+  await check('Historical v1 receipts render explicitly; current v3 rejects stale prose and uses verified code for all 230 synthetic results',()=>transaction(async()=>{
    assert.notEqual(STORED_INTERPRETATION_VERSION,release.interpretationVersion,'This seed proves historical v1 integrity, not native v2 parity')
    for(const definition of ASSESSMENT_DEFINITIONS){
     const answers=Object.fromEntries(definition.questions.map(question=>[question.id,question.min??definition.answerScale.min]))
     const result=scoreAssessment(definition,answers,syntheticTraumaContext(definition))
     const [enriched]=await withResultInterpretations(db,[result])
-    assert.deepEqual(enriched.interpretationRecords,{},definition.key+' has no approved v2 records')
+    assert.deepEqual(enriched.interpretationRecords,{},definition.key+' has no approved v3 records')
     for(const locale of ['en','ru']){
      const row=stored.find(item=>item.assessment_version_id===definition.id&&item.report_locale===locale)
      assert.ok(row)
@@ -205,9 +207,10 @@ test('C2 approved registry: native PostgreSQL schema, seed, readback, RLS and se
   // success just because individual t.test promises completed.
   assert.equal(proof.checks.length,12,'Every historical v1 stage must complete before v2 SQL')
   proof.v2 = await verifyNativeV2({ t, db, root, transaction, v2Release, sourceSnapshot, sourceBefore, recordColumns })
-  proof.runtimeRegistryMode = 'approved-v2-database'
-  proof.databaseParityForRuntimeVersion = proof.v2.status === 'passed'
-  proof.status=proof.checks.length===12 && proof.v2.status==='passed'?'passed':'failed'
+  proof.v3 = await verifyNativeV3({ t, db, root, transaction, v3Release, sourceSnapshot, sourceBefore, recordColumns })
+  proof.runtimeRegistryMode = 'approved-v3-database'
+  proof.databaseParityForRuntimeVersion = proof.v3.status === 'passed'
+  proof.status=proof.checks.length===12 && proof.v2.status==='passed' && proof.v3.status==='passed'?'passed':'failed'
   assert.equal(proof.status,'passed','Every native verification stage must complete')
  }catch(error){proof.status='failed';proof.error=error.message;throw error}
  finally{

@@ -46,3 +46,16 @@ test('v1 and v2 gates validate exact independent 460-entry subsets without accep
  assert.throws(()=>validateInterpretationRelease({...v2,seedPath:INTERPRETATION_SEED_PATH},combined,{seedExists:true}))
  assert.throws(()=>validateInterpretationRelease({...v2,interpretationVersion:'future.v3'},combined,{seedExists:true}))
 })
+
+
+test('v3 release isolates its 460 exact identities while preserving both historical maps', () => {
+ const {release, digests}=approved();const versions=['2026-10-17.v1','2026-10-17.v2','2026-10-17.v3'];
+ const maps=versions.map(version=>Object.fromEntries(Object.entries(digests).map(([key,value])=>{const id=JSON.parse(key);id[2]=version;return[JSON.stringify(id),value]})))
+ const combined=Object.assign({},...maps);assert.equal(Object.keys(combined).length,1380)
+ for(let index=0;index<3;index++){
+  const version=versions[index];const descriptor={...release,interpretationVersion:version,seedPath:'supabase/seeds/assessment-interpretations-'+version+'.sql'}
+  assert.deepEqual(validateInterpretationRelease(descriptor,combined,{seedExists:true}).approvedDigests,maps[index]);
+  const missing={...combined};delete missing[Object.keys(maps[index])[0]];assert.throws(()=>validateInterpretationRelease(descriptor,missing,{seedExists:true}));
+ }
+ assert.throws(()=>validateInterpretationRelease({...release,interpretationVersion:versions[2]},combined,{seedExists:true}),'v3 must not reuse v1 seed path')
+})

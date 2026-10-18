@@ -36,7 +36,7 @@ function mount(mode, locale) {
   const element = (type, props, key) => ({ type, props, key })
   const modules = {
     react, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
-    'next/link': { default: 'a' }, 'lucide-react': new Proxy({}, { get: () => 'svg' }),
+    'next/link': { default: 'a' }, 'next/dynamic': { default: () => 'development-program-boundary' }, 'lucide-react': new Proxy({}, { get: () => 'svg' }),
     '@/lib/whatsapp-enquiry': whatsappEnquiry,
     '@/lib/documents/recommendation': { recommendationItemType: item => item.type },
     '@/lib/profile/profile-service-offers': {

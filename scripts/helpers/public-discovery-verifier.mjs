@@ -173,79 +173,58 @@ export async function exercisePublicCollections(page, expect, locale) {
 // Exercise the current measured-axis and four-sector contract through real controls.
 // Restore the original fine selection and all sectors before the report journey resumes.
 export async function exercisePortraitRays(portrait, expect, locale) {
-  const copy = COPY[locale]
   const options = portrait.locator('[data-portrait-ray-options]')
   const inputs = options.locator('input[type="checkbox"]')
-  const axes = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality')
   const rays = portrait.locator('svg[role="img"] > g:has(> line[x1="180"][y1="182"])')
   const sectors = portrait.locator('[data-portrait-sectors]')
   const allSectors = sectors.locator('[data-portrait-sector-all]')
-  assert.equal(axes.length, 17)
-  await expect(sectors).toHaveCount(1)
+  const originals = new Map()
   await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(4)
-  await expect(allSectors).toBeChecked()
-  for (const sector of PORTRAIT_SECTORS) await expect(sectors.locator(`[data-portrait-sector="${sector.key}"] input`)).toBeChecked()
-  await expect(options).toHaveCount(1)
-  await expect(inputs).toHaveCount(10)
-  const id = await options.getAttribute('id')
-  assert.ok(id)
-  const more = portrait.getByRole('button', { name: copy.raysMore, exact: true })
-  await expect(more).toHaveAttribute('aria-controls', id)
-  await expect(more).toHaveAttribute('aria-expanded', 'false')
-  await more.click()
-  const less = portrait.getByRole('button', { name: copy.raysLess, exact: true })
-  await expect(less).toHaveAttribute('aria-expanded', 'true')
-  await expect(inputs).toHaveCount(17)
-  const initial = await inputs.evaluateAll(nodes => nodes.map(node => ({
-    checked: node.checked, score: node.parentElement.querySelector('strong')?.textContent.trim(),
-  })))
-  // Empty, partially measured and fully measured portraits are all legitimate.
-  // The actual displayed score, not a made-up fixed count, defines initial rays.
-  for (const item of initial) assert.ok(item.score === '—' || /^\d+(?:\.\d+)?%$/.test(item.score))
-  const original = initial.map(item => item.checked)
-  assert.deepEqual(original, initial.map(item => item.score !== '—'), 'Default selection contains every measured axis and no unmeasured axis')
-  await expect(rays).toHaveCount(original.filter(Boolean).length)
-  await expect(options.locator('input:disabled')).toHaveCount(0)
-  // All 17 individual rays can be selected; the old arbitrary ten-ray cap is retired.
-  for (let index = 0; index < axes.length; index++) await inputs.nth(index).check()
-  await expect(options.locator('input:checked')).toHaveCount(17)
-  await expect(rays).toHaveCount(17)
-  await expect(options.locator('input:disabled')).toHaveCount(0)
-  await less.click()
-  await expect(inputs).toHaveCount(10)
-  await expect(rays).toHaveCount(17)
-  await portrait.getByRole('button', { name: copy.raysMore, exact: true }).click()
-  await expect(options.locator('input:checked')).toHaveCount(17)
-  // Preserve an intentionally deselected hidden option across collapse/expand.
-  await inputs.nth(16).uncheck()
-  await less.click()
-  await expect(rays).toHaveCount(16)
-  await portrait.getByRole('button', { name: copy.raysMore, exact: true }).click()
-  assert.equal((await inputs.evaluateAll(nodes => nodes.map(node => node.checked)))[16], false)
-  await inputs.nth(16).check()
-  // Sector filtering hides fine choices but must never erase them.
-  await allSectors.uncheck()
-  await expect(inputs).toHaveCount(0)
-  await expect(rays).toHaveCount(0)
-  let visible = 0
-  for (const sector of PORTRAIT_SECTORS.slice(0, 2)) {
-    await sectors.locator(`[data-portrait-sector="${sector.key}"] input`).check()
-    visible += sector.axes.length
-    await expect(inputs).toHaveCount(visible)
-    await expect(options.locator('input:checked')).toHaveCount(visible)
-    await expect(rays).toHaveCount(visible)
+  await expect(allSectors).toHaveAttribute('aria-pressed', 'true')
+  await expect(portrait.locator('[data-sector-point]')).toHaveCount(4)
+  await expect(options).toHaveCount(0)
+  let total = 0
+  for (const sector of PORTRAIT_SECTORS) {
+    const button = sectors.locator(`[data-portrait-sector="${sector.key}"]`)
+    await button.click()
+    await expect(button).toHaveAttribute('aria-pressed', 'true')
+    await expect(allSectors).toHaveAttribute('aria-pressed', 'false')
+    for (const other of PORTRAIT_SECTORS.filter(item => item.key !== sector.key)) await expect(sectors.locator(`[data-portrait-sector="${other.key}"]`)).toHaveAttribute('aria-pressed', 'false')
+    await expect(portrait.locator('[data-sector-point]')).toHaveCount(0)
+    await expect(inputs).toHaveCount(sector.axes.length)
+    const initial = await inputs.evaluateAll(nodes => nodes.map(node => ({checked: node.checked, score: node.parentElement.querySelector('strong')?.textContent.trim()})))
+    for (const item of initial) assert.ok(item.score === '—' || /^\d+(?:\.\d+)?%$/.test(item.score))
+    const original = initial.map(item => item.checked)
+    assert.deepEqual(original, initial.map(item => item.score !== '—'), 'Only measured axes selected by default')
+    originals.set(sector.key, original)
+    await expect(rays).toHaveCount(original.filter(Boolean).length)
+    for (let index = 0; index < sector.axes.length; index++) await inputs.nth(index).check()
+    await expect(inputs).toHaveCount(sector.axes.length)
+    await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
+    await expect(options.locator('input:disabled')).toHaveCount(0)
+    await expect(rays).toHaveCount(sector.axes.length)
+    total += sector.axes.length
   }
-  await allSectors.check()
-  await expect(inputs).toHaveCount(17)
-  await expect(options.locator('input:checked')).toHaveCount(17)
-  await expect(rays).toHaveCount(17)
-  for (let index = 0; index < original.length; index++) {
-    if (original[index]) await inputs.nth(index).check()
-    else await inputs.nth(index).uncheck()
+  assert.equal(total, 17, 'All 17 fine choices remain selectable across four sectors')
+  for (const sector of PORTRAIT_SECTORS) {
+    const button = sectors.locator(`[data-portrait-sector="${sector.key}"]`)
+    await button.click()
+    await expect(options.locator('input:checked')).toHaveCount(sector.axes.length)
+    await inputs.nth(sector.axes.length - 1).uncheck()
+    await allSectors.click()
+    await expect(portrait.locator('[data-sector-point]')).toHaveCount(4)
+    await expect(options).toHaveCount(0)
+    await button.click()
+    assert.equal((await inputs.evaluateAll(nodes => nodes.map(node => node.checked)))[sector.axes.length - 1], false, 'Sector switches preserve fine choices')
+    const original = originals.get(sector.key)
+    for (let index = 0; index < original.length; index++) {
+      if (original[index]) await inputs.nth(index).check(); else await inputs.nth(index).uncheck()
+    }
+    assert.deepEqual(await inputs.evaluateAll(nodes => nodes.map(node => node.checked)), original)
+    await expect(rays).toHaveCount(original.filter(Boolean).length)
   }
-  assert.deepEqual(await inputs.evaluateAll(nodes => nodes.map(node => node.checked)), original)
-  await expect(rays).toHaveCount(original.filter(Boolean).length)
-  await expect(options.locator('input:disabled')).toHaveCount(0)
-  await less.click()
-  await expect(inputs).toHaveCount(10)
+  await allSectors.click()
+  await expect(allSectors).toHaveAttribute('aria-pressed', 'true')
+  await expect(portrait.locator('[data-sector-point]')).toHaveCount(4)
+  await expect(options).toHaveCount(0)
 }

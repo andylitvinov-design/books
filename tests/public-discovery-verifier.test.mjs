@@ -218,13 +218,14 @@ function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
         if (selector === '[data-portrait-sectors]') return all.filter(node => node.props['data-portrait-sectors'])
         if (selector === '[data-portrait-sector]') return all.filter(node => node.props['data-portrait-sector'])
         if (selector === '[data-portrait-sector-all]') return all.filter(node => node.props['data-portrait-sector-all'])
-        const sector = selector.match(/^\[data-portrait-sector="([^" ]+)"\] input$/)
-        if (sector) return all.filter(node => node.props['data-portrait-sector'] === sector[1]).flatMap(node => nodes(node).filter(child => child.type === 'input'))
+        if (selector === '[data-sector-point]') return all.filter(node => node.props['data-sector-point'])
+        const sector = selector.match(/^\[data-portrait-sector="([^" ]+)"\]$/)
+        if (sector) return all.filter(node => node.props['data-portrait-sector'] === sector[1])
         if (selector === '[data-portrait-ray-options]') return all.filter(node => node.props['data-portrait-ray-options'])
         if (selector === 'input[type="checkbox"]') return all.filter(node => node.type === 'input')
         if (selector === 'input:checked') return all.filter(node => node.type === 'input' && node.props.checked)
         if (selector === 'input:disabled') return all.filter(node => node.type === 'input' && node.props.disabled)
-        if (selector === 'svg[role="img"] > g:has(> line[x1="180"][y1="182"])') return all.filter(node => node.type === 'svg' && node.props.role === 'img').flatMap(node => [].concat(node.props.children).flat().filter(child => child?.type === 'g' && [].concat(child.props.children).flat().some(line => line?.type === 'line' && String(line.props.x1) === '180' && String(line.props.y1) === '182')))
+        if (selector === 'svg[role="img"] > g:has(> line[x1="180"][y1="182"])') return all.filter(node => node.type === 'svg' && node.props.role === 'img').flatMap(node => nodes(node).filter(child => child?.type === 'g' && [].concat(child.props.children).flat().some(line => line?.type === 'line' && String(line.props.x1) === '180' && String(line.props.y1) === '182')))
         throw new Error('Unexpected selector: ' + selector)
       }))
     },
@@ -262,12 +263,11 @@ test('browser ray verifier exercises measured defaults, all 17 rays, sector filt
 })
 test('browser ray verifier rejects no-op expansion, obsolete caps, fabricated defaults and lost fine selections', async () => {
   const mutations = [
-    ['setShowAllPortraitRays(current => !current)', 'setShowAllPortraitRays(current => current)'],
+    ["setSelectedSector(sector.key)", "setSelectedSector('all')"],
     ['[...selected, axis]', '(selected.length >= 10 ? selected : [...selected, axis])'],
     ['const suggestedRays = measuredAxes', 'const suggestedRays = PORTRAIT_AXES.slice(0, 8)'],
-    ['setShowAllPortraitRays(current => !current)', '(setChosenRays(null), setShowAllPortraitRays(current => !current))'],
-    ['onChange={toggleAllSectors}', 'onChange={() => { setChosenRays(null); toggleAllSectors() }}'],
-    ["current.includes(key) ? current.filter((item) => item !== key) : [...current, key]", 'current'],
+    ['setSelectedSector(sector.key)', '(setChosenRays(null), setSelectedSector(sector.key))'],
+    ['summarySectors.map(sector => {', 'summarySectors.slice(0, 3).map(sector => {'],
   ]
   for (const [before, after] of mutations) {
     assert.ok(read('components/app/test-explorer-visual.jsx').includes(before), 'Mutation must alter the actual current source')

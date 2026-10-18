@@ -124,7 +124,12 @@ test('parser-time history guard pins the destination before hydration and can ha
   assert.equal(window.__cspPreHydration.destination, 'https://example.test/en/about');
   assert.deepEqual(replacements, ['https://example.test/en/about']);
   window.__cspPreHydration.dispose();
-  assert.equal(listeners.size, 0);
+  assert.equal(listeners.has('popstate'), false);
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  listeners.get('pageshow').handler();
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+  listeners.get('pagehide').handler();
+  assert.equal(window.__hhOptionalReadsDeparting, true);
   const { readFileSync } = await import('node:fs');
   const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /nonce=\{nonce\}[^>]*dangerouslySetInnerHTML=\{\{ __html: CSP_PREHYDRATION_SCRIPT \}\}/);
