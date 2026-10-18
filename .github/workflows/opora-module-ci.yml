@@ -34,3 +34,5 @@ jobs:
         run: node --test tests/opora-seven-skills-v5.test.mjs tests/opora-course-blueprint-methods.test.mjs tests/opora-antistress-course-landing.test.mjs tests/opora-antistress-complete-course.test.mjs tests/opora-15-stage1.test.mjs
       - name: Verify online learning methodology and no-Skip answers
         run: node --test tests/opora-as5-2-methodology-contract.test.mjs tests/opora-as53-210-guided-feedback-contract.test.mjs tests/opora-as54-online-learning-no-skip-contract.test.mjs
+      - name: Verify versioned V6 fifteen-screen lessons, safe mobile player, strict evidence and V3/V5 compatibility
+        run: node --test tests/opora-as54-live-v6.test.mjs tests/opora-as54-live-player-journey.test.mjs

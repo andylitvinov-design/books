@@ -6,6 +6,7 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '../lib/assessments/test-explorer.js'
 import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.js'
+import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
   portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors,
@@ -62,9 +63,10 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
     },
   })
   const portrait = {axes:Object.fromEntries(measured.map((axis,index)=>[axis,{
-    percent:40+index,source:'Synthetic only',change:null,
+    mode:'directional',percent:40+index,rawValue:4+index/10,min:0,max:10,
+    source:'Synthetic only',sourceTitle:'Synthetic only',change:null,
     resultId:'saved-result-'+index, dimensionKey:'fixture.'+axis+'.total',
-  }]))}
+  }])),staleAxes:{},axisCandidates:portraitAxisChoices()}
   const coverage = {axes:Object.fromEntries(TEST_EXPLORER_AXES.map(axis=>[axis,{coverage:0}])),coveredCount:0}
   return {
     render(){hook=0;return compiled.exports.TestExplorerVisual({locale,coverage,portrait})},
@@ -78,7 +80,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
   }
 }
 
-test('All is the first of five views and shows four measured-only category points',()=>{
+test('All is the first of five views and shows only measurement coverage, not averaged health percentages',()=>{
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     const tree=app.render()
@@ -90,6 +92,9 @@ test('All is the first of five views and shows four measured-only category point
     assert.equal(nodes(tree,'div',p=>p.role==='status' && String(p.className).includes('visualState')).length,0)
     assert.equal(nodes(tree,'svg',p=>p['data-radar-mode']==='summary').length,1)
     assert.equal(nodes(tree,'g',p=>p['data-summary-sector']!==undefined).length,4)
+    assert.equal(nodes(tree,'polygon',p=>p.className==='radarArea').length,0)
+    const summaryValues=nodes(tree,'text',p=>String(p.className).includes('radarSummaryValue'))
+    assert.equal(summaryValues.length,4)
     assert.equal(anchors(tree).length,0)
     assert.equal(labels(tree).length,4)
     assert.equal(rayOptions(tree).length,0)
@@ -169,9 +174,9 @@ test('missing scales keep actual test links and source data stays private',()=>{
     const missing=sector.axes.filter(axis=>!app.measured.includes(axis))
     assert.equal(testItLinks(tree).length,missing.length)
     for(const link of testItLinks(tree)){
-      const axis=link.props.href.split('axis=')[1]
+      const axis=new URL('https://holistichouse.vercel.app'+link.props.href).searchParams.get('axis')
       assert.ok(missing.includes(axis))
-      assert.equal(link.props.href,`/en/app/tests?explore=1&axis=${axis}`)
+      assert.equal(link.props.href,`/en/app/tests?explore=1&axis=${axis}&suggest=${encodeURIComponent(app.portrait.axisCandidates[axis].testKey)}`)
       assert.equal(link.props.prefetch,false)
     }
   }
@@ -195,6 +200,19 @@ test('measured rays show localized Details links to their exact result and score
       }
     }
   }
+})
+
+test('Test it opens the reviewed source with the correct scored axis, without automatic start',()=>{
+  const explorer=read('components/app/test-explorer.jsx')
+  const visual=read('components/app/test-explorer-visual.jsx')
+  assert.match(visual,/suggest=\$\{encodeURIComponent\(candidate\.testKey\)\}/)
+  assert.match(explorer,/params\.get\('suggest'\)/)
+  assert.match(explorer,/params\.get\('axis'\)/)
+  assert.match(explorer,/item\.selectable === true/)
+  assert.match(explorer,/item\.measurementAxes\?\.includes\(requestedAxis\)/)
+  assert.match(explorer,/setSelectedKeys\(\[entry\.key\]\)/)
+  assert.match(explorer,/setAxes\(\[requestedAxis\]\)/)
+  assert.ok(!explorer.slice(explorer.indexOf('// Reports → Test it:'), explorer.indexOf('  const facets =')).includes('onStart('))
 })
 
 test('the saved report honors the exact scale selected by the portrait Details link',()=>{

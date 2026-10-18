@@ -53,7 +53,7 @@ test('New V5 enrolments have seven compact slides; older V3 lessons preserve 15 
  }
 })
 
-test('Public passport and private skill IDs agree in English, Russian and Spanish',()=>{
+test('Public V6 fifteen-screen preview preserves seven skill IDs and supports all three public languages',()=>{
  for(const locale of ['ru','en','es']){
    const blueprint=antiStressBlueprint(locale)
    assert.equal(blueprint.skills.length,7)
@@ -66,7 +66,7 @@ test('Public passport and private skill IDs agree in English, Russian and Spanis
      assert.equal(d.skillId,ref.skillId)
      assert.equal(d.week,ref.week)
      assert.equal(d.checkDay,day>7)
-     assert.equal(d.screens.length,7)
+     assert.equal(d.screens.length,15)
      assert.ok(d.screens.every(s=>s.expected.length>=10))
      assert.equal(d.methodStatus,'implemented')
      assert.equal(d.methodNames.length,3)
@@ -74,11 +74,11 @@ test('Public passport and private skill IDs agree in English, Russian and Spanis
  }
 })
 
-test('V5 server/client route only applies to new AS2 cycles, not already running modules',()=>{
+test('V5 remains version-pinned while new AS2 cycles select V6 and keep old module routes',()=>{
  const server=read('lib/app/growth-daily.js')
  const player=read('components/app/course-slide-player.jsx')
  const passport=read('docs/myspace/HOLISTIC_HOUSE_OPORA_ANTISTRESS_7_SKILLS_COURSE_PASSPORT_AS5_2026-10-17.md')
- assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V5 : COURSE_CONTENT_V4/)
+ assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V6 : COURSE_CONTENT_V4/)
  assert.match(server,/const firstStressDay=Boolean\(version===COURSE_ANTISTRESS_OUTCOME_V3/)
  assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input.visitedSlideKeys\)/)
  assert.match(player,/const isSkillV5=Boolean\(lesson\.antiStress\?\.slideModel===OPORA_SKILL_SLIDE_MODEL/)

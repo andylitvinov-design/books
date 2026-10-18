@@ -38,3 +38,10 @@ CFPB: all 84 cells of the abbreviated age/administration-mode lookup match the o
 
 ## Separate portrait mapping audit — read-only reproduction
 Current source inspection confirms the findings already tracked in [issue #900](https://github.com/andylitvinov-design/books/issues/900): 32 explicit dimension mappings cover 11 of 17 displayed axes. Embodiment, focus, intimacy, boundaries, sexual wellbeing and emotional regulation cannot currently be filled by this builder. Three mappings also differ from the scale guide: state.tension, resource.support and resources.monthly.support. These are product interpretation gaps, not missing questionnaire answers. Do not invent values or convert unrelated screening counts/non-normative traits into ability scores. The existing issue scopes larger mapping/display/growth changes to audit/design pending owner approval; this PR does not implement that separate redesign. No saved client result was read or changed.
+
+
+## Additional source verification, 18 October 2026 02:33 UTC
+
+RSES: the exact ten-item order and five negative items in this implementation match the [PhenX 180901 protocol](https://www.phenxtoolkit.org/protocols/view/180901?origin=browse). All 40 item-response scoring cells agree with its 0–30 convention. The protocol explicitly allows use without permission. This resolves the key-order question; it does not certify local population norms, a translated version, or clinical cutoffs. The [NLSY79 scoring documentation](https://www.nlsinfo.org/content/cohorts/nlsy79/other-documentation/codebook-supplement/nlsy79-appendix-25-center) independently corroborates that ordering and polarity. UMD direct retrieval remained unavailable.
+
+Portrait audit #900: the owner approved mapping/label corrections and raw-score display in the conversation on 18 October at 02:39 UTC. PR902 was independently confirmed merged and deployed at commit a7984236390c0d91bf8cd19d3a1cbd203745a935. Its implementation is retained rather than replaced by a duplicate. Technical integration verification continues; this is not psychometric certification.

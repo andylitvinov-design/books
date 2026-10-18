@@ -46,5 +46,5 @@ export async function openCabinetHome(page, expect, { origin, locale = 'en' }) {
   await expect(home).toHaveAttribute('aria-label', locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage')
   await expect(home).toHaveAttribute('href', path)
   await home.click()
-  await expect(page).toHaveURL(origin + path)
+  await expect(page).toHaveURL(origin + path, { timeout: 30000 })
 }

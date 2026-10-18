@@ -76,15 +76,15 @@ for(const c of cases) for(const locale of ['en','ru']) {
  })
  test(`${c.key}/${locale}: resource/context changes never alter difficulty priority; saved old choices survive`,()=>{
   const profiles=[0,4].map(b=>courseMeasuredProfile({results:[record(score(d,Array.from({length:6},(_,i)=>c.first.includes(i)?2:b)))],testKeys:[c.key],locale,now}))
-  assert.deepEqual(profiles.map(p=>p.scales[0].priorityPercent),[50,50])
+  assert.deepEqual(profiles.map(p=>p.scales[0].priorityPercent),[null,null])
   if(c.dir==='non-normative')for(const p of profiles){assert.equal(p.scales[1].eligible,false);assert.equal(p.scales[1].priorityPercent,null)}
-  else assert.deepEqual(profiles.map(p=>p.scales[1].priorityPercent),[100,0])
+  else assert.deepEqual(profiles.map(p=>p.scales[1].priorityPercent),[null,null])
   const legacy=record(score(old,[2,2,2,2,2,2])),id=`${c.key}::${legacy.dimensions[0].key}`
   const legacyProfile=courseMeasuredProfile({results:[legacy],testKeys:[c.key],locale,now})
   assert.equal(legacyProfile.scales.length,1);assert.equal(legacyProfile.scales[0].priorityPercent,null)
-  assert.equal(goalForChosenScale(id,locale),c.goal)
+  assert.equal(goalForChosenScale(id,locale),null)
   assert.equal(coursePracticeFocus([id],'inner_support',1,locale).scaleId,id)
-  assert.equal(goalForChosenScale(`${c.key}::${c.ids[0]}`,locale),c.goal)
+  assert.equal(goalForChosenScale(`${c.key}::${c.ids[0]}`,locale),null)
   if(c.dir==='non-normative')assert.equal(goalForChosenScale(`${c.key}::${c.ids[1]}`,locale),null)
  })
  test(`${c.key}/${locale}: no old-to-new score history comparison or identity forgery`,()=>{

@@ -11,7 +11,7 @@ function phq4ShortName(key, locale) {
   const ru = locale === 'ru'
   return {
     'symptoms.phq4.total': ru ? 'Общий результат' : 'Overall',
-    'symptoms.phq4.depression': ru ? 'Настроение' : 'Mood',
+    'symptoms.phq4.depression': ru ? 'Симптомы сниженного настроения' : 'Low-mood symptoms',
     'symptoms.phq4.anxiety': ru ? 'Тревога' : 'Anxiety',
   }[key] || null
 }

@@ -6,9 +6,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Browse collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Открыть подборку', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Explorar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -84,13 +84,16 @@ export async function assertPublicCollectionChips(root, expect, locale, collecti
 
 // These controls only filter real, cleared catalog entries. The synthetic page
 // never starts a questionnaire, authenticates, or writes an account while browsing.
-export function assertPublicCollectionMatches(shown, entries, collection, selectedKeys) {
-  const allowed = new Set(filterExplorerEntries(entries, {
-    availability: 'available', focus: collection.focus, selectedKeys,
-  }).filter(entry => entry.selectable).map(entry => entry.key))
-  assert.ok(shown.length > 0 && shown.length <= 5)
-  assert.equal(new Set(shown).size, shown.length, 'Collection cards remain unique')
-  assert.ok(shown.every(key => allowed.has(key)), 'Collection matches retain source eligibility and only explicit cross-topic selections: ' + collection.id)
+export function assertPublicCollectionMatches(shown, entries, collection, selectedKeys, preferences = {}) {
+  const ranked = rankPublicTestMatches(filterExplorerEntries(entries, {
+    availability:'available', selectedKeys, kinds:preferences.kinds || [], maxMinutes:preferences.maxMinutes || 0,
+  }), { ...preferences, depth:preferences.depth || 'balanced',
+    focus:[...new Set([...(preferences.focus || []), ...collection.focus])],
+    collectionId:collection.id, collectionFocus:collection.focus })
+  const expected = groupViaRecommendations(ranked,new Set(selectedKeys),false).visible.slice(0,5).map(entry=>entry.key)
+  assert.ok(expected.length > 0)
+  assert.equal(new Set(shown).size,shown.length,'Collection cards remain unique')
+  assert.deepEqual(shown,expected,'The standard list uses the exact collection ranking, not a separate card layout or hard topic subset')
 }
 
 export async function exercisePublicCollections(page, expect, locale, initialPreferences = {}) {
@@ -132,7 +135,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
       const matches = picker.locator('[data-test-match]')
       await expect(matches.first()).toBeVisible()
       const shown = await matches.evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))
-      assertPublicCollectionMatches(shown, entries, collection, preserved)
+      assertPublicCollectionMatches(shown, entries, collection, preserved, initialPreferences)
       assert.deepEqual(await readSelection(picker), preserved, 'Changing collections preserves only the manually selected battery')
       await expect(page).toHaveURL(currentUrl)
     }
@@ -150,7 +153,8 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
     await search.fill(query)
     await search.press('Enter')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced' })
+    const sleepCollection = collections.find(item=>item.id==='sleep')
+    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: sleepCollection.focus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
     const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)
@@ -194,7 +198,7 @@ export async function exercisePortraitRays(portrait, expect, locale) {
     await expect(portrait.locator('[data-sector-point]')).toHaveCount(0)
     await expect(inputs).toHaveCount(sector.axes.length)
     const initial = await inputs.evaluateAll(nodes => nodes.map(node => ({checked: node.checked, score: node.parentElement.querySelector('strong')?.textContent.trim()})))
-    for (const item of initial) assert.ok(item.score === '—' || /^\d+(?:\.\d+)?%$/.test(item.score))
+    for (const item of initial) assert.ok(item.score === '—' || /^\d+(?:\.\d+)? \/ \d+(?:\.\d+)?$/.test(item.score))
     const original = initial.map(item => item.checked)
     assert.deepEqual(original, initial.map(() => true), 'All sector axes are selectable by default; unmeasured scores remain explicit dashes')
     originals.set(sector.key, original)

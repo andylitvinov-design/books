@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { availableTestCollections, TEST_TOPIC_COLLECTIONS } from '../lib/assessments/test-collections.js'
+import { testCollectionAffinity, testCollectionIds } from '../lib/assessments/test-collection-membership.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, buildPublicStarterBattery } from '../lib/assessments/test-explorer.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -21,10 +22,11 @@ test('topic collections are localized editorial filters with real, eligible ques
     assert.deepEqual(collections.slice(0, 4).map((item) => item.id),
       ['stress', 'relationships', 'tantra', 'sexuality'])
     for (const item of collections) {
-      const matching = filterExplorerEntries(entries, { availability: 'available', focus: item.focus })
-      assert.equal(item.count, matching.filter((entry) => entry.selectable).length, item.id)
+      const matching = filterExplorerEntries(entries, { availability: 'available' })
+        .filter((entry) => testCollectionAffinity(entry, item.id) > 0)
+      assert.equal(item.count, matching.length, item.id)
       assert.ok(item.count > 0, item.id)
-      assert.ok(matching.filter((entry) => entry.selectable).every((entry) =>
+      assert.ok(matching.every((entry) =>
         entry.rightsStatus === 'cleared' && entry.definition && entry.startable && entry.guestEligible), item.id)
     }
   }
@@ -60,21 +62,23 @@ test('collection suggestions appear after detailed filters and before test recom
   const recommendations = picker.indexOf('id="hh-simple-recommendations-title"')
   assert.ok(afterTopics < afterConcerns && afterConcerns < afterDetails)
   assert.ok(afterHero > afterDetails && afterHero < recommendations)
-  assert.ok(picker.indexOf('data-tantra-test-paths') > afterHero)
-  assert.ok(picker.indexOf('data-tantra-test-paths') < recommendations)
+  assert.doesNotMatch(picker, /data-tantra-test-paths/, 'legacy Tantra panel must not intercept the standard list')
   assert.match(picker, /availableTestCollections\(catalogEntries, \{ focus, problems, kinds: testKinds, maxMinutes, depth \}\)/)
   assert.match(picker, /data-test-collection=\{collection\.id\}/)
-  assert.match(picker, /onChooseCollection\?\.\(active \? \[\] : collection\.focus\)/)
+  assert.match(picker, /onChooseCollection\?\.\(active \? null : collection\.id\)/)
   assert.match(picker, /aria-expanded=\{collectionsOpen\}/)
   assert.match(picker, /setCollectionsOpen\(\(value\) => !value\)/)
   assert.match(picker, /hh-simple-recommendations/)
   assert.match(parent, /catalogEntries=\{entries\}/)
-  assert.match(parent, /onChooseCollection=\{\(keys\) => \{/)
-  assert.match(parent, /setFocus\(keys\)/)
-  const collectionHandler = parent.split('onChooseCollection={(keys) => {')[1]?.split('viaProfileEntry=')[0]
+  assert.match(parent, /onChooseCollection=\{\(id\) => \{/)
+  assert.match(parent, /setActiveCollectionId\(id\)/)
+  const collectionHandler = parent.split('onChooseCollection={(id) => {')[1]?.split('viaProfileEntry=')[0]
   assert.ok(collectionHandler)
-  assert.match(collectionHandler, /normalizeProblemsForTopics\(current, keys\)/)
-  assert.doesNotMatch(collectionHandler, /setKinds\(\[\]\)|setMaxMinutes\(0\)|setDepth\('balanced'\)/)
+  assert.doesNotMatch(collectionHandler, /setKinds\(\[\]\)|setMaxMinutes\(0\)|setDepth\('balanced'\)|setFocus\(/)
+  assert.match(parent, /activeCollection \? filterExplorerEntries\(entries, \{/)
+  assert.match(parent, /maxMinutes, language, tracking, freeOnly, search: query, selectedKeys/)
+  assert.match(picker, /data-test-collection-marker/)
+  assert.match(css, /\.collectionMarker/)
   assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none;/)
   assert.match(css, /@media\s*\(max-width:\s*760px\)/)
   assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none;/)
@@ -92,11 +96,45 @@ test('collection counts and ordering reflect prior topic, concern, time and type
   assert.ok(refined.length > 0 && refined.every((item) => item.count > 0))
   for (const collection of refined) {
     const expected = filterExplorerEntries(entries, { availability: 'available',
-      focus: collection.focus, kinds: selections.kinds, maxMinutes: selections.maxMinutes })
-      .filter((entry) => entry.selectable)
+      kinds: selections.kinds, maxMinutes: selections.maxMinutes })
+      .filter((entry) => testCollectionAffinity(entry, collection.id) > 0)
     assert.equal(collection.count, expected.length, collection.id)
     assert.ok(expected.every((entry) => entry.durationMinutes <= 5 && entry.testKind === 'monitoring'))
   }
   const fullCounts = new Map(availableTestCollections(entries).map((item) => [item.id, item.count]))
   assert.ok(refined.some((item) => item.count < fullCounts.get(item.id)))
+})
+
+
+test('collection membership and boosted ranking use real test topics, without excluding other tests', () => {
+  const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const eligible = filterExplorerEntries(entries, { availability: 'available' })
+  const love = eligible.find((entry) => entry.key === 'hh-love-affection')
+  assert.ok(love?.selectable)
+  assert.ok(testCollectionIds(love).includes('relationships'))
+  assert.ok(testCollectionAffinity(love, 'relationships') > 0)
+  const baseline = rankPublicTestMatches(eligible, { focus: ['relationships'] })
+  const boosted = rankPublicTestMatches(eligible, {
+    focus: ['relationships'], collectionId: 'relationships',
+    collectionFocus: ['relationships', 'intimacy'],
+  })
+  const inBaseline = baseline.find((entry) => entry.key === love.key)
+  const inBoosted = boosted.find((entry) => entry.key === love.key)
+  assert.ok(inBaseline && inBoosted)
+  assert.ok(inBoosted.matchPercent >= inBaseline.matchPercent,
+    'collection selection cannot reduce matching test relevance')
+  assert.ok(baseline.some((entry) => testCollectionAffinity(entry, 'relationships') > 0 &&
+    entry.matchPercent < 99 &&
+    boosted.find((candidate) => candidate.key === entry.key)?.matchPercent > entry.matchPercent),
+    'explicit collection selection increases relevant scores when they are not capped')
+  assert.ok(boosted.some((entry) => testCollectionAffinity(entry, 'relationships') === 0),
+    'unrelated tests remain in the standard list')
+  assert.ok(boosted.every((entry, i) =>
+    i === 0 || boosted[i - 1].matchPercent >= entry.matchPercent),
+    'order matches the visible percentage')
+  const nonMember = boosted.find((entry) => testCollectionAffinity(entry, 'relationships') === 0)
+  assert.ok(nonMember)
+  assert.equal(nonMember.matchPercent,
+    baseline.find((entry) => entry.key === nonMember.key)?.matchPercent,
+    'collection boosts do not alter unrelated results')
 })

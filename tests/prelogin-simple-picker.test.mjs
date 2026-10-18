@@ -59,8 +59,8 @@ test('preview and selected time are derived from live executable test definition
   // Explicit selections may span beyond the current topic. Verify the actual
   // recommendation declaration and its selected-aware candidate set.
   const recommendations = explorer.slice(explorer.indexOf('  const simpleRecommendations ='), explorer.indexOf('  // Only explicit duration/type options'))
-  assert.match(recommendations, /filtered\.filter\(\(entry\) => entry\.selectable\)/)
-  assert.match(recommendations, /\), \[filtered, focus, problems, details, axes, depth, stylesFilter, lengths\]\)/)
+  assert.match(recommendations, /\) : filtered\)\.filter\(\(entry\) => entry\.selectable\)/)
+  assert.match(recommendations, /\), \[entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems/)
   assert.match(explorer, /const filtered = useMemo\(\(\) => filterExplorerEntries\(entries, \{ \.\.\.facets, selectedKeys \}\)/)
   // Keeping an explicitly chosen card visible must not put opt-in, excluded
   // or unavailable cards into the automatic starter selection.

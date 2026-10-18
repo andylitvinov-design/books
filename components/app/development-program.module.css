@@ -129,3 +129,119 @@
   .gapValue{padding:5px;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.root *{transition:none!important}}
+
+/* Development path: unified wellness cards and mobile-first information hierarchy. */
+.root{margin:0 0 18px;color:#183e48}
+.trigger{position:relative;isolation:isolate;overflow:hidden;align-items:flex-start;gap:0;min-height:139px;padding:20px 21px 16px;border:1px solid #e6dfd3;border-bottom:0;border-radius:21px 21px 0 0;background:linear-gradient(105deg,#fffdf9 0%,#fffdf9 47%,#f0f8f3 100%);box-shadow:none}
+.trigger::before{content:"";position:absolute;z-index:-1;top:-20px;right:0;bottom:0;width:min(38%,300px);background:url('/images/holistic-house/homepage-botanical.svg') right center/contain no-repeat;opacity:.30;pointer-events:none}
+.trigger[aria-expanded="false"]{border-bottom:1px solid #e6dfd3;border-radius:21px;box-shadow:0 7px 18px rgba(24,59,69,.05)}
+.trigger:hover{border-color:#bbd6d0;background:linear-gradient(105deg,#fffdf9 0%,#fffdf9 47%,#f0f8f3 100%)}
+.iconCircle{display:none}
+.triggerCopy{position:relative;z-index:1;gap:5px;padding-right:9px;max-width:610px}
+.kicker{font-size:10px;font-weight:800;letter-spacing:.15em;color:#428b81}
+.triggerCopy strong{font:600 clamp(24px,3vw,32px)/1.15 Georgia,serif;letter-spacing:-.025em;color:#123b4d}
+.triggerCopy small{max-width:55ch;font-size:12.5px;line-height:1.44;color:#526f75}
+.triggerAction{margin-left:auto;align-self:flex-start;padding-top:25px;font-size:0;color:#246b72}
+.triggerAction svg{width:21px;height:21px}
+.body{margin:0;padding:0;border:0;border-radius:0;background:transparent}
+.sectionLinks{gap:8px;padding:0 19px 17px;border:1px solid #e6dfd3;border-top:0;border-radius:0 0 21px 21px;background:#fffdf9;box-shadow:0 8px 19px rgba(24,59,69,.05)}
+.root .sectionLink{gap:11px;min-height:64px;padding:12px 14px!important;border:1px solid #dceae5!important;border-radius:14px!important;background:#f6faf8!important;transition:transform .2s,border-color .2s}
+.root .sectionLink:hover{border-color:#80beb5!important;transform:translateY(-1px)}
+.root .sectionLink[aria-expanded="true"]{background:#eaf7f3!important;border-color:#7ebdb5!important}
+.sectionLinkIcon{flex-basis:40px;height:40px;border-radius:12px;background:#e0f0ec;color:#1d7079}
+.sectionLinkCopy strong{font-size:14px;color:#194959}
+.sectionLinkCopy small{font-size:11.5px;color:#6c8484}
+.sectionLink>svg:last-child{color:#246f77}
+.success{margin:4px 2px 0!important;color:#287661;font-size:11.5px;font-weight:600;line-height:1.38}
+.success svg{flex:0 0 auto}
+.status,.error{margin:9px 1px!important}
+.panel{margin-top:14px;padding:16px;border-radius:18px;border-color:#e5e7e0;box-shadow:0 6px 18px rgba(29,66,62,.04)}
+.panel.planPanel{margin-top:14px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.previewNote{font-size:11.5px}
+.plan,.courseSection{padding:clamp(15px,2.5vw,24px);border:1px solid #e6e3da;border-radius:20px;background:#fffefa;box-shadow:0 7px 19px rgba(29,66,62,.04)}
+.plan{margin:0}
+.planHeading{margin:0 0 13px}
+.planHeading .pill,.courseSection>.sectionHeading .pill{gap:9px;font:650 clamp(21px,2.5vw,27px)/1.18 Georgia,serif;letter-spacing:-.018em;color:#173f51}
+.planHeading .pill svg,.courseSection>.sectionHeading .pill svg{width:22px;height:22px;flex-shrink:0;color:#177280}
+.planHeading p,.courseSection>.sectionHeading p{margin:6px 0 0!important;font-size:12.5px;line-height:1.5;color:#668082}
+.priorityList{gap:9px}
+.priorityCard{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:start;padding:13px;border:1px solid #dbe8e7;border-radius:15px;background:linear-gradient(110deg,#fff,#fcfefd)}
+.priorityIndex{width:29px;height:29px;flex:0 0 auto;background:#1b6470;font-size:13px}
+.priorityMain>strong{font-size:13.5px;line-height:1.35;color:#1d4754}
+.priorityMain>strong span{color:#60787e;font-weight:480}
+.priorityMain>small{margin-top:2px;font-size:10.5px;color:#849496}
+.gapTrack{height:10px;margin:10px 0 6px;background:#e5eeec}
+.currentFill{background:linear-gradient(90deg,#73bcb1,#60ada4)}
+.goalMarker{background:#883750}
+.priorityFoot{font-size:10.5px;line-height:1.45;gap:6px 9px}
+.priorityFoot>a{color:#157180;font-weight:770;white-space:nowrap}
+.gapValue{padding:5px 8px;border-radius:10px;background:#f9edf1;color:#913d5a;font-size:12px}
+.root .textButton{padding:4px!important;margin:13px 0 0}
+.courseSection{margin-top:15px}
+.courseSection>.sectionHeading{margin:0 0 12px}
+.missing{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;margin:12px 0;padding:12px 14px;border:1px solid #e8dfd4;border-radius:14px;background:#fcfaf5}
+.missing>div,.missing p,.missing small{grid-column:1}
+.missing>div{font-size:12px;gap:8px}
+.missing p{margin:0!important;font-size:11px;line-height:1.45}
+.missing small{font-size:10.5px;line-height:1.45}
+.missing>a{grid-column:2;grid-row:1/span 3;align-self:center;justify-self:end;margin:0;padding:8px 10px;border-radius:99px;background:#e5f3ee;font-size:11px;white-space:nowrap}
+.courses{display:grid;grid-template-columns:1fr;gap:9px}
+.courseCard{display:grid;grid-template-columns:85px minmax(0,1fr);grid-template-rows:auto auto;align-items:start;min-height:105px;gap:3px 13px;padding:12px;border:1px solid #dce9e6;border-radius:15px;background:#f6faf8}
+.courseArtwork{display:block;grid-column:1;grid-row:1/span 2;align-self:stretch;width:85px;min-height:85px;border-radius:12px;background-color:#e4efeb;background-position:center;background-repeat:no-repeat;background-size:cover}
+.stressArtwork{background-image:url('/images/holistic-house/course-start-heron.webp')}
+.confidenceArtwork{background-image:url('/images/holistic-house/assessment-lotus.svg')}
+.focusArtwork{background-image:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.courseContent{grid-column:2;min-width:0;display:flex;flex-direction:column;gap:4px}
+.courseTop{gap:4px}
+.courseTop strong{font-size:15px;line-height:1.24;color:#1a4859}
+.courseTop span{font-size:9.5px;padding:3px 9px}
+.courseCard p{font-size:11.5px;line-height:1.4}
+.courseCard small{font-size:10.5px;line-height:1.4}
+.root .courseCard>a.courseAction{grid-column:2;justify-self:start;align-self:end;display:inline-flex;gap:7px;margin:5px 0 0;padding:9px 12px;border-radius:10px;background:#185d6b;color:#fff!important;font-size:11.5px}
+.root .courseCard>a.courseAction:hover{background:#0b4c5a}
+.catalogLink{margin:15px 0 2px}
+.method{margin:14px 4px 0}
+.privacy{margin:9px 4px 0!important}
+@media(min-width:850px){
+.courseCard{grid-template-columns:96px minmax(0,1fr) auto;grid-template-rows:auto;align-items:center;gap:15px}
+.courseArtwork{width:96px;min-height:96px;grid-row:1}
+.root .courseCard>a.courseAction{grid-column:3;grid-row:1;align-self:center;margin:0;white-space:nowrap}
+}
+@media(max-width:620px){
+.root{margin-bottom:14px}
+.trigger{min-height:133px;padding:17px 14px 13px;border-radius:18px 18px 0 0}
+.trigger::before{width:180px;right:-36px;opacity:.19}
+.trigger[aria-expanded="false"]{border-radius:18px}
+.triggerCopy{gap:4px;padding-right:0}
+.kicker{font-size:9.5px}
+.triggerCopy strong{font-size:clamp(23px,6vw,28px)}
+.triggerCopy small{font-size:11.5px;line-height:1.42;max-width:34ch}
+.triggerAction{padding-top:26px}
+.sectionLinks{padding:0 12px 13px;border-radius:0 0 18px 18px}
+.root .sectionLink{padding:10px!important;gap:10px;min-height:60px}
+.sectionLinkIcon{flex-basis:34px;height:34px;border-radius:10px}
+.sectionLinkCopy strong{font-size:12px}
+.sectionLinkCopy small{font-size:10px}
+.panel{padding:12px}
+.panel.planPanel{padding:0}
+.plan,.courseSection{padding:14px;border-radius:17px}
+.planHeading .pill,.courseSection>.sectionHeading .pill{font-size:21px;gap:8px}
+.planHeading .pill svg,.courseSection>.sectionHeading .pill svg{width:19px;height:19px}
+.planHeading p,.courseSection>.sectionHeading p{font-size:11.5px}
+.priorityCard{grid-template-columns:25px minmax(0,1fr) auto;gap:7px;padding:10px 9px}
+.priorityIndex{width:24px;height:24px;font-size:11px}
+.priorityMain>strong{font-size:11.5px}
+.priorityMain>small{font-size:10px}
+.priorityFoot{font-size:10px}
+.gapValue{padding:5px 6px;font-size:11px}
+.missing{grid-template-columns:minmax(0,1fr);padding:12px}
+.missing>div,.missing p,.missing small,.missing>a{grid-column:1;grid-row:auto}
+.missing>a{margin-top:4px;justify-self:start;padding:7px 9px}
+.courseCard{grid-template-columns:74px minmax(0,1fr);gap:4px 10px;padding:10px;min-height:100px}
+.courseArtwork{width:74px;min-height:84px}
+.courseTop strong{font-size:13px}
+.courseCard p{font-size:10.5px}
+.courseCard small{font-size:9.5px}
+.root .courseCard>a.courseAction{padding:8px 10px;font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){.root .sectionLink{transition:none!important}}
