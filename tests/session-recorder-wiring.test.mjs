@@ -21,6 +21,19 @@ test('client report editors select shared resources while personal uploads use t
   assert.match(recordings,/SessionAudioRecorder/)
   assert.match(recordings,/showYouTubeQuickAdd/)
 })
+test('report editor can record private client audio without using shared Materials or auto-publishing',()=>{
+  const editor=read('components/report-video-materials-editor.jsx')
+  const recorder=read('components/session-audio-recorder.jsx')
+  assert.match(editor,/SessionAudioRecorder clientId=\{clientId\} sessionId=\{sessionId\|\|null\}/)
+  assert.match(editor,/documentId=\{documentId\} locale=\{locale\} audioOnly/)
+  assert.match(editor,/onSaved=\{savedId=>/)
+  assert.match(recorder,/!audioOnly&&<button type="button" onClick=\{\(\)=>startRecording\('video'\)\}/)
+  assert.match(recorder,/!audioOnly&&<SessionPhotoUploader/)
+  assert.match(recorder,/if\(audioOnly&&!file\.type\.startsWith\('audio\/'\)\)/)
+  assert.match(recorder,/saveRecording\(job/)
+  assert.match(recorder,/Client sees it after you publish|Your client sees it after you publish/)
+})
+
 test('Storage CSP expansion stays confined to explicit session/editor routes',()=>{
  const source=read('middleware.ts');const expression=source.split('const deliveryPath =')[1].split('const deliveryOrigin')[0].trim()
  const libraryBinding=source.match(/const materialLibraryPage = [^\n]+/)[0]
