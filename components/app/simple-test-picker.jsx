@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
+import { DiscoverySectionTabs } from '../discovery-section-tabs'
 import { useEffect, useState } from 'react'
 import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, Layers, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
