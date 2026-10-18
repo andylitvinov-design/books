@@ -150,7 +150,7 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
  * Instant order directly underneath the price cards. The selected product
  * controls BOTH WhatsApp and Telegram drafts from the site's standard chooser.
  */
-export function AlchemySoulFormatSelector({ locale, wiseEnabled = false }: { locale: AlchemyLocale; wiseEnabled?: boolean }) {
+export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalPersonalEnabled = false }: { locale: AlchemyLocale; wiseEnabled?: boolean; paypalPersonalEnabled?: boolean }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<Format>("60");
   const data = locale === "ru" ? {
@@ -243,6 +243,23 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false }: { loc
             : locale === "es"
               ? `Después de acordar la hora, verifica el destinatario y ${selected === "30" ? "50 €" : "100 €"} en Wise. WiseTag requiere una cuenta Wise y debes escribir el importe. Comprobamos los pagos manualmente.`
               : `After agreeing a time, check the recipient and ${selected === "30" ? "€50" : "€100"} in Wise. WiseTag requires a Wise account and manual amount entry. We verify receipt separately; no automatic booking.`}</small>
+        </div>
+      ) : null}
+      {paypalPersonalEnabled && selected !== "month" ? (
+        <div className={styles.wisePayment} data-paypal-personal-offer>
+          <a className={styles.wisePaymentCta}
+            href={"/api/payments/paypal/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
+            target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
+          </a>
+          <small>{locale === "ru"
+            ? "После согласования сеанса. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov; поступление проверяется вручную."
+            : locale === "es"
+              ? "Tras acordar la sesión, elige Productos y servicios y comprueba Andrii Litvinov. Verificación manual."
+              : "After agreeing the session, choose Goods & Services and verify Andrii Litvinov. Manual payment verification."}</small>
+          <Link href={"/" + locale + "/payments"}>
+            {locale === "ru" ? "Условия и подтверждение оплаты" : locale === "es" ? "Instrucciones y confirmación" : "Payment details & confirmation"}
+          </Link>
         </div>
       ) : null}
       <p className={styles.freeOption}>{data.free} <Link href={"/" + locale + "/services/free-situation-review"}>{data.freeAction}</Link></p>

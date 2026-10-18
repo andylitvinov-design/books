@@ -187,6 +187,7 @@ export function ConsultationChoiceCapture({
   id,
   sitewide = false,
   wiseEnabled = false,
+  paypalPersonalEnabled = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
@@ -194,6 +195,7 @@ export function ConsultationChoiceCapture({
   id?: string;
   sitewide?: boolean;
   wiseEnabled?: boolean;
+  paypalPersonalEnabled?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -300,6 +302,19 @@ export function ConsultationChoiceCapture({
             : locale === "es"
               ? `Tras acordar la hora, comprueba el destinatario y ${serviceChoice === "session" ? "100 €" : "50 €"} en Wise. Un WiseTag requiere una cuenta Wise y el importe se introduce manualmente. La reserva se confirma aparte.`
               : `After agreeing a time, check the recipient and ${serviceChoice === "session" ? "€100" : "€50"} in Wise. A WiseTag requires a Wise account and you must enter the amount yourself. Booking is confirmed separately.`}</small>
+        </div>
+      ) : null}
+      {isPaidRequest && paypalPersonalEnabled ? (
+        <div className={styles.wisePayment} data-paypal-personal-offer>
+          <a href={"/api/payments/paypal/" + wiseProductId} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "После согласования времени. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov и сумму. Подтверждение оплаты вручную."
+            : locale === "es"
+              ? "Después de acordar la hora. Elige Productos y servicios y comprueba que pagas a Andrii Litvinov. Verificación manual."
+              : "After confirming the time. Select Goods & Services and verify recipient Andrii Litvinov. Payment is verified manually."}</small>
         </div>
       ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
