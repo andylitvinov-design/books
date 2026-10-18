@@ -183,8 +183,8 @@ test('the first comparable baseline is from the current version, never an older 
 
 test('the dynamics UI bases each repeat indicator on comparable scale history', () => {
   const component = readFileSync(new URL('../components/app/test-dynamics.jsx', import.meta.url), 'utf8')
-  assert.match(component, /hasRepeat=\\{item\\.track\\.length > 1\\}/)
-  assert.doesNotMatch(component, /hasRepeat=\\{group\\.count > 1\\}/)
+  assert.match(component, /hasRepeat=\{item\.track\.length > 1\}/)
+  assert.doesNotMatch(component, /hasRepeat=\{group\.count > 1\}/)
   assert.match(component, /Первый сопоставимый балл/)
   assert.match(component, /First comparable score/)
 })
