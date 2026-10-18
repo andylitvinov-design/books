@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
+import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, Layers, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
 import academyStyles from '../academy-discovery.module.css'
 import { problemsForTopics } from '@/lib/assessments/test-problems'
-import { availableTestCollections, availableTantraTestPaths } from '@/lib/assessments/test-collections'
+import { availableTestCollections, TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
+import { testCollectionIds } from '@/lib/assessments/test-collection-membership'
 import { TestScaleGuide } from './test-scale-guide'
 import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
@@ -34,7 +35,7 @@ const TEXT = {
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
     courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
-    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
+    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Selecting a collection raises relevance for its tagged tests without hiding the others. Without choices this reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', details:'Details', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
@@ -62,7 +63,7 @@ const TEXT = {
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
     courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
-    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
+    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Выбор подборки добавляет баллы тестам её темы, не скрывая остальные. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', details:'Подробнее', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
@@ -90,7 +91,7 @@ const TEXT = {
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
     courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
-    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
+    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Seleccionar una colección aumenta la relevancia de sus pruebas sin ocultar otras. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', details:'Detalles', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
@@ -124,54 +125,22 @@ const COLLECTION_ICONS = {
   sleep: Moon, resources: Leaf, personality: Compass, mood: Smile,
   attention: Target, body: Activity, meaning: Sun, wellbeing: CirclePlus,
 }
-const TANTRA_PATH_ICONS = {
-  'gentle-start': Sparkles, 'body-sensitivity': Activity,
-  'heart-connection': Heart, 'healthy-boundaries': ShieldCheck,
-  'freedom-kindness': Leaf, 'chakra-symbols': Sun,
-  'five-practice-themes': Compass, 'deep-portrait': BookOpen,
-}
-const TANTRA_PATH_COPY = {
-  en: {
-    eyebrow: 'THEMED TEST COLLECTIONS · TANTRA',
-    title: 'Tantra & intimacy: thematic test collections',
-    intro: 'Each card is a focused collection of real self-reflection tests. Explore what is included or begin straight away. These are not diagnoses or spiritual rankings.',
-    details: 'Details', start: 'Take test', included: 'Tests in this collection', scaleNames: 'Scales',
-    more: 'Show all collections', less: 'Show four collections',
-    test: 'test', tests: 'tests', questions: 'questions', scales: 'scales', minute: 'min',
-    note: 'For a multi-test collection, the questionnaires are taken in sequence. Answers and saved results are never changed by opening details.',
-  },
-  ru: {
-    eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ ТЕСТОВ · ТАНТРА',
-    title: 'Тантра и близость: тематические подборки тестов',
-    intro: 'Каждая карточка — тематическая подборка реальных тестов для самопознания. Посмотрите состав или сразу начните прохождение. Это не диагноз и не духовный рейтинг.',
-    details: 'Детали', start: 'Пройти тест', included: 'Тесты в подборке', scaleNames: 'Шкалы',
-    more: 'Все подборки', less: 'Показать четыре',
-    test: 'тест', tests: 'теста', questions: 'вопросов', scales: 'шкал', minute: 'мин',
-    note: 'Если в подборке несколько тестов, они проходятся по очереди. Просмотр деталей не меняет ваши ответы и сохранённые результаты.',
-  },
-  es: {
-    eyebrow: 'COLECCIONES TEMÁTICAS DE PRUEBAS · TANTRA',
-    title: 'Tantra e intimidad: colecciones temáticas de pruebas',
-    intro: 'Cada tarjeta reúne pruebas reales de reflexión personal. Consulta los detalles o comienza directamente. No son diagnósticos ni rangos espirituales. Cuestionarios en inglés.',
-    details: 'Detalles', start: 'Realizar prueba', included: 'Pruebas de la colección', scaleNames: 'Escalas',
-    more: 'Ver todas las colecciones', less: 'Mostrar cuatro',
-    test: 'prueba', tests: 'pruebas', questions: 'preguntas', scales: 'escalas', minute: 'min',
-    note: 'Si hay varias pruebas, se realizan en secuencia. Abrir los detalles no cambia los resultados guardados.',
-  },
-}
 const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
     test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
-    open: 'Browse collection', personalized: 'Prioritized from your selected topics and concerns. Test counts reflect your time and type filters.' },
+    open: 'Prioritize collection', personalized: 'Prioritized from your selected topics and concerns. Counts reflect available tests and your time/type filters.',
+    badge: 'Collection', prioritized: 'Higher priority from collection:', clear: 'Remove priority', tip: 'Included in collections:' },
   ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
     intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
     test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
-    open: 'Открыть подборку', personalized: 'Подборки упорядочены по выбранным темам и проблемам. Количество тестов учитывает время и тип.' },
+    open: 'Повысить приоритет подборки', personalized: 'Подборки упорядочены по вашим темам и запросам. Количество учитывает доступные тесты, время и тип.',
+    badge: 'Подборка', prioritized: 'Приоритет подборки:', clear: 'Снять приоритет', tip: 'Входит в подборки:' },
   es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
     intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
     test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
-    open: 'Explorar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales respetan los filtros de tiempo y tipo.' },
+    open: 'Priorizar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales reflejan pruebas disponibles y los filtros de tiempo y tipo.',
+    badge: 'Colección', prioritized: 'Prioridad de colección:', clear: 'Quitar prioridad', tip: 'Incluida en las colecciones:' },
 }
 
 // Always display the explicit assessment type, including on narrow phones.
@@ -211,7 +180,7 @@ export function SimpleTestPicker({
   depth, onDepth,
   maxMinutes, onMaxMinutes,
   testKinds = [], onToggleTestKind, onClearTestKinds, onSelectTestKind,
-  recommendations, searchRecommendations = [], catalogEntries = [], onChooseCollection = null, onChooseTantraPath = null, onStartTantraPath = null, activeBattery, onToggleTest, onResetSuggested,
+  recommendations, searchRecommendations = [], catalogEntries = [], activeCollectionId = null, onChooseCollection = null, activeBattery, onToggleTest, onResetSuggested,
   matchCount, viaProfileEntry = null, onStart, onStartSingle = null, onStartCourse = null, onBrowseFull, onBrowseCore, onBrowsePdf,
   starting = false, actionError = null,
 }) {
@@ -224,13 +193,9 @@ export function SimpleTestPicker({
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
-  const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
-  const [expandedTantraPaths, setExpandedTantraPaths] = useState(() => new Set())
   const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
-  const tantraPaths = availableTantraTestPaths(catalogEntries)
-  const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
-  const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
+  const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId)
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
@@ -458,7 +423,7 @@ export function SimpleTestPicker({
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
         {collections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
-          const active = focus.length === collection.focus.length && collection.focus.every((key) => focus.includes(key))
+          const active = activeCollectionId === collection.id
           const title = collection.title[locale] || collection.title.en
           const countLabel = locale === 'ru'
             ? (collection.count % 10 === 1 && collection.count % 100 !== 11 ? 'тест' :
@@ -468,16 +433,14 @@ export function SimpleTestPicker({
             data-test-collection={collection.id} data-tone={collection.tone} aria-pressed={active}
             aria-label={title + '. ' + collection.count + ' ' + countLabel + '. ' + collectionCopy.open}
             onClick={() => {
-              onChooseCollection?.(active ? [] : collection.focus)
+              onChooseCollection?.(active ? null : collection.id)
               setHeroSearch('')
               setSubmittedHeroSearch('')
               setVisibleCount(5)
-              // Keep the named Tantra pathway chooser in view, rather than
-              // jumping past it to the generic recommendation list.
+              // Every topic opens the same standard list, without the legacy
+              // Tantra card layout or automatic enrollment.
               window.requestAnimationFrame(() => {
-                const target = !active && ['tantra','sexuality'].includes(collection.id)
-                  ? 'hh-tantra-test-paths-title' : 'hh-simple-recommendations'
-                document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               })
             }}>
             <span className={styles.curatedIcon}><Icon size={17} strokeWidth={1.9} aria-hidden="true" /></span>
@@ -497,84 +460,16 @@ export function SimpleTestPicker({
       </button>}
     </section>}
 
-    {showTantraPaths && <section className={styles.tantraPaths} data-tantra-test-paths
-      data-expanded={tantraPathsOpen ? 'true' : 'false'} aria-labelledby="hh-tantra-test-paths-title">
-      <header className={styles.tantraPathHeading}>
-        <p>{tantraCopy.eyebrow}</p>
-        <h2 id="hh-tantra-test-paths-title">{tantraCopy.title}</h2>
-        <span>{tantraCopy.intro}</span>
-      </header>
-      <div className={styles.tantraPathGrid} role="group" aria-label={tantraCopy.title}>
-        {tantraPaths.map((path) => {
-          const Icon = TANTRA_PATH_ICONS[path.id] || Sparkles
-          const chosen = activeBattery.length === path.keys.length &&
-            path.keys.every((key) => selectedKeys.has(key))
-          const detailId = `hh-tantra-path-${path.id}-details`
-          const expanded = expandedTantraPaths.has(path.id)
-          const includedTests = path.keys.map((key) => catalogEntries.find((entry) => entry.key === key)).filter(Boolean)
-          return <article key={path.id} className={styles.tantraPath}
-            data-tantra-path={path.id} data-tone={path.tone} data-selected={chosen}>
-            <span className={styles.tantraPathIcon} aria-hidden="true"><Icon size={20} strokeWidth={1.8}/></span>
-            <div className={styles.tantraPathBody}>
-              <strong>{path.title[locale] || path.title.en}</strong>
-              <small>{path.detail[locale] || path.detail.en}</small>
-              <span className={styles.tantraPathMeta}>
-                {path.testCount} {path.testCount === 1 ? tantraCopy.test : tantraCopy.tests}
-                {' · '}{path.questionCount} {tantraCopy.questions}
-                {' · '}{path.scaleCount} {tantraCopy.scales}
-                {' · ~'}{path.durationMinutes} {tantraCopy.minute}
-              </span>
-            </div>
-            <div className={styles.tantraPathActions}>
-              <button type="button" className={styles.tantraPathDetailsButton}
-                data-tantra-action="details" aria-expanded={expanded} aria-controls={detailId}
-                onClick={() => setExpandedTantraPaths((current) => {
-                  const next = new Set(current)
-                  if (next.has(path.id)) next.delete(path.id)
-                  else next.add(path.id)
-                  return next
-                })}>
-                {tantraCopy.details} <ChevronDown size={15} aria-hidden="true"/>
-              </button>
-              <button type="button" className={styles.tantraPathStartButton}
-                data-tantra-action="start" disabled={starting || !onStartTantraPath}
-                aria-label={`${tantraCopy.start}: ${path.title[locale] || path.title.en}`}
-                onClick={() => {
-                  onChooseTantraPath?.(path.keys)
-                  onStartTantraPath?.(path.keys)
-                }}>
-                {tantraCopy.start} <ArrowRight size={16} aria-hidden="true"/>
-              </button>
-            </div>
-            <div id={detailId} className={styles.tantraPathDetailsBody} hidden={!expanded}>
-              <strong className={styles.tantraPathIncludedTitle}>{tantraCopy.included}</strong>
-              <ul className={styles.tantraPathIncludedTests}>
-                {includedTests.map((entry) => <li key={entry.key}>
-                  <div><strong>{entry.title}</strong>
-                    <span>{entry.questionCount} {tantraCopy.questions} · ~{entry.durationMinutes} {tantraCopy.minute}</span>
-                  </div>
-                  {entry.scaleGuide?.scales?.length > 0 && <p>
-                    {tantraCopy.scaleNames}: {entry.scaleGuide.scales.map((scale) => scale.label).join(' · ')}
-                  </p>}
-                </li>)}
-              </ul>
-              <p className={styles.tantraPathDetailsNote}>{tantraCopy.note}</p>
-            </div>
-          </article>
-        })}
-      </div>
-      {tantraPaths.length > 4 && <button type="button" className={styles.tantraPathToggle}
-        aria-expanded={tantraPathsOpen} onClick={() => setTantraPathsOpen(value => !value)}>
-        {tantraPathsOpen ? tantraCopy.less : tantraCopy.more}
-        <ChevronDown size={16} aria-hidden="true"/>
-      </button>}
-    </section>}
-
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
       <div className={styles.sectionHeader}>
         <span className={styles.step} aria-hidden="true">3</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
+      {activeCollection && <div className={styles.collectionHighlight} role="status" data-active-test-collection={activeCollection.id}>
+        <Layers size={15} aria-hidden="true" />
+        <span>{collectionCopy.prioritized} <strong>{activeCollection.title[locale] || activeCollection.title.en}</strong></span>
+        <button type="button" onClick={() => onChooseCollection?.(null)} aria-label={collectionCopy.clear}>×</button>
+      </div>}
       <div className={styles.recommendationMeta}>
         <div className={styles.matchCount} role="status" aria-live="polite">{heroSearchTerm ? browseRecommendations.length : browseTab === 'all' ? matchCount : browseRecommendations.length} {c.matching}</div>
         <details className={styles.why}>
@@ -604,6 +499,10 @@ export function SimpleTestPicker({
            const inputId = `hh-public-test-${entry.key}`
            const detailsId = `${inputId}-details`
            const expanded = expandedTests.has(entry.key)
+           const collectionNames = testCollectionIds(entry).map((id) => {
+             const preset = TEST_TOPIC_COLLECTIONS.find((item) => item.id === id)
+             return preset?.title[locale] || preset?.title.en
+           }).filter(Boolean)
            return <article className={styles.testEntry} key={entry.key} data-test-match={entry.key} data-relevance={entry.matchPercent} data-selected={checked}>
              <div className={styles.testRow} data-selected={checked}>
                <input id={inputId} type="checkbox" checked={checked} onChange={() => onToggleTest(entry.key)}
@@ -615,6 +514,11 @@ export function SimpleTestPicker({
                  <div className={styles.testImageMeta}>
                    {Number.isFinite(entry.questionCount) && entry.questionCount > 0 && <span className={styles.questionCount} title={`${entry.questionCount} ${c.questionUnit}`}><ListChecks size={13} aria-hidden="true" />{entry.questionCount} {c.questionUnit}</span>}
                    <span className={styles.imageDuration}><Clock3 size={13} aria-hidden="true" />~{entry.durationMinutes ?? '—'} {c.minuteUnit}</span>
+                   {collectionNames.length > 0 && <span className={styles.collectionMarker} data-test-collection-marker
+                     title={`${collectionCopy.tip} ${collectionNames.join(', ')}`}
+                     aria-label={`${collectionCopy.tip} ${collectionNames.join(', ')}`}>
+                     <Layers size={12} aria-hidden="true" />{collectionCopy.badge}
+                   </span>}
                  </div>
                </div>
                <label htmlFor={inputId} className={styles.testInfo}>
