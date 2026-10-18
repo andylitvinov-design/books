@@ -85,7 +85,11 @@ test("six identity-verified public intro videos use YouTube on Play while retain
   assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
   assert.match(player, /data-video-playback=\{playbackYouTubeId \? "youtube" : "heygen"\}/);
+  assert.match(player, /!playbackYouTubeId && showRecovery/);
+  assert.match(player, /data-video-recovery="heygen"/);
+  assert.match(player, /transcriptRef\.current\.open = true/);
   assert.match(minimal, /\.quickWatch/);
+  assert.match(minimal, /\.recovery/);
 });
 
 test("method showcases expose direct original HeyGen fallback and release tests handle open galleries", () => {
