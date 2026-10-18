@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, BookOpenText, ChevronDown, Compass, Flower2, HandHeart,
-  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, SlidersHorizontal, Sparkles, UsersRound, Waves,
+  HeartHandshake, Leaf, MessageCircle, Search, Send, ShoppingBag, SlidersHorizontal, Sparkles, Tag, UsersRound, Waves,
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
@@ -27,6 +27,10 @@ const COPY = {
     description:"Describe your goal. Find related services and practitioners — free, with no sign-up.",
     placeholder:"e.g. stress, confidence, relationships or Reiki...",
     button:"Find my options",
+    quickHints:[
+      { label:"energy healing", query:"energy healing Reiki" },
+      { label:"business analyses", query:"business analyses consulting" },
+    ],
     freeOnlyLabel:"Free Services Only",
     examples:"You could try",
     exampleList:["I want more balance in my body and energy","I want support with stress and anxiety","I want clarity in my relationships","I want to explore business and money questions","I want to clarify my goals, life purpose and personal growth"],
@@ -81,6 +85,10 @@ const COPY = {
     description:"Опишите свою цель. Мы покажем подходящие услуги и мастеров — бесплатно и без регистрации.",
     placeholder:"Например: стресс, уверенность, отношения или Рейки…",
     button:"Подобрать услуги",
+    quickHints:[
+      { label:"энергопрактики", query:"Рейки энергетическая поддержка" },
+      { label:"бизнес-анализ", query:"бизнес анализ консалтинг" },
+    ],
     freeOnlyLabel:"Только бесплатные услуги",
     examples:"Например",
     exampleList:["Хочу больше энергии и контакта с телом","Хочу справиться со стрессом и тревогой","Хочу разобраться в отношениях","Хочу разобраться с бизнесом и деньгами","Ищу ясность в целях, смыслах и саморазвитии"],
@@ -135,6 +143,10 @@ const COPY = {
     description:"Describe tu objetivo. Encuentra servicios y profesionales relacionados, gratis y sin registro.",
     placeholder:"Por ejemplo: estrés, confianza, relaciones o Reiki…",
     button:"Encontrar servicios",
+    quickHints:[
+      { label:"sanación energética", query:"sanación energética Reiki" },
+      { label:"análisis empresarial", query:"análisis empresarial y consultoría" },
+    ],
     freeOnlyLabel:"Solo servicios gratuitos",
     examples:"Por ejemplo",
     exampleList:["Quiero sentir más energía y conexión con mi cuerpo","Busco ayuda con el estrés y la ansiedad","Quiero entender mejor mis relaciones","Quiero explorar mi negocio y mi dinero","Quiero claridad en mis metas, propósito y desarrollo personal"],
@@ -377,7 +389,16 @@ export function ServicesSmartDiscovery({
             {aiStatus==="loading"?t.waiting:t.button}<Search size={19} aria-hidden="true"/>
           </button>
         </form>
-
+        <div className={styles.quickHints} role="group" aria-label={
+          locale==="ru"?"Подсказки для поиска":locale==="es"?"Búsquedas sugeridas":"Suggested searches"
+        }>
+          {t.quickHints.map(({label,query:hintQuery})=>(
+            <button key={label} type="button" className={styles.quickHint} onClick={()=>runExample(hintQuery)}>
+              <Tag size={15} strokeWidth={1.9} aria-hidden="true"/>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.categorySection} id="browse-service-categories" data-services-filter-below-search aria-labelledby="hh-service-category-title">
