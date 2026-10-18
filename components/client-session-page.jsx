@@ -413,7 +413,7 @@ export function ClientSessionPage({session,selector,locale='en',mode='guest',rep
         'This information does not replace appropriate medical assessment or care.'}</p>
     </footer>
   </main>
-  const reportView=<div className={styles.sessionSiteShell} lang={locale}>
+  const reportView=<div className={styles.sessionSiteShell} data-hh-report-theme="coastal-v2" lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
     {content}
   </div>
