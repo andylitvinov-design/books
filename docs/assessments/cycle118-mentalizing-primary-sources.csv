@@ -1,0 +1,14 @@
+key,item_count_or_parent,edition_evidence,source_url,digital_commercial_rights,validation_gate
+cmq-asgarizadeh2026-fair40,40,Iranian adults; respondent language to confirm,https://doi.org/10.1038/s41598-026-63482-3,licensed_only,CC BY-NC-ND article; instrument permission needed
+mmq-shibata2026-jajp32,32,JA-JP adult edition validated,https://doi.org/10.11201/jjdp.37.0144,permission_required,original MMQ 33 differs
+mzq-shibata2025-jajp-parent15,15 parent; final Japanese count pending,JA-JP one-factor adult evidence,https://doi.org/10.4992/jjpsy.96.24206,permission_required,final item count pending
+mzq-zhou2025-zhcn9,9,ZH-CN single factor university form,https://zxws.cbpt.cnki.net/portal/journal/portal/client/paper/7d4ad9ee05ba01dd04dc9a35983971cb,permission_required,distinct from ZH14
+mzq-huang2025-zhcn14,14,ZH-CN potentially-depressed college cohort,https://doi.org/10.3389/fpsyt.2025.1555549,permission_required,CFA fit limited
+mzq-ilkbilge2024-trtr15,15,TR-TR adolescent edition,https://doi.org/10.31461/ybpd.1484353,permission_required,CFA CFI 0.85
+mzq-raimondi2022-itit-parent15,15 parent; retained count pending,IT-IT adult revised unifactor model,https://doi.org/10.1080/00223891.2021.1991362,permission_required,retained count pending
+mzq-ponti2019-itit-parent15,15 parent; retained count pending,IT-IT adolescents,https://doi.org/10.4473/TPM26.1.2,permission_required,retained count pending
+ments-cosenza2024-itit28,28,IT-IT adolescent/adult three subscales,https://doi.org/10.1007/s12144-024-06071-9,permission_required,no cross-language equivalence claim
+ments12-stefana2024-srrs12,12,Serbian adult cohort; respondent language pending,https://doi.org/10.1080/00223891.2024.2326884,permission_required,no Serbian item-language validation claim
+mzq-songchoi2017-kokr-parent15,15 parent; final Korean count pending,KO-KR adolescents four factors,https://doi.org/10.15842/kjcp.2017.36.3.009,permission_required,final retained item count pending
+mzq-eloranta2020-fifi15,15,"FI-FI adolescents, four-factor validity FAILED",https://doi.org/10.1080/19012276.2020.1863852,permission_required,NOT VALIDATED
+iss-caretti2026-itit24,24,Italian adults; respondent language pending,https://doi.org/10.3390/ejihpe16060080,rights_review,commercial item-scoring permission pending
