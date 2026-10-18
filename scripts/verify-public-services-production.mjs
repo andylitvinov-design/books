@@ -107,6 +107,40 @@ try {
       const freeOnly = discovery.locator("input[data-free-services-only]");
       const price = discovery.locator('select[class*="facetPrice"]');
       await visible(freeOnly);
+      // Match the real Tests page, not only the markup: the hero and the
+      // aqua topic panel must share the same near-edge-to-edge phone gutter.
+      const visual = await discovery.evaluate((node) => {
+        const hero = node.querySelector('[class*="services-smart-discovery_hero__"]');
+        const topic = node.querySelector('[data-services-filter-below-search]');
+        const submit = node.querySelector('form[role="search"] button[type="submit"]');
+        const rect = (element) => {
+          if (!element) return null;
+          const r = element.getBoundingClientRect();
+          return { left: r.left, right: r.right, width: r.width };
+        };
+        return {
+          hero: rect(hero), topic: rect(topic),
+          topicBorder: topic ? getComputedStyle(topic).borderTopColor : '',
+          disabledSubmitColor: submit ? getComputedStyle(submit).backgroundColor : '',
+          disabledSubmitOpacity: submit ? getComputedStyle(submit).opacity : '',
+        };
+      });
+      assert.ok(visual.hero && visual.topic, "Services hero and topic panel both render");
+      assert.ok(Math.abs(visual.hero.left - visual.topic.left) <= 1.5 &&
+        Math.abs(visual.hero.width - visual.topic.width) <= 1.5,
+        "Services hero and topic selection must align edge-to-edge");
+      if (width <= 760) {
+        assert.ok(visual.hero.left >= 0 && visual.hero.left <= 11,
+          "Services mobile hero should have the same about-8px gutter as Tests: " + visual.hero.left);
+        assert.ok(visual.hero.width >= width - 22,
+          "Services first screen must not be narrowed by nested gutters");
+      }
+      assert.equal(visual.topicBorder, "rgb(209, 235, 238)",
+        "Services aqua section border uses the same #d1ebee as Tests");
+      assert.equal(visual.disabledSubmitColor, "rgb(153, 60, 95)",
+        "Primary CTA keeps the same rich berry #993c5f as Tests");
+      assert.equal(visual.disabledSubmitOpacity, "1",
+        "The initially disabled Services CTA must not appear washed out");
       assert.equal(await freeOnly.isChecked(), false, "Free Services Only starts unchecked");
       assert.equal(await price.inputValue(), "", "Price starts at Any");
       assert.equal(await findOptions.count(), 1, "one original primary Find my options button");
