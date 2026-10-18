@@ -3414,7 +3414,8 @@
 
 
 /* Client report · practitioner-selected follow-up assessments */
-.consultation-studio .consultation-report-test-picker {
+.consultation-studio .consultation-report-test-picker,
+.prescription-admin-form > .consultation-report-test-picker {
   margin: 18px 0 20px;
   padding: clamp(15px, 2vw, 22px);
   border: 1px solid #b7dad7;
