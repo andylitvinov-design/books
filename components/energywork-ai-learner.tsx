@@ -74,6 +74,7 @@ const copy = {
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
     reviewDone: "Your five lesson reports and answers are ready to review.",
+    reviewSaveNeeded: "Your answers are complete in this preview. Sign in and consent to private saving before requesting a personal initiation. Guest entries cannot be transferred automatically; copy your notes first.",
     reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
     reportMissing: "Add report",
     questionMissing: "Answer question",
@@ -151,6 +152,7 @@ const copy = {
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
     reviewDone: "Отчёты и ответы по пяти урокам готовы к просмотру.",
+    reviewSaveNeeded: "Ответы заполнены в предварительном просмотре. Для заявки на личную инициацию войдите в кабинет и согласитесь на приватное сохранение. Гостевые записи автоматически не переносятся — сначала скопируйте их.",
     reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
     reportMissing: "Заполнить отчёт",
     questionMissing: "Ответить на вопрос",
@@ -377,6 +379,10 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }));
   const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + Number(item.questionDone), 0);
   const initiationReady = readyCount === initiationItems.length * 2;
+  // A guest may practise and copy notes, but initiation review requires an
+  // authenticated, consented, fully saved journal — never just browser-local text.
+  const savedInitiationReady = initiationReady && sync === "ready" &&
+    !busy && !saveError && dirtyRef.current.size === 0;
 
   function setAnswer(value: string) {
     const updated = { ...answersRef.current, [slide.id]: value };
@@ -546,7 +552,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
               {slide.id === "paths-04" ? (
                 <div className={styles.reviewChecklist} data-initiation-readiness>
                   <h2>{t.reviewTitle} · {readyCount}/10</h2>
-                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
+                  <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
@@ -636,8 +642,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
                   {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
                   <h2>{t.reviewTitle} · {readyCount}/10 {t.readyCount}</h2>
-                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
-                  {!initiationReady ? (
+                  <p>{initiationReady ? (savedInitiationReady ? t.reviewDone : t.reviewSaveNeeded) : t.reviewNeeded}</p>
+                  {!savedInitiationReady ? (
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
