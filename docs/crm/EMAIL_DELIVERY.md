@@ -43,3 +43,6 @@ Official guidance:
 https://crtc.gc.ca/eng/com500/faq500.htm
 https://resend.com/changelog/idempotency-keys
 https://resend.com/docs/dashboard/webhooks/introduction
+\n## Delivery-readback hardening (18 October 2026)
+The new email receipt migration expands message status to delivered, delivery_delayed, bounced, complained, failed or suppressed after signature-verified Resend webhooks. Provider acceptance is not delivery. An out-of-order provider event does not replace a terminal failure with a success, and duplicate event IDs are ignored. A missing provider receipt is retried by the webhook with HTTP 503 rather than discarded.
+An email-preferences POST that cannot reach the database now returns a generic HTTP 503, and the client retains its fragment token so an unsubscribe may be retried without claiming completion. Configure Resend webhooks for email.delivered, email.delivery_delayed, email.bounced, email.complained, email.failed and email.suppressed before enabling live sends.

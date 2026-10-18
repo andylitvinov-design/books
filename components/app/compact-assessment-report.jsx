@@ -263,9 +263,14 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           <summary>{ru ? 'Какие вопросы входят в эту шкалу' : 'Which questions contribute to this scale'}
             {' · '}{rangeReading.sourceQuestions.length}</summary>
           <p data-author-cluster-scoring>{rangeReading.scoringNote}</p>
+          {rangeReading.legacyVersion && <p role="note" data-legacy-version-incompatible>
+            {ru ? 'Архивная версия ' : 'Archived version '}{rangeReading.legacyVersion}
+            {ru ? ' · новая версия ' : ' · current version '}{rangeReading.newerVersion}
+            {ru ? '. Общие баллы разных версий напрямую не сравниваются.' : '. Scores are not directly comparable across these versions.'}
+          </p>}
           <ol className={styles.rangeDetailsList} data-author-cluster-items>
             {rangeReading.sourceQuestions.map(question => <li key={question.id}>
-              {question.text}
+              {question.domain && <strong>{question.domain}: </strong>}{question.text}
             </li>)}
           </ol>
         </details>}

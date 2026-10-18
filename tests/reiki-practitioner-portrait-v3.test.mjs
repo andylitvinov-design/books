@@ -11,6 +11,7 @@ const localPortrait = '/images/holistic-house/reiki-approved-sunrise-v3.webp';
 
 test('Approved V3 retains the complete five-lesson, 53-screen real learning flow', () => {
   assert.match(learner,/data-course-visual="reiki-airy-v2" data-course-portrait="v3"/);
+  assert.match(learner,/data-reiki-reviews="v4"/);
   assert.match(learner,/energyworkLessons\.map\(\(lesson, number\) =>/);
   assert.match(learner,/const slides = useMemo\(\(\) => energyworkSlides\(\), \[\]\)/);
   assert.match(learner,/const total = slides\.length/);
@@ -27,9 +28,9 @@ test('Approved V3 retains the complete five-lesson, 53-screen real learning flow
 test('The already-approved, locally owned meditating woman is prominently shown without flattening UI', () => {
   assert.equal(existsSync(new URL('../public' + localPortrait,import.meta.url)),true);
   assert.match(learner,/portraitArt = slide\.id === "welcome-01" \|\| slide\.id === "flight-01" \|\| slide\.id === "tan-01"/);
-  assert.ok(learner.includes('const artSource = portraitArt ? "'+localPortrait+'" : slide.image;'));
-  assert.match(learner,/data-reiki-person=\{portraitArt \? "true" : undefined\}/);
-  assert.match(learner,/unoptimized=\{portraitArt\}/);
+  assert.ok(learner.includes('const artSource = portraitArt || voicesArt ? "'+localPortrait+'" : slide.image;'));
+  assert.match(learner,/data-reiki-person=\{portraitArt \|\| voicesArt \? "true" : undefined\}/);
+  assert.match(learner,/unoptimized=\{portraitArt \|\| voicesArt\}/);
   assert.match(style,/REIKI PORTRAIT V3/);
   assert.ok(style.includes('reiki-approved-sunrise-v3.webp'));
   assert.ok(!learner.includes('reiki-practitioner-sunrise.webp'));

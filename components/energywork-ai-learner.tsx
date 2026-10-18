@@ -78,10 +78,10 @@ const copy = {
     feelingMissing: "Choose a feeling level and write one short sentence to continue.",
     feelingPlaceholder: "What did you notice, even if nothing? One sentence is enough…",
     feedbackPrivacy: "A personal reflection, not a test. Your notes are never published automatically.",
-    voicesLabel: "From the community",
-    voicesNoQuote: "No verified participant quote for this exact recording is available here yet.",
-    voicesSource: "See the published testimonial",
-    voicesComments: "View original video & any public comments",
+    voicesLabel: "Learner experiences",
+    voicesNoQuote: "No verified comments for this exact recording are available here yet.",
+    voicesSource: "Original review",
+    voicesComments: "Video comments",
     voicesNote: "Other people's experiences are not a standard to meet.",
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
@@ -174,10 +174,10 @@ const copy = {
     feelingMissing: "Выберите степень ощущений и напишите одно короткое предложение.",
     feelingPlaceholder: "Что вы заметили, даже если ничего? Достаточно одного предложения…",
     feedbackPrivacy: "Это личное наблюдение, не экзамен. Ваш отзыв не публикуется автоматически.",
-    voicesLabel: "Опыт других практиков",
-    voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет в материалах курса.",
-    voicesSource: "Посмотреть опубликованный отзыв",
-    voicesComments: "Открыть видео и доступные комментарии",
+    voicesLabel: "Отзывы участников",
+    voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
+    voicesSource: "Источник отзыва",
+    voicesComments: "Комментарии к видео",
     voicesNote: "Ваш опыт не обязан совпадать с чужим.",
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
@@ -328,6 +328,7 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
 
 
 /** Review buttons only change the quote, never the current course slide. */
+/** Compact, accessible carousel: review arrows never advance the lesson. */
 function MeditationVoices({ slide, locale, youtubeId }: {
   slide: EnergyworkSlide;
   locale: EnergyworkLocale;
@@ -339,38 +340,57 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   const currentReview = entries[active];
   return (
     <div className={styles.voicesCard} data-meditation-voices>
-      <span className={styles.voicesEyebrow}><MessageCircle size={18} aria-hidden="true" />{t.voicesLabel}</span>
+      <div className={styles.voicesHeading}>
+        <span className={styles.voicesEyebrow}><MessageCircle size={17} aria-hidden="true" />{t.voicesLabel}</span>
+        {currentReview ? (
+          <span className={styles.voicesIndex} aria-live="polite">
+            {String(active + 1).padStart(2, "0")} / {String(entries.length).padStart(2, "0")}
+          </span>
+        ) : null}
+      </div>
       {currentReview ? (
         <div data-meditation-review-carousel data-review-count={entries.length}>
           <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
-            <p>“{currentReview.quote[locale]}”</p>
+            <span className={styles.voicesQuoteMark} aria-hidden="true">“</span>
+            <p>{currentReview.quote[locale]}</p>
             <cite>{currentReview.attribution[locale]}</cite>
           </blockquote>
           {entries.length > 1 ? (
             <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
               <button type="button" data-review-prev aria-label={t.voicesPrevious}
                 onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
-                <ArrowLeft size={21} aria-hidden="true" />
+                <ArrowLeft size={20} aria-hidden="true" />
               </button>
-              <span className={styles.voicesCount} aria-label={String(active + 1) + " / " + entries.length}>
-                {active + 1} / {entries.length}
+              <span className={styles.voicesCount} aria-hidden="true">
+                {entries.map((entry, number) => (
+                  <span key={entry.id} className={number === active ? styles.voiceDotActive : styles.voiceDot} />
+                ))}
               </span>
               <button type="button" data-review-next aria-label={t.voicesNext}
                 onClick={() => setActive((index) => (index + 1) % entries.length)}>
-                <ArrowRight size={21} aria-hidden="true" />
+                <ArrowRight size={20} aria-hidden="true" />
               </button>
             </div>
           ) : null}
-          <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
-            {t.voicesSource}<ArrowRight size={16} aria-hidden="true" />
-          </Link>
         </div>
-      ) : <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>}
-      {youtubeId ? (
-        <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
-          target="_blank" rel="noopener noreferrer">{t.voicesComments}<ExternalLink size={15} aria-hidden="true" /></a>
+      ) : (
+        <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>
+      )}
+      {(currentReview || youtubeId) ? (
+        <div className={styles.voicesReferences}>
+          {currentReview ? (
+            <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
+              {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
+            </Link>
+          ) : null}
+          {youtubeId ? (
+            <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
+              target="_blank" rel="noopener noreferrer">
+              {t.voicesComments}<ExternalLink size={14} aria-hidden="true" />
+            </a>
+          ) : null}
+        </div>
       ) : null}
-      <p className={styles.voicesNote}>{t.voicesNote}</p>
     </div>
   );
 }
@@ -461,7 +481,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const total = slides.length;
   const completed = slide.kind === "finish";
   const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
-  const artSource = portraitArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
+  const voicesArt = slide.kind === "voices";
+  const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const isMeditationFeedback = MEDITATION_REPORT_IDS.has(slide.id);
   const meditationFeedback = splitMeditationFeedback(answers[slide.id] ?? "");
@@ -595,7 +616,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-course-portrait="v3" data-reiki-reviews="v4" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         {slide.kind === "welcome" ? (
           <header className={styles.top}>
@@ -814,10 +835,10 @@ export function EnergyworkAiLearner({ locale }: Props) {
               ) : null}
             </div>
             {artSource ? (
-              <div className={styles.art} data-reiki-person={portraitArt ? "true" : undefined}>
+              <div className={styles.art} data-reiki-person={portraitArt || voicesArt ? "true" : undefined}>
                 <Image src={artSource}
-                  alt={portraitArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
-                  fill priority={index === 0} unoptimized={portraitArt}
+                  alt={portraitArt || voicesArt ? (locale === "ru" ? "Женщина спокойно медитирует в лучах утреннего солнца" : "Woman resting peacefully in morning sunlight") : ""}
+                  fill priority={index === 0 || voicesArt} unoptimized={portraitArt || voicesArt}
                   sizes="(max-width: 720px) 100vw, 42vw" />
               </div>
             ) : null}
