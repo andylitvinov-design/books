@@ -48,3 +48,22 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(serviceCard, /styles\.cardDirectOrder/);
   assert.match(serviceCard, /data-alchemy-booking": "services-card"/);
 });
+
+
+test("mobile format choices keep all payment methods but collapse them until after time confirmation", () => {
+  const form = read("components/alchemy-soul-lead-form.tsx");
+  const css = read("components/alchemy-soul-landing.module.css");
+  const qa = read("scripts/verify-public-services-production.mjs");
+  assert.match(form, /data-alchemy-booking-formats/);
+  assert.match(form, /selected !== "month" && \(wiseEnabled \|\| paypalPersonalEnabled \|\| Boolean\(zenInquiryUrl\)\)/);
+  assert.match(form, /<details className=\{styles.paymentDisclosure\} data-alchemy-payment-disclosure>/);
+  assert.match(form, /Payment options — after confirming a time/);
+  assert.match(form, /Способы оплаты — после подтверждения времени/);
+  assert.match(form, /Opciones de pago — tras confirmar la hora/);
+  for (const key of ["data-wise-payment-link", "data-paypal-personal-offer", "data-zen-manual-request"]) assert.ok(form.includes(key), key);
+  for (const price of ["€50", "€100"]) assert.ok(form.includes(price), price);
+  assert.match(css, /\.paymentDisclosure summary\{[^}]*min-height:44px/);
+  assert.match(css, /\.optionsSection\{justify-content:flex-start;padding-top:16px;padding-bottom:16px\}/);
+  assert.match(qa, /Payment methods must be collapsed until explicitly requested/);
+  assert.match(qa, /Unpriced monthly support must never expose one-time transfer amounts/);
+});

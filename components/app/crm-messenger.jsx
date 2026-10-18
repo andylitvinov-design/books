@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './crm-messenger.module.css'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
@@ -41,6 +41,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const pendingRequest=useRef(null)
   const load=useCallback(async(threadId='',signal)=>{
     const url='/api/app/crm/messenger'+(threadId?'?thread='+encodeURIComponent(threadId):'')
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
@@ -51,6 +52,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
   useEffect(()=>{
     if(!accountId)return
     const ctrl=new AbortController()
+    pendingRequest.current=null
     setData(null);setActive('');setText('');setError('');setStatus('')
     load('',ctrl.signal).then(setData).catch(e=>{if(e.name!=='AbortError')setError('unavailable')})
     return ()=>ctrl.abort()
@@ -59,6 +61,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     try {const result=await load(id);setData(result);setError('')}catch{setError('unavailable')}
   }
   async function selectThread(id){
+    pendingRequest.current=null
     setActive(id);setText('');setStatus('')
     try{
       const result=await load(id)
@@ -80,12 +83,25 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     finally{setBusy(false)}
   }
   async function send(){
-    if(!active||!text.trim())return
-    const result=await action('send',{threadId:active,text:text.trim(),
-      requestId:crypto.randomUUID(),purpose:'customer_reply'})
+    const body=text.trim()
+    if(!active||!body)return
+    // Keep the same idempotency key after a lost HTTP reply, network failure
+    // or an uncertain provider response. Repeated clicks must never create
+    // another provider request for an unchanged draft.
+    const old=pendingRequest.current
+    const pending=(old&&old.threadId===active&&old.text===body)
+      ?old:{threadId:active,text:body,id:crypto.randomUUID()}
+    pendingRequest.current=pending
+    const result=await action('send',{threadId:active,text:body,
+      requestId:pending.id,purpose:'customer_reply'})
     if(!result)return
-    setText('')
-    setStatus(result.status==='accepted'?t.accepted:result.status==='failed'?t.sendError:t.unknown)
+    if(result.status==='accepted'||result.status==='delivered'||result.status==='read'){
+      setText('')
+      pendingRequest.current=null
+      setStatus(t.accepted)
+    }else if(result.status==='failed'||result.status==='blocked'){
+      setStatus(t.sendError)
+    }else setStatus(t.unknown)
   }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
@@ -139,7 +155,11 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
           <div className={styles.compose}>
             <label htmlFor="crm-messenger-compose">{t.reply}</label>
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy}
-              maxLength={1200} rows={3} onChange={e=>setText(e.target.value)} placeholder={t.manual}/>
+              maxLength={1200} rows={3} onChange={e=>{
+                if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
+                  pendingRequest.current=null
+                setText(e.target.value)
+              }} placeholder={t.manual}/>
             <button disabled={busy||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
