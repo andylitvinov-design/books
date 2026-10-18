@@ -8,6 +8,8 @@ import CourseGuidedTimer from './course-guided-timer'
 import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
+import OporaV6SlidePlayer from './opora-v6-slide-player'
+import {OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
 import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
 import Course14DayOverview from './course-14-day-overview'
@@ -576,7 +578,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         :(ru?'Пока не оценивался':'Not assessed')}</small>
     </li>)}</ol>
   </section>}
-  {questOpen&&<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
+  {questOpen&&(data?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
+    <OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
+      data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+      onFinish={()=>{setQuestOpen(false);setView('path')}}
+      onSession={body=>submit('session',body,undefined,'inline')}/>
+    :<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
      onFinish={()=>{setQuestOpen(false);setView('path')}}
     onOpenRetest={showFinalRetest}
@@ -587,7 +594,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
       length:patch.length||cycle.preferences?.length||'standard',
       imagery:patch.imagery||cycle.preferences?.imagery||'optional',
       checkinFrequency:cycle.preferences?.checkinFrequency||'daily',
-    })}/>}
+    })}/>) }
   {view==='details'&&<>
   <details className={styles.classicPanel}>
     <summary>{ru?'Полный текст урока и дополнительные настройки':'Full lesson text and additional settings'}</summary>

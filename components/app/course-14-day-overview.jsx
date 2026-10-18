@@ -39,19 +39,19 @@ const STRESS = {
     allDays:'All 14 daily exercises and results',
     hint:'Exercises, outcomes and related measurements',
     practice:'Exercise', result:'Observable learning result', scales:'Related scales', check:'Skill check',
-    screens:'Seven compact practice screens', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
+    screens:'15 short interactive steps per lesson', tests:'Measurement: Weekly Pulse (8 questions) before and after; optional eligible GAD-7. Practice choices are tracked separately from symptom scores.' },
   ru: { title:'7 практических навыков · 14 занятий',
     intro:'Первая неделя — семь ключевых навыков. Вторая — повтор тех же навыков с большей самостоятельностью. Остальные специализированные маршруты сохраняют собственную последовательность.',
     allDays:'Практики и результаты всех 14 дней',
     hint:'Упражнения, результаты и связанные шкалы',
     practice:'Упражнение',result:'Ожидаемый результат',scales:'Связанные шкалы',check:'Проверка навыка',
-    screens:'7 компактных экранов практики', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
+    screens:'15 коротких интерактивных экранов в каждом уроке', tests:'Измерение: Weekly Pulse (8 вопросов) до и после курса, GAD-7 дополнительно при подходящем языке и сроке. Навыки оцениваются отдельно от симптомов.' },
   es: { title:'Siete habilidades prácticas · 14 días',
     intro:'Primera semana: aprende siete habilidades. Segunda semana: practícalas con mayor autonomía. Las otras rutas mantienen su propio plan.',
     allDays:'Ejercicios y resultados de los 14 días',
     hint:'Ejercicios, resultados y medidas relacionadas',
     practice:'Ejercicio',result:'Resultado observable',scales:'Escalas relacionadas',check:'Prueba de habilidad',
-    screens:'Siete pantallas de práctica', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
+    screens:'15 pantallas interactivas breves por lección', tests:'Medición: Weekly Pulse antes y después; GAD-7 opcional cuando corresponda. Las habilidades no se confunden con los síntomas.' },
 }
 export default function Course14DayOverview({ locale = 'en', compact = false, programId = '', moduleId = '', routerVersion = '' }) {
   const t = COPY[locale] || COPY.en
