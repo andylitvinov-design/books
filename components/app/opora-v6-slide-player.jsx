@@ -315,6 +315,13 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(role==='aphorism')return lang==='ru'
       ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
       : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
+    if(role==='prepare'&&authored?.lessonMethodVersion==='AS-5.5')return lang==='ru'
+      ?[{value:'try',label:'Мягко попробую в своей обстановке'},
+        {value:'simple',label:'Только безопасный учебный пример'},
+        {value:'read',label:'Только посмотрю или прочитаю'}]
+      :[{value:'try',label:'Gently try in my own surroundings'},
+        {value:'simple',label:'Use only a safe fictional example'},
+        {value:'read',label:'Just watch or read'}]
     if(role==='focus')return (ROLE_OPTIONS[role]||[]).map(value=>({
       value,label:value==='unsure'?(lang==='ru'?'Пока не уверен(а)':'Not sure about this focus'):t.response[value]||value,
     }))
@@ -389,7 +396,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               ? <blockquote className={styles.aphorism}>{authored?.quote}</blockquote>
               : <p className={styles.prompt}>{neutral&&PRACTICE_KINDS.has(role)
                 ? (lang==='ru'?'Можно попробовать только нейтральную внешнюю опору или просто прочитать инструкцию.':'You can use a neutral visible object, or read only.')
-                :slide?.text}</p>}
+                :answers.prepare==='simple'&&PRACTICE_KINDS.has(role)
+                  ?(lang==='ru'?'Можно остаться на вымышленном учебном примере. ':'You may stay with the fictional example. ')+(slide?.text||'')
+                  :slide?.text}</p>}
             {role==='baseline'||role==='reflection'?
               <div className={styles.rating}>
                 <span>{t.rating}</span>
