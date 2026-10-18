@@ -51,7 +51,7 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
  assert.equal(body.opora54.answers.aphorism,'unsure')
  assert.equal(body.opora54.ease,null)
  assert.deepEqual(validateOpora54Signals(body.opora54).answers,body.opora54.answers)
- assert.match(textOf(h.tree),/Шаг\\s+15\\s+из\\s+15/)
+ assert.match(textOf(h.tree),/Шаг\s+15\s+из\s+15/)
  assert.match(textOf(h.tree),/Практика сохранена/)
  await click(h,'К карте курса')
  assert.equal(f.closed,true)
