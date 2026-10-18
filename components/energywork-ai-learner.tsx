@@ -21,6 +21,9 @@ type StoredProgress = {
   accountId: string; enrolled: boolean; courseVersion: string;
   slideId?: string; pathId?: EnergyworkPath | null; answers?: AnswerMap;
   revision?: number; savedAt?: string; status?: "active" | "completed";
+  sharingWithTeacher?: boolean;
+  enrollmentLead?: { id: string; status: string; createdAt: string } | null;
+  applicationLead?: { id: string; status: string; submittedAt: string } | null;
 };
 type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
 type SaveCommand = {
@@ -114,14 +117,27 @@ const copy = {
     noInitiation: "Studying the material, completing the course or sending a request does not automatically provide initiation.",
     continuePath: "Continue to the next lesson",
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
-    consentText: "I agree to save my course position and optional reflections in my private Holistic House account. I can delete them later; they will not be shared with a teacher automatically.",
+    consentText: "I agree to save my course progress and answers privately. I can delete my course record.",
+    teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
+    teacherShareTitle: "Share my learning with Andrey",
+    teacherShareAction: "Create my learning lead",
+    teacherShareDone: "Andrey can see your course progress and responses in his private CRM.",
+    teacherShareHint: "Only you can decide whether your personal course journal is shared with Andrey.",
+    initiationLetterHeading: "Request personal initiation with Andrey",
+    initiationLetterHint: "Your letter from the final lesson and your course materials will be sent securely to Andrey's CRM as a second lead.",
+    initiationConfirm: "I agree to send my initiation letter and course answers to Andrey for personal review.",
+    initiationSend: "Send my initiation request",
+    initiationSent: "Request received in Andrey's private CRM. Your application is awaiting a personal response.",
+    initiationTooShort: "Write at least 20 characters in your initiation letter on the previous step.",
+    initiationShareNeeded: "Enable teacher sharing to send your application.",
+    initiationNotReady: "Complete your lesson reports and answers to request personal initiation.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
     guestHint: "You may continue as a guest without saving.",
     saved: "Saved privately", saving: "Saving…", offline: "Saving is unavailable. Your answers are not stored on the server.",
     retry: "Retry", saveFailed: "Could not save. Your answer is still on this screen; retry before continuing.",
     conflict: "Your course changed in another session. Reload the saved version before continuing.",
     reload: "Reload saved progress", print: "Print / Save PDF",
-    resetConfirm: "Delete your saved course progress and reflections? Your other courses and tests will remain.",
+    resetConfirm: "Delete this course, its saved answers, and both related CRM leads (including any initiation request)? Your other courses remain.",
     signupError: "Could not start Google sign-in. Try again from the My Courses cabinet.",
     accountError: "Account needs attention. Open your personal cabinet to complete sign-in and consent.",
     myCourses: "My Courses",
@@ -210,14 +226,27 @@ const copy = {
     noInitiation: "Просмотр материалов, окончание курса или отправка заявки не предоставляют инициацию автоматически.",
     continuePath: "Перейти к следующему уроку",
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
-    consentText: "Я согласен(на) сохранять пройденный слайд и необязательные ответы в личном кабинете Holistic House. Их можно удалить; преподавателю они не передаются автоматически.",
+    consentText: "Я согласен(на) приватно сохранять прогресс и ответы курса. Данные курса можно удалить.",
+    teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
+    teacherShareTitle: "Поделиться обучением с Андреем",
+    teacherShareAction: "Создать мой учебный лид",
+    teacherShareDone: "Андрей видит прогресс и ваши ответы в закрытой CRM.",
+    teacherShareHint: "Только вы решаете, передавать ли Андрею материалы вашего курса.",
+    initiationLetterHeading: "Запрос на личную инициацию у Андрея",
+    initiationLetterHint: "Ваше письмо из последнего урока и ответы сохранятся у Андрея в CRM как второй лид.",
+    initiationConfirm: "Я согласен(на) отправить Андрею своё письмо и ответы курса для личного рассмотрения.",
+    initiationSend: "Отправить заявку на инициацию",
+    initiationSent: "Ваша заявка получена в закрытой CRM Андрея и ожидает личного ответа.",
+    initiationTooShort: "Напишите не меньше 20 символов в письме на предыдущем шаге.",
+    initiationShareNeeded: "Для заявки разрешите передачу материалов преподавателю.",
+    initiationNotReady: "Заполните ответы и отчёты, чтобы отправить заявку.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
     guestHint: "Можно продолжить как гость без сохранения.",
     saved: "Сохранено приватно", saving: "Сохраняем…", offline: "Сохранение недоступно. Ответы не записываются на сервер.",
     retry: "Повторить", saveFailed: "Не удалось сохранить. Ответ остался на экране; повторите перед переходом.",
     conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
     reload: "Загрузить прогресс", print: "Печать / Сохранить PDF",
-    resetConfirm: "Удалить сохранённый прогресс и ответы этого курса? Остальные курсы и тесты останутся.",
+    resetConfirm: "Удалить курс, ответы и оба связанных лида в CRM, включая заявку на инициацию? Остальные курсы останутся.",
     signupError: "Не удалось начать вход через Google. Попробуйте через раздел «Мои курсы».",
     accountError: "Завершите вход и согласие в личном кабинете.",
     myCourses: "Мои курсы",
@@ -397,8 +426,7 @@ function MeditationVoices({ slide, locale, youtubeId }: {
 
 export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
   const t = copy[locale];
-  // Direct referral entrants already read the programme overview; start with the approved
-  // experience-choice screen. Any saved account progress still wins during hydration.
+  // Referral entrants have already read the course overview; saved account progress still wins.
   const [index, setIndex] = useState(startAtExperience ? 1 : 0);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
@@ -406,6 +434,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [sync, setSync] = useState<SyncStatus>("checking");
   const [consented, setConsented] = useState(false);
+  const [shareConsented, setShareConsented] = useState(false);
+  const [sharingWithTeacher, setSharingWithTeacher] = useState(false);
+  const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
+  const [applicationConsented, setApplicationConsented] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -431,7 +464,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }, []);
   const hydrate = useCallback((value: StoredProgress) => {
     accountIdRef.current = value.accountId;
-    if (!value.enrolled) { setSync("consent"); return; }
+    if (!value.enrolled) {
+      setSharingWithTeacher(false);
+      setApplicationLead(null);
+      setSync("consent");
+      return;
+    }
     const restored = energyworkSlides();
     revisionRef.current = value.revision ?? 0;
     progressRef.current = value.slideId ?? "welcome-01";
@@ -440,6 +478,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setAnswers(restoredAnswers);
     setIndex(Math.max(0, restored.findIndex((item) => item.id === value.slideId)));
     setSavedAt(value.savedAt || null);
+    setSharingWithTeacher(Boolean(value.sharingWithTeacher));
+    setApplicationLead(value.applicationLead || null);
     dirtyRef.current.clear();
     setSaveError(null);
     setSync("ready");
@@ -459,12 +499,27 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     setBusy(true);
     try {
       const result = await appFetch("academy-energywork", {
-        action: "start", consent: true, version: ENERGYWORK_COURSE_VERSION,
+        action: "start", consent: true, teacherConsent: shareConsented, version: ENERGYWORK_COURSE_VERSION,
       }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
       hydrate(result);
       setConsented(false);
+      setShareConsented(false);
     } catch (error) {
       setSaveError((error as { status?: number })?.status === 403 ? t.accountError : t.saveFailed);
+    } finally { setBusy(false); }
+  }
+  async function shareWithTeacher() {
+    if (busy || !shareConsented || sync !== "ready") return;
+    setBusy(true);
+    try {
+      await queueRef.current.catch(() => {});
+      const value = await appFetch("academy-energywork", {
+        action: "share", version: ENERGYWORK_COURSE_VERSION, consent: true, teacherConsent: true,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      hydrate(value);
+      setShareConsented(false);
+    } catch {
+      setSaveError(t.saveFailed);
     } finally { setBusy(false); }
   }
   async function signIn() {
@@ -580,6 +635,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     }
     answersRef.current = {};
     setIndex(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
+    setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
     dirtyRef.current.clear();
   }
   // A brief debounce preserves reflections while users type; queued writes and
@@ -605,6 +661,23 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     return () => window.removeEventListener("beforeunload", beforeLeave);
   }, [answers, savedAt]);
 
+  async function applyForInitiation() {
+    if (busy || !applicationConsented || !savedInitiationReady || !sharingWithTeacher ||
+        applicationLead || (answers["end-01"] || "").trim().length < 20) return;
+    setBusy(true);setApplicationMessage("");
+    try {
+      await queueRef.current.catch(() => {});
+      const value = await appFetch("academy-energywork", {
+        action: "apply", version: ENERGYWORK_COURSE_VERSION,
+        expectedRevision: revisionRef.current, confirmed: true,
+      }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
+      hydrate(value);
+      setApplicationConsented(false);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      setApplicationMessage(code === "COURSE_PROGRESS_CHANGED" ? t.conflict : t.saveFailed);
+    } finally { setBusy(false); }
+  }
   async function copyNotes() {
     if (!navigator.clipboard?.writeText) {
       setCopyState("error"); return;
@@ -783,6 +856,31 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "finish" ? (
                 <div className={styles.final}>
                   <span className={styles.finalTag}><Check size={18} aria-hidden="true" />{t.finish}</span>
+                  <section className={styles.initiationRequestBox} data-reiki-initiation-request>
+                    <h2>{t.initiationLetterHeading}</h2>
+                    <p>{t.initiationLetterHint}</p>
+                    {applicationLead ? (
+                      <p className={styles.initiationSent} role="status"><Check size={17} aria-hidden="true" />{t.initiationSent}</p>
+                    ) : !savedInitiationReady ? (
+                      <p className={styles.initiationHint}>{t.initiationNotReady}</p>
+                    ) : !sharingWithTeacher ? (
+                      <p className={styles.initiationHint}>{t.initiationShareNeeded}</p>
+                    ) : (answers["end-01"] || "").trim().length < 20 ? (
+                      <p className={styles.initiationHint}>{t.initiationTooShort}</p>
+                    ) : (
+                      <div className={styles.initiationApplication}>
+                        <blockquote className={styles.letterPreview}>{answers["end-01"]}</blockquote>
+                        <label className={styles.consentLabel}>
+                          <input type="checkbox" checked={applicationConsented}
+                            onChange={event => setApplicationConsented(event.target.checked)} />
+                          <span>{t.initiationConfirm}</span>
+                        </label>
+                        <button type="button" className={styles.initiationSend} disabled={busy || !applicationConsented}
+                          onClick={applyForInitiation}>{t.initiationSend}<ArrowRight size={18} aria-hidden="true" /></button>
+                      </div>
+                    )}
+                    {applicationMessage ? <p role="alert">{applicationMessage}</p> : null}
+                  </section>
                   <h2>{locale === "ru" ? "Ваши личные учебные итоги" : "Your personal learning highlights"}</h2>
                   <p className={styles.guideNote}>{locale === "ru"
                     ? "Сводка составлена только по вашим собственным ответам и выбору. Это не диагноз и не автоматическая интерпретация личности."
@@ -812,14 +910,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                       ))}
                     </div>
                   ) : (
-                    <div className={styles.initiationLinks}>
-                      {energyworkPathChoices.map((choice) => (
-                        <Link key={choice.id} className={styles.teacherLink}
-                          href={"/" + locale + "/academy/" + choice.freePath + (choice.id === "tantra" ? "#apply-free" : "")}>
-                          {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
-                        </Link>
-                      ))}
-                    </div>
+                    <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
                   )}
                   <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
@@ -892,6 +983,10 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
                   <span>{t.consentText}</span>
                 </label>
+                <label className={styles.consentLabel}>
+                  <input type="checkbox" checked={shareConsented} onChange={(event) => setShareConsented(event.target.checked)} />
+                  <span>{t.teacherShareConsent}</span>
+                </label>
                 <button type="button" onClick={startSaving} disabled={!consented || busy} className={styles.syncButton}>{t.enableSave}</button>
                 <p>{t.guestHint}</p>
               </details>
@@ -900,6 +995,18 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               <strong><Check size={16} aria-hidden="true" />{busy || dirtyRef.current.size > 0 ? t.saving : t.saved}</strong>
               {savedAt ? <small>{new Date(savedAt).toLocaleString(locale)}</small> : null}
               <Link href={"/" + locale + "/app/course"} prefetch={false}>{t.myCourses}</Link>
+              {sharingWithTeacher ? <p className={styles.teacherShared}><Check size={15} aria-hidden="true" />{t.teacherShareDone}</p> :
+                <details className={styles.saveDetails}>
+                  <summary>{t.teacherShareTitle}</summary>
+                  <p>{t.teacherShareHint}</p>
+                  <label className={styles.consentLabel}>
+                    <input type="checkbox" checked={shareConsented}
+                      onChange={event => setShareConsented(event.target.checked)} />
+                    <span>{t.teacherShareConsent}</span>
+                  </label>
+                  <button type="button" onClick={shareWithTeacher}
+                    disabled={!shareConsented || busy} className={styles.syncButton}>{t.teacherShareAction}</button>
+                </details>}
             </> : null}
             {sync === "unavailable" ? <><strong>{t.offline}</strong><button className={styles.syncButton} onClick={reloadProgress} type="button">{t.retry}</button></> : null}
             {saveError ? <p role="alert" className={styles.saveError}>{saveError}

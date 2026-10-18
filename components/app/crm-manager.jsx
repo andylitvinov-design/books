@@ -105,6 +105,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
         <p>{language==='ru'?'Все деловые контакты в одном месте.':language==='es'?'Tus contactos profesionales en un solo lugar.':'Keep your business contacts in one place.'}</p>
       </div>
     </header>
+    <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
+      {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
+    </a></p>
     <div className={styles.privacy}>
       <strong>{language==='ru'?'Только деловые контакты':'Business contacts only'}</strong>
       <p>{c.privacy} {c.noConsent}</p>

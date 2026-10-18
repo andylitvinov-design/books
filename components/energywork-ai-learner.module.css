@@ -2259,3 +2259,95 @@
   .page[data-reiki-reviews="v4"] .voicesControls {display:none!important;}
   .page[data-reiki-reviews="v4"] .voiceQuote p {max-height:none!important;overflow:visible!important;}
 }
+
+
+/* Private Reiki CRM funnel, separate from guest study and marketing consent. */
+.page[data-reiki-reviews="v4"] .initiationRequestBox {
+  margin:14px 0 18px;
+  padding:clamp(13px,3vw,20px);
+  border:1px solid #b9e3e3;
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(248,255,254,.96),rgba(221,248,245,.9));
+  box-shadow:0 7px 26px rgba(12,125,136,.1);
+  color:#194e61;
+}
+.page[data-reiki-reviews="v4"] .initiationRequestBox h2 {
+  font-size:clamp(17px,3.5vw,23px);
+  line-height:1.22;
+  color:#106e7b;
+  font-weight:800;
+  margin:0 0 8px;
+}
+.page[data-reiki-reviews="v4"] .initiationRequestBox>p {
+  font-size:13px;
+  line-height:1.45;
+  margin:0 0 10px;
+  color:#3b6572;
+}
+.page[data-reiki-reviews="v4"] .initiationApplication {
+  display:grid;gap:10px;
+}
+.page[data-reiki-reviews="v4"] .letterPreview {
+  margin:0;
+  padding:10px 12px;
+  max-height:120px;
+  overflow-y:auto;
+  background:rgba(255,255,255,.85);
+  border:1px solid rgba(151,216,218,.85);
+  border-left:3px solid #11a3ad;
+  border-radius:11px;
+  font-size:13px;
+  color:#26596a;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.page[data-reiki-reviews="v4"] .initiationSend {
+  min-height:50px;
+  border-radius:15px;
+  border:1px solid #8de2e1;
+  background:linear-gradient(120deg,#04b4c0,#078aa1);
+  color:white;
+  font-size:16px;
+  font-weight:850;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  box-shadow:0 5px 15px rgba(14,144,154,.2);
+}
+.page[data-reiki-reviews="v4"] .initiationSend:disabled {
+  cursor:not-allowed;opacity:.48;
+}
+.page[data-reiki-reviews="v4"] .initiationSent,
+.page[data-reiki-reviews="v4"] .teacherShared {
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  color:#176f6b!important;
+  font-size:13px;
+  line-height:1.4;
+  font-weight:750;
+}
+.page[data-reiki-reviews="v4"] .initiationSent svg,
+.page[data-reiki-reviews="v4"] .teacherShared svg {
+  flex:none;margin-top:1px;
+}
+.page[data-reiki-reviews="v4"] .initiationHint {
+  color:#5a6d78!important;
+  font-size:13px!important;
+}
+.page[data-reiki-reviews="v4"] .reviewDoneMessage {
+  color:#277a7c;
+  padding:9px 10px;
+  background:rgba(230,248,245,.83);
+  border-radius:12px;
+  font-size:13px;
+}
+@media (max-width:760px) {
+  .page[data-reiki-reviews="v4"] .initiationRequestBox {padding:13px;border-radius:17px;margin:9px 0 14px;}
+  .page[data-reiki-reviews="v4"] .initiationRequestBox h2 {font-size:18px;}
+  .page[data-reiki-reviews="v4"] .initiationSend {min-height:49px;font-size:15px;}
+  .page[data-reiki-reviews="v4"] .letterPreview {max-height:105px;}
+}
