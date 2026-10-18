@@ -229,7 +229,7 @@ export default async function BookReaderPage({ params }: PageProps) {
         </aside>
 
         <article className="reader-article" lang={locale === "es" ? "ru" : locale}>
-          <TranslatedReaderContent html={readerHtml} locale={readingLocale} />
+          <TranslatedReaderContent html={readerHtml} locale={readingLocale} russianHref={`/ru/books/${book.id}`} />
         </article>
       </div>
       {locale !== "es" ? <BookRelatedMaterials bookId={book.id} locale={locale} /> : null}

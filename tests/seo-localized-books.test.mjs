@@ -52,3 +52,12 @@ test("legacy book paths default to English and respect explicit Russian/Spanish 
   assert.match(middleware,/requested === 'ru' \|\| requested === 'es' \? requested : 'en'/);
   assert.match(fallback,/lang === "ru" \|\| lang === "es" \? lang : "en"/);
 });
+
+test("all book switches and fallback translation links use canonical locale routes",()=>{
+ const book2=file("components/book-02-reference.tsx"), translated=file("components/translated-reader-content.jsx");
+ assert.match(book2, /\/en\/books\/alchemy-homeopathy-remedies/);
+ assert.match(book2, /\/ru\/books\/alchemy-homeopathy-remedies/);
+ assert.ok(!book2.includes("?lang=en"));
+ assert.match(translated, /href=\{russianHref\}/);
+ assert.match(file("app/[locale]/books/[bookId]/page.tsx"), /russianHref=/);
+});
