@@ -187,6 +187,7 @@ export function ConsultationChoiceCapture({
   id,
   sitewide = false,
   wiseEnabled = false,
+  zenEnabled = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
@@ -194,6 +195,7 @@ export function ConsultationChoiceCapture({
   id?: string;
   sitewide?: boolean;
   wiseEnabled?: boolean;
+  zenEnabled?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -300,6 +302,19 @@ export function ConsultationChoiceCapture({
             : locale === "es"
               ? "Solo después de acordar la hora. El pago se verifica manualmente y no confirma una reserva."
               : "Only after agreeing a time. Payment is verified manually and does not itself confirm a booking."}</small>
+        </div>
+      ) : null}
+      {isPaidRequest && zenEnabled ? (
+        <div className={styles.wisePayment} data-zen-payment-link>
+          <Link prefetch={false} href={`/${locale}/services/checkout?service=${wiseProductId}`}>
+            {locale === "ru" ? "Оплатить через ZEN.COM" : locale === "es" ? "Pagar con ZEN.COM" : "Pay securely with ZEN.COM"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          <small>{locale === "ru"
+            ? "Разовая безопасная оплата выбранной консультации. Время сессии подтверждается отдельно."
+            : locale === "es"
+              ? "Pago seguro por una sola consulta. La hora de la sesión se confirma por separado."
+              : "Secure one-time payment for the selected consultation. Your appointment time is confirmed separately."}</small>
         </div>
       ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
