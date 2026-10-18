@@ -17,8 +17,8 @@ test('Approved V3 retains the complete five-lesson, 53-screen real learning flow
   assert.match(curriculum,/ENERGYWORK_COURSE_VERSION = "2026-10-18\.p1"/);
   assert.match(schema,/ENERGYWORK_VERSION = '2026-10-18\.p1'/);
   assert.match(learner,/<AcademyVideoPlayer/);
-  assert.match(learner,/styles\\.milestoneCard/);
-  assert.match(learner,/styles\\.voicesCard/);
+  assert.match(learner,/styles\.milestoneCard/);
+  assert.match(learner,/styles\.voicesCard/);
   assert.match(learner,/action: "start", consent: true/);
   assert.match(learner,/data-energywork-next/);
   assert.doesNotMatch(learner,/<img\s+src=["']https?:/);
@@ -50,6 +50,6 @@ test('V3 increases all mobile teaching typography and preserves pinned navigatio
   assert.match(v3,/overflow-y: auto/);
   assert.match(v3,/@media \(max-width: 760px\) and \(max-height:700px\)/);
   assert.match(v3,/@media print/);
-  assert.match(v3,/\\.milestoneCard strong/);
-  assert.match(v3,/\\.feedbackRequired/);
+  assert.match(v3,/\.milestoneCard strong/);
+  assert.match(v3,/\.feedbackRequired/);
 });
