@@ -53,7 +53,7 @@ test('all business operations retain verified owner and active scoped DB transac
  assert.doesNotMatch(repo,/assessment_results|assessment_runs|service_role/)
 })
 test('RLS, constrained FK and closed-action immutability',()=>{
- const sql=read('supabase/migrations/20261018194000_hh_crm_workflow_r1.sql')
+ const sql=read('supabase/migrations/20261018183403_hh_crm_followups_activity_sources_20261018.sql')
  for(const table of ['crm_followups','crm_activity'])
   assert.match(sql,new RegExp('alter table app\\.'+table+' force row level security'))
  assert.match(sql,/revoke all on app\.crm_followups,app\.crm_activity from public,anon,authenticated/)

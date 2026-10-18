@@ -19,3 +19,5 @@ Contacts list is currently first 100, followups first 300, and activity latest 1
 
 ## Release gates
 Run focused unit/contract tests, reviewed SQL dry-run against a transaction, and owner/scoped isolation checks. Apply migration before merging source. Require exact-SHA READY Vercel and anonymous CRM 401 smoke. No real contacts may be seeded for QA.
+
+Schema source: supabase/migrations/20261018183403_hh_crm_followups_activity_sources_20261018.sql. Applied in Supabase Production migration history version 20261018183403 after reviewed dry run.

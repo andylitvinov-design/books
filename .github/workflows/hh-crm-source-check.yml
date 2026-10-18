@@ -8,7 +8,7 @@ on:
       - 'app/api/app/crm/**'
       - 'components/app/crm-manager.*'
       - 'components/app/crm-workflow.*'
-      - 'supabase/migrations/*crm_workflow*'
+      - 'supabase/migrations/*crm_*'
       - 'components/app/crm-email-*.jsx'
       - 'components/app/crm-email-*.css'
       - 'app/[locale]/email-preferences/**'
