@@ -9,11 +9,11 @@ const end = source.indexOf(endLabel, start) + endLabel.length
 assert.ok(start >= 0 && end > start, 'The exact history diagnostic block is present')
 const block = source.slice(start, end)
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-const run = new AsyncFunction('page','ready','expect','screenshotEvidence','passed','performance','console','origin','output', block)
+const run = new AsyncFunction('page','ready','expect','screenshotEvidence','passed','performance','console','origin','output','historyNavigationDiagnostics', block)
 const stages = ['goto-start','goto-complete','ready-start','ready-complete','assertion-start','assertion-complete','screenshot-start','screenshot-complete']
 
 function fixture(failAt) {
-  const events = [], operations = []
+  const events = [], operations = [], passiveStages = []
   let tick = 0
   const step = kind => {
     operations.push(kind)
@@ -43,8 +43,8 @@ function fixture(failAt) {
     events.push(event)
   } }
   return {
-    events, operations,
-    execute: () => run(page, ready, expect, screenshot, passed, { now: () => ++tick }, consoleDouble, 'http://localhost:3100', '/synthetic-output'),
+    events, operations, passiveStages,
+    execute: () => run(page, ready, expect, screenshot, passed, { now: () => ++tick }, consoleDouble, 'http://localhost:3100', '/synthetic-output', { mark: stage => passiveStages.push(stage) }),
   }
 }
 
@@ -53,6 +53,7 @@ test('history markers preserve every original await, assertion and screenshot ar
   await f.execute()
   assert.deepEqual(f.operations, ['goto','ready','assertion','screenshot','passed'])
   assert.deepEqual(f.events.map(event => event.stage), stages)
+  assert.deepEqual(f.passiveStages, stages)
   assert.ok(f.events.every((event, index) => !index || event.elapsedMs >= f.events[index - 1].elapsedMs))
   assert.doesNotMatch(block, /timeout|waitForTimeout|setTimeout|retry|catch|page\.url|headers|response|body/)
 })
@@ -63,6 +64,7 @@ for (const [index, failAt] of ['goto','ready','assertion','screenshot'].entries(
     await assert.rejects(f.execute(), /fixture-private-secret/)
     assert.deepEqual(f.operations, ['goto','ready','assertion','screenshot'].slice(0, index + 1))
     assert.deepEqual(f.events.map(event => event.stage), stages.slice(0, index * 2 + 1))
+    assert.deepEqual(f.passiveStages, stages.slice(0, index * 2 + 1))
     assert.doesNotMatch(JSON.stringify(f.events), /fixture-private|person@|http|history-en|query|token/)
   })
 }

@@ -3,14 +3,16 @@ import { sanitizePathname, classifyDiagnosticError } from './isolated-browser-di
 
 // Passive, bounded evidence for synthetic loopback reloads only. Never retain
 // request objects, bodies, headers, query strings, messages or stack traces.
-export function observeReload(page, { origin, runtime = process.env.HH_APP_TEST_RUNTIME } = {}) {
+export function observeReload(page, { origin, runtime = process.env.HH_APP_TEST_RUNTIME, onEvent = () => {} } = {}) {
   if (runtime !== 'isolated' || !sanitizePathname('/', origin)) throw new Error('Isolated loopback diagnostics only')
   const started = performance.now(), events = [], listeners = []
   let dropped = 0, stopped = false
   const add = event => {
     if (stopped) return
     if (events.length >= 200) { dropped++; return }
-    events.push({ atMs: Math.round(performance.now() - started), ...event })
+    const evidence = { atMs: Math.round(performance.now() - started), ...event }
+    events.push(evidence)
+    try { onEvent({ ...evidence }) } catch { /* Passive evidence must not affect browser operations. */ }
   }
   const listen = (name, callback) => {
     // Diagnostics must never turn a successful browser operation into a failure.
