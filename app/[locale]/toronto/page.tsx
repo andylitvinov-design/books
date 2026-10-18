@@ -175,7 +175,7 @@ export default async function TorontoEntryPage({ params }: Props) {
         <h2 id="toronto-request-title">{t.contactTitle}</h2>
         <p>{t.contactDescription}</p>
       </div>
-      <FreeReviewQuickRequest locale={locale} />
+      <FreeReviewQuickRequest locale={locale} pagePath={"/" + locale + "/toronto"} />
     </section>
     <section className={styles.faq} aria-labelledby="toronto-faq-title">
       <h2 id="toronto-faq-title">{t.practicalTitle}</h2>
