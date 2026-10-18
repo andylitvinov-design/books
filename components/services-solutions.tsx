@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown, PlayCircle } from "lucide-react";
 import { getServiceVideoWatchUrl } from "@/data/service-video-library";
 import { coreServiceOffers } from "@/data/core-service-offers";
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-solutions.module.css";
 
 // Use existing approved local imagery, including real stills from the two service videos.
@@ -58,9 +58,28 @@ const copy = {
     ],
     disclaimer: "Дао-профиль — символическая оценка ресурса, не медицинская диагностика. Эффективность гомеопатии для лечения заболеваний не подтверждена надёжными доказательствами. Эти форматы не заменяют обычную и неотложную медицинскую помощь.",
   },
+  es: {
+    eyebrow: "ACOMPAÑAMIENTO PERSONAL · CUANDO TE SIENTAS LISTO",
+    homeEyebrow: "CUATRO FORMAS DE TRABAJAR JUNTOS",
+    servicesEyebrow: "CINCO OPCIONES · DOS FORMAS GRATUITAS DE EMPEZAR",
+    title: "Acompañamiento personal para tu siguiente paso",
+    homeTitle: "Cómo puedo ayudarte",
+    servicesTitle: "Cómo puedo ayudarte",
+    lead: "Alquimia del Alma combina constelaciones sistémicas, hipnoterapia con imágenes guiadas y psicohomeopatía opcional. También puedes explorar cursos de imágenes guiadas o consultoría empresarial.",
+    homeLead: "Dos revisiones escritas gratuitas y dos opciones de trabajo personal. También puedes realizar pruebas gratuitas de estrés y personalidad.",
+    servicesLead: "Empieza gratis o explora Alquimia del Alma, trabajo individual con imágenes guiadas o consultoría de negocios.",
+    more: "¿Quieres conocer los métodos?",
+    moreText: "Las constelaciones sistémicas, las imágenes guiadas y la homeopatía son enfoques utilizados en determinadas sesiones, no servicios adicionales obligatorios.",
+    methods: [
+      {label:"Constelaciones sistémicas", href:"systemic-constellations"},
+      {label:"Imágenes guiadas", href:"imagery-therapy"},
+      {label:"Psicohomeopatía · Alquimia del Alma", href:"alchemy-of-soul"},
+    ],
+    disclaimer: "El perfil DAO es una evaluación simbólica, no un diagnóstico médico. La homeopatía carece de pruebas fiables de eficacia para tratar enfermedades. Estos servicios no sustituyen la atención médica habitual ni la urgente.",
+  },
 } as const;
 
-export function ServicesSolutions({ locale, variant = "services" }: { locale: Locale; variant?: "services" | "home" }) {
+export function ServicesSolutions({ locale, variant = "services" }: { locale: PublicLocale; variant?: "services" | "home" }) {
   const t = copy[locale];
   const isHome = variant === "home";
   // Home keeps its four approved photo cards. Services uses the same image-left treatment
@@ -89,26 +108,26 @@ export function ServicesSolutions({ locale, variant = "services" }: { locale: Lo
               {(offer.id === "alchemy" || offer.id === "hypnotherapy") && (
                 <a className={styles.cardVideo} href={getServiceVideoWatchUrl(offer.id, locale)}
                   target="_blank" rel="noopener noreferrer" data-service-card-video={offer.id}
-                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : "Watch the method video in a new tab"}>
+                  aria-label={locale === "ru" ? "Открыть видео о подходе в новой вкладке" : locale === "es" ? "Ver el vídeo del método en otra pestaña (en inglés)" : "Watch the method video in a new tab"}>
                   <PlayCircle size={18} aria-hidden="true" />
-                  {locale === "ru" ? "Смотреть видео о подходе" : "Watch a short video"}
+                  {locale === "ru" ? "Смотреть видео о подходе" : locale === "es" ? "Ver vídeo (en inglés)" : "Watch a short video"}
                 </a>
               )}
               {offer.id === "alchemy" ? (
                 <div className={styles.cardActionRow} data-alchemy-service-actions>
                   <AcquisitionEventLink className={styles.cardDetails} href={offer.href} event="service_view">
-                    {locale === "ru" ? "Детали" : "Details"}<ArrowUpRight size={15} aria-hidden="true" />
+                    {locale === "ru" ? "Детали" : locale === "es" ? "Detalles" : "Details"}<ArrowUpRight size={15} aria-hidden="true" />
                   </AcquisitionEventLink>
                   <div className={styles.cardDirectOrder}>
-                    <ContactChannelChooser locale={locale} label={locale === "ru" ? "Заказать" : "Book"}
+                    <ContactChannelChooser locale={locale} label={locale === "ru" ? "Заказать" : locale === "es" ? "Solicitar" : "Book"}
                       className={styles.cardOrderButton} event="service_request_start"
                       whatsappUrl={whatsappEnquiryUrl({
                         locale,
                         service: offer.title,
                         request: locale === "ru"
                           ? "Хочу заказать личный сеанс «Алхимия души». Подтвердите, пожалуйста, доступные время и условия."
-                          : "I would like to book an Alchemy of the Soul session. Please confirm a time and the terms.",
-                        option: locale === "ru" ? "60 минут · €100" : "60 min · €100",
+                          : locale === "es" ? "Quisiera solicitar una sesión de Alquimia del Alma. Confirma los horarios disponibles y las condiciones." : "I would like to book an Alchemy of the Soul session. Please confirm a time and the terms.",
+                        option: locale === "ru" ? "60 минут · €100" : locale === "es" ? "60 minutos · €100" : "60 min · €100",
                         pagePath: offer.href,
                       })}
                       attributes={{ "data-alchemy-booking": "services-card" }}
