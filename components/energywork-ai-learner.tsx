@@ -513,7 +513,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
               <li key={lesson.phase}
                 className={lessonNumber === number + 1 ? styles.journeySelected :
                   lessonNumber > number + 1 ? styles.journeyIntro : ""}
-                aria-current={lessonNumber === number + 1 ? "step" : undefined}>
+                aria-current={lessonNumber === number + 1 || (lessonNumber === 0 && number === 0) ? "step" : undefined}>
                 <span className={styles.journeyDot} aria-hidden="true">
                   {lessonNumber > number + 1 ? <Check size={16} /> : number + 1}
                 </span>
