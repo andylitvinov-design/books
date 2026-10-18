@@ -41,6 +41,43 @@ jobs:
       - name: Verify AS-5.5 keyboard focus trap, process honesty, no-plan and individual exercise cases
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
       - name: Verify experience-first AS-5.6 practices, real bilingual feedback and safe V7-only save
-        run: node --test tests/opora-as56-experience-first.test.mjs
+        run: node --test tests/opora-as56-experience-first.test.mjs tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs
       - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
         run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs
+
+  as56-mobile-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      CI: 'true'
+      HH_APP_TEST_RUNTIME: isolated
+      HH_TEST_BROWSER: ${{ matrix.browser }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate the isolated AS5.6 fixture and safety regressions
+        run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
+          ln -s /tmp/hh-opora-browser/node_modules/@playwright node_modules/@playwright
+          /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Verify hydrated AS5.6 RU/EN at 320, 360 and 390 pixels
+        run: node scripts/verify-opora-as56-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opora-as56-mobile-${{ matrix.browser }}-${{ github.run_id }}
+          path: artifacts/opora-as56-mobile/${{ matrix.browser }}/
+          retention-days: 7

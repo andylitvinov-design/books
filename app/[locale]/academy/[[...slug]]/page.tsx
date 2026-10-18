@@ -25,7 +25,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { seoMetaForAcademyRoute } from "@/data/academy/seo-overrides";
 import type { PublicLocale } from "@/lib/public-locales";
 
-type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[] }> };
+type Props = { params: Promise<{ locale: string; slug?: string[] }>; searchParams: Promise<{ view?: string | string[]; start?: string | string[] }> };
 
 const directionPath: Record<string, AcademyDirectionId> = { reiki: "reiki", mysteries: "mysteries", symbolic: "symbolic", applied: "applied", path: "school", archive: "archive" };
 const prefixCopy: Record<string, Record<PublicLocale, { title: string; description: string }>> = {
@@ -123,7 +123,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedDescription = seoOverride?.description ?? description;
   const tantraFreeInitiation = routeKey(slug) === "reiki/tantra-reiki/free-initiation";
   const referralLanding = routeKey(slug) === "reiki/free-practitioner-course";
-  const sharingImage = "/images/holistic-house/andy-about.png";
+  const sharingImage = referralLanding ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : "/images/holistic-house/andy-about.png";
+  const sharingImageAlt = referralLanding ? "Free Reiki course and introductory initiation — Holistic House" : "Andrey Litvinov — Tantra Reiki teacher";
   return {
     metadataBase: metadataBaseFor(),
     title: resolvedTitle,
@@ -138,7 +139,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         locale: locale === "ru" ? "ru_RU" : locale === "es" ? "es_ES" : "en_US",
         title: resolvedTitle,
         description: resolvedDescription,
-        images: [{ url: sharingImage, alt: "Andrey Litvinov — Tantra Reiki teacher" }],
+        images: [{ url: sharingImage, alt: sharingImageAlt }],
       },
       twitter: {
         card: "summary_large_image" as const,
@@ -165,7 +166,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
 
   if (key === "free-ai-courses") return <PublicGrowthCourses locale={locale} />;
   if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
-  if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} />;
+  if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} startAtExperience={query.start === "1"} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
   if (key === "temple-studies") return <TempleStudies locale={locale} />;

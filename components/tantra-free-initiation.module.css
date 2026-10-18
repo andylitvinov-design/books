@@ -499,3 +499,13 @@
 .choiceGrid [data-contact-channel-chooser] { width:100%; }
 .questionFooter [data-contact-channel-chooser] { max-width:340px; }
 @media(max-width:760px) { .questionFooter [data-contact-channel-chooser] { max-width:none; } }
+
+
+/* Optional learning-first bridge, preserving the canonical initiation enquiry. */
+.freeCourseBridge {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  margin-top: 13px; color: #e6f9f5; font-size: 13px;
+  line-height: 1.5; font-weight: 750; text-underline-offset: 4px;
+}
+.freeCourseBridge:hover { color: #fff; }
+.freeCourseBridge:focus-visible { outline: 3px solid #86efe0; outline-offset: 4px; border-radius: 3px; }

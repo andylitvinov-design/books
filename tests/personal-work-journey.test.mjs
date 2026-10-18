@@ -99,16 +99,56 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
 test("Services hero sells the options and points to free review without diagnostic steps", () => {
   const hero = source("components", "services-conversion-hero.tsx");
   const css = source("components", "services-conversion-hero.module.css");
-  assert.match(hero, /Three free ways to begin/);
-  assert.match(hero, /Больше ясности, опоры и вариантов движения/);
-  assert.match(hero, /free-situation-review/);
-  assert.match(hero, /See all three free options/);
-  assert.match(hero, /href="#free-insights"/);
-  for (const label of ["Alchemy of the Soul · Psycho-homeopathy", "Алхимия души · Психогомеопатия", "Alquimia del Alma · sesión personal"]) assert.ok(hero.includes(label), label);
-  assert.match(hero, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/alchemy-of-soul"\}/);
-  assert.match(hero, /A live one-to-one session is separate and optional/);
-  assert.match(hero, /Личная встреча — отдельно и по желанию/);
-  assert.match(hero, /La sesión en directo es opcional y de pago/);
+  // Canonical #979 (bb1fd1ec) deliberately rewrote these exact copy fields.
+  // Keep the free written path, optional paid support and prior agreement explicit.
+  const approvedCopy = {
+    ru: {
+      heading: "Начните с вашего вопроса — найдём подходящий путь",
+      lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
+      paidCta: "Посмотреть личные сессии · от €50",
+      small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
+    },
+    en: {
+      heading: "Start with your question. Find a way forward.",
+      lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
+      paidCta: "Alchemy of the Soul · Psycho-homeopathy",
+      small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
+    },
+    es: {
+      heading: "Empieza con tu pregunta y encuentra tu próximo paso",
+      lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
+      paidCta: "Explorar sesiones personales · desde €50",
+      small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
+    },
+  };
+  const assertHeroContract = input => {
+    for (const [locale, fields] of Object.entries(approvedCopy)) {
+      const block = input.match(new RegExp("\\b" + locale + ": \\{([\\s\\S]*?)\\n  \\}"))?.[1];
+      assert.ok(block, locale + " copy block");
+      for (const [field, value] of Object.entries(fields)) {
+        assert.ok(block.includes(field + ": " + JSON.stringify(value)), locale + "." + field);
+      }
+    }
+    assert.match(input, /className=\{styles\.cta\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\}/);
+    assert.match(input, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/alchemy-of-soul"\}/);
+    assert.match(input, /See all three free options/);
+    assert.match(input, /href="#free-insights"/);
+    assert.match(input, /<p className=\{styles\.small\}>\{t\.small\}<\/p>/);
+    assert.doesNotMatch(input, /coaching form|ME, GOAL|Draw by hand on paper/);
+  };
+  assertHeroContract(hero);
+  for (const [before, after] of [
+    ["/services/free-situation-review", "/services/alchemy-of-soul"],
+    ["/services/alchemy-of-soul", "/services/free-situation-review"],
+    ["Session time and payment are agreed separately.", "Session time is automatically confirmed."],
+    ["Личная запись и оплата только после согласования.", "Запись подтверждается автоматически."],
+    ["Las sesiones se acuerdan por separado.", "La sesión se confirma automáticamente."],
+    ["{t.small}", ""],
+    ['href="#free-insights"', 'href="#solutions"'],
+  ]) {
+    assert.ok(hero.includes(before), before);
+    assert.throws(() => assertHeroContract(hero.replace(before, after)), undefined, before);
+  }
   assert.match(css, /\.paidLink:focus-visible/);
   assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
   assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);

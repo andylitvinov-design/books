@@ -47,3 +47,46 @@ test("conversion-first design is photo-led, readable on phones and avoids an ext
   assert.match(css, /:focus-visible/);
   assert.doesNotMatch(landing, /<form|<input|<video|<iframe/);
 });
+
+test("shareable landing shows its image before text and primary action above secondary copy on phones", () => {
+  const primary = landing.indexOf('attributes={{ "data-reiki-cta": "hero" }}');
+  const supporting = landing.indexOf('<p className={styles.lead}>{t.lead}</p>');
+  const secondary = landing.indexOf('attributes={{ "data-reiki-cta": "footer" }}');
+  assert.ok(primary > 0 && primary < supporting && supporting < secondary,
+    "the first action is visible before detailed copy");
+  assert.match(css, /\.heroVisual \{ order: -1; min-height:/);
+  assert.match(css, /\.heroText \{ padding: 24px 23px 23px; order: 1; \}/);
+  assert.match(landing, /learn\?start=1/);
+});
+
+test("campaign entry skips redundant intro only for fresh users; saved learners resume", () => {
+  const course = read("components/energywork-ai-learner.tsx");
+  assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
+  assert.match(course, /startAtExperience\?: boolean/);
+  assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
+  assert.match(course, /setIndex\(Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)\)/);
+  assert.match(course, /startAtExperience = false/);
+  assert.ok(read("data/academy/energywork-ai-curriculum.ts").includes('id: "welcome-02"'),
+    "first course question remains the approved Reiki experience choice");
+});
+
+test("short referral flow is discoverable from both legacy Tantra pages without removing the existing initiation", () => {
+  const tantra = read("components/tantra-free-initiation.tsx");
+  const program = read("components/academy-record-page.tsx");
+  assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
+  assert.match(tantra, /academy\/reiki\/free-practitioner-course/);
+  assert.match(program, /Try the free 5-lesson course/);
+  assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
+  assert.match(routes, /reiki-approved-sunrise-v3\.webp/);
+  assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
+});
+
+test("after saved course completion the free initiation is named, not confused with a paid session", () => {
+  const course = read("components/energywork-ai-learner.tsx");
+  assert.match(course, /Request free Level 1 introduction in/);
+  assert.match(course, /Запросить бесплатную вводную инициацию I ступени/);
+  assert.match(course, /choice\.id === "tantra" \? "#apply-free"/);
+  assert.match(course, /savedInitiationReady/);
+  assert.match(course, /!busy && !saveError && dirtyRef\.current\.size === 0/);
+  assert.match(course, /t\.reviewPrivate/);
+});

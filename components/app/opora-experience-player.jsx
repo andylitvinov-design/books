@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
-import {oporaExperienceGuide} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceGuide,oporaExperienceGuidance} from '@/lib/inner-growth/opora-as56-experience-guides'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -17,14 +17,16 @@ const WORDS={
     minute:'Один спокойный момент',learn:'Маленькая практика',feel:'Что изменилось?',
     quote:'Мысль сегодняшнего дня',keep:'Возьмите с собой',
     arriveTitle:'Можно просто побыть здесь',
-    arriveText:'Оглянитесь. Найдите один приятный или нейтральный цвет рядом. Не спешите — вы уже начали.',
+    arriveText:'Если хочется, найдите один приятный или нейтральный цвет рядом.',
+    arriveGuidance:'Оглянитесь. Найдите один приятный или нейтральный цвет рядом. Не спешите — вы уже начали.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     stepLabel:'Сегодня можно попробовать',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
     gentle:'Ничего не нужно делать идеально. Можно остановиться в любой момент.',
-    feelText:'Побудьте несколько мгновений. Не нужно специально добиваться спокойствия. Просто сравните ощущения, если хочется.',
+    feelText:'Если хочется, просто заметьте свои ощущения.',
+    feelGuidance:'Побудьте несколько мгновений. Не нужно специально добиваться спокойствия. Просто сравните ощущения, если хочется.',
     feelingBetter:'Стало немного легче',feelingSame:'Примерно так же',feelingPartial:'Есть небольшие изменения',feelingHard:'Стало некомфортно',
     feelingThanks:'Спасибо, что заметили. Любой ответ подходит; состояние не оценивается баллами.',
     quoteText:'Это не правило и не экзамен. Какая реакция ближе именно вам?',
@@ -40,6 +42,9 @@ const WORDS={
     incomplete:'Сначала откройте оставшиеся моменты занятия.',
     safetyTitle:'Здесь можно остановиться',
     safetyBody:'Не нужно продолжать через дискомфорт. По желанию найдите взглядом обычный предмет вокруг. Дышите естественно.',
+    neutralAnchor:'Если хочется, посмотрите на один обычный предмет вокруг.',
+    neutralSafety:'Можно остановиться; дыхание менять не нужно.',
+    originalGuidance:'Показать исходную подсказку',
     safetyNeutral:'Вернуться с нейтральной опорой',safetyBack:'Вернуться',safetyEnd:'Закончить без сохранения',
     learnMore:'Показать мягкую подсказку',noMedical:'Самостоятельная образовательная практика, не лечение и не диагностика.',
   },
@@ -49,14 +54,16 @@ const WORDS={
     minute:'One quiet moment',learn:'A small practice',feel:'What do you notice?',
     quote:'A thought for today',keep:'Take this with you',
     arriveTitle:'You can arrive just as you are',
-    arriveText:'Look around. Find one pleasant or neutral colour nearby. There is no hurry — you have already begun.',
+    arriveText:'If you wish, find one pleasant or neutral colour nearby.',
+    arriveGuidance:'Look around. Find one pleasant or neutral colour nearby. There is no hurry — you have already begun.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
     stepLabel:'A gentle step for today',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
     gentle:'Nothing needs to be done perfectly. You can stop at any moment.',
-    feelText:'Stay here a few moments. You do not have to make yourself calm. Just notice what is here, if you wish.',
+    feelText:'If you wish, just notice how you feel.',
+    feelGuidance:'Stay here a few moments. You do not have to make yourself calm. Just notice what is here, if you wish.',
     feelingBetter:'A little easier',feelingSame:'About the same',feelingPartial:'A small shift',feelingHard:'Uncomfortable',
     feelingThanks:'Thank you for noticing. There is no score or right answer.',
     quoteText:'This is not a rule or a test. What feels true for you?',
@@ -71,6 +78,9 @@ const WORDS={
     incomplete:'Please open the remaining moments before saving.',
     safetyTitle:'You may stop here',
     safetyBody:'You do not need to push through discomfort. If you wish, look for an ordinary object around you. Let your breath remain natural.',
+    neutralAnchor:'If you wish, look at one ordinary object around you.',
+    neutralSafety:'You can stop; no need to change your breathing.',
+    originalGuidance:'Show original guidance',
     safetyNeutral:'Return with a neutral anchor',safetyBack:'Go back',safetyEnd:'End without saving',
     learnMore:'Show gentle guidance',noMedical:'Self-guided education, not treatment or diagnosis.',
   },
@@ -88,6 +98,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
   const [showHelp,setShowHelp]=useState(false)
+  const [neutralSupport,setNeutralSupport]=useState(false)
   const [safety,setSafety]=useState(false)
   const [error,setError]=useState('')
   const [saving,setSaving]=useState(false)
@@ -98,6 +109,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const locked=Boolean(busy||saving),receipt=step>=OPORA_EXPERIENCE_PRE_SAVE_KEYS.length
   const moment=receipt?'receipt':SCENES[step]
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
+  const practiceGuidance=oporaExperienceGuidance(cycle.day,lang)
   const plan=authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=authored.quote||lesson.aphorism||''
   const rating=answers.reflection
@@ -127,14 +139,22 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     // remain absent so neither the receipt nor analytics invents an action.
     setPracticeReport(value)
   }
+  function returnWithNeutralAnchor(){
+    // Safety support must never opt the learner into the original exercise.
+    setShowHelp(false)
+    setNeutralSupport(true)
+    setSafety(false)
+  }
   function next(){
     if(locked)return
     setError('')
+    setShowHelp(false)
     setStep(s=>Math.min(OPORA_EXPERIENCE_PRE_SAVE_KEYS.length-1,s+1))
   }
   function back(){
     if(locked)return
     setError('')
+    setShowHelp(false)
     setStep(s=>Math.max(0,s-1))
   }
   function changeFeeling(value){
@@ -205,25 +225,22 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             moment==='feel'?t.feel:moment==='affirmation'?t.quote:t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
-          {moment==='arrive'&&<>
-            <p className={styles.lead}>{t.arriveText}</p>
-            <p className={styles.soft}>{t.arriveHint}</p>
-          </>}
+          {neutralSupport&&<div data-opora-neutral-anchor="true">
+            <p className={styles.lead}>{t.neutralAnchor}</p>
+            <p className={styles.soft}>{t.neutralSafety}</p>
+          </div>}
+          {moment==='arrive'&&!neutralSupport&&<p className={styles.lead}>{t.arriveText}</p>}
           {moment==='practice'&&<>
-            <p className={styles.lead}>{practiceGuide}</p>
+            {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
             <p className={styles.miniLabel}>{t.tryAfter}</p>
             <div className={styles.chips} role="group" aria-label={t.tryAfter}>
               {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
             </div>
-            <button type="button" className={styles.linkHint} disabled={locked}
-              onClick={()=>setShowHelp(s=>!s)} aria-expanded={showHelp}>
-              {t.learnMore}<ChevronDown size={16}/></button>
-            {showHelp&&<p className={styles.soft}>{lesson.antiStress?.neutralText||t.gentle}</p>}
           </>}
           {moment==='feel'&&<>
-            <p className={styles.lead}>{t.feelText}</p>
+            {!neutralSupport&&<p className={styles.lead}>{t.feelText}</p>}
             <div className={styles.chips+' '+styles.feeling} role="group" aria-label={t.feel}>
               {[[t.feelingBetter,'useful'],[t.feelingPartial,'partly'],
                 [t.feelingSame,'unchanged'],[t.feelingHard,'uncomfortable']].map(([label,value])=>
@@ -262,6 +279,20 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
+          {['arrive','practice','feel'].includes(moment)&&<>
+            <button type="button" className={styles.linkHint} disabled={locked}
+              onClick={()=>setShowHelp(s=>!s)} aria-expanded={showHelp}>
+              {neutralSupport?t.originalGuidance:t.learnMore}<ChevronDown size={16}/></button>
+            {showHelp&&<div data-opora-optional-guidance="true">
+              {moment==='arrive'&&<><p className={styles.soft}>{t.arriveGuidance}</p>
+                <p className={styles.soft}>{t.arriveHint}</p></>}
+              {moment==='practice'&&<>
+                {practiceGuidance&&<p className={styles.soft}>{practiceGuidance}</p>}
+                <p className={styles.soft}>{lesson.antiStress?.neutralText||t.gentle}</p>
+              </>}
+              {moment==='feel'&&<p className={styles.soft}>{t.feelGuidance}</p>}
+            </div>}
+          </>}
           <small className={styles.disclaimer}>{t.noMedical}</small>
         </section>
       </main>
@@ -281,7 +312,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
       <div className={styles.safetyCard}>
         <ShieldCheck size={29}/><h3>{t.safetyTitle}</h3><p>{t.safetyBody}</p>
         <button type="button" ref={safetyPrimary}
-          onClick={()=>{setSafety(false);setShowHelp(true)}}>{t.safetyNeutral}</button>
+          onClick={returnWithNeutralAnchor}>{t.safetyNeutral}</button>
         <button type="button" ref={safetyBack} onClick={()=>setSafety(false)}>{t.safetyBack}</button>
         <button type="button" ref={safetyEnd} className={styles.safetyExit}
           onClick={onClose}>{t.safetyEnd}</button>
