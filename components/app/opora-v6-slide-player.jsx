@@ -102,6 +102,88 @@ const DICTIONARY={
     }
   }
 }
+// Context-sensitive coaching: the same enum (such as 'unsure') does not mean
+// the same thing on an arrival check-in and an aphorism reflection.
+const CONTEXT_FEEDBACK={
+  ru:{
+    welcome:{
+      steady:'Вы отметили спокойный момент. Можно попробовать одну маленькую практику.',
+      tense:'Вы заметили напряжение. Не нужно сейчас заставлять себя расслабляться.',
+      low:'Если сил немного, доступен короткий формат или только чтение.',
+      unsure:'Необязательно точно называть состояние, чтобы познакомиться с навыком.',
+    },
+    pace:{
+      standard:'Оставим обычный темп; вы сможете уменьшить нагрузку в любой момент.',
+      quick:'Вы выбрали короткий вариант. Маленький шаг тоже подходит для знакомства.',
+      read:'Сегодня можно только читать. Мы не будем считать просмотр выполненным упражнением.',
+    },
+    focus:{
+      fits:'Хорошо. Сегодня потренируем именно этот маленький навык.',
+      general:'Общий учебный фокус подходит; дополнительные тесты не нужны.',
+      unsure:'Не нужно выбирать идеальную цель. Можно двигаться с общим учебным примером.',
+    },
+    prepare:{
+      try:'Начните с одного маленького шага и остановитесь, если будет неприятно.',
+      simple:'Пойдём по самому простому варианту; подсказка остаётся доступной.',
+      read:'Можно только наблюдать за примером, не выполняя упражнение.',
+    },
+    demo:{
+      clear:'Теперь видно, как выглядит конкретное действие. Можно попробовать его мягко.',
+      example:'Посмотрим на действие ещё раз, разделив его на один небольшой шаг.',
+      difficult:'Если пока непонятно, воспользуйтесь подсказкой. Спешить не нужно.',
+    },
+    transfer:{
+      planned:'Вы составили возможный план. Он не обязывает вас выполнять его сегодня.',
+      imagined:'Мысленной репетиции достаточно для сегодняшнего учебного шага.',
+      not_planning:'Планировать на сегодня необязательно. Можно сохранить только знакомство с навыком.',
+    },
+    reflection:{
+      useful:'Вы отметили, что подход оказался пригодным. Это ваше наблюдение, не медицинская оценка.',
+      partly:'Что-то подошло, а что-то нет. Следующую практику можно сделать проще.',
+      unchanged:'Отсутствие изменения — допустимый результат. Практика не обязана менять самочувствие.',
+      uncomfortable:'Спасибо, что заметили дискомфорт. Остановитесь; делать упражнение через силу не нужно.',
+    },
+  },
+  en:{
+    welcome:{
+      steady:'You noticed a steady moment. A small step is enough for today.',
+      tense:'You noticed some tension. You do not need to force yourself to relax.',
+      low:'With less energy, the shorter or read-only mode is available.',
+      unsure:'You do not need to name your state precisely to learn one small skill.',
+    },
+    pace:{
+      standard:'We can use the usual pace. You can reduce the load at any point.',
+      quick:'You chose a shorter practice. A small attempt is still meaningful.',
+      read:'You can read only today. Reading will not be recorded as performing the exercise.',
+    },
+    focus:{
+      fits:'This focus feels relevant. We can practise one small action.',
+      general:'A general skill focus is enough. No additional test is needed.',
+      unsure:'You need not choose a perfect goal. We can stay with a general example.',
+    },
+    prepare:{
+      try:'Start with one small step and stop if it becomes uncomfortable.',
+      simple:'We will use a simpler option; help remains available.',
+      read:'You can observe the example without doing the exercise.',
+    },
+    demo:{
+      clear:'You saw the action in a simple example. You may try it gently.',
+      example:'Let us look at the action again, one small step at a time.',
+      difficult:'You can use the hint if the example is unclear. There is no rush.',
+    },
+    transfer:{
+      planned:'You made a possible plan, not an obligation to act today.',
+      imagined:'A mental rehearsal can be enough for this learning step.',
+      not_planning:'You do not have to make a plan today. An introduction can be saved.',
+    },
+    reflection:{
+      useful:'You found this option suitable. This is your observation, not a clinical score.',
+      partly:'Some parts suited you and some did not. You may make the next exercise simpler.',
+      unchanged:'No change is a valid result. You are not required to feel better.',
+      uncomfortable:'Thank you for noticing discomfort. You can stop rather than push through.',
+    },
+  },
+}
 const ROLE_OPTIONS={
   welcome:['steady','tense','low','unsure'],pace:['standard','quick','read'],
   focus:['fits','general','unsure'],aphorism:['agree','unsure','disagree'],
@@ -238,8 +320,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     ?role==='scenario'
       ? (lang==='ru'?'Вы выбрали один из доступных вариантов. ': 'You chose one possible option. ')+
         (authored?.scenario?.explanation||t.feedback.other)
-      :chosen==='disagree'?t.feedback.disagree+' '+(authored?.neutralQuote||'')
-      :t.feedback[chosen]||t.feedback.other
+      :role==='aphorism'&&chosen==='disagree'
+        ?t.feedback.disagree+' '+(authored?.neutralQuote||'')
+        :role==='aphorism'?t.feedback[chosen]||t.feedback.other
+        :CONTEXT_FEEDBACK[lang]?.[role]?.[chosen]||t.feedback[chosen]||t.feedback.other
     :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
   const guidanceText=role==='scenario'?authored?.scenario?.explanation
