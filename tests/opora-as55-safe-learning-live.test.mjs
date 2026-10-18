@@ -44,6 +44,11 @@ test('V7 14-day curriculum still has three meaningful exercise cards and an hone
      const exercise=v.opora54.exercises[kind]
      const options=kind==='notice'?exercise.a:exercise.choices
      assertConcreteChoices(options,'day '+day+' '+locale+' '+kind)
+     // Single-word feeling labels are intentional low-load responses.
+     // Keep the owner's sentence-length guard for action and transfer choices.
+     const minLength=kind==='notice'?3:12
+     assert.ok(options.every(x=>x.trim().length>=minLength),
+       'Expected meaningful '+kind+' labels on '+locale+' day '+day)
      const authored=kind==='notice'?oporaNoticeActivity(day,locale).a
        :kind==='act'?oporaCompactDay(day,locale).choices:opora55Case(day,locale).transfer
      assert.deepEqual(options,authored,'The actual lesson retains the reviewed exercise choices')
@@ -148,6 +153,11 @@ test('RU V7 not-yet/not-tried and no-plan responses require no pretend action',a
  assert.equal(f.payload.practiceAttempt,null)
  assert.equal(f.payload.transferStage,null)
  assert.match(textOf(h.tree),/Практика сохранена/)
+ const receipt=textOf(h.tree)
+ assert.match(receipt,/Пока не получилось/)
+ assert.match(receipt,/Сегодня без плана/)
+ assert.doesNotMatch(receipt,/Выбранное упражнение/)
+ assert.doesNotMatch(receipt,/100% освоено|выполнено самостоятельно/)
  h.unmount()
 })
 

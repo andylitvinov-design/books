@@ -72,6 +72,9 @@
 .result strong{color:#087f8f}
 .result p{margin:0}
 .result small{color:#547588}
+.receiptRow{display:grid;gap:3px;border-top:1px solid #cce7e5;padding-top:8px;min-width:0}
+.receiptRow span{font-size:11px;color:#507b85;font-weight:730;line-height:1.35}
+.receiptRow p{font-size:13px;line-height:1.5;color:#245169;overflow-wrap:anywhere}
 .helper{color:#547588;font-size:12px}
 .disclaimer{margin:auto 0 0;padding-top:10px;color:#7294a2;font-size:10px;line-height:1.4;text-align:center}
 .error{padding:11px 14px;color:#a22e37;background:#fff0f0;border:1px solid #e6afb5;border-radius:12px;font-size:12px}
@@ -111,3 +114,401 @@
 .changeChoice{justify-self:start;min-height:36px;padding:6px 11px;border-radius:10px;
   background:#fff;border:1px solid #b6dcdf;color:#216d7e;font-size:12px;
   font-weight:750;cursor:pointer}
+
+
+/* OPORA scenic lesson system · 2026-10-18
+   One approved natural photograph throughout every 15-step AS2 lesson.
+   The image is decorative; tasks, answer semantics, pause and private
+   progress remain in the original component. Small-screen content always
+   retains scrolling as an accessible fallback instead of clipping. */
+.overlay{background:#0a5366}
+.frame{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:#124e64;
+}
+.scenicBackdrop{
+  position:absolute;inset:0;z-index:0;overflow:hidden;
+  pointer-events:none;background:#326b79;
+}
+.scenicPhoto{
+  display:block;width:100%;height:100%;
+  object-fit:cover;object-position:59% 45%;
+  filter:saturate(.93) contrast(1.015);
+}
+.scenicBackdrop::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(6,42,65,.54) 0%,
+    rgba(10,70,79,.12) 29%,
+    rgba(3,55,70,.23) 59%,
+    rgba(5,38,57,.62) 100%);
+}
+.header,.scroll,.footer{position:relative;z-index:1}
+.header{
+  min-height:60px;
+  border-bottom:1px solid rgba(225,252,250,.26);
+  background:linear-gradient(180deg,rgba(6,47,68,.82),rgba(13,69,84,.60));
+  color:#f3ffff;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+}
+.progressLabel{color:#f4ffff;text-shadow:0 1px 4px #1038488c}
+.track{background:rgba(237,255,253,.29)}
+.fill{background:linear-gradient(90deg,#83e8dd,#17b8c4);box-shadow:0 0 12px #5fe5d84a}
+.controlIcon,.safetyButton{
+  border:1px solid rgba(240,255,253,.47);
+  background:rgba(241,255,254,.86);
+  color:#234c5f;
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+}
+.scroll{padding:clamp(8px,2.3vw,18px) clamp(10px,3vw,23px) 10px;scrollbar-width:thin}
+.card{
+  min-height:100%;
+  padding:clamp(13px,3vw,22px);
+  gap:clamp(7px,1.2vh,11px);
+  border:1px solid rgba(247,255,255,.67);
+  border-radius:24px;
+  background:linear-gradient(155deg,rgba(241,253,252,.84),rgba(227,249,248,.72));
+  box-shadow:0 13px 36px rgba(0,34,53,.27),inset 0 1px 0 #ffffffba;
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+}
+.heroIcon{
+  position:relative;display:flex;align-items:flex-end;justify-content:flex-end;
+  align-self:stretch;flex:none;box-sizing:border-box;
+  width:100%;height:clamp(64px,11dvh,115px);
+  margin:0;padding:9px 11px;
+  border:1px solid rgba(246,255,254,.5);
+  border-radius:16px;border-bottom:0;
+  background:linear-gradient(180deg,rgba(4,50,68,.06),rgba(5,52,75,.42)),
+    url('/images/holistic-house/course-focus-mountain-boy.webp') center 42%/cover no-repeat;
+  color:#fbffff;
+  box-shadow:0 7px 20px rgba(9,58,75,.22);
+}
+.heroIcon svg{width:20px;height:20px;filter:drop-shadow(0 1px 5px #063246)}
+.eyebrow{color:#327b88;font-size:10px;letter-spacing:.065em}
+.title{
+  color:#153b55;font-family:Georgia,'Times New Roman',serif;
+  font-weight:700;letter-spacing:-.025em;line-height:1.2;
+  font-size:clamp(23px,4.9vw,31px);
+}
+.prompt{color:#224e66;line-height:1.46;margin:0;font-size:clamp(14px,3.5vw,16px)}
+.options{gap:7px}
+.options button{
+  min-height:46px;border:1px solid rgba(196,226,231,.88);
+  border-radius:15px;background:rgba(255,255,255,.89);
+  color:#1e4b63;box-shadow:0 3px 0 rgba(119,177,183,.31);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.options button.selected{
+  background:rgba(219,252,243,.97);border-color:#0ea5a9;
+  box-shadow:0 3px 0 #7ad1c6;color:#006b7b;
+}
+.aphorism{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(22px,5.4vw,33px);
+  font-style:italic;font-weight:400;
+  letter-spacing:-.014em;line-height:1.37;
+}
+.disclaimer{padding-top:5px;color:#477485;font-size:10px}
+.footer{
+  border-top:1px solid rgba(246,255,255,.36);
+  background:linear-gradient(180deg,rgba(238,251,250,.91),rgba(241,255,253,.97));
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  gap:9px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+}
+.back{min-height:46px;border-color:#b4dbe0;background:#ffffffbb;color:#285a6f}
+.primary{
+  min-height:48px;
+  border-bottom:3px solid #057a8b;border-radius:14px;
+  background:linear-gradient(105deg,#1babb9,#047e9f);
+  box-shadow:0 4px 13px rgba(4,93,112,.17);
+}
+
+/* The quotation is editorial text on the photograph, not a pastel inset.
+   Use a gentle dark scrim only on that step to maintain legibility. */
+.frame[data-scene-role="aphorism"] .card{
+  justify-content:flex-end;
+  background:linear-gradient(180deg,
+    rgba(10,62,77,.08) 0%,
+    rgba(9,57,75,.24) 39%,
+    rgba(5,42,64,.79) 100%);
+  border-color:rgba(231,255,254,.34);
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+}
+.frame[data-scene-role="aphorism"] .heroIcon{
+  margin-top:auto;align-self:center;justify-content:center;
+  width:38px;height:38px;padding:7px;
+  border:1px solid rgba(243,255,255,.55);
+  border-radius:50%;background:rgba(230,252,250,.16);
+  box-shadow:0 5px 20px rgba(0,35,53,.22);
+}
+.frame[data-scene-role="aphorism"] .eyebrow{color:#d3f7f1;text-shadow:0 1px 5px #173c50}
+.frame[data-scene-role="aphorism"] .title{
+  color:#ffffff;font-weight:650;text-shadow:0 2px 12px rgba(0,29,49,.48);
+}
+.frame[data-scene-role="aphorism"] .aphorism{
+  color:#fffdf1;background:transparent;border:0;border-radius:0;
+  padding:4px 4px 9px;margin:0 auto;max-width:580px;
+  text-align:center;text-wrap:balance;
+  font-size:clamp(24px,5.8vw,36px);
+  text-shadow:0 2px 13px rgba(0,28,47,.78);
+}
+.frame[data-scene-role="aphorism"] .aphorism::before{
+  content:"“";display:block;margin-bottom:-15px;
+  font:italic 50px/.9 Georgia,serif;color:#b7f1e2;
+}
+.frame[data-scene-role="aphorism"] .options button{
+  background:rgba(246,255,255,.89);
+  border-color:rgba(244,255,255,.75);
+  color:#17475f;
+}
+.frame[data-scene-role="aphorism"] .options button.selected{
+  background:#c7f4e8;color:#066374;border-color:#42c5be;
+}
+.frame[data-scene-role="aphorism"] .feedback{
+  background:rgba(225,252,243,.94);color:#145d5b;
+}
+.frame[data-scene-role="aphorism"] .disclaimer{
+  color:#e0f2f3;margin-top:0;
+  text-shadow:0 1px 7px rgba(0,26,43,.7);
+}
+.frame[data-scene-role="complete"] .heroIcon{
+  background-position:center 60%;
+}
+
+/* One step per mobile viewport, including Safari browser chrome.
+   Longer translated copy / large text may scroll inside .scroll without
+   hiding answers, the footer action or the safe-pause control. */
+@media(max-width:430px){
+  .header{min-height:54px;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 7px}
+  .controlIcon{width:37px;height:39px;border-radius:11px}
+  .safetyButton{height:39px;padding:0 9px;border-radius:12px;font-size:11px}
+  .progressWrap{gap:5px}
+  .progressLabel{font-size:10px}
+  .track{height:7px}
+  .scroll{padding:7px 9px 8px}
+  .card{gap:7px;padding:12px 12px 10px;border-radius:21px}
+  .heroIcon{height:clamp(55px,9dvh,82px);padding:7px 9px;border-radius:13px}
+  .heroIcon svg{width:18px;height:18px}
+  .eyebrow{font-size:9px;line-height:1.3}
+  .title{font-size:clamp(22px,5.5vw,27px);line-height:1.16}
+  .prompt{font-size:clamp(13px,3.4vw,15px);line-height:1.38}
+  .options{gap:6px}
+  .options button{min-height:43px;padding:9px 11px;font-size:13px;line-height:1.3;border-radius:12px}
+  .rating,.ease{padding:9px;gap:6px}
+  .ratingGrid button,.easeOptions button{min-height:35px}
+  .activityPrompt{font-size:12px}
+  .hintToggle{min-height:38px;padding:7px 10px}
+  .gentle,.feedback{font-size:11px;line-height:1.35}
+  .disclaimer{font-size:9px;line-height:1.3;padding-top:2px}
+  .footer{gap:7px;padding:7px 10px calc(7px + env(safe-area-inset-bottom))}
+  .back{min-height:43px;padding:0 12px;font-size:13px}
+  .primary{min-height:45px;font-size:14px;border-radius:13px}
+  .frame[data-scene-role="aphorism"] .heroIcon{width:33px;height:33px;padding:5px}
+  .frame[data-scene-role="aphorism"] .aphorism{
+    padding:0 3px 4px;font-size:clamp(22px,5.7vw,28px);line-height:1.34;
+  }
+  .frame[data-scene-role="aphorism"] .aphorism::before{
+    font-size:40px;margin-bottom:-11px;
+  }
+}
+@media(max-height:680px){
+  .scroll{padding-top:5px;padding-bottom:5px}
+  .card{gap:6px;padding-top:9px;padding-bottom:8px}
+  .heroIcon{height:48px}
+  .title{line-height:1.13}
+  .options button{min-height:40px;padding-block:8px}
+  .frame[data-scene-role="aphorism"] .heroIcon{height:27px;width:27px}
+  .frame[data-scene-role="aphorism"] .aphorism{font-size:clamp(20px,5.2vw,26px)}
+  .disclaimer{font-size:9px}
+}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more){
+  .card{background:#f4fdfc;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .frame[data-scene-role="aphorism"] .card{background:#174d62}
+  .options button{background:#fff}
+  .header,.footer{-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+/* OPORA photo-first, one-viewport lesson 2026-10-18.
+   The picture and title share one row rather than stacking a giant icon over
+   the copy. At accessibility zoom or unusually short heights the inner region
+   remains scrollable: text, crisis exits, feedback and answer choices are NEVER
+   clipped with overflow:hidden, line-clamp or a fixed-height content card. */
+.overlay[data-course-photo-layout="v1"] .frame {
+  max-height:100dvh;min-height:0;
+}
+.overlay[data-course-photo-layout="v1"] .header {
+  min-height:56px;gap:8px;
+  padding:calc(7px + env(safe-area-inset-top)) 10px 7px;
+}
+.overlay[data-course-photo-layout="v1"] .controlIcon {
+  width:40px;height:42px;
+}
+.overlay[data-course-photo-layout="v1"] .safetyButton {
+  height:42px;min-height:42px;
+}
+.overlay[data-course-photo-layout="v1"] .progressWrap {gap:5px}
+.overlay[data-course-photo-layout="v1"] .track {height:7px}
+.overlay[data-course-photo-layout="v1"] .scroll {
+  padding:8px 11px 8px;overflow-x:hidden;overflow-y:auto;
+}
+.overlay[data-course-photo-layout="v1"] .card {
+  min-height:100%;gap:8px;padding:11px 12px 9px;
+  border-radius:18px;box-shadow:0 7px 19px #2b768212;
+}
+.overlay[data-course-photo-layout="v1"] .slideIntro {
+  display:grid;grid-template-columns:minmax(110px,27%) minmax(0,1fr);
+  align-items:center;gap:12px;min-width:0;width:100%;
+}
+.overlay[data-course-photo-layout="v1"] .heroPhoto {
+  display:block;position:relative;min-width:0;flex:none;
+  height:clamp(82px,13dvh,122px);overflow:hidden;
+  border-radius:14px;border:1px solid #c4e8e8;
+  background:linear-gradient(145deg,#d9f7f5,#e7f8ff);
+}
+.overlay[data-course-photo-layout="v1"] .heroPhoto img {
+  display:block;width:100%;height:100%;object-fit:cover;
+}
+.overlay[data-course-photo-layout="v1"] .introCopy {
+  min-width:0;display:grid;align-content:center;gap:5px;
+}
+.overlay[data-course-photo-layout="v1"] .eyebrow {
+  display:block;text-align:left;line-height:1.25;
+  font-size:10px;letter-spacing:.035em;
+}
+.overlay[data-course-photo-layout="v1"] .title {
+  text-align:left;font-size:clamp(21px,4.7vw,27px);
+  line-height:1.17;letter-spacing:-.035em;
+}
+.overlay[data-course-photo-layout="v1"] .prompt {
+  margin:0;font-size:clamp(14px,3.65vw,16px);
+  line-height:1.37;
+}
+.overlay[data-course-photo-layout="v1"] .options {gap:6px}
+.overlay[data-course-photo-layout="v1"] .options button {
+  min-height:43px;padding:8px 11px;font-size:13px;
+  line-height:1.27;box-shadow:0 2px 0 #d9e6e9;
+}
+.overlay[data-course-photo-layout="v1"] .choiceGrid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.overlay[data-course-photo-layout="v1"] .choiceGrid button {
+  min-width:0;min-height:43px;padding:8px 10px;font-size:12px;
+}
+.overlay[data-course-photo-layout="v1"] .choiceGrid button span {
+  overflow-wrap:break-word;min-width:0;
+}
+.overlay[data-course-photo-layout="v1"] .aphorism {
+  padding:11px 12px;line-height:1.36;
+  font-size:clamp(17px,4vw,21px);
+}
+.overlay[data-course-photo-layout="v1"] .rating,
+.overlay[data-course-photo-layout="v1"] .ease {
+  gap:6px;padding:9px 11px;
+}
+.overlay[data-course-photo-layout="v1"] .ratingGrid {gap:5px}
+.overlay[data-course-photo-layout="v1"] .ratingGrid button {
+  min-height:39px;
+}
+.overlay[data-course-photo-layout="v1"] .feedback {
+  padding:8px 10px;font-size:11.5px;line-height:1.36;gap:6px;
+}
+.overlay[data-course-photo-layout="v1"] .activityChoice {
+  gap:4px;padding:7px 10px;font-size:11.5px;line-height:1.35;
+}
+.overlay[data-course-photo-layout="v1"] .activityChoice small {font-size:10px}
+.overlay[data-course-photo-layout="v1"] .activityPrompt {
+  font-size:11.5px;line-height:1.35;margin:0;
+}
+.overlay[data-course-photo-layout="v1"] .hintBlock {gap:4px}
+.overlay[data-course-photo-layout="v1"] .hintToggle {
+  min-height:37px;padding:7px 10px;
+}
+.overlay[data-course-photo-layout="v1"] .hint {
+  padding:8px 10px;font-size:11px;line-height:1.4;
+}
+.overlay[data-course-photo-layout="v1"] .gentle {
+  font-size:11px;line-height:1.34;
+}
+.overlay[data-course-photo-layout="v1"] .disclaimer {
+  font-size:9px;line-height:1.3;padding-top:3px;
+}
+.overlay[data-course-photo-layout="v1"] .result {
+  gap:6px;padding:9px 11px;font-size:12px;line-height:1.35;
+}
+.overlay[data-course-photo-layout="v1"] .receiptRow {gap:2px;padding-top:5px}
+.overlay[data-course-photo-layout="v1"] .receiptRow p {font-size:12px;line-height:1.35}
+.overlay[data-course-photo-layout="v1"] .footer {
+  padding:8px 11px calc(7px + env(safe-area-inset-bottom));gap:8px;
+}
+.overlay[data-course-photo-layout="v1"] .back {min-height:44px}
+.overlay[data-course-photo-layout="v1"] .primary {
+  min-height:47px;font-size:14px;border-bottom-width:3px;
+}
+@media(max-width:500px) {
+  .overlay[data-course-photo-layout="v1"] .header {
+    min-height:51px;padding:calc(5px + env(safe-area-inset-top)) 9px 5px;gap:6px;
+  }
+  .overlay[data-course-photo-layout="v1"] .scroll {padding:6px 8px 7px}
+  .overlay[data-course-photo-layout="v1"] .card {
+    gap:7px;padding:9px 10px 8px;border-radius:17px;
+  }
+  .overlay[data-course-photo-layout="v1"] .slideIntro {
+    grid-template-columns:clamp(84px,27vw,115px) minmax(0,1fr);gap:9px;
+  }
+  .overlay[data-course-photo-layout="v1"] .heroPhoto {
+    height:clamp(75px,12dvh,105px);border-radius:12px;
+  }
+  .overlay[data-course-photo-layout="v1"] .introCopy {gap:4px}
+  .overlay[data-course-photo-layout="v1"] .eyebrow {font-size:9px;line-height:1.22}
+  .overlay[data-course-photo-layout="v1"] .title {
+    font-size:clamp(19px,5vw,24px);line-height:1.15;
+  }
+  .overlay[data-course-photo-layout="v1"] .prompt {
+    font-size:clamp(13px,3.55vw,15px);line-height:1.34;
+  }
+  .overlay[data-course-photo-layout="v1"] .options {gap:5px}
+  .overlay[data-course-photo-layout="v1"] .options button {
+    min-height:42px;padding:7px 9px;font-size:12.5px;line-height:1.24;
+    gap:7px;border-radius:12px;
+  }
+  .overlay[data-course-photo-layout="v1"] .choiceGrid {gap:5px}
+  .overlay[data-course-photo-layout="v1"] .choiceGrid button {
+    min-height:42px;padding:6px 8px;font-size:11.5px;line-height:1.24;
+  }
+  .overlay[data-course-photo-layout="v1"] .feedback {
+    padding:7px 9px;font-size:11px;line-height:1.34;
+  }
+  .overlay[data-course-photo-layout="v1"] .activityChoice {padding:7px 8px}
+  .overlay[data-course-photo-layout="v1"] .footer {
+    padding:6px 9px calc(6px + env(safe-area-inset-bottom));
+  }
+  .overlay[data-course-photo-layout="v1"] .primary {
+    min-height:44px;font-size:14px;
+  }
+}
+@media(max-width:500px) and (max-height:740px) {
+  .overlay[data-course-photo-layout="v1"] .scroll {padding-top:5px}
+  .overlay[data-course-photo-layout="v1"] .card {gap:5px;padding:7px 9px}
+  .overlay[data-course-photo-layout="v1"] .heroPhoto {height:clamp(64px,10dvh,80px)}
+  .overlay[data-course-photo-layout="v1"] .title {font-size:clamp(18px,4.9vw,22px)}
+  .overlay[data-course-photo-layout="v1"] .prompt {font-size:12.7px;line-height:1.29}
+  .overlay[data-course-photo-layout="v1"] .options {gap:4px}
+  .overlay[data-course-photo-layout="v1"] .options button {
+    min-height:39px;padding:6px 8px;font-size:12px;
+  }
+  .overlay[data-course-photo-layout="v1"] .choiceGrid button {
+    min-height:39px;padding:6px 7px;font-size:11px;
+  }
+  .overlay[data-course-photo-layout="v1"] .footer {padding-top:5px}
+  .overlay[data-course-photo-layout="v1"] .feedback {padding:6px 8px}
+  .overlay[data-course-photo-layout="v1"] .disclaimer {font-size:8.5px}
+}
+@media(max-width:350px) {
+  .overlay[data-course-photo-layout="v1"] .slideIntro {
+    grid-template-columns:78px minmax(0,1fr);gap:8px;
+  }
+  .overlay[data-course-photo-layout="v1"] .heroPhoto {height:72px}
+  .overlay[data-course-photo-layout="v1"] .title {font-size:19px}
+  .overlay[data-course-photo-layout="v1"] .choiceGrid button {font-size:11px}
+  .overlay[data-course-photo-layout="v1"] .safetyButton {padding-inline:8px}
+}

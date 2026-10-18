@@ -19,6 +19,8 @@ import { buildAssessmentResultReport } from '../../lib/assessments/result-report
 import { getTestScaleGuide } from '../../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../../lib/assessments/dashboard-gauges.js'
 import { assessmentResultOverview } from '../../lib/assessments/result-overview.js'
+import { scoreChangeReading } from '../../lib/assessments/score-change-reading.js'
+import { assessmentEvidenceStatus } from '../../lib/assessments/assessment-evidence-status.js'
 import { syntheticTraumaContext } from '../../tests/helpers/trauma-context-fixtures.mjs'
 
 export const reportMobileFixtureScope =
@@ -115,6 +117,7 @@ export async function buildReportMobileRenderer(){
   const Gauge=transpile(dialPath,await source(dialPath),{
     'react/jsx-runtime':jsxRuntime,
     '@/lib/assessments/dashboard-gauges':{gaugeModel,gaugeChange},
+    '@/lib/assessments/score-change-reading':{scoreChangeReading},
     './assessment-gauge.module.css':gaugeCss.styles,
   })
   const Report=transpile(reportPath,await source(reportPath),{
@@ -124,6 +127,7 @@ export async function buildReportMobileRenderer(){
     '@/lib/assessments/scale-guides':{getTestScaleGuide},
     '@/lib/assessments/dashboard-gauges':{gaugeModel},
     '@/lib/assessments/result-overview':{assessmentResultOverview},
+    '@/lib/assessments/assessment-evidence-status':{assessmentEvidenceStatus},
     './compact-assessment-report.module.css':reportCss.styles,
   }).CompactAssessmentReport
   const rootLayout=await source('app/layout.tsx')

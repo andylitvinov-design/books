@@ -7,6 +7,8 @@
 .compact .value{font-size:1.32rem}
 .compact figcaption{font-size:.67rem;margin-top:4px}
 .unavailable{display:block;font-size:14px;color:#7a6f67}
+.trendGroup{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;max-width:100%}
+.trendCaveat{display:block;color:#5d6762;font:500 .67rem/1.35 system-ui,-apple-system,sans-serif;max-width:26rem;overflow-wrap:anywhere}
 .trend{display:inline-flex;align-items:center;gap:5px;white-space:normal;font:730 .8rem/1.35 system-ui,-apple-system,sans-serif;border-radius:99px;padding:5px 9px;background:#f1f1ec;color:#565d58}
 .trend>span:first-child{font-size:1.15rem;line-height:1}
 .improved{color:#22624f;background:#e3f2e9}

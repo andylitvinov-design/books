@@ -281,6 +281,60 @@ try {
     }
   }
 
+  // Spanish Alchemy has its own route. Check its untouched default state too;
+  // do not navigate payment links or enable optional payment providers.
+  {
+    const locale = "es";
+    for (const width of [320, 360, 390, 1188]) {
+      const page = await createPage(width);
+      const pageErrorStart = diagnostics.pageErrors.length;
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      const main = page.locator('main[data-core-service-detail="alchemy"]');
+      await visible(main.locator("h1"));
+      await expect(main).toHaveAttribute("lang", "es");
+      await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
+      await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
+      await assertViewport(page, "es/alchemy-of-soul/" + width);
+      const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
+        nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
+      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      if (width <= 390) {
+        if (panelHeights.some(p => p.height > p.max)) {
+          try {
+            await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
+          } catch (error) {
+            console.error("Alchemy overflow diagnostics could not be saved:", error);
+          }
+        }
+        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+          "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
+      }
+      assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
+      assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate Spanish global enquiry panel");
+      assert.equal(await main.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one Spanish enquiry form");
+      // Every mobile payment link, including the terms link, is a touch target.
+      // Desktop retains its existing 44px primary-CTA contract.
+      const paymentAnchors = main.locator("[data-alchemy-payment-options]")
+        .locator(width <= 390 ? "a" : ":scope > div > a:first-child");
+      const paymentAnchorCount = await paymentAnchors.count();
+      assert.ok(paymentAnchorCount > 0, "Spanish default payment options render");
+      for (let index = 0; index < paymentAnchorCount; index++) {
+        const anchor = paymentAnchors.nth(index);
+        await visible(anchor);
+        const bounds = await anchor.boundingBox();
+        assert.ok(bounds && bounds.width >= 44 && bounds.height >= 44,
+          "Spanish payment anchor has a 44px touch target: " + width + "/" + index + " " + JSON.stringify(bounds));
+        assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= width + 1,
+          "Spanish payment anchor fits the viewport: " + width + "/" + index);
+      }
+      await main.locator('[data-alchemy-panel="formats"]').screenshot({
+        path: output + "/alchemy-es-formats-default-" + width + ".png",
+      });
+      assert.deepEqual(diagnostics.pageErrors.slice(pageErrorStart), [], "Unexpected Spanish Alchemy browser page errors: " + width);
+      await page.close();
+    }
+  }
+
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);

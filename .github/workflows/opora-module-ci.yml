@@ -35,8 +35,12 @@ jobs:
       - name: Verify online learning methodology and no-Skip answers
         run: node --test tests/opora-as5-2-methodology-contract.test.mjs tests/opora-as53-210-guided-feedback-contract.test.mjs tests/opora-as54-online-learning-no-skip-contract.test.mjs
       - name: Verify versioned V6 fifteen-screen lessons, safe mobile player, strict evidence and V3/V5 compatibility
-        run: node --test tests/opora-as54-live-v6.test.mjs tests/opora-as54-live-player-journey.test.mjs
+        run: node --test tests/opora-as54-live-v6.test.mjs tests/opora-as54-live-player-journey.test.mjs tests/opora-scenic-lesson-all-steps.test.mjs
       - name: Verify AS5.5 distinct scenarios, if-then plans, truthful attempts and pinned previous cycles
         run: node --test tests/opora-as55-methodology-live.test.mjs
       - name: Verify AS-5.5 keyboard focus trap, process honesty, no-plan and individual exercise cases
         run: node --test tests/opora-as55-safe-learning-live.test.mjs
+      - name: Verify experience-first AS-5.6 practices, real bilingual feedback and safe V7-only save
+        run: node --test tests/opora-as56-experience-first.test.mjs
+      - name: Verify 28 full AS-5.5 bilingual lesson sessions and trilingual public course promises
+        run: node --test tests/opora-as55-28-day-end-to-end-acceptance.test.mjs tests/opora-as55-active-passport.test.mjs

@@ -166,13 +166,13 @@ export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : t
   : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findPart = (tree, name) => nodes(tree).find(n => n.type?.testName === name)
 export const findButton = (tree, label) => nodes(tree).find(n => n.type === 'button' && textOf(n).trim() === label)
-const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
+const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-experience-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
 const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileModule(readFileSync(resolve(root, 'components/app', name + '.jsx'), 'utf8'), {
   fileName: name + '.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText]))
 const pureUI = Object.fromEntries(await Promise.all(['anti-stress-skills-v5', 'anti-stress-day-one', 'course-moment-trends', 'course-adaptation',
   'course-welcome', 'anti-stress-method-activities', 'anti-stress-practice-lab', 'opora-module-exercise', 'course-single-lesson-outcome',
-  'course-slide-sequence', 'course-membership', 'anti-stress-skills-v5', 'anti-stress-skills-v6', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
+  'course-slide-sequence', 'course-membership', 'opora-as56-experience-guides', 'anti-stress-skills-v5', 'anti-stress-skills-v6', 'opora-state-journey','trauma-phase-catalog'].map(async name =>
   ['@/lib/inner-growth/' + name, await loadModule('lib/inner-growth/' + name + '.js')])) )
 
 // Executes real JSX component functions with isolated state/effect slots.

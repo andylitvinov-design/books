@@ -819,3 +819,1176 @@
   border-left-color: #3cf3ee;
 }
 
+
+.reviewChecklist {margin-top:16px;background:#effaf7;border:1px solid #c6e7e0;border-radius:15px;padding:13px;}
+.reviewChecklist h2 {margin:0 0 6px;font-size:17px;color:#145a65;}
+.reviewChecklist p {font-size:12px;line-height:1.5;color:#507378;margin:6px 0 9px;}
+.reviewRows {display:grid;gap:7px;}
+.reviewRow {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px 12px;padding:9px 10px;background:#fff;border:1px solid #d3e7e4;border-radius:11px;}
+.reviewRow strong {font-size:12px;color:#205a64;line-height:1.3;}
+.reviewRow > div {display:flex;flex-wrap:wrap;gap:6px;}
+.reviewRow button {cursor:pointer;}
+.reviewMissing,.reviewRecorded {display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 9px;min-height:34px;border-radius:9px;font-size:11px;font-weight:750;text-align:center;}
+.reviewMissing {background:#fff;border:1px solid #0d948f;color:#0b777e;}
+.reviewMissing:hover,.reviewMissing:focus-visible {background:#e3f8f1;}
+.reviewRecorded {background:#e3f5ee;border:1px solid #c0e5d8;color:#216d64;}
+.reviewPrivacy {display:flex;align-items:flex-start;gap:6px;color:#537578;font-size:12px;line-height:1.4;}
+.reviewPrivacy svg {flex:none;margin-top:1px;}
+.initiationLinks {display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+.initiationLinks .teacherLink,.initiationLinks .textLink {margin:0;}
+
+
+/* Unified five-lesson personal initiation review within approved scenic glass UI. */
+.page[data-course-theme] .reviewChecklist {
+  background: rgba(3, 52, 67, .73);border: 1px solid rgba(151, 225, 229, .43);
+  color: #f4ffff;backdrop-filter: blur(12px);
+}
+.page[data-course-theme] .reviewChecklist h2,
+.page[data-course-theme] .reviewRow strong { color: #f4ffff; }
+.page[data-course-theme] .reviewChecklist p,
+.page[data-course-theme] .reviewPrivacy { color: #d4eaf0; }
+.page[data-course-theme] .reviewRow {
+  background: rgba(5, 71, 82, .56);
+  border: 1px solid rgba(153, 219, 229, .37);
+}
+.page[data-course-theme] .reviewMissing {
+  background: rgba(10, 104, 112, .48);
+  color: #f4ffff;border: 1px solid #56d9d8;
+}
+.page[data-course-theme] .reviewRecorded {
+  background: rgba(6, 129, 125, .38);
+  color: #d6fff6;border: 1px solid rgba(79, 212, 187, .48);
+}
+.page[data-course-theme] .reviewMissing:hover,
+.page[data-course-theme] .reviewMissing:focus-visible {background: rgba(32, 161, 158, .5);}
+@media(max-width:760px) {
+  .page[data-course-theme] .reviewChecklist {margin-top:9px;padding:10px;}
+  .page[data-course-theme] .reviewChecklist h2 {font-size:14px;}
+  .page[data-course-theme] .reviewRow {padding:7px 8px;}
+  .page[data-course-theme] .reviewRow strong {font-size:11px;}
+  .page[data-course-theme] .reviewMissing,
+  .page[data-course-theme] .reviewRecorded {font-size:10px;min-height:34px;}
+}
+
+/* Five sequential journey stops fit in the same approved scenic progress rail. */
+.page[data-course-theme] .journey { width:min(100%,720px); }
+.page[data-course-theme] .journey ol::before { left:9%;right:9%; }
+.page[data-course-theme] .journeyLabel { max-width:130px; overflow-wrap:anywhere; }
+@media (max-width:760px) {
+ .page[data-course-theme] .journey li { gap:3px; }
+ .page[data-course-theme] .journeyDot { width:34px;height:34px;font-size:14px; }
+ .page[data-course-theme] .journey ol::before { top:16px; }
+ .page[data-course-theme] .journeyLabel {
+   max-width:82px;font-size:9px;line-height:1.16;
+   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+ }
+}
+@media (max-width:380px) {
+ .page[data-course-theme] .journeyDot { width:29px;height:29px; }
+ .page[data-course-theme] .journey ol::before { top:14px; }
+ .page[data-course-theme] .journeyLabel { font-size:8px;max-width:65px; }
+}
+
+.page[data-course-theme] .returnToReview {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  margin-top:10px;min-height:38px;padding:8px 11px;
+  border:1px solid rgba(110,237,232,.7);border-radius:12px;
+  background:rgba(8,106,115,.55);color:#eaffff;
+  font-size:12px;font-weight:750;cursor:pointer;
+}
+.page[data-course-theme] .returnToReview:disabled {opacity:.5;cursor:not-allowed;}
+.page[data-course-theme] .returnToReview:hover,
+.page[data-course-theme] .returnToReview:focus-visible {background:rgba(20,148,152,.68);}
+@media print { .returnToReview {display:none!important;} }
+
+
+/* REIKI 45-SCREEN FINISHING PASS · 2026-10-18
+   Every editorial screen keeps the same original full-screen sunrise,
+   navy glass, accessible CTA and genuinely saved lesson progress.
+   Only visual layout is changed; the 5-lesson source and answers stay intact. */
+.page[data-course-theme="reiki-scenic-v1"] {
+  --reiki-stage-accent: #9df7f1;
+}
+.page[data-energywork-phase="flight"] { --reiki-stage-accent: #ffdfab; }
+.page[data-energywork-phase="tantra"] { --reiki-stage-accent: #ffc5d4; }
+.page[data-energywork-phase="kundalini"] { --reiki-stage-accent: #d8ccff; }
+.page[data-energywork-phase="yggdrasil"] { --reiki-stage-accent: #bcf0df; }
+.page[data-energywork-phase="initiation"] { --reiki-stage-accent: #9ceff2; }
+.page[data-course-theme] .eyebrow,
+.page[data-course-theme] .eyebrow svg { color: var(--reiki-stage-accent); }
+.page[data-course-theme] .journeySelected .journeyDot {
+  color: #fff;
+  background: linear-gradient(145deg,#04d6d6,#0783a8);
+  border: 3px solid #e5ffff;
+  box-shadow: 0 0 0 4px rgba(40,227,237,.26), 0 0 24px rgba(54,233,234,.64);
+}
+.page[data-course-theme] .journeyIntro .journeyDot {
+  color: #e9ffff;
+  background: linear-gradient(145deg,#137c8b,#06596d);
+  border: 2px solid rgba(169,235,237,.76);
+  box-shadow: 0 2px 10px rgba(2,42,60,.22);
+}
+/* A slide without artwork or video should use the available width rather
+   than leaving the former second column blank on desktop. */
+@media (min-width:761px) {
+  .page[data-course-theme] .slideMain:has(> .content:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page[data-course-theme] .slideMain:has(> .content:only-child) > .content {
+    width: min(100%, 780px);
+    justify-self: center;
+  }
+  .page[data-course-theme] [data-energywork-slide-kind="finish"] .slideMain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page[data-course-theme] [data-energywork-slide-kind="finish"] .art {
+    display: none;
+  }
+}
+/* Source pictures feel like calm framed scene details, never a white card. */
+.page[data-course-theme] .art {
+  isolation: isolate;
+  overflow: hidden;
+}
+.page[data-course-theme] .art::after {
+  content: "";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent 50%,rgba(0,35,49,.26));
+}
+.page[data-course-theme] .reviewChecklist,
+.page[data-course-theme] .question,
+.page[data-course-theme] .video {
+  box-shadow: 0 9px 28px rgba(1,28,44,.14);
+}
+.page[data-course-theme] .reviewRow button,
+.page[data-course-theme] .returnToReview {
+  min-height: 44px;
+}
+.page[data-course-theme] .welcomeSystems li:first-child {
+  border-color: rgba(126,232,242,.6);
+}
+.page[data-course-theme] .journey li[aria-current="step"] .journeyLabel {
+  font-weight: 850;
+  color: #fff;
+}
+@media (max-width:760px) {
+  .page[data-course-theme] .journey {
+    margin: 1px 0 0;
+  }
+  .page[data-course-theme] .journeyLabel {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    min-height: 30px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    color: #dcebf2;
+  }
+  .page[data-course-theme] .journey li[aria-current="step"] .journeyLabel {
+    color: #fff;
+  }
+  .page[data-course-theme] .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 3px;
+  }
+  .page[data-course-theme] .next {
+    flex: none;
+    align-self: stretch;
+    width: 100%;
+    min-height: 56px;
+    border-radius: 18px;
+    font-size: clamp(15px,4.4vw,18px);
+  }
+  .page[data-course-theme] .back {
+    min-height: 30px;
+    height: 30px;
+    align-self: flex-start;
+    padding: 3px 7px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(0,43,60,.3);
+    color: #d7f2f6;
+  }
+  .page[data-course-theme] .slide {
+    background: linear-gradient(155deg,rgba(3,51,68,.71),rgba(2,38,57,.81));
+    border-color: rgba(173,237,240,.43);
+  }
+  .page[data-course-theme] .slideMain {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(121,232,229,.75) transparent;
+  }
+  .page[data-course-theme] .art {
+    height: clamp(90px,15dvh,142px);
+  }
+  .page[data-course-theme] .programme summary {
+    display:flex;
+    align-items:center;
+    min-height: 30px;
+    font-size: 11px;
+  }
+  .page[data-course-theme] .reviewChecklist {
+    border-radius: 16px;
+  }
+  .page[data-course-theme] .reviewMissing,
+  .page[data-course-theme] .reviewRecorded {
+    min-height: 40px;
+  }
+}
+@media (max-width:760px) and (max-height:700px) {
+  .page[data-course-theme] .journeyLabel {font-size:8.5px;line-height:1.14;min-height:29px;}
+  .page[data-course-theme] .next {min-height:49px;}
+  .page[data-course-theme] .back {min-height:27px;height:27px;}
+  .page[data-course-theme] .art {height:clamp(72px,13dvh,105px);}
+}
+@media print {
+  .page[data-course-theme] .art::after {display:none;}
+}
+
+
+/*
+ * REIKI AIRY V2 · 2026-10-18 · approved sky/light-glass redesign.
+ * Pure presentation: unchanged five-lesson order, private progress, media and
+ * initiation prerequisites. Pinned CTA stays visible while tall/zoomed lesson
+ * contents may scroll inside their own card.
+ */
+.page[data-course-visual="reiki-airy-v2"] {
+  --reiki-text: #0d3d57;
+  --reiki-muted: #496a7b;
+  --reiki-glass: rgba(255,255,255,.69);
+  --reiki-line: rgba(255,255,255,.83);
+  color: var(--reiki-text);
+  background: linear-gradient(180deg,rgba(233,249,255,.21),rgba(254,255,251,.18) 47%,rgba(242,252,255,.42)),
+    url("/images/holistic-house/reiki-heaven-sky.svg") center center / cover no-repeat #e2f5fc;
+  background-attachment: fixed;
+}
+.page[data-course-visual] .shell {
+  gap: 10px;
+  max-width: 950px;
+}
+.page[data-course-visual] .top {
+  color: #0b3f5c;
+  min-height: 37px;
+}
+.page[data-course-visual] .home {
+  color: #0b5870;
+  background: rgba(255,255,255,.73);
+  box-shadow: 0 2px 10px rgba(41,103,131,.06);
+}
+.page[data-course-visual] .home:hover,
+.page[data-course-visual] .home:focus-visible {
+  color: #065e72;
+  background: rgba(255,255,255,.95);
+}
+.page[data-course-visual] .courseMark {
+  color: #0d4057;
+  text-shadow: none;
+}
+.page[data-course-visual] .courseMark svg { color: #009eb1; }
+.page[data-course-visual] .phaseLabel { color: #547d8a; }
+.page[data-course-visual] .journey li {
+  color: #375b70;
+  gap: 5px;
+  font-weight: 700;
+}
+.page[data-course-visual] .journey ol::before { background: rgba(99,151,167,.35); }
+.page[data-course-visual] .journeyDot {
+  color: #204e65;
+  background: rgba(251,255,255,.82);
+  border: 1px solid rgba(255,255,255,.99);
+  box-shadow: 0 3px 12px rgba(39,113,151,.12);
+}
+.page[data-course-visual] .journeySelected .journeyDot,
+.page[data-course-visual] .journeyIntro .journeyDot {
+  color: #fff;
+  background: linear-gradient(125deg,#03c8d5,#0896b2);
+  border: 2px solid #ecffff;
+  box-shadow: 0 4px 13px rgba(7,142,169,.19);
+}
+.page[data-course-visual] .journeyIntro .journeyDot {
+  color: #137284;
+  background: rgba(201,242,240,.82);
+  border: 1px solid white;
+}
+.page[data-course-visual] .journeyLabel {
+  color: #385d70;
+  text-shadow: none;
+}
+.page[data-course-visual] .journey li[aria-current="step"] .journeyLabel {
+  color: #096378;
+  font-weight: 800;
+}
+.page[data-course-visual][data-energywork-screen="welcome"] .journey li:first-child .journeyDot {
+  color: #fff;
+  background: linear-gradient(125deg,#03c8d5,#0896b2);
+  border: 2px solid #ecffff;
+}
+.page[data-course-visual] .slide {
+  border: 1px solid rgba(255,255,255,.87);
+  background: rgba(255,255,255,.61);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(32,109,142,.08);
+}
+.page[data-course-visual] .welcomeSlide {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.page[data-course-visual] .eyebrow,
+.page[data-course-visual] .eyebrow svg {
+  color: #078ca2;
+  text-shadow: none;
+  letter-spacing: .09em;
+}
+.page[data-course-visual] .content h1 {
+  color: #093d55;
+  text-shadow: none;
+  font-family: Georgia,"Times New Roman",serif;
+  font-weight: 700;
+}
+.page[data-course-visual] .description {
+  color: #456b7e;
+  text-shadow: none;
+  line-height: 1.45;
+}
+.page[data-course-visual] .welcomeSlide .content h1 { max-width: 17ch; }
+.page[data-course-visual] .welcomeReward {
+  border: 1px solid rgba(255,255,255,.9);
+  background: rgba(255,255,255,.73);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 9px 27px rgba(20,94,129,.1);
+}
+.page[data-course-visual] .welcomeRewardTitle {
+  color: #11435b;
+  font-family: Georgia,"Times New Roman",serif;
+  font-weight: 700;
+}
+.page[data-course-visual] .welcomeRewardTitle svg { color: #038da0; }
+.page[data-course-visual] .welcomeSystems li,
+.page[data-course-visual] .welcomeSystems li:first-child {
+  color: #18566a;
+  background: rgba(226,249,253,.79);
+  border: 1px solid #c1e8ef;
+}
+.page[data-course-visual] .welcomeRequirement { color: #426b7e; font-weight: 550; }
+.page[data-course-visual] .benefits {
+  border: 1px solid rgba(255,255,255,.88);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 7px 22px rgba(30,101,130,.08);
+  backdrop-filter: blur(10px);
+}
+.page[data-course-visual] .benefits > div + div { border-left-color: rgba(157,193,205,.37); }
+.page[data-course-visual] .benefits strong { color: #16465d; }
+.page[data-course-visual] .benefits small { color: #5a7b8b; }
+.page[data-course-visual] .benefitIcon {
+  background: #dcf8f7;
+  color: #078b9c;
+  border-color: rgba(255,255,255,.9);
+}
+.page[data-course-visual] .benefits > div:nth-child(2) .benefitIcon {
+  color: #bd527a; background: #fff0f4;
+}
+.page[data-course-visual] .benefits > div:nth-child(3) .benefitIcon {
+  color: #886acc; background: #f1eafb;
+}
+.page[data-course-visual] .art {
+  border: 1px solid rgba(255,255,255,.81);
+  background: rgba(232,250,251,.65);
+  box-shadow: 0 7px 19px rgba(58,123,139,.11);
+}
+.page[data-course-visual] .art::after {
+  background: linear-gradient(180deg,transparent 77%,rgba(222,244,247,.23));
+}
+.page[data-course-visual] .video,
+.page[data-course-visual] .question,
+.page[data-course-visual] .reviewChecklist {
+  border: 1px solid rgba(255,255,255,.87);
+  background: rgba(255,255,255,.66);
+  box-shadow: 0 6px 20px rgba(27,113,135,.07);
+}
+.page[data-course-visual] .videoCaption,
+.page[data-course-visual] .missingVideo,
+.page[data-course-visual] .questionBadge,
+.page[data-course-visual] .optional,
+.page[data-course-visual] .experienceGuidance { color: #4a7381; }
+.page[data-course-visual] .questionBadge { color: #047e90; }
+.page[data-course-visual] .prompt { color: #1b4c62; }
+.page[data-course-visual] .textarea {
+  color: #164258;
+  background: rgba(255,255,255,.83);
+  border: 1px solid #a5d2df;
+}
+.page[data-course-visual] .textarea::placeholder { color: #738f99; }
+.page[data-course-visual] .scale { accent-color: #06a4b2; }
+.page[data-course-visual] .scaleEnds { color: #3f6778; }
+.page[data-course-visual] .choice,
+.page[data-course-visual] .experienceChoice {
+  color: #15465d;
+  background: rgba(255,255,255,.75);
+  border: 1px solid rgba(241,251,255,.95);
+  border-bottom: 2px solid rgba(174,220,226,.54);
+  box-shadow: 0 2px 9px rgba(37,102,136,.04);
+}
+.page[data-course-visual] .choice:has(input:checked),
+.page[data-course-visual] .experienceChoice:has(input:checked) {
+  color: #0a4e60;
+  background: rgba(215,250,247,.92);
+  border: 2px solid #16aeb9;
+}
+.page[data-course-visual] .choice input { accent-color: #0699aa; }
+.page[data-course-visual] .experienceSlide .experienceIcon {
+  color: #0a95a4; background: #def8fa;
+}
+.page[data-course-visual] .experienceSlide .experienceGuidance {
+  color: #255c6c; background: rgba(224,248,248,.92);
+  border-left-color: #17acb5;
+}
+.page[data-course-visual] .practiceTimer {
+  color: #225e71; background: rgba(238,252,253,.9);
+  border: 1px solid #d4eced;
+}
+.page[data-course-visual] .practiceTimer > button {
+  color: #245d6b; background: #fff; border-color: #bbd8df;
+}
+.page[data-course-visual] .practiceTimer > button:first-of-type {
+  color: #fff; background: #078d9d; border-color: #078d9d;
+}
+.page[data-course-visual] .reviewChecklist h2,
+.page[data-course-visual] .reviewRow strong,
+.page[data-course-visual] .reviewChecklist p,
+.page[data-course-visual] .reviewPrivacy { color: #1b4a60; }
+.page[data-course-visual] .reviewRow {
+  background: rgba(255,255,255,.83);
+  border: 1px solid #d1e9e9;
+}
+.page[data-course-visual] .reviewMissing {
+  color: #057c8c; background: #fff;
+  border: 1px solid #69cbd1;
+}
+.page[data-course-visual] .reviewRecorded {
+  color: #286b69; background: #e7f7f4;
+  border: 1px solid #bfe7e0;
+}
+.page[data-course-visual] .returnToReview {
+  color: #0d6475; background: #def6f7;
+  border: 1px solid #a1dce2;
+}
+.page[data-course-visual] .final,
+.page[data-course-visual] .final h2,
+.page[data-course-visual] .final p,
+.page[data-course-visual] .guideNote,
+.page[data-course-visual] .highlights { color: #224e63; border-color: #cee9e9; }
+.page[data-course-visual] .finalTag {
+  color: #047b83; background: #ddf8f4; border: 1px solid #c2e9e5;
+}
+.page[data-course-visual] .notes {
+  color: #275365;
+  background: rgba(246,252,254,.85);
+  border: 1px solid #d0e9ee;
+}
+.page[data-course-visual] .textLink,
+.page[data-course-visual] .restart {
+  color: #126a7b; background: rgba(255,255,255,.82);
+  border: 1px solid #c4e4e9;
+}
+.page[data-course-visual] .teacherLink { color: #fff; background: #087e94; }
+.page[data-course-visual] .progressHeader {
+  color: #244c63; text-shadow: none; font-weight: 750;
+}
+.page[data-course-visual] .progress {
+  background: rgba(128,166,184,.28);
+}
+.page[data-course-visual] .progress > span {
+  background: linear-gradient(90deg,#04cbd5,#11a8c4);
+}
+.page[data-course-visual] .next {
+  color: #fff;
+  background: linear-gradient(105deg,#04cdd7,#0596b7 62%,#31d9c6);
+  border: 1px solid #b5ffff;
+  border-bottom: 3px solid #099ba8;
+  box-shadow: 0 7px 15px rgba(31,160,180,.18);
+}
+.page[data-course-visual] .next:hover {
+  background: linear-gradient(105deg,#03b8c9,#087f9d,#2acaba);
+}
+.page[data-course-visual] .back {
+  color: #164b64;
+  background: rgba(255,255,255,.74);
+  border: 1px solid rgba(255,255,255,.94);
+  box-shadow: 0 3px 10px rgba(27,100,135,.06);
+}
+.page[data-course-visual] .programme {
+  color: #194d66;
+  background: rgba(255,255,255,.7);
+  border: 1px solid rgba(255,255,255,.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 13px rgba(39,102,135,.07);
+}
+.page[data-course-visual] .programme summary { color: #194e67; }
+.page[data-course-visual] .programme li[aria-current="step"] { color: #078a9e; }
+.page[data-course-visual] .programmeNote {
+  margin: 7px 0 0; color: #537888;
+  font-size: 12px; line-height: 1.42;
+}
+.page[data-course-visual] .disclaimer {
+  color: #68828d; text-align: left; text-shadow: none;
+  font-size: 11px; line-height: 1.4; margin: 8px 0;
+}
+.page[data-course-visual] .preview {
+  border: 1px solid #d0ebee;
+  color: #235c6c;
+  background: rgba(245,252,252,.86);
+  border-radius: 12px;
+  margin-top: 9px;
+}
+.page[data-course-visual] .preview > svg { color: #18899b; }
+.page[data-course-visual] .preview strong { color: #175267; }
+.page[data-course-visual] .preview p,
+.page[data-course-visual] .syncContent > small,
+.page[data-course-visual] .consentLabel { color: #4c717d; }
+.page[data-course-visual] .syncContent > a,
+.page[data-course-visual] .saveDetails summary { color: #057989; }
+.page[data-course-visual] .syncButton { background: #078a9c; }
+.page[data-course-visual] :is(button,a,input,summary,textarea):focus-visible {
+  outline: 3px solid #00aabb; outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .page[data-course-visual][data-course-one-screen] {
+    color: #103f58;
+    background: linear-gradient(180deg,rgba(229,247,255,.2),rgba(253,254,247,.14) 53%,rgba(239,253,255,.42)),
+      url("/images/holistic-house/reiki-heaven-sky.svg") center 48% / cover no-repeat #e0f2f9;
+    background-attachment: scroll;
+  }
+  .page[data-course-visual] .shell {
+    height: 100dvh; min-height:0; gap: 6px;
+    padding: calc(5px + env(safe-area-inset-top)) 12px
+      calc(6px + env(safe-area-inset-bottom));
+  }
+  .page[data-course-visual] .top { min-height: 33px; }
+  .page[data-course-visual] .home {
+    min-height:33px; width:33px; height:33px;
+    padding:5px; display:grid; place-items:center; border-radius:50%;
+  }
+  .page[data-course-visual] .home span { display:none; }
+  .page[data-course-visual] .courseMark { font-size: 12px; }
+  .page[data-course-visual] .journey { margin:0 0 1px; width:100%; }
+  .page[data-course-visual] .journey ol::before { top:15px; }
+  .page[data-course-visual] .journey li { gap:3px; }
+  .page[data-course-visual] .journeyDot { width:30px; height:30px; font-size:12px; }
+  .page[data-course-visual] .journeyLabel {
+    font-size:9px; line-height:1.1; min-height:22px;
+    max-width:100%; -webkit-line-clamp:2; line-clamp:2;
+    color:#355c6c; text-shadow:none;
+  }
+  .page[data-course-visual] .journey li[aria-current="step"] .journeyLabel { color:#087c8e; }
+  .page[data-course-visual] .slide {
+    flex:1; min-height:0; height:auto;
+    border-radius:17px;
+    background: rgba(255,255,255,.57);
+    border:1px solid rgba(255,255,255,.85);
+    box-shadow: 0 6px 20px rgba(38,102,130,.08);
+  }
+  .page[data-course-visual] .slideMain {
+    height:100%; max-height:100%;
+    gap:7px; padding:10px 11px;
+    overflow-y:auto; overscroll-behavior:contain;
+  }
+  .page[data-course-visual] .welcomeSlide {
+    border:0; background:transparent; box-shadow:none;
+  }
+  .page[data-course-visual] .welcomeSlide .slideMain {
+    display:block; padding:2px 4px 4px;
+  }
+  .page[data-course-visual] .content h1 {
+    font-size:clamp(25px,6.9vw,31px);
+    line-height:1.08; margin-bottom:6px;
+  }
+  .page[data-course-visual] .welcomeSlide .content h1 {
+    font-size:clamp(27px,7.2vw,32px);
+    max-width:18ch; margin-bottom:7px;
+  }
+  .page[data-course-visual] .eyebrow {
+    font-size:8px; letter-spacing:.085em;
+    line-height:1.25; margin-bottom:5px;
+  }
+  .page[data-course-visual] .eyebrow svg {width:13px;height:13px;}
+  .page[data-course-visual] .description {
+    color:#466c7c; font-size:12px; line-height:1.37;
+  }
+  .page[data-course-visual] .welcomeSlide .description {
+    color:#466c7c; font-size:12px; line-height:1.37;
+  }
+  .page[data-course-visual] .welcomeReward {
+    margin-top:9px; padding:10px 12px;
+    border-radius:16px;
+  }
+  .page[data-course-visual] .welcomeRewardTitle {
+    font-size:16px;line-height:1.2;gap:7px;
+  }
+  .page[data-course-visual] .welcomeRewardTitle svg {width:15px;height:15px;}
+  .page[data-course-visual] .welcomeSystems {
+    margin:7px 0; gap:5px;
+  }
+  .page[data-course-visual] .welcomeSystems li {
+    font-size:10px; padding:4px 7px; line-height:1.14;
+  }
+  .page[data-course-visual] .welcomeRequirement { font-size:11px; line-height:1.3; }
+  .page[data-course-visual] .benefits {
+    margin-top:7px; padding:7px 4px;
+    border-radius:15px;
+  }
+  .page[data-course-visual] .benefits > div { gap:3px; padding:0 4px; }
+  .page[data-course-visual] .benefitIcon {height:25px;width:25px;}
+  .page[data-course-visual] .benefitIcon svg {height:14px;width:14px;}
+  .page[data-course-visual] .benefits strong {font-size:10px;line-height:1.12;}
+  .page[data-course-visual] .benefits small {font-size:9px;line-height:1.15;}
+  .page[data-course-visual] .question {
+    margin-top:9px; padding:10px;
+    border-radius:15px;
+  }
+  .page[data-course-visual] .questionBadge {margin-bottom:5px;font-size:10px;}
+  .page[data-course-visual] .prompt {font-size:12px;line-height:1.3;margin-bottom:6px;}
+  .page[data-course-visual] .choices {gap:5px;}
+  .page[data-course-visual] .choice {min-height:43px;padding:6px 8px;gap:8px;font-size:11.5px;}
+  .page[data-course-visual] .experienceSlide .question {margin-top:8px;padding:9px;}
+  .page[data-course-visual] .experienceSlide .choices {gap:5px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice {
+    min-height:44px; padding:5px 8px; gap:8px;
+    font-size:11.5px; border-radius:11px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceIcon {
+    width:30px;height:30px;border-radius:9px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceIcon svg {height:17px;width:17px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice input {
+    width:18px;height:18px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceGuidance {
+    margin-top:7px; padding:6px 8px;
+    font-size:10px;line-height:1.3;
+  }
+  .page[data-course-visual] .optional {font-size:10px;margin-top:5px;line-height:1.3;}
+  .page[data-course-visual] .textarea {font-size:13px;line-height:1.4;min-height:85px;}
+  .page[data-course-visual] .art {height:clamp(76px,13dvh,120px);}
+  .page[data-course-visual] .progressFooter {flex:none;}
+  .page[data-course-visual] .progressHeader {
+    font-size:11px; margin:0 0 3px;
+  }
+  .page[data-course-visual] .progress {height:6px;}
+  .page[data-course-visual] .footer {margin:0;flex:none;}
+  .page[data-course-visual] .actions {
+    flex-direction:row;align-items:stretch;gap:7px;
+  }
+  .page[data-course-visual] .next {
+    flex:1; width:auto; align-self:stretch;
+    min-height:46px; padding:9px 12px;
+    border-radius:15px; font-size:14px;
+  }
+  .page[data-course-visual] .back {
+    flex:none;align-self:stretch;
+    min-height:46px;height:auto;
+    padding:8px 12px; font-size:12px;
+    border:1px solid rgba(255,255,255,.9);
+    border-radius:15px;
+  }
+  .page[data-course-visual] .back:disabled {display:none;}
+  .page[data-course-visual] .programme {
+    flex:none; margin:0; padding:0 10px;
+    border-radius:13px;
+    font-size:11px;
+    max-height:none;
+  }
+  .page[data-course-visual] .programme summary {
+    display:flex; align-items:center;
+    min-height:34px; font-size:11px;
+    cursor:pointer; line-height:1.2;
+  }
+  .page[data-course-visual] .programme[open] {
+    max-height:min(45dvh,340px);
+    overflow-y:auto; scrollbar-width:thin;
+  }
+  .page[data-course-visual] .programme ol {margin-top:6px;margin-bottom:5px;gap:5px;}
+  .page[data-course-visual] .preview {
+    max-height:none; overflow:visible;
+    padding:9px; margin:7px 0;
+  }
+  .page[data-course-visual] .preview:has(.saveDetails[open]) {
+    max-height:none;
+  }
+  .page[data-course-visual] .preview strong,
+  .page[data-course-visual] .preview p {font-size:11px;}
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-visual] .shell {gap:4px;}
+  .page[data-course-visual] .journeyDot {height:27px;width:27px;}
+  .page[data-course-visual] .journey ol::before {top:13px;}
+  .page[data-course-visual] .journeyLabel {font-size:8.5px;min-height:20px;}
+  .page[data-course-visual] .content h1 {font-size:clamp(23px,6.4vw,28px);}
+  .page[data-course-visual] .welcomeSlide .content h1 {font-size:clamp(25px,6.8vw,29px);}
+  .page[data-course-visual] .description {font-size:11px;}
+  .page[data-course-visual] .welcomeSlide .description {font-size:11px;}
+  .page[data-course-visual] .welcomeReward {margin-top:7px;padding:8px 10px;}
+  .page[data-course-visual] .benefits {margin-top:6px;padding:6px 3px;}
+  .page[data-course-visual] .benefitIcon {width:23px;height:23px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice {min-height:43px;}
+  .page[data-course-visual] .next,
+  .page[data-course-visual] .back {min-height:44px;}
+  .page[data-course-visual] .programme summary {min-height:32px;}
+}
+@media (max-width:380px) {
+  .page[data-course-visual] .shell {padding-inline:9px;}
+  .page[data-course-visual] .journeyLabel {font-size:8px;min-height:22px;}
+  .page[data-course-visual] .welcomeRewardTitle {font-size:15px;}
+  .page[data-course-visual] .welcomeSystems li {font-size:9px;}
+  .page[data-course-visual] .benefits strong {font-size:9px;}
+  .page[data-course-visual] .benefits small {font-size:8px;}
+}
+@media print {
+  .page[data-course-visual] {
+    background:#fff!important;
+    color:#153b4a!important;
+  }
+  .page[data-course-visual] .shell {height:auto;overflow:visible;}
+  .page[data-course-visual] .slide,
+  .page[data-course-visual] .slideMain {
+    background:#fff!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .page[data-course-visual] .content h1,
+  .page[data-course-visual] .final h2,
+  .page[data-course-visual] .final p,
+  .page[data-course-visual] .notes {
+    color:#173c4b!important;text-shadow:none!important;
+  }
+}
+
+/* REIKI MEDITATION JOURNAL · 2026-10-18
+   Real sourced community feedback, short written feeling check-ins and warm
+   chapter celebrations stay within the approved airy one-screen course. */
+.page[data-course-visual] .voicesCard,
+.page[data-course-visual] .milestoneCard {
+  width:100%;border-radius:22px;border:1px solid rgba(255,255,255,.95);
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(229,248,253,.8));
+  box-shadow:0 12px 32px rgba(37,115,145,.12);
+  padding:clamp(15px,3.5vw,25px);
+  color:#16485c;
+}
+.page[data-course-visual] .voicesEyebrow {
+  display:flex;align-items:center;gap:8px;
+  color:#098a9c;font-size:14px;font-weight:800;margin-bottom:10px;
+}
+.page[data-course-visual] .voiceQuote {
+  border-left:3px solid #19c2c8;
+  margin:0 0 12px;padding:7px 0 7px 14px;
+  color:#1b5263;
+}
+.page[data-course-visual] .voiceQuote p {
+  margin:0 0 8px;font:italic 500 clamp(16px,3.6vw,21px)/1.42 Georgia,serif;
+  overflow-wrap:anywhere;
+}
+.page[data-course-visual] .voiceQuote cite {
+  font-style:normal;font-weight:700;font-size:12px;color:#4c7381;
+}
+.page[data-course-visual] .voicesEmpty {font-size:14px;line-height:1.5;color:#456f7d;}
+.page[data-course-visual] .voicesLink {
+  display:inline-flex;align-items:center;gap:7px;min-height:37px;
+  margin:5px 12px 5px 0;color:#076e85;font-size:13px;font-weight:800;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.page[data-course-visual] .voicesLink:hover {color:#0a9ca7;}
+.page[data-course-visual] .voicesNote {margin:7px 0 0;color:#507686;font-size:12px;}
+.page[data-course-visual] .milestoneCard {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:10px;min-height:150px;
+}
+.page[data-course-visual] .milestoneSymbol {
+  display:grid;place-items:center;width:68px;height:68px;border-radius:50%;
+  background:linear-gradient(135deg,#d9f8ef,#99e8de);color:#048c94;
+  box-shadow:0 5px 17px rgba(22,173,176,.14);
+}
+.page[data-course-visual] .milestoneCard strong {
+  color:#0e7587;font-size:18px;
+}
+.page[data-course-visual] .milestoneCard p {
+  max-width:45ch;margin:0;font-size:12px;line-height:1.5;color:#547685;
+}
+.page[data-course-visual] .meditationFeeling {
+  display:flex;flex-direction:column;gap:6px;
+  margin:5px 0 11px;min-width:0;
+}
+.page[data-course-visual] .meditationFeeling label {
+  font-size:14px;color:#165c70;font-weight:750;
+}
+.page[data-course-visual] .feelingValue {
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+}
+.page[data-course-visual] .feelingValue span {color:#557d8b;font-size:11px;}
+.page[data-course-visual] .feelingValue strong {
+  white-space:nowrap;font-size:16px;color:#087c92;
+}
+.page[data-course-visual] .meditationFeeling input[type="range"] {
+  accent-color:#03a9b9;width:100%;min-height:38px;cursor:pointer;
+}
+.page[data-course-visual] .feedbackTextarea {
+  min-height:85px;resize:vertical;
+}
+.page[data-course-visual] .feedbackRequired {
+  font-size:12px;color:#316b78;line-height:1.4;
+}
+@media (max-width:760px) {
+  .page[data-course-visual] .voicesCard {padding:14px;border-radius:16px;}
+  .page[data-course-visual] .voiceQuote p {font-size:17px;}
+  .page[data-course-visual] .milestoneCard {padding:13px;min-height:128px;gap:6px;}
+  .page[data-course-visual] .milestoneSymbol {width:55px;height:55px;}
+  .page[data-course-visual] .milestoneCard strong {font-size:15px;}
+  .page[data-course-visual] .feelingValue span {font-size:10px;}
+  .page[data-course-visual] .feedbackRequired {font-size:11px;}
+}
+
+/*
+ * REIKI PORTRAIT V3 · 2026-10-18 · approved seven-screen photo/legibility pass.
+ * Keeps the airy sky, existing real player, 53 real screens and original answers.
+ * Source of human image: owned photo already in public/images/holistic-house/.
+ */
+.page[data-course-portrait="v3"] {
+  isolation: isolate;
+}
+.page[data-course-portrait="v3"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .28;
+  background: url("/images/holistic-house/reiki-approved-sunrise-v3.webp") right 36% center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 24%, #000 74%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 24%, #000 74%, transparent 100%);
+}
+.page[data-course-portrait="v3"] .shell { position: relative; z-index: 1; }
+.page[data-course-portrait="v3"] .journeyLabel { font-weight: 750; }
+.page[data-course-portrait="v3"] .eyebrow { font-size: 12px; }
+.page[data-course-portrait="v3"] .content h1 { font-size: clamp(33px, 4vw, 51px); }
+.page[data-course-portrait="v3"] .description { font-size: clamp(16px, 1.55vw, 20px); line-height: 1.5; }
+.page[data-course-portrait="v3"] .questionBadge { font-size: 14px; }
+.page[data-course-portrait="v3"] .prompt { font-size: 17px; }
+.page[data-course-portrait="v3"] .choice { font-size: 15px; min-height: 51px; }
+.page[data-course-portrait="v3"] .optional { font-size: 13px; }
+.page[data-course-portrait="v3"] .videoCaption { font-size: 13px; }
+.page[data-course-portrait="v3"] .practiceTimer > span { font-size: 15px; }
+.page[data-course-portrait="v3"] .practiceTimer > button { font-size: 15px; }
+.page[data-course-portrait="v3"] .experienceGuidance { font-size: 14px; }
+.page[data-course-portrait="v3"] .progressHeader { font-size: 14px; }
+.page[data-course-portrait="v3"] .programme summary { font-size: 15px; }
+.page[data-course-portrait="v3"] .benefits strong { font-size: 14px; }
+.page[data-course-portrait="v3"] .benefits small { font-size: 12px; }
+.page[data-course-portrait="v3"] .welcomeRequirement { font-size: 13px; }
+.page[data-course-portrait="v3"] .welcomeSystems li { font-size: 13px; }
+.page[data-course-portrait="v3"] .textarea { font-size: 16px; }
+.page[data-course-portrait="v3"] .slide,
+.page[data-course-portrait="v3"] .question,
+.page[data-course-portrait="v3"] .video {
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+/* The portrait is a decorative image and must never cover text controls. */
+.page[data-course-portrait="v3"] .welcomeSlide .slideMain { position: relative; }
+.page[data-course-portrait="v3"] .welcomeSlide .content { position: relative; z-index: 1; }
+.page[data-course-portrait="v3"] .welcomeSlide .art {
+  position: absolute;
+  inset: 7% 0 auto auto;
+  width: 51%;
+  height: 61%;
+  max-height: none;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  pointer-events: none;
+  opacity: .96;
+  -webkit-mask-image: radial-gradient(ellipse 83% 75% at 75% 42%, black 42%, transparent 100%);
+  mask-image: radial-gradient(ellipse 83% 75% at 75% 42%, black 42%, transparent 100%);
+}
+.page[data-course-portrait="v3"] .welcomeSlide .art::after { display:none; }
+.page[data-course-portrait="v3"] .welcomeSlide .art img { object-position: 65% 37%; }
+.page[data-course-portrait="v3"] .art[data-reiki-person] img { object-position: 66% 41%; }
+@media (max-width:760px) {
+  .page[data-course-portrait="v3"]::before {
+    opacity: .26;
+    background-position: 72% 45%;
+    background-size: auto 87%;
+  }
+  .page[data-course-portrait="v3"] .shell {
+    gap: 7px;
+    padding-inline: 11px;
+  }
+  .page[data-course-portrait="v3"] .journey { margin-bottom: 2px; }
+  .page[data-course-portrait="v3"] .journey ol::before { top:17px; }
+  .page[data-course-portrait="v3"] .journeyDot {
+    width: 34px; height: 34px;
+    font-size: 15px;
+  }
+  .page[data-course-portrait="v3"] .journeyLabel {
+    font-size: 11px; line-height: 1.16;
+    min-height: 26px;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .page[data-course-portrait="v3"] .courseMark { font-size: 14px; }
+  .page[data-course-portrait="v3"] .slide { border-radius: 20px; }
+  .page[data-course-portrait="v3"] .slideMain {
+    gap: 10px; padding: 13px 14px;
+    overflow-y: auto; overflow-x:hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .page[data-course-portrait="v3"] .content h1 {
+    font-size: clamp(30px, 7.9vw, 37px);
+    line-height: 1.08;
+    margin-bottom: 10px;
+  }
+  .page[data-course-portrait="v3"] .description {
+    font-size: clamp(14px, 4.03vw, 16px);
+    line-height: 1.4;
+  }
+  .page[data-course-portrait="v3"] .eyebrow {
+    font-size: 11px;
+    letter-spacing: .085em;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .page[data-course-portrait="v3"] .eyebrow svg { width:15px; height:15px; }
+  .page[data-course-portrait="v3"] .art {
+    height: clamp(126px, 21dvh, 190px);
+    border-radius:16px;
+    flex-shrink:0;
+  }
+  .page[data-course-portrait="v3"] .video { padding: 9px; }
+  .page[data-course-portrait="v3"] .videoCaption { font-size: 12px; line-height:1.35; }
+  .page[data-course-portrait="v3"] .question {
+    margin-top: 10px;
+    padding: 13px;
+    border-radius:16px;
+  }
+  .page[data-course-portrait="v3"] .questionBadge { font-size:13px; margin-bottom:7px; }
+  .page[data-course-portrait="v3"] .questionBadge svg { width:17px;height:17px; }
+  .page[data-course-portrait="v3"] .prompt { font-size:15px; line-height:1.35; margin-bottom:9px; }
+  .page[data-course-portrait="v3"] .choices { gap:8px; }
+  .page[data-course-portrait="v3"] .choice {
+    min-height: 49px;
+    padding: 9px 11px;
+    font-size:14px;
+    line-height: 1.3;
+    border-radius: 13px;
+  }
+  .page[data-course-portrait="v3"] .choice input {width:20px;height:20px;flex:none;}
+  .page[data-course-portrait="v3"] .optional { font-size: 12.5px; margin-top:8px; line-height:1.35; }
+  .page[data-course-portrait="v3"] .experienceSlide .slideMain {
+    background-image: linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,.94) 45%),
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+    background-repeat: no-repeat;
+    background-size: cover, auto 48%;
+    background-position: center, right top;
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .question {margin-top:9px;padding:11px;}
+  .page[data-course-portrait="v3"] .experienceSlide .choices {gap:7px;}
+  .page[data-course-portrait="v3"] .experienceSlide .experienceChoice {
+    min-height: 53px;
+    padding: 8px 10px;
+    gap: 11px;
+    font-size: clamp(13.5px, 3.9vw, 15.5px);
+    border-radius:13px;
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .experienceIcon {
+    width:37px;height:37px;border-radius:10px;
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .experienceIcon svg {width:20px;height:20px;}
+  .page[data-course-portrait="v3"] .experienceSlide .experienceChoice input {width:21px;height:21px;}
+  .page[data-course-portrait="v3"] .experienceSlide .experienceGuidance {
+    margin-top:9px; padding:10px 11px;
+    font-size:13px;line-height:1.38;
+  }
+  .page[data-course-portrait="v3"] .textarea {
+    font-size: 16px;line-height:1.45;
+    min-height: 110px;
+    padding:12px;
+  }
+  .page[data-course-portrait="v3"] .practiceTimer {margin:12px 0 4px;padding:12px;gap:9px 12px;}
+  .page[data-course-portrait="v3"] .practiceTimer > span {font-size:14px;}
+  .page[data-course-portrait="v3"] .practiceTimer > strong {font-size:34px;}
+  .page[data-course-portrait="v3"] .practiceTimer > button {min-height:46px;font-size:14px;}
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="practice"] .slideMain,
+  .page[data-course-portrait="v3"] [data-energywork-slide-kind="reflection"] .slideMain {
+    background-image: linear-gradient(180deg,rgba(255,255,255,.70),rgba(255,255,255,.96) 52%),
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+    background-repeat: no-repeat;
+    background-size: cover, auto 44%;
+    background-position: center, right top;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .slideMain {
+    display:block;
+    padding: 3px 5px 5px;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .art {
+    top:4%; right:0; width:55%; max-width:100%; height:62%;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .eyebrow,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > h1,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .description {
+    max-width: 69%;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .content h1 {
+    font-size:clamp(31px,8.25vw,39px);
+    line-height:1.04;
+    margin-bottom: 11px;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .description {
+    font-size: clamp(14px,3.8vw,15.5px);
+    line-height:1.37;
+  }
+  .page[data-course-portrait="v3"] .welcomeReward {
+    position:relative; z-index:2;
+    margin-top:14px; padding:13px 14px;
+    border-radius:17px;
+  }
+  .page[data-course-portrait="v3"] .welcomeRewardTitle {
+    font-size:clamp(16px,4.4vw,18px); line-height:1.22;
+  }
+  .page[data-course-portrait="v3"] .welcomeSystems {gap:6px;margin:9px 0;}
+  .page[data-course-portrait="v3"] .welcomeSystems li {
+    font-size:clamp(11px,3.2vw,13px);
+    padding:5px 8px; line-height:1.17;
+  }
+  .page[data-course-portrait="v3"] .welcomeRequirement {font-size:13px;line-height:1.3;}
+  .page[data-course-portrait="v3"] .benefits {
+    position:relative;z-index:2;
+    margin-top:10px;padding:10px 5px;
+  }
+  .page[data-course-portrait="v3"] .benefits > div {gap:5px;padding:0 4px;}
+  .page[data-course-portrait="v3"] .benefitIcon {width:30px;height:30px;}
+  .page[data-course-portrait="v3"] .benefitIcon svg {width:18px;height:18px;}
+  .page[data-course-portrait="v3"] .benefits strong {font-size:clamp(11px,3.3vw,13px);line-height:1.2;}
+  .page[data-course-portrait="v3"] .benefits small {font-size:clamp(10px,2.9vw,11.5px);line-height:1.2;}
+  .page[data-course-portrait="v3"] .progressHeader {font-size:13px;margin-bottom:5px;}
+  .page[data-course-portrait="v3"] .progress {height:8px;}
+  .page[data-course-portrait="v3"] .actions {gap:8px;}
+  .page[data-course-portrait="v3"] .next {
+    min-height:55px;padding:11px 12px;
+    font-size:17px;border-radius:17px;
+  }
+  .page[data-course-portrait="v3"] .back {
+    min-height:55px;padding:10px 13px;
+    font-size:15px;border-radius:17px;
+  }
+  .page[data-course-portrait="v3"] .programme {
+    padding:0 12px;border-radius:14px;
+    font-size:14px;
+  }
+  .page[data-course-portrait="v3"] .programme summary {
+    min-height:42px;
+    font-size:14px;
+  }
+  .page[data-course-portrait="v3"] .preview p,
+  .page[data-course-portrait="v3"] .preview strong,
+  .page[data-course-portrait="v3"] .syncContent a {font-size:13px;}
+}
+@media (max-width: 760px) and (max-height:700px) {
+  .page[data-course-portrait="v3"] .journeyLabel {font-size:10.5px;min-height:25px;}
+  .page[data-course-portrait="v3"] .journeyDot {width:31px;height:31px;font-size:14px;}
+  .page[data-course-portrait="v3"] .journey ol::before {top:15px;}
+  .page[data-course-portrait="v3"] .content h1 {font-size:clamp(29px,7.8vw,35px);}
+  .page[data-course-portrait="v3"] .description {font-size:clamp(13.5px,3.95vw,15px);}
+  .page[data-course-portrait="v3"] .welcomeSlide .content h1 {font-size:clamp(30px,8vw,36px);}
+  .page[data-course-portrait="v3"] .welcomeSlide .description {font-size:14px;}
+  .page[data-course-portrait="v3"] .next,.page[data-course-portrait="v3"] .back {min-height:49px;}
+  .page[data-course-portrait="v3"] .programme summary {min-height:38px;}
+  .page[data-course-portrait="v3"] .art {height:clamp(100px,17dvh,140px);}
+}
+@media(max-width:380px) {
+  .page[data-course-portrait="v3"] .shell {padding-inline:9px;}
+  .page[data-course-portrait="v3"] .journeyLabel {font-size:10.5px;min-height:27px;}
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .eyebrow,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > h1,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .description {max-width:72%;}
+  .page[data-course-portrait="v3"] .benefits small {font-size:10px;}
+  .page[data-course-portrait="v3"] .experienceSlide .experienceChoice {font-size:14px;min-height:51px;}
+}
+@media print {
+  .page[data-course-portrait="v3"]::before,
+  .page[data-course-portrait="v3"] .welcomeSlide .art {display:none!important;}
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .eyebrow,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > h1,
+  .page[data-course-portrait="v3"] .welcomeSlide .content > .description {max-width:none!important;}
+}
+
+.page[data-course-portrait="v3"] .welcomeSlide .art {display:block;}
+/* Cover 53-step meditation feedback, sourced voices and celebrations too. */
+@media(max-width:760px) {
+  .page[data-course-portrait="v3"] .milestoneCard strong {font-size:18px;}
+  .page[data-course-portrait="v3"] .milestoneCard p {font-size:14px;line-height:1.4;}
+  .page[data-course-portrait="v3"] .voicesEyebrow {font-size:15px;}
+  .page[data-course-portrait="v3"] .voiceQuote p {font-size:18px;line-height:1.4;}
+  .page[data-course-portrait="v3"] .voiceQuote cite {font-size:13px;}
+  .page[data-course-portrait="v3"] .voicesEmpty {font-size:15px;}
+  .page[data-course-portrait="v3"] .voicesNote {font-size:13px;}
+  .page[data-course-portrait="v3"] .voicesLink {min-height:44px;font-size:14px;}
+  .page[data-course-portrait="v3"] .meditationFeeling label {font-size:15px;}
+  .page[data-course-portrait="v3"] .feelingValue span {font-size:12px;}
+  .page[data-course-portrait="v3"] .feedbackRequired {font-size:13px;}
+}
+
+/* Reiki verified learner reviews: switch quotes within the current meditation slide. */
+.page[data-course-portrait="v3"] .voiceQuote {
+  min-height:112px;
+  margin-bottom:5px;
+}
+.page[data-course-portrait="v3"] .voiceQuote p {
+  max-height:min(19dvh,164px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.page[data-course-portrait="v3"] .voicesControls {
+  display:grid;
+  grid-template-columns:44px minmax(55px,1fr) 44px;
+  align-items:center;
+  gap:10px;
+  max-width:220px;
+  margin:5px auto 7px;
+}
+.page[data-course-portrait="v3"] .voicesControls button {
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1px solid rgba(11,135,157,.33);
+  color:#0a7285;
+  background:linear-gradient(140deg,#ffffff,#d9f5f8);
+  box-shadow:0 3px 11px rgba(27,112,146,.12);
+  cursor:pointer;
+}
+.page[data-course-portrait="v3"] .voicesControls button:hover,
+.page[data-course-portrait="v3"] .voicesControls button:focus-visible {
+  background:#c5eef2;
+  outline:2px solid #087e9a;
+  outline-offset:2px;
+}
+.page[data-course-portrait="v3"] .voicesCount {
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  color:#18576c;
+  font-size:14px;
+  font-weight:800;
+}
+@media(max-width:380px) {
+  .page[data-course-portrait="v3"] .voiceQuote {min-height:96px;}
+  .page[data-course-portrait="v3"] .voiceQuote p {max-height:17dvh;}
+  .page[data-course-portrait="v3"] .voicesControls {margin:3px auto 4px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .page[data-course-portrait="v3"] .voicesControls button {transition:none;}
+}

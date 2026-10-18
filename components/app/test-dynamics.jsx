@@ -15,14 +15,15 @@ const TEXT = {
     tests: 'Completed tests', attempts: 'Total attempts', repeated: 'Repeated tests',
     period: 'Date range', all: 'All time', week: '7 days', month: '30 days',
     quarter: '3 months', custom: 'Custom dates', from: 'From', to: 'To',
-    first: 'First value', latest: 'Latest value', change: 'Change',
+    first: 'First value', latest: 'Latest value', change: 'Raw score difference',
     attemptsLabel: 'attempts', retake: 'Retake this test', report: 'Last result',
     more: 'More measured scales', noResults: 'No completed tests in this range',
     noResultsHelp: 'Choose a longer period or complete your first test to start tracking changes.',
     invalid: 'Choose a valid start and end date.', allResults: 'Show all time',
     baseline: 'Repeat this test to measure changes over time.',
     incompatible: 'Some measurement versions or scales are not comparable. Values are shown without an inferred change.',
-    note: 'Scores reflect responses within individual instruments, not an overall health percentage or a diagnosis.',
+    unverifiedHistory: 'Some saved attempts could not pass the original version and score checks. Those raw records are retained for history, not treated as verified psychological measurements.',
+    note: 'Only exactly comparable source versions are paired. Numeric differences describe self-reports, not reliably established or clinically important improvement or decline. Different responses can yield the same total; these are not health percentages or diagnoses.',
     unavailable: 'Retake unavailable', scales: 'scales',
     awaiting: 'No repeat measurement yet',
     currentBand: 'Your current range', position: 'Your position on the scale',
@@ -34,14 +35,15 @@ const TEXT = {
     tests: 'Пройдено тестов', attempts: 'Всего прохождений', repeated: 'Повторных замеров',
     period: 'Диапазон', all: 'Весь период', week: '7 дней', month: '30 дней',
     quarter: '3 месяца', custom: 'Свои даты', from: 'С', to: 'По',
-    first: 'Первое значение', latest: 'Последнее значение', change: 'Изменение',
+    first: 'Первое значение', latest: 'Последнее значение', change: 'Разница баллов',
     attemptsLabel: 'прохождений', retake: 'Пройти тест повторно', report: 'Последний результат',
     more: 'Остальные шкалы', noResults: 'За этот период нет пройденных тестов',
     noResultsHelp: 'Выберите более длинный период или пройдите первый тест, чтобы отслеживать динамику.',
     invalid: 'Укажите корректные даты начала и конца периода.', allResults: 'Показать весь период',
     baseline: 'Повторите тест, чтобы увидеть динамику показателей.',
     incompatible: 'Часть версий или шкал теста несопоставима. Значения показаны без расчёта изменения.',
-    note: 'Баллы относятся к шкалам отдельных тестов, а не к проценту здоровья или диагнозу.',
+    unverifiedHistory: 'Часть сохранённых прохождений не прошла проверку исходной версии или баллов. Эти записи сохранены для истории, но не считаются подтверждёнными психологическими измерениями.',
+    note: 'Сравниваются только совместимые версии теста. Разница баллов отражает самоотчёты, но не доказывает достоверное или клинически значимое улучшение либо ухудшение. Одинаковая сумма возможна при разных ответах; это не процент здоровья и не диагноз.',
     unavailable: 'Повтор пока недоступен', scales: 'шкал',
     awaiting: 'Повторного замера пока нет',
     currentBand: 'Ваш текущий диапазон', position: 'Положение на шкале',
@@ -192,6 +194,8 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
             {group.count === 1 && <p className={styles.footnote}>{c.baseline}</p>}
             {group.count > 1 && group.scales.some(item => item.delta === null) &&
               <p className={styles.footnote}>{c.incompatible}</p>}
+            {group.unverifiedCount > 0 &&
+              <p className={styles.footnote} role="note" data-dynamics-unverified-history>{c.unverifiedHistory}</p>}
             <button type="button" className={styles.retake}
               onClick={() => onRetake?.(group.latest.definitionId)}
               disabled={busy || !canRetake?.(group.latest.definitionId)}>

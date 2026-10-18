@@ -1,4 +1,5 @@
 import { gaugeChange, gaugeModel } from '@/lib/assessments/dashboard-gauges'
+import { scoreChangeReading } from '@/lib/assessments/score-change-reading'
 import styles from './assessment-gauge.module.css'
 
 const publishedColors = ['#a84842', '#b66c43', '#8c793d', '#477f69', '#2f6c5e']
@@ -139,19 +140,25 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
 
 export function ScoreTrend({ current, previous, dimensionKey, locale = 'en', compact = false }) {
   const change = gaugeChange(current, previous, dimensionKey)
+  const dimension = Array.isArray(current?.dimensions)
+    ? current.dimensions.find(item => item?.key === dimensionKey) : null
+  const verifiedOrientation = gaugeModel(dimension, current, locale)?.orientation || 'neutral'
+  const reading = scoreChangeReading(change, dimension, locale, verifiedOrientation)
   const ru = locale === 'ru'
-  const labels = {
-    baseline: ru ? 'Первый замер' : 'First measurement',
-    unchanged: ru ? 'Без изменений' : 'No change',
-    improved: ru ? 'Лучше по этой шкале' : 'Better on this scale',
-    worsened: ru ? 'Хуже по этой шкале' : 'Worse on this scale',
-    changed: ru ? 'Изменение показателя' : 'Score changed',
-  }
-  const icon = change.state === 'improved' ? '↗' : change.state === 'worsened' ? '↘' : change.state === 'changed' ? '↔' : '—'
-  return <span className={styles.trend + ' ' + styles[change.state]} data-gauge-trend={change.state}
-    aria-label={labels[change.state]}>
-    <span aria-hidden="true">{icon}</span>
-    <span>{labels[change.state]}{change.delta !== null && change.delta !== 0 && !compact
-      ? ' (' + (change.delta > 0 ? '+' : '') + numeral(change.delta, locale) + ')' : ''}</span>
+  const shortCaveat = change.state === 'unchanged'
+    ? ru ? 'Отдельные ответы могли отличаться' : 'Individual responses may differ'
+    : ru ? 'Не доказательство улучшения или ухудшения' : 'Not proof of improvement or decline'
+  return <span className={styles.trendGroup} data-trend-evidence="descriptive-only">
+    <span className={styles.trend + ' ' + (
+      change.state === 'baseline' ? styles.baseline :
+      change.state === 'unchanged' ? styles.unchanged : styles.changed
+    )} data-gauge-trend={change.state}
+      title={reading.detail} aria-label={reading.label + '. ' + reading.detail}>
+      <span aria-hidden="true">{reading.icon}</span>
+      <span>{reading.label}{change.delta !== null && change.delta !== 0 && !compact
+        ? ' (' + (change.delta > 0 ? '+' : '') + numeral(change.delta, locale) + ')' : ''}</span>
+    </span>
+    {!compact && change.state !== 'baseline' &&
+      <small className={styles.trendCaveat}>{shortCaveat}</small>}
   </span>
 }

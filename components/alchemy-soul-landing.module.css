@@ -275,3 +275,23 @@
  .paymentOptions>.wisePayment{min-width:0;margin:0}
 }
 .paymentOptions:empty{display:none}
+
+/* Measured 320px Alchemy formats panel: tighten only vertical whitespace.
+   Keep the existing typography, widths, disclosures and payment behaviour. */
+@media(max-width:680px){
+ .optionsSection{padding-block:10px}
+ .optionsSection .sectionHeading{margin-bottom:6px}
+ .optionsSection .optionCard{padding-block:8px}
+ .optionsSection .optionCard strong,
+ .optionsSection .optionName,
+ .optionsSection .optionDescription{margin-top:5px}
+ .optionsSection .monthlyCard{padding-block:6px}
+ .optionsSection .monthlyText{margin-block:3px}
+ .optionsSection .monthlyCard,
+ .optionsSection .formatHint,
+ .optionsSection .optionsOrder,
+ .optionsSection .wisePayment,
+ .optionsSection .freeOption{margin-top:6px}
+ .optionsSection .wisePayment{gap:4px}
+ .optionsSection .wisePayment>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+}

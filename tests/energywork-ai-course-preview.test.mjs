@@ -10,110 +10,147 @@ const route = read('app/[locale]/academy/[[...slug]]/page.tsx')
 const landing = read('components/principles-of-energywork.tsx')
 const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
-const originalVideos = read('data/academy/english-guided-meditations.ts')
+const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Energywork course has a distinct versioned identity and stable slide IDs', () => {
+test('Unified Reiki Practitioner course has 53 stable editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-17.p0"/)
-  const ids = [...curriculum.matchAll(/id: "(welcome-|flight-|presence-|intention-|boundaries-|paths-|ygg-|tan-|kun-|end-)[^"]+"/g)].map(match => match[0])
-  assert.equal(ids.length, 39)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-18.p1"/)
+  const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
+    .map(match => match[0])
+  assert.equal(ids.length, 53)
   assert.equal(new Set(ids).size, ids.length)
-  for (const phase of ['welcome', 'flight', 'presence', 'intention', 'boundaries', 'paths', 'personal', 'complete']) {
-    assert.ok(curriculum.includes(phase + ':'), phase)
+  const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
+  const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
+  for (let i = 0; i < phases.length; i++) {
+    assert.ok(curriculum.includes('phase: "' + phases[i] + '"'), 'Missing '+phases[i])
+    assert.ok(curriculum.includes('firstSlideId: "' + expected[i] + '"'), 'Missing lesson entry '+expected[i])
   }
-  for (const track of ['yggdrasil', 'tantra', 'kundalini']) {
-    assert.match(curriculum, new RegExp('id: "' + ({ yggdrasil: 'ygg', tantra: 'tan', kundalini: 'kun' })[track] + '-01"'))
-  }
-  assert.ok(curriculum.includes('...commonSlides, ...(path ? pathSlides[path]'))
+  assert.match(curriculum, /\.\.\.pathSlides\.tantra,/)
+  assert.match(curriculum, /\.\.\.pathSlides\.kundalini,/)
+  assert.match(curriculum, /\.\.\.pathSlides\.yggdrasil,/)
+  assert.match(curriculum, /_legacyPath: EnergyworkPath \| null = null/)
+  assert.doesNotMatch(curriculum, /\.\.\.\(path \? pathSlides\[path\]/)
+  assert.match(curriculum, /slide\.id !== "paths-04"/)
+  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "paths-04"\)/)
 })
 
-test('Original source videos, and only original source videos, are used', () => {
+test('New peer voices and celebrations appear between the existing lessons', () => {
+  for(const id of ['flight-voices','tan-voices','kun-voices','ygg-voices','flight-done','tan-done','kun-done','ygg-done'])
+    assert.ok(curriculum.includes('id: "'+id+'"'),id)
+  assert.match(learner,/data-meditation-voices/)
+  assert.match(learner,/t\.committed/)
+  assert.match(learner,/t\.voicesComments/)
+  assert.match(learner,/data-meditation-feeling/)
+  assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)
+})
+
+test('Videos reuse the four approved original source recordings; no render or autoplay', () => {
   assert.match(learner, /englishGuidedMeditations\.find/)
   assert.match(learner, /<AcademyVideoPlayer/)
-  for (const key of ['flight-to-sun', 'tantra-reiki', 'reiki-yggdrasil', 'kundalini-reiki']) {
+  for (const key of ['flight-to-sun', 'tantra-reiki', 'reiki-yggdrasil', 'kundalini-reiki'])
     assert.ok(curriculum.includes('videoKey: "' + key + '"'), key)
-  }
   for (const id of ['HqfixazXqRY', 'w2BN-HYmHUk', '80xZ7jN6o2Y', '_IOX0E8N-To']) {
-    assert.ok(originalVideos.includes(id), id)
-    assert.ok(!curriculum.includes(id), 'video URLs remain in approved registry: ' + id)
+    assert.ok(videos.includes(id), id)
+    assert.ok(!curriculum.includes(id), 'Video IDs belong in the media registry, not the lessons')
   }
+  assert.doesNotMatch(learner, /autoplay|autoPlay/)
   assert.match(learner, /t\.unavailable/)
 })
 
-test('Guests are unsaved; signed-in learners use consent and durable authenticated progress', () => {
+test('Sun meditation is followed by gentle warmth-and-light pause, observations, and a lesson question', () => {
+  const lesson = curriculum.split('id: "flight-01"')[1].split('id: "presence-01"')[0]
+  assert.ok(lesson.indexOf('id: "flight-02"') < lesson.indexOf('id: "flight-03"'))
+  assert.ok(lesson.indexOf('id: "flight-03"') < lesson.indexOf('id: "flight-voices"'))
+  assert.ok(lesson.indexOf('id: "flight-voices"') < lesson.indexOf('id: "flight-04"'))
+  assert.ok(lesson.indexOf('id: "flight-04"') < lesson.indexOf('id: "flight-05"'))
+  assert.match(lesson, /warmth or light/)
+  assert.match(lesson, /Насколько удалось прочувствовать/)
+  assert.match(lesson, /question: \{ type: "text"/)
+  assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
+})
+
+test('Five lessons have separate post-meditation reports and question answers', () => {
+  const assignments = [
+    ['flight','flight-04','flight-05'], ['tantra','tan-04','tan-06'],
+    ['kundalini','kun-04','kun-06'], ['yggdrasil','ygg-04','ygg-06'],
+    ['initiation','end-01','init-01'],
+  ]
+  for (const [name,report,question] of assignments) {
+    assert.ok(curriculum.includes('lesson: "'+name+'", reportId: "'+report+'", questionId: "'+question+'"'))
+    assert.ok(curriculum.includes('id: "'+report+'"'))
+    assert.ok(curriculum.includes('id: "'+question+'"'))
+  }
+  assert.match(learner, /const initiationItems = energyworkInitiationRequirements\.map/)
+  assert.match(learner, /readyCount === initiationItems\.length \* 2/)
+  assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
+  assert.match(learner, /data-initiation-readiness/)
+  assert.match(learner, /jumpToSlide\(item\.reportId\)/)
+  assert.match(learner, /jumpToSlide\(item\.questionId\)/)
+  assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
+  assert.match(learner, /Nothing is sent to the teacher automatically/)
+})
+
+test('Guest answers stay unsaved; consented Google learners use private versioned progress', () => {
   assert.match(learner, /Guest preview · Answers are not saved/)
   assert.match(learner, /Гостевой просмотр · Ответы не сохраняются/)
   assert.match(learner, /action: "start", consent: true/)
   assert.match(learner, /continueTo: "energywork"/)
-  assert.match(learner, /expectedRevision: revisionRef.current/)
+  assert.match(learner, /expectedRevision: revisionRef\.current/)
   assert.match(learner, /const queueRef = useRef/)
   assert.match(learner, /950\)/)
   assert.match(learner, /const \[answers, setAnswers\] = useState<AnswerMap>\(\{\}\)/)
   assert.match(learner, /navigator\.clipboard\.writeText\(notes\)/)
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
-  assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| \(slide\.kind === "path-choice" && !path\)\}/)
-  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
+  assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/)
 })
 
-test('Preview navigation is integrated into Academy and the original source page remains', () => {
+test('Course remains available in Academy, guest cabinet and course page routes', () => {
   assert.match(route, /key === "principles-of-energywork\/learn"/)
   assert.match(route, /EnergyworkAiLearner/)
   assert.match(route, /robots: \{ index: false, follow: false \}/)
-  assert.match(route, /key === "principles-of-energywork"\) return <PrinciplesOfEnergywork/)
   assert.match(landing, /data-energywork-interactive-course/)
   assert.match(landing, /energywork-flight-to-sun/)
-  assert.match(landing, /energywork-systems/)
   assert.match(academy, /path: "principles-of-energywork\/learn"/)
-  assert.match(academy, /detailsPath: "academy\/principles-of-energywork"/)
   assert.match(cabinet, /path: 'principles-of-energywork\/learn'/)
 })
 
-test('Mobile-first teal learner has accessible buttons, outlines and no automatic video playback', () => {
+test('Mobile course uses teal five-step rail and remains accessible', () => {
   assert.match(learner, /<details className=\{styles\.programme\}>/)
+  assert.match(learner, /energyworkLessons\.map/)
   assert.match(learner, /role="progressbar"/)
   assert.match(learner, /aria-labelledby="energywork-slide-title"/)
   assert.match(learner, /type="range" min="0" max="10"/)
   assert.match(learner, /type="radio"/)
+  assert.match(css, /\.page\[data-course-theme\] \.journey/)
+  assert.match(css, /\.reviewChecklist/)
   assert.match(css, /@media \(max-width: 760px\)/)
   assert.match(css, /@media \(max-width: 380px\)/)
   assert.match(css, /:focus-visible/)
   assert.match(css, /prefers-reduced-motion/)
-  assert.doesNotMatch(learner, /autoplay|autoPlay/)
 })
 
-test('Reiki Practitioner opening slide explains all three initiation opportunities and learning tasks', () => {
+test('Reiki opening explains a single sequential course and separate teacher initiations', () => {
   const opening = curriculum.split('id: "welcome-01"')[1].split('id: "welcome-02"')[0]
-  assert.match(opening, /Reiki Practitioner/)
-  assert.match(opening, /Практик Рейки/)
-  assert.match(learner, /3 possible Level 1 initiations/)
-  assert.match(learner, /3 возможные инициации первой ступени/)
-  assert.match(learner, /energyworkPathChoices\.map\(\(choice\) => <li key=\{choice\.id\}>/)
-  assert.match(learner, /watch the course videos, complete the tasks and answer the questions/)
-  assert.match(learner, /посмотрите учебные видео, выполните задания и ответьте на вопросы/)
-  assert.match(learner, /finishing the course does not grant it automatically/)
+  assert.match(opening, /One course, five lessons in sequence/)
+  assert.match(opening, /Один курс из пяти последовательных уроков/)
+  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
+  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
+  assert.match(learner, /Course completion alone does not grant any initiation/)
+  assert.match(curriculum, /does not grant Level 1 initiation or certification/)
   assert.match(css, /welcomeSlide \.art/)
 })
 
-test('First Reiki reflection asks about prior experience with four EN/RU options', () => {
+test('Initial interactive screen asks four prior Reiki experience options in EN/RU', () => {
   const schema = read('data/academy/energywork-ai-schema.js')
   const question = curriculum.split('id: "welcome-02"')[1].split('id: "flight-01"')[0]
   assert.match(question, /How familiar are you with Reiki\?/)
   assert.match(question, /Насколько вы знакомы с Рейки\?/)
-  assert.match(question, /type: "choice"/)
-  const optionIds = [...question.matchAll(/\{ id: "([^"]+)", label: l\(/g)].map((match) => match[1])
-  assert.deepEqual(optionIds, ['beginner', 'energywork', 'reiki-1-2', 'master'])
-  for (const ru of ['Пока не знаком', 'энергетических практик', '1-я или 2-я ступень', 'мастер Рейки']) {
-    assert.ok(question.includes(ru), ru)
-  }
-  assert.match(schema, /'welcome-02': 'choice'/)
-  assert.match(schema, /ENERGYWORK_EXPERIENCE_VALUES = Object\.freeze\(\['beginner','energywork','reiki-1-2','master'\]\)/)
-  assert.match(schema, /ENERGYWORK_EXPERIENCE_VALUES\.includes\(answer\)/)
+  const optionIds = [...question.matchAll(/\{ id: "([^"]+)", label: l\(/g)].map(match=>match[1])
+  assert.deepEqual(optionIds, ['beginner','energywork','reiki-1-2','master'])
+  assert.match(schema, /ENERGYWORK_EXPERIENCE_VALUES/)
   assert.match(learner, /experienceMissing = slide\.id === "welcome-02"/)
-  assert.match(learner, /if \(busy \|\| experienceMissing \|\|/)
   assert.match(learner, /role="status">\{experienceGuidance\[locale\]/)
   assert.match(css, /\.experienceChoice:has\(input:focus-visible\)/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-17\.p0"/)
-  assert.match(schema, /ENERGYWORK_VERSION = '2026-10-17\.p0'/)
 })

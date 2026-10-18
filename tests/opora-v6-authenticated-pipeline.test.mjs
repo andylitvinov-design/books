@@ -4,7 +4,7 @@ import {repositoryHarness,mount,findButton,textOf} from './helpers/route-pipelin
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,OPORA54_PRE_SAVE_KEYS} from '../lib/inner-growth/anti-stress-skills-v6.js'
 for(const version of [COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7])
-for(const locale of ['en','ru'])for(let day=1;day<=14;day++)test(`${version===COURSE_ANTISTRESS_SKILLS_V6?'historical pinned V6':'current factory V7'} ${locale} day ${day}: actual player saves the exact versioned lesson`,async()=>{
+for(const locale of ['en','ru'])for(let day=1;day<=14;day++)test(`${version===COURSE_ANTISTRESS_SKILLS_V6?'historical pinned V6':'V7 fifteen-screen compatibility'} ${locale} day ${day}: actual player saves the exact versioned lesson`,async()=>{
  const owner=repositoryHarness({freshPhase:true});const cycle=await owner.create('AS2')
  assert.equal(cycle.content_version,COURSE_ANTISTRESS_SKILLS_V7)
  // Only the synthetic historical fixture is repinned; a fresh V7 stays untouched.

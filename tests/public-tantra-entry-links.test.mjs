@@ -75,7 +75,7 @@ const catalogue = { CatalogShowcase: ({ items }) => items.map((item) => React.cr
 const academyDiscovery = loadComponent('components/academy-discovery.tsx', {
   ...shared,
   react: React,
-  'lucide-react': { ...shared['lucide-react'], Search: empty },
+  'lucide-react': { ...shared['lucide-react'], ChevronDown: empty, Search: empty },
   '@/components/catalog-showcase': catalogue,
   './academy-discovery.module.css': {},
 }).AcademyDiscovery;

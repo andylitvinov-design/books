@@ -142,8 +142,8 @@ test('original HH resource means are descriptions of this run, not claims of tem
   assert.ok(score)
   assert.equal(score.bands.length,5)
   assert.equal(score.bands.filter(row=>row.current).length,1)
-  assert.match(score.current.label, /Strongly endorsed in these answers/)
-  assert.match(score.current.note, /does not establish their consistency across time or situations/)
+  assert.match(score.current.label, /Consistently reported/)
+  assert.match(score.current.note, /need not be available all the time/)
   assert.match(score.caveat, /not published norms/)
   const ru = descriptiveScoreLevels({
     result: {definitionKey:'hh-resource-pulse'},
@@ -151,8 +151,8 @@ test('original HH resource means are descriptions of this run, not claims of tem
     model: {verified:true,bandBasis:'descriptive',bands:[],answerBands:[],reliableDirection:true,orientation:'resource'},
     locale:'ru',
   })
-  assert.match(ru.current.label, /Высоко оценивается в ответах/)
-  assert.match(ru.current.note, /не доказывает/)
+  assert.match(ru.current.label, /Отмечается устойчиво/)
+  assert.match(ru.current.note, /не означает/)
 })
 
 test('nonclinical editorial parts never invent category levels for mixed-polarity HH scales', () => {

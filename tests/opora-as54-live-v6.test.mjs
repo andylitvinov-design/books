@@ -98,7 +98,7 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
  }
 })
 
-test('historical V6 and current V7 validate pinned content, 14 pre-save screens and private signal data',async()=>{
+test('V6 and V7 retain the historical fifteen-screen save contract and private signal data',async()=>{
  const server=read('lib/app/growth-daily.js')
  assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
  assert.match(server,/value === COURSE_ANTISTRESS_SKILLS_V6/)
@@ -140,6 +140,11 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  assert.match(legacy,/export default function CourseSlidePlayer/)
  assert.match(player,/ROLE_OPTIONS=\{/)
  assert.match(player,/choiceField=role==='notice'/)
+ // Learners can report 'not attempted' or 'uncomfortable' without
+ // pretending to have chosen a particular physical action.
+ assert.match(player,/const noActionReport=role==='transfer'/)
+ assert.match(player,/\['not_yet','not_attempted','uncomfortable'\]\.includes\(value\)/)
+ assert.match(player,/if\(choiceField&&!answers\[choiceField\]&&!noActionReport\)return/)
  assert.match(player,/activityPrompt/)
  assert.match(player,/role==='act'&&picked/)
  assert.match(player,/aphorism:\['agree','unsure','disagree'\]/)

@@ -308,3 +308,20 @@
 /* On the post-assessment screen, the recommended module/Day 1 button is the primary first-view action. */
 .routeBack{padding:4px 7px!important;min-height:30px!important;background:transparent!important;border-color:transparent!important;color:#3a7990!important;font-size:12px!important;box-shadow:none!important}
 @media(max-width:530px){.routeBack{padding:2px 5px!important;min-height:25px!important}}
+
+/* OPORA starting check-ins: both navigation actions share one short row.
+   The assessment card carries its own privacy disclosure, so no extra footer. */
+.compactBaselineRoot{gap:8px;margin-bottom:0}
+.compactBaselineNav{display:flex;justify-content:space-between;align-items:center;
+  gap:8px;width:100%;max-width:760px;margin-inline:auto}
+.compactBaselineNav button{display:inline-flex;align-items:center;gap:5px;min-height:36px;
+  padding:6px 9px;background:transparent;border:0;border-radius:9px;
+  color:#157e94;font:750 12px/1.25 system-ui,-apple-system,sans-serif;cursor:pointer}
+.compactBaselineNav button:last-child{color:#486d7d}
+.compactBaselineNav button:hover{background:#e6f8fa}
+.compactBaselineNav button:disabled{opacity:.55;cursor:wait}
+.compactBaselineNav button:focus-visible{outline:3px solid #078da6;outline-offset:2px}
+@media(max-width:530px){
+  .compactBaselineRoot{gap:7px}
+  .compactBaselineNav button{min-height:34px;padding:5px 6px;font-size:11.5px}
+}

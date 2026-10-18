@@ -143,7 +143,7 @@ test('trauma-focused AS4 cannot be newly created as an unsupervised cycle', asyn
   assert.equal(h.inserts.length,0)
 })
 
-test('real createNewCycle creates current AS-5.5 V7 AS2 for a new personal Anti-Stress cycle without changing existing history', async () => {
+test('real createNewCycle creates approved AS-5.5 AS2 for a new personal Anti-Stress cycle without changing existing history', async () => {
   const h = harness()
   assertCreated(h, await h.create(), COURSE_ANTISTRESS_SKILLS_V7, preferences('AS2'))
 })

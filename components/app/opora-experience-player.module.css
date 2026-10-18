@@ -1,0 +1,133 @@
+/* ОПОРА AS-5.6 · photographs and a small, calming experience rather than a quiz. */
+.overlay{
+  position:fixed;inset:0;z-index:2147483001;
+  background:#0a3649;color:#f8ffff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+.overlay *{box-sizing:border-box}
+.frame{
+  height:100dvh;width:100%;display:flex;flex-direction:column;
+  min-height:0;position:relative;isolation:isolate;overflow:hidden;
+  background-color:#12516a;background-size:cover;background-position:center;
+}
+.arrive{background-image:linear-gradient(180deg,#153f53b8 0%,#123d5687 36%,#0a3245a1 69%,#092a3ceb 100%),url('/images/holistic-house/course-start-heron.webp')}
+.practice{background-image:linear-gradient(180deg,#144a5cbd 0%,#17566f70 31%,#0c3655ab 68%,#0a3449f0 100%),url('/images/holistic-house/course-focus-mountain-boy.webp');background-position:50% 46%}
+.feel{background-image:linear-gradient(180deg,#163e5aad 0%,#154d6578 35%,#0b3a52ac 68%,#0a3247f0 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.affirmation{background-image:linear-gradient(180deg,#0e4253bf 0%,#0c485f66 40%,#0c3449b3 75%,#0a3046f0 100%),url('/images/holistic-house/course-start-heron.webp')}
+.save{background-image:linear-gradient(180deg,#0c3e56b9 0%,#125a7380 38%,#09374eb5 73%,#092d42f0 100%),url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.frame.receipt{background-image:linear-gradient(180deg,#153e56bc 0%,#154b6379 38%,#0b384ebd 73%,#0b2f41ed 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.header{
+  position:relative;display:flex;align-items:center;gap:12px;
+  padding:calc(10px + env(safe-area-inset-top)) clamp(12px,4vw,24px) 10px;
+  border-bottom:1px solid #d8ffff29;background:#082c4180;z-index:2;
+}
+.iconButton,.pause{
+  border:1px solid #e8ffff65;background:#f5ffff16;color:#fff;
+  border-radius:14px;min-width:43px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:none;
+}
+.pause{padding:0 12px;gap:7px;font-size:13px;font-weight:740}
+.progress{flex:1;min-width:0;display:grid;gap:7px}
+.progressCopy{display:flex;justify-content:space-between;gap:8px;font-size:11px;letter-spacing:.02em;font-weight:780;color:#e4ffff}
+.track{height:5px;border-radius:100px;overflow:hidden;background:#d3eff355}
+.fill{height:100%;background:linear-gradient(90deg,#95e9ea,#3bc6c4);border-radius:100px;transition:width .2s ease}
+.stage{
+  flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;
+  overflow:auto;overscroll-behavior:contain;
+  padding:clamp(12px,2.5vh,32px) clamp(13px,4vw,34px) clamp(12px,2.5vh,30px);
+}
+.panel{
+  display:flex;flex-direction:column;gap:clamp(9px,1.5vh,15px);
+  width:min(100%,600px);min-width:0;margin:auto auto 0;
+  padding:clamp(17px,3.4vw,29px);
+  border-radius:26px;border:1px solid #e3ffff5b;
+  color:#fff;background:linear-gradient(155deg,#113b53c7,#082c43cb);
+  box-shadow:0 16px 46px #00192338;
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+}
+.eyebrow{font-size:10px;font-weight:850;letter-spacing:.15em;text-transform:uppercase;color:#a9eff0}
+.title{
+  font-family:Georgia,'Times New Roman',serif;letter-spacing:-.025em;
+  font-size:clamp(25px,5.8vw,38px);font-weight:680;line-height:1.14;
+  margin:0;text-wrap:balance;outline:none;color:#fff;
+}
+.lead{font-size:clamp(14px,3.6vw,16px);line-height:1.5;margin:0;color:#f0fafb}
+.soft,.subtle{font-size:12px;line-height:1.5;margin:0;color:#cfebed}
+.action{
+  font-size:clamp(14px,3.6vw,16px);line-height:1.46;font-weight:670;
+  border-left:3px solid #a1f1e5;border-radius:3px 13px 13px 3px;
+  background:#e9ffff18;margin:0;padding:12px 14px;color:#f8ffff;
+}
+.choiceRow{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.actionButton,.plain,.chips button{
+  min-height:42px;padding:10px 12px;border-radius:14px;
+  cursor:pointer;text-align:center;font-size:13px;line-height:1.32;font-weight:730;
+  background:#ffffff20;border:1px solid #e1ffff6c;color:#fff;
+}
+.actionButton{display:flex;align-items:center;justify-content:center;gap:8px;background:#dcfaf3;color:#075365;border-color:#d7fff5}
+.plain{background:#ffffff12}
+.miniLabel{font-size:12px;font-weight:760;margin:0;color:#e8ffff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{flex:1 1 125px}
+.chips button[aria-pressed=true]{background:#bff4eb;color:#063e50;border-color:#ffffff}
+.chips button:focus-visible,.actionButton:focus-visible,.plain:focus-visible,
+.iconButton:focus-visible,.pause:focus-visible,.primary:focus-visible,
+.back:focus-visible,.linkHint:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.feeling button{flex-basis:42%}
+.linkHint{
+  display:flex;gap:7px;align-items:center;justify-content:flex-start;width:fit-content;
+  background:none;border:0;color:#b9eafa;padding:5px 0;cursor:pointer;font-size:12px;
+  font-weight:710;text-decoration:underline;text-underline-offset:4px;
+}
+.quotation{
+  font-family:Georgia,'Times New Roman',serif;font-size:clamp(20px,5.4vw,31px);
+  font-weight:500;font-style:italic;line-height:1.4;letter-spacing:-.015em;
+  margin:3px 0;padding:0 5px 3px;text-shadow:0 2px 20px #0026378a;
+}
+.receiptNote{display:flex;align-items:center;gap:8px;padding:11px 12px;
+  border-radius:15px;background:#bfeee331;color:#efffff;font-size:13px}
+.disclaimer{font-size:10px;line-height:1.4;color:#c7e7e9;opacity:.83}
+.error{
+  margin:0;background:#651e29;color:#fff;line-height:1.4;
+  padding:9px 18px;font-size:12px;text-align:center;
+}
+.footer{
+  position:relative;z-index:2;display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,4vw,24px) calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid #d0faf635;background:#072b40d6;
+}
+.primary,.back{
+  display:flex;align-items:center;justify-content:center;gap:9px;min-height:49px;
+  border-radius:15px;padding:11px 16px;font-size:14px;font-weight:820;
+  cursor:pointer;border:1px solid #ffffff85;
+}
+.primary{
+  flex:1;border:0;color:#083f50;
+  background:linear-gradient(110deg,#d8fbf2,#8fe9e8);
+  box-shadow:0 4px 15px #0a182e40;
+}
+.back{background:#ffffff1d;color:#fff}
+.primary:disabled,.back:disabled,.pause:disabled{opacity:.55;cursor:not-allowed}
+.shade{position:fixed;inset:0;z-index:3;background:#061d2ce0;
+  display:grid;place-items:center;padding:20px}
+.safetyCard{
+  display:grid;gap:11px;width:min(100%,390px);color:#143a4f;
+  background:#f7ffff;padding:22px;border-radius:22px;
+}
+.safetyCard h3{margin:0;font:650 23px/1.2 Georgia,serif}
+.safetyCard p{margin:0;font-size:14px;line-height:1.6}
+.safetyCard button{min-height:44px;padding:10px;border-radius:12px;
+  border:1px solid #91d3da;background:#e1f7f3;color:#145465;font-weight:740;cursor:pointer}
+.safetyCard .safetyExit{background:#fff;border-color:#e5cbd0;color:#835466}
+@media(min-width:640px){.stage{align-items:center}.panel{margin:auto}}
+@media(max-width:380px){
+  .panel{padding:14px;border-radius:20px;gap:8px}
+  .title{font-size:25px}.stage{padding:8px 10px}
+  .chips{gap:6px}.chips button{flex-basis:113px;min-height:38px;padding:8px}
+}
+@media(max-height:690px){.stage{padding:8px 10px}.panel{gap:7px;padding:13px}
+  .title{font-size:clamp(22px,4.8vw,29px)}.lead{font-size:13px;line-height:1.38}
+  .action{padding:9px 12px;font-size:13px}.quotation{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){.fill{transition:none}}

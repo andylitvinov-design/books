@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { FormEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Search, Sparkles } from "lucide-react";
 
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import type { AcademyView } from "@/data/academy/catalog";
@@ -18,13 +18,13 @@ const COPY = {
   en: {
     eyebrow: "HOLISTIC HOUSE · ACADEMY",
     title: "Find your learning path",
-    description: "Explore Reiki, energywork and Temple Studies. Choose a free introduction or a complete learning program.",
+    description: "Explore Reiki, Temple Studies and stress relief. Start free or choose a full learning program.",
     videoTitle: "Explore video lessons",
     videoDescription: "Find original lessons and guided practices, organized by program and recording language.",
     programs: "Programs", videos: "Videos", freeAiCourses: "Free AI Courses", aiShort: "AI Courses",
-    placeholder: "e.g. Reiki, Tantra, Temple Studies or stress relief...",
+    placeholder: "Reiki, Tantra or stress relief…",
     searchLabel: "Search learning programs",
-    searchButton: "Find my course",
+    searchButton: "Find my course", refine: "Refine courses", refineHint: "Topic and starting point", browseLabel: "Browse learning programs",
     topic: "Topic", topicAll: "All topics", reiki: "Reiki & energy", temple: "Temple Studies", stress: "Stress relief",
     start: "Starting point", startAll: "Any", free: "Free introduction", full: "Full program",
     suggestions: "You could try",
@@ -39,13 +39,13 @@ const COPY = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
-    description: "Изучайте Рейки, энергопрактики и храмовые традиции. Начните бесплатно или выберите полную программу.",
+    description: "Изучайте Рейки, храмовые практики и антистресс. Начните бесплатно или выберите полную программу.",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Уроки и практики по программам с указанием языка оригинальной записи.",
     programs: "Программы", videos: "Видео", freeAiCourses: "Бесплатные ИИ-курсы", aiShort: "ИИ-курсы",
-    placeholder: "Например: Рейки, Тантра, мистерии или антистресс…",
+    placeholder: "Рейки, Тантра или антистресс…",
     searchLabel: "Поиск учебных программ",
-    searchButton: "Подобрать курс",
+    searchButton: "Подобрать курс", refine: "Уточнить подбор", refineHint: "Тема и начало обучения", browseLabel: "Выбор учебных программ",
     topic: "Тема", topicAll: "Все темы", reiki: "Рейки и энергия", temple: "Храмовые традиции", stress: "Антистресс",
     start: "Начало обучения", startAll: "Любое", free: "Бесплатное введение", full: "Полная программа",
     suggestions: "Можно начать с",
@@ -60,13 +60,13 @@ const COPY = {
   es: {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
-    description: "Explora Reiki, trabajo energético y Temple Studies. Empieza gratis o elige un programa completo.",
+    description: "Explora Reiki, las tradiciones y el antiestrés. Empieza gratis o elige un programa completo.",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma de grabación original.",
     programs: "Programas", videos: "Videos", freeAiCourses: "Cursos de IA gratuitos", aiShort: "Cursos IA",
-    placeholder: "Por ejemplo: Reiki, Tantra, tradiciones o antiestrés…",
+    placeholder: "Reiki, Tantra o antiestrés…",
     searchLabel: "Buscar programas de aprendizaje",
-    searchButton: "Encontrar curso",
+    searchButton: "Encontrar curso", refine: "Filtrar cursos", refineHint: "Tema y punto de partida", browseLabel: "Explorar programas",
     topic: "Tema", topicAll: "Todos", reiki: "Reiki y energía", temple: "Temple Studies", stress: "Antiestrés",
     start: "Punto de partida", startAll: "Cualquiera", free: "Introducción gratuita", full: "Programa completo",
     suggestions: "Puedes empezar por",
@@ -173,28 +173,38 @@ export function AcademyDiscovery({
         </div>
         <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>
         <p className={styles.intro}>{view === "videos" ? t.videoDescription : t.description}</p>
-          <nav className={styles.programTabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
-            <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{t.programs}</Link>
-            <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{t.videos}</Link>
-            <Link href={"/" + locale + "/academy/free-ai-courses"} aria-label={t.freeAiCourses}><span className={styles.aiLong}>{t.freeAiCourses}</span><span className={styles.aiShort}>{t.aiShort}</span></Link>
-          </nav>
-
         {view === "programs" ? (
-          <>
-            <form className={styles.form} role="search" onSubmit={submitSearch}>
-              <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
-              <input
-                id="academy-program-query"
-                type="search"
-                className={styles.search}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                maxLength={120}
-                placeholder={t.placeholder}
-                autoComplete="off"
-              />
-              <button className={styles.submit} type="submit">{t.searchButton}<Search aria-hidden="true" size={19} /></button>
-            </form>
+          <form className={styles.form} role="search" onSubmit={submitSearch}>
+            <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
+            <input
+              id="academy-program-query"
+              type="search"
+              className={styles.search}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              maxLength={120}
+              placeholder={t.placeholder}
+              autoComplete="off"
+            />
+            <button className={styles.submit} type="submit">{t.searchButton}<Search aria-hidden="true" size={19} /></button>
+          </form>
+        ) : (
+          <Link className={styles.videoLink} href="#academy-video-courses">{t.videoButton}<ArrowRight aria-hidden="true" size={19} /></Link>
+        )}
+      </section>
+
+      <section className={styles.browseTools} aria-label={t.browseLabel}>
+        <nav className={styles.programTabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
+          <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{t.programs}</Link>
+          <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{t.videos}</Link>
+          <Link href={"/" + locale + "/academy/free-ai-courses"} aria-label={t.freeAiCourses}><span className={styles.aiLong}>{t.freeAiCourses}</span><span className={styles.aiShort}>{t.aiShort}</span></Link>
+        </nav>
+        {view === "programs" ? (
+          <details className={styles.filterPanel}>
+            <summary>
+              <span><strong>{t.refine}</strong><small>{t.refineHint}</small></span>
+              <ChevronDown aria-hidden="true" size={18} />
+            </summary>
             <div className={styles.filters}>
               <label>{t.topic}
                 <select value={topic} onChange={(event) => setTopic(event.target.value as Topic)}>
@@ -219,10 +229,8 @@ export function AcademyDiscovery({
               ))}
             </div>
             <p className={styles.subnote}>{t.local}</p>
-          </>
-        ) : (
-          <Link className={styles.videoLink} href="#academy-video-courses">{t.videoButton}<ArrowRight aria-hidden="true" size={19} /></Link>
-        )}
+          </details>
+        ) : null}
         <Link className={styles.freeLink} href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>
           {t.tantra} <ArrowRight aria-hidden="true" size={16} />
         </Link>

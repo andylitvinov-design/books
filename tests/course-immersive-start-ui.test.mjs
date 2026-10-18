@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mount, nodes, textOf, findButton, findPart, dailyView, access } from './helpers/course-ui-harness.mjs'
+import { lessonFor } from '../lib/inner-growth/lesson-library.js'
+import { COURSE_ANTISTRESS_SKILLS_V6 } from '../lib/inner-growth/anti-stress-skills-v6.js'
+import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 
 const snapshot = (courseId = 'course-a', cycleId = 'cycle-a', extra = {}) => dailyView(courseId, cycleId, {
   programme: { id: 'stress', title: 'Synthetic anti-stress course' },
@@ -9,6 +12,49 @@ const snapshot = (courseId = 'course-a', cycleId = 'cycle-a', extra = {}) => dai
   ...extra,
 })
 const primary = h => nodes(h.tree).find(node => node.type === 'button' && node.props['data-course-today-primary'] !== undefined)
+
+for (const locale of ['en', 'ru']) for (const [version, expected, absent] of [
+  [COURSE_ANTISTRESS_SKILLS_V7, 'OporaExperiencePlayer', 'OporaV6SlidePlayer'],
+  [COURSE_ANTISTRESS_SKILLS_V6, 'OporaV6SlidePlayer', 'OporaExperiencePlayer'],
+]) test(`real ${locale} immersive start routes ${version} to ${expected} without rewriting history`, async () => {
+  const lesson = lessonFor('calm_regulation', 1, locale, 'standard', version)
+  const data = snapshot('course-a', 'cycle-a', { lesson })
+  const original = structuredClone(data)
+  const h = mount('course-today', {
+    props: { locale, accountId: 'owner-a', courseId: 'course-a' }, fetcher: () => data,
+  })
+  try {
+    await h.settle()
+    for (let visit = 0; visit < 2; visit++) {
+      primary(h).props.onClick()
+      await h.settle()
+      const player = findPart(h.tree, expected)
+      assert.ok(player, expected + ' must be reachable from the real start control')
+      assert.equal(findPart(h.tree, absent), undefined)
+      assert.equal(findPart(h.tree, 'CourseSlidePlayer'), undefined)
+      assert.equal(player.props.data.lesson.version, version)
+      assert.equal(player.props.data.lesson.id, lesson.id)
+      player.props.onClose()
+      await h.settle()
+      assert.equal(findPart(h.tree, expected), undefined)
+    }
+    assert.deepEqual(data, original)
+    assert.equal(h.calls.filter(call => call.body).length, 0)
+  } finally { h.unmount() }
+})
+
+test('an explicitly supplied immersive child remains under the caller’s control', async () => {
+  const child = Object.assign(() => null, { testName: 'ExplicitImmersiveChild' })
+  const h = mount('course-today', {
+    props: { accountId: 'owner-a', courseId: 'course-a' }, fetcher: () => snapshot(),
+    extraModules: { './course-immersive-start': { __esModule: true, default: child } },
+  })
+  try {
+    await h.settle()
+    assert.ok(findPart(h.tree, 'ExplicitImmersiveChild'))
+    assert.equal(primary(h), undefined)
+  } finally { h.unmount() }
+})
 
 for (const locale of ['en', 'ru']) {
   test(`real immersive ${locale} buttons open the lesson, path, details and course exit without writes`, async () => {

@@ -24,6 +24,7 @@ import * as moduleLessons from '../../lib/inner-growth/antistress-module-lessons
 import * as oporaStateJourney from '../../lib/inner-growth/opora-state-journey.js'
 import * as oporaV5 from '../../lib/inner-growth/anti-stress-skills-v5.js'
 import * as oporaV6 from '../../lib/inner-growth/anti-stress-skills-v6.js'
+import * as oporaV7 from '../../lib/inner-growth/anti-stress-skills-v7.js'
 
 const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
@@ -66,7 +67,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
-    '@/lib/inner-growth/anti-stress-skills-v5':oporaV5, '@/lib/inner-growth/anti-stress-skills-v6':oporaV6,
+    '@/lib/inner-growth/anti-stress-skills-v5':oporaV5, '@/lib/inner-growth/anti-stress-skills-v6':oporaV6, '@/lib/inner-growth/anti-stress-skills-v7':oporaV7,
     '@/lib/inner-growth/course-membership': courseMembership, '@/lib/inner-growth/course-start-recovery': courseRecovery, '@/lib/inner-growth/course-slide-sequence': courseSequence,
     '@/lib/inner-growth/course-programs': coursePrograms, '@/lib/inner-growth/opora-state-journey': oporaStateJourney, '@/lib/inner-growth/course-presets': presets, '@/lib/inner-growth/course-plans': coursePlans, '@/lib/billing/public-plan': billingPlan,
     '@/lib/inner-growth/course-entry-intent': courseEntryIntent, '@/lib/inner-growth/course-entry-client': courseEntryClient,
@@ -87,7 +88,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     '@/lib/app/client-fetch': { appFetch: async (path, body, method, options) => {
       calls.push({ path, body, options, method }); return fetcher(path, options, body)
     } },
-    './opora-v6-slide-player':moduleFor('OporaV6SlidePlayer'), './course-guided-timer': moduleFor('CourseGuidedTimer'), './course-practice-voice': moduleFor('CoursePracticeVoice'), './course-slide-player': moduleFor('CourseSlidePlayer'), './subscription-access': { useSubscription: () => ({ status: null, phase: 'unavailable', busy: '' }), useLessonCompletionOffer: () => completion => notified.push(completion) },
+    './opora-experience-player':moduleFor('OporaExperiencePlayer'), './opora-v6-slide-player':moduleFor('OporaV6SlidePlayer'), './course-guided-timer': moduleFor('CourseGuidedTimer'), './course-practice-voice': moduleFor('CoursePracticeVoice'), './course-slide-player': moduleFor('CourseSlidePlayer'), './subscription-access': { useSubscription: () => ({ status: null, phase: 'unavailable', busy: '' }), useLessonCompletionOffer: () => completion => notified.push(completion) },
     './course-quest': { CourseQuestMap: stub('CourseQuestMap'), CourseQuestPlayer: stub('CourseQuestPlayer') },
     ...extraModules,
   }
