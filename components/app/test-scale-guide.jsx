@@ -15,7 +15,7 @@ export function TestScaleGuide({ guide, locale='en', selectedAxes=[], onSelectAx
   const symbolic=displayGuide.kind==='traditional'
   const brief=displayGuide.scales.slice(0,symbolic?2:3)
   const rest=displayGuide.scales.length-brief.length
-  return <div className={styles.guide} data-scale-guide={displayGuide.key}>
+  return <div className={styles.guide} data-scale-guide={guide.key}>
     <div className={styles.summaryLine}>
       <strong>{symbolic?c.legacy:c.scales}:</strong>
       <span>{brief.map(row=>row.label).join(' · ')}{rest>0?' · +'+rest:''}</span>

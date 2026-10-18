@@ -42,8 +42,8 @@ test('shares all public destinations with six mobile shortcuts and no administra
   assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'relationships', 'academy', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
-    assert.equal(items.length, locale === 'es' ? 6 : 7)
-    if (locale !== 'es') assert.equal(items.find(item=>item.id==='relationships')?.href, `/${locale}/relationships`)
+    assert.equal(items.length, 7)
+    assert.equal(items.find(item=>item.id==='relationships')?.href, `/${locale}/relationships`)
     assert.equal(items.find((item) => item.id === 'courses').href, `/${locale}/courses`)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
   }
