@@ -294,14 +294,15 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         {plan.priorities.length > 3 && <button type="button" className={styles.textButton} onClick={() => setAllRows(value => !value)}>
           {allRows ? t.less : t.allScales}<ChevronDown size={15} aria-hidden="true" />
         </button>}
+        </div>
         <div className={styles.courseSection}>
           <div className={styles.sectionHeading}><span className={styles.pill}><BookOpen size={16} aria-hidden="true" />{t.courses}</span><p>{t.courseHint}</p></div>
           {missing.length > 0 && <div className={styles.missing}>
-          <div><CircleHelp size={17} aria-hidden="true" /><strong>{t.missing} ({missing.length})</strong></div>
-          <p>{missing.map(axis => axisLabel(axis, lang)).join(' · ')}</p>
-          <small>{t.missingHint}</small>
-          <Link href={'/' + lang + '/app/tests?profile=missing'} prefetch={false}>{t.tests}<ArrowRight size={15} aria-hidden="true" /></Link>
-        </div>}
+            <div><CircleHelp size={17} aria-hidden="true" /><strong>{t.missing} ({missing.length})</strong></div>
+            <p>{missing.map(axis => axisLabel(axis, lang)).join(' · ')}</p>
+            <small>{t.missingHint}</small>
+            <Link href={'/' + lang + '/app/tests?profile=missing'} prefetch={false}>{t.tests}<ArrowRight size={15} aria-hidden="true" /></Link>
+          </div>}
           {(revision > 0 || dirty) && plan.courses.length ? <div className={styles.courses}>
             {plan.courses.map(course => {
               const copy = programmeText[course.id]?.[lang]
@@ -320,7 +321,6 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           </div> : <p className={styles.empty}>{t.missingCourse}</p>}
           <Link className={styles.catalogLink} href={'/' + lang + '/academy'} prefetch={false}>{t.catalog}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
-      </div>
       <details className={styles.method}>
         <summary><CircleHelp size={16} aria-hidden="true" />{t.methodology}<ChevronDown size={15} aria-hidden="true" /></summary>
         <p>{t.methodText}</p>
