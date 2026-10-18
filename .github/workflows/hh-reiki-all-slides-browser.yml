@@ -10,7 +10,7 @@ on:
       - 'components/tantra-free-initiation.tsx'
       - 'components/tantra-free-initiation.module.css'
       - 'components/academy-record-page.tsx'
-      - 'app/[locale]/academy/[[...slug]]/page.tsx'
+      - 'app/**/academy/**'
       - 'scripts/verify-reiki-referral-browser.mjs'
       - 'tests/reiki-referral-landing.test.mjs'
       - 'components/energywork-ai-learner.module.css'
