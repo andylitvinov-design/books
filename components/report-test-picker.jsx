@@ -14,7 +14,7 @@ export function ReportTestPicker({ options = [], locale = 'en', reportLocale = l
   const query = normalize(search)
   const filtered = options.filter(item => !query ||
     normalize([item.title.en, item.title.ru, item.key].join(' ')).includes(query))
-  const visible = showAll || query ? filtered.slice(0, 40) : filtered.slice(0, 8)
+  const visible = showAll ? filtered : query ? filtered.slice(0, 40) : filtered.slice(0, 8)
 
   function toggle(key) {
     if (selected.has(key)) onChange(selectedKeys.filter(value => value !== key))
