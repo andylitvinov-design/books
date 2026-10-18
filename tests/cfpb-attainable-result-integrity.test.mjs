@@ -49,7 +49,11 @@ test('complete official CFPB short form: all 84 age/mode/source table cells scor
     for (const locale of ['en','ru']) {
       const interpretation = interpretationBandModel(saved, saved.dimensions[0], locale)
       assert.equal(interpretation.verified, true)
-      assert.ok(gaugeModel(saved.dimensions[0], saved, locale)?.rangeReading?.verified)
+      const reading = gaugeModel(saved.dimensions[0], saved, locale)?.rangeReading
+      assert.ok(reading?.verified)
+      assert.equal(reading.rows.length,1,'CFPB does not have validated individual severity bands')
+      assert.match(reading.current.note,locale==='ru'?/56.*19 до 90/:/56 distinct scores within 19–90/)
+      assert.match(reading.current.note,locale==='ru'?/не процентиль/:/not a percentile/)
     }
   }
 })
