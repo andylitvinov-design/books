@@ -1045,3 +1045,524 @@
 @media print {
   .page[data-course-theme] .art::after {display:none;}
 }
+
+
+/*
+ * REIKI AIRY V2 · 2026-10-18 · approved sky/light-glass redesign.
+ * Pure presentation: unchanged five-lesson order, private progress, media and
+ * initiation prerequisites. Pinned CTA stays visible while tall/zoomed lesson
+ * contents may scroll inside their own card.
+ */
+.page[data-course-visual="reiki-airy-v2"] {
+  --reiki-text: #0d3d57;
+  --reiki-muted: #496a7b;
+  --reiki-glass: rgba(255,255,255,.69);
+  --reiki-line: rgba(255,255,255,.83);
+  color: var(--reiki-text);
+  background: linear-gradient(180deg,rgba(233,249,255,.21),rgba(254,255,251,.18) 47%,rgba(242,252,255,.42)),
+    url("/images/holistic-house/reiki-heaven-sky.svg") center center / cover no-repeat #e2f5fc;
+  background-attachment: fixed;
+}
+.page[data-course-visual] .shell {
+  gap: 10px;
+  max-width: 950px;
+}
+.page[data-course-visual] .top {
+  color: #0b3f5c;
+  min-height: 37px;
+}
+.page[data-course-visual] .home {
+  color: #0b5870;
+  background: rgba(255,255,255,.73);
+  box-shadow: 0 2px 10px rgba(41,103,131,.06);
+}
+.page[data-course-visual] .home:hover,
+.page[data-course-visual] .home:focus-visible {
+  color: #065e72;
+  background: rgba(255,255,255,.95);
+}
+.page[data-course-visual] .courseMark {
+  color: #0d4057;
+  text-shadow: none;
+}
+.page[data-course-visual] .courseMark svg { color: #009eb1; }
+.page[data-course-visual] .phaseLabel { color: #547d8a; }
+.page[data-course-visual] .journey li {
+  color: #375b70;
+  gap: 5px;
+  font-weight: 700;
+}
+.page[data-course-visual] .journey ol::before { background: rgba(99,151,167,.35); }
+.page[data-course-visual] .journeyDot {
+  color: #204e65;
+  background: rgba(251,255,255,.82);
+  border: 1px solid rgba(255,255,255,.99);
+  box-shadow: 0 3px 12px rgba(39,113,151,.12);
+}
+.page[data-course-visual] .journeySelected .journeyDot,
+.page[data-course-visual] .journeyIntro .journeyDot {
+  color: #fff;
+  background: linear-gradient(125deg,#03c8d5,#0896b2);
+  border: 2px solid #ecffff;
+  box-shadow: 0 4px 13px rgba(7,142,169,.19);
+}
+.page[data-course-visual] .journeyIntro .journeyDot {
+  color: #137284;
+  background: rgba(201,242,240,.82);
+  border: 1px solid white;
+}
+.page[data-course-visual] .journeyLabel {
+  color: #385d70;
+  text-shadow: none;
+}
+.page[data-course-visual] .journey li[aria-current="step"] .journeyLabel {
+  color: #096378;
+  font-weight: 800;
+}
+.page[data-course-visual][data-energywork-screen="welcome"] .journey li:first-child .journeyDot {
+  color: #fff;
+  background: linear-gradient(125deg,#03c8d5,#0896b2);
+  border: 2px solid #ecffff;
+}
+.page[data-course-visual] .slide {
+  border: 1px solid rgba(255,255,255,.87);
+  background: rgba(255,255,255,.61);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(32,109,142,.08);
+}
+.page[data-course-visual] .welcomeSlide {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.page[data-course-visual] .eyebrow,
+.page[data-course-visual] .eyebrow svg {
+  color: #078ca2;
+  text-shadow: none;
+  letter-spacing: .09em;
+}
+.page[data-course-visual] .content h1 {
+  color: #093d55;
+  text-shadow: none;
+  font-family: Georgia,"Times New Roman",serif;
+  font-weight: 700;
+}
+.page[data-course-visual] .description {
+  color: #456b7e;
+  text-shadow: none;
+  line-height: 1.45;
+}
+.page[data-course-visual] .welcomeSlide .content h1 { max-width: 17ch; }
+.page[data-course-visual] .welcomeReward {
+  border: 1px solid rgba(255,255,255,.9);
+  background: rgba(255,255,255,.73);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 9px 27px rgba(20,94,129,.1);
+}
+.page[data-course-visual] .welcomeRewardTitle {
+  color: #11435b;
+  font-family: Georgia,"Times New Roman",serif;
+  font-weight: 700;
+}
+.page[data-course-visual] .welcomeRewardTitle svg { color: #038da0; }
+.page[data-course-visual] .welcomeSystems li,
+.page[data-course-visual] .welcomeSystems li:first-child {
+  color: #18566a;
+  background: rgba(226,249,253,.79);
+  border: 1px solid #c1e8ef;
+}
+.page[data-course-visual] .welcomeRequirement { color: #426b7e; font-weight: 550; }
+.page[data-course-visual] .benefits {
+  border: 1px solid rgba(255,255,255,.88);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 7px 22px rgba(30,101,130,.08);
+  backdrop-filter: blur(10px);
+}
+.page[data-course-visual] .benefits > div + div { border-left-color: rgba(157,193,205,.37); }
+.page[data-course-visual] .benefits strong { color: #16465d; }
+.page[data-course-visual] .benefits small { color: #5a7b8b; }
+.page[data-course-visual] .benefitIcon {
+  background: #dcf8f7;
+  color: #078b9c;
+  border-color: rgba(255,255,255,.9);
+}
+.page[data-course-visual] .benefits > div:nth-child(2) .benefitIcon {
+  color: #bd527a; background: #fff0f4;
+}
+.page[data-course-visual] .benefits > div:nth-child(3) .benefitIcon {
+  color: #886acc; background: #f1eafb;
+}
+.page[data-course-visual] .art {
+  border: 1px solid rgba(255,255,255,.81);
+  background: rgba(232,250,251,.65);
+  box-shadow: 0 7px 19px rgba(58,123,139,.11);
+}
+.page[data-course-visual] .art::after {
+  background: linear-gradient(180deg,transparent 77%,rgba(222,244,247,.23));
+}
+.page[data-course-visual] .video,
+.page[data-course-visual] .question,
+.page[data-course-visual] .reviewChecklist {
+  border: 1px solid rgba(255,255,255,.87);
+  background: rgba(255,255,255,.66);
+  box-shadow: 0 6px 20px rgba(27,113,135,.07);
+}
+.page[data-course-visual] .videoCaption,
+.page[data-course-visual] .missingVideo,
+.page[data-course-visual] .questionBadge,
+.page[data-course-visual] .optional,
+.page[data-course-visual] .experienceGuidance { color: #4a7381; }
+.page[data-course-visual] .questionBadge { color: #047e90; }
+.page[data-course-visual] .prompt { color: #1b4c62; }
+.page[data-course-visual] .textarea {
+  color: #164258;
+  background: rgba(255,255,255,.83);
+  border: 1px solid #a5d2df;
+}
+.page[data-course-visual] .textarea::placeholder { color: #738f99; }
+.page[data-course-visual] .scale { accent-color: #06a4b2; }
+.page[data-course-visual] .scaleEnds { color: #3f6778; }
+.page[data-course-visual] .choice,
+.page[data-course-visual] .experienceChoice {
+  color: #15465d;
+  background: rgba(255,255,255,.75);
+  border: 1px solid rgba(241,251,255,.95);
+  border-bottom: 2px solid rgba(174,220,226,.54);
+  box-shadow: 0 2px 9px rgba(37,102,136,.04);
+}
+.page[data-course-visual] .choice:has(input:checked),
+.page[data-course-visual] .experienceChoice:has(input:checked) {
+  color: #0a4e60;
+  background: rgba(215,250,247,.92);
+  border: 2px solid #16aeb9;
+}
+.page[data-course-visual] .choice input { accent-color: #0699aa; }
+.page[data-course-visual] .experienceSlide .experienceIcon {
+  color: #0a95a4; background: #def8fa;
+}
+.page[data-course-visual] .experienceSlide .experienceGuidance {
+  color: #255c6c; background: rgba(224,248,248,.92);
+  border-left-color: #17acb5;
+}
+.page[data-course-visual] .practiceTimer {
+  color: #225e71; background: rgba(238,252,253,.9);
+  border: 1px solid #d4eced;
+}
+.page[data-course-visual] .practiceTimer > button {
+  color: #245d6b; background: #fff; border-color: #bbd8df;
+}
+.page[data-course-visual] .practiceTimer > button:first-of-type {
+  color: #fff; background: #078d9d; border-color: #078d9d;
+}
+.page[data-course-visual] .reviewChecklist h2,
+.page[data-course-visual] .reviewRow strong,
+.page[data-course-visual] .reviewChecklist p,
+.page[data-course-visual] .reviewPrivacy { color: #1b4a60; }
+.page[data-course-visual] .reviewRow {
+  background: rgba(255,255,255,.83);
+  border: 1px solid #d1e9e9;
+}
+.page[data-course-visual] .reviewMissing {
+  color: #057c8c; background: #fff;
+  border: 1px solid #69cbd1;
+}
+.page[data-course-visual] .reviewRecorded {
+  color: #286b69; background: #e7f7f4;
+  border: 1px solid #bfe7e0;
+}
+.page[data-course-visual] .returnToReview {
+  color: #0d6475; background: #def6f7;
+  border: 1px solid #a1dce2;
+}
+.page[data-course-visual] .final,
+.page[data-course-visual] .final h2,
+.page[data-course-visual] .final p,
+.page[data-course-visual] .guideNote,
+.page[data-course-visual] .highlights { color: #224e63; border-color: #cee9e9; }
+.page[data-course-visual] .finalTag {
+  color: #047b83; background: #ddf8f4; border: 1px solid #c2e9e5;
+}
+.page[data-course-visual] .notes {
+  color: #275365;
+  background: rgba(246,252,254,.85);
+  border: 1px solid #d0e9ee;
+}
+.page[data-course-visual] .textLink,
+.page[data-course-visual] .restart {
+  color: #126a7b; background: rgba(255,255,255,.82);
+  border: 1px solid #c4e4e9;
+}
+.page[data-course-visual] .teacherLink { color: #fff; background: #087e94; }
+.page[data-course-visual] .progressHeader {
+  color: #244c63; text-shadow: none; font-weight: 750;
+}
+.page[data-course-visual] .progress {
+  background: rgba(128,166,184,.28);
+}
+.page[data-course-visual] .progress > span {
+  background: linear-gradient(90deg,#04cbd5,#11a8c4);
+}
+.page[data-course-visual] .next {
+  color: #fff;
+  background: linear-gradient(105deg,#04cdd7,#0596b7 62%,#31d9c6);
+  border: 1px solid #b5ffff;
+  border-bottom: 3px solid #099ba8;
+  box-shadow: 0 7px 15px rgba(31,160,180,.18);
+}
+.page[data-course-visual] .next:hover {
+  background: linear-gradient(105deg,#03b8c9,#087f9d,#2acaba);
+}
+.page[data-course-visual] .back {
+  color: #164b64;
+  background: rgba(255,255,255,.74);
+  border: 1px solid rgba(255,255,255,.94);
+  box-shadow: 0 3px 10px rgba(27,100,135,.06);
+}
+.page[data-course-visual] .programme {
+  color: #194d66;
+  background: rgba(255,255,255,.7);
+  border: 1px solid rgba(255,255,255,.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 13px rgba(39,102,135,.07);
+}
+.page[data-course-visual] .programme summary { color: #194e67; }
+.page[data-course-visual] .programme li[aria-current="step"] { color: #078a9e; }
+.page[data-course-visual] .programmeNote {
+  margin: 7px 0 0; color: #537888;
+  font-size: 12px; line-height: 1.42;
+}
+.page[data-course-visual] .disclaimer {
+  color: #68828d; text-align: left; text-shadow: none;
+  font-size: 11px; line-height: 1.4; margin: 8px 0;
+}
+.page[data-course-visual] .preview {
+  border: 1px solid #d0ebee;
+  color: #235c6c;
+  background: rgba(245,252,252,.86);
+  border-radius: 12px;
+  margin-top: 9px;
+}
+.page[data-course-visual] .preview > svg { color: #18899b; }
+.page[data-course-visual] .preview strong { color: #175267; }
+.page[data-course-visual] .preview p,
+.page[data-course-visual] .syncContent > small,
+.page[data-course-visual] .consentLabel { color: #4c717d; }
+.page[data-course-visual] .syncContent > a,
+.page[data-course-visual] .saveDetails summary { color: #057989; }
+.page[data-course-visual] .syncButton { background: #078a9c; }
+.page[data-course-visual] :is(button,a,input,summary,textarea):focus-visible {
+  outline: 3px solid #00aabb; outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .page[data-course-visual][data-course-one-screen] {
+    color: #103f58;
+    background: linear-gradient(180deg,rgba(229,247,255,.2),rgba(253,254,247,.14) 53%,rgba(239,253,255,.42)),
+      url("/images/holistic-house/reiki-heaven-sky.svg") center 48% / cover no-repeat #e0f2f9;
+    background-attachment: scroll;
+  }
+  .page[data-course-visual] .shell {
+    height: 100dvh; min-height:0; gap: 6px;
+    padding: calc(5px + env(safe-area-inset-top)) 12px
+      calc(6px + env(safe-area-inset-bottom));
+  }
+  .page[data-course-visual] .top { min-height: 33px; }
+  .page[data-course-visual] .home {
+    min-height:33px; width:33px; height:33px;
+    padding:5px; display:grid; place-items:center; border-radius:50%;
+  }
+  .page[data-course-visual] .home span { display:none; }
+  .page[data-course-visual] .courseMark { font-size: 12px; }
+  .page[data-course-visual] .journey { margin:0 0 1px; width:100%; }
+  .page[data-course-visual] .journey ol::before { top:15px; }
+  .page[data-course-visual] .journey li { gap:3px; }
+  .page[data-course-visual] .journeyDot { width:30px; height:30px; font-size:12px; }
+  .page[data-course-visual] .journeyLabel {
+    font-size:9px; line-height:1.1; min-height:22px;
+    max-width:100%; -webkit-line-clamp:2; line-clamp:2;
+    color:#355c6c; text-shadow:none;
+  }
+  .page[data-course-visual] .journey li[aria-current="step"] .journeyLabel { color:#087c8e; }
+  .page[data-course-visual] .slide {
+    flex:1; min-height:0; height:auto;
+    border-radius:17px;
+    background: rgba(255,255,255,.57);
+    border:1px solid rgba(255,255,255,.85);
+    box-shadow: 0 6px 20px rgba(38,102,130,.08);
+  }
+  .page[data-course-visual] .slideMain {
+    height:100%; max-height:100%;
+    gap:7px; padding:10px 11px;
+    overflow-y:auto; overscroll-behavior:contain;
+  }
+  .page[data-course-visual] .welcomeSlide {
+    border:0; background:transparent; box-shadow:none;
+  }
+  .page[data-course-visual] .welcomeSlide .slideMain {
+    display:block; padding:2px 4px 4px;
+  }
+  .page[data-course-visual] .content h1 {
+    font-size:clamp(25px,6.9vw,31px);
+    line-height:1.08; margin-bottom:6px;
+  }
+  .page[data-course-visual] .welcomeSlide .content h1 {
+    font-size:clamp(27px,7.2vw,32px);
+    max-width:18ch; margin-bottom:7px;
+  }
+  .page[data-course-visual] .eyebrow {
+    font-size:8px; letter-spacing:.085em;
+    line-height:1.25; margin-bottom:5px;
+  }
+  .page[data-course-visual] .eyebrow svg {width:13px;height:13px;}
+  .page[data-course-visual] .description {
+    color:#466c7c; font-size:12px; line-height:1.37;
+  }
+  .page[data-course-visual] .welcomeSlide .description {
+    color:#466c7c; font-size:12px; line-height:1.37;
+  }
+  .page[data-course-visual] .welcomeReward {
+    margin-top:9px; padding:10px 12px;
+    border-radius:16px;
+  }
+  .page[data-course-visual] .welcomeRewardTitle {
+    font-size:16px;line-height:1.2;gap:7px;
+  }
+  .page[data-course-visual] .welcomeRewardTitle svg {width:15px;height:15px;}
+  .page[data-course-visual] .welcomeSystems {
+    margin:7px 0; gap:5px;
+  }
+  .page[data-course-visual] .welcomeSystems li {
+    font-size:10px; padding:4px 7px; line-height:1.14;
+  }
+  .page[data-course-visual] .welcomeRequirement { font-size:11px; line-height:1.3; }
+  .page[data-course-visual] .benefits {
+    margin-top:7px; padding:7px 4px;
+    border-radius:15px;
+  }
+  .page[data-course-visual] .benefits > div { gap:3px; padding:0 4px; }
+  .page[data-course-visual] .benefitIcon {height:25px;width:25px;}
+  .page[data-course-visual] .benefitIcon svg {height:14px;width:14px;}
+  .page[data-course-visual] .benefits strong {font-size:10px;line-height:1.12;}
+  .page[data-course-visual] .benefits small {font-size:9px;line-height:1.15;}
+  .page[data-course-visual] .question {
+    margin-top:9px; padding:10px;
+    border-radius:15px;
+  }
+  .page[data-course-visual] .questionBadge {margin-bottom:5px;font-size:10px;}
+  .page[data-course-visual] .prompt {font-size:12px;line-height:1.3;margin-bottom:6px;}
+  .page[data-course-visual] .choices {gap:5px;}
+  .page[data-course-visual] .choice {min-height:43px;padding:6px 8px;gap:8px;font-size:11.5px;}
+  .page[data-course-visual] .experienceSlide .question {margin-top:8px;padding:9px;}
+  .page[data-course-visual] .experienceSlide .choices {gap:5px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice {
+    min-height:44px; padding:5px 8px; gap:8px;
+    font-size:11.5px; border-radius:11px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceIcon {
+    width:30px;height:30px;border-radius:9px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceIcon svg {height:17px;width:17px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice input {
+    width:18px;height:18px;
+  }
+  .page[data-course-visual] .experienceSlide .experienceGuidance {
+    margin-top:7px; padding:6px 8px;
+    font-size:10px;line-height:1.3;
+  }
+  .page[data-course-visual] .optional {font-size:10px;margin-top:5px;line-height:1.3;}
+  .page[data-course-visual] .textarea {font-size:13px;line-height:1.4;min-height:85px;}
+  .page[data-course-visual] .art {height:clamp(76px,13dvh,120px);}
+  .page[data-course-visual] .progressFooter {flex:none;}
+  .page[data-course-visual] .progressHeader {
+    font-size:11px; margin:0 0 3px;
+  }
+  .page[data-course-visual] .progress {height:6px;}
+  .page[data-course-visual] .footer {margin:0;flex:none;}
+  .page[data-course-visual] .actions {
+    flex-direction:row-reverse;align-items:stretch;gap:7px;
+  }
+  .page[data-course-visual] .next {
+    flex:1; width:auto; align-self:stretch;
+    min-height:46px; padding:9px 12px;
+    border-radius:15px; font-size:14px;
+  }
+  .page[data-course-visual] .back {
+    flex:none;align-self:stretch;
+    min-height:46px;height:auto;
+    padding:8px 12px; font-size:12px;
+    border:1px solid rgba(255,255,255,.9);
+    border-radius:15px;
+  }
+  .page[data-course-visual] .back:disabled {display:none;}
+  .page[data-course-visual] .programme {
+    flex:none; margin:0; padding:0 10px;
+    border-radius:13px;
+    font-size:11px;
+    max-height:none;
+  }
+  .page[data-course-visual] .programme summary {
+    display:flex; align-items:center;
+    min-height:34px; font-size:11px;
+    cursor:pointer; line-height:1.2;
+  }
+  .page[data-course-visual] .programme[open] {
+    max-height:min(45dvh,340px);
+    overflow-y:auto; scrollbar-width:thin;
+  }
+  .page[data-course-visual] .programme ol {margin-top:6px;margin-bottom:5px;gap:5px;}
+  .page[data-course-visual] .preview {
+    max-height:none; overflow:visible;
+    padding:9px; margin:7px 0;
+  }
+  .page[data-course-visual] .preview:has(.saveDetails[open]) {
+    max-height:none;
+  }
+  .page[data-course-visual] .preview strong,
+  .page[data-course-visual] .preview p {font-size:11px;}
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-visual] .shell {gap:4px;}
+  .page[data-course-visual] .journeyDot {height:27px;width:27px;}
+  .page[data-course-visual] .journey ol::before {top:13px;}
+  .page[data-course-visual] .journeyLabel {font-size:8.5px;min-height:20px;}
+  .page[data-course-visual] .content h1 {font-size:clamp(23px,6.4vw,28px);}
+  .page[data-course-visual] .welcomeSlide .content h1 {font-size:clamp(25px,6.8vw,29px);}
+  .page[data-course-visual] .description {font-size:11px;}
+  .page[data-course-visual] .welcomeSlide .description {font-size:11px;}
+  .page[data-course-visual] .welcomeReward {margin-top:7px;padding:8px 10px;}
+  .page[data-course-visual] .benefits {margin-top:6px;padding:6px 3px;}
+  .page[data-course-visual] .benefitIcon {width:23px;height:23px;}
+  .page[data-course-visual] .experienceSlide .experienceChoice {min-height:43px;}
+  .page[data-course-visual] .next,
+  .page[data-course-visual] .back {min-height:44px;}
+  .page[data-course-visual] .programme summary {min-height:32px;}
+}
+@media (max-width:380px) {
+  .page[data-course-visual] .shell {padding-inline:9px;}
+  .page[data-course-visual] .journeyLabel {font-size:8px;min-height:22px;}
+  .page[data-course-visual] .welcomeRewardTitle {font-size:15px;}
+  .page[data-course-visual] .welcomeSystems li {font-size:9px;}
+  .page[data-course-visual] .benefits strong {font-size:9px;}
+  .page[data-course-visual] .benefits small {font-size:8px;}
+}
+@media print {
+  .page[data-course-visual] {
+    background:#fff!important;
+    color:#153b4a!important;
+  }
+  .page[data-course-visual] .shell {height:auto;overflow:visible;}
+  .page[data-course-visual] .slide,
+  .page[data-course-visual] .slideMain {
+    background:#fff!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .page[data-course-visual] .content h1,
+  .page[data-course-visual] .final h2,
+  .page[data-course-visual] .final p,
+  .page[data-course-visual] .notes {
+    color:#173c4b!important;text-shadow:none!important;
+  }
+}
