@@ -69,7 +69,7 @@ test('Course has teacher initiation readiness checklist with five private report
   assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
   assert.match(learner, /jumpToSlide\(item\.reportId\)/)
   assert.match(learner, /jumpToSlide\(item\.questionId\)/)
-  assert.match(learner, /initiationReady \? t\.reviewDone : t\.reviewNeeded/)
+  assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
 test('Bottom progress and mobile viewport safe-area fit remain approved', () => {
