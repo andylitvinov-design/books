@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmMessengerPanel from './crm-messenger'
+import CrmMarketingPanel from './crm-marketing'
 import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
 import styles from './crm-manager.module.css'
 const COPY = {
@@ -123,6 +124,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     </div>}
     {data&&<>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
+      <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
       <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} />
       <div className={styles.formCard}>
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
