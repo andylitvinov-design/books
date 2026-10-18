@@ -17,10 +17,10 @@ const copy = {
   ru: {
     wordmark: "восстановление · практика · поддержка",
     homeLabel: "Holistic House — главная",
-    heroTitle: "Разберитесь в ситуации. Найдите следующий шаг.",
+    heroTitle: "Бесплатные тесты. Найдите следующий шаг.",
     heroIntro: "Бесплатные тесты и персональный письменный разбор. При желании — платные консультации с Андреем Литвиновым в Торонто или онлайн.",
     heroPrimary: "Получить бесплатный разбор",
-    heroBook: "Личная сессия · от €50",
+    heroBook: "Записаться на консультацию · от €50",
     heroSecondary: "Пройти бесплатные тесты",
     startKicker: "Другие возможности",
     startTitle: "Исследуйте самостоятельно",
@@ -51,10 +51,10 @@ const copy = {
   en: {
     wordmark: "healing · practice · guidance",
     homeLabel: "Holistic House — home",
-    heroTitle: "Understand your situation. Find your next step.",
+    heroTitle: "Free self-checks. Find your next step.",
     heroIntro: "Free self-checks and a personal written review. Optional paid sessions with Andrey Litvinov in Toronto or online.",
     heroPrimary: "Get a free written review",
-    heroBook: "Personal sessions · from €50",
+    heroBook: "Book a consultation · from €50",
     heroSecondary: "Take free self-checks",
     startKicker: "Other ways to explore",
     startTitle: "Explore at your own pace",
@@ -136,7 +136,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             </AcquisitionEventLink>
           </div>
           <AcquisitionEventLink
-            className="service-home-paid-link"
+            className="service-home-button service-home-button--consultation service-home-paid-link"
             href={`/${locale}/services#consultation`}
             event="service_view"
             attributes={{ "data-hero-cta": "paid-sessions" }}

@@ -19,13 +19,13 @@ export default function SpanishHomePage() {
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
       <div className="service-home-hero-copy">
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
-        <h1 id="house-title"><span>Comprende tu situación.</span><span>Elige tu próximo paso.</span></h1>
+        <h1 id="house-title"><span>Autoevaluaciones gratuitas.</span><span>Encuentra tu próximo paso.</span></h1>
         <p className="service-home-intro">Pruebas gratuitas y una revisión personal por escrito. Si lo deseas, sesiones individuales de pago con Andrey Litvinov.</p>
         <div className="service-home-actions" id="free-start">
           <Link className="service-home-button service-home-button--primary" href="/es/services/free-situation-review" data-hero-cta="free-written-review">Solicitar revisión gratuita<span aria-hidden="true">→</span></Link>
           <Link className="service-home-button service-home-button--secondary" href="/es/client/tests" data-hero-cta="free-tests">Hacer pruebas gratuitas<span aria-hidden="true">→</span></Link>
         </div>
-        <Link className="service-home-paid-link" href="/es/services#consultation" data-hero-cta="paid-sessions">Sesiones personales · desde €50 <span aria-hidden="true">→</span></Link>
+        <Link className="service-home-button service-home-button--consultation service-home-paid-link" href="/es/services#consultation" data-hero-cta="paid-sessions">Reservar una consulta · desde €50 <span aria-hidden="true">→</span></Link>
         <p className="service-home-offer-note">La revisión gratuita es un informe escrito, no una llamada. Las consultas individuales son de pago.</p>
       </div>
     </section>
