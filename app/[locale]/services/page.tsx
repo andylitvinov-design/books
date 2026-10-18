@@ -8,6 +8,7 @@ import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { getCommerceConfig } from "@/lib/commerce/config";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import solutionStyles from "@/components/services-solutions.module.css";
@@ -300,7 +301,7 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
 
 
 
-      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} />
+      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} zenEnabled={getCommerceConfig().enabled && getCommerceConfig().provider === "zen"} />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
     </main>
   );
