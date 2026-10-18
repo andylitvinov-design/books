@@ -2,6 +2,7 @@
 // Educational content only. Course answers must not be persisted until owner-scoped
 // private storage, consent, and migrations are separately implemented and verified.
 import type { EnglishGuidedMeditation } from "./english-guided-meditations";
+import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
 export const ENERGYWORK_COURSE_VERSION = "2026-10-18.p1";
@@ -19,11 +20,17 @@ export type EnergyworkQuestion = {
   help?: Localized;
   options?: Array<{ id: string; label: Localized }>;
 };
+export type EnergyworkTestimonial = {
+  id: string;
+  quote: Localized;
+  attribution: Localized;
+  sourcePath: string;
+};
 export type EnergyworkSlide = {
   id: string;
   phase: EnergyworkPhase;
   kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
-  testimonial?: { quote: Localized; attribution: Localized; sourcePath: string };
+  testimonials?: EnergyworkTestimonial[];
   title: Localized;
   body: Localized;
   image?: string;
@@ -38,6 +45,48 @@ const image = {
   tantra: "/library/maya-mysteries/media/post-217-1.jpg",
   kundalini: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
 };
+
+
+/** Published Reiki Yggdrasil feedback reused from the original testimonial archive. */
+const yggdrasilVoices: EnergyworkTestimonial[] = yggdrasilTextTestimonials.map((entry) => ({
+  id: entry.id,
+  quote: { en: entry.quote.en, ru: entry.quote.ru.replace(/^«|»$/g, "") },
+  attribution: l("Reiki Yggdrasil learner · published course feedback", "Участник Рейки Иггдрасиль · отзыв об обучении"),
+  sourcePath: "reiki/yggdrasil",
+}));
+
+// Verbatim brief extracts from archived Tantra Reiki testimonials and their
+// existing EN translation: tantra-reiki-full.generated.json / tantra-reiki-ru-en.generated.json.
+// Course reviews are NOT presented as reactions to this exact meditation recording.
+const tantraVoices: EnergyworkTestimonial[] = [
+  {
+    id: "margaret",
+    quote: l("It was also a shift in perception and it felt like flowing energy as I went on my day.",
+      "Я заметила изменение восприятия и ощущение потока, которое сохранялось в течение дня."),
+    attribution: l("Margaret · published Tantra Reiki learner review", "Маргарет · опубликованный отзыв о Тантра Рейки"),
+    sourcePath: "reiki/tantra-reiki",
+  },
+  {
+    id: "olga",
+    quote: l("A soft and gentle flow that dissolves some tensions and blocks while working with the situation.",
+      "Мягкий и бережный поток который растворяет какие-то напряжения и блоки, в работе с ситуацией."),
+    attribution: l("Olga · published Tantra Reiki learner review", "Ольга · опубликованный отзыв о Тантра Рейки"),
+    sourcePath: "reiki/tantra-reiki",
+  },
+  {
+    id: "litten",
+    quote: l("I feel the heat in the palms of my hands.", "Я ощущаю тепло в ладонях."),
+    attribution: l("Litten · published Tantra Reiki learner review", "Литтен · опубликованный отзыв о Тантра Рейки"),
+    sourcePath: "reiki/tantra-reiki",
+  },
+  {
+    id: "tantra-level-1",
+    quote: l("Outside, I delight in the wind and the sun. A state of unconditional Love!",
+      "На улице кайфую От ветра) Солнца) Состояние Безусловной Любви!"),
+    attribution: l("Tantra Reiki Level 1 learner · published anonymous review", "Участница Тантра Рейки 1-й ступени · отзыв без подписи"),
+    sourcePath: "reiki/tantra-reiki",
+  },
+];
 
 export const energyworkPhases: Record<EnergyworkPhase, Localized> = {
   welcome: l("Your beginning", "Начало пути"),
@@ -222,8 +271,7 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "ygg-voices", phase: "yggdrasil", kind: "voices", videoKey: "reiki-yggdrasil", image: image.tree,
       title: l("Reiki Yggdrasil: other experiences", "Рейки Иггдрасиль: опыт других"),
       body: l("A published learner comment about Reiki Yggdrasil, not a claim about this particular meditation.", "Опубликованный отзыв об обучении Рейки Иггдрасиль, а не обещание ощущений от этой медитации."),
-      testimonial: { quote: l("From level 2 on I began to feel my being becoming more and more saturated with runic energy.", "Со второго уровня я стал(а) ощущать всё более сильное наполнение рунической энергией."),
-        attribution: l("Reiki Yggdrasil learner · original course feedback", "Участник Рейки Иггдрасиль · отзыв с сайта"), sourcePath: "reiki/yggdrasil" } },
+      testimonials: yggdrasilVoices },
     { id: "ygg-04", phase: "yggdrasil", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
       body: l("How much did you feel, if anything? Not feeling anything is also a valid observation.", "Насколько удалось прочувствовать медитацию? Если ничего не почувствовали — это тоже нормально."),
@@ -252,8 +300,7 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
     { id: "tan-voices", phase: "tantra", kind: "voices", videoKey: "tantra-reiki", image: image.tantra,
       title: l("What others noticed in Tantra Reiki", "Что ощущали другие в Тантра Рейки"),
       body: l("An existing learner testimonial about Tantra Reiki; everyone can have a different experience.", "Опубликованный отзыв о Тантра Рейки — ваши ощущения могут быть совсем другими."),
-      testimonial: { quote: l("It was also a shift in perception and it felt like flowing energy as I went on my day.", "Я заметила изменение восприятия и ощущение потока, которое сохранялось в течение дня."),
-        attribution: l("Margaret · published Tantra Reiki testimonial", "Маргарет · опубликованный отзыв о Тантра Рейки"), sourcePath: "reiki/tantra-reiki" } },
+      testimonials: tantraVoices },
     { id: "tan-04", phase: "tantra", kind: "reflection",
       title: l("Your meditation feedback", "Ваш отзыв о медитации"),
       body: l("How much did you feel, if anything? Even 'nothing yet' is an honest answer.", "Насколько удалось прочувствовать медитацию? «Пока ничего» — тоже честный ответ."),

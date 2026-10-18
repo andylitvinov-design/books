@@ -83,6 +83,9 @@ const copy = {
     voicesSource: "See the published testimonial",
     voicesComments: "View original video & any public comments",
     voicesNote: "Other people's experiences are not a standard to meet.",
+    voicesPrevious: "Previous review",
+    voicesNext: "Next review",
+    voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Lovely progress",
     milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
@@ -176,6 +179,9 @@ const copy = {
     voicesSource: "Посмотреть опубликованный отзыв",
     voicesComments: "Открыть видео и доступные комментарии",
     voicesNote: "Ваш опыт не обязан совпадать с чужим.",
+    voicesPrevious: "Предыдущий отзыв",
+    voicesNext: "Следующий отзыв",
+    voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Прекрасный прогресс",
     milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
@@ -318,6 +324,55 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
       {locale === "ru" ? "Сбросить" : "Reset"}
     </button>
   </div>;
+}
+
+
+/** Review buttons only change the quote, never the current course slide. */
+function MeditationVoices({ slide, locale, youtubeId }: {
+  slide: EnergyworkSlide;
+  locale: EnergyworkLocale;
+  youtubeId?: string;
+}) {
+  const t = copy[locale];
+  const entries = slide.testimonials ?? [];
+  const [active, setActive] = useState(0);
+  const currentReview = entries[active];
+  return (
+    <div className={styles.voicesCard} data-meditation-voices>
+      <span className={styles.voicesEyebrow}><MessageCircle size={18} aria-hidden="true" />{t.voicesLabel}</span>
+      {currentReview ? (
+        <div data-meditation-review-carousel data-review-count={entries.length}>
+          <blockquote className={styles.voiceQuote} aria-live="polite" aria-atomic="true" key={currentReview.id}>
+            <p>“{currentReview.quote[locale]}”</p>
+            <cite>{currentReview.attribution[locale]}</cite>
+          </blockquote>
+          {entries.length > 1 ? (
+            <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
+              <button type="button" data-review-prev aria-label={t.voicesPrevious}
+                onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
+                <ArrowLeft size={21} aria-hidden="true" />
+              </button>
+              <span className={styles.voicesCount} aria-label={String(active + 1) + " / " + entries.length}>
+                {active + 1} / {entries.length}
+              </span>
+              <button type="button" data-review-next aria-label={t.voicesNext}
+                onClick={() => setActive((index) => (index + 1) % entries.length)}>
+                <ArrowRight size={21} aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+          <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
+            {t.voicesSource}<ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+      ) : <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>}
+      {youtubeId ? (
+        <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
+          target="_blank" rel="noopener noreferrer">{t.voicesComments}<ExternalLink size={15} aria-hidden="true" /></a>
+      ) : null}
+      <p className={styles.voicesNote}>{t.voicesNote}</p>
+    </div>
+  );
 }
 
 export function EnergyworkAiLearner({ locale }: Props) {
@@ -600,27 +655,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <p>{t.milestoneNote}</p>
                 </div>
               ) : null}
-              {slide.kind === "voices" ? (
-                <div className={styles.voicesCard} data-meditation-voices>
-                  <span className={styles.voicesEyebrow}><MessageCircle size={18} aria-hidden="true" />{t.voicesLabel}</span>
-                  {slide.testimonial ? (
-                    <blockquote className={styles.voiceQuote}>
-                      <p>“{slide.testimonial.quote[locale]}”</p>
-                      <cite>{slide.testimonial.attribution[locale]}</cite>
-                    </blockquote>
-                  ) : <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>}
-                  {slide.testimonial ? (
-                    <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + slide.testimonial.sourcePath}>
-                      {t.voicesSource}<ArrowRight size={16} aria-hidden="true" />
-                    </Link>
-                  ) : null}
-                  {media?.youtubeId ? (
-                    <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + media.youtubeId}
-                      target="_blank" rel="noopener noreferrer">{t.voicesComments}<ExternalLink size={15} aria-hidden="true" /></a>
-                  ) : null}
-                  <p className={styles.voicesNote}>{t.voicesNote}</p>
-                </div>
-              ) : null}
+              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
               {slide.id === "paths-04" ? (

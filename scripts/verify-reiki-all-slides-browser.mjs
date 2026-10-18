@@ -81,7 +81,24 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
   if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
-  if (data.kind === "voices") await expect(page.locator("[data-meditation-voices]")).toBeVisible();
+  if (data.kind === "voices") {
+    await expect(page.locator("[data-meditation-voices]")).toBeVisible();
+    const expectedReviews = id === "ygg-voices" ? 5 : id === "tan-voices" ? 4 : 0;
+    const carousel = page.locator("[data-meditation-review-carousel]");
+    if (expectedReviews) {
+      await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
+      const first = await carousel.locator("blockquote p").innerText();
+      await page.locator("button[data-review-next]").click();
+      await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
+      assert.notEqual(await carousel.locator("blockquote p").innerText(), first, where + ": Next switches quote in place");
+      await page.locator("button[data-review-prev]").click();
+      assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
+    } else {
+      await expect(carousel).toHaveCount(0);
+      await expect(page.locator("button[data-review-next]")).toHaveCount(0);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
+    }
+  }
   if (data.kind === "milestone") await expect(page.locator("button[data-energywork-next]")).toHaveText(/I'm committed!/);
   if (screenshot) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
