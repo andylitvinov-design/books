@@ -3411,3 +3411,218 @@
   .consultation-result .consultation-publication-state{padding:15px}
   .consultation-result .consultation-publication-retry{width:100%}
 }
+
+
+/* Client report · practitioner-selected follow-up assessments */
+.consultation-studio .consultation-report-test-picker {
+  margin: 18px 0 20px;
+  padding: clamp(15px, 2vw, 22px);
+  border: 1px solid #b7dad7;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f0faf9, #fffdf9);
+  color: #1b4651;
+}
+.consultation-report-test-picker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consultation-report-test-picker-head h3 {
+  margin: 0 0 5px;
+  font: 600 clamp(19px, 2vw, 23px)/1.3 Georgia, serif;
+  color: #214c54;
+}
+.consultation-report-test-picker-head p {
+  margin: 0;
+  max-width: 640px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #49676a;
+}
+.consultation-report-test-picker-head > strong {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e1f2ed;
+  font-size: 13px;
+}
+.consultation-report-test-search {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  color: #294f58;
+  font-size: 14px;
+  font-weight: 650;
+}
+.consultation-report-test-search input {
+  width: 100%;
+  min-height: 47px;
+  padding: 10px 13px;
+  border: 1px solid #a8d1d0;
+  border-radius: 12px;
+  background: #fff;
+  color: #173e48;
+  font-size: 16px;
+}
+.consultation-report-test-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 12px;
+}
+.consultation-report-test-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid #c4dfdc;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.consultation-report-test-option[data-selected="true"] {
+  border-color: #3e968c;
+  background: #e6f5f1;
+}
+.consultation-report-test-option input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  accent-color: #208a83;
+}
+.consultation-report-test-option span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.consultation-report-test-option strong {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.consultation-report-test-option small {
+  color: #547376;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.consultation-report-test-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 13px;
+}
+.consultation-report-test-selected button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 1px solid #8fc5bd;
+  border-radius: 10px;
+  background: #fff;
+  color: #22535a;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.consultation-report-test-selected button span:last-child {
+  font-size: 19px;
+  line-height: 1;
+}
+.consultation-report-test-show-more {
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 7px 12px;
+  border: 1px solid #7db2af;
+  border-radius: 10px;
+  background: #e2f3f1;
+  color: #245a5c;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.consultation-report-test-empty {
+  margin: 12px 0 0;
+  color: #607579;
+  font-size: 13px;
+}
+.canonical-document .canonical-recommended-tests {
+  margin: 22px 0;
+  padding: 18px 21px;
+  border: 1px solid #c5dfd8;
+  border-left: 4px solid #358d86;
+  border-radius: 13px;
+  background: #f3faf7;
+  break-inside: avoid-page;
+}
+.canonical-document .canonical-recommended-tests h2 {
+  margin: 0 0 9px;
+  color: #275865;
+  font: 600 20px/1.3 Georgia, serif;
+}
+.canonical-document .canonical-recommended-tests p {
+  margin: 0 0 13px;
+  color: #456067;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.canonical-document .canonical-recommended-tests ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.canonical-document .canonical-recommended-tests li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #fff;
+  color: #173f49;
+  font-size: 14px;
+}
+.canonical-document .canonical-recommended-tests li span {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.canonical-document .canonical-recommended-tests li small {
+  display: block;
+  margin-top: 3px;
+  color: #657577;
+  font-size: 11px;
+  font-weight: 400;
+}
+.canonical-document .canonical-recommended-tests a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #207a77;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+@media (max-width: 620px) {
+  .consultation-report-test-picker-head { flex-direction: column; gap: 10px; }
+  .consultation-report-test-options { grid-template-columns: minmax(0, 1fr); }
+  .canonical-document .canonical-recommended-tests { padding: 14px; }
+}
+@media print {
+  .canonical-document .canonical-recommended-tests a {
+    background: transparent;
+    color: #215860;
+    padding: 0;
+    min-height: 0;
+    text-decoration: underline;
+  }
+}
