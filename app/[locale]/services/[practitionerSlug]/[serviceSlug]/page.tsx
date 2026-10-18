@@ -55,11 +55,17 @@ export default async function ServiceDetail({params}:PageProps){
       ? (ru?"Лично":es?"Presencial":"In person")
       : (ru?"Онлайн":es?"En línea":"Online");
   const bookingLabel=isFree?(ru?"Запросить бесплатно":es?"Solicitar gratis":"Request free service"):(ru?"Отправить запрос":es?"Solicitar sesión":"Request this service");
-  const bookingNote=ru
-    ? "Сначала отправьте запрос. Мастер подтвердит время и стоимость до оплаты; отправка не является бронированием."
-    : es
-      ? "Primero envía tu solicitud. El profesional confirma el horario y precio antes del pago. El formulario de solicitud se abre en inglés."
-      : "Send an enquiry first. Your practitioner confirms the format, time and price before any booking or payment.";
+  const bookingNote=isFree
+    ? ru
+      ? "Бесплатная заявка. Мастер уточнит доступность и формат; отправка не подтверждает время."
+      : es
+        ? "Solicitud gratuita. El profesional confirmará la disponibilidad; no se requiere pago."
+        : "Free request. Your practitioner confirms availability; no payment is required."
+    : ru
+      ? "Сначала отправьте запрос. Мастер подтвердит время и стоимость до оплаты; отправка не является бронированием."
+      : es
+        ? `Primero envía tu solicitud. Se confirmarán el horario y precio antes del pago.${service.slug==="remote-energy-support"?"":" El formulario de solicitud se abre en inglés."}`
+        : "Send an enquiry first. Your practitioner confirms the format, time and price before any booking or payment.";
   return <main className={`services-shell services-shell--studio ${styles.page}`} lang={locale} data-marketplace-service-landing>
     <PublicSiteHeader locale={locale}/>
     <section className={`services-studio-hero ${styles.hero}`} data-service-funnel-card><ServiceFunnelImpression serviceId={service.id}/>
