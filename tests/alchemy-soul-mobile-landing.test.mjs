@@ -36,7 +36,7 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(form, /data-alchemy-booking-formats/);
   assert.match(css, /@media\(max-width:680px\)/);
   assert.match(css, /@media\(max-height:650px\)/);
-  assert.match(sitewide, /coreKind === "alchemy" && locale !== "es"/);
+  assert.match(sitewide, /coreKind === "alchemy"\) return null/);
   assert.match(oldRoute, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
   assert.match(landing, /no reliable evidence/);
   assert.match(landing, /надёжной доказательной эффективности/);
