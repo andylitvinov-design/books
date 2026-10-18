@@ -883,10 +883,12 @@ try {
   await page.setViewportSize({width:390,height:844})
   // Observe this real click without changing navigation or reading private data.
   const homeEvents=[]
-  const homeConsole=message=>{if(message.text().startsWith('HH_HOME_PROBE '))homeEvents.push(message.text())}
+  const homeConsole=message=>{if(/^(HH_HOME_PROBE |\[Fast Refresh\]|\[HMR\])/.test(message.text()))homeEvents.push(message.text())}
   const homeRequest=request=>{if(request.isNavigationRequest())homeEvents.push(JSON.stringify({kind:'request',path:new URL(request.url()).pathname}))}
+  const homeFailed=request=>{if(request.isNavigationRequest())homeEvents.push(JSON.stringify({kind:'failed',path:new URL(request.url()).pathname,error:request.failure()?.errorText}))}
+  const homeResponse=response=>{if(response.request().isNavigationRequest()){const location=response.headers().location;homeEvents.push(JSON.stringify({kind:'response',path:new URL(response.url()).pathname,status:response.status(),redirectPath:location?new URL(location,response.url()).pathname:null}))}}
   const homeFrame=frame=>{if(frame===page.mainFrame())homeEvents.push(JSON.stringify({kind:'frame',path:new URL(frame.url()).pathname}))}
-  page.on('console',homeConsole);page.on('request',homeRequest);page.on('framenavigated',homeFrame)
+  page.on('console',homeConsole);page.on('request',homeRequest);page.on('framenavigated',homeFrame);page.on('requestfailed',homeFailed);page.on('response',homeResponse)
   await page.evaluate(()=>{
     const emit=(kind,event)=>console.log('HH_HOME_PROBE '+JSON.stringify({kind,path:location.pathname,
       target:event?.target?.closest?.('a')?.getAttribute('href')==='/'?'home':'other',
@@ -895,7 +897,7 @@ try {
     for(const kind of ['pagehide','popstate'])window.addEventListener(kind,event=>emit(kind,event),{capture:true,passive:true,once:true})
   })
   try { await openCabinetHome(page,expect,{origin}) }
-  finally {console.log('SYNTHETIC_HOME_NAVIGATION',JSON.stringify(homeEvents));page.off('console',homeConsole);page.off('request',homeRequest);page.off('framenavigated',homeFrame)}
+  finally {console.log('SYNTHETIC_HOME_NAVIGATION',JSON.stringify(homeEvents));page.off('console',homeConsole);page.off('request',homeRequest);page.off('framenavigated',homeFrame);page.off('requestfailed',homeFailed);page.off('response',homeResponse)}
   await page.goto(origin+'/en/app/portrait');await ready()
   passed('legacy Analysis route opens the secure integrated Profile archive with five private destinations and mobile Home navigation')
  const cookies=await context.cookies();assert.ok(cookies.some(c=>c.name.startsWith('hh-app-auth')&&c.httpOnly));assert.ok(!(await page.evaluate(()=>document.cookie)).includes('hh-app-auth'));passed('app tokens remain HttpOnly')
