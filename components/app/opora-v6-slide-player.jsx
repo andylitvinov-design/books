@@ -197,6 +197,43 @@ const ROLE_OPTIONS={
 const HINT_KINDS=new Set(['demo','notice','act','rehearse','scenario'])
 const PRACTICE_KINDS=new Set(['notice','act','rehearse'])
 const SCENES=[Heart,Leaf,ShieldCheck,BookOpen,Lightbulb,Sparkles]
+// A personal learning receipt must be built ONLY from explicit answers.
+// A chosen exercise is not an attempt; a future plan is not a completed action.
+function oporaLearningReceipt(answers,authored,lang,ease){
+  const ru=lang==='ru',rows=[]
+  const choiceIndex=value=>['one','two','three'].indexOf(value)
+  const actIndex=choiceIndex(answers.actChoice)
+  const actLabel=actIndex>=0?authored?.exercises?.act?.choices?.[actIndex]:null
+  if(typeof actLabel==='string'&&actLabel.trim())rows.push({
+    key:'choice',label:ru?'Выбранное упражнение':'Exercise chosen',value:actLabel,
+  })
+  const status=answers.act||answers.notice||answers.rehearse
+  const attemptText={
+    tried:[ru?'Получилось':'Tried the step'],
+    partly:[ru?'Частично получилось':'Partly tried'],
+    not_yet:[ru?'Пока не получилось':'Not yet'],
+    not_attempted:[ru?'Не пробовал(а)':'Did not try'],
+    uncomfortable:[ru?'Было некомфортно — практика остановлена':'Uncomfortable — practice stopped'],
+    guided:[ru?'Повторил(а) с подсказкой':'Repeated with a hint'],
+    independent:[ru?'По собственному сообщению — самостоятельно':'Reported trying independently'],
+  }
+  if(status&&attemptText[status])rows.push({
+    key:'attempt',label:ru?'Отчёт о попытке':'Reported attempt',value:attemptText[status][0],
+  })
+  if(ease!==null&&Number.isInteger(ease)&&ease>=0&&ease<=3&&['tried','partly'].includes(answers.act))
+    rows.push({key:'ease',label:ru?'Насколько был доступен шаг':'How accessible the step felt',
+      value:String(ease)+' / 3'+(ru?' · личная оценка':' · self-rating')})
+  const planIndex=choiceIndex(answers.transferChoice)
+  const planLabel=planIndex>=0?authored?.exercises?.transfer?.choices?.[planIndex]:null
+  if(['planned','imagined'].includes(answers.transfer)&&typeof planLabel==='string'&&planLabel.trim())
+    rows.push({key:'plan',label:answers.transfer==='imagined'
+      ?(ru?'Мысленно представленный план':'Imagined plan')
+      :(ru?'Возможный план на будущее':'Possible plan for later'),value:planLabel})
+  else if(answers.transfer==='not_planning')
+    rows.push({key:'no-plan',label:ru?'План':'Plan',
+      value:ru?'Сегодня без плана — это допустимо':'No plan today — that is fine'})
+  return rows
+}
 const versionTag='as-5.4-live-v6'
 
 export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,onFinish,onSession}){
@@ -373,6 +410,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const guidanceText=role==='scenario'?authored?.scenario?.hint||authored?.scenario?.explanation
     :role==='aphorism'?authored?.neutralQuote
     :authored?.hints?.[role]||authored?.hint||lesson?.antiStress?.neutralText||t.nudge
+  const receiptRows=oporaLearningReceipt(answers,authored,lang,ease)
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
@@ -399,16 +437,15 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
           <h2 className={styles.title} tabIndex={-1} ref={heading}>{afterSave?t.saved:slide?.title}</h2>
           {afterSave?<>
             <p className={styles.prompt}>{t.reward}</p>
-            <section className={styles.result}>
+            <section className={styles.result} data-opora-real-choice-summary>
               <strong>{t.outcomes}</strong>
-              <p>{lesson.antiStress?.learningOutcome}</p>
-              <p>{answers.act||answers.notice||answers.rehearse
-                ? t.feedback[answers.act]||t.feedback[answers.notice]||t.feedback[answers.rehearse]||t.notCompleted
-                :t.notCompleted}</p>
-              {answers.transfer==='planned'&&answers.transferChoice&&<p>{
-                (lang==='ru'?'Возможный план: ':'Possible plan: ')+
-                (authored?.exercises?.transfer?.choices?.[['one','two','three'].indexOf(answers.transferChoice)]||'')
-              }</p>}
+              <p>{lang==='ru'?'Тема занятия: ':'Lesson focus: '}{lesson.antiStress?.skill||lesson.title}</p>
+              {receiptRows.length?receiptRows.map(row=><div key={row.key} className={styles.receiptRow}>
+                <span>{row.label}</span><p>{row.value}</p>
+              </div>):<p>{t.notCompleted}</p>}
+              <small>{lang==='ru'
+                ?'Это ваш собственный отчёт об учебном опыте, не оценка здоровья и не доказательство освоения.'
+                :'This is your own learning report, not a health rating or proof of skill mastery.'}</small>
             </section>
             <p className={styles.helper}>{t.advance}</p>
           </>:<>
@@ -437,9 +474,12 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
             {role==='save'&&<section className={styles.result} data-opora-save-preview>
               <strong>{t.review}</strong>
               <p>{authored?.screens?.[13]?.text}</p>
-              <small>{answers.aphorism?(lang==='ru'?'Мнение об установке сохранится как ваш выбор.':'Your opinion of the idea will be recorded.'):t.without}</small>
-              <small>{[answers.act,answers.notice,answers.rehearse].some(v=>['tried','partly','guided','independent'].includes(v))
-                ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
+              {receiptRows.length?receiptRows.map(row=><div key={row.key} className={styles.receiptRow}>
+                <span>{row.label}</span><p>{row.value}</p>
+              </div>):<small>{t.notCompleted}</small>}
+              <small>{answers.aphorism
+                ?(lang==='ru'?'Мнение об афоризме сохраняется отдельно от попытки.':'Your opinion of the aphorism is separate from your practice attempt.')
+                :t.without}</small>
             </section>}
             {activityOptions.length>0&&<>
               <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q

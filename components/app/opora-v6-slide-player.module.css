@@ -72,6 +72,9 @@
 .result strong{color:#087f8f}
 .result p{margin:0}
 .result small{color:#547588}
+.receiptRow{display:grid;gap:3px;border-top:1px solid #cce7e5;padding-top:8px;min-width:0}
+.receiptRow span{font-size:11px;color:#507b85;font-weight:730;line-height:1.35}
+.receiptRow p{font-size:13px;line-height:1.5;color:#245169;overflow-wrap:anywhere}
 .helper{color:#547588;font-size:12px}
 .disclaimer{margin:auto 0 0;padding-top:10px;color:#7294a2;font-size:10px;line-height:1.4;text-align:center}
 .error{padding:11px 14px;color:#a22e37;background:#fff0f0;border:1px solid #e6afb5;border-radius:12px;font-size:12px}

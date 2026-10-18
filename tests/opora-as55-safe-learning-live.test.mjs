@@ -104,6 +104,11 @@ test('RU V7 not-yet/not-tried and no-plan responses require no pretend action',a
  assert.equal(f.payload.practiceAttempt,null)
  assert.equal(f.payload.transferStage,null)
  assert.match(textOf(h.tree),/Практика сохранена/)
+ const receipt=textOf(h.tree)
+ assert.match(receipt,/Пока не получилось/)
+ assert.match(receipt,/Сегодня без плана/)
+ assert.doesNotMatch(receipt,/Выбранное упражнение/)
+ assert.doesNotMatch(receipt,/100% освоено|выполнено самостоятельно/)
  h.unmount()
 })
 

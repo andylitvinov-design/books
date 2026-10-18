@@ -65,6 +65,13 @@ test('all 28 RU/EN V7 sessions traverse the 14 learning steps and save a truthfu
         await click(h,t.plan)
       }
       if(i===12)await click(h,t.neutral)
+      if(i===13){
+        const preview=textOf(h.tree)
+        assert.ok(preview.includes(lesson.opora54.exercises.act.choices[0]),
+          'Actual selected exercise in save preview '+lang+' day '+day)
+        assert.ok(preview.includes(lesson.opora54.exercises.transfer.choices[0]),
+          'Possible plan in save preview '+lang+' day '+day)
+      }
       if(i<13)await click(h,t.next)
       else await click(h,t.save)
     }
@@ -86,6 +93,13 @@ test('all 28 RU/EN V7 sessions traverse the 14 learning steps and save a truthfu
     assert.equal(stored.opora54.ease,null)
     assert.deepEqual(validateOpora54Signals(stored.opora54).answers,stored.opora54.answers)
     assert.ok(textOf(h.tree).includes(t.result),'server-confirmed receipt')
+    const receipt=textOf(h.tree)
+    assert.ok(receipt.includes(lesson.opora54.exercises.act.choices[0]),
+      'Actual selected exercise in saved receipt '+lang+' day '+day)
+    assert.ok(receipt.includes(lesson.opora54.exercises.transfer.choices[0]),
+      'Actual personal transfer plan in saved receipt '+lang+' day '+day)
+    assert.match(receipt,lang==='ru'?/Частично получилось/:/Partly tried/)
+    assert.doesNotMatch(receipt,/100% освоено|clinically proven|healed trauma/)
     h.unmount()
     lessons++
   }
