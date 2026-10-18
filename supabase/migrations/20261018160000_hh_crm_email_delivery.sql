@@ -26,12 +26,13 @@ create table app.crm_email_jobs (
  created_at timestamptz not null default now(),
  completed_at timestamptz,
  foreign key(contact_id,owner_id) references app.crm_contacts(id,owner_id) on delete cascade,
- foreign key(consent_event_id) references app.crm_consent_ledger(id) on delete restrict
+ foreign key(consent_event_id) references app.crm_consent_ledger(id) on delete cascade
 );
 create index crm_email_jobs_owner_recent_idx on app.crm_email_jobs(owner_id,created_at desc);
 create index crm_email_jobs_provider_idx on app.crm_email_jobs(provider_id) where provider_id is not null;
 create table app.crm_email_webhook_events (
  event_id text primary key,
+ owner_id uuid not null references app.accounts(id) on delete cascade,
  provider_id text,
  type text not null,
  received_at timestamptz not null default now()
@@ -105,8 +106,8 @@ begin
   select owner_id,contact_id into c from app.crm_email_tokens where provider_id=p_id limit 1;
   if not found then return false; end if;
  end if;
- insert into app.crm_email_webhook_events(event_id,provider_id,type)
- values(p_event,p_id,p_type) on conflict do nothing;
+ insert into app.crm_email_webhook_events(event_id,owner_id,provider_id,type)
+ values(p_event,c.owner_id,p_id,p_type) on conflict do nothing;
  if not found then return true; end if;
  update app.crm_contacts set suppressed=true,revision=revision+1
  where id=c.contact_id and owner_id=c.owner_id and suppressed=false;
