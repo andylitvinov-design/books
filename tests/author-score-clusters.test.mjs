@@ -61,7 +61,7 @@ test('original mean subscales get real attainable-score intervals, not arbitrary
     assert.equal(en.rangeReading.sourceQuestions.length,3)
     assert.equal(ru.rangeReading.sourceQuestions.length,3)
     assert.match(ru.rangeReading.scoringNote,/Среднее по 3 вопросам/)
-    assert.match(en.rangeReading.caution,/not clinical cutoffs/)
+    assert.match(en.rangeReading.caution,/not clinical norms, clinical cutoffs/)
     assert.notEqual(en.rangeReading.rows[0].note,en.rangeReading.rows[4].note)
     if (dimension.direction.startsWith('lower-reported-')) {
       assert.match(en.rangeReading.rows[0].note,/difficult moments may still occur/)
@@ -83,7 +83,7 @@ test('four-item scored personality sum keeps exact 4–20, no clinical personali
     assert.equal(m.rangeReading.rows.at(-1).to,20)
     assert.equal(m.rangeReading.sourceQuestions.length,4)
     assert.match(m.rangeReading.scoringNote,/Sum across 4 item/)
-    assert.match(m.rangeReading.caution,/not clinical cutoffs/)
+    assert.match(m.rangeReading.caution,/not clinical norms, clinical cutoffs/)
   }
 })
 
@@ -166,7 +166,7 @@ test('historical mixed-polarity and symbolic weights do not receive invented ord
     assert.equal(m?.rangeReading?.clusterBasis, 'historical-mixed-mean-v1')
     assert.equal(m.rangeReading.kind, 'historical-mixed')
     assert.equal(m.rangeReading.rows.length, 5)
-    assert.ok(m.rangeReading.caution.includes('not a'))
+    assert.match(m.rangeReading.caution,/None of these intervals indicates severity/)
     assert.ok(!m.bands.length)
   }
   const bach=get('hh-bach-flower-profile','v2','en','min')
