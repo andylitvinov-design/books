@@ -163,7 +163,10 @@ test('historical mixed-polarity and symbolic weights do not receive invented ord
   for(const dimension of old.result.dimensions){
     const m=gaugeModel(dimension,old.result,'en')
     assert.ok(m)
-    assert.equal(m?.rangeReading?.clusterBasis ?? null,null)
+    assert.equal(m?.rangeReading?.clusterBasis, 'historical-mixed-mean-v1')
+    assert.equal(m.rangeReading.kind, 'historical-mixed')
+    assert.equal(m.rangeReading.rows.length, 5)
+    assert.ok(m.rangeReading.caution.includes('not a'))
     assert.ok(!m.bands.length)
   }
   const bach=get('hh-bach-flower-profile','v2','en','min')
