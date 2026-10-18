@@ -28,18 +28,21 @@ const copy = {
     aiDisclosure: "AI-assisted video.", andyAiDisclosure: "AI-assisted video using Andy’s digital twin and voice.",
     aiShort: "AI video", avatarShort: "AI avatar", transcript: "Read transcript", transcriptShort: "Transcript",
     details: "Video details", duration: "Duration", seconds: "seconds", newTab: "opens in a new tab",
+    stalled: "Video not opening?", retry: "Try again",
   },
   ru: {
     play: "Смотреть видео", watch: "Открыть на YouTube", watchHeygen: "Открыть видео в HeyGen",
     aiDisclosure: "Видео создано с помощью ИИ.", andyAiDisclosure: "Видео с цифровым двойником и голосом Энди, созданное с помощью ИИ.",
     aiShort: "ИИ-видео", avatarShort: "ИИ-аватар", transcript: "Читать текст видео", transcriptShort: "Текст видео",
     details: "О видео", duration: "Продолжительность", seconds: "сек.", newTab: "откроется в новой вкладке",
+    stalled: "Видео не открывается?", retry: "Повторить",
   },
   es: {
     play: "Ver vídeo", watch: "Ver en YouTube", watchHeygen: "Abrir vídeo en HeyGen",
     aiDisclosure: "Vídeo creado con ayuda de inteligencia artificial.", andyAiDisclosure: "Vídeo creado con inteligencia artificial mediante el doble digital y la voz de Andy.",
     aiShort: "Vídeo IA", avatarShort: "Avatar IA", transcript: "Leer el texto en español", transcriptShort: "Texto en español",
     details: "Detalles del vídeo", duration: "Duración", seconds: "segundos", newTab: "se abre en una pestaña nueva",
+    stalled: "¿No se abre el vídeo?", retry: "Reintentar",
   },
 } as const;
 
@@ -109,6 +112,7 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
 function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   // SSR may appear before React attaches handlers on a slow connection.
   const [interactive, setInteractive] = useState(false);
   useEffect(() => { setInteractive(true); }, []);
@@ -117,6 +121,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const [poster, setPoster] = useState<"maxres" | "hq" | "direct" | null>(compact ? "hq" : "maxres");
   const [localPosterFailed, setLocalPosterFailed] = useState(false);
   const playerRef = useRef<HTMLIFrameElement>(null);
+  const transcriptRef = useRef<HTMLDetailsElement>(null);
   const titleId = useId();
   const duration = videoDuration(video.durationSeconds);
   const watchUrl = siteVideoWatchUrl(video);
@@ -136,6 +141,21 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     : `https://app.heygen.com/embeds/${video.heygenId}`;
 
   useEffect(() => { if (playing) playerRef.current?.focus(); }, [playing]);
+  // Cross-origin frames can load despite inner media failure. Offer help without
+  // claiming we can read the third-party video's internal readyState.
+  useEffect(() => {
+    if (!playing || !isHeygen || playbackYouTubeId) return;
+    const timer = window.setTimeout(() => setShowRecovery(true), 7000);
+    return () => window.clearTimeout(timer);
+  }, [playing, isHeygen, playbackYouTubeId]);
+  function openTranscript() {
+    setPlaying(false);
+    setShowRecovery(false);
+    if (transcriptRef.current) {
+      transcriptRef.current.open = true;
+      transcriptRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }
   function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
   const externalLink = <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
@@ -150,7 +170,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
         {playing ? (
           <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
-          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
+          <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => { setShowRecovery(false); setPlaying(true); }}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
               <Image className="site-video-poster site-video-fallback-poster" src={fallbackPoster} alt="" fill unoptimized={fallbackPoster.endsWith(".webp")} onError={() => setLocalPosterFailed(true)} loading="lazy" sizes={compact ? "(max-width: 767px) 100vw, 33vw" : "(max-width: 767px) 100vw, 960px"} />
             )}
@@ -172,10 +192,18 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           </button>
         )}
       </div>
+      {playing && isHeygen && !playbackYouTubeId && showRecovery && (
+        <div className={styles.recovery} role="note" data-video-recovery="heygen">
+          <span>{text.stalled}</span>
+          <button type="button" onClick={() => { setPlaying(false); setShowRecovery(false); }}>{text.retry}</button>
+          {video.transcript && <button type="button" onClick={openTranscript}>{text.transcriptShort}</button>}
+          <a href={watchUrl} target="_blank" rel="noopener noreferrer">{text.watchHeygen}<ExternalLink aria-hidden="true" /></a>
+        </div>
+      )}
       {minimal ? (
         <figcaption className="site-video-caption">
           <span className={styles.accessibleTitle} id={titleId} lang={textLanguage}>{video.title}</span>
-          <details className="site-video-transcript">
+          <details ref={transcriptRef} className="site-video-transcript">
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
             <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}<div className="site-video-actions">{externalLink}</div></div>
           </details>
@@ -188,7 +216,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           {audioNotice && <p className="site-video-description site-video-audio-language">{audioNotice}</p>}
           {isHeygen && <p className="site-video-description site-video-ai-disclosure">{aiDisclosure}</p>}
           <div className="site-video-actions">{externalLink}{mirrorLink}{duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}</div>
-          {video.transcript && <details className="site-video-transcript"><summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary><p lang={textLanguage}>{video.transcript}</p></details>}
+          {video.transcript && <details ref={transcriptRef} className="site-video-transcript"><summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary><p lang={textLanguage}>{video.transcript}</p></details>}
         </figcaption>
       )}
     </figure>
