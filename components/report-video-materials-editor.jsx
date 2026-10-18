@@ -3,12 +3,12 @@ import {useEffect,useState} from 'react'
 import {prepareReportSession} from '@/lib/consultations/owner-report-sharing'
 import {BookOpen,FolderOpen,RefreshCw,ShieldCheck} from 'lucide-react'
 import {SessionMaterialPicker} from './session-material-picker'
+import {SessionAudioRecorder} from './session-audio-recorder'
 import styles from './client-session.module.css'
 
-// Client report editor only CHOOSES previously approved general materials.
-// Creating YouTube links, uploading images and uploading videos belongs
-// exclusively to the owner catalog at /admin/materials.
-// Existing per-consultation recordings/legacy links remain untouched.
+// Shared materials are selected only from the approved owner catalog.
+// A separate inline voice recorder saves client-specific audio to the
+// consultation session, never to shared Materials; publication remains explicit.
 async function ownerApi(path,method='GET',body=null){
   const response=await fetch(path,{method,cache:'no-store',credentials:'same-origin',
     ...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})})
@@ -112,7 +112,7 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     }catch(e){setError(e.message||'SESSION_UNAVAILABLE')}
     finally{setLoading(false)}
   }
-  return <section id="report-video-materials-editor" className={styles.ownerReportMaterials}
+  return <><section id="report-video-materials-editor" className={styles.ownerReportMaterials}
     aria-labelledby="report-materials-editor-title">
     <div className={styles.ownerMaterialsHeader}>
       <span className={styles.ownerMaterialsSymbol}><FolderOpen size={23} aria-hidden="true"/></span>
@@ -159,4 +159,8 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     {notice&&<p role="status" className={styles.success}>{notice}</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}
   </section>
+  {!loading&&<SessionAudioRecorder clientId={clientId} sessionId={sessionId||null}
+    documentId={documentId} locale={locale} audioOnly
+    onSaved={savedId=>{void readSession(savedId).catch(e=>setError(e.message||'SESSION_UNAVAILABLE'))}}/>}
+  </>
 }
