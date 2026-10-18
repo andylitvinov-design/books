@@ -28,6 +28,18 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.'},
 }
 const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Facebook Messenger'}
+const messageStatuses={
+  received:{en:'Received',ru:'Получено',es:'Recibido'},
+  draft:{en:'Draft',ru:'Черновик',es:'Borrador'},
+  queued:{en:'Processing',ru:'Обрабатывается',es:'Procesando'},
+  accepted:{en:'Accepted by provider',ru:'Принято сервисом',es:'Aceptado por el proveedor'},
+  delivered:{en:'Delivered',ru:'Доставлено',es:'Entregado'},
+  read:{en:'Read',ru:'Прочитано',es:'Leído'},
+  failed:{en:'Not sent',ru:'Не отправлено',es:'No enviado'},
+  blocked:{en:'Blocked',ru:'Заблокировано',es:'Bloqueado'},
+  unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
+}
+const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
 function replyReason(reason,lang){
   const labels={
     CUSTOMER_MUST_START:{en:'Customer must message first',ru:'Клиент должен написать первым',es:'El cliente debe escribir primero'},
@@ -42,6 +54,9 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const pendingRequest=useRef(null)
+  const [search,setSearch]=useState('')
+  const [channelFilter,setChannelFilter]=useState('all')
+  const [unreadOnly,setUnreadOnly]=useState(false)
   const load=useCallback(async(threadId='',signal)=>{
     const url='/api/app/crm/messenger'+(threadId?'?thread='+encodeURIComponent(threadId):'')
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
@@ -54,6 +69,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     const ctrl=new AbortController()
     pendingRequest.current=null
     setData(null);setActive('');setText('');setError('');setStatus('')
+    setSearch('');setChannelFilter('all');setUnreadOnly(false)
     load('',ctrl.signal).then(setData).catch(e=>{if(e.name!=='AbortError')setError('unavailable')})
     return ()=>ctrl.abort()
   },[accountId,load])
@@ -77,7 +93,7 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
         body:JSON.stringify({action:name,payload})})
       const value=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(value.error||'UNAVAILABLE')
-      await refresh(name==='send'?active:'')
+      await refresh(name==='send'||name==='read'?active:'')
       return value
     }catch(e){setStatus(replyReason(e.message,lang)||t.sendError);return null}
     finally{setBusy(false)}
@@ -106,6 +122,11 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
+  const visibleThreads=threads.filter(item=>
+    (channelFilter==='all'||item.channel===channelFilter)
+    &&(!unreadOnly||item.unreadCount>0)
+    &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+  )
   return <section className={styles.panel} aria-labelledby="crm-messenger-title">
     <header className={styles.top}>
       <div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>
@@ -131,8 +152,20 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
     {data&&<div className={styles.layout}>
       <div className={styles.list} aria-label={t.customers}>
         <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread}</small></div>
-        {threads.length===0&&<p className={styles.empty}>{t.empty}</p>}
-        {threads.map(thread=><button type="button" key={thread.id}
+        <div className={styles.inboxFilters}>
+          <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+            aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
+            placeholder={lang==='ru'?'Поиск клиента…':lang==='es'?'Buscar cliente…':'Search client…'} />
+          <select aria-label={lang==='ru'?'Канал сообщений':lang==='es'?'Canal de mensajes':'Message channel'}
+            value={channelFilter} onChange={event=>setChannelFilter(event.target.value)}>
+            <option value="all">{t.all}</option>
+            {Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+          </select>
+          <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
+            {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
+        </div>
+        {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет диалогов по выбранному фильтру.':lang==='es'?'Ninguna conversación coincide.':'No conversations match your filters.'}</p>}
+        {visibleThreads.map(thread=><button type="button" key={thread.id}
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
@@ -145,11 +178,11 @@ export default function CrmMessengerPanel({accountId,locale='en'}){
           <div className={styles.chatHeader}><strong>{selected.name}</strong>
             <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={async()=>{await action('read',{threadId:selected.id});await refresh(selected.id)}}>{t.read}</button>}
+              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
           </div>
           <div className={styles.messages} role="log" aria-live="polite">
             {(data?.messages||[]).map(m=><div key={m.id} className={m.direction==='out'?styles.outbound:styles.inbound}>
-              <p>{m.text}</p><small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))} · {m.status}</small>
+              <p>{m.text}</p><small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))} · {statusLabel(m.status,lang)}</small>
             </div>)}
           </div>
           <div className={styles.compose}>
