@@ -32,7 +32,12 @@ test('V7 14-day curriculum still has three meaningful exercise cards and an hone
      const exercise=v.opora54.exercises[kind]
      const options=kind==='notice'?exercise.a:exercise.choices
      assert.equal(options.length,3,'day '+day+' '+locale+' '+kind)
-     assert.ok(options.every(x=>typeof x==='string'&&x.trim().length>=12))
+     // Single-word feeling labels (e.g. "Досада", "Relief") are
+     // intentional low-load responses to a prompt, not broken content.
+     // Action and transfer choices must remain concrete sentences.
+     const minLength=kind==='notice'?3:12
+     assert.ok(options.every(x=>typeof x==='string'&&x.trim().length>=minLength),
+       'Expected meaningful '+kind+' labels on '+locale+' day '+day)
    }
    assert.equal(v.opora54.scenario.choices.length,3)
    assert.equal(v.opora54.scenario.feedback.length,3)

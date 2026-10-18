@@ -123,7 +123,11 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  assert.match(legacy,/export default function CourseSlidePlayer/)
  assert.match(player,/ROLE_OPTIONS=\{/)
  assert.match(player,/choiceField=role==='notice'/)
- assert.match(player,/if\(choiceField&&!answers\[choiceField\]\)/)
+ // Learners can report 'not attempted' or 'uncomfortable' without
+ // pretending to have chosen a particular physical action.
+ assert.match(player,/const noActionReport=role==='transfer'/)
+ assert.match(player,/\['not_yet','not_attempted','uncomfortable'\]\.includes\(value\)/)
+ assert.match(player,/if\(choiceField&&!answers\[choiceField\]&&!noActionReport\)return/)
  assert.match(player,/activityPrompt/)
  assert.match(player,/role==='act'&&picked/)
  assert.match(player,/aphorism:\['agree','unsure','disagree'\]/)
