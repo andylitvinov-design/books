@@ -39,7 +39,7 @@ test('primary action retains the existing protected lesson-start behavior', () =
   assert.match(day, /if\(paused\)\{void submit\('resume'/)
   assert.match(day, /if\(data\.finalRetest\?\.ready\)\{showFinalRetest\(\)/)
   assert.match(entry, /data-course-today-primary onClick=\{onStart\}/)
-  assert.match(entry, /Start my course/)
+  assert.match(day, /'Start my course'/)
 })
 
 test('full-bleed natural photo and readable gradient remain limited to Today', () => {
