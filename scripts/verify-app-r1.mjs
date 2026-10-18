@@ -855,7 +855,7 @@ try {
   for (const language of ['en','ru']) {
     const archiveRedirect=await context.request.get(origin+'/'+language+'/app/analysis',{maxRedirects:0})
     assert.equal(archiveRedirect.status(),307,'legacy archive entry must redirect before streaming')
-    assert.equal(archiveRedirect.headers().location,origin+'/'+language+'/app/portrait#personal-reports')
+    assert.equal(archiveRedirect.headers().location,'/'+language+'/app/portrait#personal-reports')
     assert.match(archiveRedirect.headers()['cache-control'],/private.*no-store/)
     assert.equal(archiveRedirect.headers()['referrer-policy'],'no-referrer')
     await archiveRedirect.dispose()

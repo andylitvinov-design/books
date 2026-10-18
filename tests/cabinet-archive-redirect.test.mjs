@@ -31,7 +31,7 @@ test('actual middleware redirects before rendering and retains every private res
     const url='https://house.example/'+locale+'/app/analysis?next=https://evil.invalid'
     const result=middleware({url,method,nextUrl:new URL(url),headers:new Headers(),cookies:{get:()=>undefined}})
     assert.equal(result.status,307)
-    assert.equal(result.headers.get('location'),'https://house.example/'+locale+'/app/portrait#personal-reports')
+    assert.equal(result.headers.get('location'),'/'+locale+'/app/portrait#personal-reports')
     assert.match(result.headers.get('cache-control'),/private, no-store/)
     assert.equal(result.headers.get('referrer-policy'),'no-referrer')
     assert.equal(result.headers.get('x-frame-options'),'DENY')

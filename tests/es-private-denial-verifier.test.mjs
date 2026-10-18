@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as redirects from '../lib/canonical-redirect.js';
+import * as cabinetRedirects from '../lib/app/cabinet-redirect.js';
 import { assertUnsupportedSpanishPrivateLocale } from '../scripts/helpers/es-private-denial-verifier.mjs';
 
 const require = createRequire(import.meta.url);
@@ -27,7 +28,7 @@ function load(path, modules) {
   } });
   return exports;
 }
-const { middleware } = load('middleware.ts', { 'next/server': { NextResponse }, './lib/canonical-redirect': redirects });
+const { middleware } = load('middleware.ts', { 'next/server': { NextResponse }, './lib/canonical-redirect': redirects, './lib/app/cabinet-redirect': cabinetRedirects });
 
 function denialHeaders() {
   // A contrary cookie and spoofed request header must lose to the Spanish URL.

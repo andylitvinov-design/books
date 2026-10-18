@@ -147,6 +147,8 @@ export function middleware(request: NextRequest) {
   const archiveTarget = cabinetArchiveRedirect(request.url, request.method)
   const response = archiveTarget ? NextResponse.redirect(archiveTarget, 307)
     : NextResponse.next({ request: { headers: requestHeaders } })
+  // Relative Location preserves the requesting host even behind a dev/proxy host rewrite.
+  if (archiveTarget) response.headers.set('Location', archiveTarget.pathname + archiveTarget.hash)
   response.headers.set('Content-Security-Policy', csp)
   if (privatePath(request.nextUrl.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
