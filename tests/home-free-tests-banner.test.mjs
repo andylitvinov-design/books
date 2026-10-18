@@ -1,37 +1,30 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const home = read('components/holistic-house-home.tsx')
-const banner = read('components/home-free-tests-banner.tsx')
-const layout = read('components/home-free-tests-banner.module.css')
-const academyStyles = read('components/academy-free-course-banner.module.css')
+const spanishHome = read('app/es/page.tsx')
 const journeys = read('components/homepage-topic-journeys.tsx')
 
-test('photo service cards appear before the free-test banner and existing topic cards', () => {
-  assert.match(home, /import \{ HomeFreeTestsBanner \}/)
-  const bannerAt = home.indexOf('<HomeFreeTestsBanner locale={locale} />')
-  const helpAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />')
-  assert.ok(helpAt > 0 && bannerAt > helpAt)
-  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') > bannerAt)
-  assert.doesNotMatch(home, /HomeFreePaths/)
+// The owner explicitly removed the obsolete blue marketing block.
+// Keep this regression guard so future homepage redesigns cannot revive it.
+test('broken legacy free-test promo is absent from all home locales and source', () => {
+  for (const page of [home, spanishHome]) {
+    assert.doesNotMatch(page, /HomeFreeTestsBanner|home-free-tests-banner|data-home-free-tests-banner/)
+  }
+  assert.equal(existsSync(new URL('../components/home-free-tests-banner.tsx', import.meta.url)), false)
+  assert.equal(existsSync(new URL('../components/home-free-tests-banner.module.css', import.meta.url)), false)
 })
 
-test('free test CTA selects a relevant topic instead of opening the obsolete unfiltered tests screen', () => {
-  assert.match(banner, /href="#hh-topic-journeys"/)
+test('existing photo-led services and five topic journeys stay in the right order', () => {
+  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />')
+  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />')
+  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt)
   assert.match(journeys, /id="hh-topic-journeys"/)
-  assert.match(journeys, /explore\/\$\{journey\.id\}/)
-  assert.doesNotMatch(banner, /\/client\/tests|\/app\/tests/)
-})
-
-test('RU and EN copy, Academy look, five topic areas and mobile width are present', () => {
-  assert.match(banner, /БЕСПЛАТНЫЕ ТЕСТЫ/)
-  assert.match(banner, /FREE SELF-CHECK TESTS/)
-  assert.match(banner, /5 направлений/)
-  assert.match(banner, /5 topic areas/)
-  assert.match(banner, /academy-free-course-banner\.module\.css/)
-  assert.match(academyStyles, /@media \(max-width: 460px\)/)
-  assert.match(layout, /max-width: 760px/)
-  assert.match(banner, /не медицинская диагностика/)
+  assert.ok(journeys.includes('TOPIC_JOURNEYS.map'))
+  assert.ok(journeys.includes('explore/${journey.id}'))
+  assert.match(home, /data-hero-cta": "free-tests"/)
+  assert.match(home, /event="self_check_start"/)
+  assert.ok(home.includes('<HomepageContactCta locale={locale} />'))
 })
