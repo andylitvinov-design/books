@@ -53,7 +53,7 @@ test('Guests are unsaved; signed-in learners use consent and durable authenticat
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]|fetch\(|XMLHttpRequest|sendBeacon/)
   assert.match(learner, /maxLength=\{1600\}/)
   assert.match(learner, /aria-pressed=\{path === choice\.id\}/)
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| \(slide\.kind === "path-choice" && !path\)\}/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| \(slide\.kind === "path-choice" && !path\)\}/)
   assert.match(curriculum, /does not grant Level 1 initiation or certification/)
 })
 
@@ -94,4 +94,26 @@ test('Reiki Practitioner opening slide explains all three initiation opportuniti
   assert.match(learner, /посмотрите учебные видео, выполните задания и ответьте на вопросы/)
   assert.match(learner, /finishing the course does not grant it automatically/)
   assert.match(css, /welcomeSlide \.art/)
+})
+
+test('First Reiki reflection asks about prior experience with four EN/RU options', () => {
+  const schema = read('data/academy/energywork-ai-schema.js')
+  const question = curriculum.split('id: "welcome-02"')[1].split('id: "flight-01"')[0]
+  assert.match(question, /How familiar are you with Reiki\?/)
+  assert.match(question, /Насколько вы знакомы с Рейки\?/)
+  assert.match(question, /type: "choice"/)
+  const optionIds = [...question.matchAll(/\{ id: "([^"]+)", label: l\(/g)].map((match) => match[1])
+  assert.deepEqual(optionIds, ['beginner', 'energywork', 'reiki-1-2', 'master'])
+  for (const ru of ['Пока не знаком', 'энергетических практик', '1-я или 2-я ступень', 'мастер Рейки']) {
+    assert.ok(question.includes(ru), ru)
+  }
+  assert.match(schema, /'welcome-02': 'choice'/)
+  assert.match(schema, /ENERGYWORK_EXPERIENCE_VALUES = Object\.freeze\(\['beginner','energywork','reiki-1-2','master'\]\)/)
+  assert.match(schema, /ENERGYWORK_EXPERIENCE_VALUES\.includes\(answer\)/)
+  assert.match(learner, /experienceMissing = slide\.id === "welcome-02"/)
+  assert.match(learner, /if \(busy \|\| experienceMissing \|\|/)
+  assert.match(learner, /role="status">\{experienceGuidance\[locale\]/)
+  assert.match(css, /\.experienceChoice:has\(input:focus-visible\)/)
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-17\.p0"/)
+  assert.match(schema, /ENERGYWORK_VERSION = '2026-10-17\.p0'/)
 })
