@@ -40,7 +40,7 @@ test('outbound message validation enforces length, secret protection and health-
 test('webhook entrypoints require verified signatures, no client-side provider tokens or trust based on display name',()=>{
   const webhook=source('lib/crm/messenger-webhook.js')
   const api=source('app/api/app/crm/messenger/route.js')
-  const db=source('supabase/migrations/20261018230500_hh_crm_messenger_core.sql')
+  const db=source('supabase/migrations/20261018185711_hh_crm_messenger_core_20261018.sql')
   const ui=source('components/app/crm-messenger.jsx')
   assert.match(webhook,/timingSafeEqual/)
   assert.match(webhook,/x-hub-signature-256/)
