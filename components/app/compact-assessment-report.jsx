@@ -112,7 +112,8 @@ export function CompactAssessmentReport({ result, previous = null, report, local
   const selectedIndex = activeIndex < sections.length ? activeIndex : 0
   const section = sections[selectedIndex]
   const evidence = assessmentEvidenceStatus({ result, section, report, locale })
-  const dimension = section.bandBasis === 'unavailable' ? null : result.dimensions?.find(item => item.key === section.key)
+  const dimension = section.bandBasis === 'unavailable' || !Array.isArray(result?.dimensions)
+    ? null : result.dimensions.find(item => item?.key === section.key)
   const guide = section.bandBasis === 'unavailable' ? null : guideByScale.get(section.key)
   const model = gaugeModel(dimension, result, locale)
   const anchor = model?.currentAnswerBand || null

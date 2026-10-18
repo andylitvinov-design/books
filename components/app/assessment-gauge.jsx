@@ -140,8 +140,10 @@ export function ScoreGauge({ dimension, result = null, locale = 'en', compact = 
 
 export function ScoreTrend({ current, previous, dimensionKey, locale = 'en', compact = false }) {
   const change = gaugeChange(current, previous, dimensionKey)
-  const dimension = current?.dimensions?.find(item => item?.key === dimensionKey)
-  const reading = scoreChangeReading(change, dimension, locale)
+  const dimension = Array.isArray(current?.dimensions)
+    ? current.dimensions.find(item => item?.key === dimensionKey) : null
+  const verifiedOrientation = gaugeModel(dimension, current, locale)?.orientation || 'neutral'
+  const reading = scoreChangeReading(change, dimension, locale, verifiedOrientation)
   const ru = locale === 'ru'
   const shortCaveat = change.state === 'unchanged'
     ? ru ? 'Отдельные ответы могли отличаться' : 'Individual responses may differ'

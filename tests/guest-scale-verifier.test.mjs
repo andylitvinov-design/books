@@ -10,6 +10,8 @@ import * as reportModule from '../lib/assessments/result-report.js'
 import * as gaugeModule from '../lib/assessments/dashboard-gauges.js'
 import * as guideModule from '../lib/assessments/scale-guides.js'
 import * as overviewModule from '../lib/assessments/result-overview.js'
+import * as evidenceModule from '../lib/assessments/assessment-evidence-status.js'
+import * as changeModule from '../lib/assessments/score-change-reading.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-types-original-2026.js'
@@ -49,6 +51,8 @@ const modules = {
   '@/lib/assessments/dashboard-gauges': gaugeModule,
   '@/lib/assessments/scale-guides': guideModule,
   '@/lib/assessments/result-overview': overviewModule,
+  '@/lib/assessments/assessment-evidence-status': evidenceModule,
+  '@/lib/assessments/score-change-reading': changeModule,
   './free-course-banner': { FreeCourseBanner: () => null },
 }
 function compile(name) {
