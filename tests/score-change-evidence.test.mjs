@@ -5,7 +5,7 @@ import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
 import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
-import { gaugeChange } from '../lib/assessments/dashboard-gauges.js'
+import { gaugeChange, gaugeModel } from '../lib/assessments/dashboard-gauges.js'
 
 const withScore = (key, date, value) => {
   const def = getAssessmentDefinition(key, 'v1', 'en')
@@ -23,14 +23,14 @@ test('comparable self-report movements never get a verified improved/worsened st
   const scale = after.dimensions[0].key
   const change = gaugeChange(after,before,scale)
   assert.deepEqual(change,{state:'changed',delta:-25})
-  const reading = scoreChangeReading(change,after.dimensions[0],'ru')
+  const reading = scoreChangeReading(change,after.dimensions[0],'ru',gaugeModel(after.dimensions[0],after,'ru').orientation)
   assert.match(reading.label,/Меньше отмеченных трудностей/)
   assert.match(reading.detail,/не.*доказанным психологическим улучшением/)
   assert.equal(reading.icon,'↓')
   assert.equal(reading.comparable,true)
   const worse = gaugeChange(withScore('cbi-personal','2026-10-16T12:00:00Z',100),before,scale)
   assert.equal(worse.state,'changed')
-  assert.match(scoreChangeReading(worse,after.dimensions[0],'en').label,/More difficulties reported/)
+  assert.match(scoreChangeReading(worse,after.dimensions[0],'en',gaugeModel(after.dimensions[0],after,'en').orientation).label,/More difficulties reported/)
 })
 
 test('resource scores are descriptive and not proven intervention effects', () => {
@@ -39,11 +39,11 @@ test('resource scores are descriptive and not proven intervention effects', () =
   const change=gaugeChange(after,before,'resources.brcs.total')
   assert.equal(change.state,'changed')
   assert.equal(change.delta,9)
-  const en=scoreChangeReading(change,after.dimensions[0],'en')
+  const en=scoreChangeReading(change,after.dimensions[0],'en',gaugeModel(after.dimensions[0],after,'en').orientation)
   assert.match(en.label,/More resources endorsed/)
   assert.match(en.detail,/cannot establish psychological improvement or deterioration/)
   assert.equal(en.icon,'↑')
-  assert.equal(scoreChangeReading({state:'changed',delta:-2},after.dimensions[0],'ru').icon,'↓')
+  assert.equal(scoreChangeReading({state:'changed',delta:-2},after.dimensions[0],'ru','resource').icon,'↓')
 })
 
 test('neutral personality scores show raw increase without ranking the person', () => {
