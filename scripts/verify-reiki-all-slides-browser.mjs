@@ -16,7 +16,7 @@ const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
 assert.equal(expectedSequence.length, 53, "One consecutive course must have 53 screens");
-const milestones = new Set([1,2,4,6,8,13,20,26,34,40,44,45,53]);
+const milestones = new Set([1,2,4,6,8,13,20,25,26,33,34,40,44,45,53]);
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -83,18 +83,28 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
     await expect(page.locator("[data-meditation-voices]")).toBeVisible();
+    await expect(root).toHaveAttribute("data-reiki-reviews", "v4");
+    const portrait = page.locator('[data-energywork-slide-kind="voices"] img[alt]');
+    await expect(portrait).toHaveAttribute("src", /reiki-approved-sunrise-v3\.webp/);
+    await expect(portrait).toHaveJSProperty("complete", true);
+    const loaded = await portrait.evaluate((image) => image.naturalWidth);
+    assert.ok(loaded > 0, where + ": the approved human portrait loads");
     const expectedReviews = id === "ygg-voices" ? 5 : id === "tan-voices" ? 4 : 0;
     const carousel = page.locator("[data-meditation-review-carousel]");
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(2);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('01 / 0' + expectedReviews);
       const first = await carousel.locator("blockquote p").innerText();
       await page.locator("button[data-review-next]").click();
       await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id", id);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesIndex"]')).toHaveText('02 / 0' + expectedReviews);
       assert.notEqual(await carousel.locator("blockquote p").innerText(), first, where + ": Next switches quote in place");
       await page.locator("button[data-review-prev]").click();
       assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
     } else {
       await expect(carousel).toHaveCount(0);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(1);
       await expect(page.locator("button[data-review-next]")).toHaveCount(0);
       await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
     }
