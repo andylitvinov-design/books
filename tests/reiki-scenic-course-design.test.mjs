@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
+import {
+  energyworkSequence, ENERGYWORK_LESSON_STARTS, ENERGYWORK_VERSION,
+  ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
+} from '../data/academy/energywork-ai-schema.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const learner = read('components/energywork-ai-learner.tsx')
@@ -9,34 +12,35 @@ const css = read('components/energywork-ai-learner.module.css')
 const curriculum = read('data/academy/energywork-ai-curriculum.ts')
 const design = read('docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md')
 
-test('approved Reiki design is one scoped immersive theme, not a new course engine', () => {
+test('Approved scenic design is preserved across new unified five-lesson course', () => {
   assert.match(learner, /data-course-theme="reiki-scenic-v1"/)
   assert.match(learner, /data-course-one-screen="v1"/)
   assert.match(css, /REIKI SCENIC COURSE DESIGN V1/)
   assert.match(css, /\.page\[data-course-theme="reiki-scenic-v1"\]/)
   assert.match(css, /course-focus-mountain-boy\.webp/)
   assert.match(design, /Owner approval:.*18 October 2026/)
-  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-17.p0"/)
-  for (const path of ['yggdrasil', 'tantra', 'kundalini']) {
-    assert.equal(energyworkSequence(path).length, 29, path)
-  }
+  assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-18.p1"/)
+  assert.equal(ENERGYWORK_VERSION, '2026-10-18.p1')
+  assert.equal(energyworkSequence().length,45)
+  for(const legacyPath of ['yggdrasil','tantra','kundalini'])
+    assert.deepEqual(energyworkSequence(legacyPath),energyworkSequence())
 })
 
-test('three stage labels reflect actual explicit path rather than saving a visual preview', () => {
-  assert.match(learner, /<nav className=\{styles\.journey\} aria-label=\{t\.journey\}>/)
-  assert.match(learner, /energyworkPathChoices\.map\(\(choice, position\) =>/)
-  assert.match(learner, /aria-current=\{path === choice\.id \? "step" : undefined\}/)
-  assert.match(learner, /!path && position === 0 \? styles\.journeyIntro/)
-  assert.match(learner, /onClick=\{\(\) => choosePath\(choice\.id\)\}/)
-  assert.match(learner, /slide\.kind === "path-choice" && !path/)
+test('Immersive journey dots now follow the actual five lessons, not a path-selection', () => {
+  assert.match(learner, /<nav className=\{styles\.journey\} aria-label=\{t\.fiveLessons\}>/)
+  assert.match(learner, /energyworkLessons\.map\(\(lesson, number\) =>/)
+  assert.match(learner, /aria-current=\{lessonNumber === number \+ 1 \? "step" : undefined\}/)
+  assert.match(learner, /className=\{styles\.journeyDot\}/)
+  assert.doesNotMatch(learner, /onClick=\{\(\) => choosePath\(choice\.id\)\}/)
+  assert.doesNotMatch(learner, /slide\.kind === "path-choice" && !path/)
+  assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])
 })
 
-test('all visual slide kinds use the same scoped glass typography and safe interactions', () => {
-  const kinds = ['welcome', 'lesson', 'video', 'practice', 'reflection', 'path-choice', 'finish']
-  for (const kind of kinds) assert.ok(curriculum.includes('kind: "' + kind + '"'), kind)
-  for (const selector of ['.slide', '.description', '.video', '.pathCard', '.question', '.choice', '.practiceTimer', '.final']) {
-    assert.ok(css.includes('.page[data-course-theme] ' + selector), selector)
-  }
+test('Every type of teaching screen uses existing glass typography and safe controls', () => {
+  const kinds = ['welcome', 'lesson', 'video', 'practice', 'reflection', 'finish']
+  for(const kind of kinds)assert.ok(curriculum.includes('kind: "'+kind+'"'),kind)
+  for(const selector of ['.slide','.description','.video','.question','.choice','.practiceTimer','.final'])
+    assert.ok(css.includes('.page[data-course-theme] '+selector),selector)
   assert.match(learner, /<PracticeTimer key=\{slide\.id\} locale=\{locale\}/)
   assert.match(learner, /<AcademyVideoPlayer/)
   assert.match(learner, /onClick=\{copyNotes\}/)
@@ -45,24 +49,33 @@ test('all visual slide kinds use the same scoped glass typography and safe inter
   assert.doesNotMatch(learner, /(?:localStorage|sessionStorage)\s*[.\[]/)
 })
 
-test('welcome respects all three Level 1 requests and distinguishes studying from initiation', () => {
-  assert.match(learner, /3 possible Level 1 initiations/)
-  assert.match(learner, /3 возможные инициации первой ступени/)
-  assert.match(learner, /finishing the course does not grant it automatically/)
-  assert.match(learner, /завершение курса не заменяет инициацию/)
+test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
+  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
+  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
+  assert.match(learner, /Course completion alone does not grant any initiation/)
   assert.match(learner, /styles\.welcomeReward/)
   assert.match(learner, /styles\.benefits/)
-  for (const name of ['Short lessons', 'Practical tasks', 'Private progress']) {
-    assert.ok(learner.includes(name), name)
-  }
+  for(const name of ['Short lessons','Practical tasks','Private progress'])
+    assert.ok(learner.includes(name),name)
   assert.match(learner, /startFree: "Start free program"/)
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
 
-test('bottom progress and mobile viewport safe area are retained for every slide', () => {
-  const progressPosition = learner.indexOf('className={styles.progressFooter}')
-  assert.ok(progressPosition > learner.indexOf('</section>'))
-  assert.ok(progressPosition < learner.indexOf('className={styles.programme}'))
+test('Course has teacher initiation readiness checklist with five private reports + five answers', () => {
+  assert.equal(ENERGYWORK_REPORT_IDS.length,5)
+  assert.equal(ENERGYWORK_LESSON_ANSWER_IDS.length,5)
+  assert.match(learner, /const initiationReady = readyCount === initiationItems\.length \* 2/)
+  assert.match(learner, /data-initiation-readiness/)
+  assert.match(css, /\.page\[data-course-theme\] \.reviewChecklist/)
+  assert.match(learner, /jumpToSlide\(item\.reportId\)/)
+  assert.match(learner, /jumpToSlide\(item\.questionId\)/)
+  assert.match(learner, /initiationReady \? t\.reviewDone : t\.reviewNeeded/)
+})
+
+test('Bottom progress and mobile viewport safe-area fit remain approved', () => {
+  const position = learner.indexOf('className={styles.progressFooter}')
+  assert.ok(position > learner.indexOf('</section>'))
+  assert.ok(position < learner.indexOf('className={styles.programme}'))
   assert.match(learner, /aria-valuenow=\{index \+ 1\}/)
   assert.match(learner, /t\.completedLabel/)
   assert.match(learner, /className=\{styles\.disclaimer\}/)
@@ -76,7 +89,7 @@ test('bottom progress and mobile viewport safe area are retained for every slide
   assert.match(css, /:focus-visible/)
 })
 
-test('progress privacy and versioned saved answers retain their original contracts', () => {
+test('Private consent and optimistic saving survive the visual design transition', () => {
   assert.match(learner, /action: "start", consent: true/)
   assert.match(learner, /expectedRevision: revisionRef\.current/)
   assert.match(learner, /await store\(nextId\)/)
@@ -85,13 +98,4 @@ test('progress privacy and versioned saved answers retain their original contrac
   assert.match(learner, /t\.consentText/)
   assert.match(learner, /t\.stop/)
   assert.match(learner, /setSaveError\(t\.saveFailed\)/)
-})
-
-test('Reiki-specific clean mobile sunrise artwork is local and shipped without UI text', () => {
-  const image = readFileSync(new URL('../public/images/holistic-house/reiki-practitioner-sunrise.webp', import.meta.url))
-  assert.equal(image.subarray(0, 4).toString('ascii'), 'RIFF')
-  assert.equal(image.subarray(8, 12).toString('ascii'), 'WEBP')
-  assert.ok(image.length > 3000 && image.length < 50000, 'photographic asset should be present and mobile efficient')
-  assert.match(css, /reiki-practitioner-sunrise\.webp/)
-  assert.match(css, /course-focus-mountain-boy\.webp/)
 })

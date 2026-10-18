@@ -9,7 +9,8 @@ import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import {
   ENERGYWORK_COURSE_ID, ENERGYWORK_COURSE_VERSION,
-  energyworkPhases, energyworkPathChoices, energyworkSlides,
+  energyworkPhases, energyworkLessons, energyworkInitiationRequirements,
+  energyworkPathChoices, energyworkSlides,
   type EnergyworkLocale, type EnergyworkPath, type EnergyworkSlide,
 } from "@/data/academy/energywork-ai-curriculum";
 import styles from "./energywork-ai-learner.module.css";
@@ -23,15 +24,15 @@ type StoredProgress = {
 };
 type SyncStatus = "checking" | "guest" | "consent" | "ready" | "unavailable";
 type SaveCommand = {
-  action: "save" | "switch";
+  action: "save";
   version: string; slideId: string; nextSlideId: string;
-  pathId?: EnergyworkPath | null; answer?: string;
+  answer?: string;
 };
 
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
-    journey: "Three Reiki traditions",
+    journey: "Five Reiki lessons",
     lesson: "Lesson",
     completedLabel: "completed",
     startFree: "Start free program",
@@ -42,7 +43,7 @@ const copy = {
     practicalTasksDetail: "Learn at your pace",
     privateProgress: "Private progress",
     privateProgressDetail: "Save by choice",
-    eyebrow: "HOLISTIC HOUSE ACADEMY · FREE REIKI PROGRAM",
+    eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
@@ -61,11 +62,26 @@ const copy = {
     value: "Your choice",
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
-    welcomeOffer: "3 possible Level 1 initiations",
-    welcomeRequirement: "For each system: watch the course videos, complete the tasks and answer the questions.",
-    welcomeTeacher: "When the tasks are complete, you can request each initiation. Andrey conducts it separately by arrangement; finishing the course does not grant it automatically.",
-    pathway: "Choose one system to continue",
-    picked: "Selected",
+    welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
+    welcomeRequirement: "Study all five lessons in order. Observations may be skipped during learning; the reports and answers are needed for personal initiation review.",
+    welcomeTeacher: "A personal initiation is arranged separately with Andrey. Course completion alone does not grant any initiation.",
+    pathway: "All lessons are part of your course",
+    picked: "Completed",
+    fiveLessons: "Five sequential lessons",
+    meditationReport: "Meditation report",
+    lessonQuestion: "Course question",
+    optionalForLearning: "Optional to continue learning. A written answer is required for personal initiation review.",
+    reviewTitle: "Personal initiation readiness",
+    reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
+    reviewDone: "Your five lesson reports and answers are ready to review.",
+    reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
+    reportMissing: "Add report",
+    questionMissing: "Answer question",
+    backToReview: "Return to initiation checklist",
+    reportReady: "Report recorded",
+    questionReady: "Answer recorded",
+    readyCount: "items completed",
+    initiateRequest: "Discuss personal initiation in",
     finish: "Course completed",
     finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
     summary: "Your personal course journal",
@@ -77,7 +93,7 @@ const copy = {
     source: "Explore the original course",
     teacher: "Request teacher-guided Level 1",
     noInitiation: "Studying the material, completing the course or sending a request does not automatically provide initiation.",
-    continuePath: "Continue with the selected path",
+    continuePath: "Continue to the next lesson",
     checking: "Checking saved course…", consentTitle: "Save your learning privately",
     consentText: "I agree to save my course position and optional reflections in my private Holistic House account. I can delete them later; they will not be shared with a teacher automatically.",
     enableSave: "Start & save my course", signIn: "Sign in with Google to save",
@@ -87,14 +103,13 @@ const copy = {
     conflict: "Your course changed in another session. Reload the saved version before continuing.",
     reload: "Reload saved progress", print: "Print / Save PDF",
     resetConfirm: "Delete your saved course progress and reflections? Your other courses and tests will remain.",
-    switchConfirm: "Switching Reiki paths removes reflections from the previous branch. Continue?",
     signupError: "Could not start Google sign-in. Try again from the My Courses cabinet.",
     accountError: "Account needs attention. Open your personal cabinet to complete sign-in and consent.",
     myCourses: "My Courses",
   },
   ru: {
     shortTitle: "Практик Рейки",
-    journey: "Три направления Рейки",
+    journey: "Пять уроков Рейки",
     lesson: "Урок",
     completedLabel: "пройдено",
     startFree: "Начать бесплатный курс",
@@ -105,7 +120,7 @@ const copy = {
     practicalTasksDetail: "В своём темпе",
     privateProgress: "Личный прогресс",
     privateProgressDetail: "По вашему выбору",
-    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · БЕСПЛАТНЫЙ КУРС",
+    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
@@ -124,11 +139,26 @@ const copy = {
     value: "Ваш выбор",
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
-    welcomeOffer: "3 возможные инициации первой ступени",
-    welcomeRequirement: "По каждой системе: посмотрите учебные видео, выполните задания и ответьте на вопросы.",
-    welcomeTeacher: "После выполнения заданий можно запросить каждую инициацию. Андрей проводит её отдельно, по согласованию; завершение курса не заменяет инициацию.",
-    pathway: "Выберите одно направление",
-    picked: "Выбрано",
+    welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
+    welcomeRequirement: "Проходите все пять уроков по очереди. Наблюдения можно пропускать во время обучения, но для заявки на личную инициацию нужны отчёты и ответы.",
+    welcomeTeacher: "Личная инициация проводится отдельно, по договорённости с Андреем. Завершение курса не является инициацией.",
+    pathway: "Все уроки входят в одну программу",
+    picked: "Завершено",
+    fiveLessons: "Пять последовательных уроков",
+    meditationReport: "Отчёт после медитации",
+    lessonQuestion: "Вопрос по уроку",
+    optionalForLearning: "Можно пропустить и продолжить обучение. Письменный ответ нужен для рассмотрения заявки на личную инициацию.",
+    reviewTitle: "Готовность к личной инициации",
+    reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
+    reviewDone: "Отчёты и ответы по пяти урокам готовы к просмотру.",
+    reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
+    reportMissing: "Заполнить отчёт",
+    questionMissing: "Ответить на вопрос",
+    backToReview: "Вернуться к подготовке инициации",
+    reportReady: "Отчёт есть",
+    questionReady: "Ответ есть",
+    readyCount: "пунктов заполнено",
+    initiateRequest: "Обсудить личную инициацию:",
     finish: "Курс завершён",
     finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
     summary: "Ваш личный учебный дневник",
@@ -140,7 +170,7 @@ const copy = {
     source: "Материалы курса",
     teacher: "Запросить 1-ю ступень у преподавателя",
     noInitiation: "Просмотр материалов, окончание курса или отправка заявки не предоставляют инициацию автоматически.",
-    continuePath: "Продолжить выбранный путь",
+    continuePath: "Перейти к следующему уроку",
     checking: "Проверяем сохранённый курс…", consentTitle: "Сохранить обучение приватно",
     consentText: "Я согласен(на) сохранять пройденный слайд и необязательные ответы в личном кабинете Holistic House. Их можно удалить; преподавателю они не передаются автоматически.",
     enableSave: "Начать с сохранением", signIn: "Войти через Google для сохранения",
@@ -150,7 +180,6 @@ const copy = {
     conflict: "Курс изменился в другой вкладке. Загрузите сохранённую версию перед продолжением.",
     reload: "Загрузить прогресс", print: "Печать / Сохранить PDF",
     resetConfirm: "Удалить сохранённый прогресс и ответы этого курса? Остальные курсы и тесты останутся.",
-    switchConfirm: "При смене системы Рейки ответы прошлой ветки будут удалены. Продолжить?",
     signupError: "Не удалось начать вход через Google. Попробуйте через раздел «Мои курсы».",
     accountError: "Завершите вход и согласие в личном кабинете.",
     myCourses: "Мои курсы",
@@ -172,12 +201,10 @@ const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
   },
 };
 
-function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale: EnergyworkLocale, path: EnergyworkPath | null) {
-  const chosen = energyworkPathChoices.find((option) => option.id === path);
+function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale: EnergyworkLocale) {
   const lines = [
     copy[locale].shortTitle,
     "Course: " + ENERGYWORK_COURSE_ID + " · " + ENERGYWORK_COURSE_VERSION,
-    chosen ? chosen.title[locale] : "",
     "",
     ...slides.flatMap((slide) => {
       const answer = answers[slide.id];
@@ -189,7 +216,7 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
   return lines.filter((value) => value !== undefined).join("\n").trim();
 }
 
-function learnerHighlights(answers: AnswerMap, path: EnergyworkPath | null, locale: EnergyworkLocale) {
+function learnerHighlights(answers: AnswerMap, locale: EnergyworkLocale) {
   const highlights: string[] = [];
   const present = (id: string) => answers[id]?.trim();
   const experience = energyworkSlides(null).find((item) => item.id === "welcome-02")
@@ -197,12 +224,6 @@ function learnerHighlights(answers: AnswerMap, path: EnergyworkPath | null, loca
   if (experience) highlights.push(locale === "ru"
     ? "Ваш исходный опыт: " + experience.label.ru + "."
     : "Your starting experience: " + experience.label.en + ".");
-  if (path) {
-    const chosen = energyworkPathChoices.find((item) => item.id === path);
-    if (chosen) highlights.push(locale === "ru"
-      ? "Вы выбрали изучение: " + chosen.title.ru + "."
-      : "You chose to explore: " + chosen.title.en + ".");
-  }
   if (present("intention-03")) highlights.push(locale === "ru"
     ? "Ваше собственное намерение: «" + present("intention-03") + "»."
     : "Your own intention: “" + present("intention-03") + "”.");
@@ -259,8 +280,8 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
 
 export function EnergyworkAiLearner({ locale }: Props) {
   const t = copy[locale];
-  const [path, setPath] = useState<EnergyworkPath | null>(null);
   const [index, setIndex] = useState(0);
+  const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
@@ -271,7 +292,6 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const accountIdRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
-  const savedPathRef = useRef<EnergyworkPath | null>(null);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const dirtyRef = useRef(new Set<string>());
   const progressRef = useRef("welcome-01");
@@ -282,7 +302,6 @@ export function EnergyworkAiLearner({ locale }: Props) {
       }, "POST", { accountId: accountIdRef.current || undefined }) as StoredProgress;
       if (!value.enrolled || !Number.isSafeInteger(value.revision)) throw new Error("INVALID_PROGRESS_RESPONSE");
       revisionRef.current = value.revision!;
-      savedPathRef.current = value.pathId ?? null;
       progressRef.current = value.slideId ?? "welcome-01";
       setSavedAt(value.savedAt || null);
       setSaveError(null);
@@ -294,12 +313,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const hydrate = useCallback((value: StoredProgress) => {
     accountIdRef.current = value.accountId;
     if (!value.enrolled) { setSync("consent"); return; }
-    const restoredPath = value.pathId ?? null;
-    const restored = energyworkSlides(restoredPath);
+    const restored = energyworkSlides();
     revisionRef.current = value.revision ?? 0;
-    savedPathRef.current = restoredPath;
     progressRef.current = value.slideId ?? "welcome-01";
-    setPath(restoredPath);
     const restoredAnswers = value.answers ?? {};
     answersRef.current = restoredAnswers;
     setAnswers(restoredAnswers);
@@ -343,29 +359,25 @@ export function EnergyworkAiLearner({ locale }: Props) {
       setSaveError(t.signupError); setBusy(false);
     }
   }
-  const slides = useMemo(() => energyworkSlides(path), [path]);
+  const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
-  const pathData = energyworkPathChoices.find((option) => option.id === path);
-  const total = energyworkSlides("yggdrasil").length; // All branches have equal length.
+  const total = slides.length;
   const completed = slide.kind === "finish";
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
-  const notes = safePreviewNotes(slides, answers, locale, path);
-  const highlights = learnerHighlights(answers, path, locale);
-  const source = pathData ? "/" + locale + "/academy/" + pathData.studyPath : null;
-  const teacher = pathData ? "/" + locale + "/academy/" + pathData.freePath : null;
+  const notes = safePreviewNotes(slides, answers, locale);
+  const highlights = learnerHighlights(answers, locale);
+  const lessonNumber = slide.phase === "welcome" ? 0 : slide.phase === "complete" ? 5 :
+    Math.max(1, energyworkLessons.findIndex((item) => item.phase === slide.phase) + 1);
+  const initiationItems = energyworkInitiationRequirements.map((item) => ({
+    ...item,
+    title: energyworkLessons.find((lesson) => lesson.phase === item.lesson)?.title[locale] ?? item.lesson,
+    reportDone: Boolean(answers[item.reportId]?.trim()),
+    questionDone: Boolean(answers[item.questionId]?.trim()),
+  }));
+  const readyCount = initiationItems.reduce((count, item) => count + Number(item.reportDone) + Number(item.questionDone), 0);
+  const initiationReady = readyCount === initiationItems.length * 2;
 
-  function choosePath(chosen: EnergyworkPath) {
-    if (busy) return;
-    if (chosen !== path) {
-      const updated = Object.fromEntries(Object.entries(answersRef.current)
-        .filter(([id]) => !/^(ygg|tan|kun|end)-/.test(id)));
-      answersRef.current = updated;
-      setAnswers(updated);
-    }
-    setPath(chosen);
-    setCopyState("idle");
-  }
   function setAnswer(value: string) {
     const updated = { ...answersRef.current, [slide.id]: value };
     answersRef.current = updated;
@@ -375,20 +387,32 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
   async function store(nextSlideId: string) {
     if (sync !== "ready") return;
-    const switching = Boolean(savedPathRef.current && path && savedPathRef.current !== path);
-    if (switching && !window.confirm(t.switchConfirm)) throw new Error("USER_CANCELLED");
     const response = await request({
-      action: switching ? "switch" : "save",
+      action: "save",
       version: ENERGYWORK_COURSE_VERSION,
       slideId: slide.id, nextSlideId,
-      pathId: slide.kind === "path-choice" ? path : savedPathRef.current,
       ...(slide.question ? { answer: answers[slide.id] || "" } : {}),
     });
     dirtyRef.current.delete(slide.id);
     return response;
   }
+  // A learner can revisit a report/question without discarding other lesson answers.
+  async function jumpToSlide(id: string) {
+    if (busy) return;
+    const target = slides.findIndex((item) => item.id === id);
+    if (target < 0) return;
+    if (sync === "ready" && slide.question && dirtyRef.current.has(slide.id)) {
+      setBusy(true);
+      try { await store(slide.id); }
+      catch { setSaveError(t.saveFailed); setBusy(false); return; }
+      setBusy(false);
+    }
+    setReviewReturn(id === "paths-04" ? false :
+      slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
+    setIndex(target);
+  }
   async function next() {
-    if (busy || experienceMissing || (slide.kind === "path-choice" && !path)) return;
+    if (busy || experienceMissing) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -400,7 +424,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
       }
       setBusy(false);
     }
-    setIndex((current) => Math.min(current + 1, energyworkSlides(path).length - 1));
+    setIndex((current) => Math.min(current + 1, slides.length - 1));
   }
   async function previous() {
     if (index === 0 || busy) return;
@@ -426,17 +450,17 @@ export function EnergyworkAiLearner({ locale }: Props) {
       setBusy(false);
     }
     answersRef.current = {};
-    setIndex(0); setPath(null); setAnswers({}); setCopyState("idle");
+    setIndex(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
     dirtyRef.current.clear();
   }
   // A brief debounce preserves reflections while users type; queued writes and
   // revision checks prevent racing a Next button or concurrent browser tab.
   useEffect(() => {
     if (sync !== "ready" || !slide.question || !dirtyRef.current.has(slide.id)) return;
-    const id = slide.id, value = answers[id] ?? "", remotePath = savedPathRef.current;
+    const id = slide.id, value = answers[id] ?? "";
     const timer = window.setTimeout(() => {
       void request({action:"save",version:ENERGYWORK_COURSE_VERSION,
-        slideId:id,nextSlideId:id,pathId:remotePath,answer:value})
+        slideId:id,nextSlideId:id,answer:value})
         .then(() => {
           if (value === (answersRef.current[id] ?? "")) dirtyRef.current.delete(id);
         })
@@ -475,14 +499,17 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
         </header>
 
-        <nav className={styles.journey} aria-label={t.journey}>
+        <nav className={styles.journey} aria-label={t.fiveLessons}>
           <ol>
-            {energyworkPathChoices.map((choice, position) => (
-              <li key={choice.id}
-                className={path === choice.id ? styles.journeySelected : (!path && position === 0 ? styles.journeyIntro : "")}
-                aria-current={path === choice.id ? "step" : undefined}>
-                <span className={styles.journeyDot} aria-hidden="true">{position + 1}</span>
-                <span className={styles.journeyLabel}>{choice.title[locale]}</span>
+            {energyworkLessons.map((lesson, number) => (
+              <li key={lesson.phase}
+                className={lessonNumber === number + 1 ? styles.journeySelected :
+                  lessonNumber > number + 1 ? styles.journeyIntro : ""}
+                aria-current={lessonNumber === number + 1 ? "step" : undefined}>
+                <span className={styles.journeyDot} aria-hidden="true">
+                  {lessonNumber > number + 1 ? <Check size={16} /> : number + 1}
+                </span>
+                <span className={styles.journeyLabel}>{lesson.title[locale]}</span>
               </li>
             ))}
           </ol>
@@ -516,23 +543,38 @@ export function EnergyworkAiLearner({ locale }: Props) {
               ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
-              {slide.kind === "path-choice" ? (
-                <div className={styles.pathGrid} role="group" aria-label={t.pathway}>
-                  {energyworkPathChoices.map((choice) => (
-                    <button key={choice.id} type="button"
-                      className={styles.pathCard + (path === choice.id ? " " + styles.pathSelected : "")}
-                      onClick={() => choosePath(choice.id)} aria-pressed={path === choice.id} data-learning-path={choice.id}>
-                      <span className={styles.pathImage}><Image src={choice.image} alt="" fill sizes="(max-width: 650px) 96px, 140px" /></span>
-                      <span><strong>{choice.title[locale]}</strong><small>{choice.description[locale]}</small></span>
-                      {path === choice.id ? <Check size={22} aria-label={t.picked} /> : <ArrowRight size={20} aria-hidden="true" />}
-                    </button>
-                  ))}
+              {slide.id === "paths-04" ? (
+                <div className={styles.reviewChecklist} data-initiation-readiness>
+                  <h2>{t.reviewTitle} · {readyCount}/10</h2>
+                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
+                  <div className={styles.reviewRows}>
+                    {initiationItems.map((item) => (
+                      <div className={styles.reviewRow} key={item.lesson}>
+                        <strong>{item.title}</strong>
+                        <div>
+                          <button type="button" onClick={() => jumpToSlide(item.reportId)}
+                            className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
+                            {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
+                            {item.reportDone ? t.reportReady : t.reportMissing}
+                          </button>
+                          <button type="button" onClick={() => jumpToSlide(item.questionId)}
+                            className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
+                            {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
+                            {item.questionDone ? t.questionReady : t.questionMissing}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                 </div>
               ) : null}
 
               {slide.question ? (
                 <div className={styles.question}>
-                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge : t.optional}</span>
+                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
+                     initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
+                     initiationItems.some((item) => item.questionId === slide.id) ? t.lessonQuestion : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -568,7 +610,12 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote : t.blank}</p>
+                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote :
+                    initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
+                    ? t.optionalForLearning : t.blank}</p>
+                  {reviewReturn && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
+                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
+                      disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
               ) : null}
 
@@ -588,9 +635,42 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
                   <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
                   {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
-                  {source ? <Link className={styles.textLink} href={source}>{t.source}<ArrowRight size={16} /></Link> : null}
-                  {teacher ? <Link className={styles.teacherLink} href={teacher}>{t.teacher}<ArrowRight size={16} /></Link> : null}
+                  <h2>{t.reviewTitle} · {readyCount}/10 {t.readyCount}</h2>
+                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
+                  {!initiationReady ? (
+                    <div className={styles.reviewRows}>
+                      {initiationItems.map((item) => (
+                        <div className={styles.reviewRow} key={item.lesson}>
+                          <strong>{item.title}</strong>
+                          <div>
+                            {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
+                            {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.questionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
+                            {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.initiationLinks}>
+                      {energyworkPathChoices.map((choice) => (
+                        <Link key={choice.id} className={styles.teacherLink}
+                          href={"/" + locale + "/academy/" + choice.freePath}>
+                          {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
+                  <h2>{t.source}</h2>
+                  <div className={styles.initiationLinks}>
+                    {energyworkPathChoices.map((choice) => (
+                      <Link key={choice.id} className={styles.textLink}
+                        href={"/" + locale + "/academy/" + choice.studyPath}>
+                        {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                      </Link>
+                    ))}
+                  </div>
                   <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
                 </div>
               ) : null}
@@ -607,6 +687,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
             ) : null}
           </div>
         </section>
+
         <div className={styles.progressFooter}>
           <div className={styles.progressHeader}>
             <span>{t.lesson} {index + 1} {t.of} {total}</span>
@@ -620,8 +701,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
         <details className={styles.programme}>
           <summary>{t.program}</summary>
-          <ol>{Object.entries(energyworkPhases).map(([key, title]) => (
-            <li key={key} aria-current={key === slide.phase ? "step" : undefined}>{title[locale]}</li>
+          <ol>{energyworkLessons.map((lesson) => (
+            <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
           ))}</ol>
         </details>
         <aside className={styles.preview} aria-live="polite">
@@ -662,8 +743,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
-                {slide.kind === "welcome" ? t.startFree : slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing} className={styles.next} data-energywork-next>
+                {slide.kind === "welcome" ? t.startFree : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
