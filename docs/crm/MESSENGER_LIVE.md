@@ -22,8 +22,8 @@ Shared Meta: `HH_CRM_MSG_META_APP_SECRET`, `HH_CRM_MSG_META_VERIFY_TOKEN`, `HH_C
 The Instagram/Messenger Graph API endpoints and permissions vary according to Meta login flow/app product. Before activation confirm current provider API workflow for the exact owned professional account/Page; failing API calls are recorded failed/unknown, not silently declared delivered. Meta WhatsApp policies can restrict health-related businesses/contents; complete eligibility review. For Messenger and Instagram, customer-initiated conversation is required. Official Bot API users must initiate conversation. Telegram delivers no true read receipt.
 
 ## 3. Schema migrations & authorization
-- `20261018230500_hh_crm_messenger_core.sql`
-- `20261018230600_hh_crm_messenger_reply_thread_grant.sql`
+- `20261018185711_hh_crm_messenger_core_20261018.sql`
+- `20261018190505_hh_crm_messenger_reply_thread_grant_20261018.sql`
 Both require security, compatibility and RLS verification in Supabase. Existing email/contact schemas remain unchanged. Existing `crm_contacts` accepts incoming chat-only leads through the approved narrow webhook DB function with `email:''` but email verification/sending still fails closed.
 The webhooks use a provider-verified signature/secret **before** any DB call; the restricted hh_app_inbox role can invoke narrow `app_private.crm_msg_resolve`, `crm_msg_ingest`, `crm_msg_receipt` functions. Owner UI requests use existing authenticated `hh_crm_backend` + account-active verification.
 
