@@ -258,6 +258,17 @@ export function CompactAssessmentReport({ result, previous = null, report, local
           </ol>
         </details>}
         <p className={styles.rangeCaveat} data-range-evidence-status>{rangeReading.caution}</p>
+        {rangeReading.sourceQuestions?.length > 0 && <details className={styles.rangeDescriptions}
+          data-author-cluster-source-items>
+          <summary>{ru ? 'Какие вопросы входят в эту шкалу' : 'Which questions contribute to this scale'}
+            {' · '}{rangeReading.sourceQuestions.length}</summary>
+          <p data-author-cluster-scoring>{rangeReading.scoringNote}</p>
+          <ol className={styles.rangeDetailsList} data-author-cluster-items>
+            {rangeReading.sourceQuestions.map(question => <li key={question.id}>
+              {question.text}
+            </li>)}
+          </ol>
+        </details>}
       </section>}
       {!rangeReading && model?.bands?.length > 0 && <div className={styles.bandStrip} data-score-band-strip
         aria-label={ru ? 'Диапазоны скрининга и ваш результат' : 'Screening intervals and your result'}>

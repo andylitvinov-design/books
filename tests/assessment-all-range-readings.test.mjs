@@ -40,7 +40,16 @@ test('every immutable numeric score has one honest readable interval and a selec
         row.code && row.label && row.displayRange && row.note.length >= 45),
       context + ' every range explained')
       assert.equal(reading.rows.find(row => row.current)?.code, reading.current.code)
-      if (reading.kind === 'published') {
+      if (reading.clusterBasis) {
+        assert.ok(definition.key.startsWith('hh-'), context + ' author-only scoring')
+        assert.ok(['source-answer-anchors','attainable-score-positions'].includes(reading.clusterBasis), context)
+        assert.ok(reading.sourceQuestions?.length > 0, context + ' subscale source items')
+        assert.equal(reading.rows[0].from, dimension.min, context)
+        assert.equal(reading.rows.at(-1).to, dimension.max, context)
+        assert.ok(reading.scoringNote?.length > 50, context)
+        assert.equal(model.bands.length, 0, context + ' no invented clinical sectors')
+        assert.ok(reading.rows.length >= 2 && reading.rows.length <= 7, context)
+      } else if (reading.kind === 'published') {
         assert.equal(reading.rows.length, model.bands.length, context)
         assert.deepEqual(reading.rows.map(row => row.code), model.bands.map(row => row.code))
       } else if (reading.kind === 'source-options') {
@@ -115,8 +124,10 @@ test('personality typologies expose response-linked traits without asserting a f
       for(const dimension of result.dimensions){
         const reading=gaugeModel(dimension,result,locale).rangeReading
         assert.ok(reading.trait,key+'/'+dimension.key)
-        assert.equal(reading.kind,'descriptive')
+        assert.equal(reading.kind,'source-options')
+        assert.equal(reading.clusterBasis,'source-answer-anchors')
         assert.equal(reading.rows.length,5)
+        assert.ok(reading.sourceQuestions?.length > 0)
         assert.ok(reading.contextual?.length > 90,key+'/'+dimension.key)
         assert.ok(reading.directionNote.includes(locale==='ru'?'личност':'personality'))
       }

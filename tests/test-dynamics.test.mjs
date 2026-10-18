@@ -123,3 +123,20 @@ test('unverified saved history is labelled and cannot masquerade as a validated 
   assert.match(page, /data-dynamics-unverified-history/)
   assert.match(page, /не считаются подтверждёнными психологическими измерениями/)
 })
+
+test('Results dynamics reuses the exact authored subscale intervals from full reports', () => {
+  const definition = getAssessmentDefinition('hh-money-pressure','v2','ru')
+  const answers = Object.fromEntries(definition.questions.map((q,i) =>
+    [q.id, i===0 ? 3 : i===1 ? 2 : i===2 ? 1 : 2]))
+  const result = scoreAssessment(definition,answers)
+  for (const dimension of result.dimensions) {
+    const active = visibleTestDynamicsBand(dimension,result,'ru')
+    assert.equal(active.kind,'answers')
+    assert.equal(active.current.code,'hh-score-cluster-3')
+    assert.deepEqual([active.current.from,active.current.to],[1.67,2.33])
+    assert.equal(active.others.length,4)
+    assert.equal(active.others[0].displayRange,'0–0,33')
+    assert.match(active.current.note,/среднему ответу/)
+    assert.match(active.caveat,/не медицинские нормы/)
+  }
+})
