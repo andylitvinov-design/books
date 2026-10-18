@@ -39,12 +39,15 @@ test("the Services video gallery is expanded by default after booking and testim
   assert.match(browser, /getAttribute\('open'\) === null/);
 });
 
-test("Services cards offer direct one-tap media source without breaking the small photo-left layout", () => {
+test("Services cards keep exact method media accessible on-page with transcript if the HeyGen player fails", () => {
   const cards = read("components/services-solutions.tsx");
   const css = read("components/services-solutions.module.css");
   assert.match(cards, /getServiceVideoWatchUrl\(offer\.id, locale\)/);
   assert.match(cards, /data-service-card-video=\{offer\.id\}/);
-  assert.match(cards, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(cards, /locale === "ru" \? getServiceVideoWatchUrl\(offer\.id, locale\) :/);
+  assert.match(cards, /\$\{offer\.href\}#service-video/);
+  assert.match(cards, /Video & transcript/);
+  assert.match(cards, /target=\{locale === "ru" \? "_blank" : undefined\}/);
   assert.match(cards, /isHome \? homepageMedia\[offer\.id\] : offer\.image/);
   assert.match(css, /\.cardVideo/);
   assert.match(css, /\.card\{position:relative/);
