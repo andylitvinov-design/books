@@ -452,6 +452,7 @@
 .compactTests{max-width:760px;gap:8px;padding:14px 16px!important}
 .baselineHero{display:grid;gap:6px;padding:12px 14px;border:1px solid #c8e6e9;
   border-radius:15px;background:linear-gradient(125deg,#f3fdfe,#eaf9fa 72%,#f9fffc);min-width:0}
+.baselineHero .compactEyebrow{margin:0!important}
 .baselineHero h2{font:500 clamp(23px,3.7vw,29px)/1.12 Georgia,serif;
   color:#143f5c;letter-spacing:-.02em;margin:0}
 .baselineHero .compactLead{font-size:12.5px;line-height:1.33;color:#486e80;margin:0}
