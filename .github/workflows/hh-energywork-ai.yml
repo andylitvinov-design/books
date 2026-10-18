@@ -12,6 +12,9 @@ on:
       - 'app/api/app/\[...path\]/route.js'
       - 'app/\[locale\]/academy/\[\[...slug\]\]/page.tsx'
       - 'tests/energywork-ai-course-*.test.mjs'
+      - 'tests/reiki-scenic-course-design.test.mjs'
+      - 'docs/design/REIKI_PRACTITIONER_SCENIC_V1_APPROVED.md'
+      - 'public/images/holistic-house/reiki-practitioner-sunrise.webp'
       - 'supabase/migrations/20261017181000_hh_academy_energywork_progress.sql'
       - '.github/workflows/hh-energywork-ai.yml'
   workflow_dispatch:
@@ -32,7 +35,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Source, media, security and route contracts
-        run: node --test tests/energywork-ai-course-preview.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs
+        run: node --test tests/energywork-ai-course-preview.test.mjs tests/reiki-scenic-course-design.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs
       - name: Targeted ESLint
         run: npx eslint components/energywork-ai-learner.tsx components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js
       - name: TypeScript verification

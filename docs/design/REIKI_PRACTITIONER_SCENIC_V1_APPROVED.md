@@ -15,7 +15,7 @@
 - A slim teal progress bar with precise “Lesson N of 29 / P% completed”, near the primary CTA.
 - An extra-large cyan-to-turquoise **Start free program / Continue** action at the bottom, with a distinct back action only when relevant. Below: compact “Explore the programme” and private-save disclosure; tiny safety disclaimer.
 - The font and spacing match the existing course system's premium calm aesthetic without borrowing proprietary Duolingo graphics.
-- The owner-approved mockup shows a meditating person at sunrise. The current implementation uses the **existing local photograph** `/images/holistic-house/course-focus-mountain-boy.webp` plus gradients so it can ship without an external photo dependency. A final owned Reiki-specific photographic asset may later replace this single background URL; do not upload the mockup *with UI text* as a background.
+- The owner-approved mockup shows a meditating person at sunrise. The mobile screen now uses the **dedicated clean Reiki sunrise photo** `/images/holistic-house/reiki-practitioner-sunrise.webp`, cropped from the owner-approved AI visual without any interface text. The desktop presentation retains the existing local scenic photo `/images/holistic-house/course-focus-mountain-boy.webp` to avoid upscaling the small mobile-optimized image. Both backgrounds are local, with deep teal/navy gradients; no remote photo dependency or flattened UI mockup is loaded.
 
 ## Apply to **all 29 steps**, not just the welcome card
 
