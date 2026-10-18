@@ -33,6 +33,19 @@ export function getSitemapEntries(baseUrl) {
         'x-default': at(base, `/en/books/${book.id}`),
       } },
     })))
+  // This public, editorial-only test catalogue entry is distinct from the
+  // noindex/robots-blocked interactive /client/tests explorer and private reports.
+  const publicTestLanguages = Object.fromEntries(
+    bookLocales.map(locale => [locale, at(base, `/${locale}/tests`)]),
+  )
+  publicTestLanguages['x-default'] = publicTestLanguages.en
+  const publicTestEntries = bookLocales.map(locale => ({
+    url: publicTestLanguages[locale],
+    lastModified: new Date('2026-10-18T00:00:00.000Z'),
+    changeFrequency: 'monthly',
+    priority: 0.8,
+    alternates: { languages: { ...publicTestLanguages } },
+  }))
   const homeopathyIndexes = ['/ru/homeopathy', '/en/homeopathy', '/ru/homeopathy/remedies', '/en/homeopathy/remedies']
     .map((pathname) => localizedEntry(base, pathname))
   const servicesIndexes = ['/ru/services', '/en/services'].map((pathname) => localizedEntry(base, pathname))
@@ -43,7 +56,7 @@ export function getSitemapEntries(baseUrl) {
   return [
     { url: at(base, '/'), changeFrequency: 'weekly', priority: 1, alternates: { languages: homepageLanguages } },
     { url: at(base, '/ru'), changeFrequency: 'weekly', priority: 1, alternates: { languages: homepageLanguages } },
-    { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...homeopathyIndexes, ...servicesIndexes, ...remedyEntries]
+    { url: at(base, '/books'), changeFrequency: 'monthly', priority: 0.8 }, ...booksEntries, ...publicTestEntries, ...homeopathyIndexes, ...servicesIndexes, ...remedyEntries]
 }
 
 export function getRobotsPolicy(baseUrl) {
