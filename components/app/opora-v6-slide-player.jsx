@@ -2,8 +2,8 @@
 
 import {useEffect,useMemo,useRef,useState} from 'react'
 import {
-  ArrowLeft,ArrowRight,BookOpen,Check,CheckCircle2,ChevronDown,
-  Heart,Leaf,Lightbulb,Pause,RotateCcw,ShieldCheck,Sparkles,X,
+  ArrowLeft,ArrowRight,Check,CheckCircle2,ChevronDown,
+  Lightbulb,Pause,ShieldCheck,X,
 } from 'lucide-react'
 import {buildCourseSlides} from '@/lib/inner-growth/course-slide-sequence'
 import {OPORA54_PRE_SAVE_KEYS,validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
@@ -196,7 +196,13 @@ const ROLE_OPTIONS={
 }
 const HINT_KINDS=new Set(['demo','notice','act','rehearse','scenario'])
 const PRACTICE_KINDS=new Set(['notice','act','rehearse'])
-const SCENES=[Heart,Leaf,ShieldCheck,BookOpen,Lightbulb,Sparkles]
+// Reuse approved, locally hosted photographs. Every authored screen and the
+// completion receipt has a photographic anchor; no network image service is used.
+const OPORA_SCREEN_PHOTOS=Object.freeze([
+  {src:'/images/holistic-house/course-focus-mountain-boy.webp',position:'center 45%'},
+  {src:'/images/holistic-house/course-start-heron.webp',position:'center 48%'},
+  {src:'/images/holistic-house/reiki-practitioner-sunrise.webp',position:'center 42%'},
+])
 // A personal learning receipt must be built ONLY from explicit answers.
 // A chosen exercise is not an attempt; a future plan is not a completed action.
 function oporaLearningReceipt(answers,authored,lang,ease){
@@ -264,7 +270,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const activeActivity=choiceField?authored?.exercises?.[role]||null:null
   const picked=choiceField?answers[choiceField]||null:null
   const chosenActivityIndex=picked?['one','two','three'].indexOf(picked):-1
-  const Icon=SCENES[step%SCENES.length]
+  const photo=OPORA_SCREEN_PHOTOS[(step+Math.max(0,Number(cycle.day||1)-1))%OPORA_SCREEN_PHOTOS.length]
   useEffect(()=>{
     if(slide?.key)visited.current.add(slide.key)
     scroller.current?.scrollTo?.({top:0,behavior:'instant'})
@@ -414,7 +420,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
-    data-opora-as54-player={versionTag} data-course-one-screen="v2">
+    data-opora-as54-player={versionTag} data-course-one-screen="v2" data-course-photo-layout="v1">
     <div className={styles.frame} data-scene-role={afterSave?'complete':(role||'welcome')}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <div className={styles.scenicBackdrop} aria-hidden="true" data-opora-lesson-photo>
@@ -436,11 +442,18 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
           <Pause size={16}/><span>{t.pause}</span>
         </button>
       </header>
-      <main className={styles.scroll} ref={scroller}>
+      <main className={styles.scroll} ref={scroller} data-slide-kind={afterSave?'receipt':role}>
         <section className={styles.card} aria-live="off">
-          <div className={styles.heroIcon} aria-hidden="true"><Icon size={21} strokeWidth={1.8}/></div>
-          <span className={styles.eyebrow}>{t.map} · {lesson.antiStress?.skillId}</span>
-          <h2 className={styles.title} tabIndex={-1} ref={heading}>{afterSave?t.saved:slide?.title}</h2>
+          <div className={styles.slideIntro}>
+            <div className={styles.heroPhoto} data-opora-slide-photo data-photo-kind={afterSave?'receipt':role} aria-hidden="true">
+              <img src={photo.src} alt="" width={705} height={411}
+                style={{objectPosition:photo.position}} loading={step<2?'eager':'lazy'} decoding="async"/>
+            </div>
+            <div className={styles.introCopy}>
+              <span className={styles.eyebrow}>{t.map} · {lesson.antiStress?.skillId}</span>
+              <h2 className={styles.title} tabIndex={-1} ref={heading}>{afterSave?t.saved:slide?.title}</h2>
+            </div>
+          </div>
           {afterSave?<>
             <p className={styles.prompt}>{t.reward}</p>
             <section className={styles.result} data-opora-real-choice-summary>
@@ -479,7 +492,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               </div>:null}
             {role==='save'&&<section className={styles.result} data-opora-save-preview>
               <strong>{t.review}</strong>
-              <p>{authored?.screens?.[13]?.text}</p>
+              {/* The slide prompt above already contains the full instruction. */}
               {receiptRows.length?receiptRows.map(row=><div key={row.key} className={styles.receiptRow}>
                 <span>{row.label}</span><p>{row.value}</p>
               </div>):<small>{t.notCompleted}</small>}
@@ -487,7 +500,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 ?(lang==='ru'?'Мнение об афоризме сохраняется отдельно от попытки.':'Your opinion of the aphorism is separate from your practice attempt.')
                 :t.without}</small>
             </section>}
-            {activityOptions.length>0&&<>
+            {activityOptions.length>0&&!picked&&<>
               <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q
                 :role==='transfer'?
                   (lang==='ru'?'Какую поддержку вам было бы удобно сохранить как возможный план?':
@@ -505,7 +518,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               </div>
             </>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
-              <div className={styles.options} role="group" aria-label={choiceField&&!picked
+              <div className={[styles.options,optionsAvailable.length>=4?styles.choiceGrid:''].filter(Boolean).join(' ')} role="group" aria-label={choiceField&&!picked
                 ?(role==='notice'?activeActivity?.q:slide?.text)
                 :role==='aphorism'?t.aphorism:role==='scenario'?t.case:role==='demo'?t.example:PRACTICE_KINDS.has(role)?t.realAttempt:t.comfort}>
                 {optionsAvailable.map(option=><button type="button" key={option.value} disabled={locked}
