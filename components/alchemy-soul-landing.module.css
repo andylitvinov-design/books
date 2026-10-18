@@ -266,3 +266,15 @@
 .wisePaymentCta:hover{text-decoration:underline;text-underline-offset:3px}
 .wisePaymentCta:focus-visible{outline:3px solid #8a632c;outline-offset:3px}
 .wisePayment small{max-width:510px;color:#4e737c;font-size:12px;line-height:1.5}
+
+/* Conversion clarity: prices and confirmation boundaries next to first action. */
+.heroPricing{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.heroPricing span{display:inline-flex;align-items:center;min-height:34px;padding:6px 12px;border:1px solid rgba(219,255,249,.46);border-radius:100px;background:rgba(242,255,252,.12);color:#fffdf2;font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.heroRequestNote{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 15px;margin-top:11px;color:#d0eeea;font:12px/1.5 Arial,Helvetica,sans-serif}
+.heroRequestNote a{display:inline-flex;align-items:center;gap:6px;color:#ffe4af;text-decoration:underline;text-underline-offset:4px;font-weight:800}
+.heroRequestNote a:focus-visible{outline:3px solid #ffd5a4;outline-offset:3px}
+@media(max-width:680px){
+  .heroPricing{gap:6px;margin-top:11px}
+  .heroPricing span{padding:6px 9px;font-size:11px;min-height:30px}
+  .heroRequestNote{font-size:11px;line-height:1.42;margin-top:9px}
+}

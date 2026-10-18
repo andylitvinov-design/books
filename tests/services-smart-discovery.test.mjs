@@ -224,8 +224,9 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(ui.includes('className={styles.editorialChannels}'))
   assert.ok(ui.includes('id={"hh-listing-details-"+service.id}'))
   assert.ok(ui.includes('service.copy.description || service.copy.shortDescription'))
-  assert.ok(ui.includes('href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}'))
-  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+locale+"/app/consultations?service="+encodeURIComponent(service.id)}>{t.order}</TrackedServiceLink>'
+  assert.ok(ui.includes('href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)}'))
+  assert.ok(ui.includes('El formulario de solicitud se abre en inglés; se conserva el servicio elegido.'))
+  const requestLink='<TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>'
   const detailsToggle='<button type="button" className={styles.suggestionDetailsToggle}'
   const assertActionOrder=source=>{
     const requestIndex=source.indexOf(requestLink)
