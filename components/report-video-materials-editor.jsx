@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import {prepareReportSession} from '@/lib/consultations/owner-report-sharing'
 import {BookOpen,FolderOpen,RefreshCw,ShieldCheck} from 'lucide-react'
 import {SessionMaterialPicker} from './session-material-picker'
+import {SessionSaveFooterVideo} from './session-save-footer-video'
 import {SessionAudioRecorder} from './session-audio-recorder'
 import styles from './client-session.module.css'
 
@@ -132,6 +133,7 @@ export function ReportVideoMaterialsEditor({clientId,documentId,sourceConsultati
     {loading?<p role="status">{ru?'Загружаем выбор материалов…':'Loading selected materials…'}</p>:
       <SessionMaterialPicker locale={locale} selectedIds={selectedIds}
         disabled={busy} onChange={ids=>void saveSelectedMaterials(ids)}/>}
+    {sessionId&&<SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>}
     {legacyCount>0&&<p className={styles.ownerMaterialsMuted}>{ru?
       'Уже добавленные к этой консультации личные записи и старые ссылки сохранены. Они не становятся общими материалами.':
       'Existing personal recordings and legacy links remain in this consultation. They are not part of the shared library.'}</p>}
