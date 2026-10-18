@@ -117,7 +117,9 @@ export default async function TantraReikiPromo({params}:Props){
         <section className={styles.hero} aria-labelledby="tantra-promo-title">
           <div className={styles.imageWrap} aria-hidden="true">
             <Image src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt="" fill priority unoptimized sizes="(max-width:760px) 100vw, 46vw" className={styles.image}/>
-            <span className={styles.halo}/><span className={styles.artCaption}>{t.art}</span>
+            <span className={styles.halo}/>
+            <span className={styles.yinYangMark}><Image src="/images/holistic-house/tantra-reiki-yin-yang-mark.svg" width={96} height={96} alt="" unoptimized/></span>
+            <span className={styles.artCaption}>{t.art}</span>
           </div>
           <div className={styles.heroCopy}>
             <span className={styles.badge}><Sparkles size={15} aria-hidden="true"/>{t.badge}</span>
