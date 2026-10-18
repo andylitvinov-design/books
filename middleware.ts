@@ -144,11 +144,9 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('Content-Security-Policy', csp)
   // Fixed legacy archive redirects must finish before any streamed document.
   // Apply the same private no-store, nonce CSP and referrer headers below.
-  const archiveTarget = cabinetArchiveRedirect(request.url, request.method)
+  const archiveTarget = cabinetArchiveRedirect(request.url, request.method, request.headers.get('host'))
   const response = archiveTarget ? NextResponse.redirect(archiveTarget, 307)
     : NextResponse.next({ request: { headers: requestHeaders } })
-  // Relative Location preserves the requesting host even behind a dev/proxy host rewrite.
-  if (archiveTarget) response.headers.set('Location', archiveTarget.pathname + archiveTarget.hash)
   response.headers.set('Content-Security-Policy', csp)
   if (privatePath(request.nextUrl.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')

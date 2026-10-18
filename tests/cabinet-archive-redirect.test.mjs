@@ -31,7 +31,7 @@ test('actual middleware redirects before rendering and retains every private res
     const url='https://house.example/'+locale+'/app/analysis?next=https://evil.invalid'
     const result=middleware({url,method,nextUrl:new URL(url),headers:new Headers(),cookies:{get:()=>undefined}})
     assert.equal(result.status,307)
-    assert.equal(result.headers.get('location'),'/'+locale+'/app/portrait#personal-reports')
+    assert.equal(result.headers.get('location'),'https://house.example/'+locale+'/app/portrait#personal-reports')
     assert.match(result.headers.get('cache-control'),/private, no-store/)
     assert.equal(result.headers.get('referrer-policy'),'no-referrer')
     assert.equal(result.headers.get('x-frame-options'),'DENY')
@@ -40,4 +40,11 @@ test('actual middleware redirects before rendering and retains every private res
     assert.match(result.headers.get('content-security-policy'),/frame-src 'none'/)
     assert.match(result.headers.get('content-security-policy'),/connect-src 'self';/)
   }
+})
+
+test('only exact normalized loopback host and port are restored, arbitrary hosts are ignored',()=>{
+ assert.equal(cabinetArchiveRedirect('http://localhost:3100/en/app/analysis','GET','127.0.0.1:3100').href,'http://127.0.0.1:3100/en/app/portrait#personal-reports')
+ for(const host of ['evil.invalid','127.0.0.1:9999','evil.invalid@127.0.0.1:3100','127.0.0.1:3100/evil'])
+  assert.equal(cabinetArchiveRedirect('http://localhost:3100/en/app/analysis','GET',host).origin,'http://localhost:3100')
+ assert.equal(cabinetArchiveRedirect('https://house.example/en/app/analysis','GET','evil.invalid').origin,'https://house.example')
 })
