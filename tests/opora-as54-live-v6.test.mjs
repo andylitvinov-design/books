@@ -7,6 +7,8 @@ import {
   opora54Day,opora54SkillCards,opora54BlueprintValid,validateOpora54Signals,
 } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {COURSE_ANTISTRESS_SKILLS_V5,OPORA_SKILL_SLIDE_MODEL} from '../lib/inner-growth/anti-stress-skills-v5.js'
+import {oporaCompactDay,oporaCompactPassportValid} from '../lib/inner-growth/opora-compact-copy-v6.js'
+import {oporaNoticeActivity,oporaNoticeCatalogValid} from '../lib/inner-growth/opora-v6-exercise-cards.js'
 import {COURSE_ANTISTRESS_OUTCOME_V3,lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -16,6 +18,8 @@ test('fourteen bilingual V6 lessons contain the fifteen visible steps and distin
  assert.equal(OPORA54_SLIDE_MODEL,'opora-fifteen-screens-v1')
  assert.equal(OPORA54_PRE_SAVE_KEYS.length,14)
  assert.equal(opora54BlueprintValid(),true)
+ assert.equal(oporaCompactPassportValid(),true)
+ assert.equal(oporaNoticeCatalogValid(),true)
  for(const lang of ['ru','en']){
    const cards=opora54SkillCards(lang)
    assert.deepEqual(cards.map(x=>x.days),[[1,8],[2,9],[3,10],[4,11],[5,12],[6,13],[7,14]])
@@ -28,6 +32,11 @@ test('fourteen bilingual V6 lessons contain the fifteen visible steps and distin
      assert.match(lesson.id,/hh-antistress-skills-v6-20261017/)
      assert.equal(lesson.aphorism,v.quote)
      assert.equal(lesson.opora54.scenario.choices.length,3)
+     assert.equal(lesson.opora54.exercises.notice.a.length,3)
+     assert.equal(lesson.opora54.exercises.notice.f.length,3)
+     assert.equal(lesson.opora54.exercises.act.choices.length,3)
+     assert.equal(oporaNoticeActivity(day,lang)?.a.length,3)
+     assert.ok(['S1','S2','S3','S4','S5','S6','S7'].includes('S'+((day-1)%7+1)))
      assert.ok(lesson.opora54.scenario.choices.every(x=>x.length>10))
      const slides=buildCourseSlides(lesson)
      assert.deepEqual(slides.map(s=>s.key),OPORA54_PRE_SAVE_KEYS)
@@ -38,6 +47,15 @@ test('fourteen bilingual V6 lessons contain the fifteen visible steps and distin
        assert.doesNotMatch(v.quote,/[А-Яа-яЁё]/)
        assert.doesNotMatch(v.scenario.prompt,/[А-Яа-яЁё]/)
      }
+   }
+ }
+ for(const lang of ['ru','en']){
+   for(let day=1;day<=14;day++){
+     const copy=oporaCompactDay(day,lang)
+     assert.equal(copy.choices.length,3)
+     const lesson=opora54Day(day,lang)
+     const maxSlide=Math.max(...lesson.screens.map(s=>s.text.length))
+     assert.ok(maxSlide<245,'No long-form script on day '+day+' '+lang+': '+maxSlide)
    }
  }
  assert.notEqual(opora54Day(1,'ru').quote,opora54Day(8,'ru').quote)
@@ -59,12 +77,12 @@ test('old V5 seven-screen and V3 fifteen-screen histories remain immutable',()=>
 })
 
 test('bounded responses never accept Skip, free-text PII, fake mastery or forged hint',()=>{
- const sample={answers:{welcome:'tense',aphorism:'disagree',act:'partly',rehearse:'guided',scenario:'one',
+ const sample={answers:{welcome:'tense',aphorism:'disagree',noticeChoice:'two',actChoice:'one',act:'partly',rehearse:'guided',scenario:'one',
    transfer:'not_planning'},hints:['demo','rehearse'],ease:2}
  assert.deepEqual(validateOpora54Signals(sample),sample)
  assert.deepEqual(validateOpora54Signals({answers:{}}),{answers:{},hints:[],ease:null})
  for(const bad of [
-   {answers:{aphorism:'skip'}},{answers:{act:'skip'}},
+   {answers:{aphorism:'skip'}},{answers:{act:'skip'}},{answers:{noticeChoice:'anything'}},{answers:{actChoice:'four'}},
    {answers:{scenario:'correct'}},{answers:{pace:'n/a'}},
    {answers:{save:'success'}},{answers:{__proto__:'unexpected',unlisted:'test'}},
    {answers:[],hints:[]},{answers:{},hints:['gibberish']},
@@ -97,6 +115,10 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  assert.match(entry,/:<CourseSlidePlayer key=/)
  assert.match(legacy,/export default function CourseSlidePlayer/)
  assert.match(player,/ROLE_OPTIONS=\{/)
+ assert.match(player,/choiceField=role==='notice'/)
+ assert.match(player,/if\(choiceField&&!answers\[choiceField\]\)/)
+ assert.match(player,/activityPrompt/)
+ assert.match(player,/role==='act'&&picked/)
  assert.match(player,/aphorism:\['agree','unsure','disagree'\]/)
  assert.match(player,/data-opora-as54-player/)
  assert.match(player,/validateOpora54Signals/)
