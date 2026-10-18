@@ -91,8 +91,11 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  const player=read('components/app/opora-v6-slide-player.jsx')
  const legacy=read('components/app/course-slide-player.jsx')
  const css=read('components/app/opora-v6-slide-player.module.css')
- assert.match(legacy,/return <OporaV6SlidePlayer \{\.\.\.props\}\/>/)
- assert.match(legacy,/function LegacyCourseSlidePlayer/)
+ const entry=read('components/app/course-today.jsx')
+ assert.match(entry,/data\?\.lesson\?\.antiStress\?\.slideModel===OPORA54_SLIDE_MODEL/)
+ assert.match(entry,/<OporaV6SlidePlayer key=/)
+ assert.match(entry,/:<CourseSlidePlayer key=/)
+ assert.match(legacy,/export default function CourseSlidePlayer/)
  assert.match(player,/ROLE_OPTIONS=\{/)
  assert.match(player,/aphorism:\['agree','unsure','disagree'\]/)
  assert.match(player,/data-opora-as54-player/)
@@ -104,7 +107,7 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  assert.doesNotMatch(player,/\['skip',/)
  assert.match(css,/100dvh/)
  assert.match(css,/safe-area-inset-bottom/)
- for(const file of ['components/app/opora-v6-slide-player.jsx','components/app/course-slide-player.jsx']){
+ for(const file of ['components/app/opora-v6-slide-player.jsx','components/app/course-slide-player.jsx','components/app/course-today.jsx']){
    const code=read(file),parsed=ts.createSourceFile(file,code,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
    assert.deepEqual(parsed.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],file+' syntax')
  }
