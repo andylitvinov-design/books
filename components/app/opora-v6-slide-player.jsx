@@ -415,7 +415,13 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-as54-player={versionTag} data-course-one-screen="v2">
-    <div className={styles.frame} inert={safety} aria-hidden={safety?'true':undefined}>
+    <div className={styles.frame} data-scene-role={afterSave?'complete':(role||'welcome')}
+      inert={safety} aria-hidden={safety?'true':undefined}>
+      <div className={styles.scenicBackdrop} aria-hidden="true" data-opora-lesson-photo>
+        <img className={styles.scenicPhoto}
+          src="/images/holistic-house/course-focus-mountain-boy.webp"
+          alt="" width={705} height={411} decoding="async"/>
+      </div>
       <header className={styles.header}>
         <button type="button" className={styles.controlIcon} onClick={onClose} disabled={locked}
           aria-label={t.close}><X size={21}/></button>
@@ -432,7 +438,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       </header>
       <main className={styles.scroll} ref={scroller}>
         <section className={styles.card} aria-live="off">
-          <div className={styles.heroIcon} aria-hidden="true"><Icon size={40} strokeWidth={1.75}/></div>
+          <div className={styles.heroIcon} aria-hidden="true"><Icon size={21} strokeWidth={1.8}/></div>
           <span className={styles.eyebrow}>{t.map} · {lesson.antiStress?.skillId}</span>
           <h2 className={styles.title} tabIndex={-1} ref={heading}>{afterSave?t.saved:slide?.title}</h2>
           {afterSave?<>
