@@ -212,7 +212,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         className={styles.portraitRadar} data-radar-mode="detail" data-radar-layout="full-circle"
         data-active-portrait-sector={selectedSector} role="img"
         aria-label={(ru ? 'Шкалы категории' : es ? 'Escalas de la categoría' : 'Category scales') + ': ' +
-          rays.map(ray => `${label(ray.axis)}: ${ray.percent === null ? '—' : ray.percent + '%'}`).join(', ')}>
+          rays.map(ray => `${label(ray.axis)}: ${ray.percent === null ? (portrait?.axes?.[ray.axis]?.mode === 'descriptive' ? 'descriptive' : 'unmeasured') : 'scale position '+ray.percent+'/100'}`).join(', ')}>
         <title>{ru ? 'Показатели выбранной категории по всей окружности' :
           es ? 'Escalas de la categoría alrededor de todo el círculo' : 'Selected category scales around the full circle'}</title>
         <circle cx="180" cy="182" r="146" className={styles.radarReference} />
@@ -266,18 +266,22 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <span>{visibleRays.length} / {focusOptions.length}</span>
       </div>
       {visibleRays.length === 0 && measuredAxes.length > 0 && <p>{ru ? 'В этих секторах пока не выбраны лучи. Отметьте нужные шкалы ниже.' : es ? 'Elige las escalas de los sectores seleccionados.' : 'No rays selected in these sectors yet. Choose individual scales below.'}</p>}
-      {measuredAxes.length === 0 && <p>{ru ? 'Измерений пока нет. Выберите шкалы: после прохождения соответствующих тестов пустые лучи заполнятся.' : es ? 'Aún no hay resultados. Selecciona escalas y completa pruebas para ver los rayos.' : 'No results yet. Choose scales now; the empty rays will fill after you complete their tests.'}</p>}
+      {measuredAxes.length === 0 && <p>{ru ? 'Подтверждённых свежих измерений пока нет. Описательные ответы не становятся показателем здоровья.' : es ? 'Sin resultados actuales. Una reflexión descriptiva no equivale a un porcentaje de salud.' : 'No recent verified results yet. Descriptive answers are never a health score.'}</p>}
       <div id={portraitRayOptionsId} className={styles.portraitRayOptions} data-portrait-ray-options>{portraitOptions.map((axis) => {
-        const measure = portrait?.axes?.[axis] || null
+        const current = portrait?.axes?.[axis] || null
+        const historic = portrait?.staleAxes?.[axis] || null
+        const measure = current || historic
+        const candidate = portrait?.axisCandidates?.[axis] || null
         const detailHref = measure?.resultId
           ? `/${locale}/app/results/${encodeURIComponent(measure.resultId)}${measure.dimensionKey ? `?scale=${encodeURIComponent(measure.dimensionKey)}` : ''}#hh-assessment-scale-panel`
           : null
-        return <div key={axis} className={styles.portraitRayItem} data-portrait-ray={axis} data-measured={Boolean(measure)}>
+        return <div key={axis} className={styles.portraitRayItem} data-portrait-ray={axis} data-measured={Boolean(current)} data-portrait-status={current?.mode || (historic ? 'stale' : 'missing')}>
           <label className={styles.portraitRayOption} title={measure ? `${measure.source} · ${formatDate(measure.measuredAt)}` : (ru ? 'Нет измерения' : es ? 'Sin medición' : 'Not measured')}>
             <input type="checkbox" checked={checkedRays.includes(axis)} onChange={() => toggleRay(axis)} />
             <span>{label(axis)}</span>
-            <strong>{measure ? `${measure.percent}%` : '—'}</strong>
-            {measure?.change != null && <small className={styles.portraitDelta} aria-label={ru ? 'Изменение относительно предыдущего совместимого замера' : 'Change from previous compatible measurement'}>{measure.change > 0 ? '+' : ''}{measure.change} {ru ? 'п.п.' : 'pp'}</small>}
+            <strong>{current ? `${current.rawValue ?? '—'} / ${current.max ?? '—'}` : '—'}</strong>
+            {current && <small className={styles.portraitDelta} aria-label={ru ? 'Позиция по исходной шкале, не процент здоровья' : es ? 'Posición en escala, no porcentaje de salud' : 'Original scale position, not a health percentage'}>{current.percent === null ? (ru ? 'описательно' : es ? 'descriptivo' : 'descriptive') : 'pos. ' + current.percent + '/100'}</small>}
+            {historic && !current && <small className={styles.portraitDelta}>{ru ? 'устарел' : es ? 'anterior' : 'outdated'}</small>}
           </label>
           {detailHref && <Link
             href={detailHref}
@@ -287,13 +291,14 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
             aria-label={`${ru ? 'Пояснение шкалы' : es ? 'Detalles de la escala' : 'Scale details'}: ${label(axis)}`}>
             {ru ? 'Подробнее' : es ? 'Detalles' : 'Details'} <span aria-hidden="true">→</span>
           </Link>}
-          {!measure && <Link
+          {!measure && candidate && <Link
             href={`/${locale}/app/tests?explore=1&axis=${encodeURIComponent(axis)}`}
             prefetch={false}
             className={styles.portraitRayTestLink}
-            aria-label={`${ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it'}: ${label(axis)}`}>
-            {ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it'} <span aria-hidden="true">→</span>
+            aria-label={`${candidate.mode === 'descriptive' ? (ru ? 'Изучить тему' : es ? 'Explorar' : 'Explore') : (ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it')}: ${label(axis)}`}>
+            {candidate.mode === 'descriptive' ? (ru ? 'Изучить' : es ? 'Explorar' : 'Explore') : (ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it')} <span aria-hidden="true">→</span>
           </Link>}
+          {!measure && !candidate && <span className={styles.portraitUnavailable}>{ru ? 'Нет разрешённого теста' : es ? 'Sin prueba habilitada' : 'No eligible test'}</span>}
         </div>
       })}</div>
       {focusOptions.length > PORTRAIT_COLLAPSED_COUNT && <button
