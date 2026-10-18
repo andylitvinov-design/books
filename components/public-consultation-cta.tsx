@@ -97,7 +97,7 @@ const copy = {
   },
 } as const;
 
-export function PublicConsultationCta({ locale, id, serviceBooking = false }: { locale: "en" | "ru" | "es"; id?: string; serviceBooking?: boolean }) {
+export function PublicConsultationCta({ locale, id, serviceBooking = false, wiseEnabled = false }: { locale: "en" | "ru" | "es"; id?: string; serviceBooking?: boolean; wiseEnabled?: boolean }) {
   const pathname = usePathname();
   // Match the server-rendered default on first hydration; resolve route intent after mount.
   const [clientPath, setClientPath] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export function PublicConsultationCta({ locale, id, serviceBooking = false }: { 
   // Both server render and the first client render now agree on null.
   // The dedicated Services page has a stable paid selector before hydration.
   // Keep other public, training and private paths on their existing route rules.
-  if (serviceBooking) return <ConsultationChoiceCapture locale={locale} variant="service" id={id} />;
+  if (serviceBooking) return <ConsultationChoiceCapture locale={locale} variant="service" id={id} wiseEnabled={wiseEnabled} />;
   if (clientPath === null) return null;
   const route = clientPath ? classifyPublicLead(clientPath) : null;
   const mode = route?.kind === "training" ? "training" : route?.kind === "reading" ? "reading" : "personal";
