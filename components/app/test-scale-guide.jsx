@@ -1,6 +1,6 @@
 'use client'
 
-import styles from './test-scale-displayGuide.module.css'
+import styles from './test-scale-guide.module.css'
 import { localizeScaleGuideSpanish } from '@/lib/assessments/spanish-scale-guide'
 
 const COPY={
