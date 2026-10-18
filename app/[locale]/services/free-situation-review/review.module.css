@@ -382,3 +382,44 @@
   .situationGrid h3{font-size:16px}
   .situationGrid p{font-size:11px}
 }
+
+
+/* Match all service landing pages: clear free-first journey, no scope change. */
+.page{background:linear-gradient(180deg,#e9f7f3 0%,#f6fbf9 530px,#fff 100%);color:#16414d}
+.eyebrow{color:#087e82}
+.heroCopy h1,.sectionIntro h2,.faq h2,.about h2{color:#153e4c}
+.lead{color:#45626c}
+.benefits li{color:#28525a}
+.benefits svg{color:#07877e}
+.freeLine{color:#0b766f}
+.introContact{border-color:#c6e2d9}
+.introContact strong{color:#16525f}
+.introContact span,.safety{color:#5e797a}
+.photo{background:#d1ece5;box-shadow:0 9px 27px rgba(7,84,95,.11)}
+.sectionIntro>p:not(.eyebrow){color:#4b6670}
+.steps{border-color:#cfe7e0}
+.steps li{border-color:#d4e9e4}
+.stepNumber,.directionNumber{color:#0a8c87}
+.steps h3,.directionList h3{color:#18515d}
+.steps p,.directionList p{color:#4b6770}
+.directions{background:linear-gradient(130deg,#e3f5f0,#f0f9f8);border:1px solid #d2e8e3}
+.directionList article,.directionList article:last-child{border-color:#d1e6e1}
+.directionList a{color:#087e80;border-color:#9fcfc7}
+.directionList a:hover{background:#cceee5}
+.about a{color:#087c81}
+.faq details,.faq details:last-child{border-color:#d4e9e3}
+.faq summary{color:#1b4b55}
+.faq summary::after{color:#0c8782}
+.closing{background:radial-gradient(circle at 90% 5%,rgba(47,160,150,.34),transparent 52%),linear-gradient(125deg,#073549,#0b7277);box-shadow:0 17px 47px rgba(7,71,81,.12)}
+.closing a:not(.back){background:#f5c493;color:#103e47}
+.paid{border-color:#d2e9e3;background:#edf9f6}
+.mobileCta{background:#087d7c;color:#fff}
+.page a:focus-visible,.page summary:focus-visible{outline-color:#df9b65}
+@media(max-width:767px){
+ .contentGrid{margin-top:12px}
+ .heroCopy{padding-top:13px}
+ .heroCopy h1{font-size:clamp(35px,8.5vw,47px)}
+ .mobileCta{background:#087f80;box-shadow:0 8px 21px rgba(6,108,117,.16)}
+ .directions{border-radius:20px}
+ .closing{border-radius:20px}
+}
