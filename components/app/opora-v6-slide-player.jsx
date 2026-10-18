@@ -216,8 +216,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   const optionsAvailable=options(),extraFeedback=chosen
     ? role==='scenario'
-      ? chosen==='one'?(authored?.scenario?.explanation||t.feedback.other)
-        :(lang==='ru'?'Посмотрите, можно ли выбрать более мягкое действие без давления и самокритики.':'Could a gentler choice reduce pressure or self-criticism?')
+      ? (authored?.scenario?.explanation||t.feedback.other)
       : chosen==='disagree'?t.feedback.disagree+' '+(authored?.neutralQuote||'')
       : t.feedback[chosen]||t.feedback.other:null
   const showingReading=answers.pace==='read'||answers.prepare==='read'
