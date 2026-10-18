@@ -1,0 +1,7 @@
+key,title,items,evidence_type,respondent_locale,source,release_status
+igq-oconnor1997-enus45,IGQ original development short form,45,original study,en-US,https://pubmed.ncbi.nlm.nih.gov/9120036/,research_only_permission_pending
+igq-oconnor1997-enus67,IGQ original full form,67,original study,en-US,https://pubmed.ncbi.nlm.nih.gov/9120036/,research_only_permission_pending
+igrs-gazzillo2017-clinician15,IGRS observer form,15,clinician study,unverified,https://pubmed.ncbi.nlm.nih.gov/28846509/,research_only_clinician_only
+igrss-gazzillo2018-itit15,IGRS self-report Italian 2018,15,validation study,it-IT,https://doi.org/10.1521/pdps.2018.46.1.23,research_only_permission_pending
+igrss-faccini2020-itit15-replication,IGRS self-report Italian followup,15,replication study,it-IT,https://doi.org/10.1521/pdps.2020.48.1.79,research_only_permission_pending
+igrss-leonardi2022-enen15-study,IGRS self-report English sample,15,correlation study,en,https://doi.org/10.1111/sjop.12854,research_only_permission_pending
