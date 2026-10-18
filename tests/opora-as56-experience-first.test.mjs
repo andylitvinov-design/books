@@ -61,8 +61,8 @@ test('five lived moments replace quizzes; 28 RU/EN lessons save a truthful resul
     assert.equal(f.payload.practiceWindow,'practice_v6')
     assert.deepEqual(f.payload.visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
     assert.deepEqual(validateOpora54Signals(f.payload.opora54).answers,f.payload.opora54.answers)
-    assert.equal(f.payload.opora54.answers.act,'tried')
-    assert.equal(f.payload.opora54.answers.actChoice,'one')
+    assert.equal(f.payload.opora54.answers.act,undefined) // AS-5.5 action was not necessarily done
+    assert.equal(f.payload.opora54.answers.actChoice,undefined) // guided moment is recorded separately
     assert.equal(f.payload.opora54.answers.reflection,'unchanged')
     assert.equal(f.payload.opora54.answers.aphorism,'unsure')
     assert.equal(f.payload.opora54.answers.transfer,'planned')
