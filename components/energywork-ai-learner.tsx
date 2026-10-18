@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -42,6 +42,8 @@ const copy = {
     back: "Back",
     stop: "You can skip or stop any practice. No medical advice or certification is provided here.",
     optional: "Optional reflection",
+    experienceBadge: "Your starting point",
+    experienceNote: "Choose one answer to continue. You can change it later.",
     blank: "You can leave this unanswered.",
     notes: "My reflection",
     placeholder: "Write here (optional)…",
@@ -92,6 +94,8 @@ const copy = {
     back: "Назад",
     stop: "Любую практику можно пропустить или остановить. Здесь нет медицинских назначений или автоматической сертификации.",
     optional: "Необязательная рефлексия",
+    experienceBadge: "Ваш уровень знакомства",
+    experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
     blank: "Можно оставить без ответа.",
     notes: "Моё наблюдение",
     placeholder: "Напишите здесь (необязательно)…",
@@ -131,6 +135,21 @@ const copy = {
   },
 } as const;
 
+const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
+  en: {
+    beginner: "Welcome! The course introduces the Reiki traditions without assuming previous training.",
+    energywork: "Your existing practice may be a useful reference point. We'll distinguish Reiki traditions as we go.",
+    "reiki-1-2": "You can revisit the foundations and compare the three Reiki traditions at your own pace.",
+    master: "Explore this as a comparison of three traditions, noticing what is familiar and what is new.",
+  },
+  ru: {
+    beginner: "Добро пожаловать! Курс знакомит с направлениями Рейки без требования предварительной подготовки.",
+    energywork: "Ваш опыт может стать опорой. По ходу курса мы будем пояснять особенности направлений Рейки.",
+    "reiki-1-2": "Можно повторить основы и в своём темпе сравнить три направления Рейки.",
+    master: "Рассматривайте курс как знакомство с тремя традициями: отмечайте знакомое и новое.",
+  },
+};
+
 function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale: EnergyworkLocale, path: EnergyworkPath | null) {
   const chosen = energyworkPathChoices.find((option) => option.id === path);
   const lines = [
@@ -151,6 +170,11 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
 function learnerHighlights(answers: AnswerMap, path: EnergyworkPath | null, locale: EnergyworkLocale) {
   const highlights: string[] = [];
   const present = (id: string) => answers[id]?.trim();
+  const experience = energyworkSlides(null).find((item) => item.id === "welcome-02")
+    ?.question?.options?.find((option) => option.id === present("welcome-02"));
+  if (experience) highlights.push(locale === "ru"
+    ? "Ваш исходный опыт: " + experience.label.ru + "."
+    : "Your starting experience: " + experience.label.en + ".");
   if (path) {
     const chosen = energyworkPathChoices.find((item) => item.id === path);
     if (chosen) highlights.push(locale === "ru"
@@ -302,6 +326,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const pathData = energyworkPathChoices.find((option) => option.id === path);
   const total = energyworkSlides("yggdrasil").length; // All branches have equal length.
   const completed = slide.kind === "finish";
+  const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale, path);
   const highlights = learnerHighlights(answers, path, locale);
@@ -341,7 +366,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
     return response;
   }
   async function next() {
-    if (busy || (slide.kind === "path-choice" && !path)) return;
+    if (busy || experienceMissing || (slide.kind === "path-choice" && !path)) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -438,7 +463,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
 
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
@@ -472,7 +497,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
               {slide.question ? (
                 <div className={styles.question}>
-                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{t.optional}</span>
+                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -490,7 +515,14 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.question.type === "choice" ? (
                     <div id={"answer-" + slide.id} className={styles.choices} role="group" aria-label={t.value}>
                       {slide.question.options?.map((option) => (
-                        <label key={option.id} className={styles.choice}>
+                        <label key={option.id} className={styles.choice + (slide.id === "welcome-02" ? " " + styles.experienceChoice : "")}>
+                          {slide.id === "welcome-02" ? (
+                            <span className={styles.experienceIcon} aria-hidden="true">
+                              {option.id === "beginner" ? <Sprout size={19} /> :
+                                option.id === "energywork" ? <HandHeart size={19} /> :
+                                  option.id === "reiki-1-2" ? <Sparkles size={19} /> : <Award size={19} />}
+                            </span>
+                          ) : null}
                           <input type="radio" name={slide.id} value={option.id}
                             checked={answers[slide.id] === option.id} onChange={() => setAnswer(option.id)} />
                           <span>{option.label[locale]}</span>
@@ -498,7 +530,10 @@ export function EnergyworkAiLearner({ locale }: Props) {
                       ))}
                     </div>
                   ) : null}
-                  <p className={styles.optional}>{t.blank}</p>
+                  {slide.id === "welcome-02" && !experienceMissing ? (
+                    <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
+                  ) : null}
+                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote : t.blank}</p>
                 </div>
               ) : null}
 
@@ -582,7 +617,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
                 {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
