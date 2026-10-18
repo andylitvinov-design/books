@@ -7,7 +7,7 @@ const learner = read('components/energywork-ai-learner.tsx');
 const style = read('components/energywork-ai-learner.module.css');
 const curriculum = read('data/academy/energywork-ai-curriculum.ts');
 const schema = read('data/academy/energywork-ai-schema.js');
-const localPortrait = '/images/holistic-house/reiki-practitioner-sunrise.webp';
+const localPortrait = '/images/holistic-house/reiki-approved-sunrise-v3.webp';
 
 test('Approved V3 retains the complete five-lesson, 53-screen real learning flow', () => {
   assert.match(learner,/data-course-visual="reiki-airy-v2" data-course-portrait="v3"/);
@@ -31,6 +31,8 @@ test('The already-approved, locally owned meditating woman is prominently shown 
   assert.match(learner,/data-reiki-person=\{portraitArt \? "true" : undefined\}/);
   assert.match(learner,/unoptimized=\{portraitArt\}/);
   assert.match(style,/REIKI PORTRAIT V3/);
+  assert.ok(style.includes('reiki-approved-sunrise-v3.webp'));
+  assert.ok(!learner.includes('reiki-practitioner-sunrise.webp'));
   assert.match(style,/\.page\[data-course-portrait="v3"\]::before/);
   assert.ok(style.includes(localPortrait));
   assert.match(style,/\.page\[data-course-portrait="v3"\] \.welcomeSlide \.art \{display:block;\}/);
