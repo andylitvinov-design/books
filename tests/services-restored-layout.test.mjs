@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Services EN/RU: original green photo hero, blue courses and tests, then image-left offers", () => {
+test("Services EN/RU: green photo hero, offers and enquiry precede optional blue courses and tests", () => {
   const page = read("app/[locale]/services/page.tsx");
   const banner = read("components/services-tests-intro.tsx");
   const greenHero = read("components/services-conversion-hero.tsx");
@@ -17,7 +17,8 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   const introPos = page.indexOf("<ServicesTestsIntro locale={locale as Locale} />");
   const cardPos = page.indexOf("<ServicesSolutions locale={locale as Locale} />");
   const aboutPos = page.indexOf("<ServicesAboutEntry locale={locale as Locale} />");
-  assert.ok(heroPos > 0 && introPos > heroPos && cardPos > introPos && aboutPos > cardPos);
+  assert.ok(heroPos > 0 && cardPos > heroPos && aboutPos > cardPos && introPos > aboutPos);
+  assertServicesOrder(page);
   assert.match(page, /<PublicSiteHeader locale=\{locale\} showAssessmentStrip=\{false\} \/>/);
   assert.match(sharedHeader, /showAssessmentStrip\?: boolean/);
   assert.match(sharedHeader, /<SiteNavigation locale=\{locale\} \/>/);
@@ -51,7 +52,7 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   assert.match(style, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.doesNotMatch(page, /<ServiceCart/);
   assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking \/>/);
+  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
 });
 
 test("Services Spanish retains its routes with a compact photographic treatment", () => {
@@ -64,9 +65,10 @@ test("Services Spanish retains its routes with a compact photographic treatment"
   const videoBlock = page.indexOf('id="method-videos"');
   const testimonials = page.indexOf('<PersonalTestimonials locale="es" variant="services" />');
   const extraCards = page.indexOf('data-es-services-photo-cards');
-  assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') < sharedOffers);
+  assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') > sharedOffers);
+  assertServicesOrder(page);
   assert.ok(sharedOffers < page.indexOf('<ServicesAboutEntry locale="es" />'));
-  assert.ok(sharedOffers < videoBlock && videoBlock < testimonials && testimonials < extraCards);
+  assert.ok(sharedOffers < testimonials && testimonials < videoBlock && videoBlock < extraCards);
   assert.match(page, /<ServicesSolutions locale="es" \/>/);
   assert.match(page, /className=\{offerStyles.photo\}/);
   assert.match(css, /grid-template-columns:minmax\(106px,2fr\) minmax\(0,3fr\)/);
@@ -74,6 +76,39 @@ test("Services Spanish retains its routes with a compact photographic treatment"
     assert.ok(page.includes("/es/services/" + route), route);
   }
   assert.doesNotMatch(page, /ServiceCart|service-cart/);
-  assert.match(page, /<PublicConsultationCta locale="es" id="consultation" serviceBooking \/>/);
+  assert.match(page, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.doesNotMatch(page, /services-studio-hero|services-studio-grid/);
+});
+
+// #996: personal offers precede optional discovery; keep every original section.
+const serviceOrder = ["<PublicSiteHeader", "<ServicesConversionHero", "<ServicesQuickStart", "<ServicesSolutions", "<PublicConsultationCta", "<ServicesAboutEntry", "<PersonalTestimonials", "<ServicesTestsIntro", "<ServicesSmartDiscovery", 'id="method-videos"', 'id="available-services"'];
+function assertServicesOrder(page) {
+  const rendered = page.slice(page.indexOf('<main '));
+  let last = -1;
+  for (const marker of serviceOrder) {
+    assert.equal(rendered.split(marker).length - 1, 1, marker + " is rendered exactly once");
+    const index = rendered.indexOf(marker);
+    assert.ok(index > last, marker + " follows the previous section");
+    last = index;
+  }
+  assert.match(rendered, /<PublicConsultationCta[^>]*id="consultation" serviceBooking/);
+  assert.match(rendered, /id="method-videos" open/);
+}
+
+test("Services section contract rejects missing, duplicated and reordered sections in shared and Spanish pages", () => {
+  for (const path of ["app/[locale]/services/page.tsx", "app/es/services/page.tsx"]) {
+    const page = read(path);
+    assertServicesOrder(page);
+    for (const marker of serviceOrder) {
+      assert.throws(() => assertServicesOrder(page.replace(marker, "")), undefined, path + " missing " + marker);
+      assert.throws(() => assertServicesOrder(page.replace(marker, marker + marker)), undefined, path + " duplicate " + marker);
+    }
+    for (let i = 1; i < serviceOrder.length; i++) {
+      const before = serviceOrder[i - 1], after = serviceOrder[i];
+      const swapped = page.replace(before, "OWNER_ORDER_SENTINEL").replace(after, before).replace("OWNER_ORDER_SENTINEL", after);
+      assert.throws(() => assertServicesOrder(swapped), undefined, path + " reordered " + after);
+    }
+    assert.throws(() => assertServicesOrder(page.replace('id="consultation"', 'id="missing-consultation"')));
+    assert.throws(() => assertServicesOrder(page.replace('id="method-videos" open', 'id="method-videos"')));
+  }
 });

@@ -55,14 +55,15 @@ test('public Home and Services use four shared offers without exposing private a
   assert.match(offers, /hypnotherapy-course/);
 });
 
-test('Services exposes source-backed method videos after service cards and before testimonials', () => {
+test('Services exposes source-backed method videos after service cards, booking and testimonials', () => {
   const services = readFileSync(new URL('../app/[locale]/services/page.tsx', import.meta.url), 'utf8')
   const start = services.indexOf('<details className={solutionStyles.extra} id="method-videos" open>')
   const end = services.indexOf('</details>', start)
   const videoSection = services.slice(start, end)
 
   assert.ok(start > services.indexOf('<ServicesSolutions'))
-  assert.ok(start < services.indexOf('<PersonalTestimonials'))
+  assert.ok(start > services.indexOf('<PersonalTestimonials'))
+  assert.ok(services.indexOf('<PersonalTestimonials') > services.indexOf('<PublicConsultationCta'))
   assert.match(videoSection, /PageVideo slot="services-intro"/)
   assert.match(videoSection, /method-hypnotherapy/)
   assert.match(videoSection, /method-constellations/)

@@ -6,6 +6,8 @@ import {
   COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL,OPORA54_PRE_SAVE_KEYS,
   opora54Day,opora54SkillCards,opora54BlueprintValid,validateOpora54Signals,
 } from '../lib/inner-growth/anti-stress-skills-v6.js'
+import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
+import {repositoryHarness,mount,findButton} from './helpers/route-pipeline-harness.mjs'
 import {COURSE_ANTISTRESS_SKILLS_V5,OPORA_SKILL_SLIDE_MODEL} from '../lib/inner-growth/anti-stress-skills-v5.js'
 import {oporaCompactDay,oporaCompactPassportValid} from '../lib/inner-growth/opora-compact-copy-v6.js'
 import {oporaNoticeActivity,oporaNoticeCatalogValid} from '../lib/inner-growth/opora-v6-exercise-cards.js'
@@ -96,13 +98,28 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
  }
 })
 
-test('V7 is used for new AS2 cycles while V6 retains its version-pinned signal schema',()=>{
+test('V6 and V7 retain the historical fifteen-screen save contract and private signal data',async()=>{
  const server=read('lib/app/growth-daily.js')
  assert.match(server,/\? COURSE_ANTISTRESS_SKILLS_V7 : COURSE_CONTENT_V4/)
  assert.match(server,/value === COURSE_ANTISTRESS_SKILLS_V6/)
  assert.match(server,/validateOpora54Signals\(input\.opora54\)/)
  assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
- assert.match(server,/opora54,interactionSchema:version===COURSE_ANTISTRESS_SKILLS_V7\?'as-5\.5-fifteen-screens-v1':'as-5\.4-fifteen-screens-v1'/)
+ for(const version of [COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7]){
+   const owner=repositoryHarness({freshPhase:true}),created=await owner.create('AS2')
+   assert.equal(created.content_version,COURSE_ANTISTRESS_SKILLS_V7)
+   if(version===COURSE_ANTISTRESS_SKILLS_V6)owner.cycle.content_version=version
+   owner.seedDay(1)
+   const data=await owner.read('en')
+   await owner.command({day:1,lessonId:data.lesson.id,
+     operationId:'00000000-0000-4000-8000-000000000991',feedback:'skip',practiceWindow:'practice_v15',
+     visitedSlideKeys:OPORA54_PRE_SAVE_KEYS,opora54:{answers:{},hints:[],ease:null}})
+   const saved=owner.sessions.at(-1)
+   assert.equal(saved.content_version,version)
+   assert.equal(saved.lesson_id,data.lesson.id)
+   assert.equal(saved.signals.interactionSchema,version===COURSE_ANTISTRESS_SKILLS_V6
+     ?'as-5.4-fifteen-screens-v1':'as-5.5-fifteen-screens-v1')
+   assert.equal(owner.cycle.content_version,version)
+ }
  assert.match(server,/!\[COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7\]\.includes\(version\) && input\.opora54!==undefined/)
  assert.match(server,/INVALID_OPORA54_INDEPENDENCE/)
  assert.match(server,/INVALID_OPORA54_APHORISM/)
@@ -145,3 +162,38 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
    assert.deepEqual(parsed.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],file+' syntax')
  }
 })
+
+
+for(const version of [COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7]){
+ test(`${version} actual player requires a chosen action for positive attempt, but permits honest non-attempt`,async()=>{
+  const lesson=lessonFor('calm_regulation',1,'en','standard',version)
+  let saves=0
+  const h=mount('opora-v6-slide-player',{locale:'en',data:{lesson,programme:{id:'stress'},
+    cycle:{id:'00000000-0000-4000-8000-000000000992',day:1,durationDays:14,preferences:{}}},
+    onClose(){},onSession(){saves++;return true}})
+  const click=async label=>{const button=findButton(h.tree,label);assert.ok(button,label);button.props.onClick();await h.settle()}
+  try{
+    for(let step=0;step<7;step++)await click('Continue')
+    for(const role of ['notice','act']){
+      assert.equal(findButton(h.tree,'I tried it'),undefined)
+      assert.equal(findButton(h.tree,'Partly'),undefined)
+      assert.ok(findButton(h.tree,'Not yet'))
+      assert.ok(findButton(h.tree,'Uncomfortable'))
+      await click('I did not try')
+      assert.equal(saves,0)
+      const exercise=lesson.opora54.exercises[role]
+      await click((role==='notice'?exercise.a:exercise.choices)[0])
+      assert.ok(findButton(h.tree,'I tried it'))
+      assert.ok(findButton(h.tree,'Partly'))
+      await click('Continue')
+    }
+    for(let step=9;step<11;step++)await click('Continue')
+    assert.equal(findButton(h.tree,'Made a plan'),undefined)
+    assert.equal(findButton(h.tree,'Imagined it'),undefined)
+    await click('Not planning today')
+    await click(lesson.opora54.exercises.transfer.choices[0])
+    assert.ok(findButton(h.tree,'Made a plan'))
+    assert.equal(saves,0)
+  }finally{h.unmount()}
+ })
+}

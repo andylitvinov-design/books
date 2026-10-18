@@ -1,4 +1,6 @@
+import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -58,6 +60,48 @@ try {
     return page;
   };
 
+  // Spanish Alchemy has its own route. Check its untouched default state too;
+  // do not navigate payment links or enable optional payment providers.
+  {
+    const locale = "es";
+    for (const width of [320, 360, 390, 1188]) {
+      const page = await createPage(width);
+      const pageErrorStart = diagnostics.pageErrors.length;
+      await page.goto(origin + "/es/services/alchemy-of-soul", { waitUntil: "networkidle" });
+      const main = page.locator('main[data-core-service-detail="alchemy"]');
+      await visible(main.locator("h1"));
+      await expect(main).toHaveAttribute("lang", "es");
+      await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
+      await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
+      await assertViewport(page, "es/alchemy-of-soul/" + width);
+      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
+        "Default Spanish payment details are collapsed before geometry measurement");
+      const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
+        nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
+      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      if (width <= 390) {
+        if (panelHeights.some(p => p.height > p.max)) {
+          try {
+            await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
+          } catch (error) {
+            console.error("Alchemy overflow diagnostics could not be saved:", error);
+          }
+        }
+        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+          "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
+      }
+      assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
+      assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate Spanish global enquiry panel");
+      assert.equal(await main.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one Spanish enquiry form");
+      await main.locator('[data-alchemy-panel="formats"]').screenshot({
+        path: output + "/alchemy-es-formats-default-" + width + ".png",
+      });
+      await assertAlchemyPaymentsExpanded(main, expect, width);
+      assert.deepEqual(diagnostics.pageErrors.slice(pageErrorStart), [], "Unexpected Spanish Alchemy browser page errors: " + width);
+      await page.close();
+    }
+  }
+
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
@@ -87,26 +131,40 @@ try {
       await visible(banner.locator('a[href="#solutions"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1, "restored hero has one primary heading");
       assert.equal(await page.evaluate(() => {
-        const hero = document.querySelector("#services-conversion-title");
-        const intro = document.querySelector("[data-services-tests-intro]#free-insights");
-        const solutions = document.querySelector("#solutions");
-        return Boolean(hero && intro && solutions &&
-          (hero.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING) &&
-          (intro.compareDocumentPosition(solutions) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "photographed hero precedes tests/course banner and service offers");
+        const selectors = ["#services-conversion-title", "#solutions", "#consultation", '[data-personal-testimonials="services"]', "[data-services-tests-intro]#free-insights"];
+        const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
+        if (sections.some(matches => matches.length !== 1)) return false;
+        return sections.every((matches, index) => index === 0 ||
+          Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
+      }), true, "Owner conversion order: hero, service offers, enquiry, testimonials, optional tests");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // The compact public header now uses one accessible menu for
-      // Cabinet and the other destinations; do not target removed CTA nodes.
-      const siteMenu = page.locator("header.house-header--services nav.site-navigation details.site-main-menu > summary");
-      await visible(siteMenu);
-      const menuBounds = await siteMenu.boundingBox();
+      // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
+      const header = page.locator("header.house-header--services");
+      const libraryEntry = header.locator("a.site-library-entry");
+      await expect(libraryEntry).toHaveCount(1);
+      await visible(libraryEntry);
+      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "top Library link keeps its locale");
+      const libraryBounds = await libraryEntry.boundingBox();
+      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the visible header: " + locale + "/" + width);
+      const siteMenu = header.locator("details.site-main-menu");
+      await expect(siteMenu).not.toHaveAttribute("open", "");
+      const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
+      await visible(menuTrigger);
+      const menuBounds = await menuTrigger.boundingBox();
       assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
         "Public site menu must fit the header: " + locale + "/" + width);
-      await siteMenu.click();
-      const cabinetEntry = page.locator('header.house-header--services details.site-main-menu a[href="/' + locale + '/app"]');
+      await siteMenu.locator("summary.site-main-menu-trigger").click();
+      await expect(siteMenu).toHaveAttribute("open", "");
+      const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
+      await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      await siteMenu.click();
+      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Мой дом" : "My House");
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "My House opens the authenticated app");
+      const cabinetBounds = await cabinetEntry.boundingBox();
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My House entry must fit the opened menu: " + locale + "/" + width);
+      await siteMenu.locator("summary.site-main-menu-trigger").click();
+      await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
@@ -313,16 +371,29 @@ try {
         if (width === 390 || width === 1188) {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
+        if (kind === "alchemy") {
+          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
+            "Default payment details are collapsed before geometry measurement");
+        }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
           assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
+          if (panelHeights.some(p => p.height > p.max)) {
+            try {
+              await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
+            } catch (error) {
+              // Diagnostic failures must never replace the original layout assertion.
+              console.error("Alchemy overflow diagnostics could not be saved:", error);
+            }
+          }
           assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
             "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
           assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Long guide is initially collapsed");
           assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
           assert.equal(await page.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one enquiry form");
         }
+        if (kind === "alchemy") await assertAlchemyPaymentsExpanded(main, expect, width);
         if (width === 390) {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
@@ -354,6 +425,7 @@ try {
             assert.equal(await paymentDisclosure.count(), 0,
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
+            await assertAlchemyPaymentsExpanded(main, expect, width);
             const channels = await openContactChannelChooser(pricing, expect);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),

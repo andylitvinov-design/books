@@ -1,3 +1,4 @@
+import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
@@ -73,7 +74,7 @@ async function verifyCspBfcache() {
       const record = (type, extra = {}) => {
         const entries = JSON.parse(sessionStorage.getItem('__rawCspLifecycle') || '[]');
         const nav = performance.getEntriesByType('navigation')[0];
-        entries.push({ type, time: performance.timeOrigin + performance.now(), probe: window.__rawCspProbe, url: location.href, documentClass: document.body?.dataset.cspClass, readyState: document.readyState, notRestoredReasons: nav?.notRestoredReasons?.toJSON?.() ?? null, ...extra });
+        entries.push({ type, time: performance.timeOrigin + performance.now(), probe: window.__rawCspProbe, url: location.href, documentClass: document.body?.dataset.cspClass, readyState: document.readyState, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: nav?.notRestoredReasons?.toJSON?.() ?? null, ...extra });
         sessionStorage.setItem('__rawCspLifecycle', JSON.stringify(entries));
       };
       record('init');
@@ -87,7 +88,7 @@ async function verifyCspBfcache() {
     assert.ok(!value.exceptionDetails, JSON.stringify(value.exceptionDetails));
     return value.result.value;
   };
-  const snapshot = () => evaluate(`({url:location.href,documentClass:document.body?.dataset.cspClass,readyState:document.readyState,probe:window.__rawCspProbe,hydrated:history.pushState.toString().includes('__NA'),lifecycle:JSON.parse(sessionStorage.getItem('__rawCspLifecycle')||'[]')})`);
+  const snapshot = () => evaluate(`({url:location.href,documentClass:document.body?.dataset.cspClass,readyState:document.readyState,probe:window.__rawCspProbe,navigationEntryKey:window.navigation?.currentEntry?.key??null,ownsHistoryEntry:window.__hhOwnsHistoryEntry?.()??null,hydrated:history.pushState.toString().includes('__NA'),lifecycle:JSON.parse(sessionStorage.getItem('__rawCspLifecycle')||'[]')})`);
   const waitFor = async (description, predicate) => {
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline) {
@@ -102,6 +103,11 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigate', { url: origin + '/en/about' });
     const initial = await waitFor('Initial public document must hydrate', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
     originalProbe = initial.probe;
+    const candidateProvenance = ['localhost', '127.0.0.1'].includes(new URL(origin).hostname);
+    if (candidateProvenance) {
+      assert.ok(initial.navigationEntryKey, 'Native entry key must be available in raw BFCache probe');
+      assert.equal(initial.ownsHistoryEntry, true, 'Initial entry belongs to its document');
+    }
     phase = 'full-document-to-tantra';
     await evaluate(`location.assign('/en/academy/reiki/tantra-reiki')`);
     await waitFor('Full cross-policy navigation must load a fresh Tantra document', state => state.url === origin + '/en/academy/reiki/tantra-reiki' && state.documentClass === 'tantra-media' && state.probe !== originalProbe && state.readyState === 'complete' && state.hydrated);
@@ -112,6 +118,10 @@ async function verifyCspBfcache() {
     await cdp.send('Page.navigateToHistoryEntry', { entryId: publicEntry.id });
     const restored = await waitFor('Back must restore the correct public URL and document policy', state => state.url === origin + '/en/about' && state.documentClass === 'public-video' && state.readyState === 'complete' && state.hydrated);
     const bfcachePersistedVerified = restored.probe === originalProbe && restored.lifecycle.some(event => event.type === 'pageshow' && event.persisted === true && event.probe === originalProbe && event.url === origin + '/en/about');
+    if (candidateProvenance) {
+      assert.equal(restored.ownsHistoryEntry, true, 'Restored public entry must belong to its document');
+      if (bfcachePersistedVerified) assert.equal(restored.navigationEntryKey, initial.navigationEntryKey, 'Owned BFCache restoration retains its native entry key');
+    }
     let ineligibilityReasons = [];
     if (!bfcachePersistedVerified) {
       assert.notEqual(restored.probe, originalProbe, 'A retained original document requires actual persisted evidence');
@@ -390,6 +400,9 @@ async function exercise(engine, browserType, width) {
       });
     }
     if (width === 390) {
+      if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {
+        await check('csp-history-provenance', { engine, width }, () => verifyHistoryProvenance({ browser, origin, evidencePath: `${evidence}/${label}-csp-${engine}-provenance.json` }));
+      }
       for (const readiness of ['rapid-history', 'loaded-history']) {
       await check('csp-navigation-and-history', { engine, width, readiness }, async () => {
         // New context isolates document policies and service-worker caching. This
@@ -417,7 +430,7 @@ async function exercise(engine, browserType, width) {
           // replacement; the asynchronous exposed binding alone may be lost.
           const record = (type, extra = {}) => {
             const navigation = performance.getEntriesByType('navigation')[0];
-            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
+            const state = { type, time: performance.timeOrigin + performance.now(), documentProbe: window.__cspInitDocumentProbe, url: location.href, readyState: document.readyState, visibilityState: document.visibilityState, documentClass: document.body?.dataset.cspClass, navigationEntryKey: window.navigation?.currentEntry?.key ?? null, ownsHistoryEntry: window.__hhOwnsHistoryEntry?.() ?? null, notRestoredReasons: navigation?.notRestoredReasons?.toJSON?.() ?? null, ...extra };
             const entries = JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]');
             entries.push(state);
             sessionStorage.setItem('__cspLifecycleTrace', JSON.stringify(entries));
@@ -445,10 +458,26 @@ async function exercise(engine, browserType, width) {
           }, true);
           window.addEventListener('pagehide', event => record('pagehide', { persisted: event.persisted }), true);
           window.addEventListener('popstate', () => record('popstate'), true);
+          window.navigation?.addEventListener('currententrychange', event => record('currententrychange', { navigationType: event.navigationType }));
           window.addEventListener('load', () => record('load'), true);
           document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
           document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
-          window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+          // Passive synchronous stack capture identifies who issued competing
+          // hard replaces. Do not wrap Location/history or cancel navigation:
+          // either would change the WebKit race this audit is measuring.
+          window.navigation?.addEventListener('navigate', event => {
+            record('navigate', {
+              destination: event.destination.url,
+              sameDocument: event.destination.sameDocument,
+              navigationType: event.navigationType,
+              cancelable: event.cancelable,
+              canIntercept: event.canIntercept,
+              userInitiated: event.userInitiated,
+              defaultPrevented: event.defaultPrevented,
+              sourceElementTag: event.sourceElement?.tagName ?? null,
+              initiatorStack: new Error('CSP navigation initiator').stack,
+            });
+          });
         });
         await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
         await cspContext.addInitScript({ content: catalogStatsDiagnosticSource() });

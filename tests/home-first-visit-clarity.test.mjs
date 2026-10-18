@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("all homepage locales show a free written review and a distinct free-test CTA first", () => {
+test("all homepage locales preserve personal-session priority and distinct free choices", () => {
   const enRu = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   for (const source of [enRu, es]) {
@@ -16,9 +16,9 @@ test("all homepage locales show a free written review and a distinct free-test C
     assert.ok(source.indexOf("service-home-button--primary") < source.indexOf("service-home-button--secondary"));
     assert.doesNotMatch(source, /HomeFreePaths/);
   }
-  assert.match(enRu, /Understand your situation\. Find your next step/);
-  assert.match(enRu, /Разберитесь в ситуации/);
-  assert.match(es, /Comprende tu situación/);
+  assert.match(enRu, /Stuck in relationships, work or an important decision\?/);
+  assert.match(enRu, /Сложности в отношениях, работе или важном решении\?/);
+  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
 });
 
 test("photo-led service cards replace the duplicated free text cards on all homepage locales", () => {
@@ -49,12 +49,12 @@ test("photo-led service cards replace the duplicated free text cards on all home
   assert.match(es, /no una llamada/);
 });
 
-test("menu keeps the original full catalog but prioritizes free entry, services, About and Cabinet", () => {
+test("menu keeps the original full catalog but prioritizes free entry, services, About and Library", () => {
   const nav = read("components/site-navigation.tsx");
   assert.match(nav, /site-nav-free-entry/);
   assert.match(nav, /item\.id === 'services'/);
   assert.match(nav, /site-nav-about-entry/);
-  assert.match(nav, /site-cabinet-entry/);
+  assert.match(nav, /site-library-entry/);
   assert.match(nav, /site-main-menu-trigger__label/);
   assert.match(nav, /getCompactNavigation\(activeLocale\)/);
   assert.match(nav, /menuItems\.map/);

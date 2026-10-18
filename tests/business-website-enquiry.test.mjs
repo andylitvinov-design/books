@@ -36,10 +36,25 @@ test("public intake is fail-closed, encrypted and never claims a confirmed booki
   // The inbox role has only column-level INSERT; naming the arbiter column
   // would additionally require SELECT privilege, defeating least privilege.
   assert.match(ownerRoute,/practitionerEmailAllowed/);
-  assert.match(ownerRoute,/businessEnquiries: await store\.listBusinessEnquiries/);
+  assertBusinessInboxCall(ownerRoute);
   assert.match(crm,/CrmBusinessEnquiries/);
   assert.match(form,/contactConsent:consent/);
   assert.match(form,/type="checkbox" required/);
   assert.doesNotMatch(form,/mailto:|send_email|setTimeout\(/);
   assert.match(form,/No payment|no payment|без регистрации|sin registro/);
+});
+
+
+// #1013 reformatted the owner GET response; retain the exact awaited inbox call.
+function assertBusinessInboxCall(source) {
+  assert.match(source,/businessEnquiries:\s*await store\.listBusinessEnquiries\(\)/);
+}
+test("owner business inbox contract ignores formatting but rejects a lost or changed awaited call",()=>{
+  const source=read("app/api/app/crm/route.js");
+  const call=source.match(/businessEnquiries:\s*await store\.listBusinessEnquiries\(\)/)?.[0];
+  assert.ok(call);
+  for(const spacing of ["", " ", "\n  "])
+    assertBusinessInboxCall(source.replace(call,"businessEnquiries:"+spacing+"await store.listBusinessEnquiries()"));
+  for(const replacement of ["", "businessEnquiries:store.listBusinessEnquiries()", "businessEnquiries:await store.listContacts()", "other:await store.listBusinessEnquiries()"])
+    assert.throws(()=>assertBusinessInboxCall(source.replace(call,replacement)));
 });

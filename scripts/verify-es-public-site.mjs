@@ -231,11 +231,17 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        // The account entry moved into the site menu; never use the retired
-        // top-level data-nav-item="cabinet" link. Exercise the real user path.
+        const accountMenu = page.locator('.site-navigation details.site-main-menu');
+        await expect(accountMenu).toHaveCount(1);
+        await expect(accountMenu).toHaveJSProperty('open', false);
         await click(page.locator('.site-main-menu-trigger'));
+        await expect(accountMenu).toHaveJSProperty('open', true);
         const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
+        await expect(accountLink).toHaveCount(1);
+        await expect(accountLink).toHaveAccessibleName('Mi Casa');
         await expect(accountLink).toBeVisible();
+        await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();

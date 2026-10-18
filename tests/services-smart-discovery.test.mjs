@@ -132,7 +132,7 @@ test('editorial fallback points only to source-backed known routes, never a synt
   assert.equal(rankEditorialDiscovery('что-то',curated,{category:'business_money'}).length,0)
 })
 
-test('Services: booking-style search and category selector appear above untouched personal Services hero in all three locales',async()=>{
+test('Services: optional booking-style search follows personal offers, enquiry and testimonials in all three locales',async()=>{
   const [main,es,ui,css,api]=await Promise.all([
     readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
@@ -142,7 +142,11 @@ test('Services: booking-style search and category selector appear above untouche
   ])
   for(const page of [main,es]){
     assert.ok(page.indexOf('<ServicesSmartDiscovery')>page.indexOf('<PublicSiteHeader'))
-    assert.ok(page.indexOf('<ServicesSmartDiscovery')<page.indexOf('<ServicesConversionHero'))
+    assert.ok(page.indexOf('<ServicesSmartDiscovery')>page.indexOf('<ServicesTestsIntro'))
+    assert.ok(page.indexOf('<ServicesTestsIntro')>page.indexOf('<PersonalTestimonials'))
+    assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<PublicConsultationCta'))
+    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<ServicesSolutions'))
+    assert.ok(page.indexOf('<ServicesSolutions')>page.indexOf('<ServicesConversionHero'))
     assert.match(page,/<ServicesTestsIntro/)
     assert.match(page,/<ServicesAboutEntry/)
     assert.match(page,/<PublicConsultationCta/)

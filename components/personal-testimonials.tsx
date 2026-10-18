@@ -166,10 +166,10 @@ export function PersonalTestimonials({
 
       <p className={styles.disclaimer}>{current.disclaimer}</p>
       <div className={styles.actions}>
-        <Link className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
+        <Link prefetch={false} className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
           {current.moreLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
-        <Link className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
+        <Link prefetch={false} className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
           {current.ctaLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>
       </div>

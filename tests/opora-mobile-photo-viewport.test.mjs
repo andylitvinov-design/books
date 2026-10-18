@@ -44,9 +44,17 @@ test('every one of the 15 screens, for either language, renders a real photo wit
    const h=mount('opora-v6-slide-player',{locale,data,onClose(){},onFinish(){},
      onSession:async()=>{saved=true;return true}})
    for(let slide=0;slide<=OPORA54_PRE_SAVE_KEYS.length;slide++){
-     const photos=nodes(h.tree).filter(n=>n.type==='img'&&photoPaths.includes(n.props?.src))
-     assert.equal(photos.length,1,`day ${day} ${locale} slide ${slide+1}: decorative photo missing`)
-     assert.equal(photos[0].props.alt,'')
+     // The scenic redesign keeps a full-frame backdrop and a separate slide
+     // hero. Verify each role instead of mistaking two intended photos for a duplicate.
+     for(const marker of ['data-opora-lesson-photo','data-opora-slide-photo']){
+       const frames=nodes(h.tree).filter(n=>n.props&&Object.hasOwn(n.props,marker))
+       assert.equal(frames.length,1,`day ${day} ${locale} slide ${slide+1}: ${marker} missing or duplicated`)
+       assert.equal(frames[0].props['aria-hidden'],'true')
+       const photos=nodes(frames[0]).filter(n=>n.type==='img')
+       assert.equal(photos.length,1,`${marker} must contain exactly one decorative photo`)
+       assert.ok(photoPaths.includes(photos[0].props.src),'Photo must retain a reviewed local asset')
+       assert.equal(photos[0].props.alt,'')
+     }
      const actions=nodes(h.tree).filter(n=>n.type==='button')
      assert.ok(actions.some(n=>textOf(n).includes(locale==='ru'?'Пауза':'Pause')),
        'Safety pause must remain available on each screen')

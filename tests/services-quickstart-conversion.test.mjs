@@ -47,8 +47,9 @@ test("personal pages keep three price and free alternatives without suggesting a
 test("real production browser QA covers personal landing CTA and safe messenger draft in all locales", () => {
   const script = read("scripts/verify-public-services-production.mjs");
   const workflow = read(".github/workflows/hh-public-services-production.yml");
-  for (const route of ["imagery-therapy", "systemic-constellations", "business-consulting"])
+  for (const route of ["imagery-therapy", "systemic-constellations"])
     assert.ok(script.includes('"' + route + '"'), route);
+  assertBusinessBrowserRoute(script);
   const business = read("components/business-consulting-landing.tsx");
   assert.match(business, /data-business-consulting/);
   assert.match(business, /data-business-offer=\{offer.kind\}/);
@@ -71,4 +72,17 @@ test("no analytics privacy bypass for conversion optimization", () => {
   assert.match(ga, /if \(!PUBLIC_ANALYTICS_AVAILABLE/);
   const quick = read("components/services-quick-start.tsx");
   assert.doesNotMatch(quick, /fetch\(|sendBeacon\(|localStorage|sessionStorage|\bgtag\(/);
+});
+
+function assertBusinessBrowserRoute(script) {
+  assert.match(script, /for \(const locale of \["en", "ru", "es"\]\) \{\s*const page = await createPage\(390\);\s*const label = locale \+ "\/business-consulting\/390";\s*const response = await page\.goto\(origin \+ "\/" \+ locale \+ "\/services\/business-consulting"/);
+}
+
+test("Business browser contract rejects missing route or locale coverage", () => {
+  const script = read("scripts/verify-public-services-production.mjs");
+  assertBusinessBrowserRoute(script);
+  for (const changed of [script.replace('locale + "/services/business-consulting"', 'locale + "/services/wrong"'), script.replaceAll('["en", "ru", "es"]', '["en", "ru"]')]) {
+    assert.notEqual(changed, script);
+    assert.throws(() => assertBusinessBrowserRoute(changed));
+  }
 });
