@@ -14,6 +14,11 @@ export function SessionMaterialPicker({locale='en',selectedIds=[],onChange,onOpe
   const [reloadCount,setReloadCount]=useState(0)
   const [search,setSearch]=useState('')
   useEffect(()=>{
+    const refresh=()=>setReloadCount(value=>value+1)
+    window.addEventListener('hh-materials-changed',refresh)
+    return ()=>window.removeEventListener('hh-materials-changed',refresh)
+  },[])
+  useEffect(()=>{
     if(!open)return
     let mounted=true
     setLoading(true);setError('')
