@@ -9,6 +9,7 @@ import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-
 import type { AcademyView } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-discovery.module.css";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 
 type Topic = "all" | "reiki" | "temple" | "stress";
 type StartingPoint = "all" | "free" | "full";
@@ -168,14 +169,15 @@ export function AcademyDiscovery({
       <section className={styles.hero} aria-labelledby="academy-discovery-title">
         <div className={styles.topline}>
           <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
-          <nav className={styles.tabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
+          <DiscoverySectionTabs locale={locale} active="courses" />
+        </div>
+        <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>
+        <p className={styles.intro}>{view === "videos" ? t.videoDescription : t.description}</p>
+          <nav className={styles.programTabs} aria-label={locale === "ru" ? "Разделы Академии" : locale === "es" ? "Secciones de la Academia" : "Academy sections"}>
             <Link aria-current={view === "programs" ? "page" : undefined} href={"/" + locale + "/academy"}>{t.programs}</Link>
             <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/academy?view=videos"}>{t.videos}</Link>
             <Link href={"/" + locale + "/academy/free-ai-courses"} aria-label={t.freeAiCourses}><span className={styles.aiLong}>{t.freeAiCourses}</span><span className={styles.aiShort}>{t.aiShort}</span></Link>
           </nav>
-        </div>
-        <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>
-        <p className={styles.intro}>{view === "videos" ? t.videoDescription : t.description}</p>
 
         {view === "programs" ? (
           <>

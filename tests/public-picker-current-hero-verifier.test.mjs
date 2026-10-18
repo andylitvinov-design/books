@@ -18,7 +18,10 @@ for(const file of ['scripts/verify-app-r1.mjs','scripts/verify-es-public-site.mj
   ]){
    assert.ok(picker.includes("heroHeadline:'"+headline+"'"))
    assert.ok(picker.includes("heroTabTests:'"+topics+"'"))
-   assert.ok(picker.includes('<Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>'))
+   assert.ok(picker.includes('<DiscoverySectionTabs locale={locale} active="tests" />'))
+   const tabs=read('components/discovery-section-tabs.tsx')
+   assert.ok(tabs.includes('if (section === "tests") return "/" + locale + "/client/tests"'))
+   assert.ok(tabs.includes('aria-current={section === active ? "page" : undefined}'))
    const seen=[]
    const locator=path=>({path,locator:selector=>locator([...path,['selector',selector]]),getByRole:(role,options)=>locator([...path,['role',role,options]])})
    const expect=target=>({toBeVisible:async()=>seen.push(['visible',target.path]),toHaveAttribute:async(name,value)=>seen.push(['attribute',target.path,name,value])})

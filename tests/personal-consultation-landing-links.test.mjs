@@ -20,7 +20,7 @@ test("free written review and optional paid consultation are distinct choices on
   assert.ok(landing.indexOf('id="personal-consultation"') > landing.indexOf('<ServiceVideoShowcase'), "consultation format selection belongs after the value explanation and video");
   assert.match(landing, /<details className=\{styles\.directions\}>/);
   assert.match(landing, /className=\{styles\.finalRequest\} id="request-free-review"/);
-  assert.match(landing, /href=\{locale === "es" \? "\/en\/services\/alchemy-of-soul"/);
+  assert.ok(landing.includes('href={"/" + locale + "/services/alchemy-of-soul"}'));
 });
 
 test("three languages preserve a genuinely free written report and transparent live consultation prices", () => {

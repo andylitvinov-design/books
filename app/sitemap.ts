@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const coreServicePaths = ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"];
   const coreServiceUrls = (["en", "ru", "es"] as const).flatMap(locale => coreServicePaths.map(slug => `/${locale}/services/${slug}`));
   const spanishJourneys = ['relationships', 'business', 'stress', 'energy', 'effectiveness'].map(theme => `/es/explore/${theme}`);
-  const publicPaths = [...spanishJourneys, '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`),  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
+  const publicPaths = [...(['en','ru','es'] as const).map(locale => '/' + locale + '/events'), ...spanishJourneys, '/en/courses/antistress', '/ru/courses/antistress', '/es/courses/antistress', '/en/courses/methodology', '/ru/courses/methodology', '/es/courses/methodology', '/en/explore/relationships', '/ru/explore/relationships', '/en/books', '/ru/books', '/en/library', '/ru/library', '/es/library', '/en/library/distance-homeopathy', '/ru/library/distance-homeopathy', '/es/library/distance-homeopathy', '/en/wu-xing', '/ru/wu-xing', '/es/wu-xing', '/es', '/es/about', '/es/services', '/es/books', '/es/homeopathy', '/es/homeopathy/remedies', ...getSpanishRemedySlugs().map(slug => `/es/homeopathy/remedies/${slug}`),  ...coreServiceUrls, ...(['en','ru','es'] as const).flatMap(locale => [`/${locale}/services/business-consulting`, ...['psychohomeopathy', 'imagery-therapy', 'systemic-constellations'].map(slug => `/${locale}/services/${slug}`)]), ...academyPaths];
   const entries: MetadataRoute.Sitemap = publicPaths.map(path => ({ url: base + path, changeFrequency: 'monthly', priority: path === '/es' ? 0.8 : 0.6 }));
   const network: MetadataRoute.Sitemap = [];
   try {
@@ -60,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const knownServiceRedirects = new Set([
     '/en/services/psychohomeopathy',
     '/ru/services/psychohomeopathy',
+    '/es/services/psychohomeopathy',
     '/en/services/andy-litvinov/homeopathy-consultation',
     '/ru/services/andy-litvinov/homeopathy-consultation',
   ]);

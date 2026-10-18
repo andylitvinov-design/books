@@ -40,6 +40,7 @@ const shared = {
   '@/components/static-portrait': { StaticPortrait: empty },
   '@/components/public-site-header': { PublicSiteHeader: empty },
 };
+shared['@/components/discovery-section-tabs']=loadComponent('components/discovery-section-tabs.tsx',{'next/link':anchor,'./discovery-section-tabs.module.css':{}});
 const freePaths = loadComponent('components/home-free-paths.tsx', {
   ...shared,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },

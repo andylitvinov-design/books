@@ -14,6 +14,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ServicesFreeRecommendations } from "@/components/services-free-recommendations";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./services-smart-discovery.module.css";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 
 type Locale = "en" | "ru" | "es";
 type Editorial = {id:string;title:string;promise:string;benefit?:string;details?:string;href:string;areaKey:string;label?:string;price?:string;free?:boolean;image?:string};
@@ -361,11 +362,7 @@ export function ServicesSmartDiscovery({
       <div className={styles.hero}>
         <div className={styles.topline}>
           <p className={styles.kicker}><Sparkles size={16} aria-hidden="true"/>{t.kicker}</p>
-          <nav className={styles.tabs} aria-label={locale==="ru"?"Тесты, курсы и помощь":locale==="es"?"Pruebas, cursos y ayuda":"Tests, courses and assistance"}>
-            <Link href={locale==="es"?"/es/client":"/"+locale+"/client/tests"}>{locale==="ru"?"Тесты":locale==="es"?"Pruebas":"Tests"}</Link>
-            <Link href={"/"+locale+"/academy/free-ai-courses"}>{locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}</Link>
-            <Link href={"/"+locale+"/services"} aria-current="page">{locale==="ru"?"Помощь":locale==="es"?"Ayuda":"Assist"}</Link>
-          </nav>
+          <DiscoverySectionTabs locale={locale} active="services" />
         </div>
         <div className={styles.heroCopy}>
           <h2 id="hh-service-discovery-title">{t.title}</h2>

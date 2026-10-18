@@ -29,6 +29,8 @@ function load(path, imports, transform = value => value) {
   });
   return exports;
 }
+const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
+common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
 const { SiteNavigation } = load('components/site-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },

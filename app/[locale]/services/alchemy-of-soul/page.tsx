@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: {
       canonical: "/" + locale + "/services/alchemy-of-soul",
-      languages: { en: "/en/services/alchemy-of-soul", ru: "/ru/services/alchemy-of-soul" },
+      languages: { en: "/en/services/alchemy-of-soul", ru: "/ru/services/alchemy-of-soul", es: "/es/services/alchemy-of-soul" },
     },
     openGraph: {
       title: ru ? "Алхимия души · Психогомеопатия" : "Alchemy of the Soul · Psycho-homeopathy",

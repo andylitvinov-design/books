@@ -122,7 +122,7 @@ test('the public Tests first screen uses the Academy discovery hero and preserve
   assert.match(picker, /className=\{academyStyles\.topline\}/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSearch : academyStyles\.form\} role="search"/)
   assert.match(picker, /\{authenticated && <div className=\{styles\.accountFinderFilters\}>/)
-  assert.match(picker, /className=\{academyStyles\.tabs\}/)
+  assert.match(picker, /<DiscoverySectionTabs locale=\{locale\} active="tests"/)
   assert.match(picker, /className=\{authenticated \? styles\.accountFinderSubmit : academyStyles\.submit\}/)
   assert.match(academyCss, /linear-gradient\(121deg, #203450/)
   assert.match(css, /\.shell\[data-public-test-picker="true"\]/)
@@ -177,18 +177,17 @@ test('mobile cards show questions and time under the photo, Type by match, and a
   assert.match(card, /<details className=\{styles\.researchDetails\}>/)
 })
 
-test('public finder has three localized working destinations and retains test selection', () => {
-  assert.ok(picker.includes("heroTabTests:'Tests', heroTabCourses:'Courses', heroTabAssist:'Assist'"))
-  assert.ok(picker.includes("heroTabTests:'Тесты', heroTabCourses:'Курсы', heroTabAssist:'Помощь'"))
-  assert.ok(picker.includes("heroTabTests:'Pruebas', heroTabCourses:'Cursos', heroTabAssist:'Ayuda'"))
-  assert.ok(picker.includes('<Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>'))
-  assert.ok(picker.includes('<Link href={`/${locale}/academy/free-ai-courses`}>{c.heroTabCourses}</Link>'))
-  assert.ok(picker.includes('<Link href={`/${locale}/services/free-situation-review`}>{c.heroTabAssist}</Link>'))
+test('public finder has four localized working destinations and retains test selection', () => {
+  const tabs = read('components/discovery-section-tabs.tsx')
+  for (const lang of ['en','ru','es']) assert.ok(tabs.includes(lang + ':'))
+  assert.match(picker, /<DiscoverySectionTabs locale=\{locale\} active="tests"/)
+  assert.match(tabs, /"tests", "services", "events", "courses"/)
+  for (const destination of ['client/tests', 'services', 'events', 'academy/free-ai-courses']) assert.ok(tabs.includes(destination))
+  for (const title of ['Tests', 'Services', 'Events', 'Courses', 'Тесты', 'Услуги', 'События', 'Курсы', 'Pruebas', 'Servicios', 'Eventos', 'Cursos']) assert.ok(tabs.includes(title), title)
   assert.ok(picker.includes('aria-pressed={checked}'))
   assert.ok(picker.includes('onToggleFocus(key)'))
   assert.ok(picker.includes('data-test-start-mode={journeyMode}'))
 })
-
 
 test('the existing two-column mobile topic chooser is untouched by the warm hero', () => {
   assert.ok(picker.includes('const TOPICS = [...HOME_TEST_TOPICS'))
@@ -211,7 +210,7 @@ test('the first mobile step follows the hero immediately, without redundant prom
   assert.doesNotMatch(header, /academyStyles\.filters|academyStyles\.suggestions|academyStyles\.subnote|heroQuickPicks/)
   assert.match(header, /\{authenticated && <div className=\{styles\.accountFinderFilters\}>/)
   assert.match(header, /role="search"/)
-  assert.equal((header.match(/<Link href=/g) || []).length, 3)
+  assert.equal((header.match(/<DiscoverySectionTabs /g) || []).length, 1)
   assert.ok(picker.includes('c.privacy'))
 })
 

@@ -60,8 +60,14 @@ test("Services Spanish retains its routes with a compact photographic treatment"
   assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') > 0);
   assert.match(page, /<PublicSiteHeader locale="es" showAssessmentStrip=\{false\} \/>/);
   assert.ok(page.indexOf('<ServicesConversionHero locale="es" />') < page.indexOf('<ServicesTestsIntro locale="es" />'));
-  assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') < page.indexOf('data-es-services-photo-cards'));
-  assert.match(page, /id="solutions"/);
+  const sharedOffers = page.indexOf('<ServicesSolutions locale="es" />');
+  const videoBlock = page.indexOf('id="method-videos"');
+  const testimonials = page.indexOf('<PersonalTestimonials locale="es" variant="services" />');
+  const extraCards = page.indexOf('data-es-services-photo-cards');
+  assert.ok(page.indexOf('<ServicesTestsIntro locale="es" />') < sharedOffers);
+  assert.ok(sharedOffers < page.indexOf('<ServicesAboutEntry locale="es" />'));
+  assert.ok(sharedOffers < videoBlock && videoBlock < testimonials && testimonials < extraCards);
+  assert.match(page, /<ServicesSolutions locale="es" \/>/);
   assert.match(page, /className=\{offerStyles.photo\}/);
   assert.match(css, /grid-template-columns:minmax\(106px,2fr\) minmax\(0,3fr\)/);
   for (const route of ["psychohomeopathy", "imagery-therapy", "business-consulting", "systemic-constellations"]) {

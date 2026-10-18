@@ -23,9 +23,12 @@ test('public test hero reuses the home palette and photo while keeping the exist
 })
 
 test('the compact public finder links to tests, courses and assistance without losing the real topic and recommendations sections', () => {
-  assert.match(picker, /\/client\/tests/)
-  assert.match(picker, /\/academy\/free-ai-courses/)
-  assert.match(picker, /\/services\/free-situation-review/)
+  assert.ok(picker.includes('<DiscoverySectionTabs locale={locale} active="tests" />'))
+  const tabs=read('components/discovery-section-tabs.tsx')
+  assert.match(tabs, /\/client\/tests/)
+  assert.match(tabs, /\/academy\/free-ai-courses/)
+  assert.match(tabs, /\/services/)
+  assert.match(tabs, /\/events/)
   assert.match(picker, /id="hh-simple-topic-title"/)
   assert.match(picker, /id="hh-simple-recommendations"/)
   assert.match(css, /\.shell :global\(#hh-simple-topic-title\)\{scroll-margin-top:115px\}/)

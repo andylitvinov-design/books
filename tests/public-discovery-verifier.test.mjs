@@ -37,6 +37,7 @@ function compile(source, react, modules = {}, browser = {}) {
       if (name === 'next/link' || name === 'next/image') return { default: name === 'next/link' ? 'a' : 'img' }
       if (name.endsWith('.css')) return styles
       if (name === 'lucide-react') return new Proxy({}, { get: () => 'svg' })
+      if (name === '../discovery-section-tabs') return compile(read('components/discovery-section-tabs.tsx'), react, modules, browser)
       if (name === './simple-test-picker') return { SimpleTestPicker: 'SimpleTestPicker' }
       if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
       if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }

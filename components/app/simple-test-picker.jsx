@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { DiscoverySectionTabs } from '../discovery-section-tabs'
 import { useEffect, useState } from 'react'
 import { Activity, ArrowRight, Check, ChevronDown, Clock3, Compass, BookOpen, GraduationCap, Layers, ListChecks, BriefcaseBusiness, CirclePlus, Search, Heart, Leaf, Moon, Play, ShieldCheck, SlidersHorizontal, Smile, Sparkles, Sun, Target, Users, Zap } from 'lucide-react'
 import styles from './simple-test-picker.module.css'
@@ -245,11 +246,7 @@ export function SimpleTestPicker({
     <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
       {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
-        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Тесты, курсы и помощь' : locale === 'es' ? 'Pruebas, cursos y ayuda' : 'Tests, courses and assistance'}>
-          <Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>
-          <Link href={`/${locale}/academy/free-ai-courses`}>{c.heroTabCourses}</Link>
-          <Link href={`/${locale}/services/free-situation-review`}>{c.heroTabAssist}</Link>
-        </nav>
+        <DiscoverySectionTabs locale={locale} active="tests" />
       </div>}
       {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
       {authenticated

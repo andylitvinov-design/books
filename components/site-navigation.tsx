@@ -97,7 +97,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Preserve the additional editorial destinations afterwards.
   const menuItems = [
     ...getCompactNavigation(activeLocale),
-    ...getSiteNavigation(activeLocale).filter(item => item.id === 'relationships' || item.id === 'courses'),
+    ...getSiteNavigation(activeLocale).filter(item => item.id === 'relationships' || item.id === 'courses' || item.id === 'events'),
   ];
 
   return <nav aria-label={text.navigation} className="site-navigation">

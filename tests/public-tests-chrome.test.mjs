@@ -11,7 +11,7 @@ test('guest test-selection routes reuse public site chrome in EN and RU', () => 
       assert.equal(isPublicTestDiscoveryPath(route), true, route)
       assert.equal(activeNavigationId(route), 'cabinet', route)
     }
-    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 6)
+    assert.equal(getSiteNavigation(locale).filter(item => item.id !== 'relationships').length, 7)
   }
 })
 

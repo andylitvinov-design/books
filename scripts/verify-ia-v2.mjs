@@ -132,7 +132,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['events','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinet = header.locator('a.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
