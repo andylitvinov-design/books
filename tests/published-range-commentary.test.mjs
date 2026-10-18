@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { PUBLISHED_RANGE_COMMENTARY, publishedRangeCommentary } from '../lib/assessments/published-range-commentary.js'
 import { assessmentRangeReading } from '../lib/assessments/assessment-range-reading.js'
+import { descriptiveScoreLevels } from '../lib/assessments/descriptive-score-levels.js'
 
 const expected = Object.freeze({
   'phq-2': { 'symptoms.phq2.total': ['below_screen','screen_signal'] },
@@ -129,4 +130,36 @@ test('out-of-range and unverified models never create a confident band narrative
     bands:[{code:'severe',from:15,to:21,label:'severe',current:true}],
   })
   assert.equal(noProvenance,null)
+})
+
+test('original HH resource means are descriptions of this run, not claims of temporal stability', () => {
+  const score = descriptiveScoreLevels({
+    result: {definitionKey:'hh-resource-pulse'},
+    section: {key:'resource.support',construct:'Available support',value:5,min:0,max:5,bandBasis:'descriptive'},
+    model: {verified:true,bandBasis:'descriptive',bands:[],answerBands:[],reliableDirection:true,orientation:'resource'},
+    locale:'en',
+  })
+  assert.ok(score)
+  assert.equal(score.bands.length,5)
+  assert.equal(score.bands.filter(row=>row.current).length,1)
+  assert.match(score.current.label, /Strongly endorsed in these answers/)
+  assert.match(score.current.note, /does not establish their consistency across time or situations/)
+  assert.match(score.caveat, /not published norms/)
+  const ru = descriptiveScoreLevels({
+    result: {definitionKey:'hh-resource-pulse'},
+    section: {key:'resource.support',construct:'Поддержка',value:5,min:0,max:5,bandBasis:'descriptive'},
+    model: {verified:true,bandBasis:'descriptive',bands:[],answerBands:[],reliableDirection:true,orientation:'resource'},
+    locale:'ru',
+  })
+  assert.match(ru.current.label, /Высоко оценивается в ответах/)
+  assert.match(ru.current.note, /не доказывает/)
+})
+
+test('nonclinical editorial parts never invent category levels for mixed-polarity HH scales', () => {
+  const model = {verified:true,bandBasis:'descriptive',bands:[],answerBands:[],reliableDirection:false,orientation:'neutral'}
+  assert.equal(descriptiveScoreLevels({
+    result:{definitionKey:'hh-original-incompatible-v1'},
+    section:{key:'some.dimension',value:3,min:1,max:5,bandBasis:'descriptive'},
+    model,locale:'en',
+  }),null)
 })
