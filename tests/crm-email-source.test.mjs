@@ -60,7 +60,8 @@ test('no public table grants and owner-only RLS on durable email delivery',()=>{
  assert.match(sql,/security definer set search_path = ''/)
  assert.match(sql,/on delete cascade/)
 })
-\ntest('delivery webhook tracks delivered, delayed and suppression without misleading acceptance',()=>{
+
+test('delivery webhook tracks delivered, delayed and suppression without misleading acceptance',()=>{
  const route=read('app/api/app/crm/webhook/route.js')
  const migration=read('supabase/migrations/20261018190000_hh_crm_email_delivery_receipts.sql')
  const list=read('components/app/crm-email-tools.jsx')
