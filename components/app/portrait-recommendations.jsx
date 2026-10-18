@@ -10,6 +10,7 @@ const COPY = {
     eyebrow:'YOUR TEST RESULTS', title:'Personal recommendations',
     intro:'Here are your recent, verified questionnaire measurements. Choose which topics feel useful to explore; scores never decide your worth or personal goals.',
     readings:'What your questionnaires report', consider:'Choose your own focus',
+    nextEyebrow:'CHOOSE WHAT HAPPENS NEXT',goalsLabel:'Set my development goals',courseLabel:'Explore OPORA daily practices',supportLabel:'Request a free written review',nextHint:'You decide whether to practise independently or ask for support; your test results are not sent when you open these links.',
     chooseTitle:'Your priorities belong to you',
     chooseCopy:'No automatic “strengths” or “weaknesses” are inferred from arbitrary percentage cutoffs. If something feels important, explore its original score and choose a gentle next step.',
     noData:'There are no recent, source-verified results to summarize yet. You can review older reports or choose an available check-in.',
@@ -22,6 +23,7 @@ const COPY = {
     eyebrow:'РЕЗУЛЬТАТЫ ВАШИХ ТЕСТОВ', title:'Персональные рекомендации',
     intro:'Здесь собраны свежие подтверждённые результаты анкет. Какие направления вам важны, решаете вы: баллы не оценивают личность и не задают обязательных целей.',
     readings:'Что показали ваши опросники', consider:'Выберите собственный ориентир',
+    nextEyebrow:'ВАШ СЛЕДУЮЩИЙ ШАГ',goalsLabel:'Установить цели развития',courseLabel:'Посмотреть ежедневные практики «ОПОРА»',supportLabel:'Запросить бесплатный письменный разбор',nextHint:'Вы сами выбираете дальнейшие действия. Переход по ссылкам не отправляет ваши результаты тестов.',
     chooseTitle:'Вы сами определяете приоритеты',
     chooseCopy:'По произвольным процентным порогам мы больше не объявляем показатели «сильными» или «слабыми». Откройте исходную шкалу, изучите контекст и только затем решите, что стоит практиковать.',
     noData:'Пока нет свежих проверенных результатов. Можно посмотреть прежние отчёты или пройти подходящий тест.',
@@ -34,6 +36,7 @@ const COPY = {
     eyebrow:'TUS RESULTADOS',title:'Recomendaciones personales',
     intro:'Mediciones recientes y verificadas. Elige qué temas te interesan; ningún número determina tu valor ni tus metas.',
     readings:'Resultados de cuestionarios',consider:'Elige tu propio enfoque',
+    nextEyebrow:'ELIGE TU SIGUIENTE PASO',goalsLabel:'Definir mis objetivos',courseLabel:'Explorar las prácticas diarias OPORA',supportLabel:'Solicitar una revisión escrita gratuita',nextHint:'Tú eliges cómo continuar. Abrir estos enlaces no envía tus resultados personales.',
     chooseTitle:'Tú decides tus prioridades',
     chooseCopy:'No clasificamos fortalezas ni debilidades a partir de porcentajes arbitrarios. Consulta la escala original y decide qué explorar.',
     noData:'No hay resultados actuales verificados. Puedes consultar informes anteriores o hacer una prueba disponible.',
@@ -89,6 +92,21 @@ export function PortraitRecommendations({results = [],locale = 'en'}) {
         {t.next}<ArrowRight size={16} aria-hidden="true"/>
       </Link>
     </div>
+    <nav className={styles.nextSteps} aria-label={t.nextEyebrow} data-personal-next-steps>
+      <p className={styles.nextEyebrow}>{t.nextEyebrow}</p>
+      <div className={styles.nextLinks}>
+        <Link href={`/${locale === 'es' ? 'en' : locale}/app/portfolio#hh-development-program`} prefetch={false}>
+          <Compass size={17} aria-hidden="true"/>{t.goalsLabel}<ArrowRight size={15} aria-hidden="true"/>
+        </Link>
+        <Link href={`/${locale === 'es' ? 'en' : locale}/app/course?program=stress`} prefetch={false}>
+          <BookOpen size={17} aria-hidden="true"/>{t.courseLabel}<ArrowRight size={15} aria-hidden="true"/>
+        </Link>
+        <Link href={`/${locale}/services/free-situation-review`} prefetch={false}>
+          <ShieldCheck size={17} aria-hidden="true"/>{t.supportLabel}<ArrowRight size={15} aria-hidden="true"/>
+        </Link>
+      </div>
+      <p className={styles.nextHint}>{t.nextHint}</p>
+    </nav>
     <p className={styles.disclaimer}>{t.note}</p>
   </section>
 }
