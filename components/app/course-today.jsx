@@ -430,7 +430,6 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     actionDisabled={busy||(paused&&resumeBlocked)}
     onStart={startFocusLesson} onBack={()=>onExit?.()} onViewChange={setView}/>}
   {!immersiveStart&&<header className={styles.questHero} data-course-teal-hero>
-  <header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
     <div className={styles.heroInner}>
       <div className={styles.questTopline}>
