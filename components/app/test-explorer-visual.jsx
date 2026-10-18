@@ -27,7 +27,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const drag = useRef(null)
   const ru = locale === 'ru', es = locale === 'es'
-  const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Regulación emocional","relationships":"Relaciones","intimacy":"Intimidad","boundaries":"Límites y consentimiento","sexual_wellbeing":"Bienestar sexual","embodiment":"Presencia corporal","resource":"Recursos y resiliencia","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
+  const spanishAxes = {"stress":"Estrés","anxiety":"Ansiedad","mood":"Estado de ánimo","sleep":"Sueño / recuperación","energy":"Energía","clarity":"Claridad","focus":"Concentración","emotional_regulation":"Conciencia emocional","relationships":"Conexión / apoyo","intimacy":"Elección de cercanía","boundaries":"Límites personales","sexual_wellbeing":"Autoaceptación sexual","embodiment":"Conciencia corporal","resource":"Recursos percibidos","self_support":"Apoyo interior","functioning":"Vida cotidiana","personality":"Personalidad","meaning":"Sentido y dirección"}
   const label = (axis) => (es ? spanishAxes[axis] : null) || TEST_EXPLORER_AXIS_LABELS[axis]?.[locale] || TEST_EXPLORER_AXIS_LABELS[axis]?.en || axis
   const measuredAxes = portrait ? PORTRAIT_AXES.filter((axis) => portrait.axes?.[axis] != null) : []
   // The chosen category always unfolds across the full circumference. Show
@@ -46,13 +46,14 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         ? (ru ? 'Дух / развитие' : es ? 'Espíritu / desarrollo' : 'Spirit / Growth')
         : (sector.label[locale] || sector.label.en),
       ideal: project(146),
-      end: sector.percent === null ? null : project(14 + sector.percent / 100 * 132),
+      // Length in All indicates TEST COVERAGE, never an average wellbeing grade.
+      end: sector.measured === 0 ? null : project(14 + sector.coveragePercent / 100 * 132),
       value: project(110),
     }
   }) : []
   const overviewLabels = portrait && allSectors ? layoutPortraitRayLabels(overviewRays.map((ray) => ({
     axis: ray.key, label: ray.displayLabel, ideal: ray.ideal,
-    end: null, measured: ray.percent !== null,
+    end: null, measured: ray.measured > 0,
   }))) : []
   const sectorAxes = portraitAxesForSectors([selectedSector])
   const sectorAxisSet = new Set(sectorAxes)
@@ -171,8 +172,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         className={styles.portraitRadar} data-radar-mode="summary" data-radar-layout="full-circle"
         data-active-portrait-sector="all" role="img"
         aria-label={(ru ? 'Обзор четырёх категорий' : es ? 'Resumen de cuatro categorías' : 'Four-category overview') + ': ' +
-          overviewRays.map(ray => ray.displayLabel + ': ' + (ray.percent === null ? '—' : ray.percent + '%') +
-            ' (' + ray.measured + '/' + ray.total + ')').join(', ')}>
+          overviewRays.map(ray => ray.displayLabel + ': ' + ray.measured + '/' + ray.total + ' measured').join(', ')}>
         <title>{ru ? 'Обзор четырёх категорий по реально измеренным шкалам' :
           es ? 'Resumen de cuatro categorías usando solo escalas medidas' :
             'Four-category overview based only on measured scales'}</title>
@@ -181,7 +181,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <polygon points={overviewRays.map(ray => ray.ideal.x + ',' + ray.ideal.y).join(' ')}
           className={styles.radarContourPolygon}/>
         {overviewRays.map(ray => <g key={ray.key} className={styles.radarSummarySector}
-          data-summary-sector={ray.key} data-measured={ray.percent !== null}>
+          data-summary-sector={ray.key} data-measured={ray.measured > 0}>
           <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y}
             className={styles.radarGuide}/>
           {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y}
@@ -192,15 +192,9 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
             className={ray.end ? styles.radarContourMeasured : styles.radarContourUnmeasured}/>
           <text x={ray.value.x} y={ray.value.y} textAnchor="middle" dy=".3em"
             className={styles.radarSummaryValue}>
-            {ray.percent === null ? '—' : ray.percent + '%'}
+            {ray.measured} / {ray.total}
           </text>
         </g>)}
-        {overviewRays.every(ray => ray.end) && <polygon
-          points={overviewRays.map(ray => ray.end.x + ',' + ray.end.y).join(' ')}
-          className={styles.radarArea}/>}
-        {overviewRays.every(ray => ray.end) && <polygon
-          points={overviewRays.map(ray => ray.end.x + ',' + ray.end.y).join(' ')}
-          className={styles.radarOutline}/>}
         <circle cx="180" cy="182" r="7" className={styles.radarCenter}/>
         {overviewLabels.map(ray => <g key={'summary-label-' + ray.axis}
           className={[styles.radarLabel, !ray.measured ? styles.radarLabelUnmeasured : ''].join(' ')}>
@@ -339,6 +333,6 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
       </div>)}
     </div>}
-    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (allSectors ? (ru ? 'В режиме «Все» показаны четыре обобщённых значения только по измеренным шкалам. Пустые категории не оцениваются. Это не процент здоровья.' : es ? 'La vista Todo muestra cuatro promedios solo de escalas medidas; las categorías sin datos quedan vacías. No son porcentajes de salud.' : 'All shows four descriptive averages of measured scales only; unmeasured categories stay blank. These are not health scores.') : (ru ? 'Шкалы выбранной категории равномерно расположены по кругу. Тёмные точки — только сохранённые измерения; пустые контуры — неизмеренные шкалы. Это не процент здоровья.' : es ? 'Las escalas se distribuyen por todo el círculo. Solo los puntos medidos muestran resultados. No es un porcentaje de salud.' : 'Scales span the full circle. Only saved measurements have filled data points; hollow ring markers show unmeasured scales. These are not health percentages.')) : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
+    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (allSectors ? (ru ? '«Все» показывает охват — сколько шкал имеют свежие результаты. Это не общий балл здоровья.' : es ? 'Todo muestra cobertura de mediciones actuales, no un promedio de salud.' : 'All displays current measurement coverage only, never an average health score.') : (ru ? 'Только свежие проверенные направленные шкалы создают луч. Описательные и устаревшие результаты не получают искусственной длины.' : es ? 'Solo mediciones verificadas y actuales con dirección definida generan rayos.' : 'Only recent, verified directional measurements create rays. Descriptive and outdated scores have no artificial length.')) : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
   </section>
 }
