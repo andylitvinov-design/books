@@ -28,6 +28,8 @@ const buttons=h=>nodes(h.tree).filter(n=>n.type==='button').map(textOf)
 
 test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step evidence, then server receipt',async()=>{
  const f=fixture('ru',1),h=f.h
+ const lesson=lessonFor('calm_regulation',1,'ru','standard',COURSE_ANTISTRESS_SKILLS_V6)
+ assert.equal(lesson.opora54.exercises.notice.a.length,3)
  for(let i=0;i<14;i++){
    assert.match(textOf(h.tree),new RegExp('Шаг\\s+'+(i+1)+'\\s+из\\s+15'))
    assert.doesNotMatch(buttons(h).join(' | '),/Пропустить|Skip/)
@@ -38,8 +40,8 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
      assert.match(textOf(h.tree),/Сомневаться нормально/)
    }
    if(i===7){
-     await click(h,'Пришли четыре сообщения')
-     assert.match(textOf(h.tree),/Это само событие/)
+     await click(h,lesson.opora54.exercises.notice.a[0])
+     assert.ok(textOf(h.tree).includes(lesson.opora54.exercises.notice.f[0]),'feedback follows the selected detail')
      await click(h,'Не пробовал(а)')
    }
    if(i===8){
@@ -80,6 +82,8 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
 
 test('EN V6 player: empty optional answers are not invented, safe pause never saves automatically',async()=>{
  const f=fixture('en',8),h=f.h
+ const lesson=lessonFor('calm_regulation',8,'en','standard',COURSE_ANTISTRESS_SKILLS_V6)
+ assert.equal(lesson.opora54.exercises.notice.a.length,3)
  assert.ok(findButton(h.tree,'Pause'))
  await click(h,'Pause')
  assert.match(textOf(h.tree),/You may stop here/)
@@ -89,8 +93,8 @@ test('EN V6 player: empty optional answers are not invented, safe pause never sa
    assert.doesNotMatch(buttons(h).join(' | '),/Skip this step|Skip this check-in|Skip$/)
    if(i===4){assert.ok(findButton(h.tree,'I disagree'));await click(h,'I disagree')}
    if(i===7){
-     await click(h,'My attention keeps switching')
-     assert.match(textOf(h.tree),/shifting attention/)
+     await click(h,lesson.opora54.exercises.notice.a[0])
+     assert.ok(textOf(h.tree).includes(lesson.opora54.exercises.notice.f[0]),'feedback follows actual bilingual day activity')
      await click(h,'I did not try')
    }
    if(i<13)await click(h,'Continue')
