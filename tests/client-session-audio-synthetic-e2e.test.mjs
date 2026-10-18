@@ -55,6 +55,7 @@ function harness(){
     return {id:assetId,attached:true}
   }
   const storage={
+    getBucket:async()=>({data:{public:false},error:null}),
     createSignedUploadUrl:async()=>({data:{token:'synthetic-create-only-token'},error:null}),
     upload:async(key,blob,{contentType,upsert})=>{
       assert.equal(upsert,false)
@@ -156,8 +157,8 @@ const importMemo=(content=wavLike)=>normalizePhoneAudioFile(
 
 test('real AAC Voice Memo: private intent -> same-origin upload -> verification -> ready -> explicit client publishing -> Range playback',async()=>{
   const f=harness()
-  assert.equal(await f.services.checkPrivateMediaStorage(config).catch(()=>false),false,
-    'synthetic harness omits bucket preflight implementation; do not claim it checked production storage')
+  assert.equal(await f.services.checkPrivateMediaStorage(config),true,
+    'the synthetic private bucket passes the identical recorder readiness preflight')
   const file=importMemo()
   assert.equal(file.type,'audio/mp4')
   assert.equal(file.size,wavLike.length)
