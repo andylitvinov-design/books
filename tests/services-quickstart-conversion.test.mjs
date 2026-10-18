@@ -9,7 +9,7 @@ test("EN/RU/ES services give visitors a direct free or paid path before searchin
   const css = read("components/services-quick-start.module.css");
   const enRu = read("app/[locale]/services/page.tsx");
   const es = read("app/es/services/page.tsx");
-  assert.match(quick, /type PublicLocale/);
+  assert.match(quick, /import type \{ PublicLocale \}/);
   for (const lang of ["en: {", "ru: {", "es: {"]) assert.ok(quick.includes(lang), lang);
   assert.match(quick, /data-services-quick-start/);
   assert.match(quick, /data-services-quick-action": "free-written-review"/);
