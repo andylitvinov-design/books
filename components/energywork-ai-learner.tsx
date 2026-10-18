@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, PlayCircle, Sparkles, Heart, Leaf, BarChart3 } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -418,7 +418,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-design="scenic-v2" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -427,21 +427,19 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{t.shortTitle}</span>
           <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
         </header>
-
-        <div className={styles.progressHeader}>
-          <span>{t.step} {index + 1} {t.of} {total}</span>
-          <span>{Math.round((index + 1) / total * 100)}%</span>
-        </div>
-        <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label={t.step}>
-          <span style={{ width: ((index + 1) / total * 100) + "%" }} />
-        </div>
-
-
+        <ol className={styles.stageRail} aria-label={locale === "ru" ? "Три направления Рейки" : "Three Reiki traditions"}>
+          {energyworkPathChoices.map((choice, stepIndex) => (
+            <li key={choice.id} className={styles.stage} data-highlighted={path ? path === choice.id : stepIndex === 0} aria-current={path === choice.id ? "step" : undefined}>
+              <span className={styles.stageCircle}>{stepIndex + 1}</span>
+              <span className={styles.stageName}>{choice.title[locale]}</span>
+            </li>
+          ))}
+        </ol>
 
         <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
-              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
+              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
               {slide.kind === "welcome" ? (
@@ -452,6 +450,22 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   </ul>
                   <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
                   <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
+                </div>
+              ) : null}
+              {slide.kind === "welcome" ? (
+                <div className={styles.welcomeBenefits} aria-label={locale === "ru" ? "Возможности программы" : "Programme benefits"}>
+                  <div><span className={styles.benefitIcon}><Leaf size={23} aria-hidden="true" /></span>
+                    <strong>{locale === "ru" ? "Короткие уроки" : "Short lessons"}</strong>
+                    <small>{locale === "ru" ? "Понятно и по шагам" : "Clear, step-by-step guidance"}</small>
+                  </div>
+                  <div><span className={styles.benefitIcon}><Heart size={23} aria-hidden="true" /></span>
+                    <strong>{locale === "ru" ? "Практические задания" : "Practical tasks"}</strong>
+                    <small>{locale === "ru" ? "В комфортном темпе" : "Learn at your own pace"}</small>
+                  </div>
+                  <div><span className={styles.benefitIcon}><BarChart3 size={23} aria-hidden="true" /></span>
+                    <strong>{locale === "ru" ? "Личный прогресс" : "Private progress"}</strong>
+                    <small>{locale === "ru" ? "С согласия — приватно" : "Save privately if you choose"}</small>
+                  </div>
                 </div>
               ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
@@ -538,6 +552,25 @@ export function EnergyworkAiLearner({ locale }: Props) {
           </div>
         </section>
 
+        <div className={styles.journeyEnd}>
+        <div className={styles.progressHeader}>
+          <span>{t.step} {index + 1} {t.of} {total}</span>
+          <span>{Math.round((index + 1) / total * 100)}%</span>
+        </div>
+        <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label={t.step}>
+          <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+        </div>
+        <footer className={styles.footer}>
+          {!completed ? (
+            <div className={styles.actions}>
+              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
+                {slide.kind === "path-choice" ? t.continuePath : index === 0 ? (locale === "ru" ? "Начать бесплатный курс" : "Start free program") : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+        </footer>
+          <div className={styles.secondary}>
         <details className={styles.programme}>
           <summary>{t.program}</summary>
           <ol>{Object.entries(energyworkPhases).map(([key, title]) => (
@@ -578,17 +611,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
               <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
           </div>
         </aside>
-        <footer className={styles.footer}>
-          {!completed ? (
-            <div className={styles.actions}>
-              <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
-                {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
-              </button>
-            </div>
-          ) : null}
-          <p>{t.stop}</p>
-        </footer>
+          </div>
+          <p className={styles.safety}>{t.stop}</p>
+        </div>
       </div>
     </main>
   );
