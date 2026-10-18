@@ -28,7 +28,7 @@ export default function CrmEmailTools({ contact, locale='en', enabled=false, bus
    event.preventDefault()
    if(proof.trim().length<8)return
    onAction('record_consent',{id:crypto.randomUUID(),contactId:contact.id,channel:'email',purpose:'product_updates',
-     decision:'granted',occurredAt:new Date().toISOString(),source:proof.trim(),textVersion:'crm-marketing-v1'})
+     decision:'granted',occurredAt:new Date().toISOString(),source:proof.trim().replace(/\s+/g,' '),textVersion:'crm-marketing-v1'})
  }
  function send(event) {
    event.preventDefault()
