@@ -25,7 +25,7 @@ const copy = {
     filters: "Event format", all: "All", somatic: "Body & safety", connection: "Heart & connection", reiki: "Energy & Reiki", temple: "Temple studies",
     noDates: "No confirmed upcoming dates are published yet.", noDatesHelp: "The calendar will show dates and registration links after the organizer confirms them. The themes below are examples, not scheduled events.",
     noMatches: "No events match these filters.", noMatchesHelp: "Try another topic or show the full calendar.",
-    reset: "Clear filters", view: "Event details & registration", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
+    reset: "Clear filters", view: "Event details & registration", program: "Workshop program", onlineLocation: "Online", pastNote: "Past events are shown for reference, not for booking.",
     themes: "Event directions", themesIntro: "These are formats we work with. They do not imply a scheduled date.",
     explore: "Explore related services", academy: "Explore learning programs",
     themeSomatic: "Somatic circles", themeSomaticText: "Gentle awareness, boundaries and embodied safety.",
@@ -44,7 +44,7 @@ const copy = {
     filters: "Формат мероприятий", all: "Все", somatic: "Тело и безопасность", connection: "Сердце и общение", reiki: "Энергия и Рейки", temple: "Храмовые практики",
     noDates: "Пока нет опубликованных подтверждённых дат.", noDatesHelp: "В афише появятся даты и ссылки для записи после подтверждения организатором. Темы ниже — примеры направлений, а не объявленные мероприятия.",
     noMatches: "По этим фильтрам событий нет.", noMatchesHelp: "Попробуйте другую тему или очистите фильтры.",
-    reset: "Сбросить фильтры", view: "Описание и запись", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
+    reset: "Сбросить фильтры", view: "Описание и запись", program: "Программа семинара", onlineLocation: "Онлайн", pastNote: "Прошедшие встречи показаны для информации, не для записи.",
     themes: "Форматы встреч", themesIntro: "Эти направления возможны, но конкретная дата пока не заявлена.",
     explore: "Посмотреть услуги", academy: "Посмотреть программы обучения",
     themeSomatic: "Соматические круги", themeSomaticText: "Мягкие практики внимания к телу, границам и безопасности.",
@@ -63,7 +63,7 @@ const copy = {
     filters: "Formato del evento", all: "Todos", somatic: "Cuerpo y seguridad", connection: "Corazón y conexión", reiki: "Energía y Reiki", temple: "Estudios del templo",
     noDates: "Todavía no hay fechas próximas confirmadas.", noDatesHelp: "Las fechas y enlaces de inscripción aparecerán después de la confirmación del organizador. Los temas de abajo no son eventos programados.",
     noMatches: "No hay eventos con estos filtros.", noMatchesHelp: "Prueba otro tema o restablece los filtros.",
-    reset: "Borrar filtros", view: "Detalles e inscripción", onlineLocation: "En línea", pastNote: "Los eventos anteriores son informativos; no están disponibles para reservar.",
+    reset: "Borrar filtros", view: "Detalles e inscripción", program: "Programa del taller", onlineLocation: "En línea", pastNote: "Los eventos anteriores son informativos; no están disponibles para reservar.",
     themes: "Tipos de encuentros", themesIntro: "Son posibles formatos de actividades, no fechas anunciadas.",
     explore: "Explorar servicios", academy: "Explorar programas",
     themeSomatic: "Círculos somáticos", themeSomaticText: "Atención amable al cuerpo, límites y seguridad.",
@@ -77,9 +77,15 @@ function renderSchedule(event: PublicEvent, locale: PublicLocale) {
   const date = new Date(event.startsAt);
   if (Number.isNaN(date.getTime())) return "";
   try {
-    return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA", {
+    const language = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA";
+    const start = new Intl.DateTimeFormat(language, {
       dateStyle: "medium", timeStyle: "short", timeZone: event.timeZone,
     }).format(date);
+    const end = event.endsAt ? new Date(event.endsAt) : null;
+    if (!end || Number.isNaN(end.getTime()) || end <= date) return start;
+    return start + " – " + new Intl.DateTimeFormat(language, {
+      timeStyle: "short", timeZone: event.timeZone,
+    }).format(end);
   } catch {
     return "";
   }
@@ -105,10 +111,11 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
     return verified.filter(event => {
       const starts = Date.parse(event.startsAt);
       if (past ? starts >= now : starts < now) return false;
-      if (category !== "all" && event.category !== category) return false;
+      if (category !== "all" && event.category !== category && !event.relatedCategories?.includes(category)) return false;
       if (format !== "all" && event.format !== format) return false;
       return !term || [
         ...Object.values(event.title), ...Object.values(event.description),
+        ...Object.values(event.highlights ?? {}).flat(),
         event.city || "", event.location || "",
       ].join(" ").toLocaleLowerCase(locale).includes(term);
     }).sort((a,b) => past ? Date.parse(b.startsAt) - Date.parse(a.startsAt) : Date.parse(a.startsAt) - Date.parse(b.startsAt));
@@ -167,10 +174,15 @@ export function EventsDiscovery({ locale, events }: { locale: PublicLocale; even
       <div className={styles.resultHeading}><h2 id="hh-events-results">{past ? t.past : t.upcoming}</h2><span>{filtered.length}</span></div>
       {filtered.length ? <div className={styles.eventGrid}>
         {filtered.map(event => <article key={event.id} className={styles.eventCard}>
+          {event.posterUrl && <img src={event.posterUrl} className={styles.eventPoster} alt={event.title[locale]} width={940} height={492} loading="lazy" decoding="async" />}
           <div className={styles.eventTop}><CalendarDays size={19} aria-hidden="true" /><strong>{renderSchedule(event,locale)}</strong></div>
           <h3>{event.title[locale]}</h3>
           <p>{event.description[locale]}</p>
-          <div className={styles.eventLocation}><MapPin size={16} aria-hidden="true" />{event.format === "online" ? t.onlineLocation : [event.location,event.city].filter(Boolean).join(", ")}</div>
+          {event.highlights?.[locale]?.length ? <details className={styles.eventDetails}>
+            <summary>{t.program}</summary>
+            <ul>{event.highlights[locale].map((point,i) => <li key={i}>{point}</li>)}</ul>
+          </details> : null}
+          <div className={styles.eventLocation}><MapPin size={16} aria-hidden="true" />{event.format === "online" ? t.onlineLocation : event.location || event.city || ""}</div>
           {!past && (event.registrationHref.startsWith("/") ?
             <Link href={event.registrationHref} prefetch={false}>{t.view}<ArrowRight size={17} aria-hidden="true" /></Link> :
             <a href={event.registrationHref} target="_blank" rel="noopener noreferrer">{t.view}<ArrowRight size={17} aria-hidden="true" /></a>

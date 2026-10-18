@@ -40,7 +40,15 @@ test('Events is a first-party menu destination in every language while the exist
 test('Event page never invents upcoming dates or shows private unpublished entries', () => {
   const data = read('data/public-events.ts')
   const view = read('components/events-discovery.tsx')
-  assert.match(data, /PUBLIC_EVENTS: readonly PublicEvent\[\] = \[\]/)
+  assert.match(data, /PUBLIC_EVENTS: readonly PublicEvent/);
+  assert.match(data, /love-magic-tarot-initiations-2026-10-25/);
+  assert.match(data, /2026-10-25T19:00:00-04:00/);
+  assert.match(data, /2026-10-25T22:00:00-04:00/);
+  assert.match(data, /America\\/Toronto/);
+  assert.match(data, /2003517510808/);
+  assert.match(data, /status: "published"/);
+  assert.match(view, /event\\.posterUrl/);
+  assert.match(view, /event\\.highlights/);
   assert.match(view, /event\.status === "published"/)
   assert.match(view, /event\.registrationHref\.trim\(\)/)
   assert.match(view, /starts < now/)
