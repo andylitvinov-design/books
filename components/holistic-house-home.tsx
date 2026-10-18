@@ -136,7 +136,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
             </AcquisitionEventLink>
           </div>
           <AcquisitionEventLink
-            className="service-home-paid-link"
+            className="service-home-selfcheck-link"
             href={`/${locale}/client/tests`}
             event="self_check_start"
             attributes={{ "data-hero-cta": "free-tests" }}
