@@ -2805,6 +2805,8 @@ function ResultConsultationCta({ locale }) {
 
 function ResultPage({ id, locale, data }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const focusScaleKey = searchParams?.get('scale') || null
   const [retaking, setRetaking] = useState(false)
   const [retakeError, setRetakeError] = useState(null)
   const c = COPY[locale],
@@ -2874,7 +2876,7 @@ function ResultPage({ id, locale, data }) {
 
       {result.definitionKey === 'mini-ipip-20' && <p className="hh-notice">{c.traitNotice}</p>}
 
-      <PersonalResultReport result={result} locale={locale} previous={previous} />
+      <PersonalResultReport result={result} locale={locale} previous={previous} focusScaleKey={focusScaleKey} />
       <TestRatingCard locale={locale} definitionKey={result.definitionKey} />
       <div className="hh-result-repeat">
         {canRepeat
