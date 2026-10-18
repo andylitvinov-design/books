@@ -26,29 +26,46 @@ async function handle(request) {
     const repo = createCrmRepository(config)
     let data
     if (request.method === 'GET') {
-      data = await repo.withOwner(actor, async (store) => ({
-        contacts: await store.listContacts(),
-        overview: await store.overview(),
-        followups: await store.listFollowups(),
-        activity: await store.listRecentActivity(),
-        drafts: await store.listDrafts(),
-        emailMessages: await store.listEmailMessages(),
-        subscribers: await store.listSubscribers(),
-        subscriberRegistryEnabled: billingRegistryEnabled(),
-        sendingEnabled: false,
-        emailEnabled: getCrmEmailConfig().enabled,
-        emailStatus: getCrmEmailConfig().reason || 'ready',
-      }))
+      const url=new URL(request.url)
+      const cursor=url.searchParams.get('contactsCursor')
+      if(cursor!==null) {
+        if([...url.searchParams.keys()].some(key=>key!=='contactsCursor')||
+           url.searchParams.getAll('contactsCursor').length!==1)
+          throw new AppError('INVALID_CONTACT_CURSOR',400)
+        data=await repo.withOwner(actor,async store=>({
+          ...await store.listContactsPage(cursor),pageOnly:true,
+        }))
+      } else {
+        data=await repo.withOwner(actor,async store=>{
+          const page=await store.listContactsPage(null)
+          return {
+            contacts:page.contacts,contactsNextCursor:page.nextCursor,
+            businessEnquiries:await store.listBusinessEnquiries(),
+            overview:await store.overview(),
+            followups:await store.listFollowups(),
+            activity:await store.listRecentActivity(),
+            drafts:await store.listDrafts(),
+            emailMessages:await store.listEmailMessages(),
+            subscribers:await store.listSubscribers(),
+            subscriberRegistryEnabled:billingRegistryEnabled(),
+            sendingEnabled:false,
+            emailEnabled:getCrmEmailConfig().enabled,
+            emailStatus:getCrmEmailConfig().reason||'ready',
+          }
+        })
+      }
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'create_followup', 'change_followup', 'log_activity'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email', 'create_followup', 'change_followup', 'log_activity', 'update_business_enquiry', 'edit_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
       if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
       else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
       else data = await repo.withOwner(actor, (store) => {
+        if (body.action === 'update_business_enquiry') return store.updateBusinessEnquiry(body.payload)
         if (body.action === 'create_followup') return store.createFollowup(body.payload)
         if (body.action === 'change_followup') return store.changeFollowup(body.payload)
         if (body.action === 'log_activity') return store.logBusinessActivity(body.payload)
+        if (body.action === 'edit_contact') return store.editContact(body.payload)
         if (body.action === 'create_contact') return store.createContact(body.payload)
         if (body.action === 'record_consent') return store.recordConsent(body.payload)
         if (body.action === 'suppress_contact') {
