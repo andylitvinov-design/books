@@ -69,7 +69,7 @@ test('owner CRM UI includes localized workflow, source and manual activity',()=>
  assert.match(source,/overview:'Обзор работы с клиентами'/)
  assert.match(source,/overview:'Resumen de contactos'/)
  for(const action of ['create_followup','change_followup','log_activity'])assert.ok(source.includes(action))
- assert.match(manager,/save\('create_contact', \{ displayName, email, locale: language, lifecycle, source \}\)/)
+ assert.match(manager,/save\('create_contact', \{ displayName, email, phone, locale: language, lifecycle, source \}\)/)
  assert.match(manager,/<CrmWorkflowOverview/)
  assert.match(manager,/<CrmContactWorkflow/)
  assert.doesNotMatch(source,/sendResendEmail|sendMail|sendMessage/)
