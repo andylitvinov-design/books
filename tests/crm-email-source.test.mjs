@@ -47,6 +47,7 @@ test('provider webhook checks signature first, applies only bounce/complaint/fai
  assert.match(src,/email\.bounced/)
  assert.match(src,/email\.complained/)
  assert.match(src,/crm_suppress_provider_email/)
+ assert.match(src,/result\.rows\[0\]\?\.matched!==true/)
  assert.doesNotMatch(src,/sendResendEmail/)
 })
 test('no public table grants and owner-only RLS on durable email delivery',()=>{
