@@ -25,7 +25,7 @@ const copy = {
     "heroImageLine": "Спокойствие не нужно заслуживать.",
     "free": "Первый курс бесплатно",
     "factDays": "14 занятий",
-    "factSkills": "6 курсов",
+    "factSkills": "6 маршрутов",
     "factTime": "В своём темпе",
     "start": "Начать курс бесплатно",
     "explore": "Посмотреть программу",
@@ -231,7 +231,7 @@ const copy = {
     "heroImageLine": "You do not have to earn a moment of calm.",
     "free": "Your first course is free",
     "factDays": "14 lessons",
-    "factSkills": "6 learning courses",
+    "factSkills": "6 learning paths",
     "factTime": "At your own pace",
     "start": "Start the free course",
     "explore": "Explore the 14 days",
@@ -437,7 +437,7 @@ const copy = {
     "heroImageLine": "No necesitas ganarte un momento de calma.",
     "free": "Tu primer curso es gratis",
     "factDays": "14 lecciones",
-    "factSkills": "6 cursos",
+    "factSkills": "6 rutas",
     "factTime": "A tu propio ritmo",
     "start": "Empezar el curso gratis",
     "explore": "Ver los 14 días",
@@ -637,9 +637,9 @@ const copy = {
 
 const challengeIcons = [Waves, PauseCircle, Leaf, ShieldCheck] as const;
 const chapterLinks = {
-  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "stress-levels", title: "6 этапов" }, { id: "programme", title: "7 этапов" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
-  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "stress-levels", title: "5 routes" }, { id: "programme", title: "7 stages" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
-  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "stress-levels", title: "5 rutas" }, { id: "programme", title: "7 etapas" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
+  ru: { label: "Разделы курса", links: [{ id: "for-whom", title: "Для кого" }, { id: "stress-levels", title: "6 маршрутов" }, { id: "programme", title: "7 навыков" }, { id: "daily-programme", title: "14 дней" }, { id: "how", title: "Занятие" }, { id: "methodologies", title: "Методики" }, { id: "measurements", title: "Тесты и шкалы" }, { id: "questions", title: "Вопросы" }] },
+  en: { label: "Course sections", links: [{ id: "for-whom", title: "Who it is for" }, { id: "stress-levels", title: "6 routes" }, { id: "programme", title: "7 skills" }, { id: "daily-programme", title: "14 days" }, { id: "how", title: "Lesson" }, { id: "methodologies", title: "Methods" }, { id: "measurements", title: "Tests & measures" }, { id: "questions", title: "Questions" }] },
+  es: { label: "Secciones del curso", links: [{ id: "for-whom", title: "Para quién" }, { id: "stress-levels", title: "6 rutas" }, { id: "programme", title: "7 habilidades" }, { id: "daily-programme", title: "14 días" }, { id: "how", title: "Clase" }, { id: "methodologies", title: "Métodos" }, { id: "measurements", title: "Pruebas y escalas" }, { id: "questions", title: "Preguntas" }] },
 } as const;
 const outcomeIcons = [Target, PauseCircle, BookOpenCheck, Heart] as const;
 
