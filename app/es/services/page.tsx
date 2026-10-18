@@ -7,6 +7,7 @@ import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { getCommerceConfig } from "@/lib/commerce/config";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
@@ -118,7 +119,7 @@ export default async function SpanishServicesPage() {
     </section>
   </details>
 
-  <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} />
+  <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} zenEnabled={getCommerceConfig().enabled && getCommerceConfig().provider === "zen"} />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
  </main>;
 }
