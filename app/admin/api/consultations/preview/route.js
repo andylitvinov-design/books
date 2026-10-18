@@ -58,6 +58,9 @@ export async function POST(request) {
     if (!Array.isArray(items) || items.length > 60) throw new Error('Too many remedy items')
     const input = Object.fromEntries(inputKeys.map(key => [key, form.get(key) ?? undefined]))
     input.items = items
+    const testKeysText = String(form.get('recommendedTestKeysJson') ?? '[]')
+    if (testKeysText.length > 2500) throw new Error('Invalid recommended tests')
+    input.recommendedTestKeys = JSON.parse(testKeysText)
     input.consultationDate = input.dateIssued
     input.includeRecommendation = form.get('includeRecommendation') === 'on'
     input.includeInvoice = form.get('includeInvoice') === 'on'
