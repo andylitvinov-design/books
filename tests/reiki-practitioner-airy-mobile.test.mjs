@@ -10,7 +10,7 @@ const curriculum = read("data/academy/energywork-ai-curriculum.ts")
 const sky = read("public/images/holistic-house/reiki-heaven-sky.svg")
 
 test("Reiki airy v2 removes welcome duplications but preserves one unified course", () => {
-  assert.equal(energyworkSequence().length,45)
+  assert.equal(energyworkSequence().length,53)
   assert.match(ui,/data-course-visual="reiki-airy-v2"/)
   assert.match(ui,/data-energywork-screen=\{slide\.kind === "welcome" \? "welcome" : "lesson"\}/)
   assert.match(ui,/welcomeRequirement: "Study all five lessons in order\."/)
@@ -28,7 +28,7 @@ test("Inner slides have no duplicate top buttons but all five steps and one bott
   assert.match(ui,/onClick=\{previous\}/)
   assert.match(ui,/onClick=\{next\}/)
   assert.match(ui,/experienceMissing/)
-  assert.match(styles,/\.page\[data-course-visual\] \.actions \{\s*flex-direction:row-reverse/)
+  assert.match(styles,/\.page\[data-course-visual\] \.actions \{\s*flex-direction:row;/)
 })
 
 test("Save-private function is retained in expanded programme, not an always-visible panel", () => {
