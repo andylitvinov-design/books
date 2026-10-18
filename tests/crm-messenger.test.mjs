@@ -146,6 +146,9 @@ test('inbox supports channel, unread and search filters with locale-correct prov
   assert.match(ui,/type="search" value=\{search\}/)
   assert.match(ui,/aria-label=\{lang==='ru'\?'Канал сообщений'/)
   assert.match(ui,/statusLabel\(m\.status,lang\)/)
+  assert.match(ui,/name==='send'\|\|name==='read'\?active/)
+  assert.doesNotMatch(ui,/await action\('read'[^;]*;await refresh/)
+
   assert.match(ui,/unknown:\{en:'Unconfirmed — do not resend'/)
   assert.match(css,/\.inboxFilters\{/)
 })
