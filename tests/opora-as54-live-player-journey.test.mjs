@@ -221,7 +221,7 @@ test('nonattempt and no-plan responses stay possible before choosing any activit
   await click(h,'Далее')
   assert.ok(findButton(h.tree,'Пока нет'))
   await click(h,'Пока нет')
-  for(let i=9;i<11;i++)await click(h,'Далее')
+  for(let i=9;i<12;i++)await click(h,'Далее')
   assert.ok(findButton(h.tree,'Сегодня не планирую'))
   await click(h,'Сегодня не планирую')
   assert.match(textOf(h.tree),/можно обойтись без плана/)
