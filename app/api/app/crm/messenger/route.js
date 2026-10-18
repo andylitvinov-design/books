@@ -6,7 +6,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
-import { verifyMessengerBusiness, sendOneMessengerMessage } from '@/lib/crm/messenger-provider'
+import { verifyMessengerBusiness, ensureTelegramWebhook, sendOneMessengerMessage } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -35,6 +35,7 @@ async function handle(request){
         onlyKeys(payload,['channel'])
         if(!MESSENGER_CHANNELS.includes(payload.channel))throw new AppError('INVALID_CHANNEL',400)
         const externalId=await verifyMessengerBusiness(payload.channel)
+        if(payload.channel==='telegram')await ensureTelegramWebhook()
         data=await repo.withOwner(actor,store=>store.connectMessengerChannel(payload.channel,externalId))
       }else if(action==='read'){
         onlyKeys(payload,['threadId'])
@@ -45,15 +46,23 @@ async function handle(request){
         if(reservation.duplicate){
           data={id:reservation.id,status:reservation.status,duplicate:true}
         }else{
-          let status='unknown',providerId=null
-          try{
-            const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text})
-            status=accepted.status
-            providerId=accepted.providerId
-          }catch(e){if(e?.code==='PROVIDER_REJECTED')status='failed'}
-          try{data=await repo.withOwner(actor,store=>
-            store.finalizeMessengerReply(reservation.id,reservation.channel,status,providerId))}
-          catch{data={id:reservation.id,status:'unknown'}}
+          // Recheck the latest suppression, account state and reply window
+          // after the reservation transaction but BEFORE the provider request.
+          const dispatch=await repo.withOwner(actor,store=>store.checkMessengerReplyReady(reservation.id))
+          if(!dispatch.allowed){
+            data=await repo.withOwner(actor,store=>
+              store.finalizeMessengerReply(reservation.id,reservation.channel,'blocked'))
+          }else{
+            let status='unknown',providerId=null
+            try{
+              const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text})
+              status=accepted.status
+              providerId=accepted.providerId
+            }catch(e){if(e?.code==='PROVIDER_REJECTED')status='failed'}
+            try{data=await repo.withOwner(actor,store=>
+              store.finalizeMessengerReply(reservation.id,reservation.channel,status,providerId))}
+            catch{data={id:reservation.id,status:'unknown'}}
+          }
           data={...data,duplicate:false}
         }
       }else throw new AppError('INVALID_ACTION',400)
