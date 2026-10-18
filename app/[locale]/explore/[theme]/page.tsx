@@ -4,7 +4,7 @@ import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
 import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
-import type { Locale } from '@/data/remedies'
+import type { PublicLocale } from '@/lib/public-locales'
 
 type Props = { params: Promise<{ locale: string; theme: string }> }
 export function generateStaticParams() {
@@ -27,7 +27,7 @@ export default async function TopicJourneyPage({ params }: Props) {
   const journey = getTopicJourney(theme)
   if (!journey) notFound()
   return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
-    <PublicSiteHeader locale={locale as "en" | "ru" | "es"} showAssessmentStrip={false}/>
-    <TopicJourneySelector locale={locale as "en" | "ru" | "es"} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale === "es" ? "en" : locale)}/>
+    <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
+    <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
   </main>
 }
