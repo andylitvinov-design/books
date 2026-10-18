@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, Check, ClipboardCheck, Compass, Lightbulb, Sh
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { businessConsultingCopy, type BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-consulting-landing.module.css";
@@ -52,7 +53,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <p className={styles.heroLead}>{t.lead}</p>
             <p className={styles.audiences}><Check size={17} aria-hidden="true" />{t.audiences}</p>
             <div className={styles.heroActions}>
-              <AcquisitionEventLink href={freeHref} event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
+              <AcquisitionEventLink href="#business-direct-request" event="service_request_start" className={styles.primary} prefetch={false} attributes={{ "data-business-cta": "free-hero" }}>
                 {t.freeCta}<ArrowRight size={19} aria-hidden="true" />
               </AcquisitionEventLink>
               <a href="#business-offers" className={styles.secondary}>{t.paidCta}<ArrowUpRight size={18} aria-hidden="true" /></a>
@@ -113,10 +114,19 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                       attributes={{ "data-business-format": offer.kind }} />
                   )}
                 </div>
+                <AcquisitionEventLink className={styles.offerDirectLink}
+                  href={`?businessFormat=${offer.kind}#business-direct-request`}
+                  event="service_request_start" prefetch={false}
+                  attributes={{"data-business-direct-option":offer.kind}}>
+                  {locale === "ru" ? "Отправить заявку с сайта" : locale === "es" ? "Enviar solicitud desde la web" : "Send a website request"}
+                  <ArrowRight size={15} aria-hidden="true"/>
+                </AcquisitionEventLink>
               </article>
             ))}
           </div>
         </section>
+
+        <BusinessWebsiteEnquiry locale={locale}/>
 
         <section className={styles.workflow} aria-labelledby="business-process-title">
           <p className={styles.sectionEyebrow}>{t.processEyebrow}</p>
@@ -163,6 +173,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             <h2 id="business-request-title">{t.requestTitle}</h2>
             <p>{t.requestLead}</p>
             <p className={styles.requestNote}>{t.replyNote}</p>
+            <a className={styles.requestDirect} href="#business-direct-request">{locale === "ru" ? "Сохранить заявку напрямую на сайте" : locale === "es" ? "Guardar solicitud directamente en la web" : "Save your request directly on the website"}<ArrowRight size={17} aria-hidden="true"/></a>
           </div>
           <div className={styles.requestChoices}>
             <ContactChannelChooser locale={locale} whatsappUrl={contactUrl("express")}
