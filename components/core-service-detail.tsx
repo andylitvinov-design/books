@@ -288,7 +288,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
             <strong>{kind === "dao" ? pathFacts.free : kind === "alchemy" ? pathFacts.alchemy : pathFacts.session}</strong>
             <span>{pathFacts.noPayment}</span>
           </div>
-          <ContactChannelChooser locale={locale} label={t.action} whatsappUrl={whatsappUrl} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
           <p className={styles.note}>{t.note}</p>
           <aside className={styles.andrey}>
             <strong>{locale === "ru" ? "С Андреем Литвиновым" : locale === "es" ? "Con Andrey Litvinov" : "With Andrey Litvinov"}</strong>
@@ -323,7 +323,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
         <div className={styles.links}>
           <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <ContactChannelChooser locale={locale} label={t.action} whatsappUrl={whatsappUrl} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
         </div>
         <details className={styles.freeAlternative}>
           <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : locale === "es" ? "¿Prefieres comenzar con una revisión gratuita por escrito?" : "Prefer to start with a free written situation review?"}</summary>
