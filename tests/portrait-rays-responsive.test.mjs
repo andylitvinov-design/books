@@ -78,21 +78,28 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
   }
 }
 
-test('only FOUR category buttons, same component, no count block or All button',()=>{
+test('All is the first of five views and shows four measured-only category points',()=>{
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     const tree=app.render()
     assert.equal(sectors(tree).length,4)
-    assert.equal(nodes(tree,'button',p=>p['data-portrait-sector-all']!==undefined).length,0)
-    assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,1)
-    assert.equal(sectors(tree)[0].props['data-portrait-sector'],'body')
-    assert.equal(sectors(tree)[0].props['aria-pressed'],true)
+    const all = nodes(tree,'button',p=>p['data-portrait-sector-all']!==undefined)
+    assert.equal(all.length,1)
+    assert.equal(all[0].props['aria-pressed'],true)
+    assert.equal(sectors(tree).filter(b=>b.props['aria-pressed']===true).length,0)
     assert.equal(nodes(tree,'div',p=>p.role==='status' && String(p.className).includes('visualState')).length,0)
-    assert.equal(nodes(tree,'svg',p=>p['data-radar-layout']==='full-circle').length,1)
-    assert.equal(anchors(tree).length,5)
-    assert.equal(labels(tree).length,5)
-    assert.equal(rayOptions(tree).length,5)
-    assert.equal(rayInputs(tree).filter(input=>input.props.checked).length,5)
+    assert.equal(nodes(tree,'svg',p=>p['data-radar-mode']==='summary').length,1)
+    assert.equal(nodes(tree,'g',p=>p['data-summary-sector']!==undefined).length,4)
+    assert.equal(anchors(tree).length,0)
+    assert.equal(labels(tree).length,4)
+    assert.equal(rayOptions(tree).length,0)
+    const detail = app.choose('body')
+    assert.equal(sectors(detail)[0].props['aria-pressed'],true)
+    assert.equal(nodes(detail,'svg',p=>p['data-radar-layout']==='full-circle').length,1)
+    assert.equal(anchors(detail).length,5)
+    assert.equal(labels(detail).length,5)
+    assert.equal(rayOptions(detail).length,5)
+    assert.equal(rayInputs(detail).filter(input=>input.props.checked).length,5)
   }
 })
 
@@ -125,7 +132,7 @@ test('each category shows all its own 3–5 scales, spaced over the FULL 360-deg
 
 test('user can opt out of one scale; switching categories preserves that preference',()=>{
   const app=harness('en')
-  const first=app.render()
+  const first=app.choose('body')
   const bodyAxes=PORTRAIT_SECTORS[0].axes
   assert.equal(rayInputs(first).filter(input=>input.props.checked).length,bodyAxes.length)
   // Embodiment is not measured in the fixture but its axis and label are visible.
@@ -201,25 +208,27 @@ test('the saved report honors the exact scale selected by the portrait Details l
   assert.match(compact,/focusedIndex >= 0 \? focusedIndex/)
 })
 
-test('mobile CSS stays four columns even at 320px and uses wide aspect-ratio radar',()=>{
+test('mobile CSS keeps five portrait views in one row down to 320px',()=>{
   const css=read('components/app/test-explorer.module.css')
-  const fresh=css.slice(css.indexOf('/* Portrait v3: four compact tabs'))
-  assert.ok(fresh.length>2500)
-  assert.match(fresh,/\.visual:not\(\.visualCompact\) \.portraitSectorGrid\{[\s\S]*?grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
-  assert.match(fresh,/@media\(max-width:760px\)\{[\s\S]*?\.portraitSectorGrid\{[\s\S]*?grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
-  assert.match(fresh,/@media\(max-width:440px\)\{[\s\S]*?\.portraitSectorGrid\{[\s\S]*?grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  const fresh=css.slice(css.lastIndexOf('/* Portrait v4:'))
+  assert.ok(fresh.length>1500)
+  assert.match(fresh,/\.visual:not\(\.visualCompact\) \.portraitSectorGrid\{/)
+  assert.match(fresh,/grid-template-columns:minmax\(43px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/@media\(max-width:440px\)\{/)
+  assert.match(fresh,/grid-template-columns:minmax\(39px,\.68fr\) repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(fresh,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\)\{[\s\S]*?aspect-ratio:360 \/ 390/)
   assert.match(css,/\.visual:not\(\.visualCompact\) \.modelStage:has\(\.portraitRadar\) > \.portraitRadar\{[\s\S]*?height:100%/)
-  assert.match(fresh,/\.radarContourMeasured\{/)
-  assert.match(fresh,/\.radarContourUnmeasured\{/)
+  assert.match(css,/\.radarContourMeasured\{/)
+  assert.match(css,/\.radarContourUnmeasured\{/)
   assert.match(css,/\.portraitRayTestLink:focus-visible/)
 })
 
-test('Reports keeps the two original quick actions right under the radar',()=>{
+test('Reports keeps the three quick actions right under the radar',()=>{
   const src=read('components/app/test-explorer-visual.jsx')
   assert.ok(src.indexOf('className={styles.portraitRadar}')<src.indexOf('{portrait && !compact && portraitActions}'))
   assert.ok(src.indexOf('{portrait && !compact && portraitActions}')<src.indexOf('className={styles.portraitControls}'))
-  assert.match(src,/\{portrait && !compact && <section className=\{styles.portraitControls\}/)
+  assert.match(src,/\{portrait && !compact && !allSectors && <section className=\{styles.portraitControls\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
-  assert.doesNotMatch(src,/toggleAllSectors|toggleSector\(|data-portrait-sector-all|summaryPoints/)
+  assert.match(src,/data-portrait-sector-all/)
 })

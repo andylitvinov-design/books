@@ -54,7 +54,7 @@ test('already completed questionnaire is not recommended to fill a different pro
   }
 })
 
-test('Reports portrait places both actions after photo and before ray chooser; target is reachable below', () => {
+test('Reports portrait places all three actions after photo and before ray chooser; targets are reachable', () => {
   const workspace = source('components/app/app-workspace.jsx')
   const visual = source('components/app/test-explorer-visual.jsx')
   const reports = workspace.slice(workspace.indexOf('function PortfolioPage('), workspace.indexOf('function ProfileOverview('))
@@ -62,6 +62,9 @@ test('Reports portrait places both actions after photo and before ray chooser; t
   assert.match(visual, /\{portrait && !compact && portraitActions\}/)
   assert.ok(visual.indexOf('{portrait && !compact && portraitActions}') < visual.indexOf('className={styles.portraitControls}'))
   assert.match(reports, /data-testid="portrait-completion-action"/)
+  assert.match(reports, /data-testid="portrait-analyses-action"/)
+  assert.match(reports, /setAnalysisScrollRequest/)
+  assert.match(reports, /hh-insights-title/)
   assert.match(reports, /data-testid="portrait-recommendations-action"/)
   assert.match(reports, /profile=missing/)
   assert.match(reports, /setRecommendationScrollRequest/)

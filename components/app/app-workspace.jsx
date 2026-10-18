@@ -2014,6 +2014,7 @@ function PortfolioPage({ data, locale }) {
   useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
   const [recommendationScrollRequest, setRecommendationScrollRequest] = useState(0)
+  const [analysisScrollRequest, setAnalysisScrollRequest] = useState(0)
   useEffect(() => {
     if (!recommendationScrollRequest || activeTab !== 'values') return
     const frame = window.requestAnimationFrame(() => {
@@ -2027,6 +2028,20 @@ function PortfolioPage({ data, locale }) {
     })
     return () => window.cancelAnimationFrame(frame)
   }, [recommendationScrollRequest, activeTab])
+
+  useEffect(() => {
+    if (!analysisScrollRequest || activeTab !== 'values') return
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById('hh-insights-title')
+      if (!target) return
+      target.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      })
+      target.focus({ preventScroll: true })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [analysisScrollRequest, activeTab])
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2123,8 +2138,17 @@ function PortfolioPage({ data, locale }) {
             <Link href={`/${locale}/app/tests?profile=missing`} prefetch={false}
               className="hh-portrait-quick-primary" data-testid="portrait-completion-action">
               <ClipboardList size={18} aria-hidden="true" />
-              {ru ? 'Пройти тесты' : 'Take tests'}
+              {ru ? 'Тесты' : locale === 'es' ? 'Tests' : 'Tests'}
             </Link>
+            <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
+              data-testid="portrait-analyses-action"
+              onClick={() => {
+                chooseView('values')
+                setAnalysisScrollRequest(current => current + 1)
+              }}>
+              <BarChart3 size={18} aria-hidden="true" />
+              {ru ? 'Анализы' : locale === 'es' ? 'Análisis' : 'Analyses'}
+            </button>
             <button type="button" className="hh-portrait-quick-secondary"
               data-testid="portrait-recommendations-action"
               onClick={() => {
@@ -2170,7 +2194,7 @@ function PortfolioPage({ data, locale }) {
         : <div role="tabpanel" id="hh-results-panel-values" aria-labelledby="hh-results-tab-values">
       <header className="hh-insights-intro">
         <p className="hh-kicker">{ru ? 'Кабинет · Insights' : 'Dashboard · Insights'}</p>
-        <h1 id="hh-insights-title">{ru ? 'Мои результаты' : 'My results'}</h1>
+        <h1 id="hh-insights-title" tabIndex={-1}>{ru ? 'Мои результаты' : 'My results'}</h1>
         <p>{ru ? 'Ваши пройденные тесты, результаты и динамика.' : 'Your completed tests, scores and trends.'}</p>
       </header>
       <details className="hh-insights-portrait-details" data-insights-detailed-scales>
