@@ -60,3 +60,6 @@
 .stageLabel{display:flex;flex-direction:column;gap:3px;min-width:104px;font:600 10px/1.3 system-ui,sans-serif;color:#7b6f66}
 .stageLabel select{width:auto;min-height:38px;padding:6px 8px;font-size:11px;background:#fff}
 @media(max-width:600px){.stageLabel{margin-left:43px}}
+
+/* Contact communication tools occupy their own row on mobile and desktop. */
+.list li.emailContactRow{flex-wrap:wrap;align-items:center}

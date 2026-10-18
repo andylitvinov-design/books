@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
+import CrmEmailTools from './crm-email-tools'
 import styles from './crm-manager.module.css'
 const COPY = {
-  en: { title: 'Clients & subscribers', privacy: 'Business contact details only. Do not enter health information here.', name: 'Name', email: 'Email', add: 'Add contact', loading: 'Loading…', error: 'CRM is not available yet. Your information was not saved.', noContacts: 'No contacts yet.', noConsent: 'Marketing consent is separate from a paid subscription.', draft: 'Prepare an update', saveDraft: 'Save draft', drafts: 'Drafts', off: 'Sending is off. No email or messenger campaign will be sent from this screen.', saved: 'Saved.', unverified: 'Address not verified', suppressed: 'Do not contact', locale: 'Language' },
-  ru: { title: 'Клиенты и подписчики', privacy: 'Только деловые контактные данные. Не вводите здесь сведения о здоровье.', name: 'Имя', email: 'Email', add: 'Добавить контакт', loading: 'Загрузка…', error: 'CRM пока недоступна. Данные не сохранены.', noContacts: 'Контактов пока нет.', noConsent: 'Согласие на рассылку оформляется отдельно от платной подписки.', draft: 'Подготовить новость', saveDraft: 'Сохранить черновик', drafts: 'Черновики', off: 'Отправка отключена. Эта страница не отправляет email или сообщения в мессенджеры.', saved: 'Сохранено.', unverified: 'Адрес не подтверждён', suppressed: 'Не писать', locale: 'Язык' },
-  es: { title: 'Clientes y suscriptores', privacy: 'Solo datos de contacto. No introduzcas información de salud aquí.', name: 'Nombre', email: 'Correo', add: 'Añadir contacto', loading: 'Cargando…', error: 'El CRM aún no está disponible. Los datos no se han guardado.', noContacts: 'Todavía no hay contactos.', noConsent: 'El consentimiento para recibir novedades es independiente de la suscripción.', draft: 'Preparar novedades', saveDraft: 'Guardar borrador', drafts: 'Borradores', off: 'El envío está desactivado. Esta pantalla no envía correos ni mensajes.', saved: 'Guardado.', unverified: 'Dirección no verificada', suppressed: 'No contactar', locale: 'Idioma' },
+  en: { title: 'Clients & subscribers', privacy: 'Business contact details only. Do not enter health information here.', name: 'Name', email: 'Email', add: 'Add contact', loading: 'Loading…', error: 'CRM is not available yet. Your information was not saved.', noContacts: 'No contacts yet.', noConsent: 'Marketing consent is separate from a paid subscription.', draft: 'Prepare an update', saveDraft: 'Save draft', drafts: 'Drafts', off: 'Automatic campaigns are off. Individual opted-in emails are handled in each contact.', saved: 'Saved.', unverified: 'Address not verified', suppressed: 'Do not contact', locale: 'Language' },
+  ru: { title: 'Клиенты и подписчики', privacy: 'Только деловые контактные данные. Не вводите здесь сведения о здоровье.', name: 'Имя', email: 'Email', add: 'Добавить контакт', loading: 'Загрузка…', error: 'CRM пока недоступна. Данные не сохранены.', noContacts: 'Контактов пока нет.', noConsent: 'Согласие на рассылку оформляется отдельно от платной подписки.', draft: 'Подготовить новость', saveDraft: 'Сохранить черновик', drafts: 'Черновики', off: 'Автоматические массовые рассылки отключены. Отдельные письма доступны в карточке контакта при наличии согласия.', saved: 'Сохранено.', unverified: 'Адрес не подтверждён', suppressed: 'Не писать', locale: 'Язык' },
+  es: { title: 'Clientes y suscriptores', privacy: 'Solo datos de contacto. No introduzcas información de salud aquí.', name: 'Nombre', email: 'Correo', add: 'Añadir contacto', loading: 'Cargando…', error: 'El CRM aún no está disponible. Los datos no se han guardado.', noContacts: 'Todavía no hay contactos.', noConsent: 'El consentimiento para recibir novedades es independiente de la suscripción.', draft: 'Preparar novedades', saveDraft: 'Guardar borrador', drafts: 'Borradores', off: 'Las campañas automáticas están desactivadas. Puedes preparar correos individuales en cada contacto.', saved: 'Guardado.', unverified: 'Dirección no verificada', suppressed: 'No contactar', locale: 'Idioma' },
 }
 const BILLING_COPY = {
   en: { title: 'Subscription register', note: 'Up to 100 technical account records. Contact matching has not been verified.', off: 'Subscription register is not connected.', until: 'Paid through', cancel: 'Renewal cancelled' },
@@ -54,12 +55,25 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
-      setNotice(c.saved)
+      setNotice(action==='send_email'?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
       await load(session).catch(() => {})
-    } catch (error) { if (sessionRef.current === session) setNotice(error?.message === 'CONTACT_ALREADY_EXISTS' ? c.duplicate : error?.message === 'CONFLICT' ? c.conflict : c.error) } finally { if (sessionRef.current === session) setBusy(false) }
+    } catch (error) {
+      if (sessionRef.current === session) {
+        const labels={
+          EMAIL_DELIVERY_UNCONFIRMED:language==='ru'?'Статус доставки неизвестен. Не повторяйте отправку автоматически.':'Delivery status unknown. Do not resend automatically.',
+          EMAIL_NOT_CONFIGURED:language==='ru'?'Почтовый сервис пока не подключён.':'Email sender is not configured.',
+          EMAIL_CONSENT_REQUIRED:language==='ru'?'Нет подтверждённого согласия.':'Consent evidence required.',
+          EMAIL_VERIFICATION_RECENT:language==='ru'?'Подтверждение уже запрашивалось за последние 24 часа.':'Verification already requested in the last 24 hours.',
+          EMAIL_CONTACT_BLOCKED:language==='ru'?'Контакт недоступен для рассылки.':'Contact is not eligible for email.',
+          EMAIL_DAILY_LIMIT:language==='ru'?'Достигнут лимит писем за сутки.':'Daily message limit reached.',
+          INVALID_EMAIL_MESSAGE:language==='ru'?'Проверьте текст и тему письма.':'Check the email subject and body.',
+        }
+        setNotice(error?.message==='CONTACT_ALREADY_EXISTS'?c.duplicate:error?.message==='CONFLICT'?c.conflict:labels[error?.message]||c.error)
+      }
+    } finally { if (sessionRef.current === session) setBusy(false) }
   }
   if (!accountId) return null
   const contacts=(data?.contacts||[]).filter(contact=>{
@@ -117,8 +131,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
         {[[ 'all', c.all ], [ 'lead', c.leads ], [ 'client', c.clients ], [ 'archived', c.archived ]].map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} className={filter===key?styles.filterSelected:styles.filterButton} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
       <p className={styles.fine}>{c.showing}</p>
+      {!data.emailEnabled&&<p className={styles.privacy} role="status">{language==='ru'?'Отправка email пока не подключена: требуется проверенный почтовый домен, Resend и подтверждённые настройки отправителя.':language==='es'?'Para enviar correo debes conectar Resend y un dominio de remitente verificado.':'Connect Resend and a verified sender domain to enable actual email delivery.'}</p>}
       <ul className={styles.list}>
-        {contacts.length?contacts.map(contact=><li key={contact.id}>
+        {contacts.length?contacts.map(contact=><li key={contact.id} className={styles.emailContactRow}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
           <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
           <label className={styles.stageLabel}><span>{c.stage}</span>
@@ -128,6 +143,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
           </label>
           {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>}
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
+          <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
       <details className={styles.advanced}>
