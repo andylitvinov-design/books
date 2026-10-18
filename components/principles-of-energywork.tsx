@@ -81,11 +81,11 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     systemsLead: "In the interactive course, Tantra Reiki comes first, followed by Kundalini Reiki and Reiki Yggdrasil. Below are the original materials and optional initiation pages for each tradition.",
     learn: "Explore the system",
     request: "Start free Level 1",
-    systemTags: ["Runes · World Tree", "Presence · Connection", "Earth · Kundalini"],
+    systemTags: ["Presence · Connection", "Earth · Kundalini", "Runes · World Tree"],
     systemDescriptions: [
-      "A runic Reiki tradition inspired by Yggdrasil, the Norse World Tree. Begin with its four introductory streams and discover a much larger, structured curriculum.",
       "A nine-level tradition using the language of vitality, creativity and connection. Its first step is the Spring of Life, approached through guided study and reflection.",
       "A compact three-level system described in its manuals as combining Reiki and Kundalini energy. Begin with Level 1 and the original Paul Crick study material.",
+      "A runic Reiki tradition inspired by Yggdrasil, the Norse World Tree. Begin with its four introductory streams and discover a much larger, structured curriculum.",
     ],
     journeyEyebrow: "STEP 4 · REQUEST YOUR FREE LEVEL 1",
     journeyTitle: "How to receive an introductory initiation",
@@ -142,11 +142,11 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     systemsLead: "В интерактивном курсе сначала Тантра Рейки, затем Кундалини Рейки и Рейки Иггдрасиль. Ниже — исходные материалы и отдельные страницы инициаций.",
     learn: "Описание системы",
     request: "Бесплатная 1-я ступень",
-    systemTags: ["Руны · Мировое Древо", "Присутствие · Связь", "Земля · Кундалини"],
+    systemTags: ["Присутствие · Связь", "Земля · Кундалини", "Руны · Мировое Древо"],
     systemDescriptions: [
-      "Руническая традиция Рейки, связанная с образом Иггдрасиля — скандинавского Мирового Древа. На первой ступени изучаются четыре основных потока; дальше — большая последовательная программа.",
       "Девятиступенчатая система, работающая в символическом языке жизненности, творчества и отношений. Первая ступень — «Источник жизни», с материалами и вопросами для изучения.",
       "Компактная система из трёх ступеней, которая в учебной традиции сочетает Рейки и энергию Кундалини. Начните с первой ступени и оригинальной методички Пола Крика.",
+      "Руническая традиция Рейки, связанная с образом Иггдрасиля — скандинавского Мирового Древа. На первой ступени изучаются четыре основных потока; дальше — большая последовательная программа.",
     ],
     journeyEyebrow: "ШАГ 4 · ЗАПРОСИТЕ ПЕРВУЮ СТУПЕНЬ",
     journeyTitle: "Как подготовиться к инициации",
@@ -203,11 +203,11 @@ const translations: Record<PublicLocale, LocalizedCourse> = {
     systemsLead: "En el curso interactivo aprenderás primero Tantra Reiki, después Kundalini Reiki y por último Reiki Yggdrasil. Aquí están los materiales originales y las páginas de iniciación por tradición.",
     learn: "Conocer el sistema",
     request: "Nivel 1 gratis",
-    systemTags: ["Runas · Árbol del Mundo", "Presencia · Conexión", "Tierra · Kundalini"],
+    systemTags: ["Presencia · Conexión", "Tierra · Kundalini", "Runas · Árbol del Mundo"],
     systemDescriptions: [
-      "Una tradición de Reiki rúnico inspirada en Yggdrasil, el Árbol del Mundo nórdico. Comienza con cuatro corrientes introductorias y un programa más amplio y estructurado.",
       "Un camino de nueve niveles que explora la vitalidad, la creatividad y la conexión. Su primer paso, la Fuente de Vida, se estudia mediante materiales y preguntas guiadas.",
       "Un sistema de tres niveles descrito en la tradición como una combinación de Reiki y energía Kundalini. Empieza con el Nivel 1 y el manual original de Paul Crick.",
+      "Una tradición de Reiki rúnico inspirada en Yggdrasil, el Árbol del Mundo nórdico. Comienza con cuatro corrientes introductorias y un programa más amplio y estructurado.",
     ],
     journeyEyebrow: "PASO 4 · SOLICITA TU NIVEL 1 GRATIS",
     journeyTitle: "Cómo prepararte para una iniciación",
@@ -295,20 +295,12 @@ const videoCopy: Record<PublicLocale, {
 
 const paths = [
   {
-    key: "yggdrasil",
-    title: "Reiki Yggdrasil",
-    image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
-    study: "reiki/yggdrasil",
-    free: "reiki/yggdrasil/free-initiation",
-    badge: "01",
-  },
-  {
     key: "tantra",
     title: "Tantra Reiki",
     image: "/images/holistic-house/andy-about.png",
     study: "reiki/tantra-reiki",
     free: "reiki/tantra-reiki/free-initiation",
-    badge: "02",
+    badge: "01",
   },
   {
     key: "kundalini",
@@ -316,6 +308,14 @@ const paths = [
     image: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
     study: "reiki/kundalini-reiki",
     free: "reiki/kundalini-reiki/free-initiation",
+    badge: "02",
+  },
+  {
+    key: "yggdrasil",
+    title: "Reiki Yggdrasil",
+    image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
+    study: "reiki/yggdrasil",
+    free: "reiki/yggdrasil/free-initiation",
     badge: "03",
   },
 ] as const;
