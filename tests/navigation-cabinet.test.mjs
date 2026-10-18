@@ -186,7 +186,7 @@ test('public pages share one localized soft CTA with direct WhatsApp and Telegra
     readFile('components/academy-record-page.tsx', 'utf8'),
     readFile('app/[locale]/homeopathy/remedies/page.tsx', 'utf8'),
     readFile('components/remedy-page.tsx', 'utf8'),
-    readFile('app/books/[bookId]/page.tsx', 'utf8'),
+    readFile('app/[locale]/books/[bookId]/page.tsx', 'utf8'),
   ])
 
   assert.match(cta, /data-consultation-cta/)
