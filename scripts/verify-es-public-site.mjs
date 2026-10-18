@@ -28,12 +28,12 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/en/app'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
   const destinations = [
     ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
     ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/library', 'Biblioteca'],
-    ['/en/app', 'Mi Casa'], ['/es/events', 'Eventos'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
+    ['/en/app', 'Mi Casa'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -231,8 +231,12 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
-        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));
+        // The account entry moved into the site menu; never use the retired
+        // top-level data-nav-item="cabinet" link. Exercise the real user path.
+        await click(page.locator('.site-main-menu-trigger'));
+        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
+        await expect(accountLink).toBeVisible();
+        await click(accountLink);
         await expect(page).toHaveURL(origin+'/en/app/portrait');
         await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
         await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\.|The new personal app is not connected yet\.)$/);
