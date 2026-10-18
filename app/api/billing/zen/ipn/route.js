@@ -10,6 +10,24 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+async function readBoundedBody(request) {
+  const reader = request.body?.getReader()
+  if (!reader) throw new AppError('SERVICE_PAYMENT_INVALID', 400)
+  const chunks = []
+  let length = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    length += value.byteLength
+    if (length > 32768) {
+      await reader.cancel()
+      throw new AppError('SERVICE_PAYMENT_INVALID', 400)
+    }
+    chunks.push(value)
+  }
+  return Buffer.concat(chunks)
+}
+
 export async function POST(request) {
   try {
     const config = getCommerceConfig()
@@ -18,7 +36,7 @@ export async function POST(request) {
     if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json') ||
         Number(request.headers.get('content-length') || 0) > 32768)
       throw new AppError('SERVICE_PAYMENT_INVALID', 400)
-    const bytes = Buffer.from(await request.arrayBuffer())
+    const bytes = await readBoundedBody(request)
     // ZEN's IPN API secret authenticates the *exact received* decimal amount,
     // currency, status and merchant transaction ID. No browser return or
     // unsigned notification can mark an order paid.
