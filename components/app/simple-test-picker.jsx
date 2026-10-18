@@ -35,7 +35,7 @@ const TEXT = {
     professional:'Professional tests only', clear:'Clear optional filters',
     recommended:'Recommended for you', recommendedHelp:'Suggested from your selected topics, using tests available to take now.',
     courseCta:'Start my personal course', courseCtaHint:'Continue to course setup and review these tests.', syncHint:'Already selected from your themes. You can edit the concerns below.',
-    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Without choices it reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
+    why:'Why these tests?', whyText:'The approximate match percentage is based on selected topics, specific concerns, coverage and optional depth. Selecting a collection raises relevance for its tagged tests without hiding the others. Without choices this reflects general starter relevance. This is not a clinical probability, diagnosis or health score.',
     suggested:'Suggested', available:'Available', selected:'selected', matching:'matching tests', takeTest:'Take test', details:'Details', expandTest:'What it measures', scalesLabel:'Measured scales', methodDetails:'Method & sources', sourceLink:'Original source', questionUnit:'questions', minuteUnit:'min',
     minutes:'min total', viewSelection:'Included in your plan', none:'No available tests match. Try a different topic or clear optional filters.',
     build:'Start free monitoring', buildHelp:'No registration required to start',
@@ -63,7 +63,7 @@ const TEXT = {
     professional:'Только профессиональные тесты', clear:'Очистить дополнительные фильтры',
     recommended:'Рекомендуем для вас', recommendedHelp:'На основе выбранных тем и реально доступных тестов.',
     courseCta:'Начать персональный курс', courseCtaHint:'Перейти к запуску курса с выбранной подборкой тестов.', syncHint:'Эти проблемы уже отмечены по выбранным подтемам. Можно изменить выбор.',
-    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
+    why:'Почему эти тесты?', whyText:'Процент — ориентировочное соответствие выбранным темам, конкретным проблемам, охвату шкал и глубине теста. Выбор подборки добавляет баллы тестам её темы, не скрывая остальные. Без выбора оценивается общая релевантность. Это не диагноз, клиническая вероятность или процент здоровья.',
     suggested:'Подходит', available:'Доступен', selected:'выбрано', matching:'подходящих тестов', takeTest:'Пройти', details:'Подробнее', expandTest:'Что измеряет', scalesLabel:'Шкалы', methodDetails:'Методика и источники', sourceLink:'Первоисточник', questionUnit:'вопросов', minuteUnit:'мин',
     minutes:'мин всего', viewSelection:'В вашем наборе', none:'Подходящих доступных тестов нет. Выберите другую тему или сбросьте фильтры.',
     build:'Начать бесплатный мониторинг', buildHelp:'Для прохождения регистрация не нужна',
@@ -91,7 +91,7 @@ const TEXT = {
     professional:'Solo pruebas profesionales', clear:'Borrar filtros opcionales',
     recommended:'Recomendados para ti', recommendedHelp:'Basados en tus temas y pruebas disponibles.',
     courseCta:'Iniciar mi curso personal', courseCtaHint:'Revisar pruebas y configurar el curso.', syncHint:'Tus temas ya seleccionaron estas preocupaciones; puedes editarlas.',
-    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
+    why:'¿Por qué estas pruebas?', whyText:'El porcentaje es una estimación orientativa basada en temas, cobertura y profundidad del test. Seleccionar una colección aumenta la relevancia de sus pruebas sin ocultar otras. Sin temas elegidos indica relevancia general. No es una probabilidad clínica ni un diagnóstico.',
     suggested:'Sugerida', available:'Disponible', selected:'seleccionadas', matching:'pruebas coincidentes', takeTest:'Realizar', details:'Detalles', expandTest:'Qué mide', scalesLabel:'Escalas', methodDetails:'Método y fuentes', sourceLink:'Fuente original', questionUnit:'preguntas', minuteUnit:'min',
     minutes:'min en total', viewSelection:'En tu selección', none:'No hay pruebas disponibles con estos filtros.',
     build:'Iniciar monitoreo gratuito', buildHelp:'Sin registro para comenzar',
@@ -195,7 +195,7 @@ export function SimpleTestPicker({
   const [collectionsOpen, setCollectionsOpen] = useState(false)
   const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
   const collectionCopy = COLLECTION_COPY[locale] || COLLECTION_COPY.en
-  const activeCollection = collections.find((collection) => collection.id === activeCollectionId)
+  const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId)
   const [expandedTests, setExpandedTests] = useState(new Set())
   const journeyMode = initialMode === 'course' && onStartCourse ? 'course' : 'tests'
   const [showAllProblems, setShowAllProblems] = useState(false)
