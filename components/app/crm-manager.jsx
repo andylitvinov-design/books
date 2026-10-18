@@ -12,9 +12,14 @@ const BILLING_COPY = {
   ru: { title: 'Реестр подписок', note: 'До 100 технических записей аккаунтов. Связь с контактами ещё не подтверждена.', off: 'Реестр подписок пока не подключён.', until: 'Оплачено до', cancel: 'Продление отменено' },
   es: { title: 'Registro de suscripciones', note: 'Hasta 100 registros técnicos de cuentas. La vinculación con contactos no está verificada.', off: 'El registro aún no está conectado.', until: 'Pagado hasta', cancel: 'Renovación cancelada' },
 }
+const EXTRA_COPY = {
+  en: { all: 'All', leads: 'Interested', clients: 'Clients', archived: 'Archived', suppress: 'Do not contact', suppressConfirm: 'Stop promotional contact with this person? This cannot be undone on this screen.', duplicate: 'This email is already in your contacts.', showing: 'Showing up to 100 recent contacts.' },
+  ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Показаны до 100 последних контактов.' },
+  es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'Se muestran hasta 100 contactos recientes.' },
+}
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
-  const c = COPY[language]
+  const c = { ...COPY[language], ...EXTRA_COPY[language] }
   const billing = BILLING_COPY[language]
   const [data, setData] = useState(null)
   const sessionRef = useRef(null)
@@ -24,6 +29,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [email, setEmail] = useState('')
   const [templateId, setTemplate] = useState('course_update')
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
   const [lifecycle, setLifecycle] = useState('lead')
   async function load(session) {
     const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
@@ -35,7 +41,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setName(''); setEmail('')
+    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setFilter('all'); setSearch('')
     fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
       .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
@@ -47,17 +53,18 @@ export default function CrmManager({ locale = 'en', accountId }) {
     setBusy(true); setNotice('')
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
-      if (!response.ok) throw new Error('unavailable')
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error === 'CONTACT_ALREADY_EXISTS' ? 'CONTACT_ALREADY_EXISTS' : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
       await load(session).catch(() => {})
-    } catch { if (sessionRef.current === session) setNotice(c.error) } finally { if (sessionRef.current === session) setBusy(false) }
+    } catch (error) { if (sessionRef.current === session) setNotice(error?.message === 'CONTACT_ALREADY_EXISTS' ? c.duplicate : c.error) } finally { if (sessionRef.current === session) setBusy(false) }
   }
   if (!accountId) return null
   const contacts=(data?.contacts||[]).filter(contact=>{
     const text=[contact.displayName,contact.email].join(' ').toLowerCase()
-    return text.includes(search.trim().toLowerCase())
+    return text.includes(search.trim().toLowerCase()) && (filter === 'all' || contact.lifecycle === filter)
   })
   const retry=()=>{
     const session=sessionRef.current
@@ -68,7 +75,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   return <section className={styles.panel} aria-labelledby="crm-title">
     <header className={styles.head}>
       <div><h2 id="crm-title">{c.title}</h2>
-        <p>{language==='ru'?'Все деловые контакты в одном месте.':'Keep your business contacts in one place.'}</p>
+        <p>{language==='ru'?'Все деловые контакты в одном месте.':language==='es'?'Tus contactos profesionales en un solo lugar.':'Keep your business contacts in one place.'}</p>
       </div>
     </header>
     <div className={styles.privacy}>
@@ -106,11 +113,16 @@ export default function CrmManager({ locale = 'en', accountId }) {
         <input aria-label={language==='ru'?'Поиск контактов':'Search contacts'} type="search"
           placeholder={language==='ru'?'Поиск…':'Search contacts…'} value={search} onChange={(event)=>setSearch(event.target.value)} />
       </div>
+      <div className={styles.filters} role="group" aria-label={language==='ru'?'Фильтр контактов':language==='es'?'Filtro de contactos':'Contact filter'}>
+        {[[ 'all', c.all ], [ 'lead', c.leads ], [ 'client', c.clients ], [ 'archived', c.archived ]].map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} className={filter===key?styles.filterSelected:styles.filterButton} onClick={()=>setFilter(key)}>{label}</button>)}
+      </div>
+      <p className={styles.fine}>{c.showing}</p>
       <ul className={styles.list}>
         {contacts.length?contacts.map(contact=><li key={contact.id}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
           <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
-          <small className={styles.tag}>{contact.suppressed?c.suppressed:contact.lifecycle==='client'?(language==='ru'?'Клиент':'Client'):(language==='ru'?'Интересуется':'Interested')}</small>
+          <small className={styles.tag}>{contact.suppressed?c.suppressed:contact.lifecycle==='client'?c.clients:contact.lifecycle==='archived'?c.archived:c.leads}</small>
+          {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
       <details className={styles.advanced}>

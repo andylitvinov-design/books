@@ -29,3 +29,9 @@ These sources require honoring opt-out without delay, at the latest within ten b
 ## Verification
 
 Run `node --test tests/crm-consent.test.mjs`. Synthetic contacts only. Passing policy tests does not establish database/RLS integration, live email delivery, messenger approval or end-to-end unsubscribe behavior.
+
+## Owner contact-management polish — 18 October 2026
+
+Source implementation adds lead/client/archived filters, a privacy-first one-way **Do not contact** action that writes a withdrawal event and sets global suppression in one owner-scoped transaction, and a safe duplicate-email error. An attempted repeat suppression is idempotent. Neither this action nor draft creation sends any messages, verifies an email address, changes subscription status or authorizes marketing.
+
+**Release gate remains in force:** on 18 October the live Holistic House Supabase project had no `app.crm_*` tables or `hh_crm_backend` role, and Vercel did not have `HH_CRM_ENABLED` / `HH_CRM_PRODUCTION_APPROVED`. The source UI alone is **not** a working production CRM. The guarded schema proposal must receive explicit owner security/deletion approval and be tested with the exact existing restricted runtime LOGIN before enabling these flags. Never grant broad CRM table rights to authenticated/anon or enable campaign dispatch by default. No CRM production schema, environment or customer data was changed by this source update.

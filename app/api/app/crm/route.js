@@ -28,8 +28,16 @@ async function handle(request) {
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
-      data = await repo.withOwner(actor, (store) => body.action === 'create_contact' ? store.createContact(body.payload) : body.action === 'record_consent' ? store.recordConsent(body.payload) : store.createDraft(body.payload))
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      data = await repo.withOwner(actor, (store) => {
+        if (body.action === 'create_contact') return store.createContact(body.payload)
+        if (body.action === 'record_consent') return store.recordConsent(body.payload)
+        if (body.action === 'suppress_contact') {
+          onlyKeys(body.payload, ['id'])
+          return store.suppressContact(body.payload.id)
+        }
+        return store.createDraft(body.payload)
+      })
     }
     return auth.apply(NextResponse.json(data, { headers: PRIVATE_HEADERS }))
   } catch (error) {

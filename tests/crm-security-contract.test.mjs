@@ -51,3 +51,21 @@ test('CRM and preferences reject stale cross-tab account identity', () => {
     assert.match(source, /if \(!accountId\) return null/)
   }
 })
+
+test('CRM manual suppression is owner-only, ledger-backed and never re-subscribes', () => {
+  const route = read('app/api/app/crm/route.js')
+  const repo = read('lib/crm/repository.js')
+  const ui = read('components/app/crm-manager.jsx')
+  assert.match(route, /body\.action === 'suppress_contact'/)
+  assert.match(route, /onlyKeys\(body\.payload, \['id'\]\)/)
+  assert.match(repo, /async suppressContact\(id\)/)
+  assert.match(repo, /where id=\$1 and owner_id=\$2 for update/)
+  assert.match(repo, /decision: 'withdrawn'/)
+  assert.match(repo, /source: 'owner_manual_suppression'/)
+  assert.match(repo, /set suppressed=true,revision=revision\+1/)
+  assert.doesNotMatch(repo, /set suppressed=false/)
+  assert.match(ui, /save\('suppress_contact',\{id:contact\.id\}\)/)
+  assert.match(ui, /filter === 'all' \|\| contact\.lifecycle === filter/)
+  assert.match(repo, /CONTACT_ALREADY_EXISTS/)
+  assert.doesNotMatch(route, /sendMail|sendMessage/)
+})

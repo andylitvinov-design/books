@@ -48,3 +48,10 @@
   .contactsHead input{width:100%;max-width:none}
   .tag{font-size:9px;max-width:90px;overflow-wrap:anywhere;text-align:center}
 }
+
+/* Scoped owner CRM management controls; no send or re-subscribe action. */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.filters button{min-height:38px;padding:7px 11px;border:1px solid #d9c8bd;border-radius:999px;background:#fff;color:#674a43;font-size:12px;font-weight:650}
+.filters .filterSelected{background:#812c49;color:#fff;border-color:#812c49}
+.list .suppress{min-height:36px;flex:none;padding:7px 9px;background:#fff0ee;border:1px solid #d6a5a4;color:#75313b;font-size:11px}
+@media(max-width:600px){.list li{flex-wrap:wrap}.list .suppress{margin-left:43px}.filters button{flex:1 1 auto}}
