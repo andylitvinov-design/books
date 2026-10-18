@@ -33,7 +33,7 @@ test("All five Yggdrasil and four independently sourced Tantra reviews are avail
   assert.deepEqual([...tantra.matchAll(/id: "([^"]+)"/g)].map(match => match[1]),
     ["margaret", "olga", "litten", "tantra-level-1"]);
   assert.match(curriculum, /Course reviews are NOT presented as reactions to this exact meditation recording/);
-  assert.match(curriculum, /Open the original recording to explore any public viewer comments/);
+  assert.match(curriculum, /Explore comments on the original video, then share your own experience/);
 });
 
 test("Buttons switch quotes without navigating away or touching required student feedback", () => {
@@ -51,4 +51,9 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(browser, /Previous restores quote/);
   assert.match(css, /\.voicesControls button:focus-visible/);
   assert.match(css, /grid-template-columns:44px/);
+  assert.match(css, /REIKI REVIEW V4/);
+  assert.match(css, /reiki-approved-sunrise-v3\.webp/);
+  assert.match(learner, /styles\.voicesReferences/);
+  assert.match(learner, /styles\.voiceDotActive/);
+  assert.match(learner, /voicesArt = slide\.kind === "voices"/);
 });
