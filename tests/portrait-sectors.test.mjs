@@ -44,14 +44,14 @@ test('each sector has localized public labels', () => {
   }
 })
 
-test('All: only actual measured axes contribute to four descriptive sector values', () => {
+test('All reports only actual measured coverage, never composite wellbeing values', () => {
   const portrait = {axes:{
     stress:{percent:20},sleep:{percent:80},clarity:{percent:40},
     relationships:{percent:65},boundaries:{percent:75},meaning:{percent:90},
   }}
   const summary = summarizePortraitSectors(portrait)
-  assert.deepEqual(summary.map(row => [row.key,row.percent,row.measured,row.total]), [
-    ['body',50,2,5],['work',40,1,3],['relationships',70,2,4],['growth',90,1,5],
+  assert.deepEqual(summary.map(row => [row.key,row.percent,row.measured,row.total,row.coveragePercent]), [
+    ['body',null,2,5,40],['work',null,1,3,33],['relationships',null,2,4,50],['growth',null,1,5,20],
   ])
   assert.deepEqual(summary.map(s => Math.round(portraitSectorMidAngle(s.key) * 1e6)),
     PORTRAIT_SECTOR_KEYS.map((key,index) => Math.round((-Math.PI / 2 + (index+.5) * Math.PI / 2) * 1e6)))
@@ -68,7 +68,8 @@ test('No result: four sectors remain unmeasured, not percentages or health norms
     clarity:{percent:0},focus:{percent:100},
   }})
   assert.equal(invalid[0].percent,null)
-  assert.equal(invalid[1].percent,50)
+  assert.equal(invalid[1].percent,null)
+  assert.equal(invalid[1].coveragePercent,67)
   assert.equal(invalid[1].measured,2)
   assert.deepEqual(PORTRAIT_SECTOR_KEYS, ['body','work','relationships','growth'])
 })

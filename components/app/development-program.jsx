@@ -17,9 +17,9 @@ const words = {
     open: 'Настроить мою программу', close: 'Свернуть',
     goalLink: 'Установить ориентиры и цели', goalLinkHint: 'Четыре сферы и отдельные шкалы',
     planLink: 'Просмотреть рекомендованную программу развития', planLinkHint: 'Приоритеты роста и подходящие курсы',
-    defaultGoalsPreview: 'Рекомендации пока основаны на исходных целях 80%. Установите и сохраните свои ориентиры для персонального подбора.',
+    defaultGoalsPreview: 'Пока личные цели не сохранены, автоматический подбор отключён. Начальные ползунки — только образец для редактирования, а не психологическая норма.',
     unsavedGoalsPreview: 'Это предварительный подбор по несохранённым изменениям. Сохраните цели, чтобы закрепить ваш маршрут.',
-    goals: 'Желаемые ориентиры', goalHint: 'Цель от 0 до 100 — ваш личный ориентир внутри шкал, а не медицинская норма.',
+    goals: 'Желаемые ориентиры', goalHint: 'Ползунки — добровольные личные ориентиры, а не нормы здоровья. Неподходящие для оценки развития шкалы исключены из рекомендаций.',
     measured: 'Сейчас', notMeasured: 'Нет замера', target: 'Цель', axes: 'подтверждённых направлений',
     details: 'Уточнить цели по отдельным шкалам', detailsHint: 'По умолчанию каждая шкала наследует цель своей сферы.',
     fineTune: 'Своя цель', inherit: 'Общая цель', save: 'Сохранить цели и подобрать программу',
@@ -40,7 +40,7 @@ const words = {
     methodology: 'Как рассчитывается приоритет',
     methodText: 'Разрыв = желаемая позиция минус текущая, только когда разница положительная. Для разных тестов используется направление шкалы из проверенной методологии. Показатели из разных опросников не являются одной универсальной оценкой здоровья, не сравниваются с нормой и не используются для постановки диагнозов. Неизмеренные и устаревшие данные исключены.',
     private: 'Ваши цели хранятся отдельно от ответов тестов. Без вашего действия программа не назначается и специалисту ничего не отправляется.',
-    scoreNote: '≈ ориентировочная позиция по имеющимся шкалам, не процент психологического здоровья',
+    scoreNote: 'Позиции отдельных опросников нельзя считать общей оценкой здоровья или сравнивать как клинические процентили.',
   },
   en: {
     eyebrow: 'MY DEVELOPMENT PATH',
@@ -49,9 +49,9 @@ const words = {
     open: 'Set my development goals', close: 'Collapse',
     goalLink: 'Set goals & targets', goalLinkHint: 'Four areas and individual scales',
     planLink: 'View recommended development programme', planLinkHint: 'Growth priorities and suitable courses',
-    defaultGoalsPreview: 'Recommendations currently use the initial 80% targets. Set and save your own goals for a personal selection.',
+    defaultGoalsPreview: 'No personal targets are saved yet. The starting sliders are editable placeholders, not a psychological norm; recommendations start after you save.',
     unsavedGoalsPreview: 'This preview uses unsaved changes. Save your targets to keep your development path.',
-    goals: 'Your desired levels', goalHint: 'A 0–100 target is your own within-scale reference, not a medical norm.',
+    goals: 'Your desired levels', goalHint: 'Sliders are optional personal preferences, not health norms; unsuitable measures cannot drive recommendations.',
     measured: 'Current', notMeasured: 'Not measured', target: 'Goal', axes: 'measured directions',
     details: 'Customize individual scale targets', detailsHint: 'Each scale initially inherits the target of its life area.',
     fineTune: 'Custom goal', inherit: 'Area goal', save: 'Save goals & find programmes',
@@ -72,7 +72,7 @@ const words = {
     methodology: 'How priorities are calculated',
     methodText: 'Gap = your target minus your measured position, counting only positive differences. The direction of each scale is determined by its verified methodology. Scores across different questionnaires are not one universal health score, clinical norm or diagnosis. Missing and outdated measurements are excluded.',
     private: 'Your goals are stored separately from assessment answers. No course is enrolled automatically and nothing is shared with a practitioner when you open this panel.',
-    scoreNote: '≈ an approximate position from the available scales, not a psychological health percentage',
+    scoreNote: 'Positions from different questionnaires are not an overall health grade or comparable clinical percentiles.',
   },
 }
 const programmeText = {
@@ -227,7 +227,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           return <article className={styles.sectorCard} key={sector.key}>
             <div className={styles.sectorTop}>
               <strong>{sector.label[lang]}</strong>
-              <span>{summary?.measuredAxes ? '≈ ' + percent(summary.current) : t.notMeasured}</span>
+              <span>{summary?.measuredAxes ? (summary.measuredAxes + ' / ' + sector.axes.length) : t.notMeasured}</span>
             </div>
             <TargetSlider title={sector.label[lang]} value={goals.targets[sector.key]}
               onChange={n => changeSector(sector.key, n)} />
@@ -272,7 +272,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         {dirty && <p className={styles.previewNote}>{t.unsavedGoalsPreview}</p>}
         <div className={styles.plan} data-testid="development-recommendations">
         <header className={styles.planHeading}><span className={styles.pill}><Target size={15} aria-hidden="true" /> {t.results}</span><p>{t.resultsDesc}</p></header>
-        {plan.priorities.length > 0 ? <div className={styles.priorityList}>
+        {revision === 0 && !dirty ? <p className={styles.empty}>{t.defaultGoalsPreview}</p> : plan.priorities.length > 0 ? <div className={styles.priorityList}>
           {(allRows ? plan.priorities : plan.priorities.slice(0, 5)).map((item, index) => <article key={item.id} className={styles.priorityCard}>
             <div className={styles.priorityIndex}>{index + 1}</div>
             <div className={styles.priorityMain}>
@@ -301,7 +301,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         </div>}
         <div className={styles.courseSection}>
           <div className={styles.sectionHeading}><span className={styles.pill}><BookOpen size={16} aria-hidden="true" />{t.courses}</span><p>{t.courseHint}</p></div>
-          {plan.courses.length ? <div className={styles.courses}>
+          {(revision > 0 || dirty) && plan.courses.length ? <div className={styles.courses}>
             {plan.courses.map(course => {
               const copy = programmeText[course.id]?.[lang]
               return <article key={course.id} className={styles.courseCard}>

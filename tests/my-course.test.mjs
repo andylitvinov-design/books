@@ -14,7 +14,7 @@ import {
   GROWTH_GOALS, COURSE_TOPICS, COURSE_STEPS,
   courseDay, courseLesson, growthSuggestions, suggestedCourseTopics,
 } from '../lib/inner-growth/course-model.js'
-import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus } from '../lib/inner-growth/course-strategy.js'
+import { courseRecommendedTests, courseMeasuredProfile, courseSuggestedFocus, goalForChosenScale, coursePracticeFocus, courseNextCycleScaleKeys } from '../lib/inner-growth/course-strategy.js'
 import { getAssessmentDefinition, provenance } from '../lib/assessments/definitions.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -221,6 +221,17 @@ test('measured profile prioritizes high difficulties and low resources without r
   const wrong=weeklyResult({'weekly.tension':8})
   wrong.dimensions[0].direction='higher-reported-wellbeing'
   assert.equal(courseMeasuredProfile({results:[wrong],testKeys:['hh-weekly-pulse']}).eligible.length,0)
+})
+
+test('previously consented relationship focus can continue without becoming an automatic new target', () => {
+  const previous = ['hh-weekly-pulse::weekly.tension',
+    'hh-weekly-pulse::weekly.recovery','hh-weekly-pulse::weekly.connection']
+  // The single-item connection/support answer is no longer a supported *new*
+  // automatic gap, but the user's saved course must remain resumable.
+  assert.equal(goalForChosenScale(previous[2]), null)
+  assert.deepEqual(courseNextCycleScaleKeys(previous,'connection_boundaries'),
+    [previous[2],previous[0],previous[1]])
+  assert.equal(courseNextCycleScaleKeys(previous,'meaning'),null)
 })
 
 test('top-three focus recommendations use only genuine eligible scales in direction-aware order', () => {

@@ -262,6 +262,25 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setAvailability('available')
     setFocus([entry.topics.includes('sexuality') ? 'sexuality' : entry.topics.includes('tantra') ? 'tantra' : 'intimacy'])
   }, [entries])
+  // Reports → Test it: offer the exact rights-cleared questionnaire whose
+  // scored dimension feeds this portrait axis. Preselect only; never start,
+  // save, or replace the user's existing tests without an explicit tap.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const suggestedKey = params.get('suggest')
+    const requestedAxis = params.get('axis')
+    if (!suggestedKey || !requestedAxis || !TEST_EXPLORER_AXES.includes(requestedAxis)) return
+    const entry = entries.find(item =>
+      item.key === suggestedKey && item.selectable === true &&
+      item.measurementAxes?.includes(requestedAxis))
+    if (!entry) return // A forged or retired source must not bypass rights gates.
+    setSelectedKeys([entry.key])
+    setAxes([requestedAxis])
+    setFocus([])
+    setAvailability('available')
+    setCustomizeOpen(true)
+    setShowAll(true)
+  }, [entries])
   const facets = { availability, focus, problems, styles: stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
   const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
