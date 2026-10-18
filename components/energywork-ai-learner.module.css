@@ -680,7 +680,7 @@
     background:
       radial-gradient(circle at 80% 31%, rgba(250, 199, 129, .19), transparent 34%),
       linear-gradient(180deg, rgba(1, 70, 105, .53), rgba(2, 47, 70, .53) 33%, rgba(2, 44, 61, .86) 66%, #033146 100%),
-      url("/images/holistic-house/course-focus-mountain-boy.webp") center 40% / cover no-repeat #073448;
+      url("/images/holistic-house/reiki-practitioner-sunrise.webp") 18% center / cover no-repeat #073448;
   }
   .page[data-course-theme] .shell {
     height: 100dvh; min-height: 0; overflow: hidden;
