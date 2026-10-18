@@ -186,12 +186,14 @@ export function ConsultationChoiceCapture({
   service,
   id,
   sitewide = false,
+  wiseEnabled = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
   service?: string;
   id?: string;
   sitewide?: boolean;
+  wiseEnabled?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -212,6 +214,7 @@ export function ConsultationChoiceCapture({
     : variant === "personal" ? t.personalLead : t.freeLead;
 
   const isPaidRequest = isService && serviceChoice !== "free";
+  const wiseProductId = serviceChoice === "session" ? "personal-session-60" : "express-consultation-30";
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation"),
@@ -286,6 +289,19 @@ export function ConsultationChoiceCapture({
           <ArrowUpRight size={20} aria-hidden="true" />
         </AcquisitionEventLink>
       )}
+      {isPaidRequest && wiseEnabled ? (
+        <div className={styles.wisePayment} data-wise-payment-link>
+          <a href={"/api/payments/wise/" + wiseProductId} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить через Wise" : locale === "es" ? "Pagar con Wise" : "Pay with Wise"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "Только после согласования времени. Оплата проверяется вручную и сама по себе не подтверждает запись."
+            : locale === "es"
+              ? "Solo después de acordar la hora. El pago se verifica manualmente y no confirma una reserva."
+              : "Only after agreeing a time. Payment is verified manually and does not itself confirm a booking."}</small>
+        </div>
+      ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>
