@@ -22,6 +22,7 @@ const TEXT = {
     invalid: 'Choose a valid start and end date.', allResults: 'Show all time',
     baseline: 'Repeat this test to measure changes over time.',
     incompatible: 'Some measurement versions or scales are not comparable. Values are shown without an inferred change.',
+    unverifiedHistory: 'Some saved attempts could not pass the original version and score checks. Those raw records are retained for history, not treated as verified psychological measurements.',
     note: 'Only exactly comparable source versions are paired. Numeric differences describe self-reports, not reliably established or clinically important improvement or decline. Different responses can yield the same total; these are not health percentages or diagnoses.',
     unavailable: 'Retake unavailable', scales: 'scales',
     awaiting: 'No repeat measurement yet',
@@ -41,6 +42,7 @@ const TEXT = {
     invalid: 'Укажите корректные даты начала и конца периода.', allResults: 'Показать весь период',
     baseline: 'Повторите тест, чтобы увидеть динамику показателей.',
     incompatible: 'Часть версий или шкал теста несопоставима. Значения показаны без расчёта изменения.',
+    unverifiedHistory: 'Часть сохранённых прохождений не прошла проверку исходной версии или баллов. Эти записи сохранены для истории, но не считаются подтверждёнными психологическими измерениями.',
     note: 'Сравниваются только совместимые версии теста. Разница баллов отражает самоотчёты, но не доказывает достоверное или клинически значимое улучшение либо ухудшение. Одинаковая сумма возможна при разных ответах; это не процент здоровья и не диагноз.',
     unavailable: 'Повтор пока недоступен', scales: 'шкал',
     awaiting: 'Повторного замера пока нет',
@@ -192,6 +194,8 @@ export function TestDynamics({ results = [], locale = 'en', onRetake, canRetake,
             {group.count === 1 && <p className={styles.footnote}>{c.baseline}</p>}
             {group.count > 1 && group.scales.some(item => item.delta === null) &&
               <p className={styles.footnote}>{c.incompatible}</p>}
+            {group.unverifiedCount > 0 &&
+              <p className={styles.footnote} role="note" data-dynamics-unverified-history>{c.unverifiedHistory}</p>}
             <button type="button" className={styles.retake}
               onClick={() => onRetake?.(group.latest.definitionId)}
               disabled={busy || !canRetake?.(group.latest.definitionId)}>
