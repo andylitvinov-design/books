@@ -60,9 +60,9 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 - Явные соответствия публичной теме → публичной услуге:
   - relationships → systemic-constellations;
   - business → business-consulting;
-  - stress → hypnotherapy-course (для ES действующий переводной маршрут);
+  - stress → imagery-therapy (EN/RU/ES);
   - energy → remote-energy-support (другая политика цен);
-  - effectiveness → business-consulting.
+  - effectiveness → imagery-therapy.
 - Внизу маршрута, рядом с опциями теста и бесплатного разбора, необязательная ссылка «Обсудить лично»; во всех локалях.
 - Никаких параметров с ответами, баллами, диагнозом, именем или свободным текстом в URL.
 
@@ -85,7 +85,7 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 | `contact_whatsapp_click` / `contact_telegram_click` | Сайт | Открыл мессенджер; отправку нельзя подтвердить браузером |
 | `lead_created` | CRM server | Подтверждён реальный входящий запрос, idempotency key |
 | `booking_confirmed` | CRM server | Время согласовано обеими сторонами |
-| `payment_received` | Биллинг / verified webhook | Успешный платёж, не مجرد redirect |
+| `payment_received` | Биллинг / verified webhook | Успешный платёж, не простой redirect |
 
 Не пересылать текст запроса, рисунки, ответы тестов, имена, email, телефон, персональный профиль, health fields, session IDs в GA4/Ads. Атрибуция: whitelisted `source, medium, campaign, content` только с утверждённым согласием и без PII. CRM хранит отдельные owner-only lead/source/consent/status/timestamps; дедупликация и аудит изменений.
 
