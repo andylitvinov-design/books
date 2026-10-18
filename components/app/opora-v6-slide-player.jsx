@@ -218,6 +218,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const [saving,setSaving]=useState(false)
   const saveOp=useRef(null),visited=useRef(new Set([OPORA54_PRE_SAVE_KEYS[0]]))
   const heading=useRef(null),scroller=useRef(null)
+  const safetyTrigger=useRef(null),safetyFirstAction=useRef(null),safetyHasOpened=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=slides.length
   const slide=receipt?null:slides[step]
   const role=slide?.kind
@@ -233,6 +234,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     heading.current?.focus()
     setShowHint(false)
   },[step,slide?.key])
+  // A pause must not leave keyboard focus on a hidden exercise.
+  useEffect(()=>{
+    if(safety){safetyHasOpened.current=true;safetyFirstAction.current?.focus?.()}
+    else if(safetyHasOpened.current)safetyTrigger.current?.focus?.()
+  },[safety])
   function back(){if(!locked){setError('');setStep(i=>Math.max(0,i-1))}}
   function next(){
     if(locked)return
@@ -346,7 +352,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-as54-player={versionTag} data-course-one-screen="v2">
-    <div className={styles.frame}>
+    <div className={styles.frame} inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
         <button type="button" className={styles.controlIcon} onClick={onClose} disabled={locked}
           aria-label={t.close}><X size={21}/></button>
@@ -357,7 +363,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
           </div>
           <div className={styles.track}><div className={styles.fill} style={{width:((afterSave?15:step+1)/15*100)+'%'}}/></div>
         </div>
-        <button type="button" className={styles.safetyButton} onClick={()=>setSafety(true)} disabled={locked}>
+        <button type="button" className={styles.safetyButton} ref={safetyTrigger} onClick={()=>setSafety(true)} disabled={locked}>
           <Pause size={16}/><span>{t.pause}</span>
         </button>
       </header>
@@ -489,11 +495,12 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
         </button>
       </footer>
     </div>
-    {safety&&<div className={styles.safetyShade} role="alertdialog" aria-modal="true" aria-label={t.safetyTitle}>
+    {safety&&<div className={styles.safetyShade} role="alertdialog" aria-modal="true" aria-label={t.safetyTitle}
+      onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();setSafety(false)}}}>
       <div className={styles.safetyCard}>
         <ShieldCheck size={35} color="#008d9e"/>
         <h2>{t.safetyTitle}</h2><p>{t.safetyBody}</p>
-        <button type="button" onClick={neutralChoice}>{t.safetyNeutral}</button>
+        <button type="button" ref={safetyFirstAction} onClick={neutralChoice}>{t.safetyNeutral}</button>
         <button type="button" onClick={()=>setSafety(false)}>{t.safetyReturn}</button>
         <button type="button" className={styles.exit} onClick={onClose}>{t.safetyFinish}</button>
       </div>
