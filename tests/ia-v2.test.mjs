@@ -18,7 +18,7 @@ const errorCode = code => error => error.code === code
 
 test('extended primary navigation and precise active families', () => {
   for (const locale of ['en', 'ru', 'es']) {
-    assert.deepEqual(getSiteNavigation(locale).map(x => x.id), locale === 'es' ? ['home','library','services','academy','courses','cabinet'] : ['home','library','services','relationships','academy','courses','cabinet'])
+    assert.deepEqual(getSiteNavigation(locale).map(x => x.id), ['home','library','services','relationships','academy','courses','cabinet'])
     for (const suffix of ['library', 'books', 'homeopathy', 'homeopathy/remedies/aconitum']) assert.equal(activeNavigationId(`/${locale}/${suffix}`), 'library')
     assert.equal(activeNavigationId(`/${locale}/client/opaque`), 'cabinet')
   }

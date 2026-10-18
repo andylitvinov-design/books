@@ -150,7 +150,7 @@ async function checkSpanishNavigation(path = '/es', fault, transform) {
   assert.equal(url, home + path, 'The menu audit must not navigate away from the current route')
 }
 for (const path of ['/es', '/es/library', '/es/services', '/es/academy', '/es/books', '/es/about', '/es/courses', '/es/homeopathy', '/es/homeopathy/remedies', '/es/client']) {
-  test(path + ' actual JSX preserves four direct links and the exact labelled eight-entry menu', () => checkSpanishNavigation(path))
+  test(path + ' actual JSX preserves four direct links and the exact labelled ten-entry menu', () => checkSpanishNavigation(path))
 }
 for (const fault of ['wrong direct destination', 'missing direct link', 'extra direct link', 'wrong cabinet destination', 'wrong menu destination', 'missing menu destination', 'extra menu destination', 'reordered menu destinations', 'wrong menu label', 'wrong trigger label', 'initially open', 'missing menu', 'cannot open', 'keyboard order', 'escape closure', 'focus return', 'unexpected navigation', 'menu overflow', 'hidden menu link', 'hidden trigger']) {
   test('Spanish navigation verifier rejects ' + fault, () => assert.rejects(checkSpanishNavigation('/es', fault)))
@@ -168,7 +168,7 @@ for (const [name, before, after] of [
 test('navigation disclosure returns closed before screenshots and preserves the browser/privacy lifecycle', () => {
   assert.match(source, /await assertSpanishNavigation\(page, path\);/)
   assert.ok(source.indexOf('await assertSpanishNavigation(page, path);') < source.indexOf("if(path==='/es/client')"))
-  assert.match(source, /four direct links plus eight-entry Spanish menu, Enter\/Tab\/Escape and focus return/)
+  assert.match(source, /four direct links plus ten-entry Spanish menu, Enter\/Tab\/Escape and focus return/)
   assert.match(source, /for \(const width of \[390,1365\]\)/)
   assert.match(source, /\[\['chromium', chromium\], \['webkit', webkit\]\]/)
   assert.match(source, /await assertUnsupportedSpanishPrivateLocale\(denialPage,response,target,expect\)/)

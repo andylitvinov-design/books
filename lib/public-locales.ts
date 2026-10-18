@@ -6,7 +6,7 @@ export function publicHomePath(locale: PublicLocale) {
   return locale === 'en' ? '/' : `/${locale}`;
 }
 export function hasSpanishCounterpart(pathname: string) {
-  return pathname === '/' || /^\/(?:en|ru|es)\/courses\/antistress\/?$/.test(pathname) || /^\/(en|ru|es)(?:\/(?:about|courses(?:\/methodology)?|services(?:\/(?:free-situation-review|imagery-therapy|business-consulting|[a-z0-9-]+\/[a-z0-9-]+))?|books|library(?:\/distance-homeopathy)?|client(?:\/tests)?|masters(?:\/[a-z0-9-]+)?|academy(?:\/[a-z0-9-]+)*|wu-xing|homeopathy(?:\/remedies(?:\/[a-z0-9-]+)?)?))?\/?$/.test(pathname);
+  return pathname === '/' || /^\/(?:en|ru|es)\/courses\/antistress\/?$/.test(pathname) || /^\/(en|ru|es)(?:\/(?:about|courses(?:\/methodology)?|services(?:\/(?:free-situation-review|imagery-therapy|business-consulting|psychohomeopathy|systemic-constellations|remote-energy-support|dao-health-profile|alchemy-of-soul|hypnotherapy-course|[a-z0-9-]+\/[a-z0-9-]+))?|explore\/(?:relationships|business|stress|energy|effectiveness)|relationships|books|library(?:\/distance-homeopathy)?|client(?:\/tests)?|masters(?:\/[a-z0-9-]+)?|academy(?:\/[a-z0-9-]+)*|wu-xing|homeopathy(?:\/remedies(?:\/[a-z0-9-]+)?)?))?\/?$/.test(pathname);
 }
 export function publicCounterpart(pathname: string, locale: PublicLocale) {
   if (pathname === '/' || /^\/(?:en|ru|es)\/?$/.test(pathname)) return publicHomePath(locale);

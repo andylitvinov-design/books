@@ -65,7 +65,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
           <Link className={styles.cta} href={"/" + locale + "/services/free-situation-review"}>
             {t.cta}<ArrowUpRight size={20} aria-hidden="true" />
           </Link>
-          <Link className={styles.paidLink} href={locale === "es" ? "/en/services/alchemy-of-soul" : "/" + locale + "/services/alchemy-of-soul"}>
+          <Link className={styles.paidLink} href={"/" + locale + "/services/alchemy-of-soul"}>
             {t.paidCta}<ArrowRight size={17} aria-hidden="true" />
           </Link>
           <Link className={styles.secondary} href="#free-insights">{t.secondary}<ArrowRight size={17} aria-hidden="true" /></Link>

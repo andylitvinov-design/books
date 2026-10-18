@@ -105,7 +105,7 @@ test("Services hero sells the options and points to free review without diagnost
   assert.match(hero, /See all three free options/);
   assert.match(hero, /href="#free-insights"/);
   for (const label of ["Alchemy of the Soul · Psycho-homeopathy", "Алхимия души · Психогомеопатия", "Alquimia del Alma · sesión personal"]) assert.ok(hero.includes(label), label);
-  assert.match(hero, /className=\{styles\.paidLink\} href=\{locale === "es" \? "\/en\/services\/alchemy-of-soul" : "\/" \+ locale \+ "\/services\/alchemy-of-soul"\}/);
+  assert.match(hero, /className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/alchemy-of-soul"\}/);
   assert.match(hero, /A live one-to-one session is separate and optional/);
   assert.match(hero, /Личная встреча — отдельно и по желанию/);
   assert.match(hero, /La sesión en directo es opcional y de pago/);

@@ -33,7 +33,7 @@ async function assertSpanishNavigation(page, path) {
     ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
     ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
     ['/es/academy', 'Academia'], ['/es/library', 'Biblioteca'],
-    ['/en/app', 'Mi Casa'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+    ['/en/app', 'Mi Casa'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -275,7 +275,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eight-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus ten-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }

@@ -8,7 +8,7 @@ import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessmen
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
 
-type Language = 'en' | 'ru'
+type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
 type Journey = { id: string; title: Record<Language, string>; eyebrow: Record<Language, string>; summary: Record<Language, string>; introduction: Record<Language, string>; focus: readonly string[]; courseProgram: string; topics: readonly Item[] }
 type RecommendedTest = {
@@ -44,6 +44,15 @@ const copy = {
     safety: 'These questionnaires are for self-reflection, not medical diagnosis or treatment.',
     error: 'Could not open your tests. Check your connection and try again.',
     signinError: 'Google sign-in is currently unavailable. Please try again.',
+  },
+  es: {
+    back:'Todas las áreas',eyebrow:'PASO 1 · ELIGE UN TEMA',pickTitle:'¿Qué te gustaría explorar?',pickHint:'Selecciona uno o varios temas; las dos pruebas sugeridas se actualizarán.',
+    recommended:'PASO 2 · RECOMENDACIONES',recommendedTitle:'Dos pruebas para empezar',recommendedHint:'Cuestionarios disponibles relacionados con tus intereses. Abre una tarjeta para conocer la fuente.',
+    questions:'preguntas',minutes:'min',details:'Acerca de esta prueba',empty:'No hay pruebas iniciales para esta selección. Prueba otros temas o consulta el catálogo.',
+    start:'Realizar las dos pruebas sugeridas',starting:'Abriendo las pruebas…',browse:'Explorar el catálogo de más de 100 pruebas',
+    options:'¿Cómo deseas continuar?',course:'Curso gratuito de apoyo',courseDetail:'Empieza con pruebas y después descubre prácticas breves a tu ritmo. Un curso gratuito a la vez.',
+    review:'Revisión escrita de tu situación',reviewDetail:'Reflexión personal gratuita sobre tu formulario y dibujo YO–META–PROBLEMA; no incluye una sesión en directo.',
+    safety:'Estos cuestionarios son para la autoobservación y no ofrecen diagnóstico ni tratamiento médico.',error:'No se pudieron abrir las pruebas. Comprueba la conexión e inténtalo de nuevo.',signinError:'El acceso con Google no está disponible en este momento. Inténtalo más tarde.',
   },
   ru: {
     back: 'Все направления', eyebrow: 'ШАГ 1 · ВЫБОР ТЕМЫ', pickTitle: 'Что хотите исследовать?',
@@ -92,7 +101,9 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   journey: Journey
   suggestions: Record<string, RecommendedTest[]>
 }) {
-  const language = locale === 'ru' ? 'ru' : 'en'
+  const language = locale
+  // Private test sessions still use the existing English/Russian app.
+  const appLocale = language === 'es' ? 'en' : language
   const c = copy[language]
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
@@ -201,13 +212,13 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         if (session.account?.id !== accountId) throw new Error('ACCOUNT_CHANGED')
         // Cross public -> private CSP policies with one fresh document.
         // A soft transition would start chunks that the CSP boundary must cancel.
-        window.location.assign('/' + language + '/app/tests?plan=' + encodeURIComponent(saved.id))
+        window.location.assign('/' + appLocale + '/app/tests?plan=' + encodeURIComponent(saved.id))
         return
       }
       // Store only the editorial test identifiers, never personal answers.
       attempt.intent = intent
       window.sessionStorage.setItem(PENDING_TEST_SELECTION_KEY, intent)
-      const auth = await request('auth/start', { locale: language, continueTo: 'tests' }, 'POST', options)
+      const auth = await request('auth/start', { locale: appLocale, continueTo: 'tests' }, 'POST', options)
       if (!current()) return
       if (!auth.redirectUrl) throw new Error('SIGN_IN_UNAVAILABLE')
       window.location.assign(auth.redirectUrl)
@@ -235,7 +246,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
       </div>
       <div className={styles.heroCopy}>
-        <Link onClick={cancelStart} href={'/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
+        <Link onClick={cancelStart} href={language === 'es' ? '/es#hh-topic-journeys' : '/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
           <ArrowLeft size={16} aria-hidden="true" />{c.back}
         </Link>
         <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
@@ -278,7 +289,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
             <ChevronDown className={styles.testChevron} size={19} aria-hidden="true" />
           </summary>
           <div className={styles.testDetail}>
-            <p>{item.description || item.area || c.details}</p>
+            {language === 'es' ? <><p>Los detalles técnicos se muestran en el idioma original del cuestionario. Esta herramienta no establece un diagnóstico.</p><p lang={item.definition.instrumentLocale}>{item.description || item.area || c.details}</p></> : <p>{item.description || item.area || c.details}</p>}
           </div>
         </details>) : <p className={styles.noTests}>{c.empty}</p>}
       </div>
