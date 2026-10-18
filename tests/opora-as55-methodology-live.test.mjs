@@ -8,7 +8,7 @@ import {opora55CasesValid} from '../lib/inner-growth/opora-as55-learning-cases.j
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
-import {mount,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
+import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const keys=['welcome','baseline','pace','focus','aphorism','demo','prepare','notice','act','rehearse','scenario','transfer','reflection','save']
 
@@ -139,7 +139,10 @@ test('new scenario and transfer copy stays educational, mobile, accessible and n
  assert.match(js,/scenario\?\.feedback\?\./)
  assert.match(js,/authored\?\.hints\?\.\[role\]/)
  assert.match(js,/role==='transfer'&&picked&&authored\?\.transferBackup/)
- assert.match(js,/\['not_attempted','uncomfortable'\]/)
+ assert.match(js,/\['not_yet','not_attempted','uncomfortable'\]/)
+ assert.match(js,/role==='transfer'\?\['not_planning'\]/)
+ assert.match(js,/inert=\{safety\}/)
+ assert.match(js,/ref=\{safetyFirstAction\}/)
  assert.match(js,/setBeforeNow\(v=>v===i\?null:i\)/)
  assert.doesNotMatch(js,/\['skip',/)
  assert.match(js,/setSafety\(true\)/)
