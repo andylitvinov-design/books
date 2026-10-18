@@ -69,6 +69,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
   const [available, setAvailable] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<"zen" | "stripe" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [signInRequired, setSignInRequired] = useState(false);
@@ -81,7 +82,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [accountId, setAccountId] = useState<string | null>(null);
   const invalidateAccount = useCallback(() => {
     accountGuard.current.invalidate();
-    setAccountId(null); setAvailable(false); setOrderId(null); setOrderStatus("");
+    setAccountId(null); setAvailable(false); setPaymentProvider(null); setOrderId(null); setOrderStatus("");
     setPending(false); setError(""); setSignInRequired(true); setRepeatOrderId(null);
     operationId.current = null; inFlight.current = false;
   }, []);
@@ -104,6 +105,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (status.accountId && guard.bindInitial(status.accountId, generation)) {
           setAccountId(status.accountId);
           setAvailable(status.available === true);
+          setPaymentProvider(status.provider === "zen" || status.provider === "stripe" ? status.provider : null);
         }
       }).catch(() => {});
     const returnedId = new URLSearchParams(window.location.search).get("serviceOrder");
@@ -141,7 +143,10 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     async function check() {
       try {
         if (!guard.current(ticket)) return;
-        const response = await fetch(`/api/app/commerce/orders/${encodeURIComponent(orderId!)}`, {
+        const zen = paymentProvider === "zen";
+        const route = `/api/app/commerce/orders/${encodeURIComponent(orderId!)}`;
+        const response = await fetch(zen ? route + "/refresh" : route, {
+          method: zen ? "POST" : "GET",
           credentials: "same-origin", cache: "no-store", signal: abort.signal,
           headers: { "X-HH-Account-ID": ticket!.accountId },
         });
@@ -159,7 +164,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (order.status === "paid") {
           const paidIds = new Set((order.items || []).map((item: { serviceId: string }) => item.serviceId));
           setSelected((current) => current.filter((value) => !paidIds.has(value)));
-        } else if (["pending", "open", "processing"].includes(order.status)) timer = setTimeout(check, 5000);
+        } else if (["pending", "open", "processing"].includes(order.status)) timer = setTimeout(check, paymentProvider === "zen" ? 12000 : 5000);
       } catch (error) {
         if (cancelled) return;
         if (error instanceof Error && error.message === "ACCOUNT_CHANGED") { invalidateAccount(); return; }
@@ -168,7 +173,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     }
     check();
     return () => { cancelled = true; clearTimeout(timer); abort.abort(); };
-  }, [orderId, accountId, repeatOrderId, t.error, invalidateAccount]);
+  }, [orderId, accountId, repeatOrderId, paymentProvider, t.error, invalidateAccount]);
 
   const chosen = products.filter((product) => selected.includes(product.id));
   const total = chosen.reduce((value, product) => value + product.amountMinor, 0);
@@ -218,7 +223,10 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
       }
       if (result.redirectUrl) {
         const url = new URL(result.redirectUrl);
-        if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com" || url.username || url.password || url.port) throw new Error("invalid-redirect");
+        const allowedHost = paymentProvider === "zen"
+          ? ["secure.zen.com", "secure.zen-test.com"].includes(url.hostname)
+          : url.hostname === "checkout.stripe.com";
+        if (url.protocol !== "https:" || !allowedHost || url.username || url.password || url.port) throw new Error("invalid-redirect");
         if (guard.current(ticket)) window.location.assign(url.href);
       }
     } catch (error) {
@@ -258,7 +266,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
             </li>)}</ul>
             <p className={styles.total}><span>{t.total}</span><strong>{formatServiceAmount(total, locale)}</strong></p>
             <p className={styles.notice} id={`${id}-payment-note`}>{available ? t.secure : t.unavailable}</p>
-            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : t.pay}</button>
+            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : paymentProvider === "zen" ? `${t.pay} · ZEN.COM` : t.pay}</button>
             <a className={styles.request} href={requestUrl} target="_blank" rel="noopener noreferrer">{t.request}</a>
             <p className={styles.fine}>{t.requestNote}</p>
           </> : <p className={styles.empty} role="status">{t.empty}</p>}
