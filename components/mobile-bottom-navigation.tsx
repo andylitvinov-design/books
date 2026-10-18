@@ -1,19 +1,13 @@
 "use client";
-import { BookOpen, House, Sparkles, UserRound, NotebookPen, GraduationCap, CircleUserRound, ClipboardList, HousePlus, Heart } from 'lucide-react';
+import { BookOpen, House, Sparkles, GraduationCap, ClipboardList, HousePlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
-import { activeNavigationId, getSiteNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
+import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-const mobileCopy: Record<PublicLocale, { tests: string; house: string }> = {
-  en: { tests: 'Tests', house: 'My House' },
-  ru: { tests: 'Тесты', house: 'Мой дом' },
-  es: { tests: 'Tests', house: 'Mi Casa' },
-};
-
-const icons = { home: House, library: BookOpen, services: Sparkles, relationships: Heart, academy: GraduationCap, about: UserRound, courses: NotebookPen, cabinet: CircleUserRound, tests: ClipboardList, house: HousePlus };
+const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, library: BookOpen, house: HousePlus };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
@@ -34,15 +28,8 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     return () => { observer?.disconnect(); document.body.style.removeProperty('--ia222-bottom-height'); };
   }, [hidden, locale]);
   if (hidden) return null;
-  const current = /^\/(?:en|ru|es)\/client(?:\/|$)/.test(pathname) ? 'tests'
-    : /^\/(?:en|ru)\/app(?:\/|$)/.test(pathname) ? 'house'
-    : activeNavigationId(pathname);
-  const publicItems = getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id));
-  const localized = mobileCopy[locale];
-  const mobileItems = [...publicItems,
-    { id: 'tests', href: `/${locale}/client/tests`, label: localized.tests, ariaLabel: localized.tests, external: false },
-    { id: 'house', href: `/${locale === 'es' ? 'en' : locale}/app`, label: localized.house, ariaLabel: localized.house, external: false },
-  ];
+  const current = activeCompactNavigationId(pathname);
+  const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
     {/* Keep the six high-priority destinations on the compact bottom bar. The
         new love/intimacy hub remains prominent in the desktop menu and homepage. */}
