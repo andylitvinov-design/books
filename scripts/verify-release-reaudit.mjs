@@ -665,7 +665,7 @@ async function exercise(engine, browserType, width) {
     }
     if (engine === 'chromium' && width === 390) {
       for (const book of volumes) {
-        for (const [readerPath, locale] of [[`/books/${book}?lang=en`, 'en'], [`/books/${book}`, 'ru']]) {
+        for (const [readerPath, locale] of [[`/en/books/${book}`, 'en'], [`/ru/books/${book}`, 'ru']]) {
           await check('maya-reader-and-images', { path: readerPath, locale }, async () => {
             const response = await page.goto(origin + readerPath, { waitUntil: 'domcontentloaded', timeout: 35000 });
             assert.equal(response.status(), 200);

@@ -117,6 +117,9 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
   }
   page.on('request', observe)
   try {
+    await more.click()
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
+    await expect(root.locator('[data-test-collection]:visible')).toHaveCount(collections.length)
     for (const id of ['stress', 'relationships', 'tantra', 'sexuality']) {
       const collection = collections.find(item => item.id === id)
       assert.ok(collection)
@@ -139,7 +142,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     assert.deepEqual(await readSelection(picker), preserved, 'Clearing a collection does not auto-enroll intimate questionnaires')
     // Catalog search must cross an unrelated topic while preserving that topic
     // for recommendations and retaining every explicitly selected test.
-    await more.click()
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
     const sleep = root.locator('[data-test-collection="sleep"]')
     await sleep.click()
     await expect(sleep).toHaveAttribute('aria-pressed', 'true')
@@ -147,7 +150,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
     await search.fill(query)
     await search.press('Enter')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: 'balanced' })
+    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced' })
     const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)

@@ -42,7 +42,7 @@ export async function verifyLive(origin = 'https://holistichouse.vercel.app') {
   assert.equal(base.protocol, 'https:', 'Hosted verification requires HTTPS');
   const routes = [
     ['/books/maya-tradition', 'en'],
-    ...volumes.flatMap(([slug]) => [[`/books/${slug}?lang=en`, 'en'], [`/books/${slug}`, 'ru']]),
+    ...volumes.flatMap(([slug]) => [[`/en/books/${slug}`, 'en'], [`/ru/books/${slug}`, 'ru']]),
   ];
   // GitHub can finish its build before Vercel starts its queued production build.
   // Allow a bounded two-minute alias-settling window without accepting any failed route.
