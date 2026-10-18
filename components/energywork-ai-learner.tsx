@@ -63,7 +63,7 @@ const copy = {
     audio: "Original English audio",
     unavailable: "This recording is not available. You can continue using the written teaching.",
     welcomeOffer: "One course · 5 lessons · 3 Reiki systems",
-    welcomeRequirement: "Study all five lessons in order. Observations may be skipped during learning; the reports and answers are needed for personal initiation review.",
+    welcomeRequirement: "Study all five lessons in order.",
     welcomeTeacher: "A personal initiation is arranged separately with Andrey. Course completion alone does not grant any initiation.",
     pathway: "All lessons are part of your course",
     picked: "Completed",
@@ -141,7 +141,7 @@ const copy = {
     audio: "Оригинальное видео на английском",
     unavailable: "Запись пока недоступна. Можно продолжить изучение по тексту.",
     welcomeOffer: "Один курс · 5 уроков · 3 системы Рейки",
-    welcomeRequirement: "Проходите все пять уроков по очереди. Наблюдения можно пропускать во время обучения, но для заявки на личную инициацию нужны отчёты и ответы.",
+    welcomeRequirement: "Проходите все пять уроков по очереди.",
     welcomeTeacher: "Личная инициация проводится отдельно, по договорённости с Андреем. Завершение курса не является инициацией.",
     pathway: "Все уроки входят в одну программу",
     picked: "Завершено",
@@ -495,15 +495,17 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-course-visual="reiki-airy-v2" data-energywork-screen={slide.kind === "welcome" ? "welcome" : "lesson"} data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
-        <header className={styles.top}>
-          <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
-            <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
-          </Link>
-          <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{t.shortTitle}</span>
-          <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
-        </header>
+        {slide.kind === "welcome" ? (
+          <header className={styles.top}>
+            <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
+              <ArrowLeft size={19} aria-hidden="true" /><span>{t.backCourse}</span>
+            </Link>
+            <span className={styles.courseMark}><Sparkles size={17} aria-hidden="true" />{t.shortTitle}</span>
+            <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
+          </header>
+        ) : null}
 
         <nav className={styles.journey} aria-label={t.fiveLessons}>
           <ol>
@@ -511,7 +513,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
               <li key={lesson.phase}
                 className={lessonNumber === number + 1 ? styles.journeySelected :
                   lessonNumber > number + 1 ? styles.journeyIntro : ""}
-                aria-current={lessonNumber === number + 1 ? "step" : undefined}>
+                aria-current={lessonNumber === number + 1 || (lessonNumber === 0 && number === 0) ? "step" : undefined}>
                 <span className={styles.journeyDot} aria-hidden="true">
                   {lessonNumber > number + 1 ? <Check size={16} /> : number + 1}
                 </span>
@@ -534,7 +536,6 @@ export function EnergyworkAiLearner({ locale }: Props) {
                     {energyworkPathChoices.map((choice) => <li key={choice.id}>{choice.title[locale]}</li>)}
                   </ul>
                   <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
-                  <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
                 </div>
               ) : null}
               {slide.kind === "welcome" ? (
@@ -710,8 +711,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <ol>{energyworkLessons.map((lesson) => (
             <li key={lesson.phase} aria-current={lesson.phase === slide.phase ? "step" : undefined}>{lesson.title[locale]}</li>
           ))}</ol>
-        </details>
-        <aside className={styles.preview} aria-live="polite">
+          {slide.kind === "welcome" ? <p className={styles.programmeNote}>{t.welcomeTeacher}</p> : null}
+          <p className={styles.disclaimer}>{t.stop}</p>
+          <aside className={styles.preview} aria-live="polite">
           <LockKeyhole size={19} aria-hidden="true" />
           <div className={styles.syncContent}>
             {sync === "checking" ? <strong>{t.checking}</strong> : null}
@@ -744,7 +746,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
             {saveError ? <p role="alert" className={styles.saveError}>{saveError}
               <button className={styles.retryButton} onClick={reloadProgress} type="button">{t.reload}</button></p> : null}
           </div>
-        </aside>
+          </aside>
+        </details>
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions}>
@@ -755,7 +758,6 @@ export function EnergyworkAiLearner({ locale }: Props) {
             </div>
           ) : null}
         </footer>
-        <p className={styles.disclaimer}>{t.stop}</p>
       </div>
     </main>
   );

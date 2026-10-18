@@ -29,7 +29,7 @@ test('Approved scenic design is preserved across new unified five-lesson course'
 test('Immersive journey dots now follow the actual five lessons, not a path-selection', () => {
   assert.match(learner, /<nav className=\{styles\.journey\} aria-label=\{t\.fiveLessons\}>/)
   assert.match(learner, /energyworkLessons\.map\(\(lesson, number\) =>/)
-  assert.match(learner, /aria-current=\{lessonNumber === number \+ 1 \? "step" : undefined\}/)
+  assert.match(learner, /aria-current=\{lessonNumber === number \+ 1 \|\| \(lessonNumber === 0 && number === 0\) \? "step" : undefined\}/)
   assert.match(learner, /className=\{styles\.journeyDot\}/)
   assert.doesNotMatch(learner, /onClick=\{\(\) => choosePath\(choice\.id\)\}/)
   assert.doesNotMatch(learner, /slide\.kind === "path-choice" && !path/)

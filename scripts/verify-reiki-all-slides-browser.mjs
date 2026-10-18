@@ -45,6 +45,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       stageCount: journey?.children.length || 0,
       activeStage: journey?.querySelectorAll('[aria-current="step"]').length || 0,
       slideHeight: slideRect.height,
+      titleHeaderCount: element.querySelectorAll("header").length,
+      previewUnderProgramme: Boolean(element.querySelector("aside")?.closest("details[class*='programme']")),
+      programmeOpen: Boolean(element.querySelector("details[class*='programme']")?.open),
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
       rootHorizontalOverflow: element.scrollWidth-element.clientWidth,
       ctaTop: rect?.top ?? null,
@@ -58,8 +61,12 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   assert.equal(data.progressCurrent, index, where + ": actual slide progress");
   assert.equal(data.progressMax, 45, where + ": total");
   assert.equal(data.stageCount, 5, where + ": five true lesson circles");
-  assert.equal(data.activeStage, 1, where + ": one highlighted current stage");
-  assert.ok(data.rootBackground.includes("reiki-practitioner-sunrise.webp"), where + ": approved sunrise background");
+  assert.equal(data.activeStage, 1, where + ": one highlighted current stage, including course welcome");
+  assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
+  assert.ok(data.previewUnderProgramme, where + ": private saving is accessible inside programme disclosure");
+  assert.equal(data.programmeOpen, false, where + ": programme details closed until requested");
+  assert.equal(data.titleHeaderCount, data.kind === "welcome" ? 1 : 0,
+    where + ": redundant top buttons hidden on inner slides");
   assert.ok(data.slideHorizontalOverflow <= 2, where + ": no slide horizontal overflow");
   assert.ok(data.rootHorizontalOverflow <= 3, where + ": no root horizontal overflow");
   assert.ok(data.slideHeight >= 80, where + ": visible teaching viewport");
@@ -114,9 +121,9 @@ const context = await browser.newContext({ viewport:{width:390,height:844},devic
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
 try {
-  const image = await page.request.get(origin+"/images/holistic-house/reiki-practitioner-sunrise.webp");
-  assert.equal(image.status(),200,"Approved local background photo must be served");
-  assert.match(image.headers()["content-type"]||"",/image\/webp/);
+  const image = await page.request.get(origin+"/images/holistic-house/reiki-heaven-sky.svg");
+  assert.equal(image.status(),200,"Approved local sky background must be served");
+  assert.match(image.headers()["content-type"]||"",/image\/svg\+xml/);
   for (const [locale,width] of [["en",390],["ru",320]]) await exerciseJourney(page,locale,width);
   // Additional layout sizes: these reuse the same guest-only route, no persistence.
   for (const [locale,width] of [["en",375],["ru",430]]) {
