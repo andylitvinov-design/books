@@ -11,7 +11,8 @@ const attrs = (tag,name) => {
   return (match?.[1] || match?.[2] || match?.[3] || '').replace(/&amp;/g,'&');
 };
 const result = { checkedAt: new Date().toISOString(), origin, pages: 0, images: 0, internalLinks: 0,
-  externalLinks: 0, errorCount: 0, rateLimited: 0, warnings: [], errors: [], status: 'pending' };
+  externalLinks: 0, errorCount: 0, rateLimited: 0, networkUnverified: 0,
+  warnings: [], errors: [], status: 'pending' };
 const errors = result.errors, images = new Set(), links = new Set(), external = new Set();
 function issue(kind,url,status) {
   if (errors.length < 100) errors.push({ kind, url: new URL(url).origin+new URL(url).pathname, status });
@@ -54,6 +55,25 @@ async function request(url,method='HEAD',follow=false) {
     headers: { 'User-Agent':'HolisticHouse-PublicLinkAudit/1.0', 'Accept':'text/html,*/*;q=0.8' } }); }
   finally { clearTimeout(timeout); }
 }
+async function requestWithRetry(url, method = 'HEAD', follow = true) {
+  // Retest transient upstream transport/5xx errors only; never retry 404 or 429.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await request(url, method, follow);
+      if (![502,503,504].includes(response.status) || attempt === 2) return response;
+      await response.body?.cancel();
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 500));
+  }
+  throw new Error('retry exhausted');
+}
+function uncertain(type, url, detail) {
+  const u = new URL(url);
+  result.networkUnverified++;
+  if (result.warnings.length < 100) result.warnings.push(type + ' INCONCLUSIVE: ' + u.origin + u.pathname + ' ' + detail);
+}
 async function pool(items,fn,concurrency=2) {
   let i=0;
   async function worker() {while(i<items.length) {
@@ -83,13 +103,41 @@ await pool(pages,async url=>{
   collect(html,url);
 });
 const check = async (url,type)=>{
-  const u=new URL(url);
-  const remote=u.origin!==origin;
-  const response=await request(url,'HEAD',true);
-  if(response.status===429) result.rateLimited++;
-  if(response.status===404 || response.status===410) issue(type,url,response.status);
-  else if(response.status>=400 && !remote) issue(type,url,response.status);
-  else if(response.status>=400 && remote) result.warnings.push(type+' HEAD inconclusive: '+u.origin+u.pathname+' '+response.status);
+  const u = new URL(url), remote = u.origin !== origin;
+  let response;
+  try { response = await requestWithRetry(url,'HEAD',true); }
+  catch(error) {
+    // The site redirects /media/* to pinned GitHub Raw; a fetch failure is not
+    // proof the original image is absent. Keep an explicit inconclusive warning.
+    if (remote || u.pathname.startsWith('/media/')) uncertain(type,url,String(error?.message||error).slice(0,80));
+    else issue('network',url,String(error?.message||error).slice(0,80));
+    return;
+  }
+  if (response.status === 429 && !remote) {
+    result.rateLimited++;
+    issue(type,url,429);
+    return;
+  }
+  if (response.status === 404 || response.status === 410) {
+    if (remote) {
+      // Some providers reject HEAD even when GET is valid. Verify before
+      // marking an external resource broken; never download paid image variants.
+      try {
+        const checkGet = await requestWithRetry(url,'GET',true);
+        await checkGet.body?.cancel();
+        if (checkGet.ok) { uncertain(type,url,'HEAD '+response.status+' but GET '+checkGet.status); return; }
+        if (checkGet.status !== 404 && checkGet.status !== 410) {
+          uncertain(type,url,'HEAD '+response.status+' / GET '+checkGet.status); return;
+        }
+      } catch(error) { uncertain(type,url,'GET confirmation failed: '+String(error?.message||error).slice(0,80)); return; }
+    }
+    issue(type,url,response.status);
+    return;
+  }
+  if (response.status >= 400) {
+    if (remote) uncertain(type,url,'HEAD inconclusive '+response.status);
+    else issue(type,url,response.status);
+  }
 };
 result.images=images.size; result.internalLinks=links.size; result.externalLinks=external.size;
 const checkedLocal=new Set(pages);
@@ -98,7 +146,7 @@ await pool([...links].filter(url=>!checkedLocal.has(url) && !known.has(url)),
   async url=>check(url,'internal-link'),2);
 await pool([...external],async url=>check(url,'external-link'),1);
 result.errorCount=errors.length;
-result.status=errors.length ? 'failed' : 'passed';
+result.status=errors.length ? 'failed' : result.warnings.length ? 'passed_with_warnings' : 'passed';
 await mkdir('artifacts',{recursive:true});
 await writeFile('artifacts/seo-nightly-links.json',JSON.stringify(result,null,2));
 console.log(JSON.stringify({...result,errors:errors.slice(0,30),warnings:result.warnings.slice(0,5)}));

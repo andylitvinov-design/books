@@ -19,7 +19,7 @@ test('all 12 registered Tantric definitions retain scale-specific descriptive fi
      assert.ok(band.note.includes(plan.label[locale]));assert.equal(band.optionalPractice,plan.step[locale]);assert.ok(band.levelLabel)
     }
     assert.match(model.answerBands[0].note,locale==='ru'?/не недостаток или диагноз/:/not a defect or diagnosis/)
-    assert.match(model.answerBands[4].note,locale==='ru'?/не духовный уровень/:/not a spiritual rank/)
+    assert.match(model.answerBands[4].note,locale==='ru'?/не означает устойчивости во времени, духовного уровня/:/does not establish a stable trait over time, a spiritual rank/)
    }
    const earlier=r=>({...r,accountId:'synthetic',measurementAt:'2026-10-01T12:00:00Z'})
    const later=r=>({...r,accountId:'synthetic',measurementAt:'2026-10-02T12:00:00Z'})

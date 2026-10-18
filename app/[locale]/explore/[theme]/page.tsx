@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
+import { TopicGrowthGuide } from '@/components/topic-growth-guide'
+import { growthGuideFor } from '@/data/growth-guides'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
 import { buildTopicTestSuggestions } from '@/lib/assessments/topic-test-suggestions'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -15,9 +17,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const journey = getTopicJourney(theme)
   if (!journey || !['en','ru','es'].includes(locale)) return {title:'Not found'}
   const language = locale as 'en' | 'ru' | 'es'
+  const guide = growthGuideFor(theme,language)
+  const title = (guide?.title || journey.title[language]) + ' | Holistic House'
+  const description = (guide?.lead || journey.summary[language]).slice(0,180)
   return {
-    title: `${journey.title[language]} | Holistic House`,
-    description: journey.summary[language],
+    title,
+    description,
+    openGraph: {title,description,type:'article'},
+    robots: {index:true,follow:true},
     alternates: {canonical: `/${language}/explore/${theme}`,languages:{en:`/en/explore/${theme}`,ru:`/ru/explore/${theme}`,es:`/es/explore/${theme}`}},
   }
 }
@@ -29,5 +36,6 @@ export default async function TopicJourneyPage({ params }: Props) {
   return <main lang={locale} style={{maxWidth:'100%',overflowX:'clip',minWidth:0}}>
     <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
     <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={buildTopicTestSuggestions(journey, locale)}/>
+    <TopicGrowthGuide theme={theme} locale={locale as 'en'|'ru'|'es'}/>
   </main>
 }

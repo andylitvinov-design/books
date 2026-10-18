@@ -15,3 +15,45 @@ test('live sitemap monitor differentiates rate limit and en ru es missing page t
   assert.match(s,/statuses\.rateLimited/);
   assert.match(s,/translatedNotFound/);
 });
+
+test('public media crawler retries transport failures and validates remote HTTP 404',()=>{
+  const script=read('scripts/verify-public-assets.mjs'), academy=read('data/academy/catalog.ts');
+  assert.match(script,/requestWithRetry/);
+  assert.match(script,/attempt < 3/);
+  assert.match(script,/but GET/);
+  assert.match(script,/networkUnverified/);
+  assert.match(script,/passed_with_warnings/);
+  assert.match(script,/result.rateLimited\+\+/);
+  assert.match(academy,/unavailablePublicYouTubeIds/);
+  assert.match(academy,/OrdMvKn2Zg8/);
+  assert.match(academy,/!unavailablePublicYouTubeIds.has/);
+});
+
+test('Lighthouse measures key public mobile routes, captures screenshots and reports lab thresholds without inventing field INP',()=>{
+  const workflow=read('.github/workflows/hh-lighthouse.yml');
+  const script=read('scripts/report-hh-lighthouse.mjs');
+  const screenshots=read('scripts/export-hh-lighthouse-screenshots.mjs');
+  assert.match(workflow,/lighthouse-services-mobile\.json/);
+  assert.match(workflow,/lighthouse-remedy-mobile\.json/);
+  assert.match(workflow,/export-hh-lighthouse-screenshots/);
+  assert.match(script,/maxLcpMs: 2500, maxCls: 0\.1/);
+  assert.match(script,/mobileThresholds/);
+  assert.match(script,/INP/);
+  assert.match(screenshots,/final-screenshot/);
+});
+
+test('all public remedy lead images reserve a square layout box and are discovery-prioritized',()=>{
+  const standard=read('components/remedy-page.tsx');
+  const spanish=read('app/es/homeopathy/remedies/[slug]/page.tsx');
+  const css=read('app/globals.css');
+  for(const source of [standard,spanish]){
+    assert.match(source,/width=\{800\} height=\{800\}/);
+    assert.match(source,/fetchPriority="high" loading="eager"/);
+    assert.match(source,/decoding="async"/);
+    assert.match(source,/remedy\.primary_image/);
+  }
+  assert.match(css,/\.remedy-primary-image \{[^\n]*aspect-ratio: 1 \/ 1;/);
+  assert.match(css,/\.remedy-primary-image img \{[^\n]*object-contain;[^\n]*height: 100%/);
+  assert.match(standard,/supportingImages\.map/);
+  assert.match(standard,/loading="lazy" decoding="async"/);
+});

@@ -6,6 +6,8 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { billingRegistryEnabled } from '@/lib/crm/billing-registry'
+import { getCrmEmailConfig } from '@/lib/crm/email'
+import { sendCrmMessage, sendCrmVerification } from '@/lib/crm/email-dispatch'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -24,12 +26,14 @@ async function handle(request) {
     const repo = createCrmRepository(config)
     let data
     if (request.method === 'GET') {
-      data = await repo.withOwner(actor, async (store) => ({ contacts: await store.listContacts(), drafts: await store.listDrafts(), subscribers: await store.listSubscribers(), subscriberRegistryEnabled: billingRegistryEnabled(), sendingEnabled: false }))
+      data = await repo.withOwner(actor, async (store) => ({ contacts: await store.listContacts(), drafts: await store.listDrafts(), emailMessages: await store.listEmailMessages(), subscribers: await store.listSubscribers(), subscriberRegistryEnabled: billingRegistryEnabled(), sendingEnabled: false, emailEnabled: getCrmEmailConfig().enabled, emailStatus: getCrmEmailConfig().reason || 'ready' }))
     } else {
       const body = await readBody(request, 8192)
       onlyKeys(body, ['action', 'payload'])
-      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
-      data = await repo.withOwner(actor, (store) => {
+      if (!['create_contact', 'record_consent', 'create_draft', 'suppress_contact', 'set_lifecycle', 'send_verification', 'send_email'].includes(body.action)) throw new AppError('INVALID_ACTION', 400)
+      if (body.action === 'send_verification') data = await sendCrmVerification({repo,actor,payload:body.payload})
+      else if (body.action === 'send_email') data = await sendCrmMessage({repo,actor,payload:body.payload})
+      else data = await repo.withOwner(actor, (store) => {
         if (body.action === 'create_contact') return store.createContact(body.payload)
         if (body.action === 'record_consent') return store.recordConsent(body.payload)
         if (body.action === 'suppress_contact') {

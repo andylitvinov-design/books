@@ -6,7 +6,7 @@ import { WORKBOOK_DAYS, workbookDay } from '../data/inner-growth/workbook-days.j
 import { COURSE_JOURNEY, COURSE_PHASES } from '../data/inner-growth/course-journey.js'
 import { COURSE_PRE_ENROLMENT_PHASES, coursePreEnrolmentPlan } from '../lib/inner-growth/course-pre-enrolment.js'
 import { SHARED_DAYS } from '../data/inner-growth/shared-days.js'
-import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION } from '../lib/inner-growth/lesson-library.js'
+import { TRACKS, lessonFor, isCompleteLibrary, COURSE_CONTENT_VERSION, COURSE_WORKBOOK_VERSION, COURSE_ANTISTRESS_OUTCOME_V3, COURSE_ANTISTRESS_SKILLS_V5, COURSE_ANTISTRESS_SKILLS_V6, COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/lesson-library.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -569,15 +569,27 @@ test('V3 re-entry hints are nonclinical, optional and do not misrepresent missin
   assert.equal(v3ReturnSuggestion({day:17,sessions:[]}),null)
 })
 
-test('V3 persists the chosen content version and uses the exact same lesson ID for display and authenticated save', () => {
+test('stored content versions are preserved and use the exact same lesson ID for display and authenticated save', async () => {
   const service=read('lib/app/growth-daily.js')
   const component=read('components/app/course-today.jsx')
   const css=read('components/app/course-today.module.css')
   assert.match(service,/goal,nextContentVersion,local,zone/)
   assert.match(service,/nextContentVersion=courseProgramFromTopics/)
-  assert.match(service,/COURSE_ANTISTRESS_SKILLS_V6 : COURSE_CONTENT_V4/)
-  assert.match(service,/const resolveCycleVersion = value => value === COURSE_ANTISTRESS_SKILLS_V6/)
-  assert.match(service,/value === COURSE_CONTENT_V4/)
+  const {repositoryHarness}=await import('./helpers/route-pipeline-harness.mjs')
+  for(const version of [COURSE_CONTENT_V3,COURSE_CONTENT_V4,COURSE_ANTISTRESS_OUTCOME_V3,
+    COURSE_ANTISTRESS_SKILLS_V5,COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7]){
+    const owner=repositoryHarness({freshPhase:true}),created=await owner.create('AS2')
+    assert.equal(created.content_version,COURSE_ANTISTRESS_SKILLS_V7,'Only new AS2 selects the current V7')
+    // Model an already-persisted cycle before exercising the real read resolver.
+    owner.cycle.content_version=version
+    owner.seedDay(2)
+    const writesBefore=owner.writes.length
+    const daily=await owner.read('en')
+    assert.equal(daily.lesson.version,version)
+    assert.equal(daily.lesson.id,lessonFor('calm_regulation',2,'en','standard',version).id)
+    assert.equal(owner.cycle.content_version,version)
+    assert.equal(owner.writes.length,writesBefore,'A read never migrates historical content')
+  }
   assert.match(service,/const contentVersion=resolveCycleVersion\(cycle\.content_version\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,dayInfo\.day,locale,contentVersion\)/)
   assert.match(service,/coursePracticeFocus\(course\.scale_keys,cycle\.primary_domain,plannedDay,locale,contentVersion\)/)

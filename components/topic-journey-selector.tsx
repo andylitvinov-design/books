@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
@@ -41,6 +41,7 @@ const copy = {
     options: 'How else would you like to continue?',
     course: 'Free support course', courseDetail: 'Start with tests, then explore a self-guided daily programme. One free course at a time.',
     review: 'Personal situation review', reviewDetail: 'A free written review of your form and ME–GOAL–PROBLEM drawing; no live session is included.',
+    share:'Share this public guide', copied:'Public guide link copied. Your personal results are not included.', shared:'Public guide shared without your results.', manual:'Copy this public link manually. It does not contain your test answers.',
     safety: 'These questionnaires are for self-reflection, not medical diagnosis or treatment.',
     error: 'Could not open your tests. Check your connection and try again.',
     signinError: 'Google sign-in is currently unavailable. Please try again.',
@@ -52,6 +53,7 @@ const copy = {
     start:'Realizar las dos pruebas sugeridas',starting:'Abriendo las pruebas…',browse:'Explorar el catálogo de más de 100 pruebas',
     options:'¿Cómo deseas continuar?',course:'Curso gratuito de apoyo',courseDetail:'Empieza con pruebas y después descubre prácticas breves a tu ritmo. Un curso gratuito a la vez.',
     review:'Revisión escrita de tu situación',reviewDetail:'Reflexión personal gratuita sobre tu formulario y dibujo YO–META–PROBLEMA; no incluye una sesión en directo.',
+    share:'Compartir esta guía pública',copied:'Enlace copiado. Tus resultados personales no se incluyen.',shared:'Guía compartida sin tus resultados.',manual:'Copia este enlace público. No contiene respuestas personales.',
     safety:'Estos cuestionarios son para la autoobservación y no ofrecen diagnóstico ni tratamiento médico.',error:'No se pudieron abrir las pruebas. Comprueba la conexión e inténtalo de nuevo.',signinError:'El acceso con Google no está disponible en este momento. Inténtalo más tarde.',
   },
   ru: {
@@ -66,6 +68,7 @@ const copy = {
     options: 'Как ещё хотите продолжить?',
     course: 'Бесплатный курс поддержки', courseDetail: 'После тестов — самостоятельная ежедневная программа. Бесплатно доступен один курс одновременно.',
     review: 'Личная диагностика (расстановка)', reviewDetail: 'Бесплатный письменный разбор; живая расстановка в бесплатный формат не входит. Заполните анкету и пришлите рисунок «Я — цель — проблема».',
+    share:'Поделиться публичным материалом',copied:'Ссылка скопирована. В ней нет ваших результатов.',shared:'Публичный материал отправлен без ваших результатов.',manual:'Скопируйте эту ссылку вручную. Она не содержит ваших ответов.',
     safety: 'Опросники предназначены для самонаблюдения, не для медицинской диагностики или лечения.',
     error: 'Не удалось открыть тесты. Проверьте соединение и повторите попытку.',
     signinError: 'Вход через Google сейчас недоступен. Попробуйте позже.',
@@ -108,6 +111,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
+  const [shareStatus,setShareStatus] = useState<'copied'|'shared'|'manual'|''>('')
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
   const recommended = suggestions[selected.slice().sort().join(',')] || []
@@ -165,6 +169,25 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
     '&journey=' + journey.id + '&topics=' + encodeURIComponent(selected.join(','))
   const courseHref = testHref + '&mode=course'
   const browseHref = testHref + '&catalog=full'
+
+  async function shareJourney() {
+    // Never place session identifiers, selected answers, scores or concerns in a public URL.
+    const publicUrl = new URL('/' + language + '/explore/' + journey.id, window.location.origin).toString()
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: journey.title[language], url: publicUrl })
+        setShareStatus('shared')
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(publicUrl)
+        setShareStatus('copied')
+      } else {
+        setShareStatus('manual')
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      setShareStatus('manual')
+    }
+  }
 
   const toggle = (id: string) => setSelected((current) =>
     current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
@@ -322,6 +345,15 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
+      </div>
+      <div className={styles.shareArea} data-topic-safe-sharing>
+        <button type="button" className={styles.shareButton} onClick={shareJourney}>
+          <Share2 size={17} aria-hidden="true" />{c.share}
+        </button>
+        {shareStatus && <p className={styles.shareStatus} role="status">{c[shareStatus]}</p>}
+        {shareStatus === 'manual' && <input className={styles.manualShare} type="text" readOnly
+          aria-label={c.manual} onFocus={event=>event.currentTarget.select()}
+          value={'https://holistichouse.vercel.app/' + language + '/explore/' + journey.id}/>}
       </div>
       <p className={styles.footnote}><Sparkles size={15} aria-hidden="true" />{c.safety}</p>
     </section>

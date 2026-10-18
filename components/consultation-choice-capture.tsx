@@ -7,6 +7,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import styles from "./consultation-choice-capture.module.css";
 
 type Variant = "free" | "service" | "personal" | "reading";
@@ -187,6 +188,7 @@ export function ConsultationChoiceCapture({
   id,
   sitewide = false,
   wiseEnabled = false,
+  paypalPersonalEnabled = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
@@ -194,6 +196,7 @@ export function ConsultationChoiceCapture({
   id?: string;
   sitewide?: boolean;
   wiseEnabled?: boolean;
+  paypalPersonalEnabled?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -215,6 +218,7 @@ export function ConsultationChoiceCapture({
 
   const isPaidRequest = isService && serviceChoice !== "free";
   const wiseProductId = serviceChoice === "session" ? "personal-session-60" : "express-consultation-30";
+  const zenInquiryUrl = isPaidRequest ? buildZenTransferInquiry([wiseProductId], locale) : null;
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation"),
@@ -292,14 +296,40 @@ export function ConsultationChoiceCapture({
       {isPaidRequest && wiseEnabled ? (
         <div className={styles.wisePayment} data-wise-payment-link>
           <a href={"/api/payments/wise/" + wiseProductId} target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "Оплатить через Wise" : locale === "es" ? "Pagar con Wise" : "Pay with Wise"}
+            {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
             <ArrowUpRight size={16} aria-hidden="true" />
           </a>
           <small>{locale === "ru"
-            ? "Только после согласования времени. Оплата проверяется вручную и сама по себе не подтверждает запись."
+            ? `После согласования времени проверьте получателя и сумму ${serviceChoice === "session" ? "€100" : "€50"} в Wise. Если используется WiseTag, нужна учётная запись Wise и сумму надо ввести вручную. Перевод не подтверждает запись автоматически.`
             : locale === "es"
-              ? "Solo después de acordar la hora. El pago se verifica manualmente y no confirma una reserva."
-              : "Only after agreeing a time. Payment is verified manually and does not itself confirm a booking."}</small>
+              ? `Tras acordar la hora, comprueba el destinatario y ${serviceChoice === "session" ? "100 €" : "50 €"} en Wise. Un WiseTag requiere una cuenta Wise y el importe se introduce manualmente. La reserva se confirma aparte.`
+              : `After agreeing a time, check the recipient and ${serviceChoice === "session" ? "€100" : "€50"} in Wise. A WiseTag requires a Wise account and you must enter the amount yourself. Booking is confirmed separately.`}</small>
+        </div>
+      ) : null}
+      {isPaidRequest && paypalPersonalEnabled ? (
+        <div className={styles.wisePayment} data-paypal-personal-offer>
+          <a href={"/api/payments/paypal/" + wiseProductId} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить личным PayPal" : locale === "es" ? "Pagar con PayPal personal" : "Pay with personal PayPal"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "После согласования времени. Выберите «Товары и услуги», проверьте получателя Andrii Litvinov и сумму. Подтверждение оплаты вручную."
+            : locale === "es"
+              ? "Después de acordar la hora. Elige Productos y servicios y comprueba que pagas a Andrii Litvinov. Verificación manual."
+              : "After confirming the time. Select Goods & Services and verify recipient Andrii Litvinov. Payment is verified manually."}</small>
+        </div>
+      ) : null}
+      {zenInquiryUrl ? (
+        <div className={styles.wisePayment} data-zen-manual-request>
+          <a href={zenInquiryUrl} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "Откроется только запрос в WhatsApp с суммой выбранной услуги. Это не оплата: сначала подтвердите доступность ZEN и реквизиты получателя."
+            : locale === "es"
+              ? "Solo se abre una consulta por WhatsApp con el importe. No es un pago; primero confirma si ZEN está disponible y los datos del destinatario."
+              : "Opens a WhatsApp enquiry with the fixed amount, not a payment. Verify ZEN recipient eligibility and transfer instructions first."}</small>
         </div>
       ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>

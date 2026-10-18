@@ -266,3 +266,12 @@
 .wisePaymentCta:hover{text-decoration:underline;text-underline-offset:3px}
 .wisePaymentCta:focus-visible{outline:3px solid #8a632c;outline-offset:3px}
 .wisePayment small{max-width:510px;color:#4e737c;font-size:12px;line-height:1.5}
+
+/* Keep optional payment methods alongside one another on wide screens.
+   Mobile remains in the original reading order; every disclosure stays visible. */
+.paymentOptions{display:contents}
+@media(min-width:851px){
+ .paymentOptions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);align-items:start;gap:16px;margin-top:10px}
+ .paymentOptions>.wisePayment{min-width:0;margin:0}
+}
+.paymentOptions:empty{display:none}

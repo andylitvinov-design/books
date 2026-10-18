@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { assessmentExplanation } from '../lib/assessments/assessment-methodology.js'
+import { buildExplorerEntries } from '../lib/assessments/test-explorer.js'
+import { readFileSync } from 'node:fs'
 
 const CORE_EN_TITLES = [
   "Bach Flower Emotional Profile",
@@ -48,4 +50,22 @@ test('Spanish explorer resolves translated summary rather than EN fallback', () 
   assert.match(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'es' }).summary, /Registro semanal original/i)
   assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'en' }).summary, weekly.description.en)
   assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'ru' }).summary, weekly.description.ru)
+})
+
+test('actual TestExplorer passes Spanish locale to discovery without falling back to English', () => {
+  const source = readFileSync(new URL('../components/app/test-explorer.jsx', import.meta.url), 'utf8')
+  assert.match(source, /buildExplorerEntries\(\{\s*locale,\s*audience\s*\}\)/)
+  assert.doesNotMatch(source, /locale:\s*locale\s*===\s*['\"]es['\"]\s*\?\s*['\"]en['\"]/, 'Spanish UI must not silently become English')
+  const spanish = buildExplorerEntries({ locale: 'es', audience: 'guest' })
+  const english = buildExplorerEntries({ locale: 'en', audience: 'guest' })
+  const russian = buildExplorerEntries({ locale: 'ru', audience: 'guest' })
+  const week = spanish.find(entry => entry.title === 'Estado psicológico de la semana')
+  assert.ok(week, 'Expected Spanish weekly test title')
+  assert.match(week.description, /Registro semanal original/)
+  assert.ok(week.definition, 'Spanish public UI must preserve the available verified-language source definition')
+  assert.equal(week.definition.instrumentLocale, 'en', 'The Spanish display must not fabricate Spanish test questions')
+  assert.equal(english.find(entry => entry.key === week.key)?.title, 'Weekly Psychic Health')
+  assert.equal(russian.find(entry => entry.key === week.key)?.title, 'Психическое состояние за неделю')
+  assert.equal(english.find(entry => entry.key === week.key)?.description, week.catalog.description.en)
+  assert.equal(russian.find(entry => entry.key === week.key)?.description, week.catalog.description.ru)
 })

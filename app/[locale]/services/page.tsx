@@ -8,6 +8,7 @@ import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { ServicesSolutions } from "@/components/services-solutions";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import solutionStyles from "@/components/services-solutions.module.css";
@@ -300,7 +301,12 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
 
 
 
-      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} />
+      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+      <div style={{ textAlign: "center", padding: "6px 14px 25px" }}>
+        <Link href={`/${locale}/payments`} style={{ color: "#0b7881", fontWeight: 700, fontSize: 13, textDecoration: "underline", textUnderlineOffset: 3 }}>
+          {locale === "ru" ? "PayPal / ZEN.COM · Способы оплаты консультации" : "PayPal / ZEN.COM · Consultation payment options"} →
+        </Link>
+      </div>
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
     </main>
   );

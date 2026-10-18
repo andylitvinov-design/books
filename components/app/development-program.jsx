@@ -125,6 +125,19 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   const [allRows, setAllRows] = useState(false)
 
   useEffect(() => {
+    const openGoalsLink = () => {
+      if (window.location.hash !== '#hh-development-program') return
+      setExpanded(true)
+      setActivePanel('goals')
+      // The target is an existing private-account panel; opening a URL is not consent to save.
+      requestAnimationFrame(() => document.getElementById('hh-development-program')?.scrollIntoView({block:'start'}))
+    }
+    openGoalsLink()
+    window.addEventListener('hashchange', openGoalsLink)
+    return () => window.removeEventListener('hashchange', openGoalsLink)
+  }, [])
+
+  useEffect(() => {
     if (!expanded || !accountId || loaded) return
     let active = true
     setLoading(true)
@@ -186,7 +199,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
     }
   }
 
-  return <section className={styles.root} data-testid="reports-development-program">
+  return <section id="hh-development-program" className={styles.root} data-testid="reports-development-program">
     <button type="button" className={styles.trigger} aria-expanded={expanded} aria-controls="hh-development-program-body"
       onClick={() => setExpanded(value => !value)}>
       <span className={styles.iconCircle}><Target size={21} aria-hidden="true" /></span>

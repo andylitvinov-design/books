@@ -40,7 +40,7 @@ test("EN/RU/ES first screen clearly distinguishes free written review, tests and
   }
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
   assert.match(es, /href="\/es\/services#consultation"/);
-  assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.match(css, /\.house-home--services \.service-home-button--primary \{/);
   assert.match(css, /\.house-home--services \.service-home-button--secondary \{ display: inline-flex; \}/);
 });

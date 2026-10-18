@@ -19,7 +19,7 @@ export const ENERGYWORK_BRANCH = Object.freeze({
 })
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
 export const ENERGYWORK_QUESTIONS = Object.freeze({
-  'welcome-02': 'text',
+  'welcome-02': 'choice',
   'flight-04': 'text',
   'flight-03': 'choice',
   'presence-03': 'scale',
@@ -37,6 +37,7 @@ export const ENERGYWORK_QUESTIONS = Object.freeze({
   'kun-03': 'choice',
   'end-01': 'text',
 })
+export const ENERGYWORK_EXPERIENCE_VALUES = Object.freeze(['beginner','energywork','reiki-1-2','master'])
 export const ENERGYWORK_CHOICE_VALUES = Object.freeze(['pause','adapt','ask'])
 export const ENERGYWORK_PRACTICE_VALUES = Object.freeze(['tried','skipped'])
 export const ENERGYWORK_CHOICE_INDEX = ENERGYWORK_COMMON.indexOf('paths-04')
@@ -53,8 +54,10 @@ export function energyworkAnswerValid(id, answer) {
   if (!kind || typeof answer !== 'string') return false
   if (kind === 'text') return answer.length <= 1600
   if (kind === 'scale') return /^(?:[0-9]|10)$/.test(answer)
-  if (kind === 'choice') return id === 'boundaries-02'
-    ? ENERGYWORK_CHOICE_VALUES.includes(answer)
-    : ENERGYWORK_PRACTICE_VALUES.includes(answer)
+  if (kind === 'choice') return id === 'welcome-02'
+    ? ENERGYWORK_EXPERIENCE_VALUES.includes(answer)
+    : id === 'boundaries-02'
+      ? ENERGYWORK_CHOICE_VALUES.includes(answer)
+      : ENERGYWORK_PRACTICE_VALUES.includes(answer)
   return false
 }

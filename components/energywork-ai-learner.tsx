@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -31,7 +31,18 @@ type SaveCommand = {
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
-    eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
+    journey: "Three Reiki traditions",
+    lesson: "Lesson",
+    completedLabel: "completed",
+    startFree: "Start free program",
+    benefits: "What to expect from your learning",
+    shortLessons: "Short lessons",
+    shortLessonsDetail: "Clear guidance",
+    practicalTasks: "Practical tasks",
+    practicalTasksDetail: "Learn at your pace",
+    privateProgress: "Private progress",
+    privateProgressDetail: "Save by choice",
+    eyebrow: "HOLISTIC HOUSE ACADEMY · FREE REIKI PROGRAM",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
@@ -42,6 +53,8 @@ const copy = {
     back: "Back",
     stop: "You can skip or stop any practice. No medical advice or certification is provided here.",
     optional: "Optional reflection",
+    experienceBadge: "Your starting point",
+    experienceNote: "Choose one answer to continue. You can change it later.",
     blank: "You can leave this unanswered.",
     notes: "My reflection",
     placeholder: "Write here (optional)…",
@@ -81,7 +94,18 @@ const copy = {
   },
   ru: {
     shortTitle: "Практик Рейки",
-    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
+    journey: "Три направления Рейки",
+    lesson: "Урок",
+    completedLabel: "пройдено",
+    startFree: "Начать бесплатный курс",
+    benefits: "Что ждёт вас на курсе",
+    shortLessons: "Короткие уроки",
+    shortLessonsDetail: "Понятные шаги",
+    practicalTasks: "Практические задания",
+    practicalTasksDetail: "В своём темпе",
+    privateProgress: "Личный прогресс",
+    privateProgressDetail: "По вашему выбору",
+    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · БЕСПЛАТНЫЙ КУРС",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
@@ -92,6 +116,8 @@ const copy = {
     back: "Назад",
     stop: "Любую практику можно пропустить или остановить. Здесь нет медицинских назначений или автоматической сертификации.",
     optional: "Необязательная рефлексия",
+    experienceBadge: "Ваш уровень знакомства",
+    experienceNote: "Выберите один вариант, чтобы продолжить. Позже его можно изменить.",
     blank: "Можно оставить без ответа.",
     notes: "Моё наблюдение",
     placeholder: "Напишите здесь (необязательно)…",
@@ -131,6 +157,21 @@ const copy = {
   },
 } as const;
 
+const experienceGuidance: Record<EnergyworkLocale, Record<string, string>> = {
+  en: {
+    beginner: "Welcome! The course introduces the Reiki traditions without assuming previous training.",
+    energywork: "Your existing practice may be a useful reference point. We'll distinguish Reiki traditions as we go.",
+    "reiki-1-2": "You can revisit the foundations and compare the three Reiki traditions at your own pace.",
+    master: "Explore this as a comparison of three traditions, noticing what is familiar and what is new.",
+  },
+  ru: {
+    beginner: "Добро пожаловать! Курс знакомит с направлениями Рейки без требования предварительной подготовки.",
+    energywork: "Ваш опыт может стать опорой. По ходу курса мы будем пояснять особенности направлений Рейки.",
+    "reiki-1-2": "Можно повторить основы и в своём темпе сравнить три направления Рейки.",
+    master: "Рассматривайте курс как знакомство с тремя традициями: отмечайте знакомое и новое.",
+  },
+};
+
 function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale: EnergyworkLocale, path: EnergyworkPath | null) {
   const chosen = energyworkPathChoices.find((option) => option.id === path);
   const lines = [
@@ -151,6 +192,11 @@ function safePreviewNotes(slides: EnergyworkSlide[], answers: AnswerMap, locale:
 function learnerHighlights(answers: AnswerMap, path: EnergyworkPath | null, locale: EnergyworkLocale) {
   const highlights: string[] = [];
   const present = (id: string) => answers[id]?.trim();
+  const experience = energyworkSlides(null).find((item) => item.id === "welcome-02")
+    ?.question?.options?.find((option) => option.id === present("welcome-02"));
+  if (experience) highlights.push(locale === "ru"
+    ? "Ваш исходный опыт: " + experience.label.ru + "."
+    : "Your starting experience: " + experience.label.en + ".");
   if (path) {
     const chosen = energyworkPathChoices.find((item) => item.id === path);
     if (chosen) highlights.push(locale === "ru"
@@ -302,6 +348,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const pathData = energyworkPathChoices.find((option) => option.id === path);
   const total = energyworkSlides("yggdrasil").length; // All branches have equal length.
   const completed = slide.kind === "finish";
+  const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale, path);
   const highlights = learnerHighlights(answers, path, locale);
@@ -341,7 +388,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
     return response;
   }
   async function next() {
-    if (busy || (slide.kind === "path-choice" && !path)) return;
+    if (busy || experienceMissing || (slide.kind === "path-choice" && !path)) return;
     const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
     if (sync === "ready") {
       setBusy(true);
@@ -418,7 +465,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -428,17 +475,20 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
         </header>
 
-        <div className={styles.progressHeader}>
-          <span>{t.step} {index + 1} {t.of} {total}</span>
-          <span>{Math.round((index + 1) / total * 100)}%</span>
-        </div>
-        <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label={t.step}>
-          <span style={{ width: ((index + 1) / total * 100) + "%" }} />
-        </div>
+        <nav className={styles.journey} aria-label={t.journey}>
+          <ol>
+            {energyworkPathChoices.map((choice, position) => (
+              <li key={choice.id}
+                className={path === choice.id ? styles.journeySelected : (!path && position === 0 ? styles.journeyIntro : "")}
+                aria-current={path === choice.id ? "step" : undefined}>
+                <span className={styles.journeyDot} aria-hidden="true">{position + 1}</span>
+                <span className={styles.journeyLabel}>{choice.title[locale]}</span>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
-
-
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
               <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
@@ -452,6 +502,16 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   </ul>
                   <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
                   <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
+                </div>
+              ) : null}
+              {slide.kind === "welcome" ? (
+                <div className={styles.benefits} aria-label={t.benefits}>
+                  <div><span className={styles.benefitIcon}><Leaf size={19} aria-hidden="true" /></span>
+                    <strong>{t.shortLessons}</strong><small>{t.shortLessonsDetail}</small></div>
+                  <div><span className={styles.benefitIcon}><Heart size={19} aria-hidden="true" /></span>
+                    <strong>{t.practicalTasks}</strong><small>{t.practicalTasksDetail}</small></div>
+                  <div><span className={styles.benefitIcon}><BarChart3 size={19} aria-hidden="true" /></span>
+                    <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
@@ -472,7 +532,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
               {slide.question ? (
                 <div className={styles.question}>
-                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{t.optional}</span>
+                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -490,7 +550,14 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.question.type === "choice" ? (
                     <div id={"answer-" + slide.id} className={styles.choices} role="group" aria-label={t.value}>
                       {slide.question.options?.map((option) => (
-                        <label key={option.id} className={styles.choice}>
+                        <label key={option.id} className={styles.choice + (slide.id === "welcome-02" ? " " + styles.experienceChoice : "")}>
+                          {slide.id === "welcome-02" ? (
+                            <span className={styles.experienceIcon} aria-hidden="true">
+                              {option.id === "beginner" ? <Sprout size={19} /> :
+                                option.id === "energywork" ? <HandHeart size={19} /> :
+                                  option.id === "reiki-1-2" ? <Sparkles size={19} /> : <Award size={19} />}
+                            </span>
+                          ) : null}
                           <input type="radio" name={slide.id} value={option.id}
                             checked={answers[slide.id] === option.id} onChange={() => setAnswer(option.id)} />
                           <span>{option.label[locale]}</span>
@@ -498,7 +565,10 @@ export function EnergyworkAiLearner({ locale }: Props) {
                       ))}
                     </div>
                   ) : null}
-                  <p className={styles.optional}>{t.blank}</p>
+                  {slide.id === "welcome-02" && !experienceMissing ? (
+                    <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
+                  ) : null}
+                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote : t.blank}</p>
                 </div>
               ) : null}
 
@@ -537,6 +607,16 @@ export function EnergyworkAiLearner({ locale }: Props) {
             ) : null}
           </div>
         </section>
+        <div className={styles.progressFooter}>
+          <div className={styles.progressHeader}>
+            <span>{t.lesson} {index + 1} {t.of} {total}</span>
+            <span>{Math.round((index + 1) / total * 100)}% {t.completedLabel}</span>
+          </div>
+          <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
+            aria-valuenow={index + 1} aria-label={t.lesson}>
+            <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+          </div>
+        </div>
 
         <details className={styles.programme}>
           <summary>{t.program}</summary>
@@ -551,7 +631,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
             {sync === "guest" ? <>
               <strong>{t.preview}</strong>
               <details className={styles.saveDetails}>
-                <summary>{locale === "ru" ? "Сохранить в моих курсах" : "Save to My Courses"}</summary>
+                <summary>{t.consentTitle}</summary>
                 <p>{t.previewHelp}</p>
                 <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
                 <p>{t.guestHint}</p>
@@ -582,13 +662,13 @@ export function EnergyworkAiLearner({ locale }: Props) {
           {!completed ? (
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
-              <button type="button" onClick={next} disabled={busy || sync === "checking" || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
-                {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
+              <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
+                {slide.kind === "welcome" ? t.startFree : slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
-          <p>{t.stop}</p>
         </footer>
+        <p className={styles.disclaimer}>{t.stop}</p>
       </div>
     </main>
   );

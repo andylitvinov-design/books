@@ -218,6 +218,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const [saving,setSaving]=useState(false)
   const saveOp=useRef(null),visited=useRef(new Set([OPORA54_PRE_SAVE_KEYS[0]]))
   const heading=useRef(null),scroller=useRef(null)
+  const safetyTrigger=useRef(null),safetyFirstAction=useRef(null),safetyReturnAction=useRef(null),safetyExitAction=useRef(null),safetyWasOpened=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=slides.length
   const slide=receipt?null:slides[step]
   const role=slide?.kind
@@ -233,6 +234,21 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     heading.current?.focus()
     setShowHint(false)
   },[step,slide?.key])
+  // A pause is an alternative to practice, never a scored answer. Keep
+  // focus within the active alert dialog and restore it on return.
+  useEffect(()=>{
+    if(safety){safetyWasOpened.current=true;safetyFirstAction.current?.focus?.()}
+    else if(safetyWasOpened.current)safetyTrigger.current?.focus?.()
+  },[safety])
+  function handleSafetyKeyDown(event){
+    if(event.key==='Escape'){event.preventDefault();setSafety(false);return}
+    if(event.key!=='Tab')return
+    // Tab stays within the 3 safe actions; no invisible exercise buttons.
+    const controls=[safetyFirstAction.current,safetyReturnAction.current,safetyExitAction.current].filter(Boolean)
+    const focused=controls.indexOf(event.target)
+    if(event.shiftKey&&focused<=0){event.preventDefault();controls[controls.length-1]?.focus?.()}
+    else if(!event.shiftKey&&focused===controls.length-1){event.preventDefault();controls[0]?.focus?.()}
+  }
   function back(){if(!locked){setError('');setStep(i=>Math.max(0,i-1))}}
   function next(){
     if(locked)return
@@ -254,7 +270,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(locked)return
     // Feedback is a separate voluntary report AFTER the learner chooses a
     // concrete micro-action. No visit or scenario click can forge practice.
-    if(choiceField&&!answers[choiceField])return
+    const noActionReport=role==='transfer'?value==='not_planning':
+      ['not_yet','not_attempted','uncomfortable'].includes(value)
+    if(choiceField&&!answers[choiceField]&&!noActionReport)return
     setAnswers(a=>({...a,[role]:value}))
     if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
@@ -304,13 +322,26 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
-    if(choiceField&&!picked)return []
+    // No learner must choose an action just to report not trying or discomfort.
+    // A positive attempt remains impossible until a concrete action is chosen.
+    if(choiceField&&!picked){
+      const withoutAction=role==='transfer'?['not_planning']:
+        ['not_yet','not_attempted','uncomfortable']
+      return withoutAction.map(value=>({value,label:t.response[value]}))
+    }
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
     if(role==='aphorism')return lang==='ru'
       ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
       : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
+    if(role==='prepare'&&authored?.lessonMethodVersion==='AS-5.5')return lang==='ru'
+      ?[{value:'try',label:'Мягко попробую в своей обстановке'},
+        {value:'simple',label:'Только безопасный учебный пример'},
+        {value:'read',label:'Только посмотрю или прочитаю'}]
+      :[{value:'try',label:'Gently try in my own surroundings'},
+        {value:'simple',label:'Use only a safe fictional example'},
+        {value:'read',label:'Just watch or read'}]
     if(role==='focus')return (ROLE_OPTIONS[role]||[]).map(value=>({
       value,label:value==='unsure'?(lang==='ru'?'Пока не уверен(а)':'Not sure about this focus'):t.response[value]||value,
     }))
@@ -331,22 +362,22 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     :null
   const extraFeedback=chosen
     ?role==='scenario'
-      ? (lang==='ru'?'Вы выбрали один из доступных вариантов. ': 'You chose one possible option. ')+
-        (authored?.scenario?.explanation||t.feedback.other)
+      ? (authored?.scenario?.feedback?.[['one','two','three'].indexOf(chosen)]||
+        (lang==='ru'?'Это один возможный выбор. ':'This is one possible choice. ')+(authored?.scenario?.explanation||t.feedback.other))
       :role==='aphorism'&&chosen==='disagree'
         ?t.feedback.disagree+' '+(authored?.neutralQuote||'')
         :role==='aphorism'?t.feedback[chosen]||t.feedback.other
         :CONTEXT_FEEDBACK[lang]?.[role]?.[chosen]||t.feedback[chosen]||t.feedback.other
     :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
-  const guidanceText=role==='scenario'?authored?.scenario?.explanation
+  const guidanceText=role==='scenario'?authored?.scenario?.hint||authored?.scenario?.explanation
     :role==='aphorism'?authored?.neutralQuote
-    :authored?.hint||lesson?.antiStress?.neutralText||t.nudge
+    :authored?.hints?.[role]||authored?.hint||lesson?.antiStress?.neutralText||t.nudge
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-as54-player={versionTag} data-course-one-screen="v2">
-    <div className={styles.frame}>
+    <div className={styles.frame} inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
         <button type="button" className={styles.controlIcon} onClick={onClose} disabled={locked}
           aria-label={t.close}><X size={21}/></button>
@@ -357,7 +388,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
           </div>
           <div className={styles.track}><div className={styles.fill} style={{width:((afterSave?15:step+1)/15*100)+'%'}}/></div>
         </div>
-        <button type="button" className={styles.safetyButton} onClick={()=>setSafety(true)} disabled={locked}>
+        <button type="button" className={styles.safetyButton} ref={safetyTrigger} onClick={()=>setSafety(true)} disabled={locked}>
           <Pause size={16}/><span>{t.pause}</span>
         </button>
       </header>
@@ -385,14 +416,16 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               ? <blockquote className={styles.aphorism}>{authored?.quote}</blockquote>
               : <p className={styles.prompt}>{neutral&&PRACTICE_KINDS.has(role)
                 ? (lang==='ru'?'Можно попробовать только нейтральную внешнюю опору или просто прочитать инструкцию.':'You can use a neutral visible object, or read only.')
-                :slide?.text}</p>}
+                :answers.prepare==='simple'&&PRACTICE_KINDS.has(role)
+                  ?(lang==='ru'?'Можно остаться на вымышленном учебном примере. ':'You may stay with the fictional example. ')+(slide?.text||'')
+                  :slide?.text}</p>}
             {role==='baseline'||role==='reflection'?
               <div className={styles.rating}>
                 <span>{t.rating}</span>
                 <div className={styles.ratingGrid} role="group" aria-label={t.rating}>
                   {Array.from({length:11},(_,i)=><button type="button" key={i} disabled={locked}
                     aria-pressed={(role==='baseline'?beforeNow:afterNow)===i}
-                    onClick={()=>role==='baseline'?setBeforeNow(i):setAfterNow(i)}>{i}</button>)}
+                    onClick={()=>role==='baseline'?setBeforeNow(v=>v===i?null:i):setAfterNow(v=>v===i?null:i)}>{i}</button>)}
                 </div>
                 <div className={styles.ends}><span>{t.ratingLow}</span><span>{t.ratingHigh}</span></div>
                 <small>{t.noRating}</small>
@@ -405,7 +438,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <strong>{t.review}</strong>
               <p>{authored?.screens?.[13]?.text}</p>
               <small>{answers.aphorism?(lang==='ru'?'Мнение об установке сохранится как ваш выбор.':'Your opinion of the idea will be recorded.'):t.without}</small>
-              <small>{answers.act||answers.notice||answers.rehearse
+              <small>{[answers.act,answers.notice,answers.rehearse].some(v=>['tried','partly','guided','independent'].includes(v))
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
             {activityOptions.length>0&&<>
@@ -453,6 +486,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 :(lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
                   'Now report whether you actually tried the step.')}</small>
             </div>}
+            {role==='transfer'&&picked&&authored?.transferBackup&&<p className={styles.gentle}>
+              <ShieldCheck size={17} aria-hidden="true"/>{authored.transferBackup}
+            </p>}
             {role==='act'&&picked&&['tried','partly'].includes(chosen)&&<div className={styles.ease}>
               <span>{t.easyTitle} <small>({lang==='ru'?'по желанию':'optional'})</small></span>
               <div className={styles.easeOptions} role="group" aria-label={t.easyTitle}>
@@ -489,13 +525,14 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
         </button>
       </footer>
     </div>
-    {safety&&<div className={styles.safetyShade} role="alertdialog" aria-modal="true" aria-label={t.safetyTitle}>
+    {safety&&<div className={styles.safetyShade} role="alertdialog" aria-modal="true" aria-label={t.safetyTitle}
+      onKeyDown={handleSafetyKeyDown}>
       <div className={styles.safetyCard}>
         <ShieldCheck size={35} color="#008d9e"/>
         <h2>{t.safetyTitle}</h2><p>{t.safetyBody}</p>
-        <button type="button" onClick={neutralChoice}>{t.safetyNeutral}</button>
-        <button type="button" onClick={()=>setSafety(false)}>{t.safetyReturn}</button>
-        <button type="button" className={styles.exit} onClick={onClose}>{t.safetyFinish}</button>
+        <button type="button" ref={safetyFirstAction} onClick={neutralChoice}>{t.safetyNeutral}</button>
+        <button type="button" ref={safetyReturnAction} onClick={()=>setSafety(false)}>{t.safetyReturn}</button>
+        <button type="button" ref={safetyExitAction} className={styles.exit} onClick={onClose}>{t.safetyFinish}</button>
       </div>
     </div>}
   </div>

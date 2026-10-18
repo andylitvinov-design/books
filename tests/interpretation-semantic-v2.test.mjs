@@ -61,7 +61,8 @@ test('approval and obstacles answer notes name scored capabilities, while money 
     assert.equal(model.construct, expected)
     assert.ok(model.currentAnswerBand.note.includes('«' + expected + '»'))
     assert.ok(!model.currentAnswerBand.note.includes(misleading))
-    assert.match(model.currentAnswerBand.note, value === 0 ? /weakly endorsed/ : /consistently reflected/)
+    assert.match(model.currentAnswerBand.note, value === 0 ? /weakly endorsed/ : /strongly endorsed in this questionnaire run/)
+    if (value === 4) assert.match(model.currentAnswerBand.note, /does not establish their consistency across time or situations/)
     assert.equal(definition.questions.length, 6)
     assert.equal(definition.scoring.dimensions[0].direction, 'higher-reported-resource')
   }

@@ -51,7 +51,7 @@ test("Services EN/RU: original green photo hero, blue courses and tests, then im
   assert.match(style, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
   assert.doesNotMatch(page, /<ServiceCart/);
   assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(page, /<PublicConsultationCta locale=\{locale as Locale\} id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
 });
 
 test("Services Spanish retains its routes with a compact photographic treatment", () => {
@@ -74,6 +74,6 @@ test("Services Spanish retains its routes with a compact photographic treatment"
     assert.ok(page.includes("/es/services/" + route), route);
   }
   assert.doesNotMatch(page, /ServiceCart|service-cart/);
-  assert.match(page, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(page, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
   assert.doesNotMatch(page, /services-studio-hero|services-studio-grid/);
 });

@@ -85,11 +85,27 @@ try {
       }), true, "photographed hero precedes tests/course banner and service offers");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      const cabinetEntry = page.locator("header.house-header--services a.site-cabinet-entry");
+      // Canonical header: Library shortcut; My House keeps cabinet access in the menu.
+      const header = page.locator("header.house-header--services");
+      const libraryEntry = header.locator("a.site-library-entry");
+      await expect(libraryEntry).toHaveCount(1);
+      await visible(libraryEntry);
+      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "top Library link keeps its locale");
+      const libraryBounds = await libraryEntry.boundingBox();
+      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the visible header: " + locale + "/" + width);
+      const siteMenu = header.locator("details.site-main-menu");
+      await expect(siteMenu).not.toHaveAttribute("open", "");
+      await siteMenu.locator("summary.site-main-menu-trigger").click();
+      await expect(siteMenu).toHaveAttribute("open", "");
+      const cabinetEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/app"]');
+      await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top cabinet link opens the authenticated app");
+      await expect(cabinetEntry).toHaveText(locale === "ru" ? "Мой дом" : "My House");
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "My House opens the authenticated app");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My House entry must fit the opened menu: " + locale + "/" + width);
+      await siteMenu.locator("summary.site-main-menu-trigger").click();
+      await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });

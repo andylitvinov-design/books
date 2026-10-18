@@ -120,7 +120,7 @@ function assertSelected(h, result, report, section, locale) {
       // may live in disclosure. Integrity and translation warnings must be visible.
       assert.ok(text(panel).includes(limit), 'Detailed caveat remains accessible')
       if (scoreModel?.currentAnswerBand) assert.match(visibleText(panel),
-        locale === 'ru' ? /не медицинские нормы/ : /not clinical norms/,
+        locale === 'ru' ? /это не нормы, диагноз или доказательство устойчивой особенности/ : /they are not norms, diagnoses or evidence of a stable trait/,
         'Answer anchors cannot be mistaken for published clinical cutoffs')
     } else assert.ok(visibleText(panel).includes(limit),
       'Screening, translation, mixed-polarity or unverified warnings must remain visible')
