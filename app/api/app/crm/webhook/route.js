@@ -23,7 +23,9 @@ export async function POST(request) {
   try {
     const db=await databasePool(getAppConfig()).connect()
     try {
-      await db.query('select app_private.crm_suppress_provider_email($1,$2,$3)',[id,parsed.id,event.type])
+      const result=await db.query('select app_private.crm_suppress_provider_email($1,$2,$3) as matched',[id,parsed.id,event.type])
+      // Ask the provider to retry if the webhook precedes the accepted email receipt.
+      if (result.rows[0]?.matched!==true) return new NextResponse(null,{status:503})
     } finally { db.release() }
     return NextResponse.json({ok:true})
   } catch { return new NextResponse(null,{status:503}) }
