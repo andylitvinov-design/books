@@ -57,9 +57,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
       const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
-      setNotice(action==='send_email'?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
+      setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
       if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
       await load(session).catch(() => {})
+      return result
     } catch (error) {
       if (sessionRef.current === session) {
         const labels={
@@ -73,6 +74,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         }
         setNotice(error?.message==='CONTACT_ALREADY_EXISTS'?c.duplicate:error?.message==='CONFLICT'?c.conflict:labels[error?.message]||c.error)
       }
+      return null
     } finally { if (sessionRef.current === session) setBusy(false) }
   }
   if (!accountId) return null
