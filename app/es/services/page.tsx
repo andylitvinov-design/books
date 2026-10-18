@@ -119,6 +119,9 @@ export default async function SpanishServicesPage() {
   </details>
 
   <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} />
+  <div style={{ textAlign: "center", padding: "22px 14px 30px" }}>
+    <Link href="/es/payments" className="services-marketplace-details">Precios y pago de consultas →</Link>
+  </div>
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
  </main>;
 }
