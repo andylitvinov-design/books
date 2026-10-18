@@ -35,10 +35,10 @@ test("homepage prioritizes free written review and tests while preserving access
   const home = read("components/holistic-house-home.tsx");
   const wrapper = read("components/homepage-contact-cta.tsx");
   const freeCapture = read("components/homepage-free-capture.tsx");
-  assert.match(home, /heroBook: "Personal sessions · from €50"/);
-  assert.match(home, /heroBook: "Личная сессия · от €50"/);
+  assert.match(home, /heroBook: "Book a consultation · from €50"/);
+  assert.match(home, /heroBook: "Записаться на консультацию · от €50"/);
   assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
-  assert.match(home, /className="service-home-paid-link"/);
+  assert.match(home, /className="service-home-button service-home-button--consultation service-home-paid-link"/);
   assert.match(wrapper, /id="home-consultation"/);
   assert.match(wrapper, /<HomepageFreeCapture locale=\{locale\} \/>/);
   assert.match(freeCapture, /data-home-free-capture="true"/);
@@ -57,7 +57,7 @@ test("homepage prioritizes free written review and tests while preserving access
   const firstScreen = home.indexOf('className="service-home-hero"');
   const free = home.indexOf('className="service-home-button service-home-button--primary"');
   const tests = home.indexOf('className="service-home-button service-home-button--secondary"');
-  const book = home.indexOf('className="service-home-paid-link"');
+  const book = home.indexOf('className="service-home-button service-home-button--consultation service-home-paid-link"');
   const belowFold = home.indexOf("<ServicesSolutions");
   assert.ok(firstScreen < free && free < tests && tests < book && book < belowFold, "Free routes must precede the optional paid booking");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
@@ -109,4 +109,24 @@ test('private Cabinet loads heavyweight tab modules on demand', () => {
   const route = read('app/[locale]/app/[[...path]]/page.jsx');
   assert.match(route, /force-dynamic/);
   assert.match(route, /revalidate = 0/);
+});
+
+
+test("hero H1 matches free self-check metadata, and paid CTA stays clear across EN/RU/ES", () => {
+  const enRu = read("components/holistic-house-home.tsx");
+  const es = read("app/es/page.tsx");
+  const seo = read("lib/home-seo.ts");
+  const css = read("app/holistic-house-home.css");
+  assert.match(seo, /free self-checks and personal guidance/);
+  assert.match(enRu, /heroTitle: "Free self-checks\. Find your next step\."/);
+  assert.match(enRu, /heroTitle: "Бесплатные тесты\. Найдите следующий шаг\."/);
+  assert.match(enRu, /heroBook: "Book a consultation · from €50"/);
+  assert.match(enRu, /heroBook: "Записаться на консультацию · от €50"/);
+  assert.match(es, /Autoevaluaciones gratuitas\./);
+  assert.match(es, /Reservar una consulta · desde €50/);
+  assert.match(es, /href="\/es\/services#consultation"/);
+  assert.match(css, /\.house-home--services \.service-home-paid-link \{/);
+  assert.match(css, /background: #0a7180/);
+  assert.match(css, /\.house-home--services \.service-home-paid-link:focus-visible/);
+  assert.doesNotMatch(enRu, /force-static|s-maxage/);
 });
