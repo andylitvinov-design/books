@@ -46,6 +46,7 @@ const DICTIONARY={
       partly:'Частичная попытка тоже опыт. Можно оставить один маленький шаг или воспользоваться подсказкой.',
       not_yet:'Пока не получилось — это допустимо. Попробуйте простой пример или только прочитайте инструкцию.',
       not_attempted:'Сегодня вы познакомились с действием. Мы не будем отмечать его как выполненное.',
+      not_planning:'Сегодня можно обойтись без плана. Мы не отметим невыполненное действие.',
       uncomfortable:'Вы можете остановиться сразу. Никакое упражнение не нужно делать через дискомфорт.',
       unsure:'Сомневаться нормально. Не нужно принимать афоризм, чтобы попробовать действие.',
       disagree:'Спасибо за ваш ответ. Установку можно сформулировать нейтральнее:',
@@ -91,6 +92,7 @@ const DICTIONARY={
       partly:'A partial attempt counts as an attempt. You can make the next step smaller.',
       not_yet:'Not yet is a fair answer. You may look at an example or read only.',
       not_attempted:'You explored the instruction. It will not be marked as performed.',
+      not_planning:'You can leave the plan for another day. No untried action is marked as completed.',
       uncomfortable:'You may stop immediately. There is no need to push through discomfort.',
       unsure:'It is fine to be unsure. You need not agree to try a small step.',
       disagree:'Thank you. You could use a more neutral idea:',
@@ -260,7 +262,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(locked)return
     // Feedback is a separate voluntary report AFTER the learner chooses a
     // concrete micro-action. No visit or scenario click can forge practice.
-    if(choiceField&&!answers[choiceField])return
+    // A person can truthfully report not trying, difficulty or discomfort
+    // without being forced to select a concrete action first.
+    const noActionResponse=role==='transfer'?value==='not_planning':
+      ['not_yet','not_attempted','uncomfortable'].includes(value)
+    if(choiceField&&!answers[choiceField]&&!noActionResponse)return
     setAnswers(a=>({...a,[role]:value}))
     if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
@@ -310,7 +316,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
-    if(choiceField&&!picked)return []
+    if(choiceField&&!picked){
+      const available=role==='transfer'?['not_planning']:
+        ['not_yet','not_attempted','uncomfortable']
+      return available.map(value=>({value,label:t.response[value]||value}))
+    }
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
