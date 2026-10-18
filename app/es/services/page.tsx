@@ -4,6 +4,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesQuickStart } from "@/components/services-quick-start";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
@@ -61,6 +62,7 @@ export default async function SpanishServicesPage() {
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" showAssessmentStrip={false} />
   <ServicesConversionHero locale="es" />
+  <ServicesQuickStart locale="es" />
   <ServicesSolutions locale="es" />
   <PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
   <ServicesAboutEntry locale="es" />
