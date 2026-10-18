@@ -23,7 +23,7 @@ jobs:
           mkdir -p /tmp/native-back-cancellation
           printf '{"commit":"%s","tree":"%s","playwright":"1.63.0","scope":"synthetic-loopback-only"}\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})" > /tmp/native-back-cancellation/provenance.json
       - name: Verify diagnostic contracts
-        run: node --test scripts/diagnostics/native-back-cancellation/probe.test.mjs
+        run: node --test 'scripts/diagnostics/native-back-cancellation/*.test.mjs'
       - name: Install pinned official WebKit
         run: |
           npm install --prefix /tmp/native-back-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -34,6 +34,12 @@ jobs:
           PLAYWRIGHT_MODULE: file:///tmp/native-back-tools/node_modules/@playwright/test/index.mjs
           PROBE_OUTPUT: /tmp/native-back-cancellation
         run: node scripts/diagnostics/native-back-cancellation/probe.mjs
+      - name: Compare handled synthetic ratings fetch cleanup
+        timeout-minutes: 2
+        env:
+          PLAYWRIGHT_MODULE: file:///tmp/native-back-tools/node_modules/@playwright/test/index.mjs
+          PROBE_OUTPUT: /tmp/native-back-cancellation
+        run: node scripts/diagnostics/native-back-cancellation/fetch-probe.mjs
       - name: Preserve bounded diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
