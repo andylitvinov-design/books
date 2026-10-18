@@ -63,3 +63,7 @@
 
 /* Contact communication tools occupy their own row on mobile and desktop. */
 .list li.emailContactRow{flex-wrap:wrap;align-items:center}
+
+/* Keep source-selection and action controls readable on phones. */
+.form label:nth-child(4){grid-column:1/-1}
+@media(max-width:600px){.form label:nth-child(4){grid-column:auto}}

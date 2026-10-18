@@ -2,11 +2,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
+import { CrmWorkflowOverview, CrmContactWorkflow } from './crm-workflow'
 import styles from './crm-manager.module.css'
 const COPY = {
   en: { title: 'Clients & subscribers', privacy: 'Business contact details only. Do not enter health information here.', name: 'Name', email: 'Email', add: 'Add contact', loading: 'Loading…', error: 'CRM is not available yet. Your information was not saved.', noContacts: 'No contacts yet.', noConsent: 'Marketing consent is separate from a paid subscription.', draft: 'Prepare an update', saveDraft: 'Save draft', drafts: 'Drafts', off: 'Automatic campaigns are off. Individual opted-in emails are handled in each contact.', saved: 'Saved.', unverified: 'Address not verified', suppressed: 'Do not contact', locale: 'Language' },
   ru: { title: 'Клиенты и подписчики', privacy: 'Только деловые контактные данные. Не вводите здесь сведения о здоровье.', name: 'Имя', email: 'Email', add: 'Добавить контакт', loading: 'Загрузка…', error: 'CRM пока недоступна. Данные не сохранены.', noContacts: 'Контактов пока нет.', noConsent: 'Согласие на рассылку оформляется отдельно от платной подписки.', draft: 'Подготовить новость', saveDraft: 'Сохранить черновик', drafts: 'Черновики', off: 'Автоматические массовые рассылки отключены. Отдельные письма доступны в карточке контакта при наличии согласия.', saved: 'Сохранено.', unverified: 'Адрес не подтверждён', suppressed: 'Не писать', locale: 'Язык' },
   es: { title: 'Clientes y suscriptores', privacy: 'Solo datos de contacto. No introduzcas información de salud aquí.', name: 'Nombre', email: 'Correo', add: 'Añadir contacto', loading: 'Cargando…', error: 'El CRM aún no está disponible. Los datos no se han guardado.', noContacts: 'Todavía no hay contactos.', noConsent: 'El consentimiento para recibir novedades es independiente de la suscripción.', draft: 'Preparar novedades', saveDraft: 'Guardar borrador', drafts: 'Borradores', off: 'Las campañas automáticas están desactivadas. Puedes preparar correos individuales en cada contacto.', saved: 'Guardado.', unverified: 'Dirección no verificada', suppressed: 'No contactar', locale: 'Idioma' },
+}
+const SOURCE_CHOICES={
+  en:{manual:'Added manually',website:'Website enquiry',referral:'Referral',event:'Event',academy:'Academy',other:'Other'},
+  ru:{manual:'Добавлен вручную',website:'Заявка с сайта',referral:'Рекомендация',event:'Мероприятие',academy:'Академия',other:'Другое'},
+  es:{manual:'Añadido manualmente',website:'Consulta web',referral:'Referencia',event:'Evento',academy:'Academia',other:'Otro'},
 }
 const BILLING_COPY = {
   en: { title: 'Subscription register', note: 'Up to 100 technical account records. Contact matching has not been verified.', off: 'Subscription register is not connected.', until: 'Paid through', cancel: 'Renewal cancelled' },
@@ -32,6 +38,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [lifecycle, setLifecycle] = useState('lead')
+  const [source, setSource] = useState('manual')
   async function load(session) {
     const response = await fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: session.controller.signal, headers: { 'X-HH-Account-Id': session.accountId } })
     if (!response.ok) throw new Error('unavailable')
@@ -42,7 +49,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setFilter('all'); setSearch('')
+    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setFilter('all'); setSearch(''); setSource('manual')
     fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
       .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
@@ -55,10 +62,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
-      if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead') }
+      if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead'); setSource('manual') }
       await load(session).catch(() => {})
       return result
     } catch (error) {
@@ -71,6 +78,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
           EMAIL_CONTACT_BLOCKED:language==='ru'?'Контакт недоступен для рассылки.':'Contact is not eligible for email.',
           EMAIL_DAILY_LIMIT:language==='ru'?'Достигнут лимит писем за сутки.':'Daily message limit reached.',
           INVALID_EMAIL_MESSAGE:language==='ru'?'Проверьте текст и тему письма.':'Check the email subject and body.',
+          INVALID_FOLLOWUP:language==='ru'?'Проверьте дату и вид действия.':'Check follow-up date and type.',
+          CRM_FOLLOWUP_LIMIT:language==='ru'?'У контакта слишком много открытых задач.':'Too many open follow-ups for this contact.',
+          CRM_CONTACT_ARCHIVED:language==='ru'?'Контакт в архиве; новые действия недоступны.':'Archived contact cannot receive new tasks.',
+          INVALID_CRM_ACTIVITY:language==='ru'?'Действие не поддерживается.':'This activity is not supported.',
         }
         setNotice(error?.message==='CONTACT_ALREADY_EXISTS'?c.duplicate:error?.message==='CONFLICT'?c.conflict:labels[error?.message]||c.error)
       }
@@ -103,11 +114,12 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {notice&&<button type="button" onClick={retry}>{language==='ru'?'Повторить':'Retry'}</button>}
     </div>}
     {data&&<>
+      <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]} busy={busy} onAction={save} />
       <div className={styles.formCard}>
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
         <form className={styles.form} onSubmit={(event) => {
           event.preventDefault()
-          save('create_contact', { displayName, email, locale: language, lifecycle })
+          save('create_contact', { displayName, email, locale: language, lifecycle, source })
         }}>
           <label>{c.name} *<input value={displayName} onChange={(event)=>setName(event.target.value)}
             placeholder={language==='ru'?'Имя клиента':'e.g. Jane Smith'} maxLength={120} autoComplete="off" required /></label>
@@ -117,6 +129,11 @@ export default function CrmManager({ locale = 'en', accountId }) {
             <select value={lifecycle} onChange={(event)=>setLifecycle(event.target.value)}>
               <option value="lead">{language==='ru'?'Интересуется':'Interested'}</option>
               <option value="client">{language==='ru'?'Клиент':'Client'}</option>
+            </select>
+          </label>
+          <label>{language==='ru'?'Источник контакта':language==='es'?'Origen del contacto':'Contact source'}
+            <select value={source} onChange={event=>setSource(event.target.value)}>
+              {Object.entries(SOURCE_CHOICES[language]).map(([id,label])=><option key={id} value={id}>{label}</option>)}
             </select>
           </label>
           <button disabled={busy} type="submit">{busy?c.loading:c.add}</button>
@@ -145,6 +162,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
           </label>
           {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>}
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
+          <CrmContactWorkflow contact={contact} locale={language} busy={busy} onAction={save} followups={data.followups||[]} activity={data.activity||[]} />
           <CrmEmailTools contact={contact} locale={language} enabled={data.emailEnabled} busy={busy} onAction={save} messages={data.emailMessages||[]} />
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
