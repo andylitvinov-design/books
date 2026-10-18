@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
+import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
@@ -17,10 +17,10 @@ export type LibraryPublicArticle = {
 export const libraryCopy = {
   en: {
     title: "Library",
-    lead: "Books and practical references are organized as one library: a single book catalog, the remedy reference, a distance-homeopathy guide, and the Daoist Alchemy manual.",
+    lead: "Books, guides and reference materials in one place.",
     latestTab: "Latest", booksTab: "Books",
-    leadLatest: "New videos, articles and learning resources, all in one place. Explore the latest publications or browse our reference collection.",
-    leadVideos: "Watch educational videos and introductions to the Holistic House approach.",
+    leadLatest: "Fresh videos, articles and guides from Holistic House.",
+    leadVideos: "Short educational videos and introductions.",
     guides: "Explore the guides",
     videosTab: "Videos",
     sections: "Library materials",
@@ -33,10 +33,10 @@ export const libraryCopy = {
   },
   ru: {
     title: "Библиотека",
-    lead: "Книги и рабочие справочники собраны в одной библиотеке: единый каталог книг, каталог препаратов, методичка по дистанционной гомеопатии и методичка по Даосской Алхимии.",
+    lead: "Книги, справочники и методички в одном месте.",
     latestTab: "Новое", booksTab: "Книги",
-    leadLatest: "Новые видео, статьи и методические материалы — в одной ленте. Читайте последние публикации и изучайте справочники.",
-    leadVideos: "Видео и короткие объяснения подходов Holistic House.",
+    leadLatest: "Свежие видео, статьи и методички Holistic House.",
+    leadVideos: "Обучающие видео и короткие объяснения практик.",
     guides: "Справочники и методички",
     videosTab: "Видео",
     sections: "Материалы библиотеки",
@@ -49,10 +49,10 @@ export const libraryCopy = {
   },
   es: {
     title: "Biblioteca",
-    lead: "Libros y referencias prácticas en una sola biblioteca: catálogo de libros, remedios, guía de homeopatía a distancia y manual de Alquimia Taoísta.",
+    lead: "Libros, guías y materiales de referencia en un solo lugar.",
     latestTab: "Novedades", booksTab: "Libros",
-    leadLatest: "Vídeos, artículos y materiales recientes en un solo lugar. Descubre nuevas publicaciones y guías.",
-    leadVideos: "Vídeos educativos e introducciones a Holistic House.",
+    leadLatest: "Nuevos vídeos, artículos y guías de Holistic House.",
+    leadVideos: "Vídeos educativos e introducciones breves.",
     guides: "Explorar las guías",
     videosTab: "Videos",
     sections: "Materiales de la biblioteca",
@@ -235,25 +235,17 @@ export function LibraryHub({ locale, view = "latest", publishedVideos = [], arti
   return (
     <main className="library-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
+      <header className="library-heading">
+        <h1>{text.title}</h1>
+        <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : text.lead}</p>
+      </header>
       <nav className="library-media-switch" aria-label={text.title}>
         <Link aria-current={view === "latest" ? "page" : undefined} href={"/" + locale + "/library"}>{text.latestTab}</Link>
         <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/library?view=videos"}>{text.videosTab}</Link>
         <Link aria-current={view === "books" ? "page" : undefined} href={"/" + locale + "/library?view=books"}>{text.booksTab}</Link>
       </nav>
-      <header className="library-heading">
-        <p className="homeopathy-kicker">Holistic House</p>
-        <h1>{text.title}</h1>
-        <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : text.lead}</p>
-      </header>
-      {view === "books" ?
-        <CatalogShowcase items={guides} label={text.sections} /> :
-        <LibraryFeed locale={locale} items={feedItems} videosOnly={view === "videos"} />}
-      {view === "latest" && <section className="library-quick-guides" aria-label={text.guides}>
-        <h2>{text.guides}</h2>
-        <div>{guides.map(guide => <Link key={guide.id} href={guide.href}>
-          <span>{guide.title}</span><span aria-hidden="true">→</span>
-        </Link>)}</div>
-      </section>}
+      <LibraryFeed locale={locale} items={view === "books" ? guideFeed : feedItems}
+        videosOnly={view === "videos"} guidesOnly={view === "books"} />
       <p className="library-note">{text.note}</p>
       <PublicConsultationCta locale={locale} />
     </main>

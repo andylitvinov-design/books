@@ -19,7 +19,7 @@ test('Library defaults to Latest news feed with videos, articles and guides whil
   assert.match(feed,/youtube-nocookie\.com\/embed/)
   assert.match(feed,/setPlayingId\(item.id\)/)
   assert.match(css,/@media\(max-width:700px\)/)
-  assert.match(css,/grid-template-columns:minmax\(122px,36%\)/)
+  assert.match(css,/grid-template-columns:116px minmax\(0,1fr\)/)
 })
 
 test('Only explicitly approved public YouTube resources are included, not client private storage',()=>{
