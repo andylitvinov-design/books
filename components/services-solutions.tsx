@@ -16,7 +16,7 @@ const homepageMedia = {
   dao: "/academy/reiki-yggdrasil/source/eastern-tradition.png",
   alchemy: "/images/holistic-house/video-posters/constellations-en-v1.webp",
   hypnotherapy: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp",
-  business: "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  business: "/images/holistic-house/andy-about.png",
 } as const;
 
 const copy = {
@@ -27,7 +27,7 @@ const copy = {
     title: "Personal support for your next step",
     homeTitle: "How I can help",
     servicesTitle: "How I can help",
-    lead: "Alchemy of the Soul brings together systemic constellations, guided imagery hypnotherapy and optional psycho-homeopathy. Or explore a separate guided-imagery course or business consultation.",
+    lead: "Alchemy of the Soul brings together systemic constellations, guided imagery hypnotherapy and optional psycho-homeopathy. Or explore a separate guided-imagery course or practical business strategy and founder coaching.",
     homeLead: "A free written situation review, a free symbolic Wu Xing profile and personal sessions. Explore self-checks below if you prefer.",
     servicesLead: "Start free or explore Alchemy of the Soul (constellations, hypnotherapy and psycho-homeopathy), individual guided imagery and business sessions.",
     more: "Curious about the methods?",
@@ -46,7 +46,7 @@ const copy = {
     title: "Личная работа для следующего шага",
     homeTitle: "Чем я могу помочь",
     servicesTitle: "Чем я могу помочь",
-    lead: "«Алхимия души» объединяет расстановки, образную гипнотерапию и дополнительную психогомеопатию. Есть также отдельные курсы и бизнес-сессии.",
+    lead: "«Алхимия души» объединяет расстановки, образную гипнотерапию и дополнительную психогомеопатию. Есть также отдельные курсы, бизнес-стратегия и коучинг предпринимателей.",
     homeLead: "Бесплатный письменный разбор ситуации, символический профиль У-Син и личные сессии. Ниже — тесты самонаблюдения.",
     servicesLead: "Начните бесплатно или выберите «Алхимию души» (расстановка, гипнотерапия, психогомеопатия), индивидуальную образную работу либо бизнес-сессию.",
     more: "Хотите подробнее о методах?",
@@ -65,7 +65,7 @@ const copy = {
     title: "Acompañamiento personal para tu siguiente paso",
     homeTitle: "Cómo puedo ayudarte",
     servicesTitle: "Cómo puedo ayudarte",
-    lead: "Alquimia del Alma combina constelaciones sistémicas, hipnoterapia con imágenes guiadas y psicohomeopatía opcional. También puedes explorar cursos de imágenes guiadas o consultoría empresarial.",
+    lead: "Alquimia del Alma combina constelaciones sistémicas, hipnoterapia con imágenes guiadas y psicohomeopatía opcional. También puedes explorar cursos de imágenes guiadas o estrategia y coaching empresarial.",
     homeLead: "Dos revisiones escritas gratuitas y dos opciones de trabajo personal. También puedes realizar pruebas gratuitas de estrés y personalidad.",
     servicesLead: "Empieza gratis o explora Alquimia del Alma, trabajo individual con imágenes guiadas o consultoría de negocios.",
     more: "¿Quieres conocer los métodos?",
