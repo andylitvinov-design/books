@@ -15,13 +15,13 @@ const score = (axis, priorityPercent, id=axis) => ({
 })
 const file = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8')
 
-test('all 4 canonical sectors and 17 detailed scales receive editable default targets', () => {
+test('all four sectors keep editable neutral placeholders, not an 80% psychological norm', () => {
   assert.equal(PORTRAIT_SECTORS.length, 4)
   assert.equal(PORTRAIT_AXIS_ORDER.length, 17)
   assert.deepEqual(Object.keys(DEFAULT_DEVELOPMENT_TARGETS), ['body','work','relationships','growth'])
   const actual = normalizeDevelopmentGoals(goals())
   assert.deepEqual(actual, goals())
-  for (const axis of PORTRAIT_AXIS_ORDER) assert.equal(targetForDevelopmentAxis(actual, axis),80)
+  for (const axis of PORTRAIT_AXIS_ORDER) assert.equal(targetForDevelopmentAxis(actual, axis),50)
 })
 
 test('custom scale targets override only their parent area; input is tightly validated', () => {
@@ -30,7 +30,7 @@ test('custom scale targets override only their parent area; input is tightly val
   changed.details.sleep = 95
   assert.equal(targetForDevelopmentAxis(changed,'sleep'),95)
   assert.equal(targetForDevelopmentAxis(changed,'stress'),70)
-  assert.equal(targetForDevelopmentAxis(changed,'clarity'),80)
+  assert.equal(targetForDevelopmentAxis(changed,'clarity'),50)
   assert.deepEqual(normalizeDevelopmentGoals(changed),changed)
   for (const extra of [
     { ...goals(), targets:{...goals().targets, unknown:50} },
