@@ -821,17 +821,41 @@ export default function CourseSlidePlayer({
 
           {slide.kind === 'checkin' && (lesson.antiStress||isOporaModule ? <>
             {!isOporaStateJourney&&!isSkillV5&&<IllustratedMoment variant="calm" kind={slide.kind}/>}
-            <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
-            <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
+            {isDayOne
+              ? <p className={styles.calmFirstDayPace} data-opora-calm-pace>
+                  {locale==='ru'
+                    ?'Сегодня достаточно одной небольшой паузы. Выберите темп и просто начните — никаких проверок.'
+                    :'Today a small pause is enough. Choose a pace and simply begin — nothing to prove.'}
+                </p>
+              :<>
+                <p className={styles.prompt}>{lesson.antiStress?.skill||lesson.oporaModule?.theme}</p>
+                <p className={styles.instruction}>{lesson.antiStress?.learningOutcome||lesson.oporaModule?.practice}</p>
+              </>}
             <div className={styles.preferenceRow} role="group" aria-label={words.adjustPace}>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length==='quick'} onClick={()=>void updatePreferences({length:'quick'})}>{words.short}</button>
               <button type="button" disabled={locked} aria-pressed={cycle.preferences?.length!=='quick'} onClick={()=>void updatePreferences({length:'standard'})}>{words.standard}</button>
-              <button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>
+              {!isDayOne&&<button type="button" disabled={locked} aria-pressed={cycle.preferences?.imagery==='no_imagery'} onClick={()=>void updatePreferences({imagery:'no_imagery'})}>{words.noImagery}</button>}
             </div>
             <details className={styles.supportDetails} data-course-optional-explanation>
-              <summary><CircleHelp size={15} aria-hidden="true"/>{locale==='ru'?'О практике и безопасном выборе':'About this practice'}</summary>
-              <p>{locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.':'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
-              <p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>
+              <summary><CircleHelp size={15} aria-hidden="true"/>
+                {isDayOne
+                  ?(locale==='ru'
+                    ?cycle.preferences?.imagery==='no_imagery'?'Выбрано: без образов · изменить':'Другие настройки (по желанию)'
+                    :cycle.preferences?.imagery==='no_imagery'?'No imagery selected · change':'Other options (optional)')
+                  :locale==='ru'?'О практике и безопасном выборе':'About this practice'}
+              </summary>
+              {isDayOne&&<button type="button" className={styles.calmNoImagery} disabled={locked}
+                aria-pressed={cycle.preferences?.imagery==='no_imagery'}
+                onClick={()=>void updatePreferences({imagery:cycle.preferences?.imagery==='no_imagery'?'optional':'no_imagery'})}>
+                {locale==='ru'?'Без образов':'No imagery'}
+                {cycle.preferences?.imagery==='no_imagery'&&<Check size={15}/>}
+              </button>}
+              <p>{isDayOne
+                ?locale==='ru'?'Глаза могут оставаться открытыми. Дыхание — естественное. Если неприятно, можно остановиться.'
+                  :'Your eyes can stay open. Breathe naturally. You can stop if anything feels uncomfortable.'
+                :locale==='ru'?'Это занятие — практика, а не очередной тест. Выберите удобный формат или продолжайте.'
+                  :'This is a practice, not another questionnaire. Choose a comfortable format, or continue.'}</p>
+              {!isDayOne&&<p>{lesson.antiStress?.neutralText||lesson.disclaimer}</p>}
             </details>
           </> : <>
             <IllustratedMoment variant="calm" kind={slide.kind}/>
@@ -1219,8 +1243,7 @@ export default function CourseSlidePlayer({
         {!finished && !discomfortOpen && <div className={styles.subactions}>
           {index > 0 && <button type="button" disabled={locked} className={styles.back} onClick={goBack}>
             <ArrowLeft size={16}/>{words.back}</button>}
-          {!isSkillV5&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)
-            || (isDayOne && slide.kind!=='welcome' && index<slides.length-1)) && <button
+          {!isSkillV5&&!isDayOne&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>
             {slide.kind === 'checkin' ? words.skipRating : words.skip}<SkipForward size={14}/></button>}
         </div>}
