@@ -26,7 +26,8 @@ jobs:
       - name: Verify full sitemap (200, hreflang, canonical, 404, 429)
         run: node scripts/verify-live-sitemap.mjs
       - name: Verify public HTML links and image sources
-        if: always()
+        # Avoid hammering a temporarily rate-limited site.
+        if: success()
         run: node scripts/verify-public-assets.mjs
       - name: Publish issue counts in Actions summary
         if: always()
