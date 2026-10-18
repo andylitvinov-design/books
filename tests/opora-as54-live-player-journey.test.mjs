@@ -37,7 +37,17 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
      await click(h,'Пока сомневаюсь')
      assert.match(textOf(h.tree),/Сомневаться нормально/)
    }
-   if(i===8){await click(h,'Частично');assert.match(textOf(h.tree),/Частичная попытка тоже опыт/)}
+   if(i===7){
+     await click(h,'Пришли четыре сообщения')
+     assert.match(textOf(h.tree),/Это само событие/)
+     await click(h,'Получилось')
+   }
+   if(i===8){
+     await click(h,'Отложить необязательную задачу')
+     assert.match(textOf(h.tree),/Вы выбрали один посильный вариант/)
+     await click(h,'Частично')
+     assert.match(textOf(h.tree),/Частичная попытка тоже опыт/)
+   }
    if(i<13)await click(h,'Далее')
    else await click(h,'Сохранить практику')
  }
@@ -48,6 +58,8 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
  assert.equal(body.aphorismResponse,'unsure')
  assert.equal(body.practiceAttempt,'simplified')
  assert.equal(body.opora54.answers.act,'partly')
+ assert.equal(body.opora54.answers.actChoice,'one')
+ assert.equal(body.opora54.answers.noticeChoice,'one')
  assert.equal(body.opora54.answers.aphorism,'unsure')
  assert.equal(body.opora54.ease,null)
  assert.deepEqual(validateOpora54Signals(body.opora54).answers,body.opora54.answers)
@@ -68,12 +80,17 @@ test('EN V6 player: empty optional answers are not invented, safe pause never sa
  for(let i=0;i<14;i++){
    assert.doesNotMatch(buttons(h).join(' | '),/Skip this step|Skip this check-in|Skip$/)
    if(i===4){assert.ok(findButton(h.tree,'I disagree'));await click(h,'I disagree')}
-   if(i===7)await click(h,'I did not try')
+   if(i===7){
+     await click(h,'My attention keeps switching')
+     assert.match(textOf(h.tree),/shifting attention/)
+     await click(h,'I did not try')
+   }
    if(i<13)await click(h,'Continue')
    else await click(h,'Save my practice')
  }
  assert.equal(f.calls,1)
  assert.equal(f.payload.opora54.answers.notice,'not_attempted')
+ assert.equal(f.payload.opora54.answers.noticeChoice,'one')
  assert.equal(f.payload.aphorismResponse,'disagree')
  assert.equal(f.payload.practiceAttempt,null)
  assert.equal(f.payload.beforeNow,null)
