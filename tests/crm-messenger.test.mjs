@@ -103,3 +103,11 @@ test('signed early WhatsApp receipts survive out-of-order events with owner-scop
   assert.match(store,/app\.crm_msg_receipts/)
   assert.match(store,/provider_hash=\$3/)
 })
+
+test('Meta provider adapters use the correct official Instagram Login and Page-scoped endpoints',()=>{
+  const provider=source('lib/crm/messenger-provider.js')
+  assert.match(provider,/const INSTAGRAM = 'https:\/\/graph\.instagram\.com'/)
+  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\/messages'/)
+  assert.match(provider,/configuredExternalId\('messenger',env\)\+'\/messages'/)
+  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\?fields=id'/)
+})
