@@ -446,58 +446,61 @@
   .collapsibleSummary>summary{padding:14px 12px}}
 
 
-/* Course baseline: a compact two-step before/after story, readable on phones.
-   Measurements are neutral; no colour encodes a diagnosis or improvement. */
-.compactTests{max-width:760px;gap:12px}
-.baselineHero{display:grid;gap:10px;padding:clamp(15px,2.5vw,21px);border:1px solid #c8e6e9;
-  border-radius:18px;background:linear-gradient(132deg,#f3fdfe,#e9f8fb 72%,#f9fffc);min-width:0}
-.baselineHero h2{font:500 clamp(25px,3.8vw,32px)/1.16 Georgia,serif;color:#143f5c;letter-spacing:-.025em;margin:0}
-.baselineHero .compactLead{color:#486e80;font-size:14px;line-height:1.52}
-.baselineTimeline{display:grid;grid-template-columns:minmax(0,1fr) 19px minmax(0,1fr);
-  align-items:center;gap:9px;min-width:0;margin:3px 0}
-.baselineStep{display:flex;align-items:flex-start;gap:10px;min-width:0;height:100%;padding:12px;
-  border:1px solid #cde7ed;border-radius:13px;background:#fff;box-shadow:0 2px 9px #0c7b9810}
-.baselineNumber{display:grid;place-items:center;width:26px;height:26px;flex:none;
-  border-radius:50%;background:#d7f4f7;color:#0a8096;font-size:13px;font-weight:850}
-.baselineStep>div{display:grid;align-content:start;gap:4px;min-width:0}
-.baselineStep small{font-size:9.5px;line-height:1.3;color:#087e96;letter-spacing:.045em;font-weight:850}
-.baselineStep strong{font-size:14px;line-height:1.27;color:#194b65}
-.baselineStep>div>span{font-size:11.5px;line-height:1.37;color:#587e8e}
-.baselineArrow{color:#0b94a6}
-.baselineHero .baselineContext{font-size:11.5px;line-height:1.5;color:#507483;margin:0}
-.baselineListIntro{display:grid;gap:5px;padding:0 2px}
-.baselineListIntro h3{margin:0;font-size:17px;color:#174d65;line-height:1.3}
-.baselineListIntro p{margin:0;font-size:12.5px;line-height:1.45;color:#5c7a88}
-.compactTests .baselineSaved{display:flex;align-items:flex-start;gap:9px;
-  margin:0;border:1px solid #b8e0d5;border-radius:11px;padding:10px 12px;
-  background:#f0faf5;color:#286e61;font-size:12.5px;line-height:1.46;font-weight:650}
-.baselineSaved svg{flex:none;margin-top:1px}
-.compactTests .shortTestList{gap:8px;margin:0}
-.compactTests .shortTestRow{min-height:59px;padding:10px 12px;transition:border-color .15s,background-color .15s}
+/* OPORA mobile baseline: a single first-view decision. Long explanations stay
+   in the disclosure; extra questionnaires scroll inside the list, not past CTA.
+   No assessment data or server safeguards are changed by these styles. */
+.compactTests{max-width:760px;gap:8px;padding:14px 16px!important}
+.baselineHero{display:grid;gap:6px;padding:12px 14px;border:1px solid #c8e6e9;
+  border-radius:15px;background:linear-gradient(125deg,#f3fdfe,#eaf9fa 72%,#f9fffc);min-width:0}
+.baselineHero h2{font:500 clamp(23px,3.7vw,29px)/1.12 Georgia,serif;
+  color:#143f5c;letter-spacing:-.02em;margin:0}
+.baselineHero .compactLead{font-size:12.5px;line-height:1.33;color:#486e80;margin:0}
+.baselineTimeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.baselineTimeline>span{padding:4px 7px;border-radius:7px;background:#fff;border:1px solid #cde7ed;
+  color:#087e96;font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:1.2}
+.baselineArrow{color:#0b94a6;flex:none}
+.baselineHero .baselineContext{font-size:10.5px;line-height:1.3;color:#527685;margin:0}
+.baselineListIntro{display:grid;gap:3px;padding:0 2px}
+.baselineListIntro h3{margin:0;font-size:15px;color:#174d65;line-height:1.2}
+.baselineListIntro p{margin:0;font-size:11.5px;line-height:1.3;color:#5c7a88}
+.compactTests .baselineSaved{display:flex;align-items:center;gap:7px;
+  margin:0;border:1px solid #b8e0d5;border-radius:9px;padding:6px 9px;
+  background:#f0faf5;color:#286e61;font-size:11.5px;line-height:1.27;font-weight:700}
+.baselineSaved svg{flex:none}
+.compactTests .shortTestList{gap:6px;margin:0;max-height:clamp(155px,31dvh,245px);
+  overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.compactTests .shortTestRow{min-height:48px;padding:7px 10px;gap:9px;
+  transition:border-color .15s,background-color .15s}
 .compactTests .shortTestRow:hover{border-color:#7fc4d1}
 .compactTests .shortTestRow[data-checked=true]{background:#effbfc;border-color:#9bd8df}
 .compactTests .shortTestRow[data-course-required-baseline=true]{background:#eaf8fb;border-color:#63becb}
-.compactTests .shortTestBody strong{font-size:14px}
-.compactTests .shortTestBody small{font-size:11.5px}
-.compactTests .fastTestButton{min-height:51px;margin-top:1px}
+.compactTests .shortTestBody{gap:3px}
+.compactTests .shortTestBody strong{font-size:13px;line-height:1.2}
+.compactTests .shortTestBody small{font-size:11px;line-height:1.22}
+.compactTests .fastTestButton{min-height:47px;margin:0;padding:9px 11px;font-size:14px}
+.compactTests .shortTestExtras{gap:5px 12px;justify-content:space-between}
+.compactTests .shortTestExtras button{min-height:29px;padding:3px 5px;font-size:11.5px}
+.compactTests .shortTestDetails{margin-top:0;padding-top:6px}
+.compactTests .shortTestDetails summary{font-size:11.5px;line-height:1.25}
 @media(max-width:530px){
-  .compactTests{padding:13px 12px!important;gap:11px}
-  .baselineHero{padding:14px 12px;gap:9px;border-radius:15px}
-  .baselineHero h2{font-size:25px;line-height:1.14}
-  .baselineHero .compactLead{font-size:12.8px}
-  .baselineTimeline{gap:5px;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr)}
-  .baselineStep{padding:10px 7px;gap:7px;border-radius:11px}
-  .baselineNumber{width:21px;height:21px;font-size:11px}
-  .baselineStep small{font-size:8.5px}
-  .baselineStep strong{font-size:12.5px}
-  .baselineStep>div>span{font-size:10px}
-  .baselineArrow{width:16px}
-  .baselineHero .baselineContext{font-size:11px}
-  .baselineListIntro h3{font-size:16px}
-  .baselineListIntro p{font-size:12px}
-  .compactTests .shortTestRow{min-height:56px;padding:10px}
-  .compactTests .shortTestBody strong{font-size:13.5px}
-  .compactTests .shortTestBody small{font-size:11px}
+  .compactTests{padding:10px!important;gap:7px}
+  .baselineHero{padding:10px 11px;gap:5px;border-radius:13px}
+  .baselineHero h2{font-size:clamp(22px,6vw,26px)}
+  .baselineHero .compactLead{font-size:12px;line-height:1.3}
+  .baselineHero .baselineContext{font-size:10.5px;line-height:1.26}
+  .baselineTimeline{gap:5px}
+  .baselineTimeline>span{font-size:9.5px;padding:3px 6px}
+  .baselineListIntro h3{font-size:14px}
+  .baselineListIntro p{font-size:11px}
+  .compactTests .shortTestRow{min-height:46px;padding:7px 8px}
+  .compactTests .shortTestRow>input{width:18px;height:18px}
+  .compactTests .shortTestBody strong{font-size:12.5px}
+  .compactTests .shortTestBody small{font-size:10.5px}
+  .compactTests .shortTestCheck{width:16px;height:16px}
+  .compactTests .fastTestButton{min-height:45px;font-size:14px}
+}
+@media(max-width:360px){
+  .compactTests .shortTestExtras{gap:2px}
+  .compactTests .shortTestExtras button{font-size:10.5px;padding-inline:3px}
 }
 @media(prefers-reduced-motion:reduce){.compactTests .shortTestRow{transition:none}}
-
