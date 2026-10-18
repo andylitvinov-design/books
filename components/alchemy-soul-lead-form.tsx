@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { ShieldCheck } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 type AlchemyLocale = Locale | "es";
@@ -153,6 +154,8 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
 export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalPersonalEnabled = false }: { locale: AlchemyLocale; wiseEnabled?: boolean; paypalPersonalEnabled?: boolean }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<Format>("60");
+  const zenInquiryUrl = selected === "month" ? null :
+    buildZenTransferInquiry([selected === "30" ? "express-consultation-30" : "personal-session-60"], locale);
   const data = locale === "ru" ? {
     short: "Экспресс-разбор", long: "Личная сессия",
     shortText: "Уточнить ситуацию и следующий шаг.",
@@ -260,6 +263,19 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           <Link href={"/" + locale + "/payments"}>
             {locale === "ru" ? "Условия и подтверждение оплаты" : locale === "es" ? "Instrucciones y confirmación" : "Payment details & confirmation"}
           </Link>
+        </div>
+      ) : null}
+      {zenInquiryUrl ? (
+        <div className={styles.wisePayment} data-zen-manual-request>
+          <a className={styles.wisePaymentCta} href={zenInquiryUrl}
+            target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
+          </a>
+          <small>{locale === "ru"
+            ? "Это запрос реквизитов для разовой сессии, а не оплата. Сначала согласуйте время и подтвердите возможность перевода в ZEN."
+            : locale === "es"
+              ? "Solicitud de instrucciones para transferencia, no un pago. Acuerda la sesión y verifica si ZEN está disponible."
+              : "Only a request for transfer instructions, not a completed payment. Agree a session time and confirm ZEN availability first."}</small>
         </div>
       ) : null}
       <p className={styles.freeOption}>{data.free} <Link href={"/" + locale + "/services/free-situation-review"}>{data.freeAction}</Link></p>
