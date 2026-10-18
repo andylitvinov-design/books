@@ -9,8 +9,8 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('Andrey legacy Homeopathy consultation opens the approved new psycho-homeopathy landing', () => {
   assert.equal(getPublicServiceDetailHref('en', 'andy-litvinov', 'homeopathy-consultation'), '/en/services/alchemy-of-soul');
   assert.equal(getPublicServiceDetailHref('ru', 'andy-litvinov', 'homeopathy-consultation'), '/ru/services/alchemy-of-soul');
-  // The English/Russian unified landing has no Spanish copy yet.
-  assert.equal(getPublicServiceDetailHref('es', 'andy-litvinov', 'homeopathy-consultation'), '/es/services/psychohomeopathy');
+  // Spanish now uses the same unified Alchemy of the Soul landing.
+  assert.equal(getPublicServiceDetailHref('es', 'andy-litvinov', 'homeopathy-consultation'), '/es/services/alchemy-of-soul');
 });
 
 test('all unrelated and non-owner services retain their real moderated service URLs', () => {
@@ -42,5 +42,5 @@ test('legacy deep links redirect permanently only after published-service author
   const alchemy = read('components/alchemy-soul-landing.tsx');
   assert.match(alchemy, /id="reviews" data-alchemy-panel="reviews"/);
   const spanish = read('app/[locale]/services/psychohomeopathy/page.tsx');
-  assert.match(spanish, /return <PersonalServiceLanding locale=/);
+  assert.match(spanish, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
 });

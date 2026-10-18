@@ -6,6 +6,10 @@ import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { ServicesSolutions } from "@/components/services-solutions";
+import { PersonalTestimonials } from "@/components/personal-testimonials";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
+import solutionStyles from "@/components/services-solutions.module.css";
 import { spanishMetadata } from "@/lib/spanish-metadata";
 import { ServicesSmartDiscovery } from "@/components/services-smart-discovery";
 import { getAppConfig } from "@/lib/app/config";
@@ -36,7 +40,7 @@ export default async function SpanishServicesPage() {
    "wu-xing":"energy_spiritual", alchemy:"homeopathy_holistic", hypnotherapy:"personal_development", remote:"energy_spiritual",
  };
  const editorial = [
-   ...approaches.map(({id,image,title,situation,detail,href})=>({
+   ...approaches.filter(({id}) => id !== "psychohomeopathy").map(({id,image,title,situation,detail,href})=>({
      id,image,title,promise:situation,details:detail,href,areaKey:areas[id],
      label:id==="situation"?"Revisión gratuita":id==="wu-xing"?"Perfil gratuito":id==="remote"?"Apoyo a distancia":"Sesión personal",
      price:id==="situation"||id==="wu-xing"?"Gratis":id==="remote"?undefined:id==="business"||id==="constellations"||id==="imagery"||id==="psychohomeopathy"||id==="alchemy"||id==="hypnotherapy"
@@ -59,31 +63,60 @@ export default async function SpanishServicesPage() {
       && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)} />
   <ServicesConversionHero locale="es" />
   <ServicesTestsIntro locale="es" />
-  <section className={offerStyles.section} id="solutions" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>
-    <header className={offerStyles.heading}>
-      <p>SERVICIOS · HOLISTIC HOUSE</p>
-      <h2 id="services-es-offers-title">Cómo puedo ayudarte</h2>
-    </header>
-    <div className={offerStyles.grid}>
-      {approaches.map(({id,image,title,situation,detail,action,href}) => (
-        <article className={offerStyles.card} key={id} id={id}>
-          <Link className={offerStyles.photo} href={href} tabIndex={-1} aria-hidden="true">
-            <Image unoptimized src={image} alt="" fill sizes="(max-width: 760px) 45vw, 230px" loading="lazy" />
-          </Link>
-          <div className={offerStyles.content}>
-            <h3><Link href={href}>{title}</Link></h3>
-            <p className={offerStyles.situation}>{situation}</p>
-            <details className={offerStyles.more}>
-              <summary>Más información</summary>
-              <p>{detail}</p>
-            </details>
-            <Link className={offerStyles.action} href={href}>{action}<span aria-hidden="true">→</span></Link>
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
+  <ServicesSolutions locale="es" />
   <ServicesAboutEntry locale="es" />
+
+  <details className={solutionStyles.extra} id="method-videos" open>
+    <summary className={solutionStyles.extraSummary}>
+      <span>
+        <strong>Vídeos: cómo trabajo</strong>
+        <small>Vídeos originales disponibles · audio en inglés</small>
+      </span>
+      <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
+    </summary>
+    <div className={solutionStyles.extraVideos}>
+      <ServiceVideoShowcase locale="es" topic="overview" id="es-service-video-overview" />
+      <ServiceVideoShowcase locale="es" topic="hypnotherapy" id="es-service-video-hypnotherapy" />
+      <ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations" />
+    </div>
+  </details>
+
+  <PersonalTestimonials locale="es" variant="services" />
+
+  <details className={solutionStyles.extra} id="available-services">
+    <summary className={solutionStyles.extraSummary}>
+      <span>
+        <strong>Otros enfoques y formatos</strong>
+        <small>Más opciones para explorar junto a los cinco servicios principales</small>
+      </span>
+      <span className={solutionStyles.expandSymbol} aria-hidden="true">+</span>
+    </summary>
+    <section className={offerStyles.section} id="additional-services" aria-labelledby="services-es-offers-title" data-es-services-photo-cards>
+      <header className={offerStyles.heading}>
+        <p>SERVICIOS · HOLISTIC HOUSE</p>
+        <h2 id="services-es-offers-title">Otros servicios personales</h2>
+      </header>
+      <div className={offerStyles.grid}>
+        {approaches.filter(({id}) => ["imagery", "constellations", "remote"].includes(id)).map(({id,image,title,situation,detail,action,href}) => (
+          <article className={offerStyles.card} key={id} id={id}>
+            <Link className={offerStyles.photo} href={href} tabIndex={-1} aria-hidden="true">
+              <Image unoptimized src={image} alt="" fill sizes="(max-width: 760px) 45vw, 230px" loading="lazy" />
+            </Link>
+            <div className={offerStyles.content}>
+              <h3><Link href={href}>{title}</Link></h3>
+              <p className={offerStyles.situation}>{situation}</p>
+              <details className={offerStyles.more}>
+                <summary>Más información</summary>
+                <p>{detail}</p>
+              </details>
+              <Link className={offerStyles.action} href={href}>{action}<span aria-hidden="true">→</span></Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  </details>
+
   <PublicConsultationCta locale="es" id="consultation" serviceBooking />
   <p className="remedy-disclaimer services-disclaimer">La psicohomeopatía y los enfoques de exploración personal no sustituyen el diagnóstico ni el tratamiento médico. Las constelaciones no garantizan resultados ni sustituyen el asesoramiento financiero o jurídico.</p>
  </main>;

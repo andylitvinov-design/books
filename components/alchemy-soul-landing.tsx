@@ -5,6 +5,7 @@ import {
   Compass, Heart, Layers3, PlayCircle, ShieldCheck, Sparkles, Waves,
 } from "lucide-react";
 import type { Locale } from "@/data/remedies";
+type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -173,6 +174,83 @@ const copy = {
     requestIntro: "Choose a format and topic, then select WhatsApp or Telegram to request your booking.",
     safety: "This is an author's reflective and symbolic consultation, not a replacement for medical or psychiatric care. Homeopathy has no reliable evidence for treating health conditions. Do not change prescribed medication without medical guidance. Outcomes are not guaranteed.",
   },
+  es: {
+    back: "Todos los servicios",
+    kicker: "TRABAJO PERSONAL · ANDREY LITVINOV",
+    title: "Alquimia del Alma",
+    titleDetail: "Psicohomeopatía",
+    headline: "Explora qué mantiene una dificultad — y encuentra una posible forma de avanzar.",
+    intro: "Primero observamos la situación mediante una constelación y después exploramos posibles patrones internos con hipnoterapia de imágenes guiadas. Elegimos los recursos complementarios de forma individual.",
+    chips: ["Constelaciones", "Hipnoterapia", "Recursos personales"],
+    cta: "Solicitar una sesión",
+    freeStart: "Empezar con una revisión escrita gratuita",
+    practitioner: "Con Andrey Litvinov",
+    place: "En línea · Toronto con cita previa",
+
+    painKicker: "QUÉ PODEMOS EXPLORAR",
+    painTitle: "Cuando vuelve el mismo patrón",
+    painIntro: "No necesitas explicarlo perfectamente. Podemos comenzar con lo que te preocupa o se repite.",
+    pains: [
+      { title: "Relaciones", text: "Distancia, conflictos, patrones repetidos y límites personales." },
+      { title: "Estrés y bloqueos", text: "Tensión, restricciones internas o miedo al juicio de los demás." },
+      { title: "Trabajo y dinero", text: "Estancamiento, decisiones difíciles o dificultad para actuar." },
+      { title: "Metas y sentido", text: "Pérdida de dirección, claridad o apoyo interior." },
+    ],
+    painEnd: "Partimos de tu pregunta, no de un método único para todo el mundo.",
+
+    methodKicker: "MI ENFOQUE INTEGRADO",
+    methodTitle: "Cuatro etapas de un mismo proceso",
+    methodIntro: "Comprender la situación, explorar el patrón interno y elegir el siguiente paso.",
+    steps: [
+      { title: "Constelación — mapa de la situación", text: "Exploramos tu objetivo, tus relaciones y tus roles mediante un ejercicio sistémico simbólico." },
+      { title: "Hipnoterapia — explorar en profundidad", text: "Las imágenes guiadas y el diálogo interior ayudan a observar reacciones emocionales y partes internas." },
+      { title: "Psicohomeopatía — apoyo opcional", text: "Si lo deseas, podemos considerar un remedio homeopático como práctica complementaria, no como tratamiento médico probado." },
+      { title: "Integración — acciones concretas", text: "Cuando resulte útil, recurrimos a Wu Xing, arquetipos u otras prácticas y observamos los cambios en la vida cotidiana." },
+    ],
+    methodNote: "Cada método es opcional y se acuerda contigo. Las imágenes no demuestran hechos ocultos ni recuperan recuerdos verificables.",
+
+    videoKicker: "CONOCE MI ENFOQUE",
+    videoTitle: "Descubre cómo trabajo",
+    videoIntro: "Un breve vídeo ya publicado, en inglés, sobre cómo elijo el método para cada situación.",
+    videoNote: "El vídeo presenta el enfoque general, no todas las etapas del servicio Alquimia del Alma. El audio original está en inglés.",
+
+    reviewsKicker: "EXPERIENCIAS DE CLIENTES",
+    reviewsTitle: "Escucha sus experiencias",
+    reviewsIntro: "Testimonios en vídeo ya publicados, en inglés, sobre distintos tipos de sesiones personales.",
+    swipe: "Desliza para ver más experiencias →",
+    reviewsNote: "Las experiencias personales no garantizan resultados similares.",
+
+    optionsKicker: "FORMATOS PERSONALES",
+    optionsTitle: "Elige por dónde empezar",
+    shortName: "Revisión exprés",
+    shortTime: "30 minutos",
+    shortPrice: "€50",
+    shortText: "Aclarar la cuestión principal y un primer paso.",
+    fullName: "Sesión personal",
+    fullTime: "60 minutos",
+    fullPrice: "€100",
+    fullText: "Explorar tu situación y tus patrones internos en más profundidad.",
+    programTitle: "Acompañamiento personal de cuatro semanas",
+    programDescription: "2 sesiones personales y 4 semanas de seguimiento y reflexión.",
+    programPrice: "Precio acordado individualmente · sin suscripción",
+    optionsAction: "Solicitar una sesión",
+    freeText: "¿Prefieres comenzar gratis? ",
+    freeLink: "Solicitar una revisión escrita de tu situación",
+
+    faqKicker: "ES IMPORTANTE SABERLO",
+    faqTitle: "Respuestas a preguntas frecuentes",
+    faq: [
+      { q: "¿Es un diagnóstico médico?", a: "No. Las constelaciones y las imágenes guiadas permiten reflexionar sobre experiencias y situaciones, pero no establecen diagnósticos médicos." },
+      { q: "¿Es necesaria la homeopatía?", a: "No, es opcional. La homeopatía carece de pruebas científicas fiables de eficacia para tratar enfermedades físicas o problemas de salud mental." },
+      { q: "¿Podemos trabajar en línea?", a: "Sí. La modalidad principal es en línea. La posibilidad de una sesión presencial en Toronto se consulta individualmente." },
+      { q: "¿Qué ocurre al enviar una solicitud?", a: "Se abrirá WhatsApp con un borrador que podrás revisar y decidir si envías. Después acordamos la disponibilidad. No hay reserva ni cobro automáticos." },
+    ],
+
+    requestKicker: "TU PRIMER PASO",
+    requestTitle: "Empecemos por tu pregunta",
+    requestIntro: "Elige el formato y el tema; después selecciona WhatsApp o Telegram para solicitar tu sesión.",
+    safety: "Esta es una consulta reflexiva y simbólica de autor, no un sustituto de la atención médica o psiquiátrica. La homeopatía no tiene pruebas fiables de eficacia para tratar problemas de salud. No cambies tratamientos prescritos sin orientación médica. No se garantizan resultados.",
+  },
 } as const;
 
 // These original public testimonial video IDs and poster files were provenance-checked
@@ -188,27 +266,32 @@ const testimonials = {
     { id: "aUJde6A-9p0", title: "Business consulting — client testimonial", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
     { id: "4NrryHcEF1A", title: "Psychic Alchemy — client testimonial", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
   ],
+  es: [
+    { id: "Dk0LBmOivQo", title: "Constelación empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
+    { id: "aUJde6A-9p0", title: "Consultoría empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
+    { id: "4NrryHcEF1A", title: "Alquimia psíquica — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
+  ],
 } as const;
 
-export function AlchemySoulLanding({ locale }: { locale: Locale }) {
+export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   const t = copy[locale];
   const video = getServiceVideoMedia("alchemy", locale);
   const reviews = testimonials[locale];
   const freeReview = "/" + locale + "/services/free-situation-review";
   const heroWhatsApp = whatsappEnquiryUrl({
     locale,
-    service: locale === "ru" ? "Алхимия души / Психогомеопатия" : "Alchemy of the Soul / Psycho-homeopathy",
+    service: locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy",
     request: locale === "ru"
       ? "Хочу заказать индивидуальный сеанс. Подскажите доступные дату и время для подтверждения записи."
-      : "I would like to book a personal session. Please send your available dates and times to confirm.",
-    option: locale === "ru" ? "Личная сессия · 60 минут · €100" : "Personal session · 60 min · €100",
+      : locale === "es" ? "Quisiera solicitar una sesión personal. Indícame las fechas y los horarios disponibles para confirmar." : "I would like to book a personal session. Please send your available dates and times to confirm.",
+    option: locale === "ru" ? "Личная сессия · 60 минут · €100" : locale === "es" ? "Sesión personal · 60 minutos · €100" : "Personal session · 60 min · €100",
     pagePath: "/" + locale + "/services/alchemy-of-soul",
   });
 
   return (
     <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
       <div className={styles.shell}>
-        <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : "Breadcrumb"}>
+        <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : locale === "es" ? "Ruta de navegación" : "Breadcrumb"}>
           <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
           <span aria-hidden="true">/</span><span>{t.title}</span>
         </nav>
@@ -291,13 +374,13 @@ export function AlchemySoulLanding({ locale }: { locale: Locale }) {
             {reviews.map((review) => (
               <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
                 <div className={styles.reviewVideo}>
-                  <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale }}
+                  <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
                     locale={locale} compact minimal fallbackPoster={review.poster} />
                 </div>
                 <div className={styles.reviewInfo}>
                   <h3>{review.title}</h3>
                   <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank"
-                    rel="noopener noreferrer">{locale === "ru" ? "Смотреть отзыв" : "Watch testimonial"}<ArrowUpRight size={15} aria-hidden="true" /></a>
+                    rel="noopener noreferrer">{locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio (en inglés)" : "Watch testimonial"}<ArrowUpRight size={15} aria-hidden="true" /></a>
                 </div>
               </article>
             ))}

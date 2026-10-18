@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Quote } from "lucide-react";
 
 import { SiteVideoPlayer } from "@/components/site-video-player";
-import type { Locale } from "@/data/remedies";
+import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./personal-testimonials.module.css";
 
 // Existing public first-party About-page testimonials and previously published,
@@ -35,6 +35,14 @@ const testimonialVideos = {
     { id: "itjo2_z2NGk", title: "Experience of working together", language: "en" },
     { id: "4NrryHcEF1A", title: "Psychic Alchemy — testimonial", language: "en" },
     { id: "hYwRNMxIMjc", title: "Family constellations — testimonial", language: "en" },
+  ],
+  es: [
+    { id: "Dk0LBmOivQo", title: "Constelaciones empresariales — testimonio (en inglés)", language: "en" },
+    { id: "aUJde6A-9p0", title: "Consultoría de negocios — testimonio (en inglés)", language: "en" },
+    { id: "fE6sD1zr1Js", title: "Claire — testimonio (en inglés)", language: "en" },
+    { id: "itjo2_z2NGk", title: "Experiencia de trabajo personal (en inglés)", language: "en" },
+    { id: "4NrryHcEF1A", title: "Alquimia psíquica — testimonio (en inglés)", language: "en" },
+    { id: "hYwRNMxIMjc", title: "Constelaciones familiares — testimonio (en inglés)", language: "en" },
   ],
 } as const;
 
@@ -69,13 +77,28 @@ const copy = {
     moreLink: "More videos and archived reviews",
     ctaLink: "Discuss my situation",
   },
+  es: {
+    eyebrow: "Experiencias reales",
+    title: "Lo que comparten quienes han trabajado conmigo",
+    lead: "Experiencias de sesiones individuales, constelaciones y formación. Incluye vídeos publicados anteriormente y un testimonio escrito compartido con permiso.",
+    serviceTitle: "Experiencias del trabajo personal",
+    serviceLead: "Testimonios auténticos sobre diversas formas de trabajo, desde las imágenes guiadas hasta las constelaciones.",
+    storyEyebrow: "Después de una sesión con imágenes guiadas",
+    storyQuote: "Durante nuestra sesión surgió el deseo de tener mi propio estudio de psicología y juegos transformacionales. ... Hoy mi esposo me compró precisamente ese estudio. ... No entiendo cómo funciona, pero gracias.",
+    storySource: "Mensaje privado de una clienta · compartido con permiso · abreviado y traducido del ruso",
+    videoHeading: "Testimonios en vídeo",
+    videoLanguage: "Audio original en inglés",
+    disclaimer: "Estas son experiencias individuales, no resultados habituales ni garantizados. No es posible atribuir acontecimientos externos a una sesión. Los testimonios no demuestran eficacia médica.",
+    moreLink: "Más vídeos y testimonios del archivo",
+    ctaLink: "Consultar mi situación",
+  },
 } as const;
 
 export function PersonalTestimonials({
   locale,
   variant = "home",
 }: {
-  locale: Locale;
+  locale: PublicLocale;
   variant?: "home" | "services" | "all";
 }) {
   const current = copy[locale];
@@ -109,21 +132,21 @@ export function PersonalTestimonials({
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
         <h2 id={titleId}>{isHome || variant === "all" ? current.title : current.serviceTitle}</h2>
-        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
+        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
       </header>
 
       {variant === "all" ? (
         <details className={styles.storyDisclosure}>
-          <summary>{locale === "ru" ? "Прочитать личную историю клиента" : "Read a personal client story"}</summary>
+          <summary>{locale === "ru" ? "Прочитать личную историю клиента" : locale === "es" ? "Leer una historia personal" : "Read a personal client story"}</summary>
           {story}
         </details>
       ) : story}
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
+        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
-      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : "Swipe or scroll to see all video reviews →"}</p>}
+      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
       <div className={styles.videoGrid}
         role={variant === "all" ? "region" : undefined}
         aria-label={variant === "all" ? (locale === "ru" ? "Галерея из 12 видеоотзывов" : "Gallery of 12 video testimonials") : undefined}

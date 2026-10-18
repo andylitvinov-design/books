@@ -451,7 +451,7 @@ export default async function FreeSituationReviewPage({ params }: Props) {
           <h2 id="review-alchemy-title">{deeper.title}</h2>
           <p>{deeper.description}</p>
         </div>
-        <Link className={styles.alchemyLink} href={locale === "es" ? "/en/services/alchemy-of-soul" : "/" + locale + "/services/alchemy-of-soul"}>
+        <Link className={styles.alchemyLink} href={"/" + locale + "/services/alchemy-of-soul"}>
           {deeper.action} <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </section>

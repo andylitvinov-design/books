@@ -60,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const knownServiceRedirects = new Set([
     '/en/services/psychohomeopathy',
     '/ru/services/psychohomeopathy',
+    '/es/services/psychohomeopathy',
     '/en/services/andy-litvinov/homeopathy-consultation',
     '/ru/services/andy-litvinov/homeopathy-consultation',
   ]);
