@@ -12,6 +12,7 @@ import { consultationRemedySuggestions } from '@/lib/consultations/remedy-search
 import { getOwnerReportTextTemplate } from '@/lib/consultations/owner-report-template'
 import { reportFollowUpCopy } from '@/lib/documents/recommendation'
 import { ReportLanguagePicker } from './report-language-picker'
+import { ConsultationRecommendedTests } from './consultation-recommended-tests'
 import { readUiLocale } from '@/lib/ui-locale'
 
 const copy = {
@@ -176,7 +177,7 @@ function detectedType(items) {
   return 'homeopathy'
 }
 
-export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId }) {
+export function ConsultationForm({ action, remedies, consultation, payment, requestId, clients = [], selectedClientId, recommendedTestOptions = { en: [], ru: [] } }) {
   const selectedClientLocale = clients.find((client) => client.id === selectedClientId)?.preferredLocale
   const initialReportLocale = consultation?.languagePreference === 'ru' || consultation?.languagePreference === 'en'
     ? consultation.languagePreference
@@ -195,6 +196,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
   const [analysis, setAnalysis] = useState(() => consultation?.analysis ?? getOwnerReportTextTemplate(initialReportLocale).analysis)
   const [templateReviewed, setTemplateReviewed] = useState(Boolean(consultation))
   const [additionalNotes, setAdditionalNotes] = useState(() => consultation?.additionalNotes ?? getOwnerReportTextTemplate(initialReportLocale).additionalNotes)
+  const [recommendedTestKeys, setRecommendedTestKeys] = useState(() => consultation?.recommendedTestKeys ?? [])
   const [uiLocale, setUiLocale] = useState('en')
 
   useEffect(() => {
@@ -328,6 +330,7 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
     <input type="hidden" name="paymentRevision" value={payment?.updatedAt ?? ''} />
     <input type="hidden" name="requestId" value={requestId ?? ''} />
     <input type="hidden" name="itemsJson" value={JSON.stringify(serializeConsultationRows(items))} />
+    <input type="hidden" name="recommendedTestsJson" value={JSON.stringify(recommendedTestKeys)} />
     <input type="hidden" name="followUp" value={consultation?.followUp ?? ''} />
     <input type="hidden" name="recommendationNumber" value={consultation?.recommendationNumber ?? ''} />
 
@@ -480,6 +483,9 @@ export function ConsultationForm({ action, remedies, consultation, payment, requ
           <textarea name="additionalNotes" rows={4} maxLength={5000} value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} placeholder={labels.clientNotesPlaceholder} />
         </label>
       </div>
+      <ConsultationRecommendedTests locale={reportLocale}
+        options={recommendedTestOptions[reportLocale] || []}
+        selectedKeys={recommendedTestKeys} onChange={setRecommendedTestKeys} />
       {!consultation && <label className="consultation-template-review">
         <input
           type="checkbox"
