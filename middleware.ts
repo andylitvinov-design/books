@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
   const oldBook = request.nextUrl.pathname.match(/^\/books\/([a-z0-9-]+)\/?$/)
   if (oldBook && oldBook[1] !== 'maya-tradition' && ['GET', 'HEAD'].includes(request.method)) {
     const requested = request.nextUrl.searchParams.get('lang')
-    const locale = requested === 'en' || requested === 'es' ? requested : 'ru'
+    const locale = requested === 'ru' || requested === 'es' ? requested : 'en'
     const destination = new URL(`/${locale}/books/${oldBook[1]}`, request.url)
     return NextResponse.redirect(destination, 301)
   }

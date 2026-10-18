@@ -136,7 +136,8 @@ for (const path of spotlight) {
   } catch (e) { logError("Spotlight request error " + path + ": " + e.message); }
 }
 for (const [old, target] of [
-  ["/books/alchemy-homeopathy-foundations", "/ru/books/alchemy-homeopathy-foundations"],
+  ["/books/alchemy-homeopathy-foundations", "/en/books/alchemy-homeopathy-foundations"],
+  ["/books/alchemy-homeopathy-foundations?lang=ru", "/ru/books/alchemy-homeopathy-foundations"],
   ["/books/alchemy-homeopathy-foundations?lang=en", "/en/books/alchemy-homeopathy-foundations"],
   ["/en/tests", "/en/client/tests"], ["/ru/cabinet", "/ru/client"],
   ["/es/review", "/es/services/free-situation-review"],

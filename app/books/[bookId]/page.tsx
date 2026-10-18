@@ -8,6 +8,6 @@ export default async function LegacyBookRedirect({ params, searchParams }: PageP
   const { bookId } = await params;
   if (!getBookById(bookId)) notFound();
   const { lang } = await searchParams;
-  const locale = lang === "en" || lang === "es" ? lang : "ru";
+  const locale = lang === "ru" || lang === "es" ? lang : "en";
   permanentRedirect(`/${locale}/books/${bookId}`);
 }
