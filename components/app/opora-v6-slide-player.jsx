@@ -166,6 +166,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
       return
     }
     setAnswers(a=>({...a,[role]:value}))
+    if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
     if(value==='uncomfortable')setSafety(true)
   }
@@ -298,6 +299,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 </div>
                 <div className={styles.ends}><span>{t.ratingLow}</span><span>{t.ratingHigh}</span></div>
                 <small>{t.noRating}</small>
+                {(role==='baseline'?beforeNow:afterNow)!==null&&
+                  <small role="status">{lang==='ru'
+                    ?'Отметка записана как ваше наблюдение. Она не определяет успешность упражнения.'
+                    :'This is your own momentary observation, not a performance score.'}</small>}
               </div>:null}
             {role==='save'&&<section className={styles.result} data-opora-save-preview>
               <strong>{t.review}</strong>
@@ -330,7 +335,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <button type="button" className={styles.changeChoice} disabled={locked}
                 onClick={()=>setAnswers(a=>{
                   const next={...a};delete next[choiceField];delete next[role];return next
-                })}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
+                })}{...(role==='act'?{onClick:()=>{setAnswers(a=>{const next={...a};delete next[choiceField];delete next[role];return next});setEase(null)}}:{})}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
               <small>{role==='transfer'
                 ?(lang==='ru'?'Теперь отметьте: вы только представили план или хотите его сохранить?':
                   'Now choose whether you imagined this plan or want to keep it.')
@@ -346,7 +351,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <div className={styles.ends}><small>{t.easeLow}</small><small>{t.easeHigh}</small></div>
             </div>}
             {extraFeedback&&<p className={styles.feedback} role="status">
-              <CheckCircle2 size={17} aria-hidden="true"/><span>{extraFeedback}</span></p>}
+              {['not_yet','not_attempted','uncomfortable','disagree','difficult'].includes(chosen)
+                ?<Lightbulb size={17} aria-hidden="true"/>
+                :<CheckCircle2 size={17} aria-hidden="true"/>}<span>{extraFeedback}</span></p>}
             {HINT_KINDS.has(role)&&<div className={styles.hintBlock}>
               <button type="button" className={styles.hintToggle} disabled={locked} onClick={revealHint}>
                 <Lightbulb size={17}/>{showHint?t.hideHint:t.aid}<ChevronDown size={16}/>
