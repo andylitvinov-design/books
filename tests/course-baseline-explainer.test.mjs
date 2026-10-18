@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { mount, nodes, textOf, account, courseA, courseView } from './helpers/course-ui-harness.mjs'
 import * as programs from '../lib/inner-growth/course-programs.js'
 
@@ -76,4 +77,28 @@ test('missing baseline offers a check-in without claiming the course has measure
   } finally {
     tests[0] = original
   }
+})
+
+test('one-screen starting check-in keeps the real choices and CTA visible without tall step cards', async () => {
+  const h = render('en')
+  await h.settle()
+  assert.ok(find(h.tree, 'data-course-baseline-one-screen'))
+  const hero = find(h.tree, 'data-course-baseline-explanation')
+  assert.ok(hero)
+  assert.doesNotMatch(JSON.stringify(hero), /baselineStep|baselineNumber/)
+  const picker = find(h.tree, 'data-course-antistress-pretests')
+  assert.ok(picker)
+  const rows = nodes(picker).filter(node => node.props?.['data-checked'] !== undefined)
+  assert.equal(rows.length, 3, 'weekly, anxiety and resource check-ins remain')
+  assert.ok(find(h.tree, 'data-antistress-start-first-test'), 'primary CTA remains')
+  h.unmount()
+
+  const css = readFileSync(new URL('../components/app/course-r3-steps.module.css', import.meta.url), 'utf8')
+  const parent = readFileSync(new URL('../components/app/my-course.jsx', import.meta.url), 'utf8')
+  const parentCss = readFileSync(new URL('../components/app/my-course.module.css', import.meta.url), 'utf8')
+  assert.match(css, /\\.compactTests \\.shortTestList\\{[^}]*max-height:clamp\\([^}]*overflow-y:auto/)
+  assert.match(css, /\\.compactTests \\.fastTestButton\\{min-height:47px/)
+  assert.match(parent, /data-opora-baseline-compact-nav/)
+  assert.match(parent, /!compactBaselineNav && <footer/)
+  assert.match(parentCss, /\\.compactBaselineNav\\{display:flex/)
 })
