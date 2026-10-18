@@ -138,3 +138,14 @@
   .closing .closingPrimary,.closing .closingSecondary{width:100%;font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.primary{transition:none}}
+
+/* Keep the consultation choice in view alongside the educational content
+   on tall desktop screens; short laptops/mobile retain natural scroll. */
+@media(min-width:901px) and (min-height:820px){
+ .order{position:sticky;top:82px;align-self:start}
+ .orderCard{position:static}
+}
+@media(max-width:767px){
+ .order{position:static}
+ .orderCard{position:static}
+}
