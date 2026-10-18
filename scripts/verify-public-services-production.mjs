@@ -63,6 +63,17 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
+      const quick = page.locator("[data-services-quick-start]");
+      await visible(quick);
+      const freeDirect = quick.locator('[data-services-quick-action="free-written-review"]');
+      const paidDirect = quick.locator('[data-services-quick-action="personal-session"]');
+      assert.equal(await freeDirect.getAttribute("href"), "/" + locale + "/services/free-situation-review");
+      assert.equal(await paidDirect.getAttribute("href"), "/" + locale + "/services/alchemy-of-soul");
+      for (const action of [freeDirect, paidDirect]) {
+        const bounds = await action.boundingBox();
+        assert.ok(bounds && bounds.width >= 105 && bounds.height >= 44,
+          "Services first-screen actions must be usable at " + locale + "/" + width);
+      }
       const banner = page.locator('[data-services-tests-intro]#free-insights');
       assert.equal(await banner.count(), 1, "one free tests/course banner");
       await visible(banner);
@@ -179,6 +190,10 @@ try {
   {
     const page = await createPage(390);
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
+    const quick = page.locator("[data-services-quick-start]");
+    await visible(quick);
+    assert.equal(await quick.locator('[data-services-quick-action="free-written-review"]').getAttribute("href"), "/es/services/free-situation-review");
+    assert.equal(await quick.locator('[data-services-quick-action="personal-session"]').getAttribute("href"), "/es/services/alchemy-of-soul");
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
     await visible(freeOnly);
     await expect(freeOnly).not.toBeChecked();
@@ -186,6 +201,53 @@ try {
     await page.locator('#find-your-service form[role="search"] button[type="submit"]').click();
     await expect(page.locator("#hh-service-discovery-results-title")).toHaveText("Servicios gratuitos");
     await page.close();
+  }
+
+  // Real hydrated, non-submitting conversion journey for ALL personal service
+  // landing variants, including Spanish. Verify navigation, pricing, live
+  // thumbnails and message drafts; NEVER follow or send any messenger URL.
+  for (const locale of ["en", "ru", "es"]) {
+    for (const service of ["imagery-therapy", "systemic-constellations", "business-consulting"]) {
+      const width = 390;
+      const page = await createPage(width);
+      const label = locale + "/" + service + "/" + width;
+      const response = await page.goto(origin + "/" + locale + "/services/" + service, { waitUntil: "networkidle", timeout: 60000 });
+      assert.equal(response?.status(), 200, "Personal landing should render: " + label);
+      const main = page.locator('main[data-personal-service="' + service + '"]');
+      await visible(main.locator('h1#personal-service-title'));
+      assert.equal(await main.locator("h1").count(), 1, "One personal landing title: " + label);
+      const photo = main.locator('section[aria-labelledby="personal-service-title"] img').first();
+      assert.ok(await photo.evaluate(image => image.complete && image.naturalWidth > 100), "Approved hero photo loads: " + label);
+      assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
+      const facts = await main.locator('[class*="heroFacts"]').innerText();
+      assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
+      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      await visible(free);
+      const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
+      await visible(primary);
+      const primaryBounds = await primary.boundingBox();
+      assert.ok(primaryBounds && primaryBounds.height >= 44, "Large primary CTA: " + label);
+      await assertViewport(page, "personal/" + label);
+      await assertNoDevIssueOverlay(page, label);
+      await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-hero-390.png", fullPage: false, animations: "disabled" });
+      await primary.click();
+      await page.waitForURL(/#request-session$/);
+      const target = main.locator('aside#request-session [data-consultation-capture="service"]');
+      await visible(target);
+      assert.ok(await target.locator('[data-choice-layout="service"]').count() === 1,
+        "Paid format selector must be present after anchor navigation: " + label);
+      const choices = target.locator('[data-choice-layout="service"] button');
+      assert.equal(await choices.count(), 3, "Two paid choices and the separate free alternative: " + label);
+      await choices.nth(1).click();
+      await expect(choices.nth(1)).toHaveAttribute("aria-pressed", "true");
+      const chooser = await openContactChannelChooser(target, expect);
+      const prepared = await assertPreparedContactChannels(chooser, expect);
+      assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
+        "Express rate preserved in approved draft: " + label);
+      await assertViewport(page, "personal-request/" + label);
+      await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
+      await page.close();
+    }
   }
 
   const coreServices = [
