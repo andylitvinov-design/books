@@ -53,7 +53,7 @@ test('all EN/RU/ES service selectors show only fixed-price personal payment choi
 
 test('payment page transparently requires Goods & Services and manual verification', () => {
   const page = file('app/[locale]/payments/page.tsx')
-  for (const phrase of ['Goods & Services', 'Товары и услуги', 'Productos y servicios', 'Andrii Litvinov'])
+  for (const phrase of ['Goods & Services', 'Товары и услуги', 'Productos y servicios', 'PERSONAL_PAYPAL_PAYEE'])
     assert.match(page, new RegExp(phrase))
   assert.match(page, /data-paypal-manual-confirmation/)
   assert.match(page, /data-paypal-personal-link/)
