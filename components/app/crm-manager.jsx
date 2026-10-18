@@ -126,7 +126,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
               <option value="lead">{c.leads}</option><option value="client">{c.clients}</option><option value="archived">{c.archived}</option>
             </select>
           </label>
-          {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>
+          {contact.suppressed&&<small className={styles.tag}>{c.suppressed}</small>}
           {!contact.suppressed&&<button className={styles.suppress} type="button" disabled={busy} onClick={()=>{ if (window.confirm(c.suppressConfirm)) save('suppress_contact',{id:contact.id}) }}>{c.suppress}</button>}
         </li>):<li className={styles.empty}>{search?(language==='ru'?'Ничего не найдено.':'No matching contacts.'):c.noContacts}</li>}
       </ul>
