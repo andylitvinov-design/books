@@ -912,6 +912,16 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   ) : (
                     <p className={styles.reviewDoneMessage}>{applicationLead ? t.initiationSent : t.initiationLetterHint}</p>
                   )}
+                  {applicationLead ? (
+                    <div className={styles.initiationLinks}>
+                      {energyworkPathChoices.map((choice) => (
+                        <Link key={choice.id} className={styles.textLink}
+                          href={"/" + locale + "/academy/" + choice.freePath + (choice.id === "tantra" ? "#apply-free" : "")}>
+                          {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                   <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
                   <h2>{t.source}</h2>
