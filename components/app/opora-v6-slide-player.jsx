@@ -254,7 +254,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     if(locked)return
     // Feedback is a separate voluntary report AFTER the learner chooses a
     // concrete micro-action. No visit or scenario click can forge practice.
-    if(choiceField&&!answers[choiceField])return
+    if(choiceField&&!answers[choiceField]&&!['not_attempted','uncomfortable'].includes(value))return
     setAnswers(a=>({...a,[role]:value}))
     if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
@@ -304,7 +304,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
-    if(choiceField&&!picked)return []
+    // No learner must choose an action just to report not trying or discomfort.
+    // A positive attempt remains impossible until a concrete action is chosen.
+    if(choiceField&&!picked)return role==='notice'||role==='act'
+      ?['not_attempted','uncomfortable'].map(value=>({value,label:t.response[value]}))
+      :[]
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
@@ -331,17 +335,17 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     :null
   const extraFeedback=chosen
     ?role==='scenario'
-      ? (lang==='ru'?'Вы выбрали один из доступных вариантов. ': 'You chose one possible option. ')+
-        (authored?.scenario?.explanation||t.feedback.other)
+      ? (authored?.scenario?.feedback?.[['one','two','three'].indexOf(chosen)]||
+        (lang==='ru'?'Это один возможный выбор. ':'This is one possible choice. ')+(authored?.scenario?.explanation||t.feedback.other))
       :role==='aphorism'&&chosen==='disagree'
         ?t.feedback.disagree+' '+(authored?.neutralQuote||'')
         :role==='aphorism'?t.feedback[chosen]||t.feedback.other
         :CONTEXT_FEEDBACK[lang]?.[role]?.[chosen]||t.feedback[chosen]||t.feedback.other
     :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
-  const guidanceText=role==='scenario'?authored?.scenario?.explanation
+  const guidanceText=role==='scenario'?authored?.scenario?.hint||authored?.scenario?.explanation
     :role==='aphorism'?authored?.neutralQuote
-    :authored?.hint||lesson?.antiStress?.neutralText||t.nudge
+    :authored?.hints?.[role]||authored?.hint||lesson?.antiStress?.neutralText||t.nudge
   const afterSave=receipt&&saved
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
@@ -392,7 +396,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 <div className={styles.ratingGrid} role="group" aria-label={t.rating}>
                   {Array.from({length:11},(_,i)=><button type="button" key={i} disabled={locked}
                     aria-pressed={(role==='baseline'?beforeNow:afterNow)===i}
-                    onClick={()=>role==='baseline'?setBeforeNow(i):setAfterNow(i)}>{i}</button>)}
+                    onClick={()=>role==='baseline'?setBeforeNow(v=>v===i?null:i):setAfterNow(v=>v===i?null:i)}>{i}</button>)}
                 </div>
                 <div className={styles.ends}><span>{t.ratingLow}</span><span>{t.ratingHigh}</span></div>
                 <small>{t.noRating}</small>
@@ -405,7 +409,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <strong>{t.review}</strong>
               <p>{authored?.screens?.[13]?.text}</p>
               <small>{answers.aphorism?(lang==='ru'?'Мнение об установке сохранится как ваш выбор.':'Your opinion of the idea will be recorded.'):t.without}</small>
-              <small>{answers.act||answers.notice||answers.rehearse
+              <small>{[answers.act,answers.notice,answers.rehearse].some(v=>['tried','partly','guided','independent'].includes(v))
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
             {activityOptions.length>0&&<>
