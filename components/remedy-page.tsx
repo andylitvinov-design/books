@@ -30,7 +30,8 @@ function RemedyPrimaryImage({ locale, remedy }: RemedyPageProps) {
     <figure className="remedy-primary-image">
       {/* Source image files are intentionally rendered as-is; the contextual alt does not infer their unseen visual content. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={remedy.primary_image} alt={alt} decoding="async" />
+      <img src={remedy.primary_image} alt={alt} width={800} height={800}
+         fetchPriority="high" loading="eager" decoding="async" />
     </figure>
   );
 }
