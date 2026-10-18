@@ -49,6 +49,12 @@ test("real production browser QA covers personal landing CTA and safe messenger 
   const workflow = read(".github/workflows/hh-public-services-production.yml");
   for (const route of ["imagery-therapy", "systemic-constellations", "business-consulting"])
     assert.ok(script.includes('"' + route + '"'), route);
+  const business = read("components/business-consulting-landing.tsx");
+  assert.match(business, /data-business-consulting/);
+  assert.match(business, /data-business-offer=\{offer.kind\}/);
+  assert.match(script, /main\[data-business-consulting\]/);
+  assert.match(script, /data-business-offer="express"/);
+  assert.match(script, /Business Strategy & Founder Coaching has its own separate/);
   assert.match(script, /for \(const locale of \["en", "ru", "es"\]\)/);
   assert.match(script, /waitForURL\(\/#request-session\$\/\)/);
   assert.match(script, /assertPreparedContactChannels\(chooser, expect\)/);
