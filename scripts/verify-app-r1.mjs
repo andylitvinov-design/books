@@ -36,6 +36,9 @@ await context.exposeBinding('__hhBillingStatusDiagnostic',(_source,event)=>{
   console.log('SYNTHETIC_BILLING_STATUS_DIAGNOSTIC',JSON.stringify(event))
 })
 await context.addInitScript(installBillingStatusLifecycleDiagnostics)
+await context.addInitScript(() => {
+  window.addEventListener('popstate', () => console.log('HH_HOME_PROBE '+JSON.stringify({kind:'early-popstate',path:location.pathname,pendingPath:window.__hhCspHardDestination ? new URL(window.__hhCspHardDestination).pathname : null})), {capture:true,passive:true})
+})
 let page=await context.newPage()
 const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
 page.on('pageerror',capturePageError)
@@ -1215,7 +1218,8 @@ try {
  const otherPage=await other.newPage()
  await otherPage.goto(origin+'/en/app')
  await otherPage.getByRole('button',{name:'Continue with Google'}).click()
- await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible()
+ await expect(otherPage).toHaveURL(/\/en\/app\/portrait$/,{timeout:30000})
+ await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:30000})
  // These old readiness signals are already true before consent is submitted.
  // Prove the 403 gate here; never retry it until it happens to become a 404.
  await expect(otherPage.locator('.hh-nav')).toBeVisible()
