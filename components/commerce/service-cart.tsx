@@ -82,7 +82,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [accountId, setAccountId] = useState<string | null>(null);
   const invalidateAccount = useCallback(() => {
     accountGuard.current.invalidate();
-    setAccountId(null); setAvailable(false); setPaymentProvider(null); setOrderId(null); setOrderStatus("");
+    setAccountId(null); setPaymentProvider(null); setAvailable(false); setOrderId(null); setOrderStatus("");
     setPending(false); setError(""); setSignInRequired(true); setRepeatOrderId(null);
     operationId.current = null; inFlight.current = false;
   }, []);
