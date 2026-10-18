@@ -369,7 +369,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
   const notes = safePreviewNotes(slides, answers, locale);
   const highlights = learnerHighlights(answers, locale);
-  const lessonNumber = slide.phase === "welcome" ? 0 : slide.phase === "complete" ? 5 :
+  const lessonNumber = slide.phase === "welcome" ? 1 : slide.phase === "complete" ? 5 :
     Math.max(1, energyworkLessons.findIndex((item) => item.phase === slide.phase) + 1);
   const initiationItems = energyworkInitiationRequirements.map((item) => ({
     ...item,
@@ -495,7 +495,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-energywork-phase={slide.phase} data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -521,10 +521,10 @@ export function EnergyworkAiLearner({ locale }: Props) {
           </ol>
         </nav>
 
-        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
+        <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} data-energywork-slide-id={slide.id} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
-              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{t.eyebrow}</span>
+              <span className={styles.eyebrow}><Compass size={17} aria-hidden="true" />{slide.kind === "welcome" ? t.eyebrow : energyworkPhases[slide.phase][locale]}</span>
               <h1 id="energywork-slide-title">{slide.title[locale]}</h1>
               <p className={styles.description}>{slide.body[locale]}</p>
               {slide.kind === "welcome" ? (

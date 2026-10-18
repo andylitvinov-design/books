@@ -1,0 +1,132 @@
+/**
+ * Isolated, read-only guest browser acceptance for the entire five-lesson
+ * Reiki Practitioner course. Never signs in, uploads, or shares journal data.
+ * Run with HH_TEST_APP_ORIGIN on local loopback only.
+ */
+import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
+import { chromium, webkit, expect } from "@playwright/test";
+import { energyworkSequence } from "../data/academy/energywork-ai-schema.js";
+
+const origin = process.env.HH_TEST_APP_ORIGIN || "http://127.0.0.1:3100";
+assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]+$/, "Never browse a real account or production site");
+const engineName = process.env.HH_TEST_BROWSER === "webkit" ? "webkit" : "chromium";
+const browser = await (engineName === "webkit" ? webkit : chromium).launch();
+const output = "artifacts/reiki-all-slides";
+await mkdir(output, { recursive: true });
+const expectedSequence = energyworkSequence();
+assert.equal(expectedSequence.length, 45, "One consecutive course must have 45 screens");
+const milestones = new Set([1,2,4,6,8,13,20,26,34,40,44,45]);
+const pageErrors = [];
+
+async function inspect(page, { locale, width, index, id, screenshot = false }) {
+  const root = page.locator("[data-energywork-ai-learner]");
+  const data = await root.evaluate(element => {
+    const slide = element.querySelector("[data-energywork-slide-id]");
+    const scroller = slide.querySelector('[class*="slideMain"]');
+    const primary = element.querySelector("button[data-energywork-next]");
+    const progress = element.querySelector('[role="progressbar"]');
+    const journey = element.querySelector("nav ol");
+    const title = element.querySelector("#energywork-slide-title");
+    const rect = primary ? primary.getBoundingClientRect() : null;
+    const slideRect = slide.getBoundingClientRect();
+    const slideStyle = getComputedStyle(slide);
+    return {
+      id: slide.dataset.energyworkSlideId,
+      kind: slide.dataset.energyworkSlideKind,
+      phase: element.dataset.energyworkPhase,
+      title: title?.textContent?.trim() || "",
+      rootBackground: getComputedStyle(element).backgroundImage,
+      slideBackground: slideStyle.backgroundImage,
+      slideFill: slideStyle.backgroundColor,
+      titleColor: getComputedStyle(title).color,
+      progressCurrent: Number(progress?.getAttribute("aria-valuenow")),
+      progressMax: Number(progress?.getAttribute("aria-valuemax")),
+      stageCount: journey?.children.length || 0,
+      activeStage: journey?.querySelectorAll('[aria-current="step"]').length || 0,
+      slideHeight: slideRect.height,
+      slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
+      rootHorizontalOverflow: element.scrollWidth-element.clientWidth,
+      ctaTop: rect?.top ?? null,
+      ctaBottom: rect?.bottom ?? null,
+      viewportHeight: innerHeight,
+    };
+  });
+  const where = locale + " " + width + "px " + index + "/" + expectedSequence.length + " " + id;
+  assert.equal(data.id, id, where + ": slide ID");
+  assert.ok(data.title.length > 3, where + ": readable title");
+  assert.equal(data.progressCurrent, index, where + ": actual slide progress");
+  assert.equal(data.progressMax, 45, where + ": total");
+  assert.equal(data.stageCount, 5, where + ": five true lesson circles");
+  assert.equal(data.activeStage, 1, where + ": one highlighted current stage");
+  assert.ok(data.rootBackground.includes("reiki-practitioner-sunrise.webp"), where + ": approved sunrise background");
+  assert.ok(data.slideHorizontalOverflow <= 2, where + ": no slide horizontal overflow");
+  assert.ok(data.rootHorizontalOverflow <= 3, where + ": no root horizontal overflow");
+  assert.ok(data.slideHeight >= 80, where + ": visible teaching viewport");
+  if (data.kind !== "welcome") {
+    assert.ok(data.slideBackground.includes("gradient") || data.slideFill.includes("rgba("), where + ": glass panel background");
+  }
+  if (index < 45) {
+    assert.ok(data.ctaTop >= -1 && data.ctaBottom <= data.viewportHeight + 2,
+      where + ": action stays reachable above mobile browser safe area; " + JSON.stringify(data));
+  }
+  if (data.kind === "practice") await expect(page.locator('[data-energywork-slide-kind="practice"]').locator('[class*="practiceTimer"]')).toBeVisible();
+  if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
+  if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
+  if (screenshot) {
+    await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
+  }
+  console.log("REIKI_SCREEN_QA", JSON.stringify({engine:engineName, locale, width, index, id, kind:data.kind, phase:data.phase}));
+}
+
+async function exerciseJourney(page, locale, width) {
+  await page.setViewportSize({width, height:844});
+  await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn", { waitUntil:"domcontentloaded",timeout:90000 });
+  const root = page.locator("[data-energywork-ai-learner]");
+  await expect(root).toBeVisible({timeout:90000});
+  await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
+  await expect(root).toHaveAttribute("data-course-version","2026-10-18.p1");
+  const journey = [];
+  for (let n=0;n<expectedSequence.length;n++) {
+    const index = n+1;
+    const id = expectedSequence[n];
+    const current = page.locator("[data-energywork-slide-id]");
+    await expect(current).toHaveAttribute("data-energywork-slide-id",id,{timeout:30000});
+    const capture = milestones.has(index);
+    await inspect(page,{locale,width,index,id,screenshot:capture});
+    journey.push(id);
+    if (id==="welcome-02") {
+      await page.locator('input[name="welcome-02"][value="beginner"]').check();
+    }
+    if (index===expectedSequence.length) break;
+    const next = page.locator("button[data-energywork-next]");
+    await expect(next).toBeEnabled({timeout:30000});
+    await next.click();
+  }
+  assert.deepEqual(journey,expectedSequence,locale+": all 45 sequential slides reached without picking branches");
+  await expect(page.locator("[data-energywork-slide-kind='finish']")).toBeVisible();
+  await expect(page.locator("[data-initiation-readiness]")).toHaveCount(0);
+  console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
+}
+
+const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
+const page = await context.newPage();
+page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
+try {
+  const image = await page.request.get(origin+"/images/holistic-house/reiki-practitioner-sunrise.webp");
+  assert.equal(image.status(),200,"Approved local background photo must be served");
+  assert.match(image.headers()["content-type"]||"",/image\/webp/);
+  for (const [locale,width] of [["en",390],["ru",320]]) await exerciseJourney(page,locale,width);
+  // Additional layout sizes: these reuse the same guest-only route, no persistence.
+  for (const [locale,width] of [["en",375],["ru",430]]) {
+    await page.setViewportSize({width,height:844});
+    await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn",{waitUntil:"domcontentloaded",timeout:90000});
+    await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
+    await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
+  }
+  assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
+  console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:45,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
+} finally {
+  await browser.close();
+}
