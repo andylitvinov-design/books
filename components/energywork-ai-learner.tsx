@@ -482,6 +482,19 @@ export function EnergyworkAiLearner({ locale }: Props) {
 
 
 
+        <nav className={styles.lessonSteps} aria-label={t.fiveLessons}>
+          {energyworkLessons.map((lesson, number) => (
+            <span key={lesson.phase}
+              className={styles.lessonStep + (lessonNumber > number + 1 ? " " + styles.lessonStepDone : "") +
+                (lessonNumber === number + 1 ? " " + styles.lessonStepActive : "")}
+              aria-current={lessonNumber === number + 1 ? "step" : undefined}
+              title={lesson.title[locale]}>
+              <span>{lessonNumber > number + 1 ? <Check size={13} aria-hidden="true" /> : number + 1}</span>
+              <small>{lesson.title[locale]}</small>
+            </span>
+          ))}
+        </nav>
+
         <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
             <div className={styles.content}>
@@ -500,23 +513,38 @@ export function EnergyworkAiLearner({ locale }: Props) {
               ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
 
-              {slide.kind === "path-choice" ? (
-                <div className={styles.pathGrid} role="group" aria-label={t.pathway}>
-                  {energyworkPathChoices.map((choice) => (
-                    <button key={choice.id} type="button"
-                      className={styles.pathCard + (path === choice.id ? " " + styles.pathSelected : "")}
-                      onClick={() => choosePath(choice.id)} aria-pressed={path === choice.id} data-learning-path={choice.id}>
-                      <span className={styles.pathImage}><Image src={choice.image} alt="" fill sizes="(max-width: 650px) 96px, 140px" /></span>
-                      <span><strong>{choice.title[locale]}</strong><small>{choice.description[locale]}</small></span>
-                      {path === choice.id ? <Check size={22} aria-label={t.picked} /> : <ArrowRight size={20} aria-hidden="true" />}
-                    </button>
-                  ))}
+              {slide.id === "paths-04" ? (
+                <div className={styles.reviewChecklist} data-initiation-readiness>
+                  <h2>{t.reviewTitle} · {readyCount}/10</h2>
+                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
+                  <div className={styles.reviewRows}>
+                    {initiationItems.map((item) => (
+                      <div className={styles.reviewRow} key={item.lesson}>
+                        <strong>{item.title}</strong>
+                        <div>
+                          <button type="button" onClick={() => jumpToSlide(item.reportId)}
+                            className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
+                            {item.reportDone ? <Check size={13} aria-hidden="true" /> : null}
+                            {item.reportDone ? t.reportReady : t.reportMissing}
+                          </button>
+                          <button type="button" onClick={() => jumpToSlide(item.questionId)}
+                            className={item.questionDone ? styles.reviewRecorded : styles.reviewMissing}>
+                            {item.questionDone ? <Check size={13} aria-hidden="true" /> : null}
+                            {item.questionDone ? t.questionReady : t.questionMissing}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                 </div>
               ) : null}
 
               {slide.question ? (
                 <div className={styles.question}>
-                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge : t.optional}</span>
+                  <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
+                     initiationItems.some((item) => item.reportId === slide.id) ? t.meditationReport :
+                     initiationItems.some((item) => item.questionId === slide.id) ? t.lessonQuestion : t.optional}</span>
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
@@ -552,7 +580,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
                   ) : null}
-                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote : t.blank}</p>
+                  <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote :
+                    initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
+                    ? t.optionalForLearning : t.blank}</p>
                 </div>
               ) : null}
 
@@ -572,9 +602,42 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <button type="button" className={styles.copyButton} onClick={copyNotes}><ClipboardCopy size={17} aria-hidden="true" />{copyState === "success" ? t.copied : t.copy}</button>
                   <button type="button" className={styles.copyButton} onClick={() => window.print()}>{t.print}</button>
                   {copyState === "error" ? <p role="alert">{t.failed}</p> : null}
-                  {source ? <Link className={styles.textLink} href={source}>{t.source}<ArrowRight size={16} /></Link> : null}
-                  {teacher ? <Link className={styles.teacherLink} href={teacher}>{t.teacher}<ArrowRight size={16} /></Link> : null}
+                  <h2>{t.reviewTitle} · {readyCount}/10 {t.readyCount}</h2>
+                  <p>{initiationReady ? t.reviewDone : t.reviewNeeded}</p>
+                  {!initiationReady ? (
+                    <div className={styles.reviewRows}>
+                      {initiationItems.map((item) => (
+                        <div className={styles.reviewRow} key={item.lesson}>
+                          <strong>{item.title}</strong>
+                          <div>
+                            {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
+                            {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.questionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}
+                            {item.reportDone && item.questionDone ? <span className={styles.reviewRecorded}><Check size={13} />{t.picked}</span> : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.initiationLinks}>
+                      {energyworkPathChoices.map((choice) => (
+                        <Link key={choice.id} className={styles.teacherLink}
+                          href={"/" + locale + "/academy/" + choice.studyPath}>
+                          {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  <p className={styles.reviewPrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.reviewPrivate}</p>
                   <p className={styles.initiationNote}>{t.noInitiation}</p>
+                  <h2>{t.source}</h2>
+                  <div className={styles.initiationLinks}>
+                    {energyworkPathChoices.map((choice) => (
+                      <Link key={choice.id} className={styles.textLink}
+                        href={"/" + locale + "/academy/" + choice.studyPath}>
+                        {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
+                      </Link>
+                    ))}
+                  </div>
                   <button type="button" className={styles.restart} onClick={restart} disabled={busy}>{t.restart}</button>
                 </div>
               ) : null}
