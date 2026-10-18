@@ -34,6 +34,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   const [notice, setNotice] = useState('')
   const [displayName, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [templateId, setTemplate] = useState('course_update')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -49,7 +50,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
     const controller = new AbortController()
     const session = { accountId, controller }
     sessionRef.current = session
-    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setFilter('all'); setSearch(''); setSource('manual')
+    setData(null); setNotice(''); setBusy(false); setName(''); setEmail(''); setPhone(''); setFilter('all'); setSearch(''); setSource('manual')
     fetch('/api/app/crm', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'X-HH-Account-Id': accountId } })
       .then(async (response) => { if (!response.ok) throw new Error('unavailable'); const result = await response.json(); if (sessionRef.current === session) setData(result) })
       .catch((error) => { if (error.name !== 'AbortError' && sessionRef.current === session) setNotice(c.error) })
@@ -62,10 +63,10 @@ export default function CrmManager({ locale = 'en', accountId }) {
     try {
       const response = await fetch('/api/app/crm', { method: 'POST', credentials: 'same-origin', signal: session.controller.signal, headers: { 'Content-Type': 'application/json', 'X-HH-Account-Id': session.accountId }, body: JSON.stringify({ action, payload }) })
       const result = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY'].includes(result.error) ? result.error : 'unavailable')
+      if (!response.ok) throw new Error(['CONTACT_ALREADY_EXISTS','CONFLICT','CONTACT_CHANNEL_REQUIRED','INVALID_PHONE','EMAIL_ADDRESS_REQUIRED','EMAIL_DELIVERY_UNCONFIRMED','EMAIL_NOT_CONFIGURED','EMAIL_CONSENT_REQUIRED','EMAIL_VERIFICATION_RECENT','EMAIL_CONTACT_BLOCKED','EMAIL_DAILY_LIMIT','INVALID_EMAIL_MESSAGE','INVALID_FOLLOWUP','CRM_FOLLOWUP_LIMIT','CRM_CONTACT_ARCHIVED','INVALID_CRM_ACTIVITY'].includes(result.error) ? result.error : 'unavailable')
       if (sessionRef.current !== session) return
       setNotice(action==='send_email'?(result.accepted?(language==='ru'?'Письмо принято почтовым сервисом.':language==='es'?'Correo aceptado por el proveedor.':'Email accepted by provider.'):(language==='ru'?'Статус отправки неопределён. Повторной отправки не было.':language==='es'?'Estado de entrega desconocido. No se volvió a enviar.':'Delivery status unknown; no duplicate email was sent.')):action==='send_verification'?(language==='ru'?'Письмо для подтверждения отправлено.':language==='es'?'Confirmación enviada.':'Verification email submitted.'):c.saved)
-      if (action === 'create_contact') { setName(''); setEmail(''); setLifecycle('lead'); setSource('manual') }
+      if (action === 'create_contact') { setName(''); setEmail(''); setPhone(''); setLifecycle('lead'); setSource('manual') }
       await load(session).catch(() => {})
       return result
     } catch (error) {
@@ -82,6 +83,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
           CRM_FOLLOWUP_LIMIT:language==='ru'?'У контакта слишком много открытых задач.':'Too many open follow-ups for this contact.',
           CRM_CONTACT_ARCHIVED:language==='ru'?'Контакт в архиве; новые действия недоступны.':'Archived contact cannot receive new tasks.',
           INVALID_CRM_ACTIVITY:language==='ru'?'Действие не поддерживается.':'This activity is not supported.',
+          INVALID_PHONE:language==='ru'?'Укажите телефон в международном формате, например +14165551234.':'Use an international phone number, e.g. +14165551234.',
+          CONTACT_CHANNEL_REQUIRED:language==='ru'?'Нужен email или телефон.':'Enter an email or phone number.',
+          EMAIL_ADDRESS_REQUIRED:language==='ru'?'У контакта нет email для подтверждения.':'This contact has no email address.',
         }
         setNotice(error?.message==='CONTACT_ALREADY_EXISTS'?c.duplicate:error?.message==='CONFLICT'?c.conflict:labels[error?.message]||c.error)
       }
@@ -90,7 +94,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
   }
   if (!accountId) return null
   const contacts=(data?.contacts||[]).filter(contact=>{
-    const text=[contact.displayName,contact.email].join(' ').toLowerCase()
+    const text=[contact.displayName,contact.email,contact.phone].join(' ').toLowerCase()
     return text.includes(search.trim().toLowerCase()) && (filter === 'all' || contact.lifecycle === filter)
   })
   const retry=()=>{
@@ -119,12 +123,15 @@ export default function CrmManager({ locale = 'en', accountId }) {
         <h3>{language==='ru'?'Добавить контакт':'Add new contact'}</h3>
         <form className={styles.form} onSubmit={(event) => {
           event.preventDefault()
-          save('create_contact', { displayName, email, locale: language, lifecycle, source })
+          save('create_contact', { displayName, email, phone, locale: language, lifecycle, source })
         }}>
           <label>{c.name} *<input value={displayName} onChange={(event)=>setName(event.target.value)}
             placeholder={language==='ru'?'Имя клиента':'e.g. Jane Smith'} maxLength={120} autoComplete="off" required /></label>
-          <label>{c.email} *<input type="email" value={email} onChange={(event)=>setEmail(event.target.value)}
-            placeholder="name@example.com" maxLength={254} autoComplete="off" required /></label>
+          <label>{c.email}<input type="email" value={email} onChange={(event)=>setEmail(event.target.value)}
+            placeholder="name@example.com" maxLength={254} autoComplete="off" /></label>
+          <label>{language==='ru'?'Телефон / WhatsApp':language==='es'?'Teléfono / WhatsApp':'Phone / WhatsApp'}
+            <input type="tel" value={phone} onChange={(event)=>setPhone(event.target.value)}
+              placeholder="+14165551234" maxLength={40} autoComplete="tel" /></label>
           <label>{language==='ru'?'Тип контакта':'Contact type'}
             <select value={lifecycle} onChange={(event)=>setLifecycle(event.target.value)}>
               <option value="lead">{language==='ru'?'Интересуется':'Interested'}</option>
@@ -136,7 +143,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
               {Object.entries(SOURCE_CHOICES[language]).map(([id,label])=><option key={id} value={id}>{label}</option>)}
             </select>
           </label>
-          <button disabled={busy} type="submit">{busy?c.loading:c.add}</button>
+          <button disabled={busy||(!email.trim()&&!phone.trim())} type="submit">{busy?c.loading:c.add}</button>
         </form>
         <p className={styles.fine}>{language==='ru'?'Добавляйте только контакты, с которыми есть допустимое основание для деловой связи. Это не подписка на рассылку.':'Add only business contacts you are permitted to keep. This does not enroll them in marketing messages.'}</p>
         {notice&&<p role="status" className={styles.notice}>{notice}</p>}
@@ -154,7 +161,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <ul className={styles.list}>
         {contacts.length?contacts.map(contact=><li key={contact.id} className={styles.emailContactRow}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
-          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
+          <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{[contact.email,contact.phone].filter(Boolean).join(' · ')}</small></span>
           <label className={styles.stageLabel}><span>{c.stage}</span>
             <select aria-label={c.stage+' — '+contact.displayName} disabled={busy} value={contact.lifecycle} onChange={(event)=>save('set_lifecycle',{id:contact.id,lifecycle:event.target.value,expectedRevision:contact.revision})}>
               <option value="lead">{c.leads}</option><option value="client">{c.clients}</option><option value="archived">{c.archived}</option>

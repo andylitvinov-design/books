@@ -67,3 +67,9 @@
 /* Keep source-selection and action controls readable on phones. */
 .form label:nth-child(4){grid-column:1/-1}
 @media(max-width:600px){.form label:nth-child(4){grid-column:auto}}
+
+/* A lead can be entered with either email or a phone/WhatsApp number. */
+.form label:nth-child(3){grid-column:1/-1}
+.form label:nth-child(4){grid-column:auto}
+.form label:nth-child(5){grid-column:auto}
+@media(max-width:600px){.form label:nth-child(3),.form label:nth-child(4),.form label:nth-child(5){grid-column:auto}}
