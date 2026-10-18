@@ -77,6 +77,7 @@ const copy = {
     reviewPrivate: "Saved responses are private. Nothing is sent to the teacher automatically; you decide what to share.",
     reportMissing: "Add report",
     questionMissing: "Answer question",
+    backToReview: "Return to initiation checklist",
     reportReady: "Report recorded",
     questionReady: "Answer recorded",
     readyCount: "items completed",
@@ -153,6 +154,7 @@ const copy = {
     reviewPrivate: "Ответы сохраняются приватно. Преподавателю они автоматически не отправляются; вы сами решаете, чем поделиться.",
     reportMissing: "Заполнить отчёт",
     questionMissing: "Ответить на вопрос",
+    backToReview: "Вернуться к подготовке инициации",
     reportReady: "Отчёт есть",
     questionReady: "Ответ есть",
     readyCount: "пунктов заполнено",
@@ -279,6 +281,7 @@ function PracticeTimer({ locale }: { locale: EnergyworkLocale }) {
 export function EnergyworkAiLearner({ locale }: Props) {
   const t = copy[locale];
   const [index, setIndex] = useState(0);
+  const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
@@ -404,6 +407,8 @@ export function EnergyworkAiLearner({ locale }: Props) {
       catch { setSaveError(t.saveFailed); setBusy(false); return; }
       setBusy(false);
     }
+    setReviewReturn(id === "paths-04" ? false :
+      slide.id === "paths-04" || slide.kind === "finish" ? true : reviewReturn);
     setIndex(target);
   }
   async function next() {
@@ -445,7 +450,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
       setBusy(false);
     }
     answersRef.current = {};
-    setIndex(0); setAnswers({}); setCopyState("idle");
+    setIndex(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
     dirtyRef.current.clear();
   }
   // A brief debounce preserves reflections while users type; queued writes and
@@ -608,6 +613,9 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   <p className={styles.optional}>{slide.id === "welcome-02" ? t.experienceNote :
                     initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id)
                     ? t.optionalForLearning : t.blank}</p>
+                  {reviewReturn && initiationItems.some((item) => item.reportId === slide.id || item.questionId === slide.id) ?
+                    <button type="button" className={styles.returnToReview} onClick={() => jumpToSlide("paths-04")}
+                      disabled={busy}>{t.backToReview}<ArrowRight size={15} aria-hidden="true" /></button> : null}
                 </div>
               ) : null}
 
@@ -646,7 +654,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
                     <div className={styles.initiationLinks}>
                       {energyworkPathChoices.map((choice) => (
                         <Link key={choice.id} className={styles.teacherLink}
-                          href={"/" + locale + "/academy/" + choice.studyPath}>
+                          href={"/" + locale + "/academy/" + choice.freePath}>
                           {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
                         </Link>
                       ))}
