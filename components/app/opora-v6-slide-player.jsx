@@ -204,6 +204,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   function options(){
     if(!role)return []
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
+    // The aphorism is a personal reflection, not a correct/incorrect quiz.
+    // Keep its three explicit positions distinct from the welcome 'unsure'.
+    if(role==='aphorism')return lang==='ru'
+      ? [{value:'agree',label:'Да, откликается'},{value:'unsure',label:'Пока сомневаюсь'},{value:'disagree',label:'Не согласен(на)'}]
+      : [{value:'agree',label:'This resonates'},{value:'unsure',label:'Not sure yet'},{value:'disagree',label:'I disagree'}]
     return (ROLE_OPTIONS[role]||[]).map(value=>({value,label:t.response[value]||value}))
   }
   const optionsAvailable=options(),extraFeedback=chosen
