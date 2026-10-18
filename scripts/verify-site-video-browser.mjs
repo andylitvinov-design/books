@@ -131,7 +131,9 @@ try {
       const sourceLinks = page.locator('[data-core-service-offers="services"] [data-service-card-video]')
       await expect(sourceLinks).toHaveCount(2)
       const hrefs = await sourceLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))
-      assert.ok(hrefs.every(url => url && /^(https:\/\/(?:www\.youtube\.com\/watch\?v=|app\.heygen\.com\/share\/))/.test(url)))
+      assert.ok(hrefs.every(url => url && (locale === 'ru'
+        ? /^https:\/\/www\.youtube\.com\/watch\?v=/.test(url)
+        : /^\/en\/services\/(?:alchemy-of-soul|hypnotherapy-course)#service-video$/.test(url))))
       await page.setViewportSize({ width: 390, height: 844 })
       await expect(visibleGallery.locator('[data-video-slot="services-intro"] .site-video-play')).toBeVisible()
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Services mobile overflow: ' + locale)
