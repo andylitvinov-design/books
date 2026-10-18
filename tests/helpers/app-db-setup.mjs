@@ -22,6 +22,8 @@ export async function setup(){const db=await adminClient();try{
  await db.query(`alter table app.service_offerings add column photos jsonb not null default '[]'::jsonb
    constraint service_offerings_photos_check check (jsonb_typeof(photos)='array' and jsonb_array_length(photos)<=5)`)
 
+ // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
+ await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}
  }finally{await db.end()}}
