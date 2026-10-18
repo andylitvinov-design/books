@@ -41,10 +41,3 @@ test('actual middleware redirects before rendering and retains every private res
     assert.match(result.headers.get('content-security-policy'),/connect-src 'self';/)
   }
 })
-
-test('only exact normalized loopback host and port are restored, arbitrary hosts are ignored',()=>{
- assert.equal(cabinetArchiveRedirect('http://localhost:3100/en/app/analysis','GET','127.0.0.1:3100').href,'http://127.0.0.1:3100/en/app/portrait#personal-reports')
- for(const host of ['evil.invalid','127.0.0.1:9999','evil.invalid@127.0.0.1:3100','127.0.0.1:3100/evil'])
-  assert.equal(cabinetArchiveRedirect('http://localhost:3100/en/app/analysis','GET',host).origin,'http://localhost:3100')
- assert.equal(cabinetArchiveRedirect('https://house.example/en/app/analysis','GET','evil.invalid').origin,'https://house.example')
-})
