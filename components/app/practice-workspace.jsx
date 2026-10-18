@@ -127,6 +127,15 @@ function showcasePrice(item,locale,copy){
   }catch{return copy.viewService}
 }
 
+function ShowcaseCover({item}){
+  const [failed,setFailed]=useState(false)
+  const fallback=PRACTICE_SHOWCASE_IMAGES[item.areaKey]||'/images/holistic-house/hero-olive-incense.webp'
+  return <span className="hh-practice-marketplace-card-photo">
+    <Image src={failed?fallback:showcasePhoto(item)} alt="" fill unoptimized loading="lazy"
+      sizes="(max-width: 600px) 116px, 165px" onError={()=>setFailed(true)} />
+  </span>
+}
+
 function PracticeTile({Icon,title,description,onClick,active=false}) {
   return <button type="button" className="hh-practice-tool-card" onClick={onClick} aria-pressed={active}>
     <span className="hh-practice-tool-top">
@@ -222,9 +231,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
-  const recentPublicServices=(newServices?.recent||[])
+  const publicServiceExamples=(newServices?.recent||[])
     .filter(item=>locale!=='es'||item.displayLocales?.includes('es'))
-    .slice(0,4)
+  // Prefer examples from other masters, but never invent one if only our own are live.
+  const recentPublicServices=[
+    ...publicServiceExamples.filter(item=>item.practitionerSlug!==p?.slug),
+    ...publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug),
+  ].slice(0,4)
   const marketplaceCopy=ru?{
     kicker:'HOLISTIC HOUSE · СООБЩЕСТВО',
     title:'Вдохновитесь услугами коллег',
@@ -232,7 +245,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     latest:'Мастера уже размещают',noRecent:'Опубликованных примеров пока нет. Ваша услуга может стать одной из первых.',
     unavailable:'Примеры услуг временно недоступны.',all:'Все услуги',
     add:'Разместить свою услугу',limit:'Лимит услуг достигнут',
-    hobby:'Hobby · бесплатно',slots:'услуг из',free:'Бесплатно',from:'от',viewService:'Подробнее',
+    hobby:'Hobby · бесплатно',slots:'услуг',free:'Бесплатно',from:'от',viewService:'Подробнее',
     practitioner:'Практик',
   }:locale==='es'?{
     kicker:'HOLISTIC HOUSE · COMUNIDAD',
@@ -241,7 +254,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     latest:'Servicios de la comunidad',noRecent:'Todavía no hay servicios publicados. El tuyo podría ser uno de los primeros.',
     unavailable:'Los ejemplos no están disponibles por ahora.',all:'Ver todos',
     add:'Publicar mi servicio',limit:'Límite de servicios alcanzado',
-    hobby:'Hobby · gratis',slots:'servicios de',free:'Gratis',from:'desde',viewService:'Descubrir',
+    hobby:'Hobby · gratis',slots:'servicios',free:'Gratis',from:'desde',viewService:'Descubrir',
     practitioner:'Profesional',
   }:{
     kicker:'HOLISTIC HOUSE · COMMUNITY',
@@ -250,7 +263,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     latest:'From our practitioner community',noRecent:'No published examples yet. Your service could be among the first.',
     unavailable:'Service examples are temporarily unavailable.',all:'Explore all',
     add:'Add your service — free',limit:'Service limit reached',
-    hobby:'Hobby · Free',slots:'of',free:'Free',from:'From',viewService:'Explore service',
+    hobby:'Hobby · Free',slots:'services',free:'Free',from:'From',viewService:'Explore service',
     practitioner:'Practitioner',
   }
   const hasProfile=Boolean(p?.profile?.displayName||p?.draftProfile?.displayName)
@@ -355,10 +368,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
             <Link className="hh-practice-marketplace-card"
               href={'/'+locale+'/services/'+item.practitionerSlug+'/'+item.slug} prefetch={false}>
-              <span className="hh-practice-marketplace-card-photo">
-                <Image src={showcasePhoto(item)} alt="" fill unoptimized loading="lazy"
-                  sizes="(max-width: 600px) 116px, 165px" />
-              </span>
+              <ShowcaseCover item={item} />
               <span className="hh-practice-marketplace-card-content">
                 <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
                 <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
