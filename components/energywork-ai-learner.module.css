@@ -1971,12 +1971,12 @@
 .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art {
   min-height:0;
   background:linear-gradient(90deg,rgba(243,252,255,.68),rgba(255,250,233,.1) 78%),
-    url("/images/holistic-house/reiki-approved-sunrise-v3.webp") 72% 44% / cover;
+    url("/images/holistic-house/reiki-approved-sunrise-v3.webp") 72% 10% / cover;
   border:1px solid rgba(255,255,255,.85);
   box-shadow:0 8px 25px rgba(23,114,142,.11);
 }
 .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art img {
-  object-position:72% 43%;
+  object-position:72% 10%;
 }
 .page[data-reiki-reviews="v4"] [data-energywork-slide-kind="voices"] .art::after {
   background:linear-gradient(90deg,rgba(243,252,255,.39),rgba(255,255,255,0) 70%);
