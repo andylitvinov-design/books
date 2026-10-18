@@ -101,3 +101,13 @@
 @media(max-height:670px){.heroIcon{width:60px;height:60px;border-radius:20px}.heroIcon svg{width:31px}
   .card{gap:9px}.scroll{padding-top:8px}.eyebrow{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.fill{transition:none}}
+
+.activityPrompt{font-size:12px;font-weight:750;color:#315b70;margin:-2px 0 0;
+  line-height:1.4}
+.activityChoice{display:grid;gap:7px;padding:10px 12px;border-radius:14px;
+  background:#effafa;border:1px solid #c8e8e9;font-size:12px;color:#285870;line-height:1.5}
+.activityChoice strong{color:#087d8f}
+.activityChoice small{color:#487989}
+.changeChoice{justify-self:start;min-height:36px;padding:6px 11px;border-radius:10px;
+  background:#fff;border:1px solid #b6dcdf;color:#216d7e;font-size:12px;
+  font-weight:750;cursor:pointer}
