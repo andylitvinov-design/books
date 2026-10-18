@@ -1,0 +1,44 @@
+name: Synthetic WebKit Back cancellation diagnostic
+on:
+  push:
+    branches: ['feat/assessment-interpretation-registry-20261017']
+    paths:
+      - 'scripts/diagnostics/native-back-cancellation/**'
+      - '.github/workflows/native-back-cancellation-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Record exact source provenance
+        run: |
+          mkdir -p /tmp/native-back-cancellation
+          printf '{"commit":"%s","tree":"%s","playwright":"1.63.0","scope":"synthetic-loopback-only"}\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})" > /tmp/native-back-cancellation/provenance.json
+      - name: Verify diagnostic contracts
+        run: node --test scripts/diagnostics/native-back-cancellation/probe.test.mjs
+      - name: Install pinned official WebKit
+        run: |
+          npm install --prefix /tmp/native-back-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
+          /tmp/native-back-tools/node_modules/.bin/playwright install --with-deps webkit
+      - name: Compare pending and loaded synthetic Back cases
+        timeout-minutes: 3
+        env:
+          PLAYWRIGHT_MODULE: file:///tmp/native-back-tools/node_modules/@playwright/test/index.mjs
+          PROBE_OUTPUT: /tmp/native-back-cancellation
+        run: node scripts/diagnostics/native-back-cancellation/probe.mjs
+      - name: Preserve bounded diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-webkit-back-cancellation
+          path: /tmp/native-back-cancellation
+          retention-days: 7
+          if-no-files-found: error
