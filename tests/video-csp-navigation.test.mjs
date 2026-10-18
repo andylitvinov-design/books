@@ -167,3 +167,25 @@ test("English Tantra testimonials prioritize Litten and Margaret and disclose Ru
   assert.ok(component.indexOf('id="tantra-original-english-testimonials"') < component.indexOf('<TantraVideoTestimonials'));
 });
 
+
+
+test('parser-time optional reads stop on the real NavigationDestination API shape', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { CSP_PREHYDRATION_SCRIPT } = await import('../lib/csp-prehydration.js');
+  const navigation = new Map(), events = new Map();
+  const window = {
+    navigation: { addEventListener: (name, fn) => navigation.set(name, fn) },
+    addEventListener: (name, fn) => events.set(name, fn), removeEventListener() {},
+    location: { href: 'https://example.test/en/client/tests', replace() {} },
+  };
+  runInNewContext(CSP_PREHYDRATION_SCRIPT, { window });
+  navigation.get('navigate')({ destination: { sameDocument: true } });
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+  navigation.get('navigate')({ destination: { sameDocument: false } });
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  // A later router replace cannot erase an already departing document.
+  navigation.get('navigate')({ destination: { sameDocument: true } });
+  assert.equal(window.__hhOptionalReadsDeparting, true);
+  events.get('pageshow')();
+  assert.equal(window.__hhOptionalReadsDeparting, false);
+});

@@ -7,7 +7,7 @@ import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments
 import { layoutPortraitRayLabels } from '@/lib/assessments/portrait-ray-labels'
 import {
   PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER,
-  portraitAxesForSectors, portraitFullCircleAngleForAxis,
+  portraitAxesForSectors, portraitFullCircleAngleForAxis, summarizePortraitSectors, portraitSectorMidAngle,
 } from '@/lib/assessments/portrait-sectors'
 import styles from './test-explorer.module.css'
 
@@ -21,7 +21,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
-  const [selectedSector, setSelectedSector] = useState('body')
+  const [selectedSector, setSelectedSector] = useState('all')
   const [showAllPortraitRays, setShowAllPortraitRays] = useState(false)
   const portraitRayOptionsId = useId()
   const [rotation, setRotation] = useState({ x: 0, y: 0 })
@@ -35,6 +35,25 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   // Missing scores remain empty; fine-grained visibility choices are optional.
   const suggestedRays = PORTRAIT_AXES
   const checkedRays = chosenRays === null ? suggestedRays : chosenRays.filter((axis) => PORTRAIT_AXES.includes(axis))
+
+  const allSectors = selectedSector === 'all'
+  const overviewRays = portrait ? summarizePortraitSectors(portrait).map((sector) => {
+    const angle = portraitSectorMidAngle(sector.key)
+    const project = (radius) => ({ x: 180 + Math.cos(angle) * radius, y: 182 + Math.sin(angle) * radius })
+    return {
+      ...sector,
+      displayLabel: sector.key === 'growth'
+        ? (ru ? 'Дух / развитие' : es ? 'Espíritu / desarrollo' : 'Spirit / Growth')
+        : (sector.label[locale] || sector.label.en),
+      ideal: project(146),
+      end: sector.percent === null ? null : project(14 + sector.percent / 100 * 132),
+      value: project(110),
+    }
+  }) : []
+  const overviewLabels = portrait && allSectors ? layoutPortraitRayLabels(overviewRays.map((ray) => ({
+    axis: ray.key, label: ray.displayLabel, ideal: ray.ideal,
+    end: null, measured: ray.percent !== null,
+  }))) : []
   const sectorAxes = portraitAxesForSectors([selectedSector])
   const sectorAxisSet = new Set(sectorAxes)
   const focusOptions = PORTRAIT_AXES.filter((axis) => sectorAxisSet.has(axis))
@@ -99,8 +118,13 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
     </div>}
     {portrait && !compact && <div className={styles.portraitSectorPicker} data-portrait-sectors
-      role="group" aria-label={ru ? 'Четыре категории портрета' : es ? 'Cuatro categorías del retrato' : 'Four portrait categories'}>
+      role="group" aria-label={ru ? 'Обзор и четыре категории портрета' : es ? 'Resumen y cuatro categorías del retrato' : 'Overview and four portrait categories'}>
       <div className={styles.portraitSectorGrid}>
+        <button type="button" className={[styles.portraitSectorChip, styles.portraitSectorAll].join(' ')}
+          data-portrait-sector-all="true" data-selected={allSectors}
+          aria-pressed={allSectors} onClick={() => setSelectedSector('all')}>
+          <span>{ru ? 'Все' : es ? 'Todo' : 'All'}</span>
+        </button>
         {PORTRAIT_SECTORS.map((sector) => <button type="button" key={sector.key}
           className={styles.portraitSectorChip} data-portrait-sector={sector.key}
           data-selected={selectedSector === sector.key}
@@ -142,7 +166,55 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           </g>
         })}
       </svg>}
-      {portrait && <svg viewBox="0 0 360 390" preserveAspectRatio="xMidYMid meet"
+
+      {portrait && allSectors && <svg viewBox="0 0 360 390" preserveAspectRatio="xMidYMid meet"
+        className={styles.portraitRadar} data-radar-mode="summary" data-radar-layout="full-circle"
+        data-active-portrait-sector="all" role="img"
+        aria-label={(ru ? 'Обзор четырёх категорий' : es ? 'Resumen de cuatro categorías' : 'Four-category overview') + ': ' +
+          overviewRays.map(ray => ray.displayLabel + ': ' + (ray.percent === null ? '—' : ray.percent + '%') +
+            ' (' + ray.measured + '/' + ray.total + ')').join(', ')}>
+        <title>{ru ? 'Обзор четырёх категорий по реально измеренным шкалам' :
+          es ? 'Resumen de cuatro categorías usando solo escalas medidas' :
+            'Four-category overview based only on measured scales'}</title>
+        <circle cx="180" cy="182" r="146" className={styles.radarReference} />
+        <circle cx="180" cy="182" r="73" className={styles.radarGrid} />
+        <polygon points={overviewRays.map(ray => ray.ideal.x + ',' + ray.ideal.y).join(' ')}
+          className={styles.radarContourPolygon}/>
+        {overviewRays.map(ray => <g key={ray.key} className={styles.radarSummarySector}
+          data-summary-sector={ray.key} data-measured={ray.percent !== null}>
+          <line x1="180" y1="182" x2={ray.ideal.x} y2={ray.ideal.y}
+            className={styles.radarGuide}/>
+          {ray.end && <line x1="180" y1="182" x2={ray.end.x} y2={ray.end.y}
+            className={styles.radarRay}/>}
+          {ray.end && <circle cx={ray.end.x} cy={ray.end.y} r="5.8"
+            className={styles.radarPoint}/>}
+          <circle cx={ray.ideal.x} cy={ray.ideal.y} r="6"
+            className={ray.end ? styles.radarContourMeasured : styles.radarContourUnmeasured}/>
+          <text x={ray.value.x} y={ray.value.y} textAnchor="middle" dy=".3em"
+            className={styles.radarSummaryValue}>
+            {ray.percent === null ? '—' : ray.percent + '%'}
+          </text>
+        </g>)}
+        {overviewRays.every(ray => ray.end) && <polygon
+          points={overviewRays.map(ray => ray.end.x + ',' + ray.end.y).join(' ')}
+          className={styles.radarArea}/>}
+        {overviewRays.every(ray => ray.end) && <polygon
+          points={overviewRays.map(ray => ray.end.x + ',' + ray.end.y).join(' ')}
+          className={styles.radarOutline}/>}
+        <circle cx="180" cy="182" r="7" className={styles.radarCenter}/>
+        {overviewLabels.map(ray => <g key={'summary-label-' + ray.axis}
+          className={[styles.radarLabel, !ray.measured ? styles.radarLabelUnmeasured : ''].join(' ')}>
+          {ray.showLeader && <line x1={ray.tip.x} y1={ray.tip.y}
+            x2={ray.anchor.x} y2={ray.anchor.y} className={styles.radarInlineLeader}/>}
+          <text x={ray.x} y={ray.y + (ray.lines.length === 1 ? 14 : 13)}
+            textAnchor="start" className={styles.radarInlineLabel}>
+            {ray.lines.map((line,index) => <tspan key={index} x={ray.x}
+              dy={index === 0 ? 0 : 14} textLength={ray.lineWidths[index]}
+              lengthAdjust="spacingAndGlyphs">{line}</tspan>)}
+          </text>
+        </g>)}
+      </svg>}
+      {portrait && !allSectors && <svg viewBox="0 0 360 390" preserveAspectRatio="xMidYMid meet"
         className={styles.portraitRadar} data-radar-mode="detail" data-radar-layout="full-circle"
         data-active-portrait-sector={selectedSector} role="img"
         aria-label={(ru ? 'Шкалы категории' : es ? 'Escalas de la categoría' : 'Category scales') + ': ' +
@@ -194,7 +266,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     </div>}
     {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
     {portrait && !compact && portraitActions}
-    {portrait && !compact && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
+    {portrait && !compact && !allSectors && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
         <span>{visibleRays.length} / {focusOptions.length}</span>
@@ -267,6 +339,6 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
       </div>)}
     </div>}
-    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (ru ? 'Шкалы выбранной категории равномерно расположены по кругу. Тёмные точки — только сохранённые измерения; пустые контуры — неизмеренные шкалы. Это не процент здоровья.' : es ? 'Las escalas se distribuyen por todo el círculo. Solo los puntos medidos muestran resultados. No es un porcentaje de salud.' : 'Scales span the full circle. Only saved measurements have filled data points; hollow ring markers show unmeasured scales. These are not health percentages.') : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
+    {!compact && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (allSectors ? (ru ? 'В режиме «Все» показаны четыре обобщённых значения только по измеренным шкалам. Пустые категории не оцениваются. Это не процент здоровья.' : es ? 'La vista Todo muestra cuatro promedios solo de escalas medidas; las categorías sin datos quedan vacías. No son porcentajes de salud.' : 'All shows four descriptive averages of measured scales only; unmeasured categories stay blank. These are not health scores.') : (ru ? 'Шкалы выбранной категории равномерно расположены по кругу. Тёмные точки — только сохранённые измерения; пустые контуры — неизмеренные шкалы. Это не процент здоровья.' : es ? 'Las escalas se distribuyen por todo el círculo. Solo los puntos medidos muestran resultados. No es un porcentaje de salud.' : 'Scales span the full circle. Only saved measurements have filled data points; hollow ring markers show unmeasured scales. These are not health percentages.')) : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
   </section>
 }

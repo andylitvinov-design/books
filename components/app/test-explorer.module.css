@@ -1214,3 +1214,88 @@
 @media(prefers-reduced-motion:reduce){
   .visual:not(.visualCompact) .portraitSectorChip{transition:none}
 }
+
+/* Portrait v4: All + four category views, and three compact quick actions. */
+.visual:not(.visualCompact) .portraitSectorGrid{
+  grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+  gap:5px;
+}
+.visual:not(.visualCompact) .portraitSectorAll{
+  width:100%;
+  min-width:0;
+  min-height:49px;
+  padding:7px 2px;
+  margin:0;
+  font:800 12px/1.2 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitSectorChip > span{
+  overflow-wrap:anywhere;
+  hyphens:auto;
+}
+.visual:not(.visualCompact) .radarSummaryValue{
+  fill:#17695f;
+  font-size:14px;
+  font-weight:850;
+  stroke:rgba(255,253,246,.95);
+  stroke-width:3.8px;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:8px;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+  min-width:0;
+  min-height:65px;
+  padding:9px 4px;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-size:clamp(11px,2.2vw,14px);
+  line-height:1.15;
+}
+.visual:not(.visualCompact) :global(.hh-portrait-quick-actions) :global(svg){
+  flex:none;
+}
+@media(max-width:760px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:49px;
+    padding:6px 2px;
+    font-size:clamp(9px,2.35vw,12px);
+  }
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(39px,.68fr) repeat(4,minmax(0,1fr));
+    gap:3px;
+  }
+  .visual:not(.visualCompact) .portraitSectorChip,
+  .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:47px;
+    padding:5px 2px;
+    font-size:clamp(8.5px,2.45vw,10.5px);
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+    gap:6px;
+  }
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(a),
+  .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+    min-height:58px;
+    font-size:clamp(10px,2.65vw,12px);
+    padding:7px 2px;
+  }
+}

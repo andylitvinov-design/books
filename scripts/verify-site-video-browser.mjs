@@ -182,7 +182,7 @@ try {
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')
   assert.ok(remedyPath)
   await navigate('/en/books')
-  const bookPath = await page.locator('a[href^="/books/"]').first().getAttribute('href')
+  const bookPath = await page.locator('a[href^="/en/books/"]').first().getAttribute('href')
   assert.ok(bookPath)
   const paths = ['/?lang=en', '/?lang=ru', '/en/about', '/ru/about', '/en/services', '/ru/services', '/en/homeopathy', '/ru/homeopathy', '/en/homeopathy/remedies', '/ru/homeopathy/remedies', '/en/books', '/ru/books', remedyPath, bookPath]
   for (const width of [1365, 390]) {

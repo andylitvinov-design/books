@@ -55,12 +55,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: homepageLanguages[locale], changeFrequency: 'weekly', priority: locale === 'es' ? 0.8 : 1,
     alternates: { languages: homepageLanguages },
   }));
-  // /books is a preference-sensitive redirect and must never be indexed.
+  // No redirecting URLs in sitemap: exclude known legacy service aliases too.
+  const knownServiceRedirects = new Set([
+    '/en/services/psychohomeopathy',
+    '/ru/services/psychohomeopathy',
+    '/en/services/andy-litvinov/homeopathy-consultation',
+    '/ru/services/andy-litvinov/homeopathy-consultation',
+  ]);
   const unique: MetadataRoute.Sitemap = [...new Map(
     [...existing, ...entries, ...priorityEntries, ...network, ...homes]
       .filter(entry => {
         const pathname = new URL(entry.url).pathname;
-        return pathname !== '/books' && !pathname.startsWith('/books/');
+        return pathname !== '/books' && !pathname.startsWith('/books/') && !knownServiceRedirects.has(pathname);
       })
       .map(entry => [entry.url, entry]),
   ).values()];

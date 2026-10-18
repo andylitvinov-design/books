@@ -93,11 +93,11 @@ export function assertPublicCollectionMatches(shown, entries, collection, select
   assert.ok(shown.every(key => allowed.has(key)), 'Collection matches retain source eligibility and only explicit cross-topic selections: ' + collection.id)
 }
 
-export async function exercisePublicCollections(page, expect, locale) {
+export async function exercisePublicCollections(page, expect, locale, initialPreferences = {}) {
   const picker = page.locator('[data-prelogin-test-picker]')
   const root = picker.locator('[data-test-topic-collections]')
   const entries = buildExplorerEntries({ locale: locale === 'es' ? 'en' : locale, audience: 'guest' })
-  const collections = availableTestCollections(entries)
+  const collections = availableTestCollections(entries, initialPreferences)
   await expect(root).toHaveCount(1)
   const width = await page.evaluate(() => innerWidth)
   await assertPublicCollectionChips(root, expect, locale, collections, width)
@@ -173,11 +173,14 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   const inputs = options.locator('input[type="checkbox"]')
   const rays = portrait.locator('svg[role="img"] > g:has(> line[x1="180"][y1="182"])')
   const sectors = portrait.locator('[data-portrait-sectors]')
-  const defaultSector = sectors.locator('[data-portrait-sector="body"]')
+  const defaultSector = sectors.locator('[data-portrait-sector-all]')
   const originals = new Map()
   await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(4)
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
-  await expect(sectors.locator('[data-portrait-sector-all]')).toHaveCount(0)
+  await expect(defaultSector).toHaveCount(1)
+  await expect(inputs).toHaveCount(0)
+  await expect(rays).toHaveCount(4)
+  await sectors.locator('[data-portrait-sector="body"]').click()
   await expect(inputs).toHaveCount(PORTRAIT_SECTORS[0].axes.length)
   let total = 0
   for (const sector of PORTRAIT_SECTORS) {
@@ -220,6 +223,7 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   }
   await defaultSector.click()
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
-  await expect(sectors.locator('[data-portrait-sector-all]')).toHaveCount(0)
-  await expect(inputs).toHaveCount(PORTRAIT_SECTORS[0].axes.length)
+  await expect(defaultSector).toHaveCount(1)
+  await expect(inputs).toHaveCount(0)
+  await expect(rays).toHaveCount(4)
 }

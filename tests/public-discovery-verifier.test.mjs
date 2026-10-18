@@ -284,7 +284,7 @@ test('browser ray verifier rejects no-op expansion, obsolete caps, fabricated de
 
 test('core keeps new discovery paths inside the isolated native browser acceptance and preserves Spanish public diagnostics', () => {
   const core = read('scripts/verify-app-r1.mjs')
-  for (const locale of ['en', 'ru', 'es']) assert.ok(core.includes(`exercisePublicCollections(guestPickerPage,expect,'${locale}')`))
+  for (const [locale, suffix] of [['en',",{focus:['stress'],depth:'quick'}"], ['ru',",{focus:['stress'],depth:'balanced'}"], ['es','']]) assert.ok(core.includes(`exercisePublicCollections(guestPickerPage,expect,'${locale}'${suffix})`))
   assert.ok(core.includes("guestPickerPage.goto(origin+'/es/client/tests')"))
   assert.ok(core.includes('exercisePortraitRays(portrait,expect,locale)'))
   assert.ok(core.includes("target.locator('[data-sitewide-personal-review-banner]')).toBeHidden()"))

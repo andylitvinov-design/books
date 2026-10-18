@@ -79,8 +79,8 @@ async function fill(page,d,mode,guest,locale){
  await readEveryAccountScale(report,expect,d.scoring.dimensions.map(dimension=>dimension.key))
  await expect(report.locator('[data-assessment-methodology]')).toContainText(locale==='ru'?'Авторские вопросы Holistic House':'Original Holistic House self-reflection')
  const summary=report.locator('[data-personality-type-summary]')
- if(await summary.getAttribute('open')===null)await summary.locator(':scope > summary').click()
- await expect(summary).toHaveAttribute('open','')
+ await expect(summary).toHaveCount(1)
+ await expect(summary.locator(':scope > h3')).toHaveCount(1)
  await expect(summary).toBeVisible()
  await expect(summary).toContainText(d.key==='hh-socionics-32'
    ? locale==='ru'?'Однозначный социотип не определяется':'No single sociotype is supported'

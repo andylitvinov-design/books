@@ -313,7 +313,7 @@ async function exercise(engine, browserType, width) {
         await page.locator(`.site-language-menu [lang="${locale}"]`).click();
         await expect(page).toHaveURL(origin + `/books/maya-tradition?lang=${locale}`);
         await expect(page.locator('main').first()).toHaveAttribute('lang', locale);
-        await expect(page.locator(`main ol a[href$="?lang=${locale}"]`)).toHaveCount(4);
+        await expect(page.locator(`main ol a[href^="/${locale}/books/"]`)).toHaveCount(4);
       });
     }
     for (const locale of ['en', 'ru', 'es']) {

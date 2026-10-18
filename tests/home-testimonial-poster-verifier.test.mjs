@@ -7,7 +7,7 @@ const component = read('components/personal-testimonials.tsx');
 const verifier = read('scripts/verify-home-locale-switch.mjs');
 const expectedCatalog = {
   en: ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc'],
-  ru: ['MIVLm1GUTtM', 'ttQxUHopaUM', 'VABgpmn4ZYA', 'muOnIHllI7E', 'm9RfDgK76PU', '5oj0BIbLT4w'],
+  ru: ['m9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM', 'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'],
 };
 
 function sourceFixture(source = component) {
