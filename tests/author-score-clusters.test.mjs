@@ -63,6 +63,13 @@ test('original mean subscales get real attainable-score intervals, not arbitrary
     assert.match(ru.rangeReading.scoringNote,/Среднее по 3 вопросам/)
     assert.match(en.rangeReading.caution,/not clinical cutoffs/)
     assert.notEqual(en.rangeReading.rows[0].note,en.rangeReading.rows[4].note)
+    if (dimension.direction.startsWith('lower-reported-')) {
+      assert.match(en.rangeReading.rows[0].note,/difficult moments may still occur/)
+      assert.match(en.rangeReading.rows[4].note,/professional support/)
+    } else {
+      assert.match(en.rangeReading.rows[0].note,/named options are weakly endorsed/)
+      assert.match(en.rangeReading.rows[4].note,/does not establish stability over time/)
+    }
   }
 })
 
