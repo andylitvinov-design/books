@@ -166,7 +166,7 @@ export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : t
   : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findPart = (tree, name) => nodes(tree).find(n => n.type?.testName === name)
 export const findButton = (tree, label) => nodes(tree).find(n => n.type === 'button' && textOf(n).trim() === label)
-const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
+const uiNames = ['course-slide-player', 'opora-v6-slide-player', 'opora-experience-player', 'opora-module-activity', 'opora-state-journey', 'anti-stress-method-activity', 'anti-stress-practice-lab', 'course-lesson-result', 'anti-stress-day-one']
 const compiledUI = Object.fromEntries(uiNames.map(name => [name, ts.transpileModule(readFileSync(resolve(root, 'components/app', name + '.jsx'), 'utf8'), {
   fileName: name + '.jsx', compilerOptions: { allowJs: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText]))
