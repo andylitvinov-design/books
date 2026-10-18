@@ -4,6 +4,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesAboutEntry } from "@/components/services-about-entry";
 import { ServicesTestsIntro } from "@/components/services-tests-intro";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
+import { ServicesQuickStart } from "@/components/services-quick-start";
 import offerStyles from "@/components/services-es-offers.module.css";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
@@ -60,6 +61,7 @@ export default async function SpanishServicesPage() {
  ];
  return <main className="services-shell services-shell--studio" lang="es">
   <PublicSiteHeader locale="es" showAssessmentStrip={false} />
+      <ServicesQuickStart locale={"es"} />
   <ServicesSmartDiscovery locale="es" services={published} editorialOffers={editorial}
     aiAvailable={process.env.HH_MARKETPLACE_AI_ENABLED === "true"
       && Boolean(process.env.OPENROUTER_API_KEY) && Boolean(process.env.HH_MARKETPLACE_AI_MODEL)} />
