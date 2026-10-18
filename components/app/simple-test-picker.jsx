@@ -21,7 +21,7 @@ const TEXT = {
     heroDescription:'Explore stress, mood, sleep and inner resources with free self-checks. See your results as soon as you finish.',
     heroPrimary:'Choose my topics', heroSecondary:'Browse free tests',
     heroFootnote:'Available tests and sets start without registration. Sign in for a free personal analysis.',
-    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTopics:'Topics', heroTabTests:'Tests', heroPicks:'You could try', heroSearchClear:'Clear search',
+    heroSearchLabel:'Find a self-check test', heroSearchPlaceholder:'e.g. stress, sleep, mood or relationships…', heroSearchAction:'Find my tests', heroTopicFilter:'Topic', heroAllTopics:'All topics', heroTypeFilter:'Test type', heroAllTypes:'All types', heroTabTests:'Tests', heroTabCourses:'Courses', heroTabAssist:'Assist', heroPicks:'You could try', heroSearchClear:'Clear search',
     lead:'Choose what you want to monitor — stress, mood, sleep or inner resources. We’ll suggest relevant self-checks.',
     first:'What would you like to explore?', firstHelp:'Select one or more areas. We will recommend tests using the scales they actually measure.',
     detail:'Detailed selection (optional)', detailHelp:'Set recommendation order, time and test types.',
@@ -49,7 +49,7 @@ const TEXT = {
     heroDescription:'Исследуйте стресс, настроение, сон и внутренние ресурсы с помощью бесплатных тестов. Результаты доступны сразу после прохождения.',
     heroPrimary:'Выбрать темы', heroSecondary:'Посмотреть тесты',
     heroFootnote:'Доступные тесты и наборы проходятся без регистрации. После входа — бесплатные пояснения и анализ.',
-    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTopics:'Темы', heroTabTests:'Тесты', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
+    heroSearchLabel:'Поиск тестов', heroSearchPlaceholder:'Например: стресс, сон, настроение, отношения…', heroSearchAction:'Найти тесты', heroTopicFilter:'Тема', heroAllTopics:'Все темы', heroTypeFilter:'Тип теста', heroAllTypes:'Все типы', heroTabTests:'Тесты', heroTabCourses:'Курсы', heroTabAssist:'Помощь', heroPicks:'Попробуйте', heroSearchClear:'Сбросить поиск',
     lead:'Выберите, за чем хотите наблюдать: стресс, настроение, сон или внутренние ресурсы. Мы предложим подходящие опросники.',
     first:'Что вы хотите исследовать?', firstHelp:'Отметьте важные темы. Мы подберём тесты по шкалам, которые они действительно измеряют.',
     detail:'Подробный подбор (необязательно)', detailHelp:'Настройте порядок рекомендаций, время и типы тестов.',
@@ -77,7 +77,7 @@ const TEXT = {
     heroDescription:'Explora el estrés, el ánimo, el sueño y tus recursos internos con pruebas gratuitas. Consulta tus resultados al terminar.',
     heroPrimary:'Elegir temas', heroSecondary:'Ver pruebas gratuitas',
     heroFootnote:'Puedes hacer pruebas y conjuntos disponibles sin registrarte. Entra para recibir un análisis personal gratuito.',
-    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTopics:'Temas', heroTabTests:'Pruebas', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
+    heroSearchLabel:'Buscar pruebas gratuitas', heroSearchPlaceholder:'p. ej. estrés, sueño, ánimo o relaciones…', heroSearchAction:'Buscar pruebas', heroTopicFilter:'Tema', heroAllTopics:'Todos los temas', heroTypeFilter:'Tipo de prueba', heroAllTypes:'Todos los tipos', heroTabTests:'Pruebas', heroTabCourses:'Cursos', heroTabAssist:'Ayuda', heroPicks:'Prueba', heroSearchClear:'Borrar búsqueda',
     lead:'Elige lo que quieres observar: estrés, ánimo, sueño o recursos personales. Te sugeriremos cuestionarios adecuados.',
     first:'¿Qué te gustaría explorar?', firstHelp:'Elige los temas importantes. Priorizaremos pruebas según las escalas que realmente miden.',
     detail:'Selección detallada (opcional)', detailHelp:'Ordena las recomendaciones y filtra por tiempo o tipo.',
@@ -280,9 +280,10 @@ export function SimpleTestPicker({
     <header className={authenticated ? styles.accountFinder : academyStyles.hero} data-client-tests-hero>
       {!authenticated && <div className={academyStyles.topline}>
         <p className={academyStyles.eyebrow}><Sparkles size={16} aria-hidden="true" />{c.heroKicker}</p>
-        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Разделы тестов' : locale === 'es' ? 'Secciones de pruebas' : 'Test sections'}>
-          <a href="#hh-simple-topic-title" aria-current="page">{c.heroTabTopics}</a>
-          <a href="#hh-simple-recommendations">{c.heroTabTests}</a>
+        <nav className={academyStyles.tabs} aria-label={locale === 'ru' ? 'Тесты, курсы и помощь' : locale === 'es' ? 'Pruebas, cursos y ayuda' : 'Tests, courses and assistance'}>
+          <Link href={`/${locale}/client/tests`} aria-current="page">{c.heroTabTests}</Link>
+          <Link href={`/${locale}/academy/free-ai-courses`}>{c.heroTabCourses}</Link>
+          <Link href={`/${locale}/services/free-situation-review`}>{c.heroTabAssist}</Link>
         </nav>
       </div>}
       {authenticated && <p className={styles.accountFinderEyebrow}>{c.kicker}</p>}
@@ -304,7 +305,7 @@ export function SimpleTestPicker({
           placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
         <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      <div className={authenticated ? styles.accountFinderFilters : academyStyles.filters}>
+      {authenticated && <div className={styles.accountFinderFilters}>
         <label>{c.heroTopicFilter}
           <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
             onChange={(event) => {
@@ -327,16 +328,7 @@ export function SimpleTestPicker({
               <option value={item.key} key={item.key}>{testKindShortLabel({ testKind: item.key }, locale)}</option>)}
           </select>
         </label>
-      </div>
-      {!authenticated && <div className={`${academyStyles.suggestions} ${styles.heroQuickPicks}`} aria-label={c.heroPicks}>
-        <span>{c.heroPicks}:</span>
-        {['stress', 'anxiety', 'sleep', 'relationships'].map((key) => {
-          const topic = TOPICS.find((item) => item.key === key)
-          return <button key={key} type="button" aria-pressed={focus.includes(key)}
-            onClick={() => { onToggleFocus(key); setVisibleCount(5) }}>{topic?.[locale] || topic?.en || key}</button>
-        })}
       </div>}
-      {!authenticated && <p className={academyStyles.subnote}>{c.heroFootnote}</p>}
     </header>
 
     {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
