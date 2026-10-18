@@ -42,7 +42,7 @@ test('Services light topic panel and 320px friendly controls mirror the Tests mo
   assert.match(css, /\.tabs a\[aria-current="page"\]/)
   assert.match(css, /\.categorySection\{box-sizing:border-box;[^}]*#d1ebee/)
   assert.match(css, /\.stepBadge\{[^}]*#ddf5f6/)
-  assert.match(css, /\.categoryActive\{[^}]*#e4f4f2/)
+  assert.match(css, /\.categoryActive\{[^}]*#dbf6f8/)
   assert.match(css, /\.extraFilters\{[^}]*overflow:hidden/)
   assert.match(css, /\.quickFacets\{flex-wrap:wrap;overflow:visible/)
   assert.match(css, /@media\(max-width:620px\)\{[\s\S]*?\.categoryGrid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
