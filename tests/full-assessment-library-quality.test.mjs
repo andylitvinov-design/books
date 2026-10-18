@@ -7,6 +7,8 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { verifiedHistoryResult } from '../lib/assessments/verified-history.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
+import { PRIORITY_METHODS_2026 } from '../data/assessments/priority-methods-2026.js'
+import { PROFESSIONAL_SCALE_RESOURCES } from '../data/assessments/professional-scale-resources-2026.js'
 
 const ALL = ASSESSMENT_DEFINITIONS
 const register = new Map(ALL.map(d => [d.key + ':' + d.version + ':' + d.instrumentLocale, d]))
@@ -167,5 +169,28 @@ test('every registered version yields verified exact-source reports at both resp
     assert.equal(verifiedHistoryResult(scored),true,identity(d)+' '+edge)
     assert.ok(scored.dimensions.length>0)
     assert.ok(scored.dimensions.every(row=>Number.isFinite(row.value)&&row.value>=row.min&&row.value<=row.max))
+  }
+})
+
+
+test('research-only and rights-gated scale metadata never silently exposes a runnable test',()=>{
+  const runnable=new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key))
+  const installed=new Set(ALL.map(x=>x.key))
+  assert.ok(PRIORITY_METHODS_2026.length>=15)
+  for(const resource of PRIORITY_METHODS_2026){
+    assert.ok(['permission_required','rights_review','open_reuse'].includes(resource.status))
+    assert.equal(Array.isArray(resource.questions),false,'No actual protected item list may be imported as research metadata')
+    if(resource.status!=='open_reuse'){
+      assert.equal(runnable.has(resource.key),false,
+        'Unlicensed/review-only reference must not become a new test '+resource.key)
+      assert.equal(installed.has(resource.key),false,
+        'Research metadata must not create registered scorer '+resource.key)
+    }
+  }
+  for(const row of Object.values(PROFESSIONAL_SCALE_RESOURCES)){
+    assert.equal(row.downloadType,'educational_scale_guide_only',
+      row.key+' must remain an educational document, not an instrument PDF')
+    assert.ok(!Array.isArray(row.questions),'Protected source item text must remain absent from educational references')
+    assert.ok(typeof row.rightsNotice==='string' && row.rightsNotice.length>10)
   }
 })
