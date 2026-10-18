@@ -140,7 +140,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const slide=receipt?null:slides[step]
   const role=slide?.kind
   const chosen=answers[role]||null
-  const choiceField=role==='notice'?'noticeChoice':role==='act'?'actChoice':null
+  const choiceField=role==='notice'?'noticeChoice':role==='act'?'actChoice':role==='transfer'?'transferChoice':null
   const activeActivity=choiceField?authored?.exercises?.[role]||null:null
   const picked=choiceField?answers[choiceField]||null:null
   const chosenActivityIndex=picked?['one','two','three'].indexOf(picked):-1
@@ -227,6 +227,9 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   const optionsAvailable=options()
   const choiceFeedback=choiceField&&chosenActivityIndex>=0
     ?role==='notice'?activeActivity?.f?.[chosenActivityIndex]
+      :role==='transfer'?
+        (lang==='ru'?'Вы выбрали возможный шаг на будущее — это не обязательство.':
+          'You chose a possible future step. This is not a commitment.')
       :(lang==='ru'?'Вы выбрали один посильный вариант. Это ещё не означает, что упражнение выполнено.':
         'You chose a possible step. Choosing does not yet mean you performed it.')
     :null
@@ -273,7 +276,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <p>{answers.act||answers.notice||answers.rehearse
                 ? t.feedback[answers.act]||t.feedback[answers.notice]||t.feedback[answers.rehearse]||t.notCompleted
                 :t.notCompleted}</p>
-              {answers.transfer==='planned'&&<p>{lang==='ru'?'Вы выбрали небольшой возможный план на будущее.':'You chose a small optional plan for later.'}</p>}
+              {answers.transfer==='planned'&&answers.transferChoice&&<p>{
+                (lang==='ru'?'Возможный план: ':'Possible plan: ')+
+                (authored?.exercises?.transfer?.choices?.[['one','two','three'].indexOf(answers.transferChoice)]||'')
+              }</p>}
             </section>
             <p className={styles.helper}>{t.advance}</p>
           </>:<>
@@ -302,7 +308,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
             </section>}
             {choiceField&&!picked&&activeActivity&&
               <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q
-                :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>}
+                :role==='transfer'?
+                  (lang==='ru'?'Какую поддержку вам было бы удобно сохранить как возможный план?':
+                    'Which support might you keep as a possible plan?')
+                  :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
               <div className={styles.options} role="group" aria-label={choiceField&&!picked
                 ?(role==='notice'?activeActivity?.q:slide?.text)
@@ -322,8 +331,11 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
                 onClick={()=>setAnswers(a=>{
                   const next={...a};delete next[choiceField];delete next[role];return next
                 })}>{lang==='ru'?'Изменить выбор':'Change choice'}</button>
-              <small>{lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
-                'Now report whether you actually tried the step.'}</small>
+              <small>{role==='transfer'
+                ?(lang==='ru'?'Теперь отметьте: вы только представили план или хотите его сохранить?':
+                  'Now choose whether you imagined this plan or want to keep it.')
+                :(lang==='ru'?'А теперь отметьте, удалось ли попробовать действие.':
+                  'Now report whether you actually tried the step.')}</small>
             </div>}
             {role==='act'&&picked&&['tried','partly'].includes(chosen)&&<div className={styles.ease}>
               <span>{t.easyTitle} <small>({lang==='ru'?'по желанию':'optional'})</small></span>
