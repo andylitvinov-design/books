@@ -76,11 +76,6 @@ export const energyworkPathChoices: Array<{
   freePath: string;
 }> = [
   {
-    id: "yggdrasil", title: l("Reiki Yggdrasil", "Рейки Иггдрасиль"),
-    description: l("Runes, the World Tree and the four introductory streams.", "Руны, Мировое Древо и четыре вводных потока."),
-    image: image.tree, studyPath: "reiki/yggdrasil", freePath: "reiki/yggdrasil/free-initiation",
-  },
-  {
     id: "tantra", title: l("Tantra Reiki", "Тантра Рейки"),
     description: l("Presence, connection and Spring of Life as a spiritual symbol.", "Присутствие, связь и «Источник жизни» как духовный символ."),
     image: image.tantra, studyPath: "reiki/tantra-reiki", freePath: "reiki/tantra-reiki/free-initiation",
@@ -89,6 +84,11 @@ export const energyworkPathChoices: Array<{
     id: "kundalini", title: l("Kundalini Reiki", "Кундалини Рейки"),
     description: l("Grounding and the original three-level teaching.", "Опора и оригинальная трёхступенчатая система."),
     image: image.kundalini, studyPath: "reiki/kundalini-reiki", freePath: "reiki/kundalini-reiki/free-initiation",
+  },
+  {
+    id: "yggdrasil", title: l("Reiki Yggdrasil", "Рейки Иггдрасиль"),
+    description: l("Runes, the World Tree and the four introductory streams.", "Руны, Мировое Древо и четыре вводных потока."),
+    image: image.tree, studyPath: "reiki/yggdrasil", freePath: "reiki/yggdrasil/free-initiation",
   },
 ];
 
