@@ -56,6 +56,18 @@ test('neutral personality scores show raw increase without ranking the person', 
   assert.equal(scoreChangeReading({state:'baseline',delta:null},neutral,'en').comparable,false)
 })
 
+
+test('mixed-direction historical questionnaires cannot acquire a favourable trend label', () => {
+  const mixed = { direction: 'higher-reported-resource', dimensionClass: 'resources' }
+  const neutral = scoreChangeReading({state:'changed',delta:2},mixed,'en','neutral')
+  assert.equal(neutral.label, 'Score is higher')
+  assert.match(neutral.detail, /cannot establish psychological improvement/)
+  assert.equal(scoreChangeReading({state:'changed',delta:-2},
+    {direction:'lower-reported-difficulty',dimensionClass:'symptoms'},'ru','neutral').label, 'Балл стал ниже')
+  assert.match(readFileSync(new URL('../components/app/assessment-gauge.jsx',import.meta.url),'utf8'),
+    /gaugeModel\(dimension, current, locale\)\?\.orientation/, 'UI must rely on provenance-checked direction')
+})
+
 test('quality labels never conflate version integrity with independent clinical validation', () => {
   const result={definitionKey:'hh-current-state',instrumentLocale:'en'}
   const report={verified:true}
