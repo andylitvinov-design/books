@@ -14,10 +14,10 @@ const copy = {
     title: "Choose your consultation format",
     lead: "Add the formats you need and review your selection. The approach and session time are agreed personally.",
     add: "Add to cart", added: "In your cart", cart: "Your cart", empty: "Your cart is empty. Choose a format above.",
-    remove: "Remove", total: "Selected services", minute: "min", once: "One-time service", pay: "Continue to payment",
+    remove: "Remove", total: "Selected services", minute: "min", once: "One-time service", pay: "Continue to payment", paypalPay: "Pay securely with PayPal",
     unavailable: "Online payment for services is not connected yet. You can keep your selection and ask about availability and payment.",
     notPaid: "This checkout expired or did not complete. Your selection is kept; you can try again.",
-    secure: "A secure payment page will open. This is a one-time payment; the session time is agreed personally.", signIn: "Sign in to your account, then reload this page to verify your account before paying.", login: "Open my account", confirmed: "Payment confirmed. We will agree your session time personally.", checking: "Payment confirmation is pending. This page checks the order securely.", held: "This order needs a payment or refund review. Please contact us before booking.", retry: "Check payment status",
+    secure: "A secure payment page will open. This is a one-time payment; the session time is agreed personally.", paypalSecure: "You will be redirected to PayPal for a secure one-time payment. Session time is confirmed personally.", signIn: "Sign in to your account, then reload this page to verify your account before paying.", login: "Open my account", confirmed: "Payment confirmed. We will agree your session time personally.", checking: "Payment confirmation is pending. This page checks the order securely.", held: "This order needs a payment or refund review. Please contact us before booking.", retry: "Check payment status",
     repeatNotice: "An existing paid order already contains these services. Confirm only if you want to buy an additional session, even if the first is awaiting scheduling.", repeatConfirm: "Buy these services again", keepExisting: "Keep my existing order",
     pending: "Opening payment…", error: "Payment is unavailable. Your selection is saved; no payment has been confirmed.",
     request: "Ask about availability and payment", requestTitle: "Hello Andrey! I would like to ask about these services:",
@@ -31,10 +31,10 @@ const copy = {
     title: "Выберите формат консультации",
     lead: "Добавьте нужные форматы в корзину и проверьте выбор. Подход и время сессии согласуем лично.",
     add: "В корзину", added: "В корзине", cart: "Ваша корзина", empty: "Корзина пуста. Выберите формат выше.",
-    remove: "Убрать", total: "Выбранные услуги", minute: "мин", once: "Разовая услуга", pay: "Перейти к оплате",
+    remove: "Убрать", total: "Выбранные услуги", minute: "мин", once: "Разовая услуга", pay: "Перейти к оплате", paypalPay: "Оплатить через PayPal",
     unavailable: "Онлайн-оплата услуг пока не подключена. Вы можете сохранить выбор и уточнить доступное время и способ оплаты.",
     notPaid: "Срок оплаты истёк или платёж не завершён. Ваш выбор сохранён; можно повторить попытку.",
-    secure: "Откроется защищённая страница разовой оплаты. Время сессии согласуем лично.", signIn: "Войдите в личный кабинет, затем обновите эту страницу для проверки аккаунта перед оплатой.", login: "Открыть личный кабинет", confirmed: "Оплата подтверждена. Время сессии согласуем лично.", checking: "Ожидаем подтверждения оплаты. Статус заказа проверяется на сервере.", held: "Заказ требует проверки оплаты или возврата. Свяжитесь с нами до записи.", retry: "Проверить оплату",
+    secure: "Откроется защищённая страница разовой оплаты. Время сессии согласуем лично.", paypalSecure: "Откроется защищённая страница PayPal для разовой оплаты. Время сессии согласуем лично.", signIn: "Войдите в личный кабинет, затем обновите эту страницу для проверки аккаунта перед оплатой.", login: "Открыть личный кабинет", confirmed: "Оплата подтверждена. Время сессии согласуем лично.", checking: "Ожидаем подтверждения оплаты. Статус заказа проверяется на сервере.", held: "Заказ требует проверки оплаты или возврата. Свяжитесь с нами до записи.", retry: "Проверить оплату",
     repeatNotice: "Эти услуги уже есть в оплаченном заказе. Подтвердите только если хотите купить дополнительную сессию, даже если первая ещё ожидает записи.", repeatConfirm: "Купить эти услуги ещё раз", keepExisting: "Оставить существующий заказ",
     pending: "Открываем оплату…", error: "Оплата недоступна. Ваш выбор сохранён; оплата не подтверждена.",
     request: "Уточнить время и оплату", requestTitle: "Здравствуйте, Андрей! Меня интересуют услуги:",
@@ -48,10 +48,10 @@ const copy = {
     title: "Elige tu formato de consulta",
     lead: "Añade los formatos que necesites y revisa tu selección. Acordaremos personalmente el enfoque y el horario.",
     add: "Añadir al carrito", added: "En tu carrito", cart: "Tu carrito", empty: "Tu carrito está vacío. Elige un formato arriba.",
-    remove: "Quitar", total: "Servicios seleccionados", minute: "min", once: "Servicio de pago único", pay: "Continuar al pago",
+    remove: "Quitar", total: "Servicios seleccionados", minute: "min", once: "Servicio de pago único", pay: "Continuar al pago", paypalPay: "Pagar con PayPal",
     unavailable: "El pago online de servicios aún no está conectado. Puedes conservar tu selección y consultar la disponibilidad y el pago.",
     notPaid: "Este pago ha caducado o no se ha completado. Tu selección se conserva; puedes volver a intentarlo.",
-    secure: "Se abrirá una página de pago seguro. Es un pago único; acordaremos el horario personalmente.", signIn: "Inicia sesión y recarga esta página para verificar tu cuenta antes de pagar.", login: "Abrir mi cuenta", confirmed: "Pago confirmado. Acordaremos personalmente el horario de la sesión.", checking: "Esperando la confirmación del pago. Comprobamos el pedido en el servidor.", held: "Este pedido necesita una revisión del pago o reembolso. Contacta con nosotros antes de reservar.", retry: "Comprobar el pago",
+    secure: "Se abrirá una página de pago seguro. Es un pago único; acordaremos el horario personalmente.", paypalSecure: "Se abrirá PayPal para un pago único y seguro. Acordaremos el horario personalmente.", signIn: "Inicia sesión y recarga esta página para verificar tu cuenta antes de pagar.", login: "Abrir mi cuenta", confirmed: "Pago confirmado. Acordaremos personalmente el horario de la sesión.", checking: "Esperando la confirmación del pago. Comprobamos el pedido en el servidor.", held: "Este pedido necesita una revisión del pago o reembolso. Contacta con nosotros antes de reservar.", retry: "Comprobar el pago",
     repeatNotice: "Ya existe un pedido pagado con estos servicios. Confirma solo si quieres comprar otra sesión, aunque la primera siga pendiente de horario.", repeatConfirm: "Comprar estos servicios otra vez", keepExisting: "Conservar mi pedido actual",
     pending: "Abriendo el pago…", error: "El pago no está disponible. Tu selección se conserva; no se ha confirmado ningún pago.",
     request: "Consultar disponibilidad y pago", requestTitle: "¡Hola, Andrey! Me interesan estos servicios:",
@@ -69,6 +69,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
   const [available, setAvailable] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<"stripe" | "paypal">("stripe");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [signInRequired, setSignInRequired] = useState(false);
@@ -76,6 +77,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
   const [orderStatus, setOrderStatus] = useState("");
   const [repeatOrderId, setRepeatOrderId] = useState<string | null>(null);
   const operationId = useRef<string | null>(null);
+  const captureStarted = useRef(false);
   const inFlight = useRef(false);
   const accountGuard = useRef(createCommerceAccountGuard());
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -104,6 +106,7 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
         if (status.accountId && guard.bindInitial(status.accountId, generation)) {
           setAccountId(status.accountId);
           setAvailable(status.available === true);
+          setPaymentProvider(status.paymentProvider === "paypal" ? "paypal" : "stripe");
         }
       }).catch(() => {});
     const returnedId = new URLSearchParams(window.location.search).get("serviceOrder");
@@ -170,6 +173,43 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
     return () => { cancelled = true; clearTimeout(timer); abort.abort(); };
   }, [orderId, accountId, repeatOrderId, t.error, invalidateAccount]);
 
+  useEffect(() => {
+    // A PayPal return never proves payment. It only starts an authenticated,
+    // account-bound server capture, which independently checks APPROVED status.
+    if (!orderId || !accountId || paymentProvider !== "paypal" || captureStarted.current) return;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("serviceOrder") !== orderId || query.get("paymentProvider") !== "paypal" ||
+        query.get("paymentCancelled") === "1" || !query.get("token")) return;
+    const guard = accountGuard.current;
+    const ticket = guard.capture();
+    if (!ticket) return;
+    captureStarted.current = true;
+    (async () => {
+      try {
+        if (!await verifyCommerceIdentity(guard, ticket)) return;
+        const response = await fetch(`/api/app/commerce/orders/${encodeURIComponent(orderId)}/capture`, {
+          method: "POST", credentials: "same-origin",
+          headers: { "X-HH-Account-ID": ticket.accountId },
+        });
+        if (!guard.current(ticket)) return;
+        if (commerceIdentityError(response.status)) { invalidateAccount(); return; }
+        if (!response.ok) throw new Error("PAYPAL_CAPTURE_UNAVAILABLE");
+        const payload = await response.json();
+        if (!await verifyCommerceIdentity(guard, ticket)) return;
+        if (guard.current(ticket) && payload.order?.id === orderId) {
+          setOrderStatus(payload.order.status);
+          if (payload.order.status === "paid") {
+            const paidIds = new Set((payload.order.items || []).map((item: { serviceId: string }) => item.serviceId));
+            setSelected((current) => current.filter((value) => !paidIds.has(value)));
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message === "ACCOUNT_CHANGED") { invalidateAccount(); return; }
+        if (guard.current(ticket)) setError(t.error);
+      }
+    })();
+  }, [orderId, accountId, paymentProvider, invalidateAccount, t.error]);
+
   const chosen = products.filter((product) => selected.includes(product.id));
   const total = chosen.reduce((value, product) => value + product.amountMinor, 0);
   const enquiry = [t.requestTitle, ...chosen.map((product) => `${product.title} · ${product.durationMinutes} ${t.minute} · ${formatServiceAmount(product.amountMinor, locale)}`), t.requestEnd].join("\n");
@@ -218,7 +258,11 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
       }
       if (result.redirectUrl) {
         const url = new URL(result.redirectUrl);
-        if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com" || url.username || url.password || url.port) throw new Error("invalid-redirect");
+        const supportedHost = paymentProvider === "paypal"
+          ? ["www.paypal.com", "www.sandbox.paypal.com"].includes(url.hostname)
+          : url.hostname === "checkout.stripe.com";
+        if (url.protocol !== "https:" || !supportedHost || url.username || url.password || url.port)
+          throw new Error("invalid-redirect");
         if (guard.current(ticket)) window.location.assign(url.href);
       }
     } catch (error) {
@@ -257,8 +301,8 @@ export function ServiceCart({ locale }: { locale: ServiceLocale }) {
               <button type="button" className={styles.remove} disabled={pending} onClick={() => changeSelection(product.id, false)} aria-label={`${t.remove}: ${product.title}`}><Trash2 size={18} aria-hidden="true" /><span>{t.remove}</span></button>
             </li>)}</ul>
             <p className={styles.total}><span>{t.total}</span><strong>{formatServiceAmount(total, locale)}</strong></p>
-            <p className={styles.notice} id={`${id}-payment-note`}>{available ? t.secure : t.unavailable}</p>
-            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : t.pay}</button>
+            <p className={styles.notice} id={`${id}-payment-note`}>{available ? (paymentProvider === "paypal" ? t.paypalSecure : t.secure) : t.unavailable}</p>
+            <button type="button" className={styles.pay} disabled={!available || pending || Boolean(repeatOrderId)} onClick={() => checkout()} aria-describedby={`${id}-payment-note`}>{pending ? t.pending : paymentProvider === "paypal" ? t.paypalPay : t.pay}</button>
             <a className={styles.request} href={requestUrl} target="_blank" rel="noopener noreferrer">{t.request}</a>
             <p className={styles.fine}>{t.requestNote}</p>
           </> : <p className={styles.empty} role="status">{t.empty}</p>}
