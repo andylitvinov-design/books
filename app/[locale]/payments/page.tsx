@@ -22,7 +22,7 @@ const copy = {
     help: "Ask about availability first", contact: "Contact on WhatsApp",
     instructions: "If PayPal does not offer Goods & Services, don't send a personal Friends & Family transfer for a service. Contact us instead.",
     zenTitle: "Prefer ZEN.COM?",
-    zenIntro: "Request an EUR bank transfer without entering card details on this site. This is an enquiry, not a payment. Recipient eligibility and transfer details must be confirmed before sending money.",
+    zenIntro: "Request a EUR bank transfer without entering card details on this site. This is an enquiry, not a payment. Recipient eligibility and transfer details must be confirmed before sending money.",
     zenRequest: "Ask for ZEN.COM transfer details",
   },
   ru: {
