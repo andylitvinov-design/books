@@ -9,6 +9,8 @@ import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
 import { gaugeModel, gaugeChange } from '../lib/assessments/dashboard-gauges.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
+import { scoreChangeReading } from '../lib/assessments/score-change-reading.js'
 import { SITUATION_OBSERVATION } from '../lib/assessments/situational-score-context.js'
 import { assessmentResultOverview, initialAssessmentSection } from '../lib/assessments/result-overview.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
@@ -30,7 +32,8 @@ const load = (code, imports) => {
   } })
   return compiledModule.exports
 }
-const gauges = load(gaugeCode, { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange } })
+const gauges = load(gaugeCode, { '@/lib/assessments/dashboard-gauges': { gaugeModel, gaugeChange },
+  '@/lib/assessments/score-change-reading': { scoreChangeReading } })
 const expand = node => node == null || typeof node !== 'object' ? node
   : Array.isArray(node) ? node.map(expand)
     : typeof node.type === 'function' ? expand(node.type(node.props))
@@ -67,6 +70,7 @@ function mount(props) {
     '@/lib/assessments/dashboard-gauges': { gaugeModel },
     '@/lib/assessments/situational-score-context': { SITUATION_OBSERVATION },
     '@/lib/assessments/result-overview': { assessmentResultOverview },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
   })
   const render = () => { cursor = 0; tree = expand(CompactAssessmentReport(props)); return tree }
   render()
