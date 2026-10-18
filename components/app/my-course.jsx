@@ -539,14 +539,26 @@ export function MyCourse({ data, locale = 'en' }) {
     </section>
   </div>
 
-  return <div className={styles.root} data-my-course>
+  const compactBaselineNav = !showDashboard && !stressWelcome && !isHistory && stage === 2 &&
+    !state.course?.presetId &&
+    courseProgramFromTopics(state.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID
+
+  return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '')} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
       locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
     />}
-    {!showDashboard && !stressWelcome && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
+    {compactBaselineNav && <nav className={styles.compactBaselineNav} aria-label={ru ? 'Навигация курса' : locale === 'es' ? 'Navegación del curso' : 'Course navigation'} data-opora-baseline-compact-nav>
+      <button type="button" disabled={busy} onClick={() => changeView('list')}>
+        <ArrowLeft size={15} aria-hidden="true"/>{ru ? 'Мои курсы' : locale === 'es' ? 'Mis cursos' : 'My courses'}
+      </button>
+      <button type="button" disabled={busy} onClick={() => changeView('switch')}>
+        {ru ? 'Сменить направление' : locale === 'es' ? 'Cambiar dirección' : 'Change direction'}
+      </button>
+    </nav>}
+    {!showDashboard && !stressWelcome && !compactBaselineNav && courses.length > 0 && <button type="button" className={styles.backCourses} onClick={() => changeView('list')}>
       ← {ru ? 'Мои курсы' : 'My courses'}
     </button>}
     {!showDashboard && !stressWelcome && stage !== 4 && view === 'detail' && courses.length > 1 && <section className={styles.courseSelector} aria-labelledby={selectorId + '-heading'}>
@@ -647,7 +659,7 @@ export function MyCourse({ data, locale = 'en' }) {
       <button type="button" disabled={busy} onClick={()=>void retryProgramIntake()}>{ru?'Повторить настройку программы':'Retry programme setup'}</button>
     </section>}
 
-    {!showDashboard && !stressWelcome && !isHistory && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
+    {!showDashboard && !stressWelcome && !isHistory && !compactBaselineNav && stage >= 1 && stage <= 3 && <button type="button" disabled={busy} className={styles.backCourses}
       onClick={() => changeView('switch')}>
       {ru ? 'Изменить направление курса' : 'Change course direction'}
     </button>}
@@ -666,7 +678,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
     {!showDashboard && stage === 4 && <CourseToday locale={locale} key={state.course.id} courseId={state.course.id} accountId={accountId} access={access} onCourseChange={courseChanged} onExit={() => { if (isSelected(state.course.id,viewGeneration)) { changeView('list'); setShowCourse(false) } }} />}
 
-    {stage !== 4 && !stressWelcome && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
+    {stage !== 4 && !stressWelcome && !compactBaselineNav && <footer className={styles.footer}><LockKeyhole size={15}/><span>{t.safe} {t.note}</span></footer>}
   </div>
 }
 
