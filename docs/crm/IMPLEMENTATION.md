@@ -38,6 +38,6 @@ Source implementation adds lead/client/archived filters, a privacy-first one-way
 
 ## Owner launch record and lifecycle (18 October 2026)
 
-Production core CRM tables, restricted role and indexes were applied in Supabase (migration versions 20261018122353 / 20261018122533), after RLS readback. The two production Vercel CRM flags were then enabled without activating campaign dispatch. New lifecycle controls allow owner-only lead/client/archived transitions with exact revision checks. A further migration (20261018131000) hardens irreversible suppression while granting only the lifecycle column update.
+Production core CRM tables, restricted role and indexes were applied in Supabase (migration versions 20261018122353 / 20261018122533), after RLS readback. The two production Vercel CRM flags were then enabled without activating campaign dispatch. New lifecycle controls allow owner-only lead/client/archived transitions with exact revision checks. The applied lifecycle migration (20261018123830) hardens irreversible suppression while granting only the lifecycle column update.
 
 My Practice now surfaces a dedicated CRM tile for the legacy owner without replacing existing admin Clients or the multitenant enquiry view for other masters. Owner E2E remains a signed-in-browser release verification; no real contacts are seeded, imported, emailed or published by tests. Subscriber registry and outbound campaigns remain separately gated OFF.

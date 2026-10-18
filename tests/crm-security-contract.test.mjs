@@ -73,7 +73,7 @@ test('CRM manual suppression is owner-only, ledger-backed and never re-subscribe
 test('CRM lifecycle updates are owner-scoped and suppression remains immutable', () => {
  const route=read('app/api/app/crm/route.js'),repo=read('lib/crm/repository.js')
  const ui=read('components/app/crm-manager.jsx'),practice=read('components/app/practice-workspace.jsx')
- const migration=read('supabase/migrations/20261018131000_hh_crm_contact_lifecycle.sql')
+ const migration=read('supabase/migrations/20261018123830_hh_crm_contact_lifecycle.sql')
  assert.match(route,/body\.action === 'set_lifecycle'/)
  assert.match(route,/onlyKeys\(body\.payload, \['id','lifecycle','expectedRevision'\]\)/)
  assert.match(repo,/async setLifecycle\(input\)/)
