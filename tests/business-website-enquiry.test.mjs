@@ -31,7 +31,10 @@ test("public intake is fail-closed, encrypted and never claims a confirmed booki
   assert.match(route,/readBody\(request, 2400\)/);
   assert.match(store,/seal\(payload/);
   assert.match(store,/hh_app_inbox|inbox:true/);
-  assert.match(store,/on conflict\(operation_hash\) do nothing/);
+  assert.match(store,/on conflict do nothing/);
+  assert.doesNotMatch(store,/on conflict\\(operation_hash\\)/);
+  // The inbox role has only column-level INSERT; naming the arbiter column
+  // would additionally require SELECT privilege, defeating least privilege.
   assert.match(ownerRoute,/practitionerEmailAllowed/);
   assert.match(ownerRoute,/businessEnquiries: await store\.listBusinessEnquiries/);
   assert.match(crm,/CrmBusinessEnquiries/);
