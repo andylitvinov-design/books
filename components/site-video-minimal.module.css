@@ -139,3 +139,10 @@
 .minimal .quickWatch :global(.site-video-watch-link){color:#855139;display:inline-flex;align-items:center;gap:8px;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
 .minimal .quickWatch :global(.site-video-watch-link svg){width:15px;height:15px}
 .minimal .quickWatch a:focus-visible{outline:2px solid #855139;outline-offset:3px}
+
+/* Shown only after a click on an approved public HeyGen-only video. */
+.recovery{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;margin:9px 0 4px;border:1px solid #dfd4c8;border-radius:12px;background:#fffaf3;color:#59493b;font:400 13px/1.5 Arial,Helvetica,sans-serif}
+.recovery span{flex:1 1 160px}
+.recovery button,.recovery a{min-height:36px;display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:6px 2px;color:#755039;font:600 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.recovery a svg{width:14px;height:14px}
+.recovery button:focus-visible,.recovery a:focus-visible{outline:2px solid #755039;outline-offset:3px}
