@@ -115,7 +115,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
                   )}
                 </div>
                 <AcquisitionEventLink className={styles.offerDirectLink}
-                  href={`?businessFormat=${offer.kind}#business-direct-request`}
+                  href="#business-direct-request"
                   event="service_request_start" prefetch={false}
                   attributes={{"data-business-direct-option":offer.kind}}>
                   {locale === "ru" ? "Отправить заявку с сайта" : locale === "es" ? "Enviar solicitud desde la web" : "Send a website request"}
