@@ -1,3 +1,4 @@
+import { advanceSavedGuidedQuestion } from './helpers/guided-progress-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests } from './helpers/cabinet-navigation-verifier.mjs'
 import { readEveryAccountScale } from './helpers/account-scale-picker-verifier.mjs'
 import { assertQuestionnaireMode, enterGuestQuestionnaireMode } from './helpers/direct-questionnaire-verifier.mjs'
@@ -42,7 +43,7 @@ async function fill(page,d,mode,guest,locale){
   const saved=page.waitForResponse(r=>r.url().includes('/runs/')&&r.url().endsWith('/save')&&r.request().method()==='POST')
   await buttons.nth(2).click()
   assert.ok((await saved).ok())
-  if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
+  if(mode==='guided'&&i<d.questions.length-1)await advanceSavedGuidedQuestion(page,expect,{locale,progress:i+1,guest})
  }
  const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()

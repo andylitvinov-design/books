@@ -1,3 +1,4 @@
+import { advanceSavedGuidedQuestion } from './helpers/guided-progress-verifier.mjs'
 import { openAccountTestPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 async function downloadAccountReport(page, locale) {
  const action=page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true})
@@ -336,7 +337,7 @@ async function fill(page,d,mode,guest,locale){
   const saved=page.waitForResponse(r=>r.url().includes('/runs/')&&r.url().endsWith('/save')&&r.request().method()==='POST')
   await buttons.nth([0,1,4,4,2,0][i]).click()
   assert.ok((await saved).ok())
-  if(mode==='guided'&&i<d.questions.length-1)await page.getByRole('button',{name:locale==='ru'?'Далее':'Next',exact:true}).click()
+  if(mode==='guided'&&i<d.questions.length-1)await advanceSavedGuidedQuestion(page,expect,{locale,progress:i+1,guest})
  }
  const finish=page.getByRole('button',{name:guest?guestFinishLabel(locale):locale==='ru'?'Сохранить результат и получить рекомендации':'Save results and get recommendations',exact:true})
  await expect(finish).toBeEnabled()
