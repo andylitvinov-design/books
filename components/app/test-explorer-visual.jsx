@@ -292,7 +292,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
             {ru ? 'Подробнее' : es ? 'Detalles' : 'Details'} <span aria-hidden="true">→</span>
           </Link>}
           {!measure && candidate && <Link
-            href={`/${locale}/app/tests?explore=1&axis=${encodeURIComponent(axis)}`}
+            href={`/${locale}/app/tests?explore=1&axis=${encodeURIComponent(axis)}&suggest=${encodeURIComponent(candidate.testKey)}`}
             prefetch={false}
             className={styles.portraitRayTestLink}
             aria-label={`${candidate.mode === 'descriptive' ? (ru ? 'Изучить тему' : es ? 'Explorar' : 'Explore') : (ru ? 'Пройти тест' : es ? 'Hacer test' : 'Test it')}: ${label(axis)}`}>
