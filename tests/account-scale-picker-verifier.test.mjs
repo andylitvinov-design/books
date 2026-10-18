@@ -9,6 +9,7 @@ import { MHC_SF_DEFINITIONS } from '../data/assessments/mhc-sf-adult-dec2011.js'
 import { COMPASSION_DEFINITIONS } from '../data/assessments/compassion-2026.js'
 import { PERSONALITY_TYPE_DEFINITIONS } from '../data/assessments/personality-types-original-2026.js'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
+import { assessmentEvidenceStatus } from '../lib/assessments/assessment-evidence-status.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} }
@@ -28,6 +29,7 @@ function scenario(keys, fault) {
     '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },
     '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },
     '@/lib/assessments/result-overview': { assessmentResultOverview: () => ({}) },
+    '@/lib/assessments/assessment-evidence-status': { assessmentEvidenceStatus },
     './compact-assessment-report.module.css': { default: {} },
   }
   const exports = {}
