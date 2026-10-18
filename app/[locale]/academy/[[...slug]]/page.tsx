@@ -17,6 +17,7 @@ import { YggdrasilBasicCourseDescription } from "@/components/yggdrasil-basic-co
 import { YggdrasilSourceArchivePage } from "@/components/yggdrasil-source-archive";
 import { YggdrasilFreeInitiation } from "@/components/yggdrasil-free-initiation";
 import { TantraFreeInitiation } from "@/components/tantra-free-initiation";
+import { ReikiReferralLanding } from "@/components/reiki-referral-landing";
 import { YggdrasilSuperSkillsSourcesPage } from "@/components/yggdrasil-superskills-sources-page";
 import { academyCopy, academyDirections, academyDisplayTitle, academyPublicBlocks, findAcademyRecord, isPublicLocale, mediaForRecord, youtubeIdFromUrl, type AcademyDirectionId, type AcademyView } from "@/data/academy/catalog";
 import { yggdrasilModuleBySlug } from "@/data/academy/yggdrasil-module-map";
@@ -59,6 +60,7 @@ function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (routeKey(slug) === "reiki/kundalini-reiki") return locale === "ru" ? "Кундалини Рейки — 3 ступени" : locale === "es" ? "Kundalini Reiki — 3 niveles" : "Kundalini Reiki — 3 levels";
   const child = yggdrasilChild(slug);
   if (routeKey(slug) === "reiki/yggdrasil/basic-course/description") return locale === "ru" ? "Рейки Иггдрасиль — книга базового курса I–V ступени" : locale === "es" ? "Libro: Reiki Yggdrasil — Curso Básico I–V" : "Reiki Yggdrasil — Basic Course Book I–V";
+  if (routeKey(slug) === "reiki/free-practitioner-course") return locale === "ru" ? "Тантра Рейки и энергетические практики — бесплатный курс и инициация" : locale === "es" ? "Tantra Reiki — curso gratis e iniciación de Nivel 1" : "Tantra Reiki & Energywork — Free Course and Level 1 Initiation";
   if (routeKey(slug) === "reiki/tantra-reiki/free-initiation") return locale === "ru" ? "Тантра Рейки — бесплатная инициация 1-й ступени" : locale === "es" ? "Tantra Reiki — iniciación gratuita de Nivel 1" : "Tantra Reiki — Free Level 1 Initiation";
   if (child === "free-initiation") return locale === "ru" ? "Как получить бесплатную инициацию 1-й ступени Рейки Иггдрасиль" : locale === "es" ? "Cómo recibir la iniciación gratis de Reiki Yggdrasil Nivel 1" : "How to receive free Reiki Yggdrasil Level 1 initiation";
   if (child === "superskills-sources") return locale === "ru" ? "Первоисточники SuperSkills — Рейки Иггдрасиль" : locale === "es" ? "Fuentes originales de SuperSkills · Reiki Yggdrasil" : "Reiki Yggdrasil · Original SuperSkills resources";
@@ -93,6 +95,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? locale === "ru" ? "Бесплатный вводный курс: основы энергетической работы, отличия Рейки Иггдрасиль, Тантра Рейки и Кундалини Рейки, ссылки на программы и инициации первой ступени." : locale === "es" ? "Curso introductorio gratis: principios del trabajo energético, tres sistemas Reiki, materiales y enlaces a las iniciaciones de Nivel 1." : "Principles of Energywork: free introductory course comparing Reiki Yggdrasil, Tantra Reiki and Kundalini Reiki, with original study materials and teacher-guided Level 1 offers."
     : routeKey(slug) === "reiki/kundalini-reiki/free-initiation"
     ? locale === "ru" ? "Бесплатная вводная первая ступень Кундалини Рейки: обучение по исходной методичке Пола Крика и заявка Андрею без email и регистрации." : locale === "es" ? "Kundalini Reiki Nivel 1: materiales originales, manual de Paul Crick y solicitud gratuita de iniciación introductoria con Andrey." : "Kundalini Reiki free Level 1 introduction: study the original Paul Crick manual and ask Andrey for a teacher-guided initiation; no signup required."
+    : routeKey(slug) === "reiki/free-practitioner-course"
+    ? locale === "ru" ? "Бесплатный курс практик Рейки: пять уроков с Андреем Литвиновым, Тантра Рейки, Кундалини Рейки и Рейки Иггдрасиль. Бесплатная вводная инициация I ступени после курса по согласованию." : locale === "es" ? "Curso gratuito de Tantra Reiki y energía: cinco lecciones con Andrey Litvinov e iniciación introductoria gratuita de Nivel 1 previa confirmación." : "Free five-lesson Tantra Reiki and energywork course with Andrey Litvinov. Practise three Reiki systems and arrange a free introductory Level 1 initiation after completion."
     : routeKey(slug) === "reiki/tantra-reiki/free-initiation"
     ? locale === "ru" ? "Тантра Рейки: бесплатная или личная инициация первой ступени, 7 вопросов, оригинальная практика Андрея, 9 ступеней и PDF." : locale === "es" ? "Tantra Reiki: iniciación gratis o personal, siete preguntas, vídeo original de Andrey, nueve niveles y PDF." : "Tantra Reiki Level 1: free or personal initiation, seven study questions, Andrey’s original video, nine levels and PDF."
     : routeKey(slug) === "reiki/kundalini-reiki"
@@ -118,6 +122,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedTitle = (seoOverride?.title ?? title) + " — Holistic House";
   const resolvedDescription = seoOverride?.description ?? description;
   const tantraFreeInitiation = routeKey(slug) === "reiki/tantra-reiki/free-initiation";
+  const referralLanding = routeKey(slug) === "reiki/free-practitioner-course";
   const sharingImage = "/images/holistic-house/andy-about.png";
   return {
     metadataBase: metadataBaseFor(),
@@ -125,7 +130,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: resolvedDescription,
     ...(routeKey(slug) === "principles-of-energywork/learn" ? { robots: { index: false, follow: false } } : {}),
     alternates: { canonical: path, languages: { en: "/en/academy" + languageSuffix, ru: "/ru/academy" + languageSuffix, es: "/es/academy" + languageSuffix, "x-default": "/en/academy" + languageSuffix } },
-    ...(tantraFreeInitiation ? {
+    ...(tantraFreeInitiation || referralLanding ? {
       openGraph: {
         type: "website" as const,
         url: path,
@@ -159,6 +164,7 @@ export default async function AcademyPage({ params, searchParams }: Props) {
   }
 
   if (key === "free-ai-courses") return <PublicGrowthCourses locale={locale} />;
+  if (key === "reiki/free-practitioner-course") return <ReikiReferralLanding locale={locale} />;
   if (key === "principles-of-energywork/learn") return <EnergyworkAiLearner locale={locale === "ru" ? "ru" : "en"} />;
   if (key === "principles-of-energywork") return <PrinciplesOfEnergywork locale={locale} />;
   if (key === "reiki/kundalini-reiki/free-initiation") return <KundaliniFreeInitiation locale={locale} />;
