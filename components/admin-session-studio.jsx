@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { SessionMaterialPicker } from './session-material-picker'
+import { SessionSaveFooterVideo } from './session-save-footer-video'
 import { tryCopyOwnerLink } from '@/lib/consultations/owner-report-sharing'
 import { Copy,FileText,LockKeyhole,PlayCircle,Save,Send,Trash2,RotateCw,ChevronUp,ChevronDown } from 'lucide-react'
 import styles from './client-session.module.css'
@@ -235,6 +236,7 @@ export function AdminSessionStudio({clientId,initialSession,documents=[],locale=
         selectedIds={plan.materialIds||plan.materials?.map(item=>item.id)||[]}
         disabled={block}
         onChange={ids=>updatePlan({materialIds:ids})}/>
+      <SessionSaveFooterVideo clientId={clientId} session={session} locale={locale}/>
       {(plan.resources||[]).length>0&&<p className={styles.ownerMaterialsMuted}>{ru?
         'Ранее добавленные ссылки этой консультации сохранены без изменений. Новые общие материалы выбираются из библиотеки выше.':
         'Previously attached session links remain unchanged. Choose new shared resources from the library above.'}</p>}
