@@ -28,3 +28,16 @@ test('public media crawler retries transport failures and validates remote HTTP 
   assert.match(academy,/OrdMvKn2Zg8/);
   assert.match(academy,/!unavailablePublicYouTubeIds.has/);
 });
+
+test('Lighthouse measures key public mobile routes, captures screenshots and reports lab thresholds without inventing field INP',()=>{
+  const workflow=read('.github/workflows/hh-lighthouse.yml');
+  const script=read('scripts/report-hh-lighthouse.mjs');
+  const screenshots=read('scripts/export-hh-lighthouse-screenshots.mjs');
+  assert.match(workflow,/lighthouse-services-mobile\.json/);
+  assert.match(workflow,/lighthouse-remedy-mobile\.json/);
+  assert.match(workflow,/export-hh-lighthouse-screenshots/);
+  assert.match(script,/maxLcpMs: 2500, maxCls: 0\.1/);
+  assert.match(script,/mobileThresholds/);
+  assert.match(script,/INP/);
+  assert.match(screenshots,/final-screenshot/);
+});
