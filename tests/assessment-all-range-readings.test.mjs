@@ -19,7 +19,7 @@ const score = (definition, fraction = 0.5) => {
 
 test('every immutable numeric score has one honest readable interval and a selected characterization in both languages', () => {
   assert.ok(ASSESSMENT_DEFINITIONS.length >= 230)
-  const count = { published: 0, 'source-options': 0, descriptive: 0, ordinal: 0, continuous: 0 }
+  const count = { published: 0, 'source-options': 0, descriptive: 0, ordinal: 0, continuous: 0, 'historical-mixed': 0 }
   for (const definition of ASSESSMENT_DEFINITIONS) for (const fraction of [0, 0.5, 1]) {
     const scored = score(definition, fraction)
     const saved = JSON.stringify(scored)
@@ -40,7 +40,15 @@ test('every immutable numeric score has one honest readable interval and a selec
         row.code && row.label && row.displayRange && row.note.length >= 45),
       context + ' every range explained')
       assert.equal(reading.rows.find(row => row.current)?.code, reading.current.code)
-      if (reading.clusterBasis) {
+      if (reading.clusterBasis === 'historical-mixed-mean-v1') {
+        assert.ok(['hh-money-pressure','hh-overthinking-loop','hh-screen-saturation'].includes(definition.key), context)
+        assert.equal(definition.version, 'v1', context)
+        assert.equal(reading.rows.length, 5, context)
+        assert.equal(reading.sourceQuestions?.length, 6, context)
+        assert.equal(reading.newerVersion, 'v2')
+        assert.equal(model.bands.length, 0, context + ' no invented clinical score bands')
+        assert.match(reading.caution, locale === 'ru' ? /не означает уровень тяжести/ : /None of these intervals indicates severity/)
+      } else if (reading.clusterBasis) {
         assert.ok(definition.key.startsWith('hh-'), context + ' author-only scoring')
         assert.ok(['source-answer-anchors','attainable-score-positions'].includes(reading.clusterBasis), context)
         assert.ok(reading.sourceQuestions?.length > 0, context + ' subscale source items')
@@ -74,6 +82,7 @@ test('every immutable numeric score has one honest readable interval and a selec
   assert.ok(count.descriptive > 0)
   assert.ok(count.ordinal > 0)
   assert.ok(count.continuous > 0)
+  assert.ok(count['historical-mixed'] > 0)
 })
 
 test('published source categories and borderline transitions use exact interval, meaning and scope', () => {
@@ -137,9 +146,9 @@ test('personality typologies expose response-linked traits without asserting a f
 
 test('never attach clinical or directional levels to mixed historical totals, counts or calibrated scores',()=>{
   for (const [key,expected] of [
-    ['hh-money-pressure','continuous'],
-    ['hh-overthinking-loop','continuous'],
-    ['hh-screen-saturation','continuous'],
+    ['hh-money-pressure','historical-mixed'],
+    ['hh-overthinking-loop','historical-mixed'],
+    ['hh-screen-saturation','historical-mixed'],
     ['cfpb-financial-wellbeing-5','continuous'],
     ['cdc-healthy-days-symptoms','continuous'],
   ]) {
@@ -148,8 +157,13 @@ test('never attach clinical or directional levels to mixed historical totals, co
     for(const dimension of result.dimensions){
       const reading=gaugeModel(dimension,result,'ru').rangeReading
       assert.equal(reading.kind,expected,key+'/'+dimension.key)
-      assert.equal(reading.rows.length,1)
-      assert.equal(reading.rows[0].current,true)
+      assert.equal(reading.rows.length,expected==='historical-mixed'?5:1)
+      assert.equal(reading.rows.filter(row=>row.current).length,1)
+      if(expected==='historical-mixed') {
+        assert.equal(reading.rows[0].from,0)
+        assert.equal(reading.rows.at(-1).to,4)
+        assert.match(reading.caution,/не означает уровень тяжести/)
+      }
       assert.doesNotMatch(reading.caution,/клинический уровень\s+(сильный|умеренный)/)
     }
   }
