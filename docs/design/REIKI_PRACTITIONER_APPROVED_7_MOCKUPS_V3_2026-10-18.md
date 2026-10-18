@@ -23,7 +23,7 @@ The course's **all 53 screens**, not just these seven examples, share the same t
 
 ## Implementation contract
 
-- Use the **existing, locally owned** `/images/holistic-house/reiki-practitioner-sunrise.webp` (the meditating woman from the prior owner-approved concept), layered over the existing local `reiki-heaven-sky.svg` for subtle background presence throughout the course.
+- Use the **existing, locally owned** `/images/holistic-house/reiki-approved-sunrise-v3.webp` (the meditating woman from the prior owner-approved concept), layered over the existing local `reiki-heaven-sky.svg` for subtle background presence throughout the course.
 - Show the same photographic character more prominently on the welcome, symbolic flight, and opening Tantra Reiki screens. Preserve other existing meaningful artwork and never replace the actual YouTube video/poster with fictitious playback.
 - Prioritize phone readability: large headings (~30–39 CSS px), body text (~14–16 px), answer cards (~14–15.5 px), stage labels at least ~10.5 px, progress text 13+ px and 49–55 px primary touch controls. On short 320px screens long cards may scroll **inside** the slide, with the CTA kept visible.
 - Retain light blue/white glass, soft dawn-sunrise warmth, accessible text contrast and visible keyboard focus. Do **not** paste a screenshot mockup as the whole webpage. Browser address bars shown in mockups are illustrative, not site UI.
@@ -42,3 +42,7 @@ The course's **all 53 screens**, not just these seven examples, share the same t
 ## Concurrent course expansion (18 October 2026)
 
 The seven approved image mockups show **45 total screens**, because they were created before PR #970. The live curriculum is now **53 screens** after new human-reviewed meditation feedback, verified community-voice screens and chapter celebrations. **Use the real 53-screen progress and preserve these added elements**; do not hard-code the number in the interface from the historical mockups. V3 styles also enlarge their notes, buttons and headings.
+
+## Improved approved local image
+
+The production photographic asset is a clean text-free crop from owner-approved mockup 03: `public/images/holistic-house/reiki-approved-sunrise-v3.webp` (756 × 478, about 42 KB, WebP). It replaces the previous miniature photo **only within the V3 presentation**. The original mockup PNGs remain unmodified in the Library archive. No fake video screenshot or extra publishing platform is used.
