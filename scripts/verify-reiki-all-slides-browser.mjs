@@ -71,9 +71,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       where + ": action stays reachable above mobile browser safe area; " + JSON.stringify(data));
   }
   if (data.kind === "practice") await expect(page.locator('[data-energywork-slide-kind="practice"]').locator('[class*="practiceTimer"]')).toBeVisible();
-  if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('[class*="video"]')).toBeVisible();
-  if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('[class*="question"]')).toBeVisible();
-  if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('[class*="final"]')).toBeVisible();
+  if (data.kind === "video") await expect(page.locator('[data-energywork-slide-kind="video"]').locator('div[class*="_video__"]')).toBeVisible();
+  if (data.kind === "reflection") await expect(page.locator('[data-energywork-slide-kind="reflection"]').locator('div[class*="_question__"]')).toBeVisible();
+  if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (screenshot) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
   }
