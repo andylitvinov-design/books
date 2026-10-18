@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { databasePool } from '@/lib/app/database'
-import { getCrmEmailConfig, verifyResendWebhook } from '@/lib/crm/email'
+import { verifyResendWebhook } from '@/lib/crm/email'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
 
 export async function POST(request) {
-  const sender=getCrmEmailConfig()
-  if (!sender.enabled) return new NextResponse(null,{status:503})
+  // Bounce/complaint suppression must remain active even when outbound sends are paused.
+  const secret=process.env.HH_CRM_RESEND_WEBHOOK_SECRET
+  if (!secret?.startsWith('whsec_')) return new NextResponse(null,{status:503})
   const text=await request.text()
   let parsed
-  try { parsed=verifyResendWebhook(text,request.headers,sender.webhookSecret) }
+  try { parsed=verifyResendWebhook(text,request.headers,secret) }
   catch { return new NextResponse(null,{status:400}) }
   const event=parsed.event
   if (!['email.bounced','email.complained','email.failed'].includes(event.type))

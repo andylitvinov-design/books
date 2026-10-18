@@ -42,7 +42,8 @@ test('no unauthenticated email address discovery; client tokens only via fragmen
 })
 test('provider webhook checks signature first, applies only bounce/complaint/failed',()=>{
  const src=read('app/api/app/crm/webhook/route.js')
- assert.match(src,/verifyResendWebhook\(text,request\.headers,sender\.webhookSecret\)/)
+ assert.match(src,/verifyResendWebhook\(text,request\.headers,secret\)/)
+ assert.doesNotMatch(src,/if \(!sender\.enabled\)/)
  assert.match(src,/email\.bounced/)
  assert.match(src,/email\.complained/)
  assert.match(src,/crm_suppress_provider_email/)

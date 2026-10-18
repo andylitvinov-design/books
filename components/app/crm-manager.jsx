@@ -133,7 +133,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <p className={styles.fine}>{c.showing}</p>
       {!data.emailEnabled&&<p className={styles.privacy} role="status">{language==='ru'?'Отправка email пока не подключена: требуется проверенный почтовый домен, Resend и подтверждённые настройки отправителя.':language==='es'?'Para enviar correo debes conectar Resend y un dominio de remitente verificado.':'Connect Resend and a verified sender domain to enable actual email delivery.'}</p>}
       <ul className={styles.list}>
-        {contacts.length?contacts.map(contact=><li key={contact.id}>
+        {contacts.length?contacts.map(contact=><li key={contact.id} className={styles.emailContactRow}>
           <span className={styles.avatar} aria-hidden="true">{String(contact.displayName||'?').trim().slice(0,1).toUpperCase()}</span>
           <span className={styles.contactInfo}><strong>{contact.displayName}</strong><small>{contact.email}</small></span>
           <label className={styles.stageLabel}><span>{c.stage}</span>
