@@ -154,3 +154,16 @@
   .stressResult strong { font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .hero *, .results * { scroll-behavior: auto !important; } }
+
+
+/* Local academy view switch stays available below the shared four-section finder. */
+.programTabs { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 17px; }
+.programTabs a { display: inline-flex; align-items: center; justify-content: center; min-height: 34px;
+  padding: 7px 12px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 38%);
+  background: rgb(255 255 255 / 8%); color: #f3eaf0; font: 700 11px/1.3 system-ui,sans-serif; text-decoration: none; }
+.programTabs a[aria-current="page"] { background: #fff9f3; color: #243854; }
+.programTabs a:focus-visible { outline: 3px solid #f3b4c9; outline-offset: 3px; }
+@media(max-width:620px){.programTabs{gap:5px;margin-bottom:13px}.programTabs a{font-size:10px;padding:6px 9px;min-height:32px}}
+
+/* Preserve every translated label without clipping on compact phones. */
+@media(max-width:400px){.topline{flex-wrap:wrap}.eyebrow{max-width:100%}}

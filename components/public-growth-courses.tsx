@@ -5,6 +5,7 @@ import { PublicCourseCabinet } from "@/components/public-course-cabinet";
 import Course14DayOverview from "@/components/app/course-14-day-overview";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-growth-courses.module.css";
+import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 
 const copy = {
   ru: {
@@ -155,6 +156,10 @@ export function PublicGrowthCourses({ locale }: { locale: PublicLocale }) {
       <Link href={"/" + locale + "/academy"}>{t.academy}</Link><span aria-hidden="true">›</span><span aria-current="page">{t.title}</span>
     </nav>
     <section className={styles.hero} aria-labelledby="courses-title">
+      <div className={styles.discoveryTopline}>
+        <span className={styles.discoveryKicker}><Sparkles size={16} aria-hidden="true" /> HOLISTIC HOUSE</span>
+        <DiscoverySectionTabs locale={locale} active="courses" />
+      </div>
       <div className={styles.heroCopy}>
         <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
         <h1 id="courses-title">{t.title}</h1>

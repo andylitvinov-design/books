@@ -536,3 +536,6 @@
   .quickFacets label{flex-basis:100%}
 }
 @media(prefers-reduced-motion:reduce){.extraChevron{transition:none}}
+
+/* Four discovery tabs wrap below the kicker on extra-narrow mobile screens. */
+@media(max-width:400px){.topline{flex-wrap:wrap}.topline .kicker{max-width:100%}}

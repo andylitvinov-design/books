@@ -1,0 +1,50 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { activeNavigationId, getSiteNavigation, navigationCopy, compactNavigationIds } from '../lib/site-navigation-model.js'
+
+const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('Four discovery tabs share one EN/RU/ES public destination model', () => {
+  const tabs = read('components/discovery-section-tabs.tsx')
+  assert.match(tabs, /"tests", "services", "events", "courses"/)
+  assert.match(tabs, /section === active \? "page" : undefined/)
+  for (const route of ['client/tests', 'services', 'events', 'academy/free-ai-courses']) assert.ok(tabs.includes(route))
+  const css = read('components/discovery-section-tabs.module.css')
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  assert.match(css, /@media\(max-width:400px\)/)
+  for (const file of ['components/services-smart-discovery.tsx', 'components/app/simple-test-picker.jsx', 'components/academy-discovery.tsx', 'components/events-discovery.tsx']) {
+    assert.match(read(file), /<DiscoverySectionTabs locale=\{locale\} active=/, file)
+  }
+  assert.match(read('components/academy-discovery.tsx'), /programTabs/)
+  assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
+})
+
+test('Events is a first-party menu destination in every language while the existing six-item mobile bar is stable', () => {
+  const header = read('components/site-navigation.tsx')
+  const locale = read('lib/public-locales.ts')
+  const page = read('app/[locale]/events/page.tsx')
+  const sitemap = read('app/sitemap.ts')
+  for(const language of ['en','ru','es']) {
+    assert.equal(getSiteNavigation(language).find(row => row.id === 'events')?.href, '/' + language + '/events')
+    assert.equal(activeNavigationId('/' + language + '/events'), 'events')
+    assert.ok(navigationCopy[language].events)
+    assert.match(page, /alternates/)
+  }
+  assert.match(header, /item.id === 'events'/)
+  assert.match(locale, /events/)
+  assert.match(sitemap, /locale \+ '\/events'/)
+  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'library', 'house'])
+})
+
+test('Event page never invents upcoming dates or shows private unpublished entries', () => {
+  const data = read('data/public-events.ts')
+  const view = read('components/events-discovery.tsx')
+  assert.match(data, /PUBLIC_EVENTS: readonly PublicEvent\[\] = \[\]/)
+  assert.match(view, /event\.status === "published"/)
+  assert.match(view, /event\.registrationHref\.trim\(\)/)
+  assert.match(view, /starts < now/)
+  assert.match(view, /No confirmed upcoming dates are published yet/)
+  assert.match(view, /Пока нет опубликованных подтверждённых дат/)
+  assert.match(view, /Todavía no hay fechas próximas confirmadas/)
+})
