@@ -9,6 +9,8 @@ import { useLessonCompletionOffer } from './subscription-access'
 import { CourseQuestMap } from './course-quest'
 import CourseSlidePlayer from './course-slide-player'
 import OporaV6SlidePlayer from './opora-v6-slide-player'
+import OporaExperiencePlayer from './opora-experience-player'
+import {COURSE_ANTISTRESS_SKILLS_V7} from '@/lib/inner-growth/anti-stress-skills-v7'
 import {OPORA54_SLIDE_MODEL} from '@/lib/inner-growth/anti-stress-skills-v6'
 import CourseFocusEntry from './course-focus-entry'
 import CourseFinalRetest from './course-final-retest'
@@ -593,10 +595,15 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     </li>)}</ol>
   </section>}
   {questOpen&&(data?.lesson?.antiStress?.slideModel===OPORA54_SLIDE_MODEL && data.programme?.id==='stress'?
-    <OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
-      data={data} busy={busy} onClose={()=>setQuestOpen(false)}
-      onFinish={()=>{setQuestOpen(false);setView('path')}}
-      onSession={body=>submit('session',body,undefined,'inline')}/>
+    (data?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
+      ?<OporaExperiencePlayer key={cycle.id+':'+cycle.day} locale={locale}
+        data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+        onFinish={()=>{setQuestOpen(false);setView('path')}}
+        onSession={body=>submit('session',body,undefined,'inline')}/>
+      :<OporaV6SlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
+        data={data} busy={busy} onClose={()=>setQuestOpen(false)}
+        onFinish={()=>{setQuestOpen(false);setView('path')}}
+        onSession={body=>submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+cycle.day} locale={locale}
     data={data} busy={busy} promotion={promotion} onClose={()=>setQuestOpen(false)}
      onFinish={()=>{setQuestOpen(false);setView('path')}}
