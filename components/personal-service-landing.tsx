@@ -39,6 +39,20 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
       next: "Elige el formato y envía tu solicitud; Andrey confirmará el horario antes de reservar.",
     },
   }[locale];
+  const closing = {
+    en: {
+      heading: "Choose your next step",
+      body: "Ask about a personal session, or begin with a free written review. Nothing is booked or charged automatically.",
+    },
+    ru: {
+      heading: "Выберите удобный первый шаг",
+      body: "Можно запросить личную сессию или начать с бесплатного письменного разбора. Никакой автоматической записи или оплаты.",
+    },
+    es: {
+      heading: "Elige tu próximo paso",
+      body: "Solicita una sesión personal o empieza con una revisión escrita gratuita. No hay reservas ni cobros automáticos.",
+    },
+  }[locale];
   return (
     <main className={styles.page} lang={locale} data-personal-service={service}>
       <PublicSiteHeader locale={locale} />
@@ -78,7 +92,6 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         <div className={styles.mainColumns}>
           <div className={styles.reading}>
             <section className={styles.section} aria-labelledby="questions-title">
-              <p className={styles.smallEyebrow}>{ui.forWhom}</p>
               <h2 id="questions-title">{ui.forWhom}</h2>
               <ul className={styles.questions}>
                 {t.questions.map(question => <li key={question}><Check size={20} aria-hidden="true"/><span>{question}</span></li>)}
@@ -125,8 +138,8 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         </section>
         <section className={styles.closing}>
           <MessageCircle size={27} aria-hidden="true"/>
-          <h2>{ui.start}</h2>
-          <p>{ui.freeBody}</p>
+          <h2>{closing.heading}</h2>
+          <p>{closing.body}</p>
           <div className={styles.closingActions}>
             <a className={styles.closingPrimary} href="#request-session">{t.orderLabel}<ArrowRight size={19} aria-hidden="true"/></a>
             <Link className={styles.closingSecondary} href={`/${locale}/services/free-situation-review`}>{ui.free}<ArrowRight size={19} aria-hidden="true"/></Link>
