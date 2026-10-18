@@ -2600,3 +2600,38 @@
   .tantraPathMeta{font-size:.67rem}
 }
 @media(prefers-reduced-motion:reduce){.tantraPathActions button{transition:none}}
+
+
+/* A collection is a relevance boost in the ONE canonical list, not a second
+   set of incompatible test cards. Keep its provenance near the image footer. */
+.shell .testEntry .testImageMeta .collectionMarker{
+  display:inline-flex;align-items:center;gap:5px;
+  width:max-content;max-width:100%;min-height:21px;margin:2px 0 0 3px;
+  padding:3px 6px;border:1px solid #ead8e1;border-radius:7px;
+  background:#fbf1f5;color:#89455f;
+  font-size:.65rem;line-height:1.18;font-weight:750;white-space:nowrap
+}
+.shell .testEntry .testImageMeta .collectionMarker svg{flex:0 0 12px}
+.collectionHighlight{
+  display:flex;align-items:center;gap:8px;min-width:0;margin:10px 0 12px;
+  padding:9px 11px;border:1px solid #e9d6e0;border-radius:11px;
+  background:#fff5f8;color:#714055;
+  font-size:.78rem;line-height:1.35
+}
+.collectionHighlight>span{flex:1;min-width:0}
+.collectionHighlight strong{color:#713047}
+.collectionHighlight>svg{flex:0 0 15px}
+.collectionHighlight button{
+  display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;
+  border:1px solid #e3cbd7;border-radius:8px;background:#fff;color:#713047;
+  font:inherit;font-size:1.2rem;cursor:pointer
+}
+.collectionHighlight button:focus-visible{outline:2px solid #206e78;outline-offset:2px}
+/* Do not split "relationships" in the middle of a word on iPhone screens. */
+.curatedCardText strong{overflow-wrap:normal;word-break:normal;hyphens:none}
+@media(max-width:760px){
+  .curatedCard{gap:5px;padding:7px}
+  .curatedIcon{flex-basis:23px;width:23px;height:23px}
+  .curatedCardText strong{font-size:.72rem;letter-spacing:-.015em}
+  .curatedCardBottom{padding:3px 4px}
+}
