@@ -447,6 +447,21 @@
 /* Do not wash the berry CTA out when a query has not been entered yet. */
 .hero .submit:disabled{opacity:1;background:#993c5f;color:#fff}
 .hero .submit:hover:not(:disabled){background:#822d4d}
+/* Two compact, tappable discovery prompts directly beneath the first form. */
+.quickHints{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,1100px);margin:12px 0 0}
+.quickHint{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:38px;padding:8px 11px;border:1px solid #86c5f3;border-radius:999px;background:linear-gradient(110deg,#214875,#315578);color:#fff;font:700 12px/1.25 system-ui,sans-serif;text-align:center;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff25}
+.quickHint:hover{background:linear-gradient(110deg,#285a8d,#396790)}
+.quickHint svg{width:15px;height:15px;flex:none;color:#a3d9ff}
+.quickHint span{min-width:0;overflow-wrap:break-word}
+@media(max-width:620px){
+  .quickHints{gap:7px;margin-top:10px}
+  .quickHint{min-height:35px;padding:7px 6px;gap:6px;font-size:clamp(10px,2.7vw,12px)}
+  .quickHint svg{width:14px;height:14px}
+}
+@media(max-width:350px){
+  .quickHint{gap:4px;padding-inline:4px;font-size:10px}
+  .quickHint svg{width:12px;height:12px}
+}
 .categorySection{box-sizing:border-box;margin:10px 0 18px;padding:clamp(15px,2.4vw,24px);border:1px solid #d1ebee;border-radius:22px;background:linear-gradient(135deg,#fff,#f8ffff);box-shadow:0 4px 20px #237f9008;color:#19536a}
 .categoryHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px}
 .stepHeader{display:grid;grid-template-columns:43px minmax(0,1fr);align-items:start;gap:13px;min-width:0;flex:1}
