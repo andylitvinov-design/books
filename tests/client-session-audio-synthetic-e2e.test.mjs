@@ -8,7 +8,7 @@ import {canProxyOwnerAudio,OWNER_AUDIO_MIME_TYPES,OWNER_AUDIO_PROXY_MAX_BYTES} f
 import {PRIVATE_MEDIA_BUCKET,SESSION_MEDIA_TYPES,validUuid,emptySessionDraft,
   normalizeDraft,clientPayload,guestSessionProjection} from '../lib/clients/delivery-model.js'
 
-// Real 0.3s AAC-LC M4A generated from an artificial 440Hz sine. No patient data,
+// Real 0.03s AAC-LC M4A generated from an artificial 440Hz sine. No patient data,
 // microphone permissions, live application credentials or production backend.
 const wavLike=Buffer.from(readFileSync(new URL('./fixtures/synthetic-440hz-voice.m4a.base64',import.meta.url),'utf8').trim(),'base64')
 assert.equal(wavLike.toString('ascii',4,8),'ftyp')
