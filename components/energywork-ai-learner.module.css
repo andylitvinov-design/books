@@ -342,3 +342,47 @@
     height:auto!important;max-height:none!important;overflow:visible!important;
   }
 }
+
+
+/* First interactive Reiki slide: four large, single-select experience cards. */
+.experienceSlide .question { background:linear-gradient(145deg,#e9fbf7,#f5fcfc); border-color:#bfe3df; }
+.experienceSlide .choices { gap:9px; }
+.experienceChoice {
+  min-height:65px; padding:10px 12px; gap:12px;
+  color:#174d59; font-weight:750; background:#fff;
+  border:1px solid #c5dedc; border-bottom:3px solid #d6e8e5;
+  border-radius:14px; transition:border-color .14s ease, background .14s ease;
+}
+.experienceIcon {
+  width:42px; height:42px; display:flex; justify-content:center; align-items:center;
+  flex:none; color:#078e8a; border-radius:12px; background:#e8f8f4;
+}
+.experienceChoice > span:last-child { flex:1; min-width:0; }
+.experienceChoice input { order:3; margin-left:auto; width:20px; height:20px; }
+.experienceChoice:has(input:checked) {
+  border:2px solid #078f89; border-bottom:4px solid #078f89; background:#e9f9f6;
+}
+.experienceChoice:has(input:focus-visible) { outline:3px solid #10aaac; outline-offset:2px; }
+.experienceGuidance {
+  margin:11px 1px 0; padding:10px 12px; border-radius:11px;
+  background:#dff6f0; color:#205f63; font-size:13px; line-height:1.45;
+  border-left:3px solid #11a69b;
+}
+@media(max-width:760px) {
+  .page[data-course-one-screen] .experienceSlide .slideMain { gap:7px; }
+  .page[data-course-one-screen] .experienceSlide .question { margin-top:8px; padding:9px; }
+  .page[data-course-one-screen] .experienceSlide .choices { gap:6px; }
+  .page[data-course-one-screen] .experienceSlide .experienceChoice {
+    min-height:49px; padding:6px 8px; gap:9px; font-size:12px; line-height:1.28;
+    border-radius:12px;
+  }
+  .page[data-course-one-screen] .experienceSlide .experienceIcon {
+    width:33px; height:33px; border-radius:9px;
+  }
+  .page[data-course-one-screen] .experienceSlide .experienceIcon svg { width:18px; height:18px; }
+  .page[data-course-one-screen] .experienceSlide .experienceChoice input { width:19px; height:19px; }
+  .page[data-course-one-screen] .experienceSlide .experienceGuidance {
+    margin-top:7px; padding:7px 9px; font-size:11px; line-height:1.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) { .experienceChoice { transition:none; } }
