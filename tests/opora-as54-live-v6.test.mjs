@@ -35,6 +35,7 @@ test('fourteen bilingual V6 lessons contain the fifteen visible steps and distin
      assert.equal(lesson.opora54.exercises.notice.a.length,3)
      assert.equal(lesson.opora54.exercises.notice.f.length,3)
      assert.equal(lesson.opora54.exercises.act.choices.length,3)
+     assert.equal(lesson.opora54.exercises.transfer.choices.length,3)
      assert.equal(oporaNoticeActivity(day,lang)?.a.length,3)
      assert.ok(['S1','S2','S3','S4','S5','S6','S7'].includes('S'+((day-1)%7+1)))
      assert.ok(lesson.opora54.scenario.choices.every(x=>x.length>10))
@@ -83,6 +84,8 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
  assert.deepEqual(validateOpora54Signals({answers:{}}),{answers:{},hints:[],ease:null})
  for(const bad of [
    {answers:{aphorism:'skip'}},{answers:{act:'skip'}},{answers:{noticeChoice:'anything'}},{answers:{actChoice:'four'}},
+   {answers:{notice:'tried'}},{answers:{act:'partly'}},{answers:{transfer:'planned'}},
+   {answers:{transferChoice:'four'}},{answers:{},ease:2},
    {answers:{scenario:'correct'}},{answers:{pace:'n/a'}},
    {answers:{save:'success'}},{answers:{__proto__:'unexpected',unlisted:'test'}},
    {answers:[],hints:[]},{answers:{},hints:['gibberish']},
