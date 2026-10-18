@@ -55,6 +55,12 @@
 .secondaryLink strong{font-size:.91rem;line-height:1.27;color:#225566}
 .secondaryLink small{color:#6a8790;font-size:.77rem;line-height:1.44}
 .secondaryLink>svg:last-child{flex:0 0 18px;margin-top:3px}
+.shareArea{margin:15px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:9px 14px}
+.shareButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 14px;border:1px solid #a3d7de;border-radius:11px;color:#107b8c;background:#edf9fa;cursor:pointer;font-size:.84rem;font-weight:750}
+.shareButton:hover{border-color:#09899c;background:#e3f6f7}
+.shareButton:focus-visible,.manualShare:focus-visible{outline:3px solid #0099ac;outline-offset:3px}
+.shareStatus{margin:0!important;color:#32716c;font-size:.78rem;line-height:1.45}
+.manualShare{flex:1 0 100%;width:100%;max-width:700px;padding:10px 12px;border:1px solid #aed8dc;border-radius:10px;background:#fff;font-size:.8rem;color:#345760}
 .footnote{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#7a8d93;margin:16px 0 0;line-height:1.4}
 .footnote svg{flex:0 0 15px}
 .topic:focus-visible,.test summary:focus-visible,.primaryAction:focus-visible,.secondaryLink:focus-visible,.browseLink:focus-visible,.back:focus-visible{outline:3px solid #0099ac;outline-offset:3px}
