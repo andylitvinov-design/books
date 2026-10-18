@@ -1423,3 +1423,602 @@
   .adminStudio .optionalTextBody{padding:12px 14px 18px}
   .adminStudio .reportReadyCard .jumpToPublication{width:100%}
 }
+
+
+/* Client report coastal v2 · Approved option 2 (2026-10-18).
+   Screen-only and restricted to an authorized ClientSessionPage, never PDFs,
+   signed printed documents, invoices, editor forms or public report links. */
+@media screen {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] {
+    --coast-ink: #173957;
+    --coast-teal: #177f90;
+    --coast-line: #d1e5e8;
+    background: linear-gradient(180deg,#e7f4f6 0%,#f2fafa 24%,#fffdf8 71%,#e9f4f4 100%);
+    color: var(--coast-ink);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.house-header.house-header--services) {
+    border-bottom-color:#d3e3e5;
+    background:#f9fdfdfa;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage {
+    color:var(--coast-ink);
+    width:min(100%,1010px);
+    max-width:1010px;
+    padding:clamp(12px,2vw,25px);
+    background:transparent;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientHeader {
+    padding:10px 15px;
+    margin-bottom:14px;
+    border:1px solid #d9e8e8;
+    background:rgba(255,255,255,.89);
+    box-shadow:0 5px 16px #1739570b;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionCrumb {color:#1f5b71}
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .privateLabel {color:#477578}
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell.canonical-shell) {
+    width:100%;
+    max-width:100%;
+    margin:0;
+    padding:0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial) {
+    max-width:100%;
+    width:100%;
+    padding:0;
+    margin:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:var(--coast-ink);
+    box-shadow:none;
+    overflow:visible;
+  }
+  /* Self-hosted illustrated coast: no external media requests or personal information. */
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover) {
+    isolation:isolate;
+    position:relative;
+    display:block;
+    overflow:hidden;
+    margin:0 0 19px;
+    padding:clamp(17px,2.7vw,31px);
+    border:1px solid #8cbac4;
+    border-radius:24px;
+    background-color:#245c74;
+    background-image:linear-gradient(90deg,rgba(9,53,77,.91) 0%,rgba(11,64,82,.71) 51%,rgba(14,76,90,.32) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.svg');
+    background-size:cover,cover;
+    background-position:center,62% center;
+    box-shadow:0 17px 36px #153c521c;
+    color:white;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover)::before {
+    content:"";
+    position:absolute;
+    z-index:-1;
+    inset:0;
+    background:linear-gradient(180deg,transparent 44%,rgba(12,58,76,.33) 100%);
+    pointer-events:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:start;
+    gap:5px 16px;
+    padding:0 0 13px;
+    margin:0 0 12px;
+    border-bottom:1px solid #ffffff65;
+    background:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-editorial-brand strong) {
+    font:500 clamp(20px,2.8vw,30px)/1.12 Georgia,'Times New Roman',serif;
+    letter-spacing:.07em;
+    color:white;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-editorial-brand span) {
+    font:11px/1.4 Georgia,'Times New Roman',serif;
+    letter-spacing:.12em;
+    color:#e7f2ef;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-private-label) {
+    grid-column:2;
+    grid-row:1;
+    padding:5px 8px;
+    margin:2px 0 0;
+    border:1px solid #ffffff7f;
+    border-radius:999px;
+    background:#0f475570;
+    color:#f7ffff;
+    font:700 10px/1.3 system-ui,sans-serif;
+    letter-spacing:.09em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact) {
+    grid-column:1/-1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-width:0;
+    margin:0;
+    padding:0;
+    color:white;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-letterhead--compact > img) {
+    display:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-practitioner) {
+    margin:0 0 2px;
+    color:white;
+    font:500 clamp(14px,2.2vw,18px)/1.18 Georgia,'Times New Roman',serif;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-credentials) {
+    color:#e4f0f0;
+    font:12px/1.35 system-ui,sans-serif;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero) {
+    display:block;
+    min-height:142px;
+    max-width:100%;
+    padding:21px 26% 18px 0;
+    margin:0;
+    border:0;
+    border-radius:0;
+    background:none;
+    overflow:visible;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero)::after {
+    display:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-eyebrow) {
+    margin:0 0 9px;
+    color:#d9f7f5;
+    font:800 11px/1.4 system-ui,sans-serif;
+    letter-spacing:.14em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-heading h1) {
+    max-width:18ch;
+    margin:0 0 10px;
+    color:#fff;
+    text-shadow:0 2px 16px #10394b6c;
+    font:500 clamp(30px,4.6vw,46px)/1.13 Georgia,'Times New Roman',serif;
+    letter-spacing:-.025em;
+    overflow-wrap:anywhere;
+    hyphens:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero-subtitle) {
+    max-width:35ch;
+    color:#f0faf9;
+    font:400 15px/1.46 system-ui,sans-serif;
+    text-shadow:0 1px 9px #0f4554b8;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-editorial-hero-motto) {
+    display:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-client) {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin:15px 0 10px;
+    padding:0;
+    border:0;
+    background:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-client > div),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-client > div + div) {
+    min-width:0;
+    padding:10px 13px;
+    border:1px solid #ffffffc7;
+    border-radius:12px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 5px 15px #0b344b1b;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-client dt) {
+    margin:0 0 3px;
+    font:800 10px/1.35 system-ui,sans-serif;
+    letter-spacing:.09em;
+    color:#4b7381;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-client dd) {
+    margin:0;
+    font:700 clamp(13px,2.1vw,17px)/1.3 system-ui,sans-serif;
+    color:#173957;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress) {
+    margin:10px 0 0;
+    padding:15px 16px 14px;
+    border:1px solid #f0ffffd4;
+    border-radius:17px;
+    background:rgba(255,255,255,.95);
+    box-shadow:0 8px 22px #052c3e2c;
+    color:#24495b;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress > h2) {
+    margin:0 0 5px;
+    color:#27566a;
+    font:750 14px/1.35 Georgia,'Times New Roman',serif;
+    letter-spacing:.025em;
+    text-transform:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-subtitle) {
+    margin:0;
+    color:#607e86;
+    font:13px/1.4 system-ui,sans-serif;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-grid) {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px 15px;
+    max-width:none;
+    align-items:center;
+    margin:12px 0 0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-item) {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    padding:3px 0;
+    min-height:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-item--after::before) {
+    left:-11px;
+    top:37%;
+    color:#397986;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-dial) {
+    width:82px;
+    height:82px;
+    flex:0 0 82px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-note) {
+    grid-column:1/-1;
+    display:block;
+    min-height:0;
+    margin:5px 0 0;
+    padding:12px 15px;
+    border:1px solid #d7e5e6;
+    border-radius:11px;
+    background:linear-gradient(115deg,#edf8f5,#f8fbf9);
+    text-align:center;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-note span) {
+    padding:0;
+    color:#366c73;
+    font:italic 15px/1.43 Georgia,'Times New Roman',serif;
+  }
+  /* The signed narrative and factual recommendations remain always visible. */
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-general-instructions) {
+    margin:16px 0;
+    padding:clamp(17px,2.7vw,24px);
+    border:1px solid var(--coast-line);
+    border-left:4px solid #2a9c9d;
+    border-radius:17px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 5px 17px #123d510b;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis h2),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes h2),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-general-instructions h2) {
+    margin:0 0 12px;
+    padding:0 0 9px;
+    border-bottom:1px solid #e4eef0;
+    color:#1a596c;
+    font:700 clamp(19px,2.7vw,23px)/1.25 Georgia,'Times New Roman',serif;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis p),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes p),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-general-instructions p) {
+    color:#334852;
+    font:400 17px/1.7 system-ui,-apple-system,sans-serif;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    max-width:72ch;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-group-title) {
+    border-bottom:1px solid #dcebed;
+    color:#1d6c76;
+    font:800 13px/1.4 system-ui,sans-serif;
+    letter-spacing:.09em;
+    padding-bottom:9px;
+    margin:18px 0 11px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy) {
+    display:flow-root;
+    padding:clamp(15px,2.6vw,22px);
+    margin:0 0 12px;
+    border:1px solid #c9e3e3;
+    border-radius:17px;
+    background:linear-gradient(128deg,#fffefa,#f0f9f8);
+    box-shadow:0 7px 22px #1b536014;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-number) {
+    border-radius:50%;
+    background:#197f86;
+    color:#fff;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-card-photo) {
+    float:left;
+    width:90px;
+    max-width:28%;
+    margin:1px 13px 9px 0;
+    padding:5px;
+    border-radius:11px;
+    background:white;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-card-photo img) {
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:1;
+    object-fit:contain;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-title h3) {
+    color:#214d61;
+    font:600 clamp(21px,3vw,26px)/1.22 Georgia,'Times New Roman',serif;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-schedule) {
+    display:inline-block;
+    max-width:100%;
+    margin:9px 0 5px;
+    padding:6px 10px;
+    border:1px solid #c8e5e5;
+    border-radius:10px;
+    background:#e7f5f5;
+    color:#235a65;
+    font:650 14px/1.4 system-ui,sans-serif;
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-profile-action) {
+    display:inline-flex;
+    min-height:44px;
+    align-items:center;
+    gap:6px;
+    margin:10px 0;
+    padding:8px 12px;
+    border:1px solid #a8d5da;
+    border-radius:10px;
+    background:#ecf8fa;
+    color:#126a7a;
+    font:750 14px/1.3 system-ui,sans-serif;
+    text-decoration:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-fields) {
+    clear:both;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests) {
+    border:1px solid #c6e2e2;
+    border-left:4px solid #2e989b;
+    border-radius:16px;
+    background:#f2fbfa;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-recommended-tests a) {color:#126b7c}
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial details.canonical-remedy-profile-disclosure) {
+    border-color:#cee2e6;
+    border-radius:15px;
+    background:#fffefa;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial details.canonical-remedy-profile-disclosure > summary > h3) {
+    color:#1d5367;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportDownloadSection {
+    padding:15px;
+    border-color:#cee5e5;
+    border-radius:17px;
+    background:linear-gradient(120deg,#edf9f8,#fffefa);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportDownloadSection .sectionHeader h2,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection .sectionHeader h2 {
+    color:#16435c;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .downloadButton {
+    background:#137d8d;
+    border:1px solid #126c7a;
+    border-bottom:3px solid #0f6674;
+    border-radius:11px;
+    color:#fff;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .downloadButton:hover {background:#0c6677}
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .videoFirstSection,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection {
+    background:linear-gradient(135deg,#f5fcfc,#fffefa);
+    border-color:#cde4e6;
+    border-radius:19px;
+    box-shadow:0 7px 23px #12445e0b;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientMediaCard,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .youtubeLesson {
+    background:#fff;
+    border-color:#d4e7e9;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 4px 15px #153a530b;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomActions {
+    border:1px solid #bddadf;
+    border-radius:18px;
+    background:linear-gradient(130deg,#e5f4f5,#f6fcfb);
+    box-shadow:0 8px 25px #12455a13;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomActions .sessionBottomPrimary {
+    background:#173957;
+    border-color:#173957;
+    color:#fff;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomActions .sessionBottomSecondary {
+    background:#fffefa;
+    border:1px solid #8fbcc5;
+    color:#1b6373;
+    box-shadow:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomActions .sessionBottomSecondary:hover {
+    background:#e5f5f6;
+    border-color:#4798a5;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientFooter {color:#51717b}
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :is(a,button,summary):focus-visible {
+    outline:3px solid #1a8191;
+    outline-offset:3px;
+  }
+}
+@media screen and (max-width:700px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .cabinetSessionPage {
+    padding:12px 10px calc(24px + env(safe-area-inset-bottom));
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .clientHeader {
+    padding:9px 11px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell.canonical-shell) {
+    padding:0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial) {
+    padding:0;
+    border:0;
+    border-radius:0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover) {
+    padding:17px 14px;
+    margin-bottom:14px;
+    border-radius:17px;
+    background-image:linear-gradient(90deg,rgba(9,49,71,.92) 0%,rgba(10,59,77,.75) 60%,rgba(10,61,78,.46) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.svg');
+    background-position:center,70% center;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline) {
+    gap:5px 8px;
+    padding-bottom:11px;
+    margin-bottom:9px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-editorial-brand strong) {
+    font-size:clamp(18px,5.7vw,25px);
+    letter-spacing:.045em;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-private-label) {
+    font-size:9px;
+    letter-spacing:.01em;
+    padding:5px 7px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-practitioner) {
+    font-size:14px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-brandline .canonical-credentials) {
+    font-size:11px;
+    line-height:1.38;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero) {
+    padding:15px 8% 15px 0;
+    min-height:0;
+    margin:0;
+    background:none;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-report-heading h1) {
+    font-size:clamp(27px,7.6vw,36px);
+    line-height:1.16;
+    max-width:18ch;
+    color:white;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero-subtitle) {
+    color:#eff9f8;
+    max-width:26ch;
+    font-size:14px;
+    line-height:1.42;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-client) {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    margin:10px 0 8px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-client > div),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-client > div + div) {
+    padding:9px 10px;
+    min-width:0;
+    border:1px solid #ffffffc7;
+    border-radius:10px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-client dd) {
+    font-size:clamp(12px,3.9vw,15px);
+    overflow-wrap:anywhere;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress) {
+    margin-top:8px;
+    padding:13px 11px 11px;
+    border-radius:14px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-grid) {
+    gap:7px;
+    margin-top:9px;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-progress-dial) {
+    width:76px;
+    height:76px;
+    flex-basis:76px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-progress-note) {
+    min-height:0;
+    padding:10px 8px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-progress-note span) {
+    font-size:14px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-analysis),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-notes),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-general-instructions) {
+    padding:17px 15px;
+    border-radius:15px;
+    margin:12px 0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-report-analysis p),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-report-notes p),
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-general-instructions p) {
+    font-size:17px;
+    line-height:1.64;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-title h3) {
+    font-size:clamp(19px,5.8vw,24px);
+    line-height:1.26;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-remedy-schedule) {
+    font-size:14px;
+    line-height:1.43;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-remedy-card-photo) {
+    width:77px;
+    margin-right:11px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomActions {
+    padding:13px;
+    grid-template-columns:minmax(0,1fr);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomPrimary,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionBottomSecondary {
+    width:100%;
+    min-height:50px;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportDownloadSection,
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] .reportMaterialsSection {
+    padding:15px 13px;
+  }
+}
+@media screen and (max-width:355px) {
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.prescription-shell .canonical-document--editorial .canonical-client) {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-document--editorial .canonical-report-hero) {
+    padding-right:0;
+  }
+  .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover) {
+    background-position:center,75% center;
+  }
+}
