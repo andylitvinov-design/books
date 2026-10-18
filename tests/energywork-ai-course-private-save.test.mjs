@@ -55,7 +55,7 @@ test('Observations may be skipped when learning but all reports and question ans
   }
   assert.match(learner,/experienceMissing = slide\.id === "welcome-02"/)
   assert.doesNotMatch(learner,/reportMissing\s*\|\|\s*busy/)
-  assert.match(learner,/initiationReady \? t\.reviewDone : t\.reviewNeeded/)
+  assert.match(learner,/initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
 })
 
 test('Private answers use checked types, bounded lengths and only approved answer keys', () => {
