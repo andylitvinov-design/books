@@ -1665,7 +1665,7 @@
   z-index: 0;
   pointer-events: none;
   opacity: .28;
-  background: url("/images/holistic-house/reiki-practitioner-sunrise.webp") right 36% center / cover no-repeat;
+  background: url("/images/holistic-house/reiki-approved-sunrise-v3.webp") right 36% center / cover no-repeat;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 24%, #000 74%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0%, #000 24%, #000 74%, transparent 100%);
 }
@@ -1789,7 +1789,7 @@
   .page[data-course-portrait="v3"] .optional { font-size: 12.5px; margin-top:8px; line-height:1.35; }
   .page[data-course-portrait="v3"] .experienceSlide .slideMain {
     background-image: linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,.94) 45%),
-      url("/images/holistic-house/reiki-practitioner-sunrise.webp");
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
     background-repeat: no-repeat;
     background-size: cover, auto 48%;
     background-position: center, right top;
@@ -1824,7 +1824,7 @@
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="practice"] .slideMain,
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="reflection"] .slideMain {
     background-image: linear-gradient(180deg,rgba(255,255,255,.70),rgba(255,255,255,.96) 52%),
-      url("/images/holistic-house/reiki-practitioner-sunrise.webp");
+      url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
     background-repeat: no-repeat;
     background-size: cover, auto 44%;
     background-position: center, right top;
