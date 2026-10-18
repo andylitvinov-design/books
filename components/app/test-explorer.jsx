@@ -199,7 +199,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
   const [activeCollectionId, setActiveCollectionId] = useState(null)
   const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId) || null
-  const selectionFocus = activeCollection ? [...new Set([...focus, ...activeCollection.focus])] : focus
+  const selectionFocus = useMemo(() => activeCollection ? [...new Set([...focus, ...activeCollection.focus])] : focus, [activeCollection, focus])
   const [problems, setProblems] = useState(() => normalizeProblemsForTopics(
     initialPreferences?.problems ?? [], initialPreferences?.focus ?? [],
   ))
@@ -302,13 +302,15 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     // Collections change recommendation weights, not the entire card format.
     // Remove only the topic/concern hard filter so non-collection tests remain
     // available further down; respect explicit time, kind and other facets.
-    (activeCollection ? filterExplorerEntries(entries, { ...facets, focus: [], problems: [] }) : filtered)
-      .filter((entry) => entry.selectable),
+    (activeCollection ? filterExplorerEntries(entries, {
+      availability, styles: stylesFilter, kinds, lengths, areas, details, axes,
+      maxMinutes, language, tracking, freeOnly, search: query, selectedKeys,
+    }) : filtered).filter((entry) => entry.selectable),
     { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
       details, axes, depth, styles: stylesFilter, lengths },
-  ), [entries, filtered, activeCollection, activeCollectionId, availability, focus, problems, details, axes, areas,
-      kinds, maxMinutes, language, tracking, freeOnly, query, depth, stylesFilter, lengths, selectedKeys])
+  ), [entries, filtered, activeCollection, activeCollectionId, selectionFocus, problems, details, axes, areas,
+      availability, kinds, maxMinutes, language, tracking, freeOnly, query, depth, stylesFilter, lengths, selectedKeys])
   // Only explicit duration/type options restrict catalog search.
   // Topic and concern selections still drive recommendations, not searches.
   const searchRecommendations = useMemo(() => rankPublicTestMatches(
