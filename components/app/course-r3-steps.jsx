@@ -589,7 +589,6 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
         <p className={styles.baselineContext}>{c.context}</p>
       </header>
       <div className={styles.baselineListIntro}>
-        <h3>{c.listTitle}</h3>
         <p>{c.listIntro}</p>
       </div>
       {baselineSaved&&<p className={styles.baselineSaved} data-course-baseline-reused role="status">
