@@ -41,3 +41,19 @@ test('Lighthouse measures key public mobile routes, captures screenshots and rep
   assert.match(script,/INP/);
   assert.match(screenshots,/final-screenshot/);
 });
+
+test('all public remedy lead images reserve a square layout box and are discovery-prioritized',()=>{
+  const standard=read('components/remedy-page.tsx');
+  const spanish=read('app/es/homeopathy/remedies/[slug]/page.tsx');
+  const css=read('app/globals.css');
+  for(const source of [standard,spanish]){
+    assert.match(source,/width=\{800\} height=\{800\}/);
+    assert.match(source,/fetchPriority="high" loading="eager"/);
+    assert.match(source,/decoding="async"/);
+    assert.match(source,/remedy\.primary_image/);
+  }
+  assert.match(css,/\.remedy-primary-image \{[^\n]*aspect-ratio: 1 \/ 1;/);
+  assert.match(css,/\.remedy-primary-image img \{[^\n]*object-contain;[^\n]*height: 100%/);
+  assert.match(standard,/supportingImages\.map/);
+  assert.match(standard,/loading="lazy" decoding="async"/);
+});
