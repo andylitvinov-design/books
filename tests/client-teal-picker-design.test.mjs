@@ -22,10 +22,11 @@ test('public test hero reuses the home palette and photo while keeping the exist
   assert.ok(routeCss.includes('Public My Tests entry echoes the approved warm homepage masthead'))
 })
 
-test('the new entrance leads to the functioning first step, not a fake action', () => {
-  assert.match(picker, /href="#hh-simple-topic-title"/)
+test('the compact public finder links to tests, courses and assistance without losing the real topic and recommendations sections', () => {
+  assert.match(picker, /\/client\/tests/)
+  assert.match(picker, /\/academy\/free-ai-courses/)
+  assert.match(picker, /\/services\/free-situation-review/)
   assert.match(picker, /id="hh-simple-topic-title"/)
-  assert.match(picker, /href="#hh-simple-recommendations"/)
   assert.match(picker, /id="hh-simple-recommendations"/)
   assert.match(css, /\.shell :global\(#hh-simple-topic-title\)\{scroll-margin-top:115px\}/)
   assert.match(picker, /TOPICS\.map/)
