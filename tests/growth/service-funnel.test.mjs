@@ -17,7 +17,7 @@ test('EN/RU homepage promotes paid personal support with optional free choices',
   const free = home.indexOf('"data-hero-cta": "free-written-review"')
   const tests = home.indexOf('"data-hero-cta": "free-tests"')
   assert.ok(paid !== -1 && paid < free && free < tests)
-  assert.match(home, /not a live call|not a live|not a call|not a live call|not a video|not a live call|not a live consultation|not a live call|not a live call|not a live call/i)
+  assert.match(home, /not a live call/i)
   assert.match(home, /Бесплатный формат — анкета, рисунок и личный письменный отчёт/)
 })
 
@@ -45,6 +45,11 @@ test('services landing prioritizes core services, a single real enquiry and test
   assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/)
   assert.match(hero, /data-service-hero-cta="free-written-review"/)
   assert.match(hero, /Session time and payment are agreed separately|time and payment are agreed separately/)
+  const es = source('app/es/services/page.tsx')
+  for (let i = 1, blocks = ['<ServicesConversionHero', '<ServicesSolutions', '<PublicConsultationCta', '<ServicesAboutEntry', '<PersonalTestimonials', '<ServicesTestsIntro', '<ServicesSmartDiscovery']; i < blocks.length; i++) {
+    assert.ok(es.indexOf(blocks[i]) > es.indexOf(blocks[i - 1]), 'ES order: ' + blocks[i])
+  }
+  assert.equal(count(es, '<PublicConsultationCta'), 1)
 })
 
 test('topic routes offer safe opt-in personal sessions, not score-based diagnoses or prescriptions', () => {
