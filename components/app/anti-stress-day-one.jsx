@@ -72,11 +72,11 @@ export default function DayOneExercise({
   }
   const wordCount=wordTokens.filter(word=>word?.trim()).length
   const choice=(field,options,extra={})=><DayOneChoices label={extra.label||text('Выберите подходящий вариант','Choose what fits')}
-    options={options} value={answers[field]} disabled={locked} compact={extra.compact} cards={extra.cards}
+    options={options.filter(item=>item.value!=='skip')} value={answers[field]} disabled={locked} compact={extra.compact} cards={extra.cards}
     onSelect={value=>{onAnswer(field,value);if((field==='experience'||field==='comfort')&&value==='uncomfortable')onDiscomfort()}}/>
   const helper=<p className={styles.hint}>{text(
-    'Правильного ответа нет. Вы можете пропустить шаг или остановиться. Ваши чувства не обязаны измениться.',
-    'There is no correct answer. You may skip or stop. Your feelings do not have to change.')}</p>
+    'Правильного ответа нет. Можно просто продолжить или остановиться. Ваши чувства не обязаны измениться.',
+    'There is no correct answer. You can simply continue or stop. Your feelings do not have to change.')}</p>
   const skill=selectedFocus?.label||text('Осознанная пауза и поддержка','A mindful pause and support')
   const anchorLabels={
     colour:text('цвет','colour'),shape:text('форма','shape'),object:text('предмет','object'),word:text('слово','word'),
