@@ -73,7 +73,7 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   assert.match(css, /@media \(max-width: 767px\)/);
 });
 
-test("original public intro player retains HeyGen while exposing a visible YouTube fallback for six approved copies", () => {
+test("six identity-verified public intro videos use YouTube on Play while retaining original HeyGen source", () => {
   const player = read("components/site-video-player.tsx");
   const minimal = read("components/site-video-minimal.module.css");
   for (const id of ["Y4K4piEwwA8", "s30Y42IwPcg", "ILyRWyHtJoE", "AE8Pelpo424", "Cz6SxXJNZbw", "Q9NvYECKWuc"]) {
@@ -81,8 +81,10 @@ test("original public intro player retains HeyGen while exposing a visible YouTu
   }
   assert.match(player, /existingYouTubeMirrors/);
   assert.ok(player.includes("{mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}"));
+  assert.match(player, /const playbackYouTubeId = mirrorId \|\| video\.youtubeId/);
+  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /https:\/\/app\.heygen\.com\/embeds\//);
-  assert.match(player, /youtube-nocookie\.com\/embed\/\$\{video\.youtubeId\}/);
+  assert.match(player, /data-video-playback=\{playbackYouTubeId \? "youtube" : "heygen"\}/);
   assert.match(minimal, /\.quickWatch/);
 });
 
