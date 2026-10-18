@@ -25,6 +25,7 @@ const anchors = tree => nodes(tree,'circle',p => p['data-contour-axis'] !== unde
 const detailRays = tree => nodes(tree,'g',p => p['data-detail-axis'] !== undefined)
 const labels = tree => nodes(tree,'text',p => p.className === 'radarInlineLabel')
 const testItLinks = tree => nodes(tree,'a',p => String(p.className).includes('portraitRayTestLink'))
+const detailsLinks = tree => nodes(tree,'a',p => String(p.className).includes('portraitRayDetailsLink'))
 
 function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== 'personality').slice(0,8)) {
   const values = []
@@ -62,6 +63,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
   })
   const portrait = {axes:Object.fromEntries(measured.map((axis,index)=>[axis,{
     percent:40+index,source:'Synthetic only',change:null,
+    resultId:'saved-result-'+index, dimensionKey:'fixture.'+axis+'.total',
   }]))}
   const coverage = {axes:Object.fromEntries(TEST_EXPLORER_AXES.map(axis=>[axis,{coverage:0}])),coveredCount:0}
   return {
@@ -166,6 +168,37 @@ test('missing scales keep actual test links and source data stays private',()=>{
       assert.equal(link.props.prefetch,false)
     }
   }
+})
+
+test('measured rays show localized Details links to their exact result and scored dimension',()=>{
+  for(const locale of ['en','ru','es']){
+    const app=harness(locale)
+    for(const sector of PORTRAIT_SECTORS){
+      const tree=app.choose(sector.key)
+      const measured=sector.axes.filter(axis=>app.measured.includes(axis))
+      assert.equal(detailsLinks(tree).length,measured.length)
+      for(const link of detailsLinks(tree)){
+        const axis=link.props['data-portrait-scale-details']
+        assert.ok(measured.includes(axis))
+        const source=app.portrait.axes[axis]
+        assert.equal(link.props.href,`/${locale}/app/results/${encodeURIComponent(source.resultId)}?scale=${encodeURIComponent(source.dimensionKey)}#hh-assessment-scale-panel`)
+        assert.equal(link.props.prefetch,false)
+        const contents=JSON.stringify(link.props.children)
+        assert.ok(contents.includes(locale==='ru'?'Подробнее':locale==='es'?'Detalles':'Details'))
+      }
+    }
+  }
+})
+
+test('the saved report honors the exact scale selected by the portrait Details link',()=>{
+  const workspace=read('components/app/app-workspace.jsx')
+  const personal=read('components/app/personal-result-report.jsx')
+  const compact=read('components/app/compact-assessment-report.jsx')
+  assert.match(workspace,/focusScaleKey = searchParams\?\.get\('scale'\)/)
+  assert.match(workspace,/focusScaleKey=\{focusScaleKey\}/)
+  assert.match(personal,/focusScaleKey=\{focusScaleKey\}/)
+  assert.match(compact,/sections\.findIndex\(item => item\.key === focusScaleKey\)/)
+  assert.match(compact,/focusedIndex >= 0 \? focusedIndex/)
 })
 
 test('mobile CSS stays four columns even at 320px and uses wide aspect-ratio radar',()=>{
