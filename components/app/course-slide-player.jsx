@@ -802,7 +802,7 @@ export default function CourseSlidePlayer({
                 ? (locale==='ru'?'Сегодня вы потренируетесь замечать состояние и выбирать небольшую поддержку. Можно пропускать любые наблюдения.':
                   'Today you can notice your state and choose a small support. Any observation may be skipped.')
                 : words.welcomeNote}</p>
-              {!isSkillV5&&<button type="button" className={styles.welcomeSkip} disabled={locked}
+              {!isSkillV5&&!isDayOne&&<button type="button" className={styles.welcomeSkip} disabled={locked}
                 onClick={() => { setWelcomeFeeling('skip'); goNext() }}>{words.welcomeSkip}</button>}
             </div>
           </section>}
