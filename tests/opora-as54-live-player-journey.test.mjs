@@ -40,7 +40,7 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
    if(i===7){
      await click(h,'Пришли четыре сообщения')
      assert.match(textOf(h.tree),/Это само событие/)
-     await click(h,'Получилось')
+     await click(h,'Не пробовал(а)')
    }
    if(i===8){
      await click(h,'Отложить необязательную задачу')
