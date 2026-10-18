@@ -1,4 +1,5 @@
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -225,6 +226,14 @@ try {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
           assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
+          if (panelHeights.some(p => p.height > p.max)) {
+            try {
+              await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
+            } catch (error) {
+              // Diagnostic failures must never replace the original layout assertion.
+              console.error("Alchemy overflow diagnostics could not be saved:", error);
+            }
+          }
           assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
             "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
           assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Long guide is initially collapsed");
