@@ -96,11 +96,17 @@ try {
       }), true, "photographed hero precedes tests/course banner and service offers");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      const cabinetEntry = page.locator("header.house-header--services a.site-cabinet-entry");
+      // The compact public header now uses one accessible menu for
+      // Cabinet and the other destinations; do not target removed CTA nodes.
+      const siteMenu = page.locator("header.house-header--services nav.site-navigation details.site-main-menu > summary");
+      await visible(siteMenu);
+      const menuBounds = await siteMenu.boundingBox();
+      assert.ok(menuBounds && menuBounds.x >= 0 && menuBounds.x + menuBounds.width <= width + 1,
+        "Public site menu must fit the header: " + locale + "/" + width);
+      await siteMenu.click();
+      const cabinetEntry = page.locator('header.house-header--services details.site-main-menu a[href="/' + locale + '/app"]');
       await visible(cabinetEntry);
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top cabinet link opens the authenticated app");
-      const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
+      await siteMenu.click();
       await assertViewport(page, locale + "/services/" + width);
       if (width === 390 || width === 1188) {
         await page.screenshot({ path: output + "/services-" + locale + "-hero-" + width + ".png", fullPage: false });
@@ -207,7 +213,7 @@ try {
   // landing variants, including Spanish. Verify navigation, pricing, live
   // thumbnails and message drafts; NEVER follow or send any messenger URL.
   for (const locale of ["en", "ru", "es"]) {
-    for (const service of ["imagery-therapy", "systemic-constellations", "business-consulting"]) {
+    for (const service of ["imagery-therapy", "systemic-constellations"]) {
       const width = 390;
       const page = await createPage(width);
       const label = locale + "/" + service + "/" + width;
@@ -248,6 +254,42 @@ try {
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
     }
+  }
+
+  // Business Strategy & Founder Coaching has its own separate source-backed
+  // landing (PR #993); verify all three locales without assuming it uses
+  // PersonalServiceLanding's generic consultation choice component.
+  for (const locale of ["en", "ru", "es"]) {
+    const page = await createPage(390);
+    const label = locale + "/business-consulting/390";
+    const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"networkidle",timeout:60000});
+    assert.equal(response?.status(), 200, "Business service must render: " + label);
+    const main = page.locator("main[data-business-consulting]");
+    await visible(main.locator('h1#business-hero-title'));
+    assert.equal(await main.locator("h1").count(), 1);
+    const portrait = main.locator('.person img, img[alt="Andrey Litvinov"]').first();
+    assert.ok(await portrait.evaluate(img => img.complete && img.naturalWidth > 20),
+      "Business practitioner portrait should load: " + label);
+    const free = main.locator('a[data-business-cta="free-hero"]');
+    const href = await free.getAttribute("href");
+    assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business");
+    const offers = main.locator("#business-offers");
+    for (const kind of ["free", "express", "full"]) {
+      await visible(offers.locator('[data-business-offer="' + kind + '"]'));
+    }
+    assert.ok((await offers.innerText()).includes("€50") && (await offers.innerText()).includes("€100"));
+    await visible(main.locator('a[href="#business-offers"]'));
+    await main.locator('a[href="#business-offers"]').click();
+    await page.waitForURL(/#business-offers$/);
+    const express = offers.locator('[data-business-offer="express"]');
+    const chooser = await openContactChannelChooser(express, expect);
+    const prepared = await assertPreparedContactChannels(chooser, expect);
+    assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
+      "Business express €50 must survive messenger selection: " + label);
+    await assertViewport(page, "business/" + label);
+    await assertNoDevIssueOverlay(page, label);
+    await page.screenshot({path: output + "/business-" + locale + "-express-request-390.png",fullPage:false,animations:"disabled"});
+    await page.close();
   }
 
   const coreServices = [
