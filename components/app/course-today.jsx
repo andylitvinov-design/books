@@ -18,6 +18,7 @@ import { startOrResumeCourseFinalRetest, startOrResumeCourseWeeklyCheckpoint } f
 import { ANTISTRESS_MODULE_FINDER_ITEMS } from '@/lib/inner-growth/antistress-module-router'
 import { useCoursePromotion } from './use-course-promotion'
 import CourseMomentTrends from './course-moment-trends'
+import CourseImmersiveStart from './course-immersive-start'
 import styles from './course-today.module.css'
 
 const UI={
@@ -364,6 +365,14 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
    if(isFinished||(completed&&reportDay&&!reviewed)){setView('details');return}
    setQuestOpen(true)
  }
+ const immersiveStart=view==='today'&&data.programme?.id==='stress'
+ const scenicCtaLabel=paused?(ru?'Возобновить курс':'Resume course'):
+   data.finalRetest?.ready?(ru?'Повторить стартовые тесты':'Repeat my starting tests'):
+   isFinished?(ru?'Посмотреть итоги курса':'Review course results'):
+   completed&&reportDay&&!reviewed?(ru?'Подвести итоги недели':'Review my week'):
+   completed?(ru?'Посмотреть урок дня':'Review today’s lesson'):
+   (Number(progress.practiceCount)||0)===0&&cycle?.day===1?(ru?'Начать мой курс':'Start my course'):
+   (ru?'Начать практику':'Start today’s practice')
  if(data.readOnly) return <section className={'hh-panel '+styles.shell} data-course-readonly-history>
    <h2>{ru?'История курса':'Course history'}</h2>
    <p>{ru?'Курс завершён вами. Сохранённые наблюдения доступны для чтения.':'You closed this course. Your saved observations remain available to read.'}</p>
@@ -394,27 +403,33 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
    {error&&<p role="alert">{error==='URGENT_SUPPORT_NEEDED'?t.urgentHelp:['COURSE_ACTIVE_LIMIT','COURSE_LIMIT_REACHED','ACTIVE_COURSE_LIMIT_REACHED'].includes(error)?t.courseLimit:t.error} ({error})</p>}
  </section>
  if(!cycle)return <section className={'hh-panel '+styles.shell}>{t.error}<button onClick={reload}>{t.retry}</button></section>
- return <section className={styles.shell} data-daily-course data-course-view={view}>
+ return <section className={styles.shell} data-daily-course data-course-view={view} data-course-immersive={immersiveStart?'true':undefined}>
   {focusOpen&&!(paused&&resumeBlocked)&&<CourseFocusEntry locale={locale} cycle={cycle} lesson={lesson}
     progress={progress} programme={data.programme} completed={completed}
     finished={isFinished} busy={busy||(paused&&resumeBlocked)} onStart={startFocusLesson}
     onExit={()=>onExit?.()}/>}
 
-  {view==='today'&&<div className={styles.todayGreeting} data-course-today-heading>
+  {view==='today'&&!immersiveStart&&<div className={styles.todayGreeting} data-course-today-heading>
     <div><p>Holistic House</p><h1>{ru?'Мой курс':'My course'}</h1></div>
     <span className={styles.todayReward} title={ru?'Баллы только за сохранённые практики':'Points earned for saved practices only'}>
       <Sparkles size={20} aria-hidden="true"/>{20*(Number(progress.practiceCount)||0)} XP
     </span>
   </div>}
-  <div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
+  {!immersiveStart&&<div className={styles.viewSwitch} role="group" aria-label={ru?'Экраны моего курса':'My Course screens'} data-course-screen-switch>
     {[
       ['today',ru?'Сегодня':'Today'],
       ['path',ru?'Путь · 14 дней':'14-day path'],
       ['details',ru?'Подробнее':'Details'],
     ].map(([key,label])=><button key={key} type="button" aria-pressed={view===key}
       onClick={()=>setView(key)}>{label}</button>)}
-  </div>
+  </div>}
   {view==='today'&&<>
+  {immersiveStart&&<CourseImmersiveStart locale={locale} day={cycle.day} duration={cycle.durationDays}
+    completed={progress.practiceCount||0} roadmap={data.roadmap||[]}
+    moduleTitle={data.programme?.title||''} actionLabel={scenicCtaLabel}
+    actionDisabled={busy||(paused&&resumeBlocked)}
+    onStart={startFocusLesson} onBack={()=>onExit?.()} onViewChange={setView}/>}
+  {!immersiveStart&&<header className={styles.questHero} data-course-teal-hero>
   <header className={styles.questHero} data-course-teal-hero>
     <div className={styles.heroPhoto} aria-hidden="true"/>
     <div className={styles.heroInner}>
@@ -449,7 +464,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
         <progress max={cycle.durationDays} value={progress.practiceCount||0} aria-label={t.engagement}/>
       </div>
     </div>
-  </header>
+  </header>}
   <details className={styles.momentPeek} data-course-today-trends>
     <summary><span><Sparkles size={16} aria-hidden="true"/>{ru?'Моя динамика':'My progress over time'}</span>
       <ChevronDown size={18} aria-hidden="true"/></summary>
