@@ -7,6 +7,10 @@ on:
       - 'lib/crm/**'
       - 'app/api/app/crm/**'
       - 'components/app/crm-manager.*'
+      - 'components/app/crm-email-*.jsx'
+      - 'components/app/crm-email-*.css'
+      - 'app/[locale]/email-preferences/**'
+      - 'supabase/migrations/*crm_email*'
       - 'tests/crm-*.test.mjs'
       - 'docs/crm/**'
       - '.github/workflows/hh-crm-source-check.yml'
@@ -28,6 +32,6 @@ jobs:
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
       - name: Verify consent, ownership, actions and fail-closed client requests
-        run: node --test tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-client-request.test.mjs
+        run: node --test tests/crm-consent.test.mjs tests/crm-security-contract.test.mjs tests/crm-client-request.test.mjs tests/crm-email.test.mjs tests/crm-email-source.test.mjs
       - name: Lint changed CRM runtime and UI
-        run: npx eslint lib/crm/repository.js app/api/app/crm/route.js components/app/crm-manager.jsx
+        run: npx eslint lib/crm/repository.js lib/crm/email.js lib/crm/email-store.js lib/crm/email-dispatch.js app/api/app/crm/route.js app/api/app/crm/email-token/route.js app/api/app/crm/webhook/route.js components/app/crm-manager.jsx components/app/crm-email-tools.jsx components/app/crm-email-preferences.jsx
