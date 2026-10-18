@@ -239,14 +239,22 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     setError('')
     setStep(i=>Math.min(slides.length-1,i+1))
   }
+  function selectActivity(value){
+    if(locked||!choiceField||!['one','two','three'].includes(value))return
+    setAnswers(a=>{
+      if(a[choiceField]===value)return a
+      const next={...a,[choiceField]:value}
+      // A different exercise cannot inherit a claimed attempt on the old one.
+      delete next[role]
+      return next
+    })
+    if(role==='act')setEase(null)
+  }
   function record(value){
     if(locked)return
-    // The learner actually chooses a relevant detail/action first. Only a
-    // separate later response may state that they tried the exercise.
-    if(choiceField&&!answers[choiceField]){
-      setAnswers(a=>({...a,[choiceField]:value}))
-      return
-    }
+    // Feedback is a separate voluntary report AFTER the learner chooses a
+    // concrete micro-action. No visit or scenario click can forge practice.
+    if(choiceField&&!answers[choiceField])return
     setAnswers(a=>({...a,[role]:value}))
     if(role==='act'&&!['tried','partly'].includes(value))setEase(null)
     if(role==='rehearse'&&value==='independent'&&hints.includes('rehearse'))setAnswers(a=>({...a,rehearse:'guided'}))
@@ -296,9 +304,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
   }
   function options(){
     if(!role)return []
-    if(choiceField&&activeActivity&&!picked)
-      return (role==='notice'?activeActivity.a:activeActivity.choices)
-        .map((label,i)=>({value:['one','two','three'][i],label}))
+    if(choiceField&&!picked)return []
     if(role==='scenario')return authored?.scenario?.choices?.map((label,i)=>({value:['one','two','three'][i],label}))||[]
     // The aphorism is a reflection, not a correct/incorrect quiz.
     // Keep its three explicit positions distinct from the welcome 'unsure'.
@@ -311,6 +317,10 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     return (ROLE_OPTIONS[role]||[]).map(value=>({value,label:t.response[value]||value}))
   }
   const optionsAvailable=options()
+  const activityOptions=choiceField&&activeActivity
+    ?(role==='notice'?activeActivity.a:activeActivity.choices)
+      .map((label,i)=>({value:['one','two','three'][i],label}))
+    :[]
   const choiceFeedback=choiceField&&chosenActivityIndex>=0
     ?role==='notice'?activeActivity?.f?.[chosenActivityIndex]
       :role==='transfer'?
@@ -398,12 +408,23 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               <small>{answers.act||answers.notice||answers.rehearse
                 ?(lang==='ru'?'Отметим только сообщённую вами попытку.':'Only your reported attempt will be recorded.'):t.notCompleted}</small>
             </section>}
-            {choiceField&&!picked&&activeActivity&&
+            {activityOptions.length>0&&<>
               <p className={styles.activityPrompt}>{role==='notice'?activeActivity.q
                 :role==='transfer'?
                   (lang==='ru'?'Какую поддержку вам было бы удобно сохранить как возможный план?':
                     'Which support might you keep as a possible plan?')
-                  :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>}
+                  :(lang==='ru'?'Какое небольшое действие выглядит посильным?':'Which small action seems workable?')}</p>
+              <div className={styles.options} role="group"
+                aria-label={lang==='ru'?'Выберите один конкретный шаг':'Choose one concrete step'}
+                data-opora-as54-action-choice>
+                {activityOptions.map(option=><button type="button" key={option.value}
+                  disabled={locked} className={picked===option.value?styles.selected:''}
+                  aria-pressed={picked===option.value} onClick={()=>selectActivity(option.value)}>
+                  <span>{option.label}</span>
+                  {picked===option.value?<CheckCircle2 size={19}/>:<ArrowRight size={15}/>}
+                </button>)}
+              </div>
+            </>}
             {role!=='baseline'&&role!=='save'&&optionsAvailable.length>0&&
               <div className={styles.options} role="group" aria-label={choiceField&&!picked
                 ?(role==='notice'?activeActivity?.q:slide?.text)

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
+import { assessmentExplanation } from '../lib/assessments/assessment-methodology.js'
 
 const CORE_EN_TITLES = [
   "Bach Flower Emotional Profile",
@@ -35,4 +36,16 @@ test('Spanish descriptions distinguish original EN questionnaires and unvalidate
   }
   assert.match(byTitle.get('Anxiety Deep Dive')?.description?.es || '', /sin validación psicométrica independiente/i)
   assert.match(byTitle.get('Weekly Psychic Health')?.description?.es || '', /No es una evaluación clínica validada/i)
+})
+
+test('Spanish explorer resolves translated summary rather than EN fallback', () => {
+  for (const entry of MONITORING_CATALOG.filter(item => item.description?.es)) {
+    const explained = assessmentExplanation({ key: entry.key, catalog: entry, locale: 'es' })
+    assert.equal(explained.summary, entry.description.es, entry.key)
+    assert.ok(explained.originAndEvidence, `Missing methodology provenance: ${entry.key}`)
+  }
+  const weekly = MONITORING_CATALOG.find(item => item.title?.en === 'Weekly Psychic Health')
+  assert.match(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'es' }).summary, /Registro semanal original/i)
+  assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'en' }).summary, weekly.description.en)
+  assert.equal(assessmentExplanation({ key: weekly.key, catalog: weekly, locale: 'ru' }).summary, weekly.description.ru)
 })

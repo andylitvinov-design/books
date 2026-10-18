@@ -53,8 +53,8 @@ function assertBookingAnchor(page, cta, capture) {
   const targets = [...page.matchAll(/<PublicConsultationCta\b[^>]*\/>/g)].map(match => match[0]);
   assert.equal(targets.length, 1, "One consultation target per Services page");
   assert.match(targets[0], /id="consultation"/);
-  assert.match(targets[0], /\bserviceBooking\s*\/>/);
-  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} \/>/);
+  assert.match(targets[0], /\bserviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} \/>/);
+  assert.match(cta, /if \(serviceBooking\) return <ConsultationChoiceCapture locale=\{locale\} variant="service" id=\{id\} wiseEnabled=\{wiseEnabled\} \/>/);
   assert.match(capture, /<section\s+id=\{id\}/);
 }
 
@@ -65,9 +65,11 @@ test("booking links resolve to the service selector anchor in every Services loc
     const page = read(path);
     assertBookingAnchor(page, cta, capture);
     assert.throws(() => assertBookingAnchor(page.replace('id="consultation"', 'id="missing-consultation"'), cta, capture));
-    assert.throws(() => assertBookingAnchor(page.replace('serviceBooking />', '/>'), cta, capture));
+    assert.throws(() => assertBookingAnchor(page.replace(' serviceBooking ', ' '), cta, capture));
+    assert.throws(() => assertBookingAnchor(page.replace('wiseEnabled={wisePaymentsEnabled()}', 'wiseEnabled={true}'), cta, capture));
   }
   assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('variant="service" id={id}', 'variant="personal" id={id}'), capture));
+  assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('wiseEnabled={wiseEnabled}', 'wiseEnabled={true}'), capture));
 });
 
 test("existing personal form remains a browser-local questionnaire with an explicit WhatsApp handoff", () => {

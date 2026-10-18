@@ -49,12 +49,12 @@ test("photo-led service cards replace the duplicated free text cards on all home
   assert.match(es, /no una llamada/);
 });
 
-test("menu keeps the original full catalog but prioritizes free entry, services, About and Cabinet", () => {
+test("menu keeps the original full catalog but prioritizes free entry, services, About and Library", () => {
   const nav = read("components/site-navigation.tsx");
   assert.match(nav, /site-nav-free-entry/);
   assert.match(nav, /item\.id === 'services'/);
   assert.match(nav, /site-nav-about-entry/);
-  assert.match(nav, /site-cabinet-entry/);
+  assert.match(nav, /site-library-entry/);
   assert.match(nav, /site-main-menu-trigger__label/);
   assert.match(nav, /getCompactNavigation\(activeLocale\)/);
   assert.match(nav, /menuItems\.map/);
