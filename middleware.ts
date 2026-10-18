@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
+import { cabinetArchiveRedirect } from './lib/app/cabinet-redirect'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -141,7 +142,11 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
-  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  // Fixed legacy archive redirects must finish before any streamed document.
+  // Apply the same private no-store, nonce CSP and referrer headers below.
+  const archiveTarget = cabinetArchiveRedirect(request.url, request.method)
+  const response = archiveTarget ? NextResponse.redirect(archiveTarget, 307)
+    : NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('Content-Security-Policy', csp)
   if (privatePath(request.nextUrl.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')

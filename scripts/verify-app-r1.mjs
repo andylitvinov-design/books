@@ -852,6 +852,14 @@ try {
  passed('public Master can open own practice but cannot access owner client database')
  await page.goto(origin+'/en/app');await ready()
  await page.goto(origin+'/en/app/reports');await ready();await expect(page.getByRole('heading',{name:'No reports from Andy have been saved yet.'})).toBeVisible();passed('Reports is a first-class empty Cabinet layer')
+  for (const language of ['en','ru']) {
+    const archiveRedirect=await context.request.get(origin+'/'+language+'/app/analysis',{maxRedirects:0})
+    assert.equal(archiveRedirect.status(),307,'legacy archive entry must redirect before streaming')
+    assert.equal(archiveRedirect.headers().location,origin+'/'+language+'/app/portrait#personal-reports')
+    assert.match(archiveRedirect.headers()['cache-control'],/private.*no-store/)
+    assert.equal(archiveRedirect.headers()['referrer-policy'],'no-referrer')
+    await archiveRedirect.dispose()
+  }
   await page.goto(origin+'/en/app/analysis');await ready()
   await expect(page).toHaveURL(/\/en\/app\/portrait#personal-reports/)
   await expect(page.getByRole('heading',{name:'My profile & reports',level:1,exact:true})).toBeVisible()
