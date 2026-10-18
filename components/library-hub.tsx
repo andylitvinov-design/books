@@ -3,15 +3,25 @@ import Link from "next/link";
 import { CatalogShowcase, type CatalogShowcaseItem } from "@/components/catalog-showcase";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { LibraryFeed, type LibraryFeedItem } from "@/components/library-feed";
 import type { PublicLocale } from "@/lib/public-locales";
 
-export type LibraryView = "books" | "videos";
+export type LibraryView = "latest" | "books" | "videos";
+
+type PublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string };
+type PublicArticle = {
+  id: string; slug: string; practitionerName: string; publishedAt: string | null;
+  published: { title: string; excerpt: string; coverPath?: string };
+};
 
 export const libraryCopy = {
   en: {
     title: "Library",
     lead: "Books and practical references are organized as one library: a single book catalog, the remedy reference, a distance-homeopathy guide, and the Daoist Alchemy manual.",
-    booksTab: "Books",
+    latestTab: "Latest", booksTab: "Books",
+    leadLatest: "New videos, articles and learning resources, all in one place. Explore the latest publications or browse our reference collection.",
+    leadVideos: "Watch educational videos and introductions to the Holistic House approach.",
+    guides: "Explore the guides",
     videosTab: "Videos",
     sections: "Library materials",
     videos: "Videos",
@@ -24,7 +34,10 @@ export const libraryCopy = {
   ru: {
     title: "Библиотека",
     lead: "Книги и рабочие справочники собраны в одной библиотеке: единый каталог книг, каталог препаратов, методичка по дистанционной гомеопатии и методичка по Даосской Алхимии.",
-    booksTab: "Книги",
+    latestTab: "Новое", booksTab: "Книги",
+    leadLatest: "Новые видео, статьи и методические материалы — в одной ленте. Читайте последние публикации и изучайте справочники.",
+    leadVideos: "Видео и короткие объяснения подходов Holistic House.",
+    guides: "Справочники и методички",
     videosTab: "Видео",
     sections: "Материалы библиотеки",
     videos: "Видео",
@@ -37,7 +50,10 @@ export const libraryCopy = {
   es: {
     title: "Biblioteca",
     lead: "Libros y referencias prácticas en una sola biblioteca: catálogo de libros, remedios, guía de homeopatía a distancia y manual de Alquimia Taoísta.",
-    booksTab: "Libros",
+    latestTab: "Novedades", booksTab: "Libros",
+    leadLatest: "Vídeos, artículos y materiales recientes en un solo lugar. Descubre nuevas publicaciones y guías.",
+    leadVideos: "Vídeos educativos e introducciones a Holistic House.",
+    guides: "Explorar las guías",
     videosTab: "Videos",
     sections: "Materiales de la biblioteca",
     videos: "Videos",
@@ -164,29 +180,80 @@ export function LibraryBackLink({ locale }: { locale: PublicLocale }) {
   return <Link className="library-back-link" href={`/${locale}/library`}>← {libraryCopy[locale].back}</Link>;
 }
 
-export function LibraryHub({ locale, view = "books" }: { locale: PublicLocale; view?: LibraryView }) {
+const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
+  en: {
+    "library-video-home": "Y4K4piEwwA8",
+    "library-video-services": "s30Y42IwPcg",
+    "library-video-homeopathy": "ILyRWyHtJoE",
+  },
+  ru: {
+    "library-video-home": "AE8Pelpo424",
+    "library-video-services": "Cz6SxXJNZbw",
+    "library-video-homeopathy": "Q9NvYECKWuc",
+  },
+  es: {},
+};
+
+export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [] }: {
+  locale: PublicLocale;
+  view?: LibraryView;
+  publishedVideos?: PublicVideo[];
+  articles?: PublicArticle[];
+}) {
   const text = libraryCopy[locale];
-  const items = view === "videos"
-    ? videoItemsByLocale[locale].map((item) => ({ ...item, actionLabel: text.watch }))
-    : bookItems(locale);
+  const guides = bookItems(locale);
+  const publishedIds = new Set(publishedVideos.map(video => video.youtubeId));
+  const publicFeed: LibraryFeedItem[] = publishedVideos.map(video => ({
+    id: "owner-" + video.id, kind: "video",
+    title: video.title, description: video.description,
+    youtubeId: video.youtubeId, href: video.url,
+    publishedAt: video.publishedAt,
+  }));
+  const articleFeed: LibraryFeedItem[] = articles.map(article => ({
+    id: "article-" + article.id, kind: "article",
+    title: article.published.title, description: article.published.excerpt,
+    image: article.published.coverPath, href: "/" + locale + "/articles/" + article.slug,
+    author: article.practitionerName, publishedAt: article.publishedAt || undefined,
+  }));
+  const siteVideoFeed: LibraryFeedItem[] = videoItemsByLocale[locale].flatMap(video => {
+    const youtubeId = videoYouTubeIds[locale][video.id];
+    if (youtubeId && publishedIds.has(youtubeId)) return [];
+    return [{
+      id: video.id, kind: "video" as const, title: video.title,
+      description: video.description, image: video.image,
+      youtubeId, href: youtubeId ? "https://www.youtube.com/watch?v=" + youtubeId : video.href,
+    }];
+  });
+  const guideFeed: LibraryFeedItem[] = guides.map(guide => ({
+    id: guide.id, kind: "guide", title: guide.title,
+    description: guide.description, image: guide.image, href: guide.href,
+  }));
+  const dated = [...publicFeed, ...articleFeed].sort((a, b) =>
+    (Date.parse(b.publishedAt || "") || 0) - (Date.parse(a.publishedAt || "") || 0));
+  const feedItems = [...dated, ...siteVideoFeed, ...guideFeed];
 
   return (
     <main className="library-shell" lang={locale}>
       <PublicSiteHeader locale={locale} />
-
       <nav className="library-media-switch" aria-label={text.title}>
-        <Link aria-current={view === "videos" ? "page" : undefined} href={`/${locale}/library?view=videos`}>{text.videosTab}</Link>
-        <Link aria-current={view === "books" ? "page" : undefined} href={`/${locale}/library`}>{text.booksTab}</Link>
+        <Link aria-current={view === "latest" ? "page" : undefined} href={"/" + locale + "/library"}>{text.latestTab}</Link>
+        <Link aria-current={view === "videos" ? "page" : undefined} href={"/" + locale + "/library?view=videos"}>{text.videosTab}</Link>
+        <Link aria-current={view === "books" ? "page" : undefined} href={"/" + locale + "/library?view=books"}>{text.booksTab}</Link>
       </nav>
-
       <header className="library-heading">
         <p className="homeopathy-kicker">Holistic House</p>
         <h1>{text.title}</h1>
-        <p>{text.lead}</p>
+        <p>{view === "latest" ? text.leadLatest : view === "videos" ? text.leadVideos : text.lead}</p>
       </header>
-
-      <CatalogShowcase items={items} label={view === "videos" ? text.videos : text.sections} />
-
+      {view === "books" ?
+        <CatalogShowcase items={guides} label={text.sections} /> :
+        <LibraryFeed locale={locale} items={feedItems} videosOnly={view === "videos"} />}
+      {view === "latest" && <section className="library-quick-guides" aria-label={text.guides}>
+        <h2>{text.guides}</h2>
+        <div>{guides.map(guide => <Link key={guide.id} href={guide.href}>
+          <span>{guide.title}</span><span aria-hidden="true">→</span>
+        </Link>)}</div>
+      </section>}
       <p className="library-note">{text.note}</p>
       <PublicConsultationCta locale={locale} />
     </main>
