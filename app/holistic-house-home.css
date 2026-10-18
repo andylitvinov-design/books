@@ -1041,3 +1041,30 @@ a.service-home-start-card:hover {
     font-size: 13px;
   }
 }
+
+/* Service-first hero: the voluntary self-check route is a readable tertiary link,
+   not the previous turquoise booking button. Applies equally to EN/RU/ES. */
+.house-home--services .service-home-selfcheck-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 6px;
+  color: #583b31;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.house-home--services .service-home-selfcheck-link:hover { color: #742c42; }
+.house-home--services .service-home-selfcheck-link:focus-visible {
+  outline: 3px solid #945838;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+@media (max-width: 767px) {
+  .house-home--services .service-home-selfcheck-link {
+    max-width: min(325px, 95%);
+    font-size: 13px;
+  }
+}
