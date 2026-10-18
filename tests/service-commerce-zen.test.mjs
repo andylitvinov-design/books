@@ -55,6 +55,25 @@ test('ZEN IPN hash is checked over EXACT received amount/status/currency and rej
   assert.throws(()=>verifyZenIpnPayload(JSON.stringify({...forged,hash:''}),secret))
   assert.throws(()=>verifyZenIpnPayload('{','test'))
 })
+test('ZEN merchant-portal refund IPN binds the original service order, not the refund reference', () => {
+  const payload = JSON.parse(fakeIpn({
+    type: 'TRT_REFUND',
+    merchantTransactionId: 'merchant-refund-42',
+    originMerchantTransactionId: orderId,
+    amount: '20.00',
+    status: 'ACCEPTED',
+  }))
+  const event = verifyZenIpnPayload(JSON.stringify(payload), secret)
+  assert.equal(event.merchantTransactionId, 'merchant-refund-42')
+  assert.equal(event.originMerchantTransactionId, orderId)
+  assert.equal(event.type, 'zen.trt_refund.accepted')
+  const forged = { ...payload, originMerchantTransactionId: '00000000-0000-4000-8000-000000000000' }
+  // The IPN hash does not cover the original-order reference; the provider
+  // still performs an authoritative merchant API purchase/order readback.
+  const other = verifyZenIpnPayload(JSON.stringify(forged), secret)
+  assert.notEqual(other.originMerchantTransactionId, event.originMerchantTransactionId)
+})
+
 test('ZEN setup stays disabled without the approved schema, real merchant and launch flags', () => {
   const env = {HH_COMMERCE_PROVIDER:'zen',HH_COMMERCE_ENVIRONMENT:'sandbox',
     HH_COMMERCE_SCHEMA_APPROVED:'true',HH_BILLING_SCHEMA_APPROVED:'true',
