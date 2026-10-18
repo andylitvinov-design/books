@@ -61,7 +61,8 @@ const approvedAndyPosters: Readonly<Record<string, string>> = {
 
 // Exact published page renders only; About and future editor replacements are unchanged.
 // Approved Unlisted YouTube mirror links for these exact public HeyGen masters.
-// Mirrors are only backup links; they do not replace provider embeds or admin state.
+// Prefer these identity-verified YouTube copies for public playback when HeyGen embeds fail.
+// Preserve the original HeyGen record, artwork, transcript and owner editor state.
 const existingYouTubeMirrors: Readonly<Record<string, string>> = {
   ed202847a43a96b918308aa972177b34: "Y4K4piEwwA8",
   "48105a2f2228e7cb3a67391e97acaf8b": "s30Y42IwPcg",
@@ -125,16 +126,19 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const watchLabel = isHeygen ? text.watchHeygen : text.watch;
   const aiDisclosure = isApprovedAndyIntro ? text.andyAiDisclosure : text.aiDisclosure;
   const audioNotice = locale === "es" && video.language !== "es" ? (video.language === "ru" ? "Audio en ruso" : "Audio en inglés") : "";
+  const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
+  const playbackYouTubeId = mirrorId || video.youtubeId;
   const playerParams = new URLSearchParams({ autoplay: "1", playsinline: "1", rel: "0", hl: locale, cc_lang_pref: video.language });
-  const embedUrl = isHeygen
-    ? `https://app.heygen.com/embeds/${video.heygenId}`
-    : `https://www.youtube-nocookie.com/embed/${video.youtubeId}?${playerParams.toString()}`;
+  // Six previously approved public copies avoid the broken HeyGen embed.
+  // Unique method/intro videos without an exact mirror keep their original source.
+  const embedUrl = playbackYouTubeId
+    ? `https://www.youtube-nocookie.com/embed/${playbackYouTubeId}?${playerParams.toString()}`
+    : `https://app.heygen.com/embeds/${video.heygenId}`;
 
   useEffect(() => { if (playing) playerRef.current?.focus(); }, [playing]);
   function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
   const externalLink = <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
-  const mirrorId = video.heygenId ? existingYouTubeMirrors[video.heygenId] : undefined;
   const mirrorLink = mirrorId ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
     target="_blank" rel="noopener noreferrer" aria-label={`${text.watch}: ${video.title} (${text.newTab})`}>
     {text.watch}<ExternalLink aria-hidden="true" />
@@ -144,7 +148,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
     <figure className={["site-video-player", compact && "site-video-player--compact", minimal && "site-video-player--minimal", minimal && styles.minimal, className].filter(Boolean).join(" ")} aria-labelledby={titleId} lang={locale}>
       <div className="site-video-frame">
         {playing ? (
-          <iframe ref={playerRef} className="site-video-iframe" src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
+          <iframe ref={playerRef} className="site-video-iframe" data-video-playback={playbackYouTubeId ? "youtube" : "heygen"} src={embedUrl} title={video.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" tabIndex={0} />
         ) : (
           <button className="site-video-play" type="button" disabled={!interactive} aria-busy={!interactive} aria-label={`${text.play}: ${video.title}`} onClick={() => setPlaying(true)}>
             {!isHeygen && fallbackPoster && !localPosterFailed && (
