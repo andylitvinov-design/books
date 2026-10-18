@@ -30,6 +30,8 @@ export default function CrmMarketingPanel({accountId,contacts=[],locale='en'}) {
   const [campaign,setCampaign]=useState('')
   const [creative,setCreative]=useState('')
   const [confirmed,setConfirmed]=useState(false)
+  const [submissionId,setSubmissionId]=useState(null)
+  useEffect(()=>{setSubmissionId(null)},[contactId,source,medium,offer,campaign,creative])
   useEffect(()=>{
     if(!accountId)return
     const controller=new AbortController()
@@ -49,7 +51,7 @@ export default function CrmMarketingPanel({accountId,contacts=[],locale='en'}) {
         headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
         body:JSON.stringify({action,payload})})
       if(!r.ok)throw Error('SAVE_FAILED')
-      if(action==='record_lead'){setCampaign('');setCreative('');setConfirmed(false)}
+      if(action==='record_lead'){setCampaign('');setCreative('');setConfirmed(false);setSubmissionId(null)}
       setNotice(t.saved);setRefresh(v=>v+1)
     }catch{setError(t.error)}finally{setBusy(false)}
   }
@@ -95,7 +97,11 @@ export default function CrmMarketingPanel({accountId,contacts=[],locale='en'}) {
         <summary>{t.form}</summary>
         {choices.length?<form className={styles.form} onSubmit={event=>{
           event.preventDefault()
-          if(confirmed&&contactId)send('record_lead',{contactId,source,medium,campaign,creative,offer})
+          if(confirmed&&contactId){
+            const id=submissionId||globalThis.crypto.randomUUID()
+            setSubmissionId(id)
+            send('record_lead',{id,contactId,source,medium,campaign,creative,offer})
+          }
         }}>
           <label>{t.contact}<select required value={contactId} onChange={e=>setContactId(e.target.value)}>
             <option value="">—</option>{choices.map(x=><option key={x.id} value={x.id}>{x.displayName}</option>)}
