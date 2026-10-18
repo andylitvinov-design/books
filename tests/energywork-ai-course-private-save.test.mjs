@@ -6,6 +6,7 @@ import {
   ENERGYWORK_COMMON, ENERGYWORK_BRANCH, ENERGYWORK_FINISH,
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
+  ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
   energyworkSequence, energyworkAnswerValid, energyworkInitiationReady,
   energyworkLegacyResumeId,
 } from '../data/academy/energywork-ai-schema.js'
@@ -18,18 +19,18 @@ const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 45 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 53 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
   assert.equal(ENERGYWORK_VERSION, '2026-10-18.p1')
   assert.equal(ENERGYWORK_LEGACY_VERSION, '2026-10-17.p0')
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1))
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 45)
-  assert.equal(new Set(registered).size,45)
+  assert.equal(editorial.length, 53)
+  assert.equal(new Set(registered).size,53)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,45)
+  assert.equal(sequence.length,53)
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
   assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])
@@ -42,8 +43,14 @@ test('Server registry includes exactly 45 editorial IDs in one fixed five-lesson
     assert.deepEqual(energyworkSequence(oldPath),sequence,'Old branches do not change sequence')
 })
 
-test('Observations may be skipped when learning but all reports and question answers gate initiation', () => {
+test('Meditation feedback gates the next screen; five reports and answers gate initiation', () => {
   assert.deepEqual(ENERGYWORK_REPORT_IDS,['flight-04','tan-04','kun-04','ygg-04','end-01'])
+  assert.deepEqual(ENERGYWORK_MEDITATION_REPORT_IDS,['flight-04','tan-04','kun-04','ygg-04'])
+  for(const rating of [0,2,5,10]) assert.equal(energyworkMeditationFeedbackComplete(`Feeling:${rating}/10\nNothing unusual yet.`),true)
+  for(const feedback of ['', 'Just words','Feeling:5/10\n', 'Feeling:11/10\nNote','Feeling:3/10\n   ']) assert.equal(energyworkMeditationFeedbackComplete(feedback),false)
+  assert.match(repository,/MEDITATION_FEEDBACK_REQUIRED/)
+  assert.match(learner,/feedbackMissing = isMeditationFeedback/)
+  assert.match(learner,/experienceMissing \|\| feedbackMissing/)
   assert.deepEqual(ENERGYWORK_LESSON_ANSWER_IDS,['flight-05','tan-06','kun-06','ygg-06','init-01'])
   assert.equal(energyworkInitiationReady(null),false)
   assert.equal(energyworkInitiationReady({}),false)
