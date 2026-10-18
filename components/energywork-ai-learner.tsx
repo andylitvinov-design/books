@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, Compass, HandHeart, LockKeyhole, PlayCircle, Sparkles, Sprout, BarChart3, Heart, Leaf } from "lucide-react";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { appFetch } from "@/lib/app/client-fetch";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -31,7 +31,18 @@ type SaveCommand = {
 const copy = {
   en: {
     shortTitle: "Reiki Practitioner",
-    eyebrow: "HOLISTIC HOUSE ACADEMY · INTERACTIVE PREVIEW",
+    journey: "Three Reiki traditions",
+    lesson: "Lesson",
+    completedLabel: "completed",
+    startFree: "Start free program",
+    benefits: "What to expect from your learning",
+    shortLessons: "Short lessons",
+    shortLessonsDetail: "Clear guidance",
+    practicalTasks: "Practical tasks",
+    practicalTasksDetail: "Learn at your pace",
+    privateProgress: "Private progress",
+    privateProgressDetail: "Save by choice",
+    eyebrow: "HOLISTIC HOUSE ACADEMY · FREE REIKI PROGRAM",
     preview: "Guest preview · Answers are not saved.",
     previewHelp: "Sign in with Google and consent to private saving. Guest reflections are not stored and will disappear after leaving.",
     program: "Explore the programme",
@@ -83,7 +94,18 @@ const copy = {
   },
   ru: {
     shortTitle: "Практик Рейки",
-    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · ИНТЕРАКТИВНЫЙ ПРОСМОТР",
+    journey: "Три направления Рейки",
+    lesson: "Урок",
+    completedLabel: "пройдено",
+    startFree: "Начать бесплатный курс",
+    benefits: "Что ждёт вас на курсе",
+    shortLessons: "Короткие уроки",
+    shortLessonsDetail: "Понятные шаги",
+    practicalTasks: "Практические задания",
+    practicalTasksDetail: "В своём темпе",
+    privateProgress: "Личный прогресс",
+    privateProgressDetail: "По вашему выбору",
+    eyebrow: "АКАДЕМИЯ HOLISTIC HOUSE · БЕСПЛАТНЫЙ КУРС",
     preview: "Гостевой просмотр · Ответы не сохраняются.",
     previewHelp: "Войдите через Google и согласитесь на приватное сохранение. Гостевые ответы не записываются и исчезнут после выхода.",
     program: "Посмотреть программу",
@@ -443,7 +465,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
   }
 
   return (
-    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
+    <main className={styles.page} lang={locale} data-course-one-screen="v1" data-course-theme="reiki-scenic-v1" data-energywork-ai-learner data-course-id={ENERGYWORK_COURSE_ID} data-course-version={ENERGYWORK_COURSE_VERSION}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <Link className={styles.home} href={"/" + locale + "/academy/principles-of-energywork"} aria-label={t.backCourse}>
@@ -453,15 +475,18 @@ export function EnergyworkAiLearner({ locale }: Props) {
           <span className={styles.phaseLabel}>{energyworkPhases[slide.phase][locale]}</span>
         </header>
 
-        <div className={styles.progressHeader}>
-          <span>{t.step} {index + 1} {t.of} {total}</span>
-          <span>{Math.round((index + 1) / total * 100)}%</span>
-        </div>
-        <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={index + 1} aria-label={t.step}>
-          <span style={{ width: ((index + 1) / total * 100) + "%" }} />
-        </div>
-
-
+        <nav className={styles.journey} aria-label={t.journey}>
+          <ol>
+            {energyworkPathChoices.map((choice, position) => (
+              <li key={choice.id}
+                className={path === choice.id ? styles.journeySelected : (!path && position === 0 ? styles.journeyIntro : "")}
+                aria-current={path === choice.id ? "step" : undefined}>
+                <span className={styles.journeyDot} aria-hidden="true">{position + 1}</span>
+                <span className={styles.journeyLabel}>{choice.title[locale]}</span>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
         <section className={styles.slide + (slide.kind === "welcome" ? " " + styles.welcomeSlide : "") + (slide.id === "welcome-02" ? " " + styles.experienceSlide : "")} key={slide.id} data-energywork-slide-kind={slide.kind} aria-labelledby="energywork-slide-title">
           <div className={styles.slideMain}>
@@ -477,6 +502,16 @@ export function EnergyworkAiLearner({ locale }: Props) {
                   </ul>
                   <p className={styles.welcomeRequirement}>{t.welcomeRequirement}</p>
                   <p className={styles.welcomeTeacher}>{t.welcomeTeacher}</p>
+                </div>
+              ) : null}
+              {slide.kind === "welcome" ? (
+                <div className={styles.benefits} aria-label={t.benefits}>
+                  <div><span className={styles.benefitIcon}><Leaf size={19} aria-hidden="true" /></span>
+                    <strong>{t.shortLessons}</strong><small>{t.shortLessonsDetail}</small></div>
+                  <div><span className={styles.benefitIcon}><Heart size={19} aria-hidden="true" /></span>
+                    <strong>{t.practicalTasks}</strong><small>{t.practicalTasksDetail}</small></div>
+                  <div><span className={styles.benefitIcon}><BarChart3 size={19} aria-hidden="true" /></span>
+                    <strong>{t.privateProgress}</strong><small>{t.privateProgressDetail}</small></div>
                 </div>
               ) : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} /> : null}
@@ -572,6 +607,16 @@ export function EnergyworkAiLearner({ locale }: Props) {
             ) : null}
           </div>
         </section>
+        <div className={styles.progressFooter}>
+          <div className={styles.progressHeader}>
+            <span>{t.lesson} {index + 1} {t.of} {total}</span>
+            <span>{Math.round((index + 1) / total * 100)}% {t.completedLabel}</span>
+          </div>
+          <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={total}
+            aria-valuenow={index + 1} aria-label={t.lesson}>
+            <span style={{ width: ((index + 1) / total * 100) + "%" }} />
+          </div>
+        </div>
 
         <details className={styles.programme}>
           <summary>{t.program}</summary>
@@ -586,7 +631,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
             {sync === "guest" ? <>
               <strong>{t.preview}</strong>
               <details className={styles.saveDetails}>
-                <summary>{locale === "ru" ? "Сохранить в моих курсах" : "Save to My Courses"}</summary>
+                <summary>{t.consentTitle}</summary>
                 <p>{t.previewHelp}</p>
                 <button type="button" onClick={signIn} disabled={busy} className={styles.syncButton}>{t.signIn}</button>
                 <p>{t.guestHint}</p>
@@ -618,12 +663,12 @@ export function EnergyworkAiLearner({ locale }: Props) {
             <div className={styles.actions}>
               <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"} className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || (slide.kind === "path-choice" && !path)} className={styles.next} data-energywork-next>
-                {slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
+                {slide.kind === "welcome" ? t.startFree : slide.kind === "path-choice" ? t.continuePath : t.continue}<ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
           ) : null}
-          <p>{t.stop}</p>
         </footer>
+        <p className={styles.disclaimer}>{t.stop}</p>
       </div>
     </main>
   );
