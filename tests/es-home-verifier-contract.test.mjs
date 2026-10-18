@@ -158,7 +158,7 @@ for (const fault of ['wrong direct destination', 'missing direct link', 'extra d
 for (const [name, before, after] of [
   ['obsolete free-start anchor', '#free-start', '#start-here'],
   ['full catalog restored as direct links', ".filter(item => item.id === 'services')", ''],
-  ['courses removed from full menu', 'getSiteNavigation(activeLocale).map(item => (', "getSiteNavigation(activeLocale).filter(item => item.id !== 'courses').map(item => ("],
+  ['courses removed from full menu', 'menuItems.map(item => (', "menuItems.filter(item => item.id !== 'courses').map(item => ("],
 ]) {
   test('Spanish navigation verifier rejects actual source mutation: ' + name, () => {
     assert.ok(navigationSource.includes(before))

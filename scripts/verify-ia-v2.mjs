@@ -14,7 +14,7 @@ import { createPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createClient } from '../lib/clients/service.js'
 import { getOwnerCabinetLink, rotateCabinetAccess, revokeCabinetAccess } from '../lib/clients/access.js'
 import { createAssessment, updateAssessment, transitionAssessment } from '../lib/clients/assessments.js'
-import { getSiteNavigation } from '../lib/site-navigation-model.js'
+import { getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-model.js'
 import { loopbackHeaders, loopbackLocation } from './ia-v2-loopback-proxy.mjs'
 assert.equal(process.env.CI, 'true', 'Only isolated CI execution is supported')
 assert.equal(process.argv.length, 2, 'No runtime URL or live mode is accepted')
@@ -52,14 +52,7 @@ async function go(page, path) {
   return response
 }
 
-function expectedMobileNavigation(locale) {
-  const labels = { en: ['Tests', 'My House'], ru: ['Тесты', 'Мой дом'], es: ['Tests', 'Mi Casa'] }
-  return [
-    ...getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id)),
-    { id: 'tests', href: '/' + locale + '/client/tests', label: labels[locale][0] },
-    { id: 'house', href: '/' + (locale === 'es' ? 'en' : locale) + '/app', label: labels[locale][1] },
-  ]
-}
+function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
 
 async function assertPublicBottomNavigation(bottom, { locale, surface, label }) {
   const expected = expectedMobileNavigation(locale)
@@ -139,7 +132,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...expected.map(item => item.id === 'cabinet' ? '/' + (locale === 'es' ? 'en' : locale) + '/app' : item.href), '/' + locale + '/about']
+        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinet = header.locator('a.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')

@@ -56,7 +56,8 @@ test("menu keeps the original full catalog but prioritizes free entry, services,
   assert.match(nav, /site-nav-about-entry/);
   assert.match(nav, /site-cabinet-entry/);
   assert.match(nav, /site-main-menu-trigger__label/);
-  assert.match(nav, /getSiteNavigation\(activeLocale\)\.map/);
+  assert.match(nav, /getCompactNavigation\(activeLocale\)/);
+  assert.match(nav, /menuItems\.map/);
 });
 
 test("primary home CTA has stronger contrast and mobile introduction stays readable", () => {

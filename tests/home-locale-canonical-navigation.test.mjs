@@ -149,15 +149,15 @@ const journeys = extract('async function exerciseFreeJourneys(', 'async function
 async function journeyScenario({ wrongBack = false, wrongDestination = false, privateRequest = false } = {}) {
   let url, home, selected, routeHandler;
   const results = [], openedHomes = [];
-  const suffixes = { situation: '/services/free-situation-review', wu: '/services/dao-health-profile', stress: '/client#cabinet-tests' };
+  const suffixes = { selfTest: '/client/tests', analysis: '/services/free-situation-review', reiki: '/academy/principles-of-energywork/learn' };
   const chooser = { locator(selector) {
-    const option = selector.match(/^button\[data-home-free-option="([a-z]+)"\]$/);
+    const option = selector.match(/^button\[data-home-free-option="([a-zA-Z]+)"\]$/);
     if (option) return { async click() { selected = option[1]; } };
     assert.equal(selector, `a[data-home-free-action="${selected}"]`);
     return { async evaluate() { return { url }; }, async click() {
       const locale = home.endsWith('/ru') ? 'ru' : 'en';
       url = origin + '/' + locale + (wrongDestination ? '/wrong' : suffixes[selected]);
-      if (privateRequest || selected === 'stress') await routeHandler({
+      if (privateRequest || selected === 'selfTest') await routeHandler({
         request: () => ({ method: () => privateRequest ? 'POST' : 'GET', url: () => origin + (privateRequest ? '/api/app/test-plans' : '/api/app/guest/bootstrap') }),
         async fulfill(response) { assert.equal(response.status, privateRequest ? 401 : 200); },
       });

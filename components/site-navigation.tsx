@@ -6,7 +6,7 @@ import { CircleUserRound, Menu } from 'lucide-react';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
-import { activeNavigationId, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
+import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
@@ -33,6 +33,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const cabinet = cabinetEntryCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
+  const menuCurrent = activeCompactNavigationId(pathname);
   const localizedPath = /^\/(ru|en|es)(?=\/|$)/.test(pathname);
   const available = hasSpanishCounterpart(pathname);
   const languages: PublicLocale[] = available ? ['ru', 'en', 'es'] : ['ru', 'en'];
@@ -92,6 +93,13 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     return available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
   }
 
+  // Keep the first six expanded-menu entries in sync with the mobile bar.
+  // Preserve the additional editorial destinations afterwards.
+  const menuItems = [
+    ...getCompactNavigation(activeLocale),
+    ...getSiteNavigation(activeLocale).filter(item => item.id === 'relationships' || item.id === 'courses'),
+  ];
+
   return <nav aria-label={text.navigation} className="site-navigation">
     <Link className="site-nav-free-entry" href={freeStartHref} prefetch={false}>{siteMenu.start}</Link>
     {getSiteNavigation(activeLocale).filter(item => item.id === 'services').map(item => item.external
@@ -123,12 +131,12 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       <div className="site-main-menu-panel">
         <p className="site-main-menu-heading">{siteMenu.heading}</p>
         <Link href={freeStartHref} prefetch={false} onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>{siteMenu.start}</Link>
-        {getSiteNavigation(activeLocale).map(item => (
+        {menuItems.map(item => (
           <Link
             key={item.id}
-            href={item.id === 'cabinet' ? `/${activeLocale === 'es' ? 'en' : activeLocale}/app` : item.href}
+            href={item.href}
             prefetch={false}
-            aria-current={current === item.id ? 'page' : undefined}
+            aria-current={menuCurrent === item.id ? 'page' : undefined}
             onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
           >{item.label}</Link>
         ))}

@@ -8,7 +8,7 @@ const wrapper = read("components/homepage-contact-cta.tsx");
 const capture = read("components/homepage-free-capture.tsx");
 const css = read("components/consultation-choice-capture.module.css");
 
-test("only the existing bottom blue capture presents the three free choices on Home", () => {
+test("the approved bottom blue capture contains the three requested free offers, without a duplicate chooser", () => {
   assert.doesNotMatch(home, /<FreeInsightsPaths|import \{ FreeInsightsPaths \}/);
   assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
   assert.match(wrapper, /id="home-consultation"/);
@@ -17,55 +17,64 @@ test("only the existing bottom blue capture presents the three free choices on H
   assert.match(capture, /data-home-free-capture="true"/);
   assert.match(capture, /data-consultation-capture="home-free"/);
   assert.match(capture, /data-choice-layout="home-free"/);
-  assert.deepEqual([...capture.matchAll(/type FreeOffer = "([^"]+)" \| "([^"]+)" \| "([^"]+)";/g)].map(m => m.slice(1, 4)), [["situation", "wu", "stress"]]);
-  assert.match(capture, /offerOrder: FreeOffer\[\] = \["situation", "wu", "stress"\]/);
+  assert.match(capture, /type FreeOffer = "selfTest" \| "analysis" \| "reiki"/);
+  assert.match(capture, /offerOrder: FreeOffer\[\] = \["selfTest", "analysis", "reiki"\]/);
+  assert.doesNotMatch(capture, /"wu"|"stress"/);
 });
 
-test("each selection opens its exact existing entry route, changing the burgundy CTA", () => {
-  for (const slug of ["free-situation-review", "dao-health-profile", "client#cabinet-tests"]) {
+test("each free offer leads directly to its existing entry route, with self-test selected by default", () => {
+  for (const slug of ["/client/tests", "/services/free-situation-review", "/academy/principles-of-energywork/learn"]) {
     assert.ok(capture.includes(slug), "Missing destination: " + slug);
   }
   for (const path of [
+    "app/[locale]/client/tests/page.tsx",
     "app/[locale]/services/free-situation-review/page.tsx",
-    "app/[locale]/services/dao-health-profile/page.tsx",
-    "app/[locale]/client/page.tsx",
+    "app/[locale]/academy/[[...slug]]/page.tsx",
   ]) assert.ok(read(path).length > 200, path);
-  assert.match(capture, /useState<FreeOffer>\("situation"\)/);
+  assert.match(read("app/[locale]/academy/[[...slug]]/page.tsx"), /key === "principles-of-energywork\/learn"/);
+  assert.match(read("components/energywork-ai-learner.tsx"), /shortTitle: "Reiki Practitioner"/);
+  assert.match(capture, /useState<FreeOffer>\("selfTest"\)/);
   assert.match(capture, /aria-pressed=\{selected === id\}/);
   assert.match(capture, /onClick=\{\(\) => setSelected\(id\)\}/);
   assert.match(capture, /data-home-free-action": selected/);
-  assert.match(capture, /selected === "stress" \? "self_check_start" : "service_request_start"/);
+  assert.match(capture, /event=\{selected === "selfTest" \? "self_check_start" : selected === "analysis" \? "service_request_start" : "service_view"\}/);
+  assert.match(capture, /analyticsEvent=\{selected === "analysis" \? "free_situation_assessment_click" : undefined\}/);
   assert.match(capture, /href=\{href\}/);
   assert.match(capture, /prefetch=\{false\}/);
 });
 
-test("EN/RU copy is clear, free and appropriately limits diagnosis promises", () => {
-  for (const text of [
-    "Free situation analysis",
-    "Free Wu Xing resources & wellbeing analysis",
-    "Stress check & personality portrait",
-    "Бесплатный анализ ситуации",
-    "Бесплатный анализ ресурсов и самочувствия по У-Син",
-    "Анализ стресса и психологический портрет",
-    "not a medical diagnosis",
+test("EN/RU copy describes real free services and preserves accurate safety and teacher-initiation limits", () => {
+  for (const phrase of [
+    "Free Self-Test",
+    "Free Personal Analysis",
+    "Free Reiki Practitioner Program",
+    "Бесплатный самотест",
+    "Бесплатный личный анализ",
+    "Бесплатная программа «Практик Рейки»",
+    "not medical diagnoses",
     "не медицинская диагностика",
-    "written review",
+    "not a free live consultation",
     "письменный разбор",
-  ]) assert.ok(capture.includes(text), text);
-  assert.doesNotMatch(capture, /localStorage|sessionStorage|fetch\(|sendBeacon|FormData|private client data|guaranteed cure/i);
+    "not automatic",
+    "автоматически",
+    "Tantra Reiki",
+    "Kundalini Reiki",
+    "Рейки Иггдрасиль",
+  ]) assert.ok(capture.includes(phrase), phrase);
+  assert.doesNotMatch(capture, /localStorage|sessionStorage|fetch\(|sendBeacon|FormData|guaranteed cure/i);
   assert.match(capture, /event="contact_click"/);
-  assert.match(capture, /href=\{`\/\$\{locale\}\/services`\}/);
+  assert.match(capture, /href=\{\x60\/\$\{locale\}\/services\x60\}/);
 });
 
-test("home free options use accessible, touch-friendly cards without changing paid selectors elsewhere", () => {
+test("mobile option buttons and primary burgundy CTA remain touch-friendly and isolated from paid selectors", () => {
   assert.match(css, /linear-gradient\(125deg, #e9f7fe/);
   assert.match(css, /\.homeFreeChoices\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.homeFreeChoices \.homeFreeChoice:last-child\{grid-column:1\/-1/);
   assert.match(css, /@media\(max-width:760px\)/);
-  assert.match(css, /\.homeFreeChoices\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(capture, /compactTitle: "Situation review"/);
-  assert.match(capture, /compactTitle: "Wu Xing profile"/);
-  assert.match(capture, /compactTitle: "Stress & personality tests"/);
+  assert.match(css, /\.homeCapture \.action\{min-height:46px;padding:10px;font-size:14px\}/);
+  assert.match(capture, /compactTitle: "Free self-test"/);
+  assert.match(capture, /compactTitle: "Free personal analysis"/);
+  assert.match(capture, /compactTitle: "Free Reiki practitioner program"/);
   assert.match(capture, /aria-label=\{\x60\$\{t\.offers\[id\]\.title\}/);
   assert.doesNotMatch(capture, /<small>\{t\.offers\[id\]\.description\}<\/small>/);
   assert.match(css, /\.capture :is\(a,button\):focus-visible/);

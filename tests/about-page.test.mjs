@@ -47,7 +47,7 @@ test('shares all public destinations with six mobile shortcuts and no administra
     assert.equal(items.find((item) => item.id === 'courses').href, `/${locale}/courses`)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
   }
-  assert.match(mobileNavigation, /getSiteNavigation/)
+  assert.match(mobileNavigation, /getCompactNavigation/)
   assert.match(mobileNavigation, /data-nav-item/)
   assert.match(siteNavigation, /getSiteNavigation/)
   assert.doesNotMatch(mobileNavigation, /href: '\/admin'/)

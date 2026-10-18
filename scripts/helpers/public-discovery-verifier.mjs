@@ -3,7 +3,7 @@ import { PORTRAIT_SECTORS } from '../../lib/assessments/portrait-sectors.js'
 import { availableTestCollections } from '../../lib/assessments/test-collections.js'
 import { buildExplorerEntries, filterExplorerEntries, rankPublicTestMatches, searchPublicTestEntries, TEST_EXPLORER_AXES } from '../../lib/assessments/test-explorer.js'
 import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
-import { getSiteNavigation } from '../../lib/site-navigation-model.js'
+import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
   en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Browse collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
@@ -20,11 +20,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
   else await expect(ribbon).toBeVisible()
   await expect(bar).toHaveCount(1)
   await expect(bar).toBeVisible()
-  const destinations = getSiteNavigation(locale).filter(item => ['home', 'library', 'services', 'academy'].includes(item.id))
-  destinations.push(
-    { id: 'tests', href: `/${locale}/client/tests`, label: locale === 'ru' ? 'Тесты' : 'Tests' },
-    { id: 'house', href: `/${locale === 'es' ? 'en' : locale}/app`, label: locale === 'ru' ? 'Мой дом' : locale === 'es' ? 'Mi Casa' : 'My House' },
-  )
+  const destinations = getCompactNavigation(locale)
   const links = bar.locator(':scope > a')
   await expect(links).toHaveCount(6)
   assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href, label }) => ({ id, href, label })))

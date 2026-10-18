@@ -61,7 +61,7 @@ async function scenario(locale, surface, fault, visible = true) {
     async toHaveAccessibleName(label) { assert.equal(visible, true, 'Hidden desktop navigation does not have an accessible name'); assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props['aria-label'] ?? text(actual.selected[0]), label); },
     async toHaveAttribute(name, value) { assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props[name], value); },
   });
-  const verify = new Function('assert', 'expect', 'getSiteNavigation', helper + '; return assertPublicBottomNavigation;')(assert, expect, model.getSiteNavigation);
+  const verify = new Function('assert', 'expect', 'getCompactNavigation', helper + '; return assertPublicBottomNavigation;')(assert, expect, model.getCompactNavigation);
   await verify(bottom, { locale, surface: surface.startsWith('client') ? 'tests' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {

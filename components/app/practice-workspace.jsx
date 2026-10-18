@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2 } from 'lucide-react'
 import CrmManager from './crm-manager'
@@ -99,6 +100,42 @@ const DASHBOARD_COPY = {
 const arr=value=>Array.isArray(value)?value.join(', '):''
 const list=value=>String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
 
+
+const PRACTICE_SHOWCASE_IMAGES={
+  personal_development:'/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+  energy_spiritual:'/academy/reiki-yggdrasil/source/basic-program.jpg',
+  emotional_psychological:'/images/holistic-house/hero-olive-incense.webp',
+  relationships:'/images/holistic-house/video-posters/constellations-en-v1.webp',
+  body_somatic:'/images/holistic-house/hero-olive-incense.webp',
+  homeopathy_holistic:'/images/holistic-house/distance-homeopathy.webp',
+  career_purpose:'/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
+  business_money:'/images/holistic-house/video-posters/constellations-en-v1.webp',
+}
+function showcasePhoto(item){
+  const selected=typeof item.imagePath==='string'?item.imagePath.trim():''
+  if(selected&&(selected.startsWith('https://')||(selected.startsWith('/')&&!selected.startsWith('//'))))return selected
+  return PRACTICE_SHOWCASE_IMAGES[item.areaKey]||'/images/holistic-house/hero-olive-incense.webp'
+}
+function showcasePrice(item,locale,copy){
+  if(item.pricingMode==='free')return copy.free
+  if(item.pricingMode==='contact'||item.confirmedPrice==null)return copy.viewService
+  try {
+    const amount=new Intl.NumberFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{
+      style:'currency',currency:item.currency||'CAD',maximumFractionDigits:0,
+    }).format(item.confirmedPrice)
+    return item.pricingMode==='from'?copy.from+' '+amount:amount
+  }catch{return copy.viewService}
+}
+
+function ShowcaseCover({item}){
+  const [failed,setFailed]=useState(false)
+  const fallback=PRACTICE_SHOWCASE_IMAGES[item.areaKey]||'/images/holistic-house/hero-olive-incense.webp'
+  return <span className="hh-practice-marketplace-card-photo">
+    <Image src={failed?fallback:showcasePhoto(item)} alt="" fill unoptimized loading="lazy"
+      sizes="(max-width: 600px) 116px, 165px" onError={()=>setFailed(true)} />
+  </span>
+}
+
 function PracticeTile({Icon,title,description,onClick,active=false}) {
   return <button type="button" className="hh-practice-tool-card" onClick={onClick} aria-pressed={active}>
     <span className="hh-practice-tool-top">
@@ -194,27 +231,40 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
-  const recentPublicServices=(newServices?.recent||[])
+  const publicServiceExamples=(newServices?.recent||[])
     .filter(item=>locale!=='es'||item.displayLocales?.includes('es'))
-    .slice(0,2)
+  // Prefer examples from other masters, but never invent one if only our own are live.
+  const recentPublicServices=[
+    ...publicServiceExamples.filter(item=>item.practitionerSlug!==p?.slug),
+    ...publicServiceExamples.filter(item=>item.practitionerSlug===p?.slug),
+  ].slice(0,4)
   const marketplaceCopy=ru?{
-    title:'Новые услуги на сайте',subtitle:'Новые предложения мастеров Holistic House — от заявки до публикации.',
-    submitted:'Заявлено за 7 дней',pending:'На проверке',published:'Опубликовано за 7 дней',available:'Всего доступно',
-    latest:'Недавно добавлены',noRecent:'Пока нет новых опубликованных услуг.',
-    unavailable:'Статистика сейчас недоступна.',all:'Просмотреть все услуги',
-    add:'Добавить свою услугу',limit:'Лимит 10 услуг',
+    kicker:'HOLISTIC HOUSE · СООБЩЕСТВО',
+    title:'Вдохновитесь услугами коллег',
+    subtitle:'Посмотрите, как мастера представляют свои услуги. Ваше предложение тоже может появиться здесь.',
+    latest:'Мастера уже размещают',noRecent:'Опубликованных примеров пока нет. Ваша услуга может стать одной из первых.',
+    unavailable:'Примеры услуг временно недоступны.',all:'Все услуги',
+    add:'Разместить свою услугу',limit:'Лимит услуг достигнут',
+    hobby:'Hobby · бесплатно',slots:'услуг',free:'Бесплатно',from:'от',viewService:'Подробнее',
+    practitioner:'Практик',
   }:locale==='es'?{
-    title:'Nuevos servicios en el sitio',subtitle:'Nuevas propuestas de profesionales, desde la solicitud hasta su publicación.',
-    submitted:'Solicitados en 7 días',pending:'En revisión',published:'Publicados en 7 días',available:'Disponibles',
-    latest:'Recién publicados',noRecent:'Todavía no hay nuevos servicios publicados.',
-    unavailable:'Las estadísticas no están disponibles.',all:'Ver todos los servicios',
-    add:'Añadir tu servicio',limit:'Límite de 10 servicios',
+    kicker:'HOLISTIC HOUSE · COMUNIDAD',
+    title:'Inspírate con otros profesionales',
+    subtitle:'Mira cómo presentan sus servicios. Tu propuesta también puede aparecer aquí.',
+    latest:'Servicios de la comunidad',noRecent:'Todavía no hay servicios publicados. El tuyo podría ser uno de los primeros.',
+    unavailable:'Los ejemplos no están disponibles por ahora.',all:'Ver todos',
+    add:'Publicar mi servicio',limit:'Límite de servicios alcanzado',
+    hobby:'Hobby · gratis',slots:'servicios',free:'Gratis',from:'desde',viewService:'Descubrir',
+    practitioner:'Profesional',
   }:{
-    title:'New services on the site',subtitle:'New Holistic House offers, from submission to publication.',
-    submitted:'Submitted · 7 days',pending:'Awaiting review',published:'Published · 7 days',available:'Available now',
-    latest:'Recently added',noRecent:'No newly published services yet.',
-    unavailable:'Service statistics are temporarily unavailable.',all:'View all services',
-    add:'Add your service',limit:'10-service limit reached',
+    kicker:'HOLISTIC HOUSE · COMMUNITY',
+    title:'Be inspired by fellow practitioners',
+    subtitle:'See how others present their services. Your own offering could be next.',
+    latest:'From our practitioner community',noRecent:'No published examples yet. Your service could be among the first.',
+    unavailable:'Service examples are temporarily unavailable.',all:'Explore all',
+    add:'Add your service — free',limit:'Service limit reached',
+    hobby:'Hobby · Free',slots:'services',free:'Free',from:'From',viewService:'Explore service',
+    practitioner:'Practitioner',
   }
   const hasProfile=Boolean(p?.profile?.displayName||p?.draftProfile?.displayName)
   const profileLive=Boolean(p?.slug&&p?.profile?.displayName&&['approved','submitted','changes_requested'].includes(p.status))
@@ -289,45 +339,49 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       <div className="hh-practice-marketplace-heading">
         <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
         <div>
-          <p className="hh-practice-marketplace-kicker">Holistic House · Marketplace</p>
+          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
           <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
           <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
         </div>
       </div>
-      {newServices?<div className="hh-practice-marketplace-statistics" role="list" aria-label={marketplaceCopy.title}>
-        {[
-          [newServices.submitted7d,marketplaceCopy.submitted],
-          [newServices.pendingNow,marketplaceCopy.pending],
-          [newServices.published7d,marketplaceCopy.published],
-          [newServices.availableNow,marketplaceCopy.available],
-        ].map(([value,label])=><div key={label} role="listitem">
-          <strong>{value}</strong><span>{label}</span>
-        </div>)}
-      </div>:<p className="hh-practice-marketplace-unavailable" role="status">{marketplaceCopy.unavailable}</p>}
-      {newServices&&<div className="hh-practice-marketplace-latest">
-        <strong>{marketplaceCopy.latest}</strong>
-        {recentPublicServices.length?<ul>
-          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
-            <Link href={'/'+locale+'/services/'+item.practitionerSlug+'/'+item.slug} prefetch={false}>
-              <span>{item.titles?.[locale]||item.titles?.en}</span><ChevronRight aria-hidden="true" />
-            </Link>
-          </li>)}
-        </ul>:<p>{marketplaceCopy.noRecent}</p>}
-      </div>}
-      <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
-        {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
-      </Link>
-      <div className="hh-practice-top-cta" aria-label={ru?'Добавление услуг':'Add services'}>
+      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
         <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
           aria-pressed={activePanel==='services'} onClick={addService}>
           <Plus aria-hidden="true" />
           <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
           <ChevronRight aria-hidden="true" />
         </button>
-        <div className="hh-practice-top-cta-quota">
-          <strong>{ru?'Hobby · бесплатно':locale==='es'?'Hobby · Gratis':'Hobby · Free'}</strong>
-          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+(ru?'услуг':locale==='es'?'servicios':'services')}</span>
+        <p className="hh-practice-marketplace-cta-note">
+          <span>{marketplaceCopy.hobby}</span>
+          <span aria-hidden="true">·</span>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
+        </p>
+      </div>
+      <div className="hh-practice-marketplace-latest">
+        <div className="hh-practice-marketplace-latest-heading">
+          <h3>{marketplaceCopy.latest}</h3>
+          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
+            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
+          </Link>
         </div>
+        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
+          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
+            <Link className="hh-practice-marketplace-card"
+              href={'/'+locale+'/services/'+item.practitionerSlug+'/'+item.slug} prefetch={false}>
+              <ShowcaseCover item={item} />
+              <span className="hh-practice-marketplace-card-content">
+                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
+                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
+                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
+                <span className="hh-practice-marketplace-card-foot">
+                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
+                </span>
+              </span>
+            </Link>
+          </li>)}
+        </ul>:<p className="hh-practice-marketplace-empty" role="status">
+          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
+        </p>}
       </div>
     </section>}
     <PracticeRequestsOverview requests={requests} services={services} locale={locale}

@@ -116,7 +116,7 @@ test('source fixture retains six catalogue IDs per locale, three Services videos
 
 test('remaining free-entry targets still match actual homepage links and destination markup', () => {
   const capture = read('components/homepage-free-capture.tsx');
-  for (const suffix of ['/services/free-situation-review', '/services/dao-health-profile', '/client#cabinet-tests']) {
+  for (const suffix of ['/client/tests', '/services/free-situation-review', '/academy/principles-of-energywork/learn']) {
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
     assert.ok(verifier.includes("'" + suffix + "'"));
   }

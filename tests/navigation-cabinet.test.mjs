@@ -31,7 +31,7 @@ test('public navigation includes the relationship hub on EN/RU and never exposes
   }
   for (const path of ['components/site-navigation.tsx', 'components/mobile-bottom-navigation.tsx']) {
     const source = await readFile(path, 'utf8')
-    assert.match(source, /getSiteNavigation/)
+    assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
 })
@@ -65,9 +65,9 @@ test('mobile navigation keeps six usable shared destinations and reserves space 
     readFile('app/ia-v2.css', 'utf8'),
   ])
 
-  assert.match(mobile, /getSiteNavigation/)
-  assert.match(mobile, /CircleUserRound/)
-  assert.match(mobile, /NotebookPen/)
+  assert.match(mobile, /getCompactNavigation/)
+  assert.match(mobile, /HousePlus/)
+  assert.match(mobile, /ClipboardList/)
   assert.match(mobile, /ia222-bottom-height/)
   assert.match(mobile, /data-nav-item/)
   assert.match(styles, /repeat\(6,minmax\(0,1fr\)\)/)

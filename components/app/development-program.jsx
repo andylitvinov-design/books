@@ -15,6 +15,10 @@ const words = {
     title: 'Программа развития',
     description: 'Выберите, к чему хотите прийти. Сопоставим цели с вашими тестами и покажем самые важные направления практики.',
     open: 'Настроить мою программу', close: 'Свернуть',
+    goalLink: 'Установить ориентиры и цели', goalLinkHint: 'Четыре сферы и отдельные шкалы',
+    planLink: 'Просмотреть рекомендованную программу развития', planLinkHint: 'Приоритеты роста и подходящие курсы',
+    defaultGoalsPreview: 'Рекомендации пока основаны на исходных целях 80%. Установите и сохраните свои ориентиры для персонального подбора.',
+    unsavedGoalsPreview: 'Это предварительный подбор по несохранённым изменениям. Сохраните цели, чтобы закрепить ваш маршрут.',
     goals: 'Желаемые ориентиры', goalHint: 'Цель от 0 до 100 — ваш личный ориентир внутри шкал, а не медицинская норма.',
     measured: 'Сейчас', notMeasured: 'Нет замера', target: 'Цель', axes: 'подтверждённых направлений',
     details: 'Уточнить цели по отдельным шкалам', detailsHint: 'По умолчанию каждая шкала наследует цель своей сферы.',
@@ -43,6 +47,10 @@ const words = {
     title: 'Development programme',
     description: 'Choose where you want to grow. We compare your goals with saved assessments and suggest learning priorities.',
     open: 'Set my development goals', close: 'Collapse',
+    goalLink: 'Set goals & targets', goalLinkHint: 'Four areas and individual scales',
+    planLink: 'View recommended development programme', planLinkHint: 'Growth priorities and suitable courses',
+    defaultGoalsPreview: 'Recommendations currently use the initial 80% targets. Set and save your own goals for a personal selection.',
+    unsavedGoalsPreview: 'This preview uses unsaved changes. Save your targets to keep your development path.',
     goals: 'Your desired levels', goalHint: 'A 0–100 target is your own within-scale reference, not a medical norm.',
     measured: 'Current', notMeasured: 'Not measured', target: 'Goal', axes: 'measured directions',
     details: 'Customize individual scale targets', detailsHint: 'Each scale initially inherits the target of its life area.',
@@ -113,7 +121,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   const [savedMessage, setSavedMessage] = useState('')
   const [dirty, setDirty] = useState(false)
   const [detailed, setDetailed] = useState(false)
-  const [showPlan, setShowPlan] = useState(false)
+  const [activePanel, setActivePanel] = useState(null)
   const [allRows, setAllRows] = useState(false)
 
   useEffect(() => {
@@ -126,7 +134,6 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         setGoals(value.goals)
         setRevision(value.revision)
         setLoaded(true)
-        setShowPlan(value.revision > 0)
         setError('')
       })
       .catch(() => { if (active) setError(t.loadError) })
@@ -140,13 +147,11 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
     setGoals(previous => ({ ...previous, targets: { ...previous.targets, [key]: value } }))
     setDirty(true)
     setSavedMessage('')
-    setShowPlan(false)
   }
   const changeDetail = (axis, value) => {
     setGoals(previous => ({ ...previous, details: { ...previous.details, [axis]: value } }))
     setDirty(true)
     setSavedMessage('')
-    setShowPlan(false)
   }
   const toggleDetail = axis => {
     setGoals(previous => {
@@ -160,7 +165,6 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
     })
     setDirty(true)
     setSavedMessage('')
-    setShowPlan(false)
   }
   async function saveGoals() {
     if (busy || !loaded) return
@@ -172,7 +176,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       setGoals(value.goals)
       setRevision(value.revision)
       setDirty(false)
-      setShowPlan(true)
+      setActivePanel('plan')
       setSavedMessage(t.saved)
     } catch (cause) {
       setError(cause?.code === 'DEVELOPMENT_GOALS_CONFLICT' ? t.conflict : t.saveError)
@@ -195,11 +199,28 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       </span>
     </button>
     {expanded && <div className={styles.body} id="hh-development-program-body">
+      <div className={styles.sectionLinks} role="group" aria-label={t.title}>
+        <button type="button" className={styles.sectionLink} aria-expanded={activePanel === 'goals'}
+          aria-controls="hh-development-goals-panel" onClick={() => setActivePanel(value => value === 'goals' ? null : 'goals')}>
+          <span className={styles.sectionLinkIcon}><SlidersHorizontal size={18} aria-hidden="true" /></span>
+          <span className={styles.sectionLinkCopy}><strong>{t.goalLink}</strong><small>{t.goalLinkHint}</small></span>
+          <ChevronDown size={18} className={activePanel === 'goals' ? styles.rotated : ''} aria-hidden="true" />
+        </button>
+        <button type="button" className={styles.sectionLink} aria-expanded={activePanel === 'plan'}
+          aria-controls="hh-development-recommendations-panel" onClick={() => setActivePanel(value => value === 'plan' ? null : 'plan')}>
+          <span className={styles.sectionLinkIcon}><BookOpen size={18} aria-hidden="true" /></span>
+          <span className={styles.sectionLinkCopy}><strong>{t.planLink}</strong><small>{t.planLinkHint}</small></span>
+          <ChevronDown size={18} className={activePanel === 'plan' ? styles.rotated : ''} aria-hidden="true" />
+        </button>
+      </div>
+      {loading && <p className={styles.status} role="status">{lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…'}</p>}
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      {savedMessage && !dirty && <p className={styles.success} role="status"><CheckCircle2 size={16} aria-hidden="true" />{savedMessage}</p>}
+      {activePanel === 'goals' && <div id="hh-development-goals-panel" className={styles.panel}>
       <div className={styles.sectionHeading}>
         <span className={styles.pill}><SlidersHorizontal size={15} aria-hidden="true" /> {t.goals}</span>
         <p>{t.goalHint}</p>
       </div>
-      {loading && <p className={styles.status} role="status">{lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…'}</p>}
       <div className={styles.sectorGrid}>
         {PORTRAIT_SECTORS.map(sector => {
           const summary = plan.sectors.find(item => item.key === sector.key)
@@ -243,10 +264,13 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           {busy ? t.saving : t.save}
           <ArrowRight size={18} aria-hidden="true" />
         </button>
-        {error && <p className={styles.error} role="alert">{error}</p>}
-        {savedMessage && !dirty && <p className={styles.success} role="status"><CheckCircle2 size={16} aria-hidden="true" />{savedMessage}</p>}
       </div>
-      {showPlan && <div className={styles.plan} data-testid="development-recommendations">
+      </div>}
+      {activePanel === 'plan' && <div id="hh-development-recommendations-panel" className={styles.panel}>
+        {!loaded ? <p className={styles.status}>{loading ? (lang === 'ru' ? 'Загружаем цели…' : 'Loading goals…') : t.loadError}</p> : <>
+        {revision === 0 && !dirty && <p className={styles.previewNote}>{t.defaultGoalsPreview}</p>}
+        {dirty && <p className={styles.previewNote}>{t.unsavedGoalsPreview}</p>}
+        <div className={styles.plan} data-testid="development-recommendations">
         <header className={styles.planHeading}><span className={styles.pill}><Target size={15} aria-hidden="true" /> {t.results}</span><p>{t.resultsDesc}</p></header>
         {plan.priorities.length > 0 ? <div className={styles.priorityList}>
           {(allRows ? plan.priorities : plan.priorities.slice(0, 5)).map((item, index) => <article key={item.id} className={styles.priorityCard}>
@@ -292,13 +316,15 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           </div> : <p className={styles.empty}>{t.missingCourse}</p>}
           <Link className={styles.catalogLink} href={'/' + lang + '/academy'} prefetch={false}>{t.catalog}<ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
-      </div>}
+      </div>
       <details className={styles.method}>
         <summary><CircleHelp size={16} aria-hidden="true" />{t.methodology}<ChevronDown size={15} aria-hidden="true" /></summary>
         <p>{t.methodText}</p>
       </details>
       <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
       <p className={styles.privacy}>{t.scoreNote}</p>
+        </>}
+      </div>}
     </div>}
   </section>
 }

@@ -31,9 +31,9 @@ async function assertSpanishNavigation(page, path) {
   assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/en/app'], 'Spanish direct destinations: ' + path);
   const destinations = [
     ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/library', 'Biblioteca'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/courses', 'Mis cursos'],
-    ['/en/app', 'Mis pruebas'], ['/es/about', 'Sobre mí'],
+    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/library', 'Biblioteca'],
+    ['/en/app', 'Mi Casa'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');

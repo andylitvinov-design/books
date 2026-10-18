@@ -37,7 +37,7 @@ test('ES About retains all sections, real translated destinations, form and SEO'
 });
 test('Public ES routing does not enable unsupported private-cabinet locales', () => {
   const navigation = source('components/site-navigation.tsx'); assert.match(navigation, /hasSpanishCounterpart/); assert.match(navigation, /if \(next === 'es'\) return/);
-  assert.match(source('components/mobile-bottom-navigation.tsx'), /getSiteNavigation/); assert.match(source('middleware.ts'), /requestHeaders.set\('x-public-page-locale', pageLocale\)/); assert.match(source('app/layout.tsx'), /<html lang=\{lang\}>/); assert.match(source('lib/ui-locale.js'), /return value === 'ru' \|\| value === 'en'/);
+  assert.match(source('components/mobile-bottom-navigation.tsx'), /getCompactNavigation/); assert.match(source('middleware.ts'), /requestHeaders.set\('x-public-page-locale', pageLocale\)/); assert.match(source('app/layout.tsx'), /<html lang=\{lang\}>/); assert.match(source('lib/ui-locale.js'), /return value === 'ru' \|\| value === 'en'/);
   assert.match(source('app/es/client/page.tsx'), /locale="en" displayLocale="es"/);
 });
 
