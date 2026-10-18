@@ -869,3 +869,22 @@
   .page[data-course-theme] .reviewMissing,
   .page[data-course-theme] .reviewRecorded {font-size:10px;min-height:34px;}
 }
+
+/* Five sequential journey stops fit in the same approved scenic progress rail. */
+.page[data-course-theme] .journey { width:min(100%,720px); }
+.page[data-course-theme] .journey ol::before { left:9%;right:9%; }
+.page[data-course-theme] .journeyLabel { max-width:130px; overflow-wrap:anywhere; }
+@media (max-width:760px) {
+ .page[data-course-theme] .journey li { gap:3px; }
+ .page[data-course-theme] .journeyDot { width:34px;height:34px;font-size:14px; }
+ .page[data-course-theme] .journey ol::before { top:16px; }
+ .page[data-course-theme] .journeyLabel {
+   max-width:82px;font-size:9px;line-height:1.16;
+   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+ }
+}
+@media (max-width:380px) {
+ .page[data-course-theme] .journeyDot { width:29px;height:29px; }
+ .page[data-course-theme] .journey ol::before { top:14px; }
+ .page[data-course-theme] .journeyLabel { font-size:8px;max-width:65px; }
+}
