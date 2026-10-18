@@ -24,7 +24,11 @@ async function handle(request) {
     if(!practitionerEmailAllowed(actor)) throw new AppError('ACCESS_DENIED',403)
     const data=await withMarketingOwner(config,actor,async(db)=>{
       const store=createMarketingStore(db,actor)
-      if(request.method==='GET') return store.overview()
+      if(request.method==='GET') {
+        const days=new URL(request.url).searchParams.get('days') || '30'
+        if(!['7','30','90'].includes(days)) throw new AppError('INVALID_MARKETING_PERIOD',400)
+        return store.overview(Number(days))
+      }
       const body=await readBody(request,2048)
       onlyKeys(body,['action','payload'])
       if(body.action==='record_lead') return store.recordLead(body.payload)
