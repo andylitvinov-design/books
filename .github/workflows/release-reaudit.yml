@@ -12,6 +12,7 @@ on:
       - 'app/layout.tsx'
       - 'tests/video-csp-navigation.test.mjs'
       - 'tests/csp-navigation-diagnostics.test.mjs'
+      - 'tests/csp-navigation-initiator.test.mjs'
       - 'middleware.ts'
       - 'app/[locale]/about/page.tsx'
       - 'app/es/about/page.tsx'
@@ -36,6 +37,7 @@ on:
       - 'app/layout.tsx'
       - 'tests/video-csp-navigation.test.mjs'
       - 'tests/csp-navigation-diagnostics.test.mjs'
+      - 'tests/csp-navigation-initiator.test.mjs'
       - 'middleware.ts'
       - 'app/[locale]/about/page.tsx'
       - 'app/es/about/page.tsx'
@@ -64,10 +66,11 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Public and synthetic security regressions
         run: |
-          node --test tests/video-csp-navigation.test.mjs tests/csp-navigation-diagnostics.test.mjs tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
+          node --test tests/video-csp-navigation.test.mjs tests/csp-navigation-initiator.test.mjs tests/csp-navigation-diagnostics.test.mjs tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
           npx eslint middleware.ts components/site-navigation.tsx components/translated-reader-content.jsx components/personal-consultation-form.tsx app/[locale]/about/page.tsx app/es/about/page.tsx app/books/maya-tradition/page.tsx
           npx tsc --noEmit
       - name: Install isolated browser tools
+        id: browser_tools
         run: |
           if [ -f /etc/apt/apt-mirrors.txt ]; then printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; fi
           npm install --prefix /tmp/reaudit-tools --no-package-lock --ignore-scripts @playwright/test@1.63.0
@@ -89,8 +92,16 @@ jobs:
         env:
           REAUDIT_ORIGIN: http://127.0.0.1:3123
           REAUDIT_LABEL: local
-      - name: Verify exact Production release, read-only
-        if: github.event_name == 'push'
+      # Temporary read-only race diagnostics for this work branch only.
+      # Restore the push-only condition before merging this diagnostic PR.
+      # Local acceptance stays fatal; its failure must not hide live evidence.
+      - name: Diagnose current Production release, read-only
+        if: >-
+          !cancelled() && steps.browser_tools.outcome == 'success' &&
+          (github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.head_ref == 'feat/assessment-interpretation-registry-20261017'))
         run: node scripts/verify-release-reaudit.mjs
         env:
           REAUDIT_ORIGIN: https://holistichouse.vercel.app

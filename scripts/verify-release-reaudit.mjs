@@ -448,7 +448,22 @@ async function exercise(engine, browserType, width) {
           window.addEventListener('load', () => record('load'), true);
           document.addEventListener('DOMContentLoaded', () => record('domcontentloaded'), true);
           document.addEventListener('visibilitychange', () => record('visibilitychange'), true);
-          window.navigation?.addEventListener('navigate', event => record('navigate', { destination: event.destination.url, sameDocument: event.destination.sameDocument, navigationType: event.navigationType }));
+          // Passive synchronous stack capture identifies who issued competing
+          // hard replaces. Do not wrap Location/history or cancel navigation:
+          // either would change the WebKit race this audit is measuring.
+          window.navigation?.addEventListener('navigate', event => {
+            record('navigate', {
+              destination: event.destination.url,
+              sameDocument: event.destination.sameDocument,
+              navigationType: event.navigationType,
+              cancelable: event.cancelable,
+              canIntercept: event.canIntercept,
+              userInitiated: event.userInitiated,
+              defaultPrevented: event.defaultPrevented,
+              sourceElementTag: event.sourceElement?.tagName ?? null,
+              initiatorStack: new Error('CSP navigation initiator').stack,
+            });
+          });
         });
         await cspContext.addInitScript({ content: cspFetchTelemetrySource() });
         await cspContext.addInitScript({ content: catalogStatsDiagnosticSource() });
