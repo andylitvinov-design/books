@@ -35,3 +35,13 @@
 .contact{display:inline-flex;color:#167280;font:700 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:620px){.shell{padding:16px 13px 40px}.notice{padding:12px;gap:9px}.cards{grid-template-columns:1fr;gap:11px}.card{padding:15px;gap:9px}.heading{margin:17px 0 11px}.price{font-size:23px}.intro>p:last-child{font-size:14px}.card>p{font-size:12.5px}.final{padding-top:13px}}
 @media(prefers-reduced-motion:reduce){.payButton,.receiptButton{transition:none}}
+
+
+/* ZEN is a payment enquiry until recipient/commercial acceptance is verified.
+   Visually distinguish it from the hosted PayPal checkout. */
+.zenNotice{margin:12px 0 4px;padding:12px 15px;border:1px solid #c9e0e3;border-radius:15px;background:#f1f8fa}
+.zenNotice strong{display:block;color:#115567;font:750 14px/1.35 Arial,Helvetica,sans-serif;margin-bottom:4px}
+.zenNotice p{margin:0;color:#466f7a;font:13px/1.53 Arial,Helvetica,sans-serif}
+.zenButton{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #abd5d9;border-radius:12px;padding:11px 12px;min-height:45px;text-align:center;text-decoration:none;color:#0f6676;background:#e8f5f4;font:750 13px/1.35 Arial,Helvetica,sans-serif}
+.zenButton:hover{background:#d8f0ec}
+.zenButton:focus-visible{outline:3px solid #ad813c;outline-offset:3px}

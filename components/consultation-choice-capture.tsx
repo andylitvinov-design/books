@@ -7,6 +7,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import styles from "./consultation-choice-capture.module.css";
 
 type Variant = "free" | "service" | "personal" | "reading";
@@ -217,6 +218,7 @@ export function ConsultationChoiceCapture({
 
   const isPaidRequest = isService && serviceChoice !== "free";
   const wiseProductId = serviceChoice === "session" ? "personal-session-60" : "express-consultation-30";
+  const zenInquiryUrl = isPaidRequest ? buildZenTransferInquiry([wiseProductId], locale) : null;
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
     service: service || (locale === "ru" ? "Личная консультация" : locale === "es" ? "Consulta individual" : "Personal consultation"),
@@ -315,6 +317,19 @@ export function ConsultationChoiceCapture({
             : locale === "es"
               ? "Después de acordar la hora. Elige Productos y servicios y comprueba que pagas a Andrii Litvinov. Verificación manual."
               : "After confirming the time. Select Goods & Services and verify recipient Andrii Litvinov. Payment is verified manually."}</small>
+        </div>
+      ) : null}
+      {zenInquiryUrl ? (
+        <div className={styles.wisePayment} data-zen-manual-request>
+          <a href={zenInquiryUrl} target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "ZEN.COM · запросить перевод" : locale === "es" ? "ZEN.COM · solicitar transferencia" : "ZEN.COM · request transfer details"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+          <small>{locale === "ru"
+            ? "Откроется только запрос в WhatsApp с суммой выбранной услуги. Это не оплата: сначала подтвердите доступность ZEN и реквизиты получателя."
+            : locale === "es"
+              ? "Solo se abre una consulta por WhatsApp con el importe. No es un pago; primero confirma si ZEN está disponible y los datos del destinatario."
+              : "Opens a WhatsApp enquiry with the fixed amount, not a payment. Verify ZEN recipient eligibility and transfer instructions first."}</small>
         </div>
       ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
