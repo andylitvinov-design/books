@@ -63,7 +63,7 @@ test('no public table grants and owner-only RLS on durable email delivery',()=>{
 
 test('delivery webhook tracks delivered, delayed and suppression without misleading acceptance',()=>{
  const route=read('app/api/app/crm/webhook/route.js')
- const migration=read('supabase/migrations/20261018190000_hh_crm_email_delivery_receipts.sql')
+ const migration=read('supabase/migrations/20261018180250_hh_crm_email_delivery_receipts_20261018.sql')
  const list=read('components/app/crm-email-tools.jsx')
  const preference=read('components/app/crm-email-preferences.jsx')
  const tokenRoute=read('app/api/app/crm/email-token/route.js')
