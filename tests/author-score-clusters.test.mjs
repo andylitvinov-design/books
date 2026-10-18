@@ -90,6 +90,9 @@ test('direct Holistic House one-item ratings present only attainable integer sco
     assert.equal(guide.rows.at(-1).to,dimension.max)
     assert.equal(guide.rows.filter(v=>v.current).length,1)
     assert.match(guide.scoringNote,/Отдельный ответ/)
+    assert.match(guide.rows[0].note,/Полюса исходного вопроса:/)
+    assert.match(guide.rows[0].note,/0/)
+    assert.match(guide.rows[0].note,/10/)
   }
 })
 
