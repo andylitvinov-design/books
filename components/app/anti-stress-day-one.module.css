@@ -194,40 +194,40 @@
 /* Subsequent original Day-One screens: do not let large multi-choice tiles
    crowd out the actual guided practice on an iPhone. Keep controls legible. */
 @media(max-width:700px){
-  .section[data-day-one-activity]{gap:clamp(7px,1.3dvh,11px)}
-  .section[data-day-one-activity] .overline{display:none}
-  .section[data-day-one-activity] .headline{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]){gap:clamp(7px,1.3dvh,11px)}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .overline{display:none}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .headline{
     font-size:clamp(16px,4.1vw,19px);line-height:1.31;
   }
-  .section[data-day-one-activity] .hint{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .hint{
     font-size:clamp(11px,2.9vw,12px);line-height:1.38;
   }
-  .section[data-day-one-activity] .tileChoices{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices{
     grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
   }
-  .section[data-day-one-activity] .tileChoices button{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices button{
     min-height:59px!important;grid-template-columns:28px minmax(0,1fr) 14px;
     padding:9px 9px!important;gap:7px!important;
     border-radius:13px!important;box-shadow:none;
   }
-  .section[data-day-one-activity] .tileChoices button:last-child:nth-child(odd){
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices button:last-child:nth-child(odd){
     grid-column:1/-1;min-height:47px!important;
   }
-  .section[data-day-one-activity] .tileChoices .tileIcon{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices .tileIcon{
     width:28px;height:28px;border-radius:9px;
   }
-  .section[data-day-one-activity] .tileChoices .tileIcon svg{width:15px;height:15px}
-  .section[data-day-one-activity] .tileCopy strong{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileChoices .tileIcon svg{width:15px;height:15px}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileCopy strong{
     font-size:clamp(11px,2.9vw,12px);line-height:1.22;
   }
-  .section[data-day-one-activity] .tileCopy small{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .tileCopy small{
     font-size:10px;line-height:1.24;color:#6c8a95;
   }
-  .section[data-day-one-activity] .practiceStepper{padding:12px;gap:9px}
-  .section[data-day-one-activity] .practiceStepper>strong{font-size:17px;line-height:1.3}
-  .section[data-day-one-activity] .practiceStepper>p{
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper{padding:12px;gap:9px}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper>strong{font-size:17px;line-height:1.3}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .practiceStepper>p{
     font-size:13px;line-height:1.43;min-height:0;
   }
-  .section[data-day-one-activity] .swatchPanel,
-  .section[data-day-one-activity] .qualityPanel{padding:9px;gap:6px}
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .swatchPanel,
+  .section[data-day-one-activity]:not([data-day-one-calm="true"]) .qualityPanel{padding:9px;gap:6px}
 }
