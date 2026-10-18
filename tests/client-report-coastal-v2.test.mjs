@@ -38,7 +38,7 @@ test('coastal hero is lightweight, same-origin and free of client data', () => {
   assert.match(image, /<svg[^>]+viewBox="0 0 1600 1050"/)
   assert.match(image, /Lighthouse above a peaceful blue sea at sunrise/)
   assert.match(image, /<path/)
-  assert.doesNotMatch(image.replace('xmlns="http://www.w3.org/2000/svg"', ''), /<script|<foreignObject|https?:\/\/|Litvinov Vadim|client selector/i)
+  assert.doesNotMatch(image.replace('xmlns="http://www.w3.org/2000/svg"', ''), /<script|<foreignObject|https?:\/\/|SYNTHETIC_PRIVATE_NAME|client selector/i)
   assert.match(css, /url\('\/images\/holistic-house\/report-lighthouse-coast\.svg'\)/)
   assert.doesNotMatch(css.slice(css.indexOf('Client report coastal v2')), /youtube\.com|unsplash\.com|drive\.google\.com/)
 })
