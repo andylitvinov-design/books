@@ -37,7 +37,7 @@ function recordingError(error,ru) {
   }
   return messages[code]||code
 }
-export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,showYouTubeQuickAdd=false}) {
+export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,documentId=null,assessmentId=null,locale='en',onSaved,showYouTubeQuickAdd=false,audioOnly=false}) {
   const ru=locale==='ru'
   const mountedRef=useRef(true),busyRef=useRef(false),jobRef=useRef(null),failedRef=useRef(false)
   const xhrRef=useRef(null)
@@ -279,6 +279,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     try {
       const availability=await checkReady()
       const video=file.type.startsWith('video/')||/\.(mp4|mov)$/i.test(file.name)
+      if(audioOnly&&!file.type.startsWith('audio/'))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
       if(video&&availability.videoReady===false)throw new Error('VIDEO_STORAGE_NOT_CONFIGURED')
       if(video&&file.size>Number(availability.videoLimitBytes||45_000_000))
         throw new Error(ru?('Видео превышает лимит '+Math.floor((availability.videoLimitBytes||45_000_000)/1_000_000)+' МБ.'):
@@ -300,7 +301,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
   <section className={styles.recorder} aria-label={ru?'Голосовое сопровождение сессии':'Session voice recording'}>
     <div className={styles.sectionHeading}>
       <span className={styles.eyebrow}>{ru?'ГОЛОСОВОЕ СОПРОВОЖДЕНИЕ':'VOICE MESSAGE'}</span>
-      <h3>{ru?'Записать аудио или видео для сессии':'Record audio or video for this session'}</h3>
+      <h3>{audioOnly?(ru?'Записать аудиосообщение':'Record a voice message'):
+        (ru?'Записать аудио или видео для сессии':'Record audio or video for this session')}</h3>
       <p>{ru?'Прямо с телефона. Файл сам прикрепится к этой консультации.':
         'Record on your phone. The file will attach to this consultation automatically.'}</p>
     </div>
@@ -329,15 +331,16 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
       </> : <>
         <button type="button" className={styles.primaryButton} onClick={()=>startRecording('audio')} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)}>
           <Mic size={20}/>{ru?'Записать аудио':'Record audio'}</button>
-        <button type="button" onClick={()=>startRecording('video')}
+        {!audioOnly&&<button type="button" onClick={()=>startRecording('video')}
           disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)||videoStatus?.ready!==true}>
-          <Video size={20}/>{ru?'Записать видео':'Record video'}</button>
+          <Video size={20}/>{ru?'Записать видео':'Record video'}</button>}
         <label className={styles.filePicker}><UploadCloud size={18}/>{ru?'Загрузить из телефона':'Choose from phone'}
-          <input type="file" accept="audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf"
+          <input type="file" accept={audioOnly?'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,.m4a,.mp3,.webm':
+            'audio/mp4,audio/x-m4a,audio/mpeg,audio/webm,video/mp4,video/quicktime,application/pdf,.m4a,.mp3,.webm,.mp4,.mov,.pdf'}
             onChange={chooseFile} disabled={busy||Boolean(retryFile)||signInRequired||Boolean(readinessError)} hidden/></label>
       </>}
     </div>
-    {showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId}
+    {!audioOnly&&showYouTubeQuickAdd&&<SessionYouTubeQuickAdd clientId={clientId}
       ensureSession={ensureSession} locale={locale} onSaved={onSaved}/>}
     {recordingKind==='video'&&['recording','paused'].includes(stage)&&<video autoPlay muted playsInline className={styles.video} aria-label={ru?'Предпросмотр камеры':'Camera preview'} ref={node=>{if(node&&node.srcObject!==streamRef.current)node.srcObject=streamRef.current}}/>}
     {busy&&<div className={styles.uploadProgress} role="status">
@@ -347,6 +350,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {uploadProgress!==null?' '+uploadProgress+'%':''}</p>
       {uploadProgress!==null&&<progress value={uploadProgress} max="100" aria-label={ru?'Прогресс загрузки':'Upload progress'}/>}
     </div>}
+    {!audioOnly&&<>
     <p className={styles.photoHint}>{ru?'Выбирайте видео из «Фото» или «Файлы»: MOV с iPhone и MP4 поддерживаются без предварительной конвертации. Для просмотра на всех устройствах лучше MP4 (H.264/AAC).':'Choose an iPhone MOV or MP4 from Photos or Files. No conversion is required for upload. H.264/AAC MP4 offers wider playback compatibility.'}
       {videoStatus&&<span> {videoStatus.ready?
         (ru?'Лимит видео: ':'Video limit: ')+Math.floor(videoStatus.limit/1_000_000)+' MB ('+(videoStatus.provider==='supabase'?'Supabase':videoStatus.provider==='s3_ca'?'S3 Canada':'R2')+')':
@@ -357,6 +361,7 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
         {ru?'Настроить приватное видеохранилище →':'Configure private video storage →'}
       </a>
     </p>}
+    </>}
     {playback&&(playbackKind==='video'?<video controls playsInline preload="metadata" src={playback} className={styles.video}/>:<audio controls preload="metadata" src={playback} className={styles.audio}/>)}
     {playback&&selectedMov&&<p className={styles.photoHint}>{ru?'MOV сохранится без изменения кодека. Видео HEVC может не воспроизводиться на некоторых Android/Windows — при необходимости используйте оригинал MOV или отдельную MP4-версию.':'MOV is kept unchanged. HEVC may not play on some Android/Windows browsers; keep the original or prepare a separate MP4 version for wider playback.'}</p>}
     {message&&<p className={styles.success} role="status"><CheckCircle2 size={18}/>{message}</p>}
@@ -367,8 +372,8 @@ export function SessionAudioRecorder({clientId,sessionId:providedSessionId=null,
     {sessionId&&(documentId||assessmentId)&&<a className={styles.inlineLink} href={'/admin/clients/'+clientId+'/sessions/'+sessionId}>
       {ru?'Открыть сессию и опубликовать клиенту →':'Open session & publish to client →'}</a>}
   </section>
-  <SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
-    assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>
+  {!audioOnly&&<SessionPhotoUploader clientId={clientId} sessionId={sessionId} documentId={documentId}
+    assessmentId={assessmentId} locale={locale} onSaved={onSaved}/>}
   </>
 }
 
