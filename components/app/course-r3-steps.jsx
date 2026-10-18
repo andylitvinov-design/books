@@ -153,14 +153,14 @@ const UI = {
 const BASELINE_COPY = {
   en: {
     eyebrow: 'OPORA · YOUR STARTING POINT',
-    title: 'See where you start. Notice what changes.',
-    lead: 'Before your first lesson, a short check-in records how you feel today. After the 14 lessons, you can repeat suitable questionnaires and compare your answers to see what has changed.',
+    title: 'Your starting point',
+    lead: 'A short check-in now helps you compare your answers after 14 lessons.',
     beforeTag: 'BEFORE LESSON 1', beforeTitle: 'My starting point', beforeDetail: 'Record how I feel now',
     afterTag: 'AFTER LESSON 14', afterTitle: 'My progress', afterDetail: 'Compare the same scales',
-    context: 'This comparison helps you reflect on your progress; it is not a diagnosis or proof that the course caused a change.',
-    listTitle: 'Choose your starting check-ins',
-    listIntro: 'Weekly Pulse is required (8 questions · about 2 minutes). The anxiety and inner-resources check-ins are optional.',
-    alreadySaved: 'Your recent Weekly Pulse result is already saved. We can use it — you do not need to repeat it.',
+    context: 'For reflection only — not a diagnosis or proof that the course caused changes.',
+    listTitle: 'Your check-ins',
+    listIntro: 'Weekly Pulse: required · 8 questions. Other check-ins: optional.',
+    alreadySaved: 'Weekly Pulse saved — you do not need to repeat it.',
     required: 'Required · 8 questions', anxiety: 'Optional · 7 questions', resources: 'Optional · 6 questions',
     optional: 'Optional', saved: 'Result saved', repeat: 'Needs a newer starting result',
     duration: 'min', preparing: 'Preparing…',
@@ -171,14 +171,14 @@ const BASELINE_COPY = {
   },
   ru: {
     eyebrow: 'ОПОРА · ИСХОДНОЕ СОСТОЯНИЕ',
-    title: 'Узнайте своё исходное состояние и увидьте изменения',
-    lead: 'Перед первым занятием короткий опрос поможет зафиксировать, как вы чувствуете себя сейчас. После 14 уроков можно повторить подходящие тесты и сравнить ответы, чтобы заметить перемены.',
+    title: 'Ваша точка отсчёта',
+    lead: 'Короткий опрос сейчас поможет сравнить ответы после 14 уроков.',
     beforeTag: 'ДО ПЕРВОГО УРОКА', beforeTitle: 'Точка отсчёта', beforeDetail: 'Зафиксировать своё состояние',
     afterTag: 'ПОСЛЕ 14 УРОКОВ', afterTitle: 'Мои изменения', afterDetail: 'Сравнить те же шкалы',
-    context: 'Сравнение помогает наблюдать за собой, но не является диагнозом и не доказывает, что изменения вызваны курсом.',
-    listTitle: 'Выберите стартовые тесты',
-    listIntro: 'Weekly Pulse обязателен (8 вопросов · около 2 минут). Тесты тревожности и внутренних ресурсов — по желанию.',
-    alreadySaved: 'Ваш недавний результат Weekly Pulse уже сохранён. Мы учтём его — повторно проходить тест не нужно.',
+    context: 'Для самонаблюдения: не является диагнозом и не доказывает влияние курса.',
+    listTitle: 'Ваши стартовые тесты',
+    listIntro: 'Weekly Pulse: обязателен · 8 вопросов. Остальные — по желанию.',
+    alreadySaved: 'Weekly Pulse сохранён — повторять не нужно.',
     required: 'Обязательный · 8 вопросов', anxiety: 'По желанию · 7 вопросов', resources: 'По желанию · 6 вопросов',
     optional: 'По желанию', saved: 'Результат сохранён', repeat: 'Нужен более свежий замер',
     duration: 'мин', preparing: 'Подготавливаем…',
@@ -189,14 +189,14 @@ const BASELINE_COPY = {
   },
   es: {
     eyebrow: 'OPORA · TU PUNTO DE PARTIDA',
-    title: 'Conoce tu punto de partida y observa los cambios',
-    lead: 'Antes de la primera lección, una breve evaluación registra cómo te sientes hoy. Después de las 14 lecciones, podrás repetir los cuestionarios adecuados y comparar tus respuestas.',
+    title: 'Tu punto de partida',
+    lead: 'Un breve chequeo ahora permite comparar tus respuestas después de 14 lecciones.',
     beforeTag: 'ANTES DE LA LECCIÓN 1', beforeTitle: 'Punto de partida', beforeDetail: 'Registrar mi estado actual',
     afterTag: 'DESPUÉS DE 14 LECCIONES', afterTitle: 'Mi evolución', afterDetail: 'Comparar las mismas escalas',
-    context: 'La comparación te ayuda a reflexionar, pero no es un diagnóstico ni demuestra que el curso haya causado los cambios.',
-    listTitle: 'Elige tus evaluaciones iniciales',
-    listIntro: 'Weekly Pulse es obligatorio (8 preguntas · unos 2 minutos). Las pruebas de ansiedad y recursos internos son opcionales.',
-    alreadySaved: 'Tu resultado reciente de Weekly Pulse ya está guardado. No necesitas repetirlo.',
+    context: 'Para reflexionar: no es un diagnóstico ni demuestra un efecto causado por el curso.',
+    listTitle: 'Tus evaluaciones',
+    listIntro: 'Weekly Pulse: obligatorio · 8 preguntas. Los demás son opcionales.',
+    alreadySaved: 'Weekly Pulse guardado — no hace falta repetirlo.',
     required: 'Obligatorio · 8 preguntas', anxiety: 'Opcional · 7 preguntas', resources: 'Opcional · 6 preguntas',
     optional: 'Opcional', saved: 'Resultado guardado', repeat: 'Se necesita un resultado más reciente',
     duration: 'min', preparing: 'Preparando…',
@@ -576,21 +576,15 @@ export default function CourseR3Steps({stage,locale='en',data,state,busy,onAct,o
       const item=optionByKey.get(key)
       return Boolean(item&&isFreshlyCompleted(item))
     })
-    return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker>
+    return <section className={'hh-panel '+styles.section+' '+styles.compactTests} data-course-tests data-antistress-compact-picker data-course-baseline-one-screen>
       <header className={styles.baselineHero} data-course-baseline-explanation>
         <p className={styles.compactEyebrow}>{c.eyebrow}</p>
         <h2>{c.title}</h2>
         <p className={styles.compactLead}>{c.lead}</p>
         <div className={styles.baselineTimeline}>
-          <div className={styles.baselineStep}>
-            <span className={styles.baselineNumber} aria-hidden="true">1</span>
-            <div><small>{c.beforeTag}</small><strong>{c.beforeTitle}</strong><span>{c.beforeDetail}</span></div>
-          </div>
-          <ArrowRight className={styles.baselineArrow} size={18} aria-hidden="true"/>
-          <div className={styles.baselineStep}>
-            <span className={styles.baselineNumber} aria-hidden="true">2</span>
-            <div><small>{c.afterTag}</small><strong>{c.afterTitle}</strong><span>{c.afterDetail}</span></div>
-          </div>
+          <span>{c.beforeTag}</span>
+          <ArrowRight className={styles.baselineArrow} size={14} aria-hidden="true"/>
+          <span>{c.afterTag}</span>
         </div>
         <p className={styles.baselineContext}>{c.context}</p>
       </header>
