@@ -532,9 +532,7 @@ export function ServicesSmartDiscovery({
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
-                <TrackedServiceLink serviceId={service.id} event="order"
-                  href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)}
-                  aria-label={locale==="es" ? "Solicitar este servicio (formulario en inglés)" : undefined}>{t.order}</TrackedServiceLink>
+                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>
               </div>
               {locale==="es"&&<small className={styles.intakeNote}>El formulario de solicitud se abre en inglés; se conserva el servicio elegido.</small>}
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
