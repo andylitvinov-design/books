@@ -20,7 +20,7 @@ test('phone is international only; reject malformed, injection and clinical fiel
  assert.throws(()=>validateContactInput({...base,email:'a@b.test',phone:'hello telegram'}))
 })
 test('phone HMAC and encryption retain owner isolation and no email fabrication',()=>{
- const repo=read('lib/crm/repository.js'),schema=read('supabase/migrations/20261018203000_hh_crm_phone_first_leads.sql')
+ const repo=read('lib/crm/repository.js'),schema=read('supabase/migrations/20261018184529_hh_crm_phone_first_contacts_20261018.sql')
  assert.match(repo,/seal\(\{ displayName: data\.displayName, email: data\.email, phone: data\.phone \}/)
  assert.match(repo,/scope: 'crm-email-less-contact'/)
  assert.match(repo,/scope: 'crm-phone'/)

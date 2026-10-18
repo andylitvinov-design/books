@@ -6,5 +6,5 @@ Phone and optional email are stored **inside the existing AES-GCM encrypted cont
 
 No automatic SMS, WhatsApp, Telegram or email is sent, nor is any phone marketing consent inferred. One-to-one email remains blocked until there is an actual address, recorded consent, confirmed email and the separately verified Resend account (see issue #980).
 
-Source: `supabase/migrations/20261018203000_hh_crm_phone_first_leads.sql`.
+Source: `supabase/migrations/20261018184529_hh_crm_phone_first_contacts_20261018.sql`.
  QA requires validation tests, synthetic duplicate phone index check and exact-head production build. Do not migrate phone values from private client profiles, service enquiries or tests without client-specific disclosure/approval.
