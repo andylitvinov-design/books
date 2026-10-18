@@ -259,3 +259,10 @@
  .optionsOrder :global([data-contact-order]),.formOrder :global([data-contact-order]){min-height:46px;font-size:13px}
 }
 @media(max-width:350px){.monthlySparkle{display:none}.reviewCard{grid-template-columns:minmax(99px,36%) minmax(0,1fr)}}
+
+/* Gated, one-time Wise payment — never an automatic booking or confirmation. */
+.wisePayment{display:flex;flex-direction:column;gap:6px;align-items:center;margin:10px auto 0;text-align:center}
+.wisePaymentCta{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:9px 15px;border:1px solid #15828a;border-radius:11px;color:#086577;background:#f7fefd;text-decoration:none;font-weight:800;font-size:13px}
+.wisePaymentCta:hover{text-decoration:underline;text-underline-offset:3px}
+.wisePaymentCta:focus-visible{outline:3px solid #8a632c;outline-offset:3px}
+.wisePayment small{max-width:510px;color:#4e737c;font-size:12px;line-height:1.5}
