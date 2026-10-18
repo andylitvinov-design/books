@@ -4,6 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import {ArrowLeft,ArrowRight,CheckCircle2,ChevronDown,Heart,Pause,ShieldCheck,X} from 'lucide-react'
 import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '@/lib/inner-growth/course-slide-sequence'
+import {oporaExperienceGuide} from '@/lib/inner-growth/opora-as56-experience-guides'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -84,7 +85,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [actionIndex,setActionIndex]=useState(0)
-  const [actionStarted,setActionStarted]=useState(false)
   const [showHelp,setShowHelp]=useState(false)
   const [safety,setSafety]=useState(false)
   const [error,setError]=useState('')
@@ -97,7 +97,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const moment=receipt?'receipt':SCENES[step]
   const actions=authored.exercises?.act?.choices||[]
   const activity=actions[actionIndex]||actions[0]||lesson?.antiStress?.skill||''
-  const practiceGuide=authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
+  const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const originalQuote=authored.quote||lesson.aphorism||''
   const rating=answers.reflection
@@ -123,12 +123,15 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   function selectAction(index){
     if(locked)return
     setActionIndex(index)
-    setActionStarted(true)
     setAnswers(a=>({...a,actChoice:['one','two','three'][index],act:undefined}))
   }
   function tryStatus(value){
     if(locked)return
-    setAnswers(a=>({...a,act:value}))
+    // The displayed, version-pinned exercise is the one being reported.
+    // A positive self-report includes its precise chosen card; merely
+    // reading or opening the screen never implies that practice happened.
+    setAnswers(a=>({...a,act:value,
+      actChoice:['tried','partly'].includes(value)?['one','two','three'][actionIndex]:undefined}))
   }
   function next(){
     if(locked)return
@@ -215,23 +218,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='practice'&&<>
             <p className={styles.lead}>{practiceGuide}</p>
             <p className={styles.action}>{activity}</p>
-            <div className={styles.choiceRow}>
-              <button type="button" className={styles.actionButton} disabled={locked}
-                onClick={()=>selectAction(actionIndex)}>
-                {actionStarted?<CheckCircle2 size={18}/>:<Heart size={18}/>}
-                {t.start}</button>
-              {actions.length>1&&<button type="button" className={styles.plain}
+            {actions.length>1&&<div className={styles.choiceRow}>
+              <button type="button" className={styles.plain}
                 disabled={locked} onClick={()=>selectAction((actionIndex+1)%Math.min(2,actions.length))}>
-                {t.alternative}</button>}
+                {t.alternative}</button>
+            </div>}
+            <p className={styles.miniLabel}>{t.tryAfter}</p>
+            <div className={styles.chips} role="group" aria-label={t.tryAfter}>
+              {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
+                <button type="button" key={value} disabled={locked}
+                  aria-pressed={answers.act===value} onClick={()=>tryStatus(value)}>{label}</button>)}
             </div>
-            {actionStarted&&<>
-              <p className={styles.miniLabel}>{t.tryAfter}</p>
-              <div className={styles.chips} role="group" aria-label={t.tryAfter}>
-                {[[t.tried,'tried'],[t.partly,'partly'],[t.read,'not_attempted']].map(([label,value])=>
-                  <button type="button" key={value} disabled={locked}
-                    aria-pressed={answers.act===value} onClick={()=>tryStatus(value)}>{label}</button>)}
-              </div>
-            </>}
             <button type="button" className={styles.linkHint} disabled={locked}
               onClick={()=>setShowHelp(s=>!s)} aria-expanded={showHelp}>
               {t.learnMore}<ChevronDown size={16}/></button>
