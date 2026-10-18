@@ -115,9 +115,9 @@ if (!process.execArgv.includes('--conditions=react-server')) {
     const req=f.calls[0]
     assert.equal(req.url,'https://secure.zen-test.com/api/checkouts')
     const body=JSON.parse(req.options.body)
-    assert.equal(body.amount,50);assert.equal(body.currency,'EUR');assert.equal(body.merchantTransactionId,orderId)
+    assert.equal(body.amount,'50.00');assert.equal(body.currency,'EUR');assert.equal(body.language,'ru');assert.equal(body.merchantTransactionId,orderId)
     assert.equal(body.customer.id,f.order.customerId)
-    assert.deepEqual(body.items,[{code:'express-consultation-30',name:'Express consultation',price:50,quantity:1,lineAmountTotal:50}])
+    assert.deepEqual(body.items,[{code:'express-consultation-30',name:'Express consultation',price:'50.00',quantity:1,lineAmountTotal:'50.00'}])
     const {signature,...unsigned}=body
     assert.equal(signature,zenCheckoutSignature(unsigned,config.zenPaywallSecret))
   })
