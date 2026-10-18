@@ -202,6 +202,19 @@ test('measured rays show localized Details links to their exact result and score
   }
 })
 
+test('Test it opens the reviewed source with the correct scored axis, without automatic start',()=>{
+  const explorer=read('components/app/test-explorer.jsx')
+  const visual=read('components/app/test-explorer-visual.jsx')
+  assert.match(visual,/suggest=\$\{encodeURIComponent\(candidate\.testKey\)\}/)
+  assert.match(explorer,/params\.get\('suggest'\)/)
+  assert.match(explorer,/params\.get\('axis'\)/)
+  assert.match(explorer,/item\.selectable === true/)
+  assert.match(explorer,/item\.measurementAxes\?\.includes\(requestedAxis\)/)
+  assert.match(explorer,/setSelectedKeys\(\[entry\.key\]\)/)
+  assert.match(explorer,/setAxes\(\[requestedAxis\]\)/)
+  assert.ok(!explorer.slice(explorer.indexOf('// Reports → Test it:'), explorer.indexOf('  const facets =')).includes('onStart('))
+})
+
 test('the saved report honors the exact scale selected by the portrait Details link',()=>{
   const workspace=read('components/app/app-workspace.jsx')
   const personal=read('components/app/personal-result-report.jsx')
