@@ -18,13 +18,13 @@ test("Measured formats correction is scoped to the existing mobile breakpoint", 
 
 test("Only measured vertical padding, margins and gaps are tightened", () => {
   for (const rule of [
-    ".optionsSection{padding-block:10px}",
+    ".optionsSection{padding-block:8px}",
     ".optionsSection .sectionHeading{margin-bottom:6px}",
     ".optionsSection .optionCard{padding-block:8px}",
     ".optionsSection .optionDescription{margin-top:5px}",
     ".optionsSection .monthlyCard{padding-block:6px}",
     ".optionsSection .monthlyText{margin-block:3px}",
-    ".optionsSection .freeOption{margin-top:6px}",
+    ".optionsSection .freeOption{margin-top:4px}",
     ".optionsSection .wisePayment{gap:4px}",
   ]) assert.ok(correction.includes(rule), rule);
   assert.match(correction, /\.optionCard strong,\s*\.optionsSection \.optionName,\s*\.optionsSection \.optionDescription\{margin-top:5px\}/);
@@ -73,4 +73,15 @@ test("All three locales retain payment disclosures and the details link", () => 
     "Payment details & confirmation",
     "Instrucciones y confirmación",
   ]) assert.ok(form.includes(text), text);
+});
+
+// RU 360×844 artifact measured 774.515625px with Wise absent. Six rendered
+// shared margins and two outer paddings provide 16px of whitespace reduction;
+// this arithmetic is explanatory, not a substitute for native geometry checks.
+test("360px correction keeps card interiors and exact shared spacing targets", () => {
+  assert.match(correction, /\.optionsSection\{padding-block:8px\}/);
+  assert.match(correction, /\.optionsSection \.monthlyCard,\s*\.optionsSection \.formatHint,\s*\.optionsSection \.optionsOrder,\s*\.optionsSection \.wisePayment,\s*\.optionsSection \.freeOption\{margin-top:4px\}/);
+  assert.match(correction, /\.optionsSection \.optionCard\{padding-block:8px\}/);
+  assert.match(correction, /\.optionsSection \.monthlyCard\{padding-block:6px\}/);
+  assert.match(correction, /\.optionsSection \.sectionHeading\{margin-bottom:6px\}/);
 });
