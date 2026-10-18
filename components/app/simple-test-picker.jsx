@@ -163,15 +163,15 @@ const COLLECTION_COPY = {
   en: { eyebrow: 'DISCOVER BY THEME', title: 'Test collections by topic',
     intro: 'Explore available tests in each collection. Select the tests you want below.',
     test: 'test', tests: 'tests', more: 'Show all collections', less: 'Show fewer collections',
-    open: 'Browse collection' },
+    open: 'Browse collection', personalized: 'Prioritized from your selected topics and concerns. Test counts reflect your time and type filters.' },
   ru: { eyebrow: 'ТЕМАТИЧЕСКИЕ ПОДБОРКИ', title: 'Подборки тестов по темам',
     intro: 'Посмотрите доступные тесты по каждой теме. Ниже можно выбрать нужные.',
     test: 'тест', tests: 'тестов', more: 'Показать все подборки', less: 'Свернуть подборки',
-    open: 'Открыть подборку' },
+    open: 'Открыть подборку', personalized: 'Подборки упорядочены по выбранным темам и проблемам. Количество тестов учитывает время и тип.' },
   es: { eyebrow: 'EXPLORA POR TEMA', title: 'Colecciones de pruebas por tema',
     intro: 'Descubre las pruebas disponibles para cada tema. Elige las que quieras más abajo.',
     test: 'prueba', tests: 'pruebas', more: 'Mostrar todas las colecciones', less: 'Mostrar menos',
-    open: 'Explorar colección' },
+    open: 'Explorar colección', personalized: 'Ordenadas por tus temas e inquietudes. Los totales respetan los filtros de tiempo y tipo.' },
 }
 
 // Always display the explicit assessment type, including on narrow phones.
@@ -226,7 +226,7 @@ export function SimpleTestPicker({
   const [collectionsOpen, setCollectionsOpen] = useState(false)
   const [tantraPathsOpen, setTantraPathsOpen] = useState(false)
   const [expandedTantraPaths, setExpandedTantraPaths] = useState(() => new Set())
-  const collections = availableTestCollections(catalogEntries)
+  const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
   const tantraPaths = availableTantraTestPaths(catalogEntries)
   const showTantraPaths = (focus.includes('tantra') || focus.includes('sexuality')) && tantraPaths.length > 0
   const tantraCopy = TANTRA_PATH_COPY[locale] || TANTRA_PATH_COPY.en
@@ -331,9 +331,130 @@ export function SimpleTestPicker({
       </div>}
     </header>
 
+    <section className={styles.section} aria-labelledby="hh-simple-topic-title">
+      <div className={styles.topicHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">1</span>
+          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
+        </div>
+        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
+          onClick={() => {
+            const all = TOPICS.every(({key}) => focus.includes(key))
+            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
+          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
+      </div>
+      <div className={styles.topicGrid} role="group" aria-label={c.first}>
+        {TOPICS.map(({ key, Icon, ...labels }) => {
+          const checked = focus.includes(key)
+          return <button key={key} type="button" aria-pressed={checked}
+            className={styles.topic} onClick={() => onToggleFocus(key)}>
+            <Icon size={20} aria-hidden="true" strokeWidth={1.9}/>
+            <span>{labels[locale] || labels.en}</span>
+            {checked && <Check size={16} className={styles.topicCheck} aria-hidden="true"/>}
+          </button>
+        })}
+      </div>
+      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
+        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
+        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
+          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
+          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
+        </button>)}
+      </div>}
+    </section>
+
+    <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
+      <div className={styles.problemHeading}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.step} aria-hidden="true">2</span>
+          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
+        </div>
+        <button type="button" className={styles.skipProblems}
+          onClick={() => (document.getElementById('hh-test-curated-heading') || document.getElementById('hh-simple-recommendations'))?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
+      </div>
+      <label className={styles.problemSearch}>
+        <Search size={19} aria-hidden="true" />
+        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
+          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
+      </label>
+      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
+        {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
+        <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
+          {visibleProblems.map((problem) => {
+            const checked = problems.includes(problem.key)
+            return <button key={problem.key} type="button" className={styles.problemChip}
+              aria-pressed={checked} data-problem-key={problem.key} onClick={() => onToggleProblem(problem.key)}>
+              {checked && <Check size={15} aria-hidden="true" />}
+              <span>{problem.label[locale] || problem.label.en}</span>
+            </button>
+          })}
+        </div>
+        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
+      {focus.length > 0 && <div className={styles.problemActions}>
+        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
+          aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
+          {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
+        </button>}
+        {problems.length > 0 && <button type="button" className={styles.problemClear}
+          onClick={onClearProblems}>{c.problemsClear} ({problems.length})</button>}
+      </div>}
+    </section>
+
+    <details className={styles.advanced} id="hh-more-test-filters">
+      <summary>
+        <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
+        <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
+        {hasExtraFilters && <span className={styles.appliedMark} title={c.activeFilters} aria-label={c.activeFilters}>{appliedFilterCount}</span>}
+        <ChevronDown aria-hidden="true" size={20} className={styles.chevron}/>
+      </summary>
+      <div className={styles.advancedBody}>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
+          <h3 id="hh-test-depth-title">{c.depth}</h3>
+          <p>{c.depthHelp}</p>
+          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
+            {[
+              {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
+              {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
+              {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
+            ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
+              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
+              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
+              {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
+            </button>)}
+          </div>
+        </section>
+        <section className={styles.filterGroup} aria-labelledby="hh-test-time-title">
+          <h3 id="hh-test-time-title">{c.time}</h3>
+          <div className={styles.timeButtons} role="group" aria-label={c.time}>
+            {[[0,c.anyTime],[5,c.shortTime],[10,c.mediumTime]].map(([minutes,label]) =>
+              <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
+            )}
+          </div>
+        </section>
+        <fieldset className={styles.kindFilters} data-test-kind-filter>
+          <legend>{c.kindsTitle}</legend>
+          <p>{c.kindsHelp}</p>
+          <div className={styles.kindChoices}>
+            {TEST_KINDS.map((kind) => {
+              const Icon = TEST_KIND_ICONS[kind.key]
+              return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
+                <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
+                <Icon size={19} aria-hidden="true" />
+                <span>{kind.label[locale] || kind.label.en}</span>
+              </label>
+            })}
+          </div>
+        </fieldset>
+        {hasExtraFilters && <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>}
+      </div>
+    </details>
+
     {!authenticated && collections.length > 0 && <section className={styles.curated} data-test-topic-collections
       data-expanded={collectionsOpen ? 'true' : 'false'} aria-labelledby="hh-test-curated-heading">
-      <h2 id="hh-test-curated-heading" className={styles.curatedSrOnly}>{collectionCopy.title}</h2>
+      <header className={styles.curatedHeading}>
+        <h2 id="hh-test-curated-heading">{collectionCopy.title}</h2>
+        <p>{focus.length || problems.length ? collectionCopy.personalized : collectionCopy.intro}</p>
+      </header>
       <div className={styles.curatedGrid} id="hh-test-curated-grid">
         {collections.map((collection) => {
           const Icon = COLLECTION_ICONS[collection.id]
@@ -448,124 +569,6 @@ export function SimpleTestPicker({
         <ChevronDown size={16} aria-hidden="true"/>
       </button>}
     </section>}
-
-    <section className={styles.section} aria-labelledby="hh-simple-topic-title">
-      <div className={styles.topicHeading}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.step} aria-hidden="true">1</span>
-          <div><h2 id="hh-simple-topic-title">{c.first}</h2><p>{c.firstHelp}</p></div>
-        </div>
-        <button type="button" className={styles.selectAll} aria-pressed={TOPICS.every(({key}) => focus.includes(key))}
-          onClick={() => {
-            const all = TOPICS.every(({key}) => focus.includes(key))
-            TOPICS.filter(({key}) => all ? focus.includes(key) : !focus.includes(key)).forEach(({key}) => onToggleFocus(key))
-          }}>{TOPICS.every(({key}) => focus.includes(key)) ? c.clearAll : c.selectAll}</button>
-      </div>
-      <div className={styles.topicGrid} role="group" aria-label={c.first}>
-        {TOPICS.map(({ key, Icon, ...labels }) => {
-          const checked = focus.includes(key)
-          return <button key={key} type="button" aria-pressed={checked}
-            className={styles.topic} onClick={() => onToggleFocus(key)}>
-            <Icon size={20} aria-hidden="true" strokeWidth={1.9}/>
-            <span>{labels[locale] || labels.en}</span>
-            {checked && <Check size={16} className={styles.topicCheck} aria-hidden="true"/>}
-          </button>
-        })}
-      </div>
-      {themeRefinements.length > 0 && <div className={styles.themeRefinements} data-theme-refinements>
-        <strong>{locale === 'ru' ? 'Уточнения темы:' : 'Selected refinements:'}</strong>
-        {themeRefinements.map((topic) => <button key={topic.key} type="button" onClick={() => onToggleFocus(topic.key)}
-          aria-label={(locale === 'ru' ? 'Убрать фильтр: ' : 'Remove filter: ') + (topic.label[locale] || topic.label.en)}>
-          {topic.label[locale] || topic.label.en} <span aria-hidden="true">×</span>
-        </button>)}
-      </div>}
-    </section>
-
-    <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
-      <div className={styles.problemHeading}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.step} aria-hidden="true">2</span>
-          <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
-        </div>
-        <button type="button" className={styles.skipProblems}
-          onClick={() => document.getElementById('hh-simple-recommendations')?.scrollIntoView({ behavior:'smooth', block:'start' })}>{c.skip} →</button>
-      </div>
-      <label className={styles.problemSearch}>
-        <Search size={19} aria-hidden="true" />
-        <input type="search" value={problemQuery} onChange={(event) => setProblemQuery(event.target.value)}
-          placeholder={c.problemSearch} aria-label={c.problemSearch} disabled={!focus.length}/>
-      </label>
-      {focus.length === 0 ? <p className={styles.problemHint}>{c.problemsEmpty}</p> : <>
-        {!!problems.length && <p className={styles.syncedConcernNote} role="status">{c.syncHint}</p>}
-        <div className={styles.problemGrid} role="group" aria-label={c.problemsTitle}>
-          {visibleProblems.map((problem) => {
-            const checked = problems.includes(problem.key)
-            return <button key={problem.key} type="button" className={styles.problemChip}
-              aria-pressed={checked} data-problem-key={problem.key} onClick={() => onToggleProblem(problem.key)}>
-              {checked && <Check size={15} aria-hidden="true" />}
-              <span>{problem.label[locale] || problem.label.en}</span>
-            </button>
-          })}
-        </div>
-        {queryText && matchingProblems.length === 0 && <p className={styles.noMatches} role="status">{c.noProblemMatches}</p>}</>}
-      {focus.length > 0 && <div className={styles.problemActions}>
-        {allProblems.length > 8 && !queryText && <button type="button" className={styles.problemMore}
-          aria-expanded={showAllProblems} onClick={() => setShowAllProblems((current) => !current)}>
-          {showAllProblems ? c.problemsLess : c.problemsMore} <ChevronDown size={16} aria-hidden="true"/>
-        </button>}
-        {problems.length > 0 && <button type="button" className={styles.problemClear}
-          onClick={onClearProblems}>{c.problemsClear} ({problems.length})</button>}
-      </div>}
-    </section>
-
-    <details className={styles.advanced} id="hh-more-test-filters">
-      <summary>
-        <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
-        <span className={styles.filterText}><strong>{c.detail}</strong><small>{c.detailHelp}</small></span>
-        {hasExtraFilters && <span className={styles.appliedMark} title={c.activeFilters} aria-label={c.activeFilters}>{appliedFilterCount}</span>}
-        <ChevronDown aria-hidden="true" size={20} className={styles.chevron}/>
-      </summary>
-      <div className={styles.advancedBody}>
-        <section className={styles.filterGroup} aria-labelledby="hh-test-depth-title">
-          <h3 id="hh-test-depth-title">{c.depth}</h3>
-          <p>{c.depthHelp}</p>
-          <div className={styles.depthOptions} role="group" aria-label={c.depth} data-mobile-depth-layout="grid" data-test-priority-selector>
-            {[
-              {key:'quick', name:c.quick, desc:c.quickNote, Icon:Zap},
-              {key:'balanced', name:c.balanced, desc:c.balancedNote, Icon:Sparkles},
-              {key:'deep', name:c.deep, desc:c.deepNote, Icon:Compass},
-            ].map(({key,name,desc,Icon}) => <button type="button" className={styles.depthOption}
-              aria-pressed={depth === key} onClick={() => onDepth(key)} key={key} title={desc} aria-label={name + '. ' + desc}>
-              <Icon size={20} aria-hidden="true"/><span><strong>{name}</strong></span>
-              {depth === key && <Check size={16} className={styles.depthCheck} aria-hidden="true"/>}
-            </button>)}
-          </div>
-        </section>
-        <section className={styles.filterGroup} aria-labelledby="hh-test-time-title">
-          <h3 id="hh-test-time-title">{c.time}</h3>
-          <div className={styles.timeButtons} role="group" aria-label={c.time}>
-            {[[0,c.anyTime],[5,c.shortTime],[10,c.mediumTime]].map(([minutes,label]) =>
-              <button key={minutes} type="button" aria-pressed={maxMinutes===minutes} onClick={() => onMaxMinutes(minutes)}>{label}</button>
-            )}
-          </div>
-        </section>
-        <fieldset className={styles.kindFilters} data-test-kind-filter>
-          <legend>{c.kindsTitle}</legend>
-          <p>{c.kindsHelp}</p>
-          <div className={styles.kindChoices}>
-            {TEST_KINDS.map((kind) => {
-              const Icon = TEST_KIND_ICONS[kind.key]
-              return <label className={styles.kindChoice} key={kind.key} data-checked={testKinds.includes(kind.key)}>
-                <input type="checkbox" data-test-kind-checkbox value={kind.key} checked={testKinds.includes(kind.key)} onChange={() => onToggleTestKind?.(kind.key)} />
-                <Icon size={19} aria-hidden="true" />
-                <span>{kind.label[locale] || kind.label.en}</span>
-              </label>
-            })}
-          </div>
-        </fieldset>
-        {hasExtraFilters && <button type="button" className={styles.clearFilters} onClick={() => { onDepth('balanced'); onMaxMinutes(0); onClearTestKinds?.() }}>{c.clear}</button>}
-      </div>
-    </details>
 
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
       <div className={styles.sectionHeader}>

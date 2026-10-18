@@ -21,7 +21,7 @@ test('every collection card has separate Details and Take test buttons with an a
   const picker = read('components/app/simple-test-picker.jsx')
   const parent = read('components/app/test-explorer.jsx')
   const css = read('components/app/simple-test-picker.module.css')
-  const section = picker.split('data-tantra-test-paths')[1]?.split('id="hh-simple-topic-title"')[0]
+  const section = picker.split('data-tantra-test-paths')[1]?.split('id="hh-simple-recommendations-title"')[0]
   assert.ok(section, 'thematic cards section is shown by existing topic selection')
   assert.match(section, /<article key=\{path\.id\} className=\{styles\.tantraPath\}/)
   assert.match(section, /data-tantra-action="details" aria-expanded=\{expanded\} aria-controls=\{detailId\}/)
