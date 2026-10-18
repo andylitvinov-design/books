@@ -87,8 +87,15 @@ test('EN V6 player: empty optional answers are not invented, safe pause never sa
  assert.ok(findButton(h.tree,'Pause'))
  await click(h,'Pause')
  assert.match(textOf(h.tree),/You may stop here/)
+ const safetyDialog=nodes(h.tree).find(n=>n.props?.role==='alertdialog')
+ assert.ok(safetyDialog,'Pause actions must be an accessible alert dialog')
+ const hiddenFrame=nodes(h.tree).find(n=>n.type==='div'&&n.props?.inert===true)
+ assert.ok(hiddenFrame,'Underlying exercise must be inert while safety dialog is active')
+ assert.equal(hiddenFrame.props['aria-hidden'],'true')
+ assert.ok(findButton(h.tree,'Continue with a neutral anchor'))
  assert.equal(f.calls,0)
  await click(h,'Return to practice')
+ assert.equal(nodes(h.tree).some(n=>n.props?.role==='alertdialog'),false)
  for(let i=0;i<14;i++){
    assert.doesNotMatch(buttons(h).join(' | '),/Skip this step|Skip this check-in|Skip$/)
    if(i===4){assert.ok(findButton(h.tree,'I disagree'));await click(h,'I disagree')}
