@@ -23,7 +23,971 @@ CREATE TABLE billing_private.service_orders (
   fulfillment_status text NOT NULL CHECK(fulfillment_status IN ('awaiting_payment','awaiting_schedule','scheduled','fulfilled','on_hold','cancelled')),
   refund_status text NOT NULL CHECK(refund_status IN ('none','partial','full')),
   refunded_minor integer NOT NULL DEFAULT 0 CHECK(refunded_minor BETWEEN 0 AND total_minor),
-  provider_checkout_id text CHECK(provider_checkout_id ~ '^cs_[A-Za-z0-9_]+$'),
+  provider_checkout_id text CHECK(
+    provider_checkout_id IS NULL OR
+    (provider='stripe' AND provider_checkout_id ~ '^cs_[A-Za-z0-9_]+
+  payment_intent_id text CHECK(
+    payment_intent_id IS NULL OR
+    (provider='stripe' AND payment_intent_id ~ '^pi_[A-Za-z0-9]+
+  invoice_id text CHECK(invoice_id IS NULL OR
+    (provider='stripe' AND invoice_id ~ '^in_[A-Za-z0-9]+
+  checkout_url text CHECK(checkout_url IS NULL OR (length(checkout_url)<=4096 AND (
+      (provider='stripe' AND checkout_url LIKE 'https://checkout.stripe.com/%') OR
+      (provider='paypal' AND (checkout_url LIKE 'https://www.paypal.com/checkoutnow%' OR
+        checkout_url LIKE 'https://www.sandbox.paypal.com/checkoutnow%' OR
+        checkout_url LIKE 'https://www.paypal.com/webapps/hermes%' OR
+        checkout_url LIKE 'https://www.sandbox.paypal.com/webapps/hermes%'))))),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND payment_intent_id ~ '^[A-Za-z0-9_-]{8,100}
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND payment_intent_id ~ '^[A-Za-z0-9_-]{8,100}
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+) OR
+    (provider='paypal' AND provider_checkout_id ~ '^[A-Za-z0-9_-]{8,100}
+  payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
+  invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
+  checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(owner_id,provider,environment,id),
+  UNIQUE(id),
+  UNIQUE(owner_id,provider,environment,operation_id),
+  UNIQUE(provider,environment,provider_checkout_id),
+  UNIQUE(provider,environment,payment_intent_id),
+  UNIQUE(provider,environment,invoice_id),
+  FOREIGN KEY(owner_id,provider,environment,customer_id)
+    REFERENCES billing_private.customers(owner_id,provider,environment,customer_id),
+  FOREIGN KEY(owner_id,provider,environment,repeat_of_order_id)
+    REFERENCES billing_private.service_orders(owner_id,provider,environment,id),
+  CHECK(status<>'open' OR (provider_checkout_id IS NOT NULL AND checkout_url IS NOT NULL)),
+  CHECK(status NOT IN ('paid','refunded','disputed','payment_review') OR payment_intent_id IS NOT NULL)
+);
+CREATE UNIQUE INDEX service_one_open_order ON billing_private.service_orders(owner_id,provider,environment)
+  WHERE status IN ('pending','open','processing');
+REVOKE ALL ON billing_private.service_orders FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox;
+GRANT SELECT,INSERT,UPDATE ON billing_private.service_orders TO hh_billing_backend;
+ALTER TABLE billing_private.service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_private.service_orders FORCE ROW LEVEL SECURITY;
+CREATE POLICY service_owner_scope ON billing_private.service_orders TO hh_billing_backend
+  USING(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true))
+  WITH CHECK(owner_id::text=current_setting('hh.billing_owner',true)
+    AND provider=current_setting('hh.billing_provider',true)
+    AND environment=current_setting('hh.billing_environment',true));
+
+-- Preserve unresolved paid work on account deletion. Minimal financial records
+-- have no cascading FK to health/account data. Same lock order as billing.
+CREATE FUNCTION billing_private.guard_service_account_deletion() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+  IF TG_OP='UPDATE' AND (NEW.status IS DISTINCT FROM 'deleting' OR OLD.status='deleting') THEN RETURN NEW; END IF;
+  PERFORM owner_id FROM billing_private.accounts WHERE owner_id=OLD.id ORDER BY provider,environment FOR UPDATE;
+  IF EXISTS(SELECT 1 FROM billing_private.service_orders WHERE owner_id=OLD.id AND
+    (status IN ('pending','open','processing') OR
+     (status IN ('paid','payment_review','disputed') AND fulfillment_status NOT IN ('fulfilled','cancelled')))) THEN
+    RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='BILLING_CANCEL_REQUIRED';
+  END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION billing_private.guard_service_account_deletion() FROM PUBLIC,anon,authenticated,hh_app_backend,hh_app_inbox,hh_billing_backend;
+CREATE TRIGGER service_guard_account_deletion BEFORE UPDATE OF status OR DELETE ON app.accounts
+  FOR EACH ROW EXECUTE FUNCTION billing_private.guard_service_account_deletion();
+-- Review scheduling/refund support workflow and financial retention before live.
+-- Run isolated RLS tests for owner, stranger, revoked session, environment,
+-- public roles and parallel prepare/reconcile before approving any execution.
+COMMIT;
+)) ,
   payment_intent_id text CHECK(payment_intent_id ~ '^pi_[A-Za-z0-9]+$'),
   invoice_id text CHECK(invoice_id ~ '^in_[A-Za-z0-9]+$'),
   checkout_url text CHECK(length(checkout_url)<=4096 AND checkout_url LIKE 'https://checkout.stripe.com/%'),
