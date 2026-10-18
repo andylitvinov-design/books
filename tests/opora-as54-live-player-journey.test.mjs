@@ -29,7 +29,7 @@ const buttons=h=>nodes(h.tree).filter(n=>n.type==='button').map(textOf)
 test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step evidence, then server receipt',async()=>{
  const f=fixture('ru',1),h=f.h
  for(let i=0;i<14;i++){
-   assert.match(textOf(h.tree),new RegExp('Шаг '+(i+1)+' из 15'))
+   assert.match(textOf(h.tree),new RegExp('Шаг\\s+'+(i+1)+'\\s+из\\s+15'))
    assert.doesNotMatch(buttons(h).join(' | '),/Пропустить|Skip/)
    if(i===4){
      const votes=['Да, откликается','Пока сомневаюсь','Не согласен(на)']
@@ -51,7 +51,7 @@ test('RU V6 player: exactly fourteen authored steps, 3-way aphorism, per-step ev
  assert.equal(body.opora54.answers.aphorism,'unsure')
  assert.equal(body.opora54.ease,null)
  assert.deepEqual(validateOpora54Signals(body.opora54).answers,body.opora54.answers)
- assert.match(textOf(h.tree),/Шаг 15 из 15/)
+ assert.match(textOf(h.tree),/Шаг\\s+15\\s+из\\s+15/)
  assert.match(textOf(h.tree),/Практика сохранена/)
  await click(h,'К карте курса')
  assert.equal(f.closed,true)
