@@ -112,7 +112,7 @@ test('each redesigned day-one screen is interactive with distinct visual practic
   const player=readFileSync('components/app/course-slide-player.jsx','utf8')
   for(const activity of ['prepare','notice','practice','exit','anchor','association','independent',
      'experience','adapt','transfer']) assert.match(ui,new RegExp('data-day-one-activity="'+activity+'"'))
-  for(const marker of ['data-interactive-practice-stepper','photoRegions','wordTokens',
+  for(const marker of ['data-interactive-practice-stepper','calmPhoto','calmMore','wordTokens',
     'swatchPanel','data-personal-transfer-preview','hintToggle','data-day-one-activity="neutral-support"'])
       assert.ok(ui.includes(marker),marker)
   assert.ok(css.includes('object-fit:contain'), 'Do not crop scenic picture')
