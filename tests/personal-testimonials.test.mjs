@@ -30,7 +30,7 @@ test("published compact home shows two sourced videos while preserving all six o
   assert.equal(new Set(ruIds).size, 6);
   assert.equal(new Set(enIds).size, 6);
   // PR637 changed the published home from six visible videos to two; keep every source.
-  assert.deepEqual(ruIds, ["MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E", "m9RfDgK76PU", "5oj0BIbLT4w"]);
+  assert.deepEqual(ruIds, ["m9RfDgK76PU", "MIVLm1GUTtM", "ttQxUHopaUM", "VABgpmn4ZYA", "muOnIHllI7E", "5oj0BIbLT4w"]);
   assert.deepEqual(enIds, ["Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk", "4NrryHcEF1A", "hYwRNMxIMjc"]);
   const expression=component.match(/const videos = (.*);/)[1];
   const choose=new Function("isHome","testimonialVideos","locale","return "+expression);
