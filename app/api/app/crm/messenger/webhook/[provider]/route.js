@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
-import { AppError } from '@/lib/assessments/contracts'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate } from '@/lib/crm/messenger-webhook'
 export const runtime='nodejs'
