@@ -90,6 +90,7 @@ test('bounded responses never accept Skip, free-text PII, fake mastery or forged
    {answers:{save:'success'}},{answers:{__proto__:'unexpected',unlisted:'test'}},
    {answers:[],hints:[]},{answers:{},hints:['gibberish']},
    {answers:{},hints:['demo','demo']},{answers:{},ease:99},
+   {answers:{rehearse:'independent'},hints:['rehearse']},
    {answers:{},extra:{sensitive:'hello'}},
  ]){
    assert.throws(()=>validateOpora54Signals(bad),/INVALID_OPORA54/)
