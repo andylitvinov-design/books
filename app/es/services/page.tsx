@@ -40,7 +40,7 @@ export default async function SpanishServicesPage() {
    "wu-xing":"energy_spiritual", alchemy:"homeopathy_holistic", hypnotherapy:"personal_development", remote:"energy_spiritual",
  };
  const editorial = [
-   ...approaches.map(({id,image,title,situation,detail,href})=>({
+   ...approaches.filter(({id}) => id !== "psychohomeopathy").map(({id,image,title,situation,detail,href})=>({
      id,image,title,promise:situation,details:detail,href,areaKey:areas[id],
      label:id==="situation"?"Revisión gratuita":id==="wu-xing"?"Perfil gratuito":id==="remote"?"Apoyo a distancia":"Sesión personal",
      price:id==="situation"||id==="wu-xing"?"Gratis":id==="remote"?undefined:id==="business"||id==="constellations"||id==="imagery"||id==="psychohomeopathy"||id==="alchemy"||id==="hypnotherapy"
