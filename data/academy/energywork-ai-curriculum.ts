@@ -297,8 +297,10 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...commonSlides.filter((slide) => slide.phase === "tantra"),
     ...pathSlides.kundalini,
     ...pathSlides.yggdrasil,
-    ...commonSlides.filter((slide) => slide.phase === "initiation"),
+    ...commonSlides.filter((slide) => slide.phase === "initiation" && slide.id !== "paths-04"),
     ...initiationSlides,
-    ...endSlides,
+    endSlides[0]!,
+    commonSlides.find((slide) => slide.id === "paths-04")!,
+    endSlides[1]!,
   ];
 }
