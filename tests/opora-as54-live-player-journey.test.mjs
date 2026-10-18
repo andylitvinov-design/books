@@ -182,3 +182,20 @@ test('editing or withdrawing a reported attempt clears the optional 0–3 ease r
   assert.equal(f.payload.practiceAttempt,null)
   h.unmount()
 })
+
+test('answers are coached according to the screen, never interpreted as a clinical score',async()=>{
+ const f=fixture('ru',1),h=f.h
+ await click(h,'Трудно сказать')
+ assert.match(textOf(h.tree),/Необязательно точно называть состояние/)
+ assert.doesNotMatch(textOf(h.tree),/Не нужно принимать афоризм/)
+ await click(h,'Далее') // optional 0–10
+ await click(h,'Далее')
+ await click(h,'Далее') // choose pace only by navigation
+ await click(h,'Пока не уверен(а)')
+ assert.match(textOf(h.tree),/Не нужно выбирать идеальную цель/)
+ await click(h,'Далее')
+ await click(h,'Пока сомневаюсь')
+ assert.match(textOf(h.tree),/Сомневаться нормально/)
+ assert.doesNotMatch(buttons(h).join(' | '),/Пропустить/)
+ h.unmount()
+})
