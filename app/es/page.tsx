@@ -34,7 +34,7 @@ export default function SpanishHomePage() {
             Solicitar revisión gratuita<span aria-hidden="true">→</span>
           </AcquisitionEventLink>
         </div>
-        <AcquisitionEventLink className="service-home-paid-link"
+        <AcquisitionEventLink className="service-home-selfcheck-link"
           href="/es/client/tests" event="self_check_start"
           attributes={{ "data-hero-cta": "free-tests" }} prefetch={false}>
           Hacer pruebas gratuitas<span aria-hidden="true">→</span>
