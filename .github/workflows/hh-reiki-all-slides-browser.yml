@@ -5,6 +5,14 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/energywork-ai-learner.tsx'
+      - 'components/reiki-referral-landing.tsx'
+      - 'components/reiki-referral-landing.module.css'
+      - 'components/tantra-free-initiation.tsx'
+      - 'components/tantra-free-initiation.module.css'
+      - 'components/academy-record-page.tsx'
+      - 'app/**/academy/**'
+      - 'scripts/verify-reiki-referral-browser.mjs'
+      - 'tests/reiki-referral-landing.test.mjs'
       - 'components/energywork-ai-learner.module.css'
       - 'data/academy/energywork-ai-curriculum.ts'
       - 'data/academy/energywork-ai-schema.js'
@@ -80,9 +88,13 @@ jobs:
             sleep 2
           done
           node scripts/verify-reiki-all-slides-browser.mjs
+          node --test tests/reiki-referral-landing.test.mjs
+          node scripts/verify-reiki-referral-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: reiki-53-screens-${{ matrix.browser }}
-          path: artifacts/reiki-all-slides/
+          path: |
+            artifacts/reiki-all-slides/
+            artifacts/reiki-referral/
           retention-days: 7

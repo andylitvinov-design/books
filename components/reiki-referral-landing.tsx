@@ -129,7 +129,7 @@ const copy = {
 export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const courseLocale = locale === "es" ? "en" : locale;
-  const courseHref = "/" + courseLocale + "/academy/principles-of-energywork/learn";
+  const courseHref = "/" + courseLocale + "/academy/principles-of-energywork/learn?start=1";
   const tantraHref = "/" + locale + "/academy/reiki/tantra-reiki";
   return (
     <main className={styles.page} data-reiki-referral-landing data-locale={locale}>
@@ -140,12 +140,12 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
             <h1 id="reiki-referral-title">{t.title}</h1>
             <p className={styles.promise}>{t.promise}</p>
-            <p className={styles.lead}>{t.lead}</p>
-            <ul className={styles.facts}>{t.facts.map((fact) => <li key={fact}><Check size={16} aria-hidden="true" />{fact}</li>)}</ul>
-            <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" className={styles.mainCta} prefetch={false}>
+            <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" attributes={{ "data-reiki-cta": "hero" }} className={styles.mainCta} prefetch={false}>
               {t.cta}<ArrowRight size={20} aria-hidden="true" />
             </AcquisitionEventLink>
             <p className={styles.actionNote}>{t.actionNote}</p>
+            <p className={styles.lead}>{t.lead}</p>
+            <ul className={styles.facts}>{t.facts.map((fact) => <li key={fact}><Check size={16} aria-hidden="true" />{fact}</li>)}</ul>
           </div>
           <div className={styles.heroVisual}>
             <Image
@@ -196,7 +196,7 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
 
         <section className={styles.bottomCta} aria-labelledby="reiki-referral-end">
           <div><h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p></div>
-          <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" className={styles.mainCta} prefetch={false}>
+          <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" attributes={{ "data-reiki-cta": "footer" }} className={styles.mainCta} prefetch={false}>
             {t.cta}<ArrowRight size={20} aria-hidden="true" />
           </AcquisitionEventLink>
         </section>

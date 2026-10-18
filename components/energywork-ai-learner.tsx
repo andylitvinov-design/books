@@ -15,7 +15,7 @@ import {
 } from "@/data/academy/energywork-ai-curriculum";
 import styles from "./energywork-ai-learner.module.css";
 
-type Props = { locale: EnergyworkLocale };
+type Props = { locale: EnergyworkLocale; startAtExperience?: boolean };
 type AnswerMap = Record<string, string>;
 type StoredProgress = {
   accountId: string; enrolled: boolean; courseVersion: string;
@@ -100,7 +100,7 @@ const copy = {
     reportReady: "Report recorded",
     questionReady: "Answer recorded",
     readyCount: "items completed",
-    initiateRequest: "Discuss personal initiation in",
+    initiateRequest: "Request free Level 1 introduction in",
     finish: "Course completed",
     finishNote: "Your reflections are private when signed in and saving is enabled. In guest mode, copy them before leaving.",
     summary: "Your personal course journal",
@@ -196,7 +196,7 @@ const copy = {
     reportReady: "Отчёт есть",
     questionReady: "Ответ есть",
     readyCount: "пунктов заполнено",
-    initiateRequest: "Обсудить личную инициацию:",
+    initiateRequest: "Запросить бесплатную вводную инициацию I ступени —",
     finish: "Курс завершён",
     finishNote: "После входа и согласия ваши ответы сохраняются приватно. В гостевом режиме скопируйте их перед выходом.",
     summary: "Ваш личный учебный дневник",
@@ -395,9 +395,11 @@ function MeditationVoices({ slide, locale, youtubeId }: {
   );
 }
 
-export function EnergyworkAiLearner({ locale }: Props) {
+export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
   const t = copy[locale];
-  const [index, setIndex] = useState(0);
+  // Direct referral entrants already read the programme overview; start with the approved
+  // experience-choice screen. Any saved account progress still wins during hydration.
+  const [index, setIndex] = useState(startAtExperience ? 1 : 0);
   const [reviewReturn, setReviewReturn] = useState(false);
   const [answers, setAnswers] = useState<AnswerMap>({});
   const answersRef = useRef<AnswerMap>({});
@@ -813,7 +815,7 @@ export function EnergyworkAiLearner({ locale }: Props) {
                     <div className={styles.initiationLinks}>
                       {energyworkPathChoices.map((choice) => (
                         <Link key={choice.id} className={styles.teacherLink}
-                          href={"/" + locale + "/academy/" + choice.freePath}>
+                          href={"/" + locale + "/academy/" + choice.freePath + (choice.id === "tantra" ? "#apply-free" : "")}>
                           {t.initiateRequest} {choice.title[locale]} <ArrowRight size={16} aria-hidden="true" />
                         </Link>
                       ))}

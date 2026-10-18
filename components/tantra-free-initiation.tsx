@@ -305,6 +305,10 @@ export function TantraFreeInitiation({ locale }: { locale: PublicLocale }) {
               <a href="#tantra-practice-video" className={styles.buttonGhost}><PlayCircle size={18} aria-hidden="true"/>{t.watchCta}</a>
             </div>
             <div className={styles.heroStats}>{t.heroMeta.map((item) => <span key={item}><Check size={14} aria-hidden="true"/>{item}</span>)}</div>
+            <Link className={styles.freeCourseBridge} href={"/" + locale + "/academy/reiki/free-practitioner-course"}>
+              {locale === "ru" ? "Хотите сначала попробовать? Бесплатный курс из 5 уроков" : locale === "es" ? "¿Quieres probar primero? Curso gratis de 5 lecciones" : "Want to try it first? Take the free 5-lesson course"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
           <div className={styles.heroArt}>
             <div className={styles.orbitOuter} aria-hidden="true" />
