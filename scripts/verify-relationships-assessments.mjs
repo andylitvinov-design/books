@@ -199,7 +199,14 @@ async function relationshipChoice(picker,key){
  for(let batch=0;await choice.count()===0&&batch<Math.ceil(MONITORING_CATALOG.length/5);batch++){
   const more=picker.getByRole('button',{name:/^Show \d+ more tests$/})
   await expect(more).toHaveCount(1)
+  const list=picker.locator('#hh-public-recommended-tests')
+  const before=Number(await list.getAttribute('data-visible-test-count'))
+  const batchSize=Number((await more.innerText()).match(/Show (\d+) more tests/)[1])
+  assert.ok(Number.isInteger(before)&&before>0)
+  assert.ok(batchSize>=1&&batchSize<=5)
+  console.log('RELATIONSHIP_PICKER_EXPANSION',JSON.stringify({key,batch,before,batchSize}))
   await more.click()
+  await expect(list).toHaveAttribute('data-visible-test-count',String(before+batchSize))
  }
  await expect(choice).toHaveCount(1)
  await expect(choice).toBeVisible()
