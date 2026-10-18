@@ -1,6 +1,6 @@
 /* Additive IA v2 styles: keep the existing readers, service pages and videos. */
 .library-shell { max-width: 1040px; margin: 0 auto; padding: 24px clamp(14px, 4vw, 42px) 48px; }
-.library-media-switch { box-sizing: border-box; width: min(360px,100%); max-width: 100%; margin: 18px 0 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border: 1px solid #d6c7b5; border-radius: 999px; padding: 3px; background: #f7f0e6; }
+.library-media-switch { box-sizing: border-box; width: min(520px,100%); max-width: 100%; margin: 18px 0 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid #d6c7b5; border-radius: 999px; padding: 3px; background: #f7f0e6; }
 .library-media-switch a { min-height: 42px; display: grid; place-items: center; border-radius: 999px; color: #765b49; font-size: 13px; font-weight: 700; text-decoration: none; }
 .library-media-switch a[aria-current="page"] { background: #4f3829; color: #fffaf2; box-shadow: 0 4px 12px rgba(56,39,28,.12); }
 .library-heading { margin: 28px 0 20px; max-width: 42rem; }
@@ -1952,3 +1952,11 @@ body:has(.client-entry-shell .cabinet-guest-tests) .ia222-bottom-navigation {
 body:has(.client-entry-shell .cabinet-guest-tests) {
   padding-bottom: 0 !important;
 }
+
+.library-quick-guides{max-width:1000px;margin:30px auto 4px;border-top:1px solid #ded1c3;padding-top:20px}
+.library-quick-guides h2{font-family:var(--font-serif);font-size:25px;font-weight:500;margin:0 0 13px;color:#362820}
+.library-quick-guides>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.library-quick-guides a{min-width:0;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #ddd1c3;border-radius:13px;padding:12px 14px;text-decoration:none;color:#5e4333;background:#fffbf5;font-size:13px;font-weight:700}
+.library-quick-guides a:hover{border-color:#a27a5c;background:#fff}
+.library-quick-guides a span:first-child{overflow-wrap:anywhere}
+@media(max-width:600px){.library-quick-guides>div{grid-template-columns:1fr}.library-quick-guides h2{font-size:23px}.library-media-switch a{font-size:12px}}
