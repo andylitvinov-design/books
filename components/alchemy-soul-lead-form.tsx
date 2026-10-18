@@ -150,7 +150,7 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
  * Instant order directly underneath the price cards. The selected product
  * controls BOTH WhatsApp and Telegram drafts from the site's standard chooser.
  */
-export function AlchemySoulFormatSelector({ locale }: { locale: AlchemyLocale }) {
+export function AlchemySoulFormatSelector({ locale, wiseEnabled = false }: { locale: AlchemyLocale; wiseEnabled?: boolean }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<Format>("60");
   const data = locale === "ru" ? {
@@ -231,6 +231,20 @@ export function AlchemySoulFormatSelector({ locale }: { locale: AlchemyLocale })
           event="service_request_start" className={styles.optionsOrderButton}
           attributes={{ "data-alchemy-booking": "formats" }} />
       </div>
+      {wiseEnabled && selected !== "month" ? (
+        <div className={styles.wisePayment} data-wise-payment-link>
+          <a className={styles.wisePaymentCta}
+            href={"/api/payments/wise/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
+            target="_blank" rel="noopener noreferrer">
+            {locale === "ru" ? "Оплатить через Wise" : locale === "es" ? "Pagar con Wise" : "Pay with Wise"}
+          </a>
+          <small>{locale === "ru"
+            ? "Оплачивайте после согласования времени. Платёж сверяется вручную и не бронирует сеанс автоматически."
+            : locale === "es"
+              ? "Paga después de acordar la hora. El pago se comprueba manualmente y no reserva una sesión."
+              : "Pay after agreeing a time. We verify Wise payments manually; this does not book the session."}</small>
+        </div>
+      ) : null}
       <p className={styles.freeOption}>{data.free} <Link href={"/" + locale + "/services/free-situation-review"}>{data.freeAction}</Link></p>
     </div>
   );
