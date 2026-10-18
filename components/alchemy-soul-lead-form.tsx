@@ -236,13 +236,13 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false }: { loc
           <a className={styles.wisePaymentCta}
             href={"/api/payments/wise/" + (selected === "30" ? "express-consultation-30" : "personal-session-60")}
             target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "Оплатить через Wise" : locale === "es" ? "Pagar con Wise" : "Pay with Wise"}
+            {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
           </a>
           <small>{locale === "ru"
-            ? "Оплачивайте после согласования времени. Платёж сверяется вручную и не бронирует сеанс автоматически."
+            ? `После согласования времени проверьте получателя и сумму ${selected === "30" ? "€50" : "€100"} в Wise. При WiseTag нужен аккаунт Wise, сумму введите вручную. Поступление проверяется отдельно.`
             : locale === "es"
-              ? "Paga después de acordar la hora. El pago se comprueba manualmente y no reserva una sesión."
-              : "Pay after agreeing a time. We verify Wise payments manually; this does not book the session."}</small>
+              ? `Después de acordar la hora, verifica el destinatario y ${selected === "30" ? "50 €" : "100 €"} en Wise. WiseTag requiere una cuenta Wise y debes escribir el importe. Comprobamos los pagos manualmente.`
+              : `After agreeing a time, check the recipient and ${selected === "30" ? "€50" : "€100"} in Wise. WiseTag requires a Wise account and manual amount entry. We verify receipt separately; no automatic booking.`}</small>
         </div>
       ) : null}
       <p className={styles.freeOption}>{data.free} <Link href={"/" + locale + "/services/free-situation-review"}>{data.freeAction}</Link></p>

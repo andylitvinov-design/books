@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { buildWiseServicePaymentUrl, wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
+import { buildWiseConfiguredServiceUrl, wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 
 export const dynamic = "force-dynamic";
 
-// Hosted Wise checkout. A redirect (or browser return) is NOT payment evidence.
+// Wise Business open link or separately approved WiseTag. A redirect is NOT payment evidence.
 // Any fulfillment requires independent confirmation in the merchant's Wise account.
 export async function GET(
   _request: Request,
@@ -17,7 +17,7 @@ export async function GET(
   }
 
   const { productId } = await params;
-  const target = buildWiseServicePaymentUrl(process.env.HH_WISE_PAYMENT_OPEN_LINK, productId);
+  const target = buildWiseConfiguredServiceUrl(process.env, productId);
   if (!target) {
     return NextResponse.json(
       { error: "UNKNOWN_SERVICE" },

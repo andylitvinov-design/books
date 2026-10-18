@@ -292,14 +292,14 @@ export function ConsultationChoiceCapture({
       {isPaidRequest && wiseEnabled ? (
         <div className={styles.wisePayment} data-wise-payment-link>
           <a href={"/api/payments/wise/" + wiseProductId} target="_blank" rel="noopener noreferrer">
-            {locale === "ru" ? "Оплатить через Wise" : locale === "es" ? "Pagar con Wise" : "Pay with Wise"}
+            {locale === "ru" ? "Перевести через Wise" : locale === "es" ? "Transferir con Wise" : "Send via Wise"}
             <ArrowUpRight size={16} aria-hidden="true" />
           </a>
           <small>{locale === "ru"
-            ? "Только после согласования времени. Оплата проверяется вручную и сама по себе не подтверждает запись."
+            ? `После согласования времени проверьте получателя и сумму ${serviceChoice === "session" ? "€100" : "€50"} в Wise. Если используется WiseTag, нужна учётная запись Wise и сумму надо ввести вручную. Перевод не подтверждает запись автоматически.`
             : locale === "es"
-              ? "Solo después de acordar la hora. El pago se verifica manualmente y no confirma una reserva."
-              : "Only after agreeing a time. Payment is verified manually and does not itself confirm a booking."}</small>
+              ? `Tras acordar la hora, comprueba el destinatario y ${serviceChoice === "session" ? "100 €" : "50 €"} en Wise. Un WiseTag requiere una cuenta Wise y el importe se introduce manualmente. La reserva se confirma aparte.`
+              : `After agreeing a time, check the recipient and ${serviceChoice === "session" ? "€100" : "€50"} in Wise. A WiseTag requires a Wise account and you must enter the amount yourself. Booking is confirmed separately.`}</small>
         </div>
       ) : null}
       <p className={styles.note}>{isPaidRequest ? t.messageNote : t.freeNote}</p>
