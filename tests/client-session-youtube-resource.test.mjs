@@ -220,7 +220,7 @@ test('final Materials section contains only chosen videos and sits after shared 
   assert.match(view,/materialsVideos\.map/)
 })
 
-test('both report editors preserve legacy links but allow new shared resources only through catalog selection',()=>{
+test('both report editors preserve legacy links and route new shared videos through owner import',()=>{
   const full=readFileSync(new URL('../app/admin/consultations/[id]/edit/page.js',import.meta.url),'utf8')
   const standalone=readFileSync(new URL('../app/admin/prescriptions/[id]/page.js',import.meta.url),'utf8')
   const materials=readFileSync(new URL('../components/report-video-materials-editor.jsx',import.meta.url),'utf8')
@@ -228,7 +228,7 @@ test('both report editors preserve legacy links but allow new shared resources o
   for(const page of [full,standalone])assert.match(page,/ReportVideoMaterialsEditor/)
   assert.match(materials,/SessionMaterialPicker/)
   assert.match(materials,/materialIds:ids/)
-  assert.match(materials,/No uploads are made here|New uploads belong/)
+  assert.match(materials,/SessionSaveFooterVideo/)\n  assert.match(studio,/SessionSaveFooterVideo/)\n  assert.match(materials,/New videos stay in your private Materials/)
   assert.match(studio,/SessionMaterialPicker/)
   assert.match(studio,/Previously attached session links remain unchanged/)
   assert.doesNotMatch(studio,/SessionAudioRecorder|Add YouTube video|Add resource link/)
