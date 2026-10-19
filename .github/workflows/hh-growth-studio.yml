@@ -34,3 +34,21 @@ jobs:
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
         run: node --test tests/growth-studio-editorial.test.mjs
+
+  next-build:
+    name: Next.js production build / Growth Studio
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact dependency lock
+        run: npm ci
+      - name: Next.js build
+        run: npm run build
