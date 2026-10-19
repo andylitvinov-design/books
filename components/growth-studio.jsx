@@ -20,7 +20,7 @@ const COPY={
     pending:'For review',planned:'Planned for manual posting',noAuto:'No automatic posts will be sent from this version.',
     unavailable:'Durable storage is not available. Editing is disabled to prevent losing your work.',
     reload:'Refresh',new:'New post',compose:'Editor',calendar:'Calendar',library:'Media',export:'Export CSV',
-    brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',
+    brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',media:'Public photo/video URL',mediaAlt:'Image description (alt text)',mediaHint:'Use a public JPG, PNG, WEBP, GIF or MP4 file on the selected brand website. Never use private client files.',
     source:'Public landing URL',campaign:'Campaign code (optional)',schedule:'Planned time',scheduleNote:'Input uses your device timezone; calendar is shown in Toronto time.',
     sourceHint:'Use public site URLs only; never include client information in these posts or links.',
     captionHint:'Write platform-specific copy. AI drafting and translation will be added after approvals and account setup.',
@@ -53,7 +53,7 @@ const COPY={
     pending:'На согласование',planned:'Запланировано вручную',noAuto:'Эта версия не отправляет публикации автоматически.',
     unavailable:'Серверное хранилище недоступно. Редактор отключён, чтобы не потерять изменения.',
     reload:'Обновить',new:'Новая публикация',compose:'Редактор',calendar:'Календарь',library:'Медиа',export:'Экспорт CSV',
-    brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',
+    brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',media:'Публичная ссылка на фото/видео',mediaAlt:'Описание изображения (alt)',mediaHint:'Публичный JPG, PNG, WEBP, GIF или MP4 на сайте выбранного проекта. Не используйте личные файлы клиентов.',
     source:'Публичная ссылка',campaign:'Код кампании (необязательно)',schedule:'Планируемое время',scheduleNote:'Ввод времени по часовому поясу устройства; календарь — по Торонто.',
     sourceHint:'Только открытые страницы сайта. Никаких личных данных клиентов в публикации и ссылке.',
     captionHint:'Пишите текст для конкретной соцсети. AI-генерацию и переводы добавим после настройки аккаунтов.',
@@ -83,7 +83,7 @@ const COPY={
 }
 const empty = () => ({
   brand:'holistic_house',channel:'instagram',locale:'en',title:'',caption:'',
-  sourceUrl:'',campaign:'',scheduledAt:'',
+  sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
 })
 const isoFromLocal = input => {
   if (!input) return ''
@@ -117,7 +117,7 @@ function csvCell(value) {
   return '"'+escaped.replaceAll('"','""')+'"'
 }
 function saveCsv(records) {
-  const cols=['id','brand','channel','locale','title','caption','sourceUrl','campaign','scheduledAt','status','updatedAt']
+  const cols=['id','brand','channel','locale','title','caption','sourceUrl','campaign','scheduledAt','mediaUrl','mediaAlt','status','updatedAt']
   const raw='\ufeff'+[cols.join(','),...records.map(x=>cols.map(key=>csvCell(x[key])).join(','))].join('\r\n')
   const url=URL.createObjectURL(new Blob([raw],{type:'text/csv;charset=utf-8;'}))
   const link=document.createElement('a');link.href=url;link.download='hh-growth-studio-editorial.csv'
@@ -188,7 +188,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         ? {action:'save',id:editing?.id??null,expectedRevision:editing?.revision??0,
           fields:{brand:form.brand,channel:form.channel,locale:form.locale,title:form.title,
             caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,
-            scheduledAt:isoFromLocal(form.scheduledAt)}}
+            scheduledAt:isoFromLocal(form.scheduledAt),mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt}}
         : {action,id:post.id,expectedRevision:post.revision})
       if (!result.ok){setNotice(t[result.error]||t.tryAgain);return}
       const saved=result.record
@@ -280,6 +280,13 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <label>{t.caption}<textarea disabled={!ready||busy} maxLength={3500} rows={6} value={form.caption}
           placeholder={locale==='ru'?'Напишите короткий текст публикации...':'Write your post caption...'} onChange={set('caption')}/></label>
         <p className={styles.hint}>{t.captionHint}</p>
+        <div className={styles.pair}>
+          <label>{t.media}<input disabled={!ready||busy} type="text" maxLength={500} value={form.mediaUrl||''}
+            placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
+          <label>{t.mediaAlt}<input disabled={!ready||busy} type="text" maxLength={240} value={form.mediaAlt||''}
+            placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
+        </div>
+        <p className={styles.hint}>{t.mediaHint}</p>
         <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
           placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
         <p className={styles.hint}>{t.sourceHint}</p>
@@ -294,6 +301,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.previewColumn}>
         <div className={styles.preview}>
           <div className={styles.previewTop}><span className={styles.brandDot}>H</span><div><strong>{BRANDS[form.brand]}</strong><small>{CHANNELS[form.channel]} · {form.locale.toUpperCase()}</small></div></div>
+          {form.mediaUrl && /\.(?:jpe?g|png|webp|gif)$/i.test(form.mediaUrl)
+            && <img className={styles.previewMedia} src={form.mediaUrl} alt={form.mediaAlt||''} loading="lazy" referrerPolicy="no-referrer" />}
+          {form.mediaUrl && /\.mp4$/i.test(form.mediaUrl)
+            && <div className={styles.previewVideo}>Video reference: {form.mediaUrl.split('/').pop()}</div>}
           <h3>{form.title||'—'}</h3><p className={styles.previewCopy}>{form.caption||'…'}</p>
           {trackingLink&&<div className={styles.tracking}>
             <span>{t.tracking}</span><code>{trackingLink}</code>
