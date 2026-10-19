@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,statSync} from 'node:fs';
+import vm from 'node:vm';
 import {
   oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,
   OPORA_EXPERIENCE_DESIGN_VERSION,
@@ -86,4 +87,67 @@ test('photographic mobile player uses a bright panel and high-contrast large typ
   assert.ok(existsSync(photo),'Welcome photo must ship with the site');
   assert.ok(statSync(photo).size>100_000,'Welcome photo must not be a tiny pixelated thumbnail');
   assert.doesNotMatch(css,/\.arrive\{--scene-photo:url\('\/images\/holistic-house\/course-start-heron/);
+});
+
+test('day-one 0–10 prompts distinguish support from concern in EN, RU and ES without reversing stored ratings',()=>{
+  const player=read('components/app/opora-experience-player.jsx');
+  const openingSource=player.slice(player.indexOf('const OPENING='),player.indexOf('\nfunction OpeningRating'));
+  assert.match(openingSource,/^const OPENING=/);
+  const opening=vm.runInNewContext(openingSource+'\nOPENING');
+  const expected={
+    en:{
+      support:'How much inner support do you feel?',
+      lowSupport:'0 · No support',highSupport:'10 · Strong support',
+      concern:'How strong was your concern?',
+      lowConcern:'0 · No concern',highConcern:'10 · Very strong concern',
+      timeframe:'past 24 hours',
+    },
+    ru:{
+      support:'Насколько вы сейчас чувствуете внутреннюю опору?',
+      lowSupport:'0 · Нет опоры',highSupport:'10 · Сильная опора',
+      concern:'Насколько сильным было беспокойство?',
+      lowConcern:'0 · Не беспокоило',highConcern:'10 · Очень сильно',
+      timeframe:'последние 24 часа',
+    },
+    es:{
+      support:'¿Cuánto apoyo interior sientes?',
+      lowSupport:'0 · Sin apoyo',highSupport:'10 · Mucho apoyo',
+      concern:'¿Qué tan intensa fue tu preocupación?',
+      lowConcern:'0 · Sin preocupación',highConcern:'10 · Muy intensa',
+      timeframe:'últimas 24 horas',
+    },
+  };
+  for(const lang of ['en','ru','es']){
+    const item=opening[lang], rule=expected[lang];
+    assert.equal(item.baseline,rule.support);
+    assert.equal(item.baselineLow,rule.lowSupport);
+    assert.equal(item.baselineHigh,rule.highSupport);
+    assert.equal(item.checkin,rule.concern);
+    assert.equal(item.checkinLow,rule.lowConcern);
+    assert.equal(item.checkinHigh,rule.highConcern);
+    assert.ok(item.checkinLead.includes(rule.timeframe),lang+' has no 24h scope');
+    assert.notEqual(item.baseline,item.checkin);
+    assert.ok(!/how was the last day|как прошли последние сутки|cómo fue el último día/i.test(item.checkin));
+  }
+  assert.match(player,/Array\.from\(\{length:11\},\(_,number\)=>/);
+  // Historical 0–10 responses remain untouched: the server reads and writes
+  // the same field; changing text must not silently invert saved records.
+  assert.match(player,/lastDayDifficulty:openingDifficulty/);
+  assert.match(player,/oporaOpening\?\.lastDayDifficulty\?\?null/);
+  assert.doesNotMatch(player,/lastDayDifficulty:\s*10\s*-/);
+});
+
+test('legacy course players also use concern wording for distress scales, not a general good-day question',()=>{
+  const quest=read('components/app/course-quest.jsx');
+  const slides=read('components/app/course-slide-player.jsx');
+  assert.doesNotMatch(quest,/checkin: 'Notice your day'|checkin: 'Заметьте своё состояние'/);
+  assert.match(quest,/checkin: 'How strong was your concern\?'/);
+  assert.match(quest,/from: '0 · No concern', to: '10 · Very strong concern'/);
+  assert.match(quest,/before: 'Concern difficulty just before practice \(0 = none, 10 = very difficult\)'/);
+  assert.match(quest,/after: 'Concern difficulty just after practice \(0 = none, 10 = very difficult\)'/);
+  assert.match(slides,/checkinDifficultyTitle: 'How strong was your concern\?'/);
+  assert.match(slides,/slide.kind==='checkin' && !\(lesson.antiStress\|\|isOporaModule\)\?words.checkinDifficultyTitle/);
+  assert.match(slides,/checkin: 'Choose your practice pace'/);
+  assert.match(slides,/checkin: 'Выберите темп практики'/);
+  assert.match(slides,/low: '0 · No concern', high: '10 · Very strong concern'/);
 });
