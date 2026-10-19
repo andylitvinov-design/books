@@ -14,7 +14,7 @@ export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
   'welcome-01','welcome-02',
-  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
+  'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
   'intention-01','intention-02','intention-03','intention-04',
   'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
@@ -97,7 +97,7 @@ export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
-    'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
+    'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
     ...ENERGYWORK_BRANCH.tantra,
     'presence-01','presence-04','tan-done',
     ...ENERGYWORK_BRANCH.kundalini,

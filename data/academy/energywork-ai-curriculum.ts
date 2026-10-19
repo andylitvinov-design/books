@@ -216,6 +216,11 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
 
+  { id: "flight-save", phase: "flight", kind: "milestone",
+    title: l("A beautiful first step!", "Первый шаг — это прекрасно!"),
+    body: l("Your first Reiki lesson is complete. Let's keep your reflections close so you can return to them whenever you wish.",
+      "Первый урок Рейки завершён. Сохраним ваши впечатления, чтобы вы могли в любой момент к ним вернуться.") },
+
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
     body: l("After exploring Tantra Reiki, practise simple presence: return attention to the room without trying to create a particular state.", "После знакомства с Тантра Рейки попробуйте простое присутствие: мягко верните внимание к окружающему, не пытаясь вызвать особое состояние.") },
