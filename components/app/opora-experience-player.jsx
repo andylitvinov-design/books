@@ -157,6 +157,7 @@ const OPENING={
     scaleNote:'Optional. This is your observation, not a test.',
     recall:'Remember what helps',recallLead:'What has helped you feel a little steadier before?',
     recallReply:'A familiar source of support can be enough for today.',
+    ownSupportLabel:'Or write your own',ownSupportPlaceholder:'Your own answer (optional)',
     supportOptions:[['pause','A short pause'],['rest','A little rest'],['connection','Kind contact'],['orient','Looking around'],['unsure','Not sure yet']],
     thought:'A thought for today',thoughtLead:'How does this idea feel to you?',
     response:'Thank you. Your view is welcome; there is no correct answer.',
@@ -174,6 +175,7 @@ const OPENING={
     scaleNote:'Это необязательное наблюдение, не тест.',
     recall:'Вспомним знакомую опору',recallLead:'Что раньше помогало вам почувствовать себя немного устойчивее?',
     recallReply:'Можно опереться на то, что вам уже знакомо.',
+    ownSupportLabel:'Или напишите свой вариант',ownSupportPlaceholder:'Ваш вариант (необязательно)',
     supportOptions:[['pause','Короткая пауза'],['rest','Немного отдыха'],['connection','Тёплый контакт'],['orient','Осмотреться вокруг'],['unsure','Пока не знаю']],
     thought:'Мысль сегодняшнего дня',thoughtLead:'Как вам откликается эта мысль?',
     response:'Спасибо. Любое отношение подходит; правильного ответа нет.',
@@ -191,6 +193,7 @@ const OPENING={
     scaleNote:'Es una observación opcional, no un examen.',
     recall:'Recuerda lo que te ayuda',recallLead:'¿Qué te ha ayudado a sentirte un poco más estable?',
     recallReply:'Puedes apoyarte en algo que ya conoces.',
+    ownSupportLabel:'O escribe tu opción',ownSupportPlaceholder:'Tu respuesta (opcional)',
     supportOptions:[['pause','Una pausa'],['rest','Descansar'],['connection','Contacto amable'],['orient','Mirar alrededor'],['unsure','Aún no lo sé']],
     thought:'Una idea para hoy',thoughtLead:'¿Qué te parece esta idea?',
     response:'Gracias. No hay una respuesta correcta.',
@@ -223,6 +226,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
   const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
   const [familiarSupport,setFamiliarSupport]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupport||null)
+  const [familiarSupportText,setFamiliarSupportText]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupportText||'')
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -329,6 +333,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             resource:openingResource,
             lastDayDifficulty:openingDifficulty,
             familiarSupport,
+            ...(familiarSupport==='other'&&familiarSupportText.trim()
+              ?{familiarSupportText:familiarSupportText.trim()}:{}),
           },
         }:{}),
         opora54:safe,visitedSlideKeys:[...scenes],
@@ -421,9 +427,18 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <div className={styles.chips} role="group" aria-label={opening.recall}>
               {opening.supportOptions.map(([value,label])=><button type="button" key={value}
                 disabled={locked} aria-pressed={familiarSupport===value}
-                onClick={()=>setFamiliarSupport(value)}>{label}</button>)}
+                onClick={()=>{setFamiliarSupport(value);setFamiliarSupportText('')}}>{label}</button>)}
             </div>
-            {familiarSupport&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
+            <label className={styles.supportLabel} htmlFor="opora-own-resource">{opening.ownSupportLabel}</label>
+            <input id="opora-own-resource" className={styles.supportInput}
+              data-opora-own-resource="true" type="text" maxLength={160}
+              disabled={locked} placeholder={opening.ownSupportPlaceholder}
+              value={familiarSupportText} onChange={event=>{
+                const value=event.target.value
+                setFamiliarSupportText(value)
+                setFamiliarSupport(value.trim()?'other':null)
+              }}/>
+            {familiarSupport&&familiarSupport!=='other'&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
           </>}
           {moment==='arrive'&&!neutralSupport&&<>
             <p className={styles.lead}>{cycle.day===1?t.arrivalWarmText:t.arriveText}</p>
