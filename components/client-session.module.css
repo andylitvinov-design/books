@@ -2655,24 +2655,26 @@
 
 /* Photographic client-report cover: real coastal sunset, readable typography,
    and a self-hosted SVG fallback. Screen-only: signed PDF print remains intact.
-   Photo: Marco Grosso, Unsplash (5zHxWVUaFms), used under Unsplash License.
+   Primary image: approved generated Holistic House artwork (AVIF).\n   Backup WebP: Marco Grosso, Unsplash (5zHxWVUaFms), used under Unsplash License.
    The image has no embedded text or client information. */
 @media screen {
   .sessionSiteShell[data-hh-report-theme="coastal-v2"] :global(.canonical-report-cover) {
     background-image:
       linear-gradient(90deg,rgba(7,45,65,.94) 0%,rgba(8,50,69,.74) 51%,rgba(7,46,62,.18) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
       url('/images/holistic-house/report-lighthouse-coast.webp'),
       url('/images/holistic-house/report-lighthouse-coast.svg');
-    background-size:cover,cover,cover;
-    background-position:center,52% center,62% center;
+    background-size:cover,cover,cover,cover;
+    background-position:center,57% center,52% center,62% center;
   }
   .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
     background-image:
       linear-gradient(90deg,rgba(7,45,65,.94) 0%,rgba(8,50,69,.74) 51%,rgba(7,46,62,.18) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
       url('/images/holistic-house/report-lighthouse-coast.webp'),
       url('/images/holistic-house/report-lighthouse-coast.svg');
-    background-size:cover,cover,cover;
-    background-position:center,52% center,63% center;
+    background-size:cover,cover,cover,cover;
+    background-position:center,57% center,52% center,63% center;
   }
 }
 @media screen and (max-width:700px) {
@@ -2680,8 +2682,9 @@
   .sessionSiteShell[data-hh-report-theme="coastal-v2"] .sessionHero {
     background-image:
       linear-gradient(90deg,rgba(6,43,63,.95) 0%,rgba(9,50,69,.82) 47%,rgba(7,43,58,.25) 100%),
+      url('/images/holistic-house/report-lighthouse-coast.avif'),
       url('/images/holistic-house/report-lighthouse-coast.webp'),
       url('/images/holistic-house/report-lighthouse-coast.svg');
-    background-position:center,57% center,70% center;
+    background-position:center,57% center,57% center,70% center;
   }
 }
