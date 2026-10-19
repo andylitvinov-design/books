@@ -415,7 +415,8 @@ export default function AppWorkspace({ locale, path = [] }) {
           locale={locale} busy={busy} onSignin={signin}
           unavailable={state === 'unavailable'}
           onRetry={state === 'error' ? load : undefined}
-          errorMessage={error ? message(error, c) : undefined}
+          sessionNotice={state === 'error'}
+          errorMessage={state === 'signed-out' && error ? message(error, c) : undefined}
         />
       </main>
     )
