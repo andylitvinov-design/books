@@ -39,7 +39,9 @@ test("main Reiki hero CTAs go to the interactive learner rather than an overview
   assert.doesNotMatch(referral, /learn\?start=1/);
 
   const banner = read("components/academy-free-course-banner.tsx");
-  assert.match(banner, /course\.id === "energywork"[\s\S]*?\? REIKI_FREE_COURSE_PATH/);
+  assert.match(banner, /const href = course\.id === "stress"[\s\S]*?: REIKI_FREE_COURSE_PATH/);
+  assert.match(banner, /detailsPath: "academy\/reiki\/tantra-reiki\/free-initiation"/);
+  assert.match(banner, /detailsPath: "academy\/reiki\/yggdrasil\/free-initiation"/);
   assert.match(banner, /course\.id === "stress"/);
 
   const tantra = read("components/academy-record-page.tsx");

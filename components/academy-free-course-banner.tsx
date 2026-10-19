@@ -94,7 +94,7 @@ const courses = [
     id: "tantra-reiki",
     image: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
     path: "reiki/tantra-reiki/free-initiation",
-    detailsPath: null,
+    detailsPath: "academy/reiki/tantra-reiki/free-initiation",
     en: {
       type: "FREE LEVEL 1 INTRODUCTION",
       title: "Tantra Reiki",
@@ -118,7 +118,7 @@ const courses = [
     id: "reiki-yggdrasil",
     image: "/academy/reiki-yggdrasil/source/basic-program.jpg",
     path: "reiki/yggdrasil/free-initiation",
-    detailsPath: null,
+    detailsPath: "academy/reiki/yggdrasil/free-initiation",
     en: {
       type: "FREE LEVEL 1 INTRODUCTION",
       title: "Reiki Yggdrasil",
@@ -165,11 +165,11 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
           <div className={styles.courses}>
             {courses.map((course) => {
               const info = course[locale];
+              // Every Reiki "Start course" CTA opens the same interactive course.
+              // Separate "Details" links preserve each Level 1 initiation guide.
               const href = course.id === "stress"
                 ? `/${courseLocale}/${course.path}`
-                : course.id === "energywork"
-                  ? REIKI_FREE_COURSE_PATH
-                  : `/${locale}/academy/${course.path}`;
+                : REIKI_FREE_COURSE_PATH;
               return (
                 <article className={styles.course} key={course.id} data-free-course-id={course.id}>
                   <span className={styles.photo}>

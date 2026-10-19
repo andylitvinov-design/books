@@ -14,6 +14,7 @@ on:
       - 'public/images/holistic-house/tantra-reiki-yin-yang-*.svg'
       - 'tests/tantra-reiki-brand-symbol.test.mjs'
       - 'tests/tantra-reiki-promo-landing.test.mjs'
+      - 'tests/reiki-free-course-cta-routing.test.mjs'
       - 'lib/academy/energywork-course-repository.js'
       - 'lib/academy/reiki-course-leads.js'
       - 'components/admin-reiki-leads.*'
@@ -54,7 +55,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Source, media, security and route contracts
-        run: node --test tests/energywork-ai-course-preview.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs
+        run: node --test tests/energywork-ai-course-preview.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs tests/reiki-referral-landing.test.mjs tests/reiki-free-course-cta-routing.test.mjs
       - name: Targeted ESLint
         run: npx eslint components/energywork-ai-learner.tsx components/reiki-my-reviews.jsx components/reiki-public-reviews.jsx components/app/course-entry-selector.jsx components/principles-of-energywork.tsx lib/academy/reiki-public-reviews.js app/api/reiki-course-reviews/route.js components/academy-free-course-banner.tsx components/app/cabinet-free-course-banners.jsx lib/academy/energywork-course-repository.js lib/academy/reiki-course-leads.js components/admin-reiki-leads.jsx app/admin/reiki-leads/page.jsx app/admin/reiki-leads/data/route.js data/academy/energywork-ai-schema.js data/academy/energywork-ai-curriculum.ts app/api/app/'[...path]'/route.js
       - name: TypeScript verification
