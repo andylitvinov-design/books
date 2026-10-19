@@ -164,26 +164,28 @@ export default function PractitionerArticles({locale,services=[]}){
   setDraft(current=>({...current,body:next.slice(0,16000)}))
  }
  const filtered=useMemo(()=>{
-  const q=clean(query)
+  const tokens=clean(query).split(/\s+/).filter(Boolean)
   return items.filter(item=>{
    if(selectedFolder==='unfiled'&&item.folderId)return false
    if(selectedFolder!=='all'&&selectedFolder!=='unfiled'&&item.folderId!==selectedFolder)return false
-   if(!q)return true
-   const text=[item.draft?.title,item.draft?.excerpt,item.draft?.body,item.published?.title,item.slug].join(' ')
-   return clean(text).includes(q)
+   if(statusFilter!=='all'&&item.status!==statusFilter)return false
+   if(!tokens.length)return true
+   const haystack=clean([item.draft?.title,item.draft?.excerpt,item.draft?.body,
+    ...(item.draft?.tags||[]),item.published?.title,item.slug].join(' '))
+   return tokens.every(token=>haystack.includes(token))
   })
- },[items,query,selectedFolder])
+ },[items,query,selectedFolder,statusFilter])
  const selected=folders.find(x=>x.id===selectedFolder)
  const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
  return <div className={styles.shell}>
   <div className={styles.top}>
    <div><h3>{t.heading} ({items.filter(x=>x.status!=='archived').length})</h3><p>{t.intro}</p></div>
-   <button type="button" className={styles.primary} onClick={()=>choose(null)}>+ {t.newArticle}</button>
+   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}>+ {t.newArticle}</button>
   </div>
   {error&&<p role="alert" className={styles.error}>{error}</p>}
   {notice&&<p role="status" className={styles.status}>{notice}</p>}
   <div className={styles.folders}>
-   <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
+   <div className={styles.folderTitle}><span>{t.folder}</span><button type="button" className={styles.secondary} disabled={busy} onClick={()=>setAddingFolder(x=>!x)}><FolderPlus size={14} aria-hidden="true"/> {t.newFolder}</button></div>
    <div className={styles.folderList} role="group" aria-label={t.folder}>
     <button type="button" className={styles.folder} aria-pressed={selectedFolder==='all'} onClick={()=>{setSelectedFolder('all');setLimit(24)}}><BookOpen size={15} aria-hidden="true"/>{t.all}<small>{items.length}</small></button>
     {folders.map(f=><button type="button" className={styles.folder} key={f.id} aria-pressed={selectedFolder===f.id} onClick={()=>{setSelectedFolder(f.id);setLimit(24)}}><Folder size={15} aria-hidden="true"/>{f.name}<small>{items.filter(x=>x.folderId===f.id).length}</small></button>)}
@@ -194,7 +196,13 @@ export default function PractitionerArticles({locale,services=[]}){
     {selected&&<><button type="button" className={styles.secondary} disabled={busy} onClick={renameFolder}>{t.rename}</button><button type="button" className={styles.danger} disabled={busy} onClick={deleteFolder}><Trash2 size={14} aria-hidden="true"/> {t.delete}</button></>}
    </div>}
   </div>
-  <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}}/></label>
+  <div className={styles.findBar}>
+   <label className={styles.search}><Search size={18} aria-hidden="true"/><input type="search" aria-label={t.search} placeholder={t.search} value={query} onChange={e=>{setQuery(e.target.value);setLimit(24)}}/></label>
+   <select className={styles.statusSelect} aria-label={t.filterStatus} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);setLimit(24)}}>
+    <option value="all">{t.allStatuses}</option>
+    {['draft','submitted','published','changes_requested','archived'].map(value=><option key={value} value={value}>{shortStatus(value,ru)}</option>)}
+   </select>
+  </div>
   <div className={styles.results}><span>{t.found}: {filtered.length}</span><span>{selected?.name||(selectedFolder==='unfiled'?t.noFolder:t.all)}</span></div>
   {filtered.length?<div className={styles.list}>{filtered.slice(0,limit).map(item=><article key={item.id} className={styles.card}>
     <div className={styles.cardHeader}>
@@ -204,13 +212,13 @@ export default function PractitionerArticles({locale,services=[]}){
       <p>{item.draft?.excerpt||item.draft?.body||''}</p></div>
     </div>
     <div className={styles.cardActions}>
-     <button type="button" className={styles.secondary} onClick={()=>choose(item)} disabled={item.status==='archived'||item.status==='suspended'}><PenLine size={14} aria-hidden="true"/> {t.edit}</button>
+     <button type="button" className={styles.secondary} onClick={()=>choose(item)} disabled={busy||item.status==='archived'||item.status==='suspended'}><PenLine size={14} aria-hidden="true"/> {t.edit}</button>
      {item.published?.title&&<Link href={'/'+item.published.locale+'/articles/'+item.slug}>{t.opened} →</Link>}
     </div>
    </article>)}</div>:<p className={styles.empty}>{t.none}</p>}
   {filtered.length>limit&&<div className={styles.actions}><button className={styles.secondary} type="button" onClick={()=>setLimit(x=>x+24)}>{t.more} <ChevronDown size={15} aria-hidden="true"/></button></div>}
   {editorOpen&&<form ref={editorRef} className={styles.editor} onSubmit={e=>{e.preventDefault();void save()}}>
-   <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={()=>setEditorOpen(false)}>{t.close} ×</button></div>
+   <div className={styles.editorHeader}><h4>{editing?t.editTitle:t.draftTitle}</h4><button type="button" className={styles.secondary} onClick={closeEditor}>{t.close} ×</button></div>
    {editing?.reviewNote&&<p className={styles.error}>{editing.reviewNote}</p>}
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
    <div className={styles.row}>
@@ -219,13 +227,14 @@ export default function PractitionerArticles({locale,services=[]}){
    </div>
    <label>{t.title}<input required maxLength={160} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
    <label>{t.excerpt}<textarea value={draft.excerpt} maxLength={500} rows={2} onChange={e=>setDraft({...draft,excerpt:e.target.value})}/></label>
-   <label>{t.body}<div className={styles.tools}>
+   <label>{t.tags}<input value={tagInput} maxLength={600} onChange={e=>setTagInput(e.target.value)} placeholder={ru?'Например: Arsenicum, мышьяк, тревога':'E.g. Arsenicum, arsenic, anxiety'}/></label>
+   <div className={styles.bodyField}><span>{t.body}</span><div className={styles.tools}>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n\n## ')}>H2</button>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n- ')}>•</button>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('**','**')}><b>B</b></button>
      <button type="button" className={styles.tool} aria-pressed={preview} onClick={()=>setPreview(x=>!x)}><Eye size={14} aria-hidden="true"/> {preview?t.hidePreview:t.preview}</button>
     </div>
-    <textarea ref={bodyRef} maxLength={16000} rows={12} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></label>
+    <textarea ref={bodyRef} maxLength={16000} rows={12} aria-label={t.body} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></div>
    {preview&&<ArticlePreview body={draft.body}/>}
    <details className={styles.source}><summary>{t.sources}</summary>
     <label>{t.sourceLinks}<textarea rows={3} value={(draft.sourceUrls||[]).join('\n')} onChange={e=>setDraft({...draft,sourceUrls:e.target.value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,8)})}/></label>
