@@ -4,11 +4,14 @@ alter table app.crm_consent_ledger drop constraint crm_consent_ledger_channel_ch
 alter table app.crm_consent_ledger add constraint crm_consent_ledger_channel_check
  check(channel in ('email','telegram','whatsapp','sms'));
 
+create unique index if not exists crm_consent_ledger_sms_owner_contact_ref
+ on app.crm_consent_ledger(id,owner_id,contact_id);
+
 create table app.crm_sms_jobs(
  id uuid primary key,
  owner_id uuid not null references app.accounts(id) on delete cascade,
  contact_id uuid not null,
- consent_event_id uuid not null references app.crm_consent_ledger(id),
+ consent_event_id uuid not null,
  payload_ciphertext text not null,
  recipient_hash text not null check(recipient_hash ~ '^[0-9a-f]{64}$'),
  segments smallint not null check(segments between 1 and 4),
@@ -18,7 +21,8 @@ create table app.crm_sms_jobs(
  provider_id text unique,
  created_at timestamptz not null default now(),
  completed_at timestamptz,
- foreign key(contact_id,owner_id) references app.crm_contacts(id,owner_id) on delete cascade
+ foreign key(contact_id,owner_id) references app.crm_contacts(id,owner_id) on delete cascade,
+ foreign key(consent_event_id,owner_id,contact_id) references app.crm_consent_ledger(id,owner_id,contact_id)
 );
 create index crm_sms_jobs_owner_recent on app.crm_sms_jobs(owner_id,created_at desc);
 create index crm_sms_jobs_contact_recent on app.crm_sms_jobs(owner_id,contact_id,created_at desc);
@@ -126,14 +130,12 @@ begin
  for r in
   select distinct owner_id,contact_id from app.crm_sms_jobs where recipient_hash=p_hash
  loop
-  update app.crm_contacts set suppressed=true,revision=revision+1
-   where id=r.contact_id and owner_id=r.owner_id and suppressed=false;
-  if found then
-   insert into app.crm_consent_ledger(id,owner_id,contact_id,channel,purpose,decision,
-      occurred_at,source,text_version,actor_kind,payload_hash)
-   values(pg_catalog.gen_random_uuid(),r.owner_id,r.contact_id,'sms','product_updates',
-      'withdrawn',now(),'twilio_stop','crm-sms-v1','contact',pg_catalog.md5(p_event));
-  end if;
+  insert into app.crm_consent_ledger(id,owner_id,contact_id,channel,purpose,decision,
+     occurred_at,source,text_version,actor_kind,payload_hash)
+  select pg_catalog.gen_random_uuid(),r.owner_id,r.contact_id,'sms','product_updates',
+     'withdrawn',now(),'twilio_stop','crm-sms-v1','contact',pg_catalog.md5(p_event)
+  where not exists(select 1 from app.crm_consent_ledger where owner_id=r.owner_id
+    and contact_id=r.contact_id and channel='sms' and decision='withdrawn' and source='twilio_stop');
  end loop;
  return true;
 end $f$;
