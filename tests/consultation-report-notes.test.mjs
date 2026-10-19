@@ -18,6 +18,7 @@ const recommendationInput = {
   status: 'active',
   items: [{ remedySlug: 'arsenicum-album', potency: '30' }],
   analysis: 'Synthetic state measurement alpha',
+  recommendationsText: 'Synthetic personalized recommendation gamma',
   additionalNotes: 'Synthetic client guidance beta',
   internalNotes: 'PRIVATE INTERNAL TEXT NEVER SHARED',
 }
@@ -26,15 +27,19 @@ test('analysis and additional notes are normalized, editable, and visible only o
   const record = createPrescription(recommendationInput)
   const client = getClientPrescription(record, 'en')
   assert.equal(client.analysis, recommendationInput.analysis)
+  assert.equal(client.recommendationsText, recommendationInput.recommendationsText)
   assert.equal(client.additionalNotes, recommendationInput.additionalNotes)
   assert.equal(recommendationCopy('en').analysis, 'STATE ANALYSIS')
-  assert.equal(recommendationCopy('ru').additionalNotes, 'ПРИМЕЧАНИЯ И РЕКОМЕНДАЦИИ')
+  assert.equal(recommendationCopy('ru').additionalNotes, 'ПРИМЕЧАНИЯ')
+  assert.equal(recommendationCopy('ru').recommendations, 'РЕКОМЕНДАЦИИ')
   assert.equal(JSON.stringify(client).includes(recommendationInput.internalNotes), false)
   assert.equal(getClientPrescription(createPrescription({ ...recommendationInput, status: 'draft' }), 'en'), undefined)
-  const edited = updatePrescription(record, { ...recommendationInput, analysis: 'Changed state alpha', additionalNotes: 'Changed note beta' })
+  const edited = updatePrescription(record, { ...recommendationInput, analysis: 'Changed state alpha', recommendationsText: 'Changed recommendation gamma', additionalNotes: 'Changed note beta' })
   assert.equal(getClientPrescription(edited, 'ru').analysis, 'Changed state alpha')
+  assert.equal(getClientPrescription(edited, 'ru').recommendationsText, 'Changed recommendation gamma')
   assert.equal(getClientPrescription(edited, 'ru').additionalNotes, 'Changed note beta')
   assert.throws(() => createPrescription({ ...recommendationInput, analysis: 'a'.repeat(5001) }), /Analysis is too long/)
+  assert.throws(() => createPrescription({ ...recommendationInput, recommendationsText: 'a'.repeat(5001) }), /Recommendations is too long/)
   assert.throws(() => createPrescription({ ...recommendationInput, additionalNotes: 'a'.repeat(5001) }), /Additional notes is too long/)
 })
 
@@ -47,14 +52,17 @@ test('new and updated standalone consultations keep both client-visible fields w
     includeInvoice: false,
     items: [{ remedySlug: 'arsenicum-album', potency: '30' }],
     analysis: 'Before and after measurements',
+    recommendationsText: 'Personal recommendations from this consultation',
     additionalNotes: 'Personal next step guidance',
   }
   const created = await createConsultation(input, { store, requestId: randomUUID() })
   assert.equal(created.payment, undefined)
   assert.equal(created.recommendation.analysis, input.analysis)
+  assert.equal(created.recommendation.recommendationsText, input.recommendationsText)
   assert.equal(created.recommendation.additionalNotes, input.additionalNotes)
   const persisted = await store.findById(created.recommendation.id)
   assert.equal(persisted.analysis, input.analysis)
+  assert.equal(persisted.recommendationsText, input.recommendationsText)
   assert.equal(persisted.additionalNotes, input.additionalNotes)
   const changed = await updateConsultation(persisted, undefined, {
     ...input,
@@ -62,9 +70,11 @@ test('new and updated standalone consultations keep both client-visible fields w
     patientName: persisted.patientName,
     languagePreference: persisted.languagePreference,
     analysis: 'Updated measurement',
+    recommendationsText: 'Updated recommendations',
     additionalNotes: 'Updated guidance',
   }, { store })
   assert.equal(changed.recommendation.analysis, 'Updated measurement')
+  assert.equal(changed.recommendation.recommendationsText, 'Updated recommendations')
   assert.equal((await store.findById(persisted.id)).additionalNotes, 'Updated guidance')
 })
 
@@ -74,6 +84,9 @@ test('PDF renders analysis and personal guidance with new themed sections and wi
   const source = pdf.toString('latin1')
   assert.ok(source.startsWith('%PDF-1.7'))
   assert.match(source, /Synthetic state measurement alpha/)
+  assert.match(source, /Synthetic personalized recommendation gamma/)
+  assert.ok(source.indexOf('Synthetic state measurement alpha') < source.indexOf('Synthetic personalized recommendation gamma'))
+  assert.ok(source.indexOf('Synthetic personalized recommendation gamma') < source.indexOf('Synthetic client guidance beta'))
   assert.match(source, /Synthetic client guidance beta/)
   assert.doesNotMatch(source, /PRIVATE INTERNAL TEXT NEVER SHARED/)
   assert.match(source, /\/Count [1-9]/)
@@ -97,7 +110,7 @@ test('private PDF preview is owner-only, inline and distinct from an explicit cl
   assert.match(route, /private, no-store/)
   assert.match(actions, /href=\{urls\.previewPdf\}/)
   assert.match(actions, /onClick=\{copy\}/)
-  for (const name of ['analysis', 'additionalNotes']) {
+  for (const name of ['analysis', 'recommendationsText', 'additionalNotes']) {
     assert.match(form, new RegExp('name="' + name + '"'))
     assert.match(standalone, new RegExp('name="' + name + '"'))
     assert.match(standaloneAction, new RegExp('formData.get\\(\\x27' + name + '\\x27\\)'))
