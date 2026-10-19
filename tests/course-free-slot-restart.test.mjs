@@ -17,10 +17,12 @@ function snapshot(selected, access = free) {
 async function approveStart(h) {
   const catalog = findPart(h.tree, 'CoursePresetCatalog')
   assert.ok(catalog, 'new course selection must open')
-  catalog.props.onPersonal()
+  const staleStart = catalog.props.onPersonal
+  staleStart()
   await h.settle()
   assert.equal(findButton(h.tree, 'Agree & start'), undefined, 'signed-in course starts without a second confirmation')
   await h.settle()
+  return staleStart
 }
 
 test('closing the only free course frees its slot and starts another without parallel-course entitlement', async () => {
@@ -40,7 +42,7 @@ test('closing the only free course frees its slot and starts another without par
   assert.equal(dashboard.props.multiCourseEnabled, false, 'free accounts do not need parallel-course entitlement')
   dashboard.props.onNew()
   await h.settle()
-  await approveStart(h)
+  const staleStart = await approveStart(h)
   const writes = h.calls.filter(call => call.body)
   assert.equal(writes.length, 1)
   assert.deepEqual(JSON.parse(JSON.stringify(writes[0].body)), {
@@ -49,6 +51,10 @@ test('closing the only free course frees its slot and starts another without par
   })
   assert.equal(writes[0].options.headers['X-HH-Account-ID'], 'owner-a')
   assert.equal(findPart(h.tree, 'CourseR3Steps')?.props.state.course.id, archived.id)
+  staleStart()
+  await h.settle()
+  assert.equal(h.calls.filter(call => call.body).length, 1,
+    'a stale Start CTA cannot restart a reused closed course row')
   h.unmount()
 })
 
@@ -63,12 +69,16 @@ test('a free account can start its first course, but cannot start a parallel sec
       : empty,
   })
   await h.settle()
-  await approveStart(h)
+  const staleStart = await approveStart(h)
   const firstWrite = h.calls.find(call => call.body)
   assert.ok(firstWrite)
   assert.equal(firstWrite.body.action, 'start')
   assert.equal(firstWrite.body.newCourse, false, 'legacy account uses its one owner row')
   assert.match(firstWrite.body.courseId, /^[0-9a-f-]{36}$/)
+  staleStart()
+  await h.settle()
+  assert.equal(h.calls.filter(call => call.body).length, 1,
+    'a stale first-course Start CTA cannot create a parallel second course')
   h.unmount()
 
   const active = course('active-course', 1)
