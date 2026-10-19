@@ -38,3 +38,8 @@
 @media(max-width:400px){.taskForm{grid-template-columns:minmax(0,1fr)}.taskForm button{grid-column:1}.contactActions select{max-width:100%}}
 
 .replyIndicator{width:max-content;max-width:100%;color:#13736d!important;background:#dff4ea;border-radius:99px;padding:2px 7px;font:750 11px/1.4 system-ui,sans-serif}
+
+.quickReplies{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.quickReplies button{flex:0 1 auto;min-height:37px;max-width:100%;padding:7px 11px!important;border:1px solid #b5d1c9!important;border-radius:999px!important;background:#f5fbf8!important;color:#276a66!important;font:650 12px/1.25 system-ui,sans-serif!important;white-space:normal;cursor:pointer}
+.quickReplies button:hover:not(:disabled){background:#e2f2eb!important}
+.quickReplies button:disabled{opacity:.4}
