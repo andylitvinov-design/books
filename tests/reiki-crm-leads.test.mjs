@@ -69,9 +69,9 @@ test('After five lessons, the student explicitly submits a motivation letter as 
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 53 steps, four meditation reports and course progress remain intact',()=>{
+test('All 57 steps, four meditation reports and course progress remain intact',()=>{
   const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
-  assert.equal(slides.length,53)
+  assert.equal(slides.length,57)
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
