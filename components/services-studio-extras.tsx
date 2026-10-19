@@ -79,7 +79,8 @@ export function ServicesIntroMedia({ locale }: { locale: PublicLocale }) {
 export function ServicesMethodVideos({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   return (
-    <details className={styles.methods} id="method-videos" data-services-methods lang={locale}>
+    {/* Keep two method posters available immediately; players still load on click. */}
+    <details className={styles.methods} id="method-videos" data-services-methods lang={locale} open>
       <summary>
         <span><strong>{t.methodsTitle}</strong><small>{t.methodsLead}</small></span>
         <ChevronDown size={22} aria-hidden="true" />
