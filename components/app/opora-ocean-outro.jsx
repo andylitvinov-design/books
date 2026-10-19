@@ -114,7 +114,7 @@ export default function OporaOceanOutro({locale='en',paused=false}){
   // A stalled, interrupted or blocked sound must also pause the visual timer.
   useEffect(()=>{
     if(!running||!audio.enabled)return
-    if(!['loading','blocked','paused'].includes(audio.status))return
+    if(!['blocked','paused'].includes(audio.status))return
     setRemaining(Math.max(0,Math.ceil((deadline.current-Date.now())/1000)))
     setRunning(false)
   },[running,audio.enabled,audio.status])
