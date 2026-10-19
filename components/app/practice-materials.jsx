@@ -104,7 +104,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   const normalized={title:form.title.trim(),description:form.description.trim(),url:form.url.trim(),locale:form.locale}
   const next=editing==='new'?[...videos,normalized]:videos.map((video,index)=>index===editing?normalized:video)
   if(next.length>12){setError('Maximum 12 videos');return}
+  setSaving(true)
   const saved=await onSaveVideos(next)
+  setSaving(false)
   if(saved===true){setVideos(next);setEditing(null);setError('')}
   else setError(ptext.saveError)
  }
@@ -149,7 +151,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     <label>{t.description}<textarea rows={3} maxLength={500} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
     {error&&<p className={styles.error} role="alert">{error}</p>}
     <div className={styles.editorActions}>
-     <button className={styles.primary} type="submit">{editing==='new'?t.addToList:t.update}</button>
+     <button className={styles.primary} type="submit" disabled={busy||saving}>{saving?ptext.saving:ptext.saveVideo}</button>
      <button type="button" className={styles.secondary} onClick={()=>{setEditing(null);setError('')}}>{t.cancel}</button>
     </div>
    </form>}
