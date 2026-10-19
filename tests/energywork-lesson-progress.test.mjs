@@ -26,19 +26,18 @@ test("The visible slide counter uses five real lesson lengths and a separate int
   assert.doesNotMatch(learner, /\{t\.lesson\} \{index \+ 1\} \{t\.of\} \{total\}/)
 })
 
-test("Only explicit private save advances and leaves at a congratulations checkpoint", () => {
-  assert.match(learner, /data-energywork-save-progress/)
-  assert.match(learner, /saveProgress: "Сохранить прогресс"/)
-  assert.match(learner, /saveAndContinue: "Сохранить и продолжить"/)
-  assert.match(learner, /returnAnytime: "Ваш прогресс сохраняется\./)
-  assert.match(learner, /await store\(nextId\);\s*window\.location\.assign\("\/" \+ locale \+ "\/app\/course\?view=courses"\)/)
-  assert.match(learner, /sync === "guest"\) \{ await signIn\(\)/)
-  assert.match(learner, /sync === "consent"/)
-  assert.match(learner, /sync === "unavailable"/)
-  assert.match(learner, /sync === "ready" \? t\.saveAndContinue : t\.continue/)
-  assert.match(repo, /MEDITATION_FEEDBACK_REQUIRED/)
-  assert.match(repo, /nextIndex < slideIndex \|\| nextIndex > slideIndex\+1/)
-})
+test("A single checkpoint action saves before advancing and does not promise guest saving", () => {
+  assert.doesNotMatch(learner, /data-energywork-save-progress|saveAndLeave/);
+  assert.match(learner, /saveAndContinue: "Save progress & continue"/);
+  assert.match(learner, /saveAndContinue: "Сохранить прогресс и продолжить"/);
+  assert.match(learner, /returnAnytime: "Pick up here anytime from My Courses\."/);
+  assert.match(learner, /returnAnytime: "Вернуться к уроку можно через «Мои курсы»\."/);
+  assert.match(learner, /async function next\(\) \{[\s\S]*?if \(sync === "ready"\) \{[\s\S]*?await store\(nextId\);[\s\S]*?setIndex\(\(current\) => Math\.min\(current \+ 1, slides\.length - 1\)\)/);
+  assert.match(learner, /slide\.kind === "milestone" \? \(sync === "ready" \? t\.saveAndContinue : t\.continuePath\)/);
+  assert.match(learner, /data-energywork-next/);
+  assert.match(repo, /MEDITATION_FEEDBACK_REQUIRED/);
+  assert.match(repo, /nextIndex < slideIndex \|\| nextIndex > slideIndex\+1/);
+});
 
 test("Cabinet chapter picker uses saved owner progress and forbids deep-link skipping", () => {
   assert.match(cabinet, /appFetch\('academy-energywork'\)/)
