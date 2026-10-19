@@ -40,7 +40,7 @@ export type EnergyworkSlide = {
 const l = (en: string, ru: string): Localized => ({ en, ru });
 const image = {
   world: "/academy/reiki-yggdrasil/source/program-overview.jpg",
-  sun: "/academy/reiki-yggdrasil/source/toltec-tradition.jpg",
+  sun: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   tree: "/academy/reiki-yggdrasil/source/basic-program.jpg",
   tantra: "/images/holistic-house/tantra-reiki-yin-yang-cover.svg",
   kundalini: "/academy/kundalini-reiki/kundalini-manual-level-2.jpg",
@@ -190,7 +190,7 @@ const commonSlides: EnergyworkSlide[] = [
     question: { type: "text", prompt: l("My answer to the lesson question…", "Мой ответ на вопрос урока…") } },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("First lesson completed!", "Первый урок пройден!"),
-    body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
+    body: l("A lovely start! Next: Tantra Reiki.", "Отличное начало! Следующий шаг — Тантра Рейки.") },
 
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
