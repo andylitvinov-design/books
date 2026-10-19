@@ -40,6 +40,8 @@
 .ocean .panel{margin:auto}
 .save{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .frame.receipt{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.recap{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.invite{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
 .header,.stage,.footer{position:relative;z-index:1}
 /* Opening: blur only the photograph, never the lesson text or controls. */
 .welcome::before, .arrive::before{
@@ -320,6 +322,54 @@
 .back:focus-visible,.linkHint:focus-visible,.chips button:focus-visible,
 .actionButton:focus-visible,.plain:focus-visible{
   outline:3px solid #096d89;outline-offset:3px;
+}
+/* A quiet four-screen finish with thumb-friendly response cards. */
+.recapSummary,.futureList,.offerList{display:grid;gap:8px}
+.summaryItem{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.82);border:1px solid rgba(150,205,204,.62);border-radius:14px
+}
+.summaryItem>span{flex:0 0 25px;font-size:20px;line-height:1.2}
+.summaryItem div{display:grid;gap:3px;min-width:0}
+.summaryItem strong{font-size:clamp(14px,3.6vw,16px);line-height:1.24}
+.summaryItem small{font-size:clamp(13px,3.35vw,15px);line-height:1.32;color:#456b76}
+.confidenceChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.confidenceChoices button{
+  min-height:50px;padding:10px 8px;border:1.5px solid #a4caca;border-radius:14px;
+  background:rgba(255,255,255,.91);color:#265566;
+  font-size:clamp(13px,3.5vw,16px);font-weight:740;line-height:1.23;cursor:pointer
+}
+.confidenceChoices button[aria-pressed=true]{
+  border:2px solid #119b97;background:#d2f4ea;color:#135b62
+}
+.confidenceChoices button:focus-visible,.offerList a:focus-visible{
+  outline:3px solid #096d89;outline-offset:3px
+}
+.celebrationMark{
+  width:66px;height:66px;display:grid;place-items:center;border-radius:50%;
+  color:#0e8f8f;background:#d8f6eb;border:2px solid #8bd3c8;box-shadow:0 6px 18px #286e6d26
+}
+.futureItem{
+  display:grid;gap:5px;padding:13px 15px;border:1px solid rgba(146,199,200,.73);
+  border-radius:15px;background:rgba(252,255,254,.87)
+}
+.futureItem span{font-size:clamp(12px,3.2vw,14px);font-weight:800;color:#137d80}
+.futureItem strong{font-size:clamp(17px,4.3vw,20px);line-height:1.3;color:#244e5d}
+.offerList a{
+  display:flex;align-items:center;gap:11px;padding:14px 12px;min-height:63px;
+  border:1.5px solid #a2c9ca;border-radius:16px;background:rgba(255,255,255,.92);
+  color:#15576b;font-size:clamp(15px,3.9vw,17px);font-weight:760;
+  text-decoration:none;line-height:1.3
+}
+.offerList a>span{font-size:23px;flex:none}
+.offerList a>svg{flex:none;margin-left:auto}
+@media(max-height:680px){
+  .recap .panel{gap:7px;padding:12px 14px}
+  .summaryItem{padding:7px 9px;gap:7px}
+  .summaryItem small{font-size:13px}
+  .confidenceChoices button{min-height:43px;padding:6px;font-size:13.5px}
+  .futureItem{padding:9px 12px}
+  .offerList a{min-height:54px;padding:9px 11px}
 }
 .shade{
   position:fixed;inset:0;z-index:3;

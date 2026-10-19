@@ -31,11 +31,11 @@ test('the ocean slide follows confirmed receipt, but neither it nor its audio ar
   assert.equal(f.writes,1)
   assert.match(textOf(f.h.tree),/Your moment is saved/)
   assert.ok(findButton(f.h.tree,'My course map'),'Receipt must retain direct exit to the map')
-  assert.ok(findButton(f.h.tree,'Relax with waves'))
+  assert.ok(findButton(f.h.tree,'Relax with waves'),'The primary next step opens optional relaxation')
   assert.match(textOf(f.h.tree),/10\s*\/\s*11/)
   await click(f.h,'Relax with waves')
   assert.equal(f.writes,1,'Opening audio never performs another save')
-  assert.match(textOf(f.h.tree),/One quiet minute/)
+  assert.match(textOf(f.h.tree),/Two quiet minutes/)
   assert.match(textOf(f.h.tree),/11\s*\/\s*11/)
   await click(f.h,'Back')
   assert.match(textOf(f.h.tree),/Your moment is saved/)
@@ -58,8 +58,8 @@ test('the receipt can skip the audio entirely for short lessons',async()=>{
 
 test('the ocean slide remains localized and saves no extra practice response',async()=>{
   const labels=[
-    ['ru','Продолжить','Сохранить мою практику','Послушать волны','Минута спокойствия','К карте курса'],
-    ['es','Continuar','Guardar mi práctica','Escuchar las olas','Un minuto tranquilo','Mapa del curso'],
+    ['ru','Продолжить','Сохранить мою практику','Послушать волны','Две минуты спокойствия','К карте курса'],
+    ['es','Continuar','Guardar mi práctica','Escuchar las olas','Dos minutos de calma','Mapa del curso'],
   ]
   for(const [locale,next,save,audio,title,map] of labels){
     const f=fixture(locale,2)
@@ -83,8 +83,10 @@ test('ocean playback requires a user click and pauses on hidden browser, safety 
   assert.match(audio,/audio\.play\(\)/)
   assert.match(audio,/audio\.pause\(\)/)
   assert.match(audio,/visibilitychange/)
+  assert.match(audio,/Date\.now\(\)/)
+  assert.match(audio,/window\.setInterval\(tick,250\)/)
   assert.match(audio,/remaining===0/)
-  assert.match(audio,/DURATION=60/)
+  assert.match(audio,/DURATION=120/)
   assert.doesNotMatch(audio,/<audio[^>]*autoplay|fetch\(|new Audio\(/i)
   assert.match(player,/outroOpen&&<OporaOceanOutro locale=\{lang\} paused=\{safety\}\/>/)
   assert.match(styles,/prefers-reduced-motion/)

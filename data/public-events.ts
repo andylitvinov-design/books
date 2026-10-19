@@ -11,6 +11,15 @@ export type PublicEvent = {
   timeZone: string; // IANA zone such as America/Toronto.
   city?: string;
   location?: string; // Publicly approved venue only.
+  /** Optional organizer-confirmed physical location details for Google Event markup. */
+  structuredLocation?: {
+    venueName?: string; // Never invent a venue name.
+    streetAddress: string;
+    addressLocality: string;
+    addressRegion: string;
+    postalCode?: string;
+    addressCountry: string;
+  };
   relatedCategories?: readonly PublicEventCategory[];
   posterUrl?: string; // Public organizer artwork, served without Vercel transforms.
   highlights?: Record<PublicLocale, readonly string[]>;
@@ -36,6 +45,13 @@ export const PUBLIC_EVENTS: readonly PublicEvent[] = [
     timeZone: "America/Toronto",
     city: "Toronto, ON",
     location: "665 Dupont Street, Toronto, ON M6G 1Z5",
+    structuredLocation: {
+      streetAddress: "665 Dupont Street",
+      addressLocality: "Toronto",
+      addressRegion: "ON",
+      postalCode: "M6G 1Z5",
+      addressCountry: "CA",
+    },
     title: {
       en: "Love Magic & Tarot Initiations",
       ru: "Магия любви и инициации Таро",

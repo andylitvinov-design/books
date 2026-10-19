@@ -115,3 +115,64 @@ Production: [holistichouse.vercel.app](https://holistichouse.vercel.app), Vercel
 - `npm run test:unit`, `npm run verify:seo`, TypeScript и Next.js build на PR, по возможности browser E2E.
 - Проверить Vercel preview `READY`, production commit SHA и `holistichouse.vercel.app` после слияния.
 - При заблокированной API-аналитике, YouTube OAuth, неутверждённом видео, внешних платежах или отправке почты — **не ставить DONE**.
+
+
+---
+
+## 8. Omnichannel acquisition / события, агрегаторы и реклама (19.10.2026)
+
+Этот раздел дополняет существующий SEO Master Plan (#306), conversion-first план (#990), первую Meta Ads стратегию в Google Drive и реальный Event Publisher TorontoTantra (#74). Не создавать параллельные системы.
+
+### Одна CRM, четыре пути привлечения
+
+1. Персональные услуги: Google/Bing SEO, Google Business Profile при подтвержденной eligibility, локальные каталоги и авторские материалы → платная услуга → реально полученное обращение → согласованное время → проведённая консультация → подтверждённая оплата. Цены для Andy €50/30 мин и €100/60 мин сохраняются только у соответствующих предложений.
+2. Бесплатное знакомство: публичный письменный разбор ситуации, тесты и Wu Xing → добровольный контакт → *подтверждённое получение* запроса → необязательное обсуждение личной работы. Нельзя использовать ответы/результаты тестов для рекламной сегментации.
+3. Настоящие мероприятия: Eventbrite/Meetup/Luma/AllEvents и локальные сообщества → живое событие с конкретной датой → регистрация на официальной площадке → подтвержденное посещение, если его можно проверить → опциональный переход на Holistic House → CRM. Не выдавать обычные услуги и записанные видео за события.
+4. Academy и образовательные видео: YouTube и органический контент → актуальный публичный курс → добровольный Start Course/заявка на обучение → платная индивидуальная работа по отдельному решению посетителя. Не менять ранее утвержденные Unlisted видео на Public.
+
+Главный показатель — **реальные квалифицированные обращения и оплаченные сессии по источнику**, а не просмотры, клики, нажатия WhatsApp или RSVPs. В CRM различать шаги: listing published → platform registration → event attendance → first-party visit where measured → received enquiry → confirmed booking → verified payment. Ни одна стадия автоматически не означает другую.
+
+### Проверено и остаётся подключить
+
+| Канал | Состояние на 19.10.2026 | Безопасный следующий шаг |
+| --- | --- | --- |
+| Сайт Events | Существуют EN/RU/ES каталог, дата, Eventbrite-кнопка, consent-safe UTM и ручная переписка | В этом PR добавлены отдельная страница события, shareable URL и Google Event schema для проверенного адреса; требуется CI и live QA |
+| Eventbrite | Утверждённая ссылка на событие 25 октября есть; owner-only idempotent мост находится в TorontoTantra | Проверить токен/организацию/организатора/venue ID, затем публиковать только точно утверждённое новое событие |
+| Meetup | Условный адаптер есть, авторизованного боевого писателя нет | Нужны Pro/API и express commercial-use permission; не покупать план автоматически |
+| Luma | Бесплатное ручное создание; API требует Plus | После решения, где canonical RSVP, размещать через собственный аккаунт; не покупать Plus ради API |
+| AllEvents | Обнаружение событий, возможно дать внешнюю ссылку на Eventbrite | Проверить реального организатора/права и вручную разместить отдельное утвержденное событие |
+| Humanitix / Ticket Tailor | Альтернативные системы билетов | Включать только при осознанной смене checkout authority, избегать дублирования билетов |
+| Google Business Profile | Есть локальная Toronto-страница и CRM источник google_maps; владельческий профиль не подтверждён | Проверить допустимость реального адреса/личных встреч и доступ к локации. Не выдумывать офис или отзывы |
+| Instagram / Facebook | Metricool подключён только к YouTube; HYPD Meta Ads не возвращает аккаунты | Подключить реальные профессиональные аккаунты/страницу с согласием владельца, затем органический план |
+| YouTube | Один канал Metricool, имеются шесть ранее опубликованных unlisted RU/EN роликов | По #218/#219 ничего не менять/рендерить без отдельной задачи |
+| Google Ads | Файл staging/PAUSED без бюджета, HYPD Google Ads аккаунтов не видит | Только после Account ID, проверенной конверсии и отдельного разрешения на расходы |
+| Meta Ads | Первый сценарий описан в Drive v2, реальный счёт HYPD не видит | Не запускать пока нет аккаунта, consent и реального квалифицированного лида |
+| GA4 | Holistic House property 558442343 доступна, код PUBLIC_ANALYTICS_AVAILABLE=false | Сначала consent default denied, защита кабинета/тестов, measurement ID и DebugView |
+| GSC / SEO | SEO-план и crawl/sitemap живут в books; сторонний GSC Wizard subscription_required | Не покупать подписку. Данные индексации проверять в авторизованном Google Search Console |
+| Telegram / партнёры | Органические referral labels в исходном коде уже есть | Размещать в группах только при праве публиковать, без массовых холодных сообщений |
+
+Контроль внешнего Event Publisher сохраняется в [TorontoTantra #74](https://github.com/andylitvinov-design/torontotantra/issues/74), разрешения в [#69](https://github.com/andylitvinov-design/torontotantra/issues/69), реальные лиды на сайте в [books #801](https://github.com/andylitvinov-design/books/issues/801). Список возможностей и ограничений площадок: [Provider Capability Matrix](https://github.com/andylitvinov-design/torontotantra/blob/main/docs/event-publisher/PROVIDER_CAPABILITY_MATRIX.md).
+
+### Модель события и разграничение ответственности
+
+На одно реальное подтверждённое мероприятие сохраняется единая редакционная карточка: ID, заголовок/описание по языкам, local start/end+timezone, реальный формат/адрес, точный organiser, проверенные poster/media rights, реальные билетные классы, валюта/цена/ёмкость только если подтверждены, canonical registration provider URL, ID/status у каждого внешнего провайдера, owner approval version и fingerprint, timestamp публичной readback.
+
+Статус: draft → approved → provider draft → API published → independently publicly verified → first-party listing → completed/archived. Не создавать вторые Eventbrite-билеты на каждой площадке; лучше единый checkout + cross-platform listing. Не повторять сомнительный POST при timeout без provider reconciliation. Отмена или перенос требуют отдельного изменения с подтверждением.
+
+**Подтвержденный кодом пример (НЕ новая публикация):** Love Magic & Tarot Initiations, **25 октября 2026, 19:00–22:00 EDT**, Toronto, **665 Dupont Street, Toronto, ON M6G 1Z5**. Ссылка Eventbrite: https://www.eventbrite.ca/e/love-magic-tarot-initiations-tickets-2003517510808 . До crossposting проверить анонимно работоспособность Eventbrite, название организатора, фактическую цену/места и права на постер. НИЧЕГО из этого не выдумывать. Страница на Holistic House должна показывать реальную программу, дату и точный адрес, и направлять к официальной регистрации. Разметку Google Event включать лишь при подтверждённой физической локации и дате, без вымышленных Offer/рейтинг/venue name.
+
+### Органика, затем осторожные оплачиваемые тесты
+
+14-дневный бесплатный эксперимент: одну существующую утверждённую афишу, аккуратные RU/EN/ES адаптации и один canonical ticket URL распространять через разрешённые каналы. Публикация T−7, напоминание T−2 разрешённой аудитории, реальный event-day update, T+1 образовательное резюме без данных участников. Не писать в личку незнакомым людям, не собирать чужие attendee lists, не обещать медицинских исходов. Отчёт per platform: published listing, реальные регистрации, вручную верифицированные обращения/оплаты, а трафик только если consent и система реально измеряют.
+
+Для organic event referral использовать существующий first-party whitelist в lib/organic-event-referrals.js: source=eventbrite|meetup|allevents|luma|partner, medium=organic_event, public-safe campaign/content slugs. Ни имени, телефона, email, ответов теста, диагноза, клиента или приватного report в URL. Сохранение source в текст WhatsApp является добровольной подписью черновика; WhatsApp click != message sent != qualified enquiry.
+
+Не превышать прежний предложенный (не активированный) **Meta CAD 5/день × 7 дней, максимум CAD 35 total lifetime**. Пилот только после отдельно подтвержденного hard budget cap и реальной цепочки получения лидов. Не создавать платные новые Google Ads/Meta Ads кампании, не подключать платные Luma/Meetup тарифы, не менять billing самостоятельно. Отдельное подтверждение — для каждого запуска.
+
+### Проверка после этого PR
+
+- Page EN/RU/ES на каждый подтвержденный опубликованный в каталоге event; даты и address должны совпадать с публичной афишей, Google Event markup только для реального подтвержденного места.
+- Один индексируемый event-specific leaf URL и hreflang/canonical; в sitemap только future published events. Past route остается историческим с noindex и без Registration CTA.
+- Визуальная приёмка 320/390/430px/desktop; фото и кнопка регистрации не должны обрезаться, отсутствие hydration/scroll ошибок.
+- Node regression test + TypeScript + Next build + Vercel Preview/production deployment SHA, после merge независимый HTTP readback реальной страницы.
+- Внешний provider URL, OAuth ID, marketplace billing, реальные органические/платные публикации и реальные CRM конверсии подтверждаются отдельно; не отмечать DONE на основании документа или CI.

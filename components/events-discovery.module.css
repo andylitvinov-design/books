@@ -72,6 +72,9 @@
 .eventTop { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .eventTheme { color: #167b8e; font: 850 10px/1.3 system-ui, sans-serif; letter-spacing: .035em; }
 .eventFormat { padding: 3px 7px; border: 1px solid #dae8ec; border-radius: 100px; background: #f0f8f9; color: #537b88; font: 650 9px/1.3 system-ui, sans-serif; }
+.eventTitleLink { color: inherit; text-decoration: none; }
+.eventTitleLink:hover { text-decoration: underline; text-underline-offset: 3px; }
+.eventPageLink { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin-top: 4px; color: #126982; font: 700 12px/1.3 system-ui, sans-serif; text-underline-offset: 3px; }
 .eventContent h3 { margin: 0; color: #193852; font: 750 clamp(17px, 1.7vw, 21px)/1.2 system-ui, sans-serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .eventMeta { display: grid; gap: 3px; min-width: 0; }
 .eventMeta time, .eventLocation { display: flex; align-items: flex-start; gap: 6px; min-width: 0; color: #356276; font: 650 11px/1.4 system-ui, sans-serif; }

@@ -8,6 +8,7 @@ import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
 import {oporaExperienceDay,oporaExperienceGuide,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import OporaOceanOutro from './opora-ocean-outro'
+import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -47,7 +48,7 @@ const WORDS={
     keepText:'Выберите одно напоминание на сегодня.',
     plan:'Хочу запомнить этот вариант',noPlan:'Пока без плана',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
-    audioTitle:'Минута спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
+    audioTitle:'Две минуты спокойствия',audioKicker:'МЯГКОЕ ЗАВЕРШЕНИЕ',audioNext:'Послушать волны',
     attempted:'Вы попробовали упражнение',readOnly:'Сегодня только ознакомление — выполнение не отмечено',
     takeaway:'Ваш возможный следующий шаг',
     feedback:'Ваше наблюдение',noResult:'Можно закончить без оценок самочувствия.',
@@ -109,7 +110,7 @@ const WORDS={
     keepText:'Choose one gentle reminder for today.',
     plan:'Keep this reminder',noPlan:'No plan today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
-    audioTitle:'One quiet minute',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
+    audioTitle:'Two quiet minutes',audioKicker:'A GENTLE ENDING',audioNext:'Relax with waves',
     attempted:'You reported trying the exercise',readOnly:'Explored the idea only — no attempt recorded',
     takeaway:'Your possible next step',feedback:'Your observation',noResult:'You can finish without rating yourself.',
     noSave:'Saving was not confirmed. Check the connection and try again.',
@@ -167,7 +168,7 @@ WORDS.es = {
   quoteText:'¿Te resuena esta idea?',agree:'Me resuena',unsure:'Aún no sé',disagree:'No estoy de acuerdo',
   keepText:'Elige un recordatorio amable para hoy.',plan:'Recordar esta idea',noPlan:'Hoy sin plan',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
-  audioTitle:'Un minuto tranquilo',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
+  audioTitle:'Dos minutos de calma',audioKicker:'UN FINAL SUAVE',audioNext:'Escuchar las olas',
   attempted:'Has indicado que probaste la práctica',readOnly:'Solo exploraste la idea; no registraste un intento',
   takeaway:'Tu recordatorio',feedback:'Tu sensación',noResult:'Puedes terminar sin evaluarte.',
   noSave:'No se confirmó el guardado. Revisa la conexión e inténtalo otra vez.',
@@ -272,6 +273,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [step,setStep]=useState(hasSaved?scenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
+  const [inviteOpen,setInviteOpen]=useState(false)
   const [saved,setSaved]=useState(hasSaved)
   const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
@@ -293,16 +295,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const visited=useRef(new Set([scenes[0]]))
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
-  const locked=Boolean(busy||saving),receipt=step>=scenes.length
-  // Offered only after the Day 1 save receipt; never a practice gate.
+  const locked=Boolean(busy||saving)
+  const recap=step===scenes.length&&!saved
+  const receipt=step>=scenes.length&&saved
+  // Optional device setup comes after the verified save and the next-day commitment.
   const previewScreens=cycle.day===1?['weekOne','weekTwo','nextStep','habit']:['nextStep']
-  const inPreview=receipt&&previewIndex>=0
-  const moment=inPreview?previewScreens[previewIndex]:outroOpen?'ocean':receipt?'receipt':scenes[step]
+  const inPreview=receipt&&previewIndex>=0&&!inviteOpen
+  const moment=inviteOpen?'invite':inPreview?previewScreens[previewIndex]:
+    outroOpen?'ocean':recap?'recap':receipt?'receipt':scenes[step]
   const nextDay=cycle.day<14?oporaExperienceDay(cycle.day+1,lang):null
-  const progressStep=Math.min(step+1,scenes.length+1)+(outroOpen?1:0)
-  const previewStep=inPreview?scenes.length+2+previewIndex+1:progressStep
-  const previewTotal=inPreview?scenes.length+2+previewScreens.length:scenes.length+2
+  const upcoming=[1,2,3].map(offset=>({day:cycle.day+offset,copy:oporaExperienceDay(cycle.day+offset,lang)})).filter(item=>item.copy)
+  const previewTotal=scenes.length+4+previewScreens.length
+  const previewStep=inviteOpen?previewTotal:inPreview?scenes.length+4+previewIndex:
+    outroOpen?scenes.length+3:receipt?scenes.length+2:Math.min(step+1,previewTotal)
   const opening=OPENING[lang]
+  const c=oporaEndingCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const plan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
@@ -317,9 +324,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
     rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
-    if(!receipt)visited.current.add(scenes[step])
+    if(step<scenes.length)visited.current.add(scenes[step])
     heading.current?.focus?.()
-  },[step,receipt,previewIndex,outroOpen])
+  },[step,receipt,previewIndex,outroOpen,inviteOpen])
   useEffect(()=>{
     if(safety){wasPaused.current=true;safetyPrimary.current?.focus?.()}
     else if(wasPaused.current)safetyTrigger.current?.focus?.()
@@ -349,7 +356,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(locked)return
     setError('')
     setShowHelp(false)
-    setStep(s=>Math.min(scenes.length-1,s+1))
+    setStep(s=>Math.min(scenes.length,s+1))
   }
   function back(){
     if(locked)return
@@ -364,7 +371,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   function advancePreview(){
     if(locked||!inPreview)return
-    if(previewIndex===previewScreens.length-1)(onFinish||onClose)?.()
+    if(previewIndex===previewScreens.length-1){setPreviewIndex(-1);setInviteOpen(true)}
     else setPreviewIndex(i=>i+1)
   }
   function backFromPreview(){
@@ -378,10 +385,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   }
   async function submit(){
     if(locked||saved)return
-    if(step!==scenes.length-1||
+    if(step!==scenes.length||
       scenes.some(key=>!visited.current.has(key))){
       setError(t.incomplete);return
     }
+    if(!answers.lessonConfidence){setError(c.required);return}
     let safe
     try{
       // Undefined responses are not saved and an exercise selection alone
@@ -419,10 +427,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
-  const title=moment==='habit'?t.habitTitle:moment==='weekOne'?t.preview.weekOneTitle:
+  const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
+    moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
+    moment==='weekOne'?t.preview.weekOneTitle:
     moment==='weekTwo'?t.preview.weekTwoTitle:
     moment==='nextStep'?(nextDay?t.preview.nextTitle:t.preview.completeTitle):
-    outroOpen?t.audioTitle:receipt?t.saved:
+    outroOpen?t.audioTitle:moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
     moment==='welcome'?opening.welcome:
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
@@ -453,7 +463,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
     data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
-    data-opora-course-program-preview={inPreview?moment:undefined}>
+    data-opora-course-program-preview={inPreview?moment:undefined}
+    data-opora-lesson-outro={recap?'recap':inviteOpen?'invite':receipt?'saved':undefined}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
@@ -481,8 +492,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               moment==='weekTwo'?t.preview.weekTwoKicker:moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
           </span>}
-          {(!receipt||outroOpen)&&<span className={styles.eyebrow}>
-            {moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
+          {(!receipt||outroOpen||inviteOpen)&&<span className={styles.eyebrow}>
+            {moment==='recap'?c.recapKicker:moment==='invite'?c.inviteKicker:
+             moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
@@ -632,8 +644,35 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 {habitSetupContent||<p className={styles.soft}>{t.habitFallback}</p>}
               </div>}
           </>}
+          {moment==='recap'&&<>
+            <p className={styles.lead}>{c.recapLead}</p>
+            <div className={styles.recapSummary} data-opora-lesson-recap="true">
+              <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
+                <div><strong>{c.notice}</strong><small>{c.noticeBody}</small></div></div>
+              <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
+                <div><strong>{c.skill}: {dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
+              <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
+                <div><strong>{c.reminder}</strong><small>{plan}</small></div></div>
+            </div>
+            <p className={styles.miniLabel}>{c.question}</p>
+            <div className={styles.confidenceChoices} role="group" aria-label={c.question}
+              data-opora-lesson-confidence="true">
+              {c.choices.map(([value,label])=><button type="button" key={value} disabled={locked}
+                aria-pressed={answers.lessonConfidence===value}
+                onClick={()=>{setError('');setAnswers(a=>({...a,lessonConfidence:value}))}}>{label}</button>)}
+            </div>
+            <p className={styles.soft}>{c.gentle}</p>
+          </>}
+          {moment==='nextStep'&&upcoming.length>1&&<div className={styles.futureList}
+            data-opora-next-lessons="true">
+            {upcoming.map(item=><div key={item.day} className={styles.futureItem}>
+              <span>{c.day} {item.day}/14</span><strong>{item.copy.title}</strong>
+            </div>)}
+          </div>}
           {moment==='receipt'&&<>
-            <p className={styles.lead}>{t.savedText}</p>
+            <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
+            <p className={styles.lead}>{c.congratsLead}</p>
+            <p className={styles.soft}>{t.savedText}</p>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
@@ -645,8 +684,16 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
           {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
             onClick={onFinish||onClose}>{t.finish}</button>}
-          {moment==='receipt'&&<button type="button" className={styles.linkHint} disabled={locked}
-            onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>}
+
+          {moment==='invite'&&<>
+            <p className={styles.lead}>{cycle.day===14?c.inviteFinalLead:c.inviteLead}</p>
+            <nav className={styles.offerList} aria-label={c.inviteKicker}
+              data-opora-tomorrow-links="true">
+              <a href={'/'+lang+'/tests'}><span aria-hidden="true">🧭</span>{c.tests}<ArrowRight size={19}/></a>
+              <a href={'/'+lang+'/academy/principles-of-energywork/learn'}><span aria-hidden="true">🌿</span>{c.reiki}<ArrowRight size={19}/></a>
+              <a href={'/'+lang+'/services/free-consultation'}><span aria-hidden="true">🤝</span>{c.consultation}<ArrowRight size={19}/></a>
+            </nav>
+          </>}
           {guidanceForMoment&&<div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
               <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
@@ -658,27 +705,29 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             {showHelp&&<p className={styles.soft} data-opora-optional-guidance="true">{guidanceForMoment}</p>}
           </div>}
-          {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
+          {(moment==='welcome'||moment==='arrive'||receipt||inviteOpen)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.footer}>
-        {receipt?<button type="button" className={styles.back} disabled={locked}
+        {inviteOpen?<button type="button" className={styles.back} disabled={locked}
+          onClick={()=>{setInviteOpen(false);setPreviewIndex(previewScreens.length-1)}}>
+          <ArrowLeft size={17}/>{t.back}</button>:
+        receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'
-            ?(habitSetup?()=>setHabitSetup(false):(onFinish||onClose))
+            ?(habitSetup?()=>setHabitSetup(false):()=>{setPreviewIndex(-1);setInviteOpen(true)})
             :inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
           <ArrowLeft size={17}/>{moment==='habit'?(habitSetup?t.back:t.habitLater):inPreview||outroOpen?t.back:t.finish}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={moment==='habit'
-            ?(habitSetup?(onFinish||onClose):()=>setHabitSetup(true))
-            :inPreview?advancePreview:receipt?openPreview:step===scenes.length-1?submit:next}>
-          {moment==='habit'?(habitSetup?t.finish:t.habitConfigure)
-            :inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next)
-            :receipt?t.seeProgram:step===scenes.length-1?(saving?t.saving:t.save):t.next}
-          {(moment==='habit'&&habitSetup)||(inPreview&&previewIndex===previewScreens.length-1)||(!receipt&&step===scenes.length-1)
-            ?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={inviteOpen?(onFinish||onClose):
+            moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
+            inPreview?advancePreview:outroOpen?openPreview:receipt?()=>setOutroOpen(true):recap?submit:next}>
+          {inviteOpen?t.finish:moment==='habit'?(habitSetup?t.next:t.habitConfigure):
+            inPreview?(moment==='nextStep'&&cycle.day===1?c.commit:previewIndex===previewScreens.length-1?c.commit:t.next):
+            outroOpen?t.seeProgram:receipt?t.audioNext:recap?(saving?t.saving:t.save):t.next}
+          {inviteOpen||recap||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>

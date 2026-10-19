@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   momentScore, compareLessonMoments, buildLessonFocusTrends, focusTrendAria, changeAmount,
+  momentChangeMeaning,
 } from '../lib/inner-growth/course-moment-trends.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -72,4 +73,41 @@ test('a separate pre-practice focus step and after-practice step surround real l
   assert.match(graph,/aria-pressed=\{group\.key === item\.key\}/)
   assert.match(graph,/viewBox="0 0 520 151"/)
   assert.doesNotMatch(slide + graph,/localStorage|sessionStorage|sendBeacon|dangerouslySetInnerHTML/)
+})
+
+test('paired ratings keep distinct directions for historical OPORA V6 availability and distress', () => {
+  assert.equal(momentChangeMeaning(-3, 'higher_is_more_difficult'), 'less_difficult')
+  assert.equal(momentChangeMeaning(3, 'higher_is_more_difficult'), 'more_difficult')
+  assert.equal(momentChangeMeaning(-3, 'higher_is_more_available'), 'less_available')
+  assert.equal(momentChangeMeaning(3, 'higher_is_more_available'), 'more_available')
+  assert.equal(momentChangeMeaning(0, 'higher_is_more_difficult'), 'same')
+  assert.equal(momentChangeMeaning(0, 'higher_is_more_available'), 'same')
+  assert.equal(momentChangeMeaning(null, 'higher_is_more_difficult'), null)
+  assert.equal(momentChangeMeaning(5, 'unrecognised'), null)
+  assert.equal(momentChangeMeaning(11, 'higher_is_more_available'), null)
+  assert.deepEqual(compareLessonMoments(0, 8), {before:0, after:8, change:8})
+  // Raw stored values never get rewritten as 10 - value.
+  const oldPair=compareLessonMoments(2, 8)
+  assert.deepEqual(oldPair,{before:2,after:8,change:6})
+  assert.equal(momentChangeMeaning(oldPair.change,'higher_is_more_available'),'more_available')
+  assert.equal(momentChangeMeaning(oldPair.change,'higher_is_more_difficult'),'more_difficult')
+})
+
+test('legacy V6 availability and modern difficulty ratings remain separated in chart and details', () => {
+  const chart=read('components/app/course-moment-trends.jsx')
+  const today=read('components/app/course-today.jsx')
+  const legacy=read('components/app/opora-v6-slide-player.jsx')
+  assert.match(chart,/cycle\.contentVersion === COURSE_ANTISTRESS_SKILLS_V6/)
+  assert.match(chart,/momentChangeMeaning\(comparison\.change, direction\)/)
+  assert.match(chart,/data-course-rating-direction=\{direction\}/)
+  assert.match(chart,/measureAvailability: '0 = not yet available · 10 = feels available'/)
+  assert.match(chart,/measure: '0 = no difficulty · 10 = very difficult'/)
+  assert.match(today,/legacyAvailabilityRatings = cycle\?\.contentVersion === COURSE_ANTISTRESS_SKILLS_V6/)
+  assert.match(today,/legacyAvailabilityRatings\?t\.beforeAvailability:t\.beforeNow/)
+  assert.match(today,/legacyAvailabilityRatings\?t\.afterAvailability:t\.afterNow/)
+  assert.match(today,/data-course-legacy-availability-direction/)
+  assert.match(legacy,/ratingLow:'0 · not yet available',ratingHigh:'10 · feels available'/)
+  assert.match(legacy,/feedback,beforeNow,afterNow,practiceWindow:'practice_v15'/)
+  assert.doesNotMatch(chart,/before:\s*10\s*-/)
+  assert.doesNotMatch(today,/afterNow:\s*10\s*-/)
 })
