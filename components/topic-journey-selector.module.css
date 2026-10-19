@@ -186,3 +186,199 @@
   .businessPromoPrice{text-align:left;font-size:10px;margin-left:1px}
   .businessPromoLink{width:100%;min-width:0;padding:9px 12px;font-size:12px}
 }
+
+
+/* Business finder uses the same navy, rose and teal discovery language as Academy.
+   All rules are scoped: the other topic journeys retain their original design. */
+.root[data-topic-journey="business"] .hero {
+  display: block;
+  isolation: isolate;
+  position: relative;
+  margin: 12px 0 16px;
+  padding: clamp(22px, 3.7vw, 42px);
+  border: 0;
+  border-radius: 24px;
+  background: linear-gradient(121deg, #203450 0%, #283d5c 58%, #483a52 100%);
+  box-shadow: 0 16px 35px rgb(17 34 64 / 10%);
+  color: #fff;
+}
+.root[data-topic-journey="business"] .hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -130px;
+  right: -82px;
+  width: 320px;
+  height: 320px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgb(255 255 255 / 3%), 0 0 0 90px rgb(255 255 255 / 2%);
+  pointer-events: none;
+}
+.businessHeroContent { position: relative; z-index: 1; }
+.businessHeroTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.businessHeroEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #d7c4cd;
+  font: 750 10px/1.4 system-ui, sans-serif;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.businessHeroEyebrow svg { flex: none; }
+.root[data-topic-journey="business"] .hero h1 {
+  max-width: 790px;
+  margin: 0 0 12px;
+  color: #fff;
+  font: 400 clamp(31px, 4.5vw, 52px)/1.12 Georgia, serif;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.businessHeroLead {
+  max-width: 720px;
+  margin: 0 0 20px;
+  color: #e0e5ed;
+  font: 400 clamp(13px, 1.5vw, 15px)/1.6 system-ui, sans-serif;
+}
+.businessSearchForm {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 1050px;
+  padding: 7px;
+  border: 1px solid #eee5e1;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgb(8 19 36 / 10%);
+}
+.businessSearchForm input {
+  flex: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  padding: 12px 15px;
+  border: 0;
+  border-radius: 12px;
+  outline: 0;
+  background: #fff;
+  color: #20334e;
+  font: 500 16px/1.45 system-ui, sans-serif;
+}
+.businessSearchForm input::placeholder { color: #7d8795; opacity: 1; font-weight: 400; }
+.businessSearchForm button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #993c5f;
+  color: #fff;
+  font: 750 14px/1.3 system-ui, sans-serif;
+  cursor: pointer;
+}
+.businessSearchForm button:hover { background: #822d4d; }
+.businessSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+.businessQuickPaths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 9px;
+  max-width: 1040px;
+  margin-top: 13px;
+}
+.businessQuickPaths a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid #8bc7ed;
+  border-radius: 999px;
+  background: linear-gradient(105deg,#20547d,#2b567b);
+  color: #fff;
+  font: 750 12px/1.2 system-ui,sans-serif;
+  text-align: center;
+  text-decoration: none;
+}
+.businessQuickPaths a svg { flex: none; }
+.businessQuickPaths a:hover { background: #386d94; box-shadow: inset 0 0 0 1px #b3e9ff; }
+.root[data-topic-journey="business"] .hero :is(input,button,a):focus-visible,
+.businessQuickPaths a:focus-visible { outline: 3px solid #f3b4c9; outline-offset: 3px; }
+.root[data-topic-journey="business"] .selection,
+.root[data-topic-journey="business"] .suggestions { scroll-margin-top: 88px; }
+.root[data-topic-journey="business"] .sectionHead h2 {
+  color: #213d56;
+  font: 400 clamp(24px,3vw,32px)/1.2 Georgia,serif;
+}
+.root[data-topic-journey="business"] .topic {
+  border: 1px solid #c9dce5;
+  border-radius: 17px;
+  background: #fffefa;
+  box-shadow: 0 6px 19px rgb(33 61 85 / 5%);
+}
+.root[data-topic-journey="business"] .topic:hover { border-color: #77bfcb; }
+.root[data-topic-journey="business"] .topic[aria-pressed="true"] {
+  border-color: #12899b;
+  background: #e6f5f7;
+}
+.businessNoMatches {
+  grid-column: 1/-1;
+  padding: 14px;
+  border: 1px dashed #b8d5de;
+  border-radius: 14px;
+  background: #fffefa;
+  color: #526a7b;
+}
+.businessNoMatches p { margin: 0 0 9px; }
+.businessNoMatches button {
+  min-height: 40px;
+  padding: 7px 13px;
+  border: 1px solid #d5afbc;
+  border-radius: 10px;
+  background: #fff;
+  color: #8d3757;
+  font-weight: 750;
+  cursor: pointer;
+}
+@media (max-width:620px) {
+  .root[data-topic-journey="business"] .hero { padding: 19px 15px 18px; border-radius: 16px; margin: 10px 0 14px; }
+  .businessHeroTopline { align-items: flex-start; gap: 8px; margin-bottom: 15px; }
+  .businessHeroEyebrow { max-width: 34%; font-size: 9px; line-height: 1.45; letter-spacing: .075em; }
+  .root[data-topic-journey="business"] .hero h1 { font-size: clamp(30px,8vw,38px); margin-bottom: 10px; }
+  .businessHeroLead { margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
+  .businessSearchForm { display: grid; gap: 6px; padding: 6px; border-radius: 14px; }
+  .businessSearchForm input { min-height: 52px; padding: 12px; font-size: 16px; }
+  .businessSearchForm button { width: 100%; min-height: 46px; border-radius: 10px; font-size: 14px; }
+  .businessQuickPaths { gap: 5px; margin-top: 11px; }
+  .businessQuickPaths a { min-height: 44px; gap: 5px; padding: 7px 4px; font-size: 10px; line-height: 1.2; }
+  .businessQuickPaths a svg { width: 14px; height: 14px; }
+}
+@media (max-width:400px) {
+  .businessHeroTopline { flex-wrap: wrap; }
+  .businessHeroEyebrow { max-width: 100%; }
+  .businessQuickPaths a { font-size: 9px; }
+}
+@media (max-width:360px) {
+  .businessQuickPaths a { gap: 3px; padding-inline: 2px; }
+  .businessQuickPaths a svg { width: 12px; height: 12px; }
+}

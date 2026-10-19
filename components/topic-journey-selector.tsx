@@ -2,12 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, Check, ChevronDown, ClipboardCheck, HeartHandshake, Search, Share2, Sparkles } from 'lucide-react'
 import { journeyFocusForTopics, journeyProblemsForTopics } from '@/lib/assessments/topic-journeys'
 import { makeTestSelectionIntent, PENDING_TEST_SELECTION_KEY } from '@/lib/app/test-selection-intent'
 import styles from './topic-journey-selector.module.css'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
+import { DiscoverySectionTabs } from '@/components/discovery-section-tabs'
 
 type Language = 'en' | 'ru' | 'es'
 type Item = { id: string; title: Record<Language, string>; detail: Record<Language, string>; focus: readonly string[] }
@@ -115,6 +116,23 @@ const businessPromo = {
   },
 } as const
 
+const businessDiscoveryCopy = {
+  en: { eyebrow: 'HOLISTIC HOUSE · BUSINESS', title: 'Find your business direction',
+    lead: 'Explore decisions, focus and work challenges. Start with free self-reflection or choose personal business consulting.',
+    searchLabel: 'Search business topics', placeholder: 'Decisions, focus, work pressure or goals…',
+    submit: 'Find my focus', paths: 'Explore business options', topics: 'Business topics', tests: 'Free tests', sessions: 'Consultations',
+    none: 'No business topics match your search.', reset: 'Show all topics' },
+  ru: { eyebrow: 'HOLISTIC HOUSE · БИЗНЕС', title: 'Найдите свой бизнес-маршрут',
+    lead: 'Исследуйте решения, концентрацию и рабочие задачи. Начните с бесплатных тестов или выберите личную бизнес-консультацию.',
+    searchLabel: 'Поиск тем бизнеса', placeholder: 'Решения, цели, деньги, работа…',
+    submit: 'Найти направление', paths: 'Направления бизнеса', topics: 'Темы бизнеса', tests: 'Тесты', sessions: 'Консультации',
+    none: 'По этому запросу темы не найдены.', reset: 'Показать все темы' },
+  es: { eyebrow: 'HOLISTIC HOUSE · NEGOCIOS', title: 'Encuentra tu camino empresarial',
+    lead: 'Explora decisiones, enfoque y retos de trabajo. Comienza con pruebas gratuitas o una consulta empresarial personal.',
+    searchLabel: 'Buscar temas de negocios', placeholder: 'Decisiones, trabajo, dinero o metas…',
+    submit: 'Buscar mi enfoque', paths: 'Explorar opciones', topics: 'Temas', tests: 'Pruebas', sessions: 'Consultas',
+    none: 'No hay temas que coincidan con la búsqueda.', reset: 'Mostrar todos los temas' },
+} as const
 type StartAttempt = { controller: AbortController; scope: string; href: string; intent?: string; handedOff: boolean }
 
 function stopAttempt(attempt: StartAttempt | null) {
@@ -149,13 +167,27 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
   const appLocale = language === 'es' ? 'en' : language
   const c = copy[language]
   const businessCallout = businessPromo[language]
+  const businessText = businessDiscoveryCopy[language]
   const [selected, setSelected] = useState<string[]>([])
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [shareStatus,setShareStatus] = useState<'copied'|'shared'|'manual'|''>('')
+  const [businessQuery, setBusinessQuery] = useState('')
+  const [businessFilter, setBusinessFilter] = useState('')
   const focus = useMemo(() => journeyFocusForTopics(journey, selected), [journey, selected])
   const problems = useMemo(() => journeyProblemsForTopics(journey, selected), [journey, selected])
   const recommended = suggestions[selected.slice().sort().join(',')] || []
+  const visibleTopics = journey.id !== 'business' || !businessFilter ? journey.topics : journey.topics.filter((topic) =>
+    [topic.title.en, topic.title.ru, topic.title.es, topic.detail.en, topic.detail.ru, topic.detail.es]
+      .some((wording) => wording.toLocaleLowerCase().includes(businessFilter))
+  )
+  function findBusinessTopics(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusinessFilter(businessQuery.trim().toLocaleLowerCase())
+    window.requestAnimationFrame(() => document.getElementById('hh-topic-selection-heading')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'
+    }))
+  }
   const scope = JSON.stringify([language, journey.id, selected, recommended.map((item) => [item.key, item.definition])])
   const scopeRef = useRef(scope)
   scopeRef.current = scope
@@ -305,18 +337,42 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
 
   return <div className={styles.root} data-topic-journey={journey.id}>
     <section className={styles.hero}>
-      <div className={styles.heroArt} aria-hidden="true">
-        <Image src={art[journey.id]} alt="" fill unoptimized priority
-          sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
-      </div>
-      <div className={styles.heroCopy}>
-        <Link onClick={cancelStart} href={language === 'es' ? '/es#hh-topic-journeys' : '/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
-          <ArrowLeft size={16} aria-hidden="true" />{c.back}
-        </Link>
-        <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
-        <h1>{journey.title[language]}</h1>
-        <p className={styles.introduction}>{journey.introduction[language]}</p>
-      </div>
+      {journey.id === 'business' ? (
+        <div className={styles.businessHeroContent}>
+          <div className={styles.businessHeroTopline}>
+            <p className={styles.businessHeroEyebrow}><Sparkles size={16} aria-hidden="true" />{businessText.eyebrow}</p>
+            <DiscoverySectionTabs locale={locale} active="business" />
+          </div>
+          <h1>{businessText.title}</h1>
+          <p className={styles.businessHeroLead}>{businessText.lead}</p>
+          <form className={styles.businessSearchForm} role="search" onSubmit={findBusinessTopics}>
+            <label className={styles.businessSrOnly} htmlFor="hh-business-topic-query">{businessText.searchLabel}</label>
+            <input id="hh-business-topic-query" type="search" value={businessQuery}
+              onChange={(event) => setBusinessQuery(event.target.value)} placeholder={businessText.placeholder} />
+            <button type="submit">{businessText.submit}<Search size={19} aria-hidden="true" /></button>
+          </form>
+          <nav className={styles.businessQuickPaths} aria-label={businessText.paths}>
+            <a href="#hh-topic-selection-heading"><BriefcaseBusiness size={16} aria-hidden="true" />{businessText.topics}</a>
+            <a href="#hh-topic-recommended-tests"><ClipboardCheck size={16} aria-hidden="true" />{businessText.tests}</a>
+            <a href="#hh-business-consultation-title"><CalendarDays size={16} aria-hidden="true" />{businessText.sessions}</a>
+          </nav>
+        </div>
+      ) : (
+        <>
+          <div className={styles.heroArt} aria-hidden="true">
+            <Image src={art[journey.id]} alt="" fill unoptimized priority
+              sizes="(max-width: 630px) 115px, (max-width: 960px) 220px, 300px" />
+          </div>
+          <div className={styles.heroCopy}>
+            <Link onClick={cancelStart} href={language === 'es' ? '/es#hh-topic-journeys' : '/?lang=' + language + '#hh-topic-journeys'} className={styles.back}>
+              <ArrowLeft size={16} aria-hidden="true" />{c.back}
+            </Link>
+            <p className={styles.eyebrow}>{journey.eyebrow[language]}</p>
+            <h1>{journey.title[language]}</h1>
+            <p className={styles.introduction}>{journey.introduction[language]}</p>
+          </div>
+        </>
+      )}
     </section>
 
     {journey.id === 'business' && (
@@ -346,11 +402,17 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
         <p>{c.pickHint}</p>
       </div>
       <div className={styles.topics} role="group" aria-label={c.pickTitle}>
-        {journey.topics.map((topic) => <button key={topic.id} type="button" className={styles.topic}
+        {visibleTopics.map((topic) => <button key={topic.id} type="button" className={styles.topic}
           aria-pressed={selected.includes(topic.id)} data-topic-choice={topic.id} onClick={() => toggle(topic.id)}>
           <span className={styles.check}><Check size={16} aria-hidden="true" /></span>
           <span><strong>{topic.title[language]}</strong><small>{topic.detail[language]}</small></span>
         </button>)}
+        {journey.id === 'business' && visibleTopics.length === 0 ? (
+          <div className={styles.businessNoMatches} role="status">
+            <p>{businessText.none}</p>
+            <button type="button" onClick={() => { setBusinessQuery(''); setBusinessFilter('') }}>{businessText.reset}</button>
+          </div>
+        ) : null}
       </div>
     </section>
 
@@ -401,7 +463,7 @@ export function TopicJourneySelector({ locale, journey, suggestions }: {
           <span><strong>{c.course}</strong><small>{c.courseDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
-        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review'} className={styles.secondaryLink} data-topic-action="review">
+        <Link onClick={cancelStart} href={'/' + language + '/services/free-situation-review' + (journey.id === 'business' ? '?topic=business' : '')} className={styles.secondaryLink} data-topic-action="review">
           <HeartHandshake size={21} aria-hidden="true" />
           <span><strong>{c.review}</strong><small>{c.reviewDetail}</small></span>
           <ArrowRight size={18} aria-hidden="true" />

@@ -132,7 +132,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const libraryEntry = header.locator('a.site-library-entry')
         const menu = header.locator('details.site-language-menu')
@@ -337,12 +337,12 @@ try {
           await expect(current).toHaveCount(1)
           await expect(current).toHaveAttribute('href', '/' + locale + '/library')
         } else {
-          // Library is in the public header; Events uses the fifth bottom-navigation slot.
+          // Library is in the public header; Business uses the fifth bottom-navigation slot.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
-          await expect(nav.locator('[data-nav-item="events"]')).toHaveAttribute('href', '/' + locale + '/events')
+          await expect(nav.locator('[data-nav-item="business"]')).toHaveAttribute('href', '/' + locale + '/explore/business')
         }
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)

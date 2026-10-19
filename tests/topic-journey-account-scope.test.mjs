@@ -75,6 +75,7 @@ function mount(locale = 'en', options = {}) {
   const modules = { react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'next/image': { default: 'Image' }, 'next/link': { default: 'Link' },
     '@/components/acquisition-event-link': { AcquisitionEventLink: 'TrackedLink' },
+    '@/components/discovery-section-tabs': { DiscoverySectionTabs: 'DiscoverySectionTabs' },
     'lucide-react': new Proxy({}, { get: (_, key) => String(key) }), '@/lib/assessments/topic-journeys': journeys,
     '@/lib/app/test-selection-intent': intents, './topic-journey-selector.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) } }
   const runtime = { exports: {}, require: name => { assert.ok(modules[name], name); return modules[name] }, window, document,

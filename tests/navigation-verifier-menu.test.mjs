@@ -153,7 +153,7 @@ test('header matrix preserves all widths and tests direct links against the actu
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
+  const expectedMenu = [(locale === 'en' ? '/' : '/' + locale) + '#free-start', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
