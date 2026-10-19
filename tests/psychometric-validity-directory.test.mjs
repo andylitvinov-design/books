@@ -8,14 +8,14 @@ import { officialQuestionnaireSource } from '../data/assessments/official-questi
 import { buildExplorerEntries, rankExplorerEntries } from '../lib/assessments/test-explorer.js'
 
 test('entire research master becomes discoverable metadata with no key duplicates, executable tests or protected score keys',()=>{
-  assert.equal(RESEARCH_CATALOGUE_TOTAL,2973)
-  assert.equal(new Set(RESEARCH_CATALOGUE.map(r=>r.key)).size,2973)
+  assert.equal(RESEARCH_CATALOGUE_TOTAL,2978)
+  assert.equal(new Set(RESEARCH_CATALOGUE.map(r=>r.key)).size,2978)
   assert.ok(RESEARCH_CATALOGUE.every(r=>r.access==='research_only'&&!r.commercialDigitalRightsCleared))
   assert.ok(RESEARCH_CATALOGUE.every(r=>r.psychometricStatus==='pending_exact_edition_review'))
   assert.ok(RESEARCH_CATALOGUE.every(r=>!('questions' in r)&&!('scoring' in r)&&!('norms' in r)))
   const page=searchResearchCatalogue({page:1,pageSize:12})
   assert.ok(page.total>2500)
-  assert.equal(page.sourceCount,2973)
+  assert.equal(page.sourceCount,2978)
   assert.equal(page.results.length,12)
   assert.equal(new Set(page.results.map(r=>r.key)).size,12)
   const last=searchResearchCatalogue({page:100000})
