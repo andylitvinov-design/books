@@ -83,7 +83,7 @@ async function verifyDirectNavigation(nav, { locale, surface, expected, label })
 async function verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport }) {
   const menu = header.locator('details.site-main-menu')
   const trigger = menu.locator('summary')
-  const links = menu.locator('.site-main-menu-panel > a')
+  const links = menu.locator('.site-main-menu-panel a')
   await expect(menu).toHaveCount(1)
   await expect(menu).toHaveJSProperty('open', false)
   await inViewport(trigger, label + '/site-menu')
@@ -333,7 +333,7 @@ try {
         const nav = page.locator(selector)
         if (selector === '.site-navigation') {
           await verifyDirectNavigation(nav, { locale, surface: 'library', expected, label: locale + '/library/' + width })
-          const current = nav.locator('.site-main-menu-panel > a[aria-current="page"]')
+          const current = nav.locator('.site-main-menu-panel a[aria-current="page"]')
           await expect(current).toHaveCount(1)
           await expect(current).toHaveAttribute('href', '/' + locale + '/library')
         } else {
