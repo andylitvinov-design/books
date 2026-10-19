@@ -48,7 +48,7 @@ export default async function ArticleDetail({params}:Props){
     block.type==='h3'?<h3 key={i}>{inlineArticleText(block.text)}</h3>:
     block.type==='ul'?<ul key={i}>{block.items.map((item,j)=><li key={j}>{inlineArticleText(item)}</li>)}</ul>:
     block.type==='ol'?<ol key={i}>{block.items.map((item,j)=><li key={j}>{inlineArticleText(item)}</li>)}</ol>:
-    <p key={i} style={{whiteSpace:'pre-line'}}>{inlineArticleText(block.text)}</p>
+    block.type==='p'?<p key={i} style={{whiteSpace:'pre-line'}}>{inlineArticleText(block.text)}</p>:null
    )}</div>
    {(published.sourceUrls||[]).length>0&&<aside className={styles.sources}><h2>{ru?'Источники':es?'Fuentes':'Sources'}</h2><ul>{published.sourceUrls.map((url:string,i:number)=><li key={i}><a href={url} rel="noopener noreferrer nofollow" target="_blank">{new URL(url).hostname}</a></li>)}</ul></aside>}
    {article.services?.length>0&&<aside className={styles.related}><h2>{ru?'Услуги автора':es?'Servicios del autor':'Work with this practitioner'}</h2><div className={styles.grid}>
