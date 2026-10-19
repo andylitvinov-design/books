@@ -115,14 +115,22 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
           itemNumber += 1
           const number = itemNumber
           const schedule = remedySchedule(item, locale, document.recommendationType)
+          // The potency belongs beside the remedy name, not in the administration line.
+          // Preserve practitioner-authored values; never infer a missing potency.
+          const potency = recommendationItemType(item, document.recommendationType) === 'homeopathy'
+            ? String(item.potency ?? '').trim() : ''
+          const administration = potency ? schedule.split(' · ').slice(1).join(' · ') : schedule
           const detailKeys = ['purpose', 'dosage', 'frequency', 'duration', 'sequence', 'instructions'].filter((key) => item[key])
           return <section className="canonical-remedy" key={number}>
             <div className="canonical-remedy-heading">
               <span className="canonical-remedy-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
               <div className="canonical-remedy-title">
-                <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}</h3>
-                {schedule && <p className="canonical-remedy-schedule" aria-label={schedule}>
-                  {schedule.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
+                <h3>{item.remedyPath ? <Link href={item.remedyPath}>{item.displayName}</Link> : item.displayName}{potency && <span
+                  className="canonical-remedy-potency"
+                  aria-label={locale === 'ru' ? `Потенция ${potency}` : `Potency ${potency}`}
+                >{' '}{potency}</span>}</h3>
+                {administration && <p className="canonical-remedy-schedule" aria-label={administration}>
+                  {administration.split(' · ').map((part, index) => <span className="canonical-remedy-schedule-part" key={index}>
                     {index > 0 && <span className="canonical-remedy-schedule-dot" aria-hidden="true">·</span>}
                     <span className="canonical-remedy-schedule-chip">{part}</span>
                   </span>)}

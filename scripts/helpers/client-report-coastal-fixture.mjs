@@ -223,7 +223,10 @@ export async function buildCoastalFixture() {
         items: full ? [{
           displayName: 'Synthetic Botanical Specimen – Long Sample Label',
           remedySlug: 'synthetic-demo-botanical',
-          syntheticDescription: ru ? 'Демонстрационные данные, не схема приёма' : 'Demonstration data, not a dosing schedule',
+          // Synthetic UI-only values: exercise title potency and regimen layout,
+          // never a clinical/client prescription.
+          potency: '30',
+          syntheticDescription: ru ? 'потенция 30 · 6 гранул · 3×/день' : 'potency 30 · 6 granules · 3×/day',
           purpose: ru ? 'Пример вёрстки карточки' : 'Card layout demonstration',
           remedyPath: '#synthetic-remedy',
         }] : [],

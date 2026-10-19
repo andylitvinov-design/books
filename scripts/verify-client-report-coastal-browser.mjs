@@ -84,6 +84,24 @@ try{
         await expect(page.locator('#session-recommended-tests a')).toHaveCount(2)
         await expect(page.locator('#session-download a')).toHaveCount(2)
         await expect(page.locator('details.canonical-remedy-profile-disclosure')).toHaveCount(1)
+        // Render the real signed JSX: the synthetic potency belongs next to the
+        // remedy title, with identical typography and no duplicate regimen label.
+        const prescriptionTitle=page.locator('.canonical-remedy-title h3')
+        await expect(prescriptionTitle.locator('.canonical-remedy-potency')).toHaveText('30')
+        const titleTypography=await prescriptionTitle.evaluate(node=>{
+          const label=node.querySelector('.canonical-remedy-potency')
+          const font=n=>{
+            const s=getComputedStyle(n)
+            return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]
+          }
+          return {name:font(node),potency:font(label)}
+        })
+        assert.deepEqual(titleTypography.potency,titleTypography.name,
+          'Potency must use exactly the remedy title font and size')
+        const regimen=page.locator('.canonical-remedy-schedule')
+        await expect(regimen).toContainText(sample.locale==='ru'?'6 гранул':'6 granules')
+        assert.doesNotMatch(await regimen.innerText(),/потенция|potency|30/i,
+          'The potency must not repeat on the administration line')
         await expect(page.locator('#session-resources')).toBeVisible()
         await expect(page.locator('#session-download')).toBeVisible()
       }else{
