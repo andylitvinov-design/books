@@ -110,7 +110,7 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
     readFile('components/prescription-document.jsx', 'utf8'),
     readFile('components/consultation-report.css', 'utf8'),
   ])
-  assert.match(jsx, /'Приложение' : 'Appendix'/)
+  assert.doesNotMatch(jsx, /className="canonical-remedy-profiles"/, 'HTML no longer repeats an appendix')
   assert.doesNotMatch(jsx, /Описание выбранных препаратов|About your selected remedies/)
   assert.doesNotMatch(jsx, /Авторские описания и фотографии из библиотеки Holistic House/)
   assert.match(css, /\.canonical-shell \.canonical-document \.canonical-remedy-profile-photo \{\s*float: right;/)
@@ -118,49 +118,46 @@ test('remedy appendix is concise and the original PDF photo floats at top right'
 })
 
 
-test('only the original remedy-description appendix collapses, with complete print and PDF preserved', async () => {
+test('one combined card keeps instructions visible, and full source descriptions print safely', async () => {
   const [jsx, css, printHandler] = await Promise.all([
     readFile('components/prescription-document.jsx', 'utf8'),
     readFile('components/consultation-report.css', 'utf8'),
     readFile('components/report-appendix-print-expander.jsx', 'utf8'),
   ])
-  const appendix = jsx.slice(
-    jsx.indexOf('selectedProfiles.map(({ item, remedy }) =>'),
-    jsx.indexOf('{document.includeDistanceHomeopathy &&'),
-  )
-  assert.match(appendix, /<details className="canonical-remedy-profile canonical-remedy-profile-disclosure"/)
-  // The original library photograph is shown before the Latin name in the
-  // closed summary; an older assertion expected the name immediately first.
-  assert.match(appendix, /<summary className="canonical-remedy-profile-summary">[\s\S]*?<h3>\{remedy\.canonical_latin_name\}<\/h3>/)
-  assert.match(appendix, /className="canonical-remedy-profile-thumb"/)
-  assert.doesNotMatch(appendix, /<details[^>]*\sopen(?:\s|=|>)/,
-    'library descriptions are closed initially on mobile/desktop')
-  assert.match(appendix, /<div className="canonical-remedy-profile-content">/)
-  assert.match(appendix, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
-  assert.match(appendix, /expandSupplementary fullSource/)
-  assert.match(appendix, /remedy\.primary_image/)
-  assert.match(appendix, /item\.remedyPath/)
+  const start = jsx.indexOf('return <section className="canonical-remedy canonical-remedy--unified" key={number}>')
+  const end = jsx.indexOf('</section>\n        })}', start)
+  assert.ok(start >= 0 && end > start)
+  const card = jsx.slice(start, end)
+  const summary = card.slice(card.indexOf('<summary'), card.indexOf('</summary>'))
+  assert.match(card, /<details className="canonical-remedy-profile-disclosure canonical-remedy-unified-disclosure"/)
+  assert.match(summary, /RemedyReportThumbnail src=\{remedy\?\.primary_image\}/)
+  assert.match(summary, /item\.displayName/)
+  assert.match(summary, /administration/)
+  assert.match(summary, /detailKeys\.map\(\(key\) => <span/)
+  assert.match(summary, /item\[key\]/)
+  assert.match(summary, /Описание/)
+  assert.doesNotMatch(card, /<details[^>]*\sopen(?:\s|=|>)/, 'full description stays closed on screen')
+  assert.match(card, /<div className="canonical-remedy-profile-content">/)
+  assert.match(card, /<RemedyContent locale=\{locale\} remedy=\{remedy\}/)
+  assert.match(card, /expandSupplementary fullSource/)
+  assert.match(card, /remedy\.primary_image/)
+  assert.match(card, /item\.remedyPath/)
+  assert.doesNotMatch(jsx, /className="canonical-remedy-profiles"/)
   assert.match(jsx, /<ReportAppendixPrintExpander \/>/)
-  assert.ok(jsx.indexOf('<ReportAppendixPrintExpander />') <
-    jsx.indexOf('<DocumentAutoPrint enabled='),
-    'print listener registers before automatic print')
+  assert.ok(jsx.indexOf('<ReportAppendixPrintExpander />') < jsx.indexOf('<DocumentAutoPrint enabled='))
   for (const marker of ['canonical-progress','canonical-report-analysis',
     'canonical-remedy-group','canonical-guidance','canonical-follow-up-appointment',
-    'DocumentSignature']) assert.ok(jsx.includes(marker),
-      'non-appendix report content remains visible: ' + marker)
-  // The current appendix keeps its brief tap instruction visible on screen;
-  // only the full remedy content collapses (and print expands all originals).
-  assert.match(css, /@media screen \{[\s\S]*?canonical-remedy-appendix-description \{\s*display:block/)
-  assert.match(css, /@media print \{[\s\S]*?canonical-remedy-appendix-hint \{display:none;/)
+    'DocumentSignature']) assert.ok(jsx.includes(marker))
+  const unified = css.slice(css.indexOf('Unified prescription + remedy library cards — 2026-10-19'))
+  assert.match(unified, /details\.canonical-remedy-unified-disclosure > summary\.canonical-remedy-unified-summary/)
+  assert.match(unified, /@media screen and \(max-width: 700px\)/)
+  assert.match(unified, /@media print/)
   assert.match(css, /details\.canonical-remedy-profile-disclosure > summary:focus-visible/)
-  assert.match(css, /@media print \{[\s\S]*?details\.canonical-remedy-profile-disclosure/)
   assert.match(printHandler, /addEventListener\('beforeprint', expandForPrint\)/)
   assert.match(printHandler, /addEventListener\('afterprint', restoreAfterPrint\)/)
   assert.match(printHandler, /if \(!appendix\.open\)/)
   assert.match(printHandler, /appendix\.open = true/)
   assert.match(printHandler, /appendix\.open = false/)
-  // The PDF generator is not touched: source description and author-approved
-  // recommendations stay in the generated full document.
   const pdfSource = buildPrescriptionPdf({
     ...example,
     items: [{ ...example.items[0], remedySlug: 'colchicum-autumnale',
