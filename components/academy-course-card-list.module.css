@@ -72,6 +72,8 @@
   color: #193852;
   font: 750 clamp(16px, 1.8vw, 21px)/1.23 system-ui, sans-serif;
   letter-spacing: -.025em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 .duration {
   color: #087d91;
