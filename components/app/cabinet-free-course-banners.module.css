@@ -67,3 +67,44 @@
   .lessonGrid { grid-template-columns: 1fr; gap: 6px; }
   .lessonLink, .lessonLocked { min-height: 43px; padding: 8px 10px; }
 }
+
+/* My Courses: resumed Academy learning precedes the free-course catalogue. */
+.savedSection{display:grid;min-width:0}
+.savedCourse{
+  display:grid;grid-template-columns:clamp(108px,20vw,145px) minmax(0,1fr);
+  gap:0;margin:0 0 12px;padding:0;min-width:0;overflow:hidden;
+  border:1px solid #32576d;border-radius:18px;
+  background:linear-gradient(120deg,#1e5063 0%,#1b314b 100%);
+  box-shadow:0 8px 22px #18394b1e;color:#fff;
+}
+.savedPhoto{position:relative;grid-column:1;grid-row:1;min-width:0;min-height:152px;background:#1d435d}
+.savedPhoto img{object-fit:cover;object-position:center}
+.savedOverview{
+  grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:6px;min-width:0;padding:13px 17px;
+}
+.savedEyebrow{font-size:9px;font-weight:850;letter-spacing:.09em;color:#a8e6e3}
+.savedOverview .savedLabel{font-size:clamp(17px,2.2vw,22px);line-height:1.15;color:#fff}
+.savedOverview p{margin:0;color:#d2e7eb;font-size:11px;line-height:1.4}
+.savedAction{
+  display:inline-flex;min-height:39px;gap:6px;margin-top:3px;
+  padding:9px 13px;background:#099ca7;color:#fff!important;
+  font-size:12px;border-radius:10px;text-decoration:none!important;
+}
+.savedAction:hover{background:#078791}
+.lessonDisclosure{grid-column:1/-1;min-width:0;border-top:1px solid #42687b;background:#1b3c50}
+.lessonDisclosure summary{
+  display:flex;align-items:center;min-height:42px;padding:10px 15px;
+  color:#d4e9ee;font-size:11px;font-weight:750;cursor:pointer;
+}
+.lessonDisclosure summary:focus-visible{outline:3px solid #83e8ea;outline-offset:-3px}
+.lessonDisclosure .lessonPicker{width:100%;padding:12px;border-top:1px solid #c7e6e7;background:#eef8f8}
+@media(max-width:540px){
+  .savedCourse{grid-template-columns:99px minmax(0,1fr);border-radius:15px;margin-bottom:10px}
+  .savedPhoto{min-height:130px}
+  .savedOverview{padding:10px 12px;gap:5px}
+  .savedOverview .savedLabel{font-size:17px}
+  .savedOverview p{font-size:10px}
+  .savedAction{font-size:11px;min-height:38px;padding:8px 10px}
+  .lessonDisclosure summary{min-height:40px}
+}
