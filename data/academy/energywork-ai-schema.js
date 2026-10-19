@@ -101,19 +101,38 @@ export const ENERGYWORK_SUN_PRACTICE_VALUES = Object.freeze(['felt-light','more-
 export const ENERGYWORK_TANTRA_PRACTICE_VALUES = Object.freeze(['connected','more-practice'])
 export const energyworkPathValid = (id) => ENERGYWORK_PATHS.includes(id)
 // Legacy path argument is accepted for old snapshots but never changes the curriculum.
+// The slide IDs remain stable for private answers and saved progress. Move only
+// the optional practice screens to just before their lesson finale.
+function withClosingPractices(ids, practiceIds, finaleId) {
+  if (!ids.includes(finaleId) || practiceIds.some(id => !ids.includes(id)))
+    throw new Error('ENERGYWORK_LESSON_PRACTICE_MISSING')
+  return [
+    ...ids.filter(id => id !== finaleId && !practiceIds.includes(id)),
+    ...practiceIds,
+    finaleId,
+  ]
+}
 export function energyworkSequence(_legacyPath = null) {
   return [
     'welcome-01','welcome-02',
-    'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
-    ...ENERGYWORK_BRANCH.tantra,
-    'presence-01','presence-04','tan-done',
-    ...ENERGYWORK_BRANCH.kundalini,
-    ...ENERGYWORK_BRANCH.yggdrasil,
-    'intention-01','intention-02','intention-03','intention-04',
-    'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
-    'paths-01','paths-02','paths-03',
-    ...ENERGYWORK_INITIATION,
-    'end-01','paths-04','end-02',
+    ...withClosingPractices(
+      ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
+      ['flight-03'], 'flight-done'),
+    ...withClosingPractices(
+      [...ENERGYWORK_BRANCH.tantra, 'presence-01','presence-04','tan-done'],
+      ['tan-03'], 'tan-done'),
+    ...withClosingPractices(ENERGYWORK_BRANCH.kundalini, ['kun-03'], 'kun-done'),
+    ...withClosingPractices(ENERGYWORK_BRANCH.yggdrasil, ['ygg-03'], 'ygg-done'),
+    // Previously, these activities were accidentally counted in Lesson 4.
+    // Lesson 5 now begins with its own introduction and ends with its practices.
+    ...withClosingPractices([
+      'paths-01',
+      'intention-01','intention-02','intention-03','intention-04',
+      'boundaries-01','boundaries-02','boundaries-03','boundaries-04',
+      'paths-02','paths-03',
+      ...ENERGYWORK_INITIATION,
+      'end-01','paths-04','end-02',
+    ], ['intention-04','boundaries-03'], 'end-02'),
   ]
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
@@ -209,9 +228,12 @@ export function energyworkP2ResumeId(slideId, answers = {}) {
 }
 // P3 lesson-one positions preceded the p4 swap. P4 quiz positions preceded p5.
 const P3_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-04','flight-05','flight-done'])
+// Preserve the historical p3→p9 ordinal migration independently of new display order.
+// The lesson-end practice move must not silently rewrite old cursor migrations.
+const P9_FLIGHT = Object.freeze(['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
 export function energyworkP3ResumeId(slideId, answers = {}) {
   const flightStep = P3_FLIGHT.indexOf(slideId)
-  if (flightStep >= 0) return energyworkSequence()[2 + flightStep]
+  if (flightStep >= 0) return P9_FLIGHT[flightStep]
   return energyworkP4ResumeId(slideId, answers)
 }
 export function energyworkInitiationReady(answers) {

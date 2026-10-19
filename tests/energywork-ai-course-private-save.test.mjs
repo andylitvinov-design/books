@@ -44,7 +44,7 @@ test('Server registry includes exactly 69 editorial IDs in one fixed five-lesson
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
   assert.equal(sequence.length,69)
-  assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'])
+  assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
   assert.equal(sequence[0],'welcome-01')
   assert.equal(sequence.at(-1),'end-02')
   assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])

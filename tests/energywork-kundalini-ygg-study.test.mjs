@@ -21,7 +21,7 @@ test('Nine approved Kundalini questions and seven Yggdrasil questions preserve p
   assert.equal(ENERGYWORK_P6_VERSION,'2026-10-19.p6')
   assert.equal(ENERGYWORK_P5_VERSION,'2026-10-19.p5')
   assert.equal(energyworkSequence().length,69)
-  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,14,16,22,8])
+  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,14,16,14,16])
   const kundalini = ["kun-study-v2-01","kun-study-v2-02","kun-study-v2-03","kun-study-v2-04","kun-study-v2-05","kun-study-v2-06","kun-study-v2-07","kun-study-v2-08","kun-study-v2-09"]
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,kundalini)
   assert.deepEqual(ENERGYWORK_BRANCH.kundalini.slice(6,15),kundalini)
