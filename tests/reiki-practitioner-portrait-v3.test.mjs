@@ -27,7 +27,7 @@ test('Approved V3 retains the complete five-lesson, 53-screen real learning flow
 
 test('The already-approved, locally owned meditating woman is prominently shown without flattening UI', () => {
   assert.equal(existsSync(new URL('../public' + localPortrait,import.meta.url)),true);
-  assert.match(learner,/portraitArt = slide\.id === "welcome-01" \|\| slide\.id === "flight-01" \|\| slide\.id === "tan-01"/);
+  assert.match(learner,/portraitArt = slide\.id === "welcome-01" \|\| slide\.id === "flight-01" \|\| slide\.id === "tan-01" \|\| slide\.id === "flight-done"/);
   assert.ok(learner.includes('const artSource = portraitArt || voicesArt ? "'+localPortrait+'" : slide.image;'));
   assert.match(learner,/data-reiki-person=\{portraitArt \|\| voicesArt \? "true" : undefined\}/);
   assert.match(learner,/unoptimized=\{portraitArt \|\| voicesArt\}/);
