@@ -20,6 +20,7 @@ import { withResultInterpretations } from '../lib/app/result-interpretations.js'
 import { storedResultInterpretation, STORED_INTERPRETATION_VERSION } from '../lib/assessments/interpretation-resolution.js'
 import { storedInterpretationForDimension } from '../lib/assessments/interpretation-storage.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
+import { assertAssessmentSourceIntegrity } from './helpers/legacy-source-fingerprint.mjs'
 import { historicalInterpretationCoverage } from './helpers/historical-interpretation-coverage.mjs'
 import { interpretationDatabaseOptions, validateInterpretationRelease, assertFreshInterpretationDatabase, INTERPRETATION_SEED_PATH } from './helpers/interpretation-db-isolation.mjs'
 
@@ -63,8 +64,11 @@ async function foundation(db){
  assert.equal(historicalDefinitions.length*2,release.recordCount)
  assert.equal(ASSESSMENT_DEFINITIONS.length,historicalDefinitions.length+newDefinitions.length)
  for(const definition of ASSESSMENT_DEFINITIONS){
-  const {contentHash,...content}=definition
-  assert.equal(digest(canonicalJSON(content)),contentHash,'Technical source definition hash must be exact')
+  // The 230 sealed source releases use canonical SHA; five newer v1 forms
+  // published an item-only fingerprint. Verify *both* the locked fingerprint
+  // and their independently approved complete-definition digest, without
+  // silently changing their historical source identities.
+  assertAssessmentSourceIntegrity(definition)
   await db.query(`INSERT INTO app.assessment_versions(id,definition_key,definition_version,instrument_locale,translation_version,
     definition,questions,answer_schema,scoring_key,scoring_version,result_schema,timeframe,source_metadata,content_hash)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,[definition.id,definition.key,definition.version,
