@@ -9,6 +9,7 @@ import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
+import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
@@ -3563,6 +3564,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
             {request.message && <p>{request.message}</p>}
+            <PracticeRequestConversation key={request.id} requestId={request.id}
+              accountId={data.account.id} locale={locale}
+              initialMessage={typeof request.message==='string'?request.message:''}
+              createdAt={request.createdAt}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>
