@@ -113,3 +113,20 @@ test('public article repository projects only approved snapshots, never owner dr
  assert.doesNotMatch(list,/return \{\.\.\.view\(row\),services\}/)
  assert.doesNotMatch(repo.slice(repo.indexOf('function publicView('),repo.indexOf('async function own(')),/draft:|reviewNote:|folderId:/)
 })
+
+test('iPhone article save shows inline feedback and does not mistake a failed refresh for a failed write',()=>{
+ const ui=read('components/app/practitioner-articles.jsx')
+ const css=read('components/app/practitioner-articles.module.css')
+ const save=ui.slice(ui.indexOf('async function save(){'),ui.indexOf('async function command(action){'))
+ assert.match(ui,/operationRef\.current=true/)
+ assert.match(ui,/if\(operationRef\.current\)return/)
+ assert.match(ui,/aria-busy=\{busy\}/)
+ assert.match(ui,/className=\{styles\.saveFeedback\}/)
+ assert.match(ui,/savedButRefreshFailed/)
+ assert.match(ui,/signInAgain/)
+ assert.match(css,/\.saveFeedback/)
+ assert.match(css,/\.bodyField textarea\{[^}]*font-weight:400/)
+ assert.ok(save.indexOf('setEditing(saved)')<save.indexOf('try{await reload()}'),'save must acknowledge the response before refreshing the list')
+ assert.match(save,/setItems\(current=>\[saved,\.\.\.current\.filter/)
+ assert.match(save,/if\(!saved\?\.id\|\|!Number\.isSafeInteger\(saved\.revision\)\)/)
+});
