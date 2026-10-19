@@ -1002,3 +1002,16 @@
  .overlay[data-course-skills-v5="true"] .welcomeScreen{padding-top:110px!important}
  .overlay[data-course-skills-v5="true"] .welcomeBackgroundImage{height:110px}
 }
+
+/* One reusable optional owl-assisted hint on the legacy/alternate exercise slides. */
+.animalGuidance{margin:2px 0 4px;min-width:0;border:0;color:#24556a}
+.animalGuidance summary{display:flex;align-items:center;gap:9px;min-height:47px;list-style:none;cursor:pointer}
+.animalGuidance summary::-webkit-details-marker{display:none}
+.animalGuidance summary img{flex:0 0 43px;width:43px;height:43px;object-fit:contain;filter:drop-shadow(0 3px 5px #286c5d22)}
+.animalGuidance summary span{display:flex;align-items:center;min-height:45px;flex:1;min-width:0;padding:10px 12px;border:1px solid #e6d8c7;border-radius:13px;background:#fffbf5;font-weight:720;font-size:13px;box-shadow:0 2px 7px #346b6d14}
+.animalGuidance summary > svg{margin-left:-34px;margin-right:13px;flex:none;pointer-events:none;transition:transform .2s ease}
+.animalGuidance[open] summary > svg{transform:rotate(180deg)}
+.animalGuidance summary:focus-visible{outline:3px solid #0c728c;outline-offset:2px;border-radius:14px}
+.animalGuidance p{margin:5px 0 0;padding:11px 13px;border:1px solid #d0e9e3;border-radius:13px;background:#f2fbf7;font-size:13px;line-height:1.45;color:#335e6c}
+@media(max-width:370px){.animalGuidance summary{gap:6px}.animalGuidance summary img{width:37px;height:37px;flex-basis:37px}.animalGuidance summary span{font-size:12px;padding:9px 10px}}
+@media(prefers-reduced-motion:reduce){.animalGuidance summary > svg{transition:none}}

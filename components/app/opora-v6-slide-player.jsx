@@ -195,6 +195,8 @@ const ROLE_OPTIONS={
   reflection:['useful','partly','unchanged','uncomfortable'],
 }
 const HINT_KINDS=new Set(['demo','notice','act','rehearse','scenario'])
+// Planning and choosing a shorter practice also deserve voluntary help, without altering saved hint enums.
+const SUPPORT_KINDS=new Set([...HINT_KINDS,'prepare','transfer'])
 const PRACTICE_KINDS=new Set(['notice','act','rehearse'])
 // Reuse approved, locally hosted photographs. Every authored screen and the
 // completion receipt has a photographic anchor; no network image service is used.
@@ -414,6 +416,7 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
     :choiceFeedback
   const showingReading=answers.pace==='read'||answers.prepare==='read'
   const guidanceText=role==='scenario'?authored?.scenario?.hint||authored?.scenario?.explanation
+    :role==='transfer'?authored?.transferBackup||authored?.hints?.transfer
     :role==='aphorism'?authored?.neutralQuote
     :authored?.hints?.[role]||authored?.hint||lesson?.antiStress?.neutralText||t.nudge
   const receiptRows=oporaLearningReceipt(answers,authored,lang,ease)
@@ -560,11 +563,17 @@ export default function OporaV6SlidePlayer({locale='en',data,busy=false,onClose,
               {['not_yet','not_attempted','uncomfortable','disagree','difficult'].includes(chosen)
                 ?<Lightbulb size={17} aria-hidden="true"/>
                 :<CheckCircle2 size={17} aria-hidden="true"/>}<span>{extraFeedback}</span></p>}
-            {HINT_KINDS.has(role)&&<div className={styles.hintBlock}>
-              <button type="button" className={styles.hintToggle} disabled={locked} onClick={revealHint}>
-                <Lightbulb size={17}/>{showHint?t.hideHint:t.aid}<ChevronDown size={16}/>
-              </button>
-              {showHint&&<p className={styles.hint}>{guidanceText} {t.nudge}</p>}
+            {SUPPORT_KINDS.has(role)&&<div className={styles.hintBlock} data-gentle-guidance={role}>
+              <div className={styles.animalHintRow}>
+                <img className={styles.hintOwl} src="/images/holistic-house/gentle-owl.svg"
+                  alt="" aria-hidden="true" width={42} height={42}/>
+                <button type="button" className={styles.hintToggle} disabled={locked}
+                  onClick={revealHint} aria-expanded={showHint}>
+                  <Lightbulb size={16} aria-hidden="true"/>{showHint?t.hideHint:t.aid}
+                  <ChevronDown size={16} aria-hidden="true"/>
+                </button>
+              </div>
+              {showHint&&<p className={styles.hint}>{guidanceText||t.hintHeader} {t.nudge}</p>}
             </div>}
             {(PRACTICE_KINDS.has(role)||role==='prepare')&&<p className={styles.gentle}>
               <ShieldCheck size={17}/>{showingReading?(lang==='ru'?'Вы выбрали режим чтения: выполнение необязательно.':'Read-only mode: practice is optional.'):t.personal}
