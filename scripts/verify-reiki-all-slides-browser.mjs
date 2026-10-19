@@ -136,15 +136,14 @@ async function exerciseJourney(page, locale, width) {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
     }
     if (["flight-04","tan-04","kun-04","ygg-04"].includes(id)) {
-      // No bypass without a feeling score AND a short written observation.
-      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
-      const slider = page.locator('[data-meditation-feeling] input[type="range"]');
-      await slider.focus();
-      await slider.press("ArrowRight");
-      await expect(page.locator("button[data-energywork-next]")).toBeDisabled();
+      // A short written review is enough; no numeric meditation rating.
+      const reviewButton = page.locator("button[data-energywork-next]");
+      await expect(reviewButton).toBeDisabled();
+      await expect(page.locator('[data-meditation-feeling]')).toHaveCount(0);
+      await expect(reviewButton).toContainText(locale==="ru" ? "Сохранить отзыв" : "Save review");
       await page.locator('textarea[id="answer-'+id+'"]').fill(locale==="ru"
         ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
-      await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
+      await expect(reviewButton).toBeEnabled();
     }
     if (index===expectedSequence.length) break;
     const next = page.locator("button[data-energywork-next]");
