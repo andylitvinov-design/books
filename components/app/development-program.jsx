@@ -223,10 +223,16 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
     ? recommendUnmeasuredPortraitTests({
         entries: profileTestEntries, results, missingAxes: missingPortraitAxes,
       }) : [], [profileTestEntries, missingPortraitAxes, results])
+  // All includes the complete vetted browse set, with personally missing
+  // dimensions ranked first. A questionnaire is shown only once.
+  const allTopicTests = useMemo(() => recommendProfileTopicTests({
+    entries: profileTestEntries, results, category: 'all', missingAxes: missingPortraitAxes,
+  }), [profileTestEntries, results, missingPortraitAxes])
   const displayedTests = useMemo(() => activeDomain === 'all'
-    ? recommendedTests : recommendProfileTopicTests({
+    ? [...recommendedTests, ...allTopicTests.filter(test => !recommendedTests.some(item => item.key === test.key))]
+    : recommendProfileTopicTests({
       entries: profileTestEntries, results, category: activeDomain, missingAxes: missingPortraitAxes,
-    }), [activeDomain, recommendedTests, profileTestEntries, results, missingPortraitAxes])
+    }), [activeDomain, recommendedTests, allTopicTests, profileTestEntries, results, missingPortraitAxes])
   const changeSector = (key, value) => {
     setGoals(previous => ({ ...previous, targets: { ...previous.targets, [key]: value } }))
     setDirty(true)
