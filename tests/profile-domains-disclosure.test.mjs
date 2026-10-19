@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as whatsappEnquiry from '../lib/whatsapp-enquiry.js'
+import { availableSavedReports, latestReceivedReport } from '../lib/profile/report-summary.js'
 
 const source = readFileSync(new URL('../components/app/profile-domains.jsx', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { fileName: 'profile-domains.jsx', compilerOptions: {
@@ -38,6 +39,7 @@ function mount(mode, locale) {
     react, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
     'next/link': { default: 'a' }, 'next/dynamic': { default: () => 'development-program-boundary' }, 'lucide-react': new Proxy({}, { get: () => 'svg' }),
     '@/lib/whatsapp-enquiry': whatsappEnquiry,
+    '@/lib/profile/report-summary': { availableSavedReports, latestReceivedReport },
     '@/lib/documents/recommendation': { recommendationItemType: item => item.type },
     '@/lib/profile/profile-service-offers': {
       PROFILE_AREAS: ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy'],
