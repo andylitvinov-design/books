@@ -1,5 +1,5 @@
 import type { PublicLocale } from './public-locales';
-export type NavigationId = 'home' | 'tests' | 'library' | 'services' | 'events' | 'relationships' | 'academy' | 'about' | 'courses' | 'cabinet' | 'house';
+export type NavigationId = 'home' | 'tests' | 'library' | 'services' | 'events' | 'business' | 'relationships' | 'academy' | 'about' | 'courses' | 'cabinet' | 'house';
 export interface NavigationItem { id: NavigationId; label: string; href: string; external: boolean; ariaLabel: string }
 export const navigationCopy: Record<PublicLocale, Record<NavigationId | 'navigation' | 'mobile' | 'language', string>>;
 export const primaryNavigationIds: NavigationId[];
