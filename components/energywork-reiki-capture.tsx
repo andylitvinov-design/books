@@ -125,6 +125,7 @@ export function EnergyworkReikiCapture({ locale, course }: { locale: PublicLocal
         <ContactChannelChooser
           locale={locale}
           whatsappUrl={enquiryHref}
+          label={action}
           className={styles.action}
           attributes={{ "data-energywork-action": choice }}
         />
