@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { classifyPublicLead, trainingEnquiryUrl } from "@/lib/public-lead-capture";
 import { ConsultationChoiceCapture } from "@/components/consultation-choice-capture";
+import { ConsultationCartEntry } from "@/components/commerce/consultation-cart-entry";
 
 const copy = {
   en: {
@@ -107,7 +108,7 @@ export function PublicConsultationCta({ locale, id, serviceBooking = false, wise
   // Both server render and the first client render now agree on null.
   // The dedicated Services page has a stable paid selector before hydration.
   // Keep other public, training and private paths on their existing route rules.
-  if (serviceBooking) return <ConsultationChoiceCapture locale={locale} variant="service" id={id} wiseEnabled={wiseEnabled} paypalPersonalEnabled={paypalPersonalEnabled} />;
+  if (serviceBooking) return <ConsultationCartEntry locale={locale} id={id} />;
   if (clientPath === null) return null;
   const route = clientPath ? classifyPublicLead(clientPath) : null;
   const mode = route?.kind === "training" ? "training" : route?.kind === "reading" ? "reading" : "personal";
