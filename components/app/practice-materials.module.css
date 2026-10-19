@@ -28,3 +28,17 @@
 .empty{padding:22px;border:1px dashed #c3d6db;border-radius:12px;color:#59717c}
 .error{color:#9b2744;font-weight:700}
 @media(max-width:640px){.tabs{margin-bottom:12px}.editorActions button,.saveActions button{flex:1 1 170px}.heading{align-items:stretch}.heading button{width:100%}}
+
+
+/* Owner's private report library remains separate from public video drafts. */
+.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs button{overflow-wrap:anywhere;font-size:.9rem;line-height:1.35;min-height:46px}
+.privatePreview{display:block;max-height:230px;width:100%;object-fit:contain;
+  margin:8px 0 12px;background:#153943;border-radius:12px}
+.external{display:inline-flex;align-items:center;min-height:44px;
+  font-weight:750;color:#185b72;overflow-wrap:anywhere}
+@media(max-width:640px){
+ .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tabs:has(>button:nth-child(3))>button:last-child{grid-column:1/-1}
+ .tabs button{font-size:.86rem}
+}
