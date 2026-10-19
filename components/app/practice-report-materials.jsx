@@ -1,8 +1,23 @@
 'use client'
+import {useState} from 'react'
 import styles from './practice-materials.module.css'
 
-export default function PracticeReportMaterials({items=[],loading=false,error='',locale='en',onRefresh,onManage}){
+export default function PracticeReportMaterials({items=[],loading=false,error='',locale='en',onRefresh}){
  const ru=locale==='ru',es=locale==='es'
+ const [manageError,setManageError]=useState('')
+ async function openLibrary(){
+  setManageError('')
+  try{
+   const response=await fetch('/api/app/practitioner/open',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'content-type':'application/json'},body:JSON.stringify({destination:'materials'}),
+   })
+   const data=await response.json().catch(()=>({}))
+   if(!response.ok||data.redirectUrl!=='/admin/materials')throw Error('NOT_AUTHORIZED')
+   window.location.assign(data.redirectUrl)
+  }catch{setManageError('Please sign in to your practitioner account and retry.')}
+ }
+
  const copy=ru?{
   heading:'Материалы для отчётов',info:'Эти материалы доступны только мастеру и клиентам, которым вы их назначите в отчёте.',
   empty:'Пока нет материалов.',refresh:'Обновить',manage:'Открыть библиотеку мастера',
@@ -35,8 +50,9 @@ export default function PracticeReportMaterials({items=[],loading=false,error=''
      {item.description&&<p>{item.description}</p>}
     </article>)}
    </div>:!error?<p className={styles.empty}>{copy.empty}</p>:null}
+  {manageError&&<p className={styles.error} role="alert">{manageError}</p>}
   <div className={styles.saveActions}>
-   <button type="button" className={styles.primary} onClick={onManage}>{copy.manage}</button>
+   <button type="button" className={styles.primary} onClick={()=>void openLibrary()}>{copy.manage}</button>
   </div>
  </section>
 }
