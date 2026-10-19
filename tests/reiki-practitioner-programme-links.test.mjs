@@ -7,55 +7,48 @@ const learner = read("components/energywork-ai-learner.tsx");
 const styles = read("components/energywork-ai-learner.module.css");
 const curriculum = read("data/academy/energywork-ai-curriculum.ts");
 
-test("Reiki programme discovery uses warm, concise bilingual copy", () => {
-  assert.match(learner, /program: "Discover your Reiki journey"/);
-  assert.match(learner, /program: "Откройте свой путь в Рейки"/);
-  assert.match(learner, /programmeTeaser: "5 lessons · 3 Reiki traditions · guided practices"/);
-  assert.match(learner, /programmeTeaser: "5 уроков · 3 системы Рейки · медитации"/);
-  assert.match(learner, /programmeIntro: "Start with a guided meditation/);
-  assert.match(learner, /programmeIntro: "Начните с медитации/);
-  assert.match(learner, /stopSaved: "Your progress is saved in My Courses/);
-  assert.match(learner, /stopSaved: "Ваш прогресс сохранён в разделе/);
-  assert.doesNotMatch(learner, /Your five-step journey is just beginning/);
-  assert.doesNotMatch(learner, /Course completion alone does not grant any initiation/);
+test("Journey hint uses a brief bilingual explanation", () => {
+  assert.ok(learner.includes('program: "Discover your Reiki journey"'));
+  assert.ok(learner.includes('program: "Откройте свой путь в Рейки"'));
+  assert.ok(learner.includes('programmeIntro: "Five short lessons:'));
+  assert.ok(learner.includes('programmeIntro: "Пять коротких уроков:'));
+  assert.ok(!learner.includes("programmeTeaser"));
 });
 
-test("All five lessons have readable benefit cards and keep reached-step navigation", () => {
-  for (const phase of ["flight", "tantra", "kundalini", "yggdrasil", "initiation"]) {
-    assert.match(learner, new RegExp('    ' + phase + ': "'));
+test("The hint renders only one summary line and a short paragraph", () => {
+  const start = learner.indexOf('<details className={styles.programme}>');
+  const end = learner.indexOf('<footer className={styles.footer}>', start);
+  assert.ok(start > 0 && end > start);
+  const hint = learner.slice(start, end);
+  assert.ok(hint.includes('<strong>{t.program}</strong>'));
+  assert.ok(hint.includes('<p className={styles.programmeIntro}>{t.programmeIntro}</p>'));
+  for (const forbidden of ["<ol", "<li", "programmeList", "programmeCard", "programmeJump", "programmeLink", "saveDetails", "<aside", "energyworkLessons.map"]) {
+    assert.ok(!hint.includes(forbidden), "The hint should not render " + forbidden);
   }
-  assert.match(learner, /energyworkLessons\.map\(\(lesson, number\) =>/);
-  assert.match(learner, /programmeBenefits\[locale\]\[lesson\.phase\]/);
-  assert.match(learner, /const unlocked = range\.start <= reachedIndex/);
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| !unlocked\}/);
-  assert.match(learner, /jumpToSlide\(lesson\.firstSlideId\)/);
-  assert.match(learner, /aria-current=\{currentLessonRange\?\.lesson === number \+ 1/);
-  assert.match(learner, /<summary className=\{styles\.programmeSummary\}>/);
-  assert.match(learner, /<ol className=\{styles\.programmeList\}>/);
-  assert.match(learner, /<aside className=\{styles\.preview\} aria-live="polite">/);
 });
 
-test("Three Reiki traditions retain their own description links inside the cards", () => {
+test("Course navigation and private saving stay accessible outside the hint", () => {
+  assert.ok(learner.includes('<nav className={styles.journey} aria-label={t.fiveLessons}>'));
+  assert.ok(learner.includes('energyworkLessons.map((lesson, number) => ('));
+  assert.ok(learner.includes('<span className={styles.journeyLabel}>{lesson.title[locale]}</span>'));
+  assert.ok(learner.includes('<details className={styles.saveManager}>'));
+  assert.ok(learner.includes('aria-label={t.consentTitle}'));
+  for (const fn of ["signIn", "startSaving", "shareWithTeacher", "reloadProgress"]) {
+    assert.ok(learner.includes("onClick={" + fn + "}"), "Saving control missing: " + fn);
+  }
+  assert.ok(learner.includes('href={"/" + locale + "/app/course?view=courses"}'));
   for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
     assert.ok(curriculum.includes('studyPath: "' + path + '"'), path);
   }
-  assert.match(learner, /const system = energyworkPathChoices\.find\(\(choice\) => choice\.id === lesson\.phase\)/);
-  assert.ok(learner.includes('href={"/" + locale + "/academy/" + system.studyPath}'));
-  assert.ok(learner.includes('target="_blank" rel="noopener noreferrer"'));
-  assert.ok(learner.includes('aria-label={lesson.title[locale] + " — " + t.systemDetails}'));
-  assert.match(learner, /systemDetails: "About this practice"/);
-  assert.match(learner, /systemDetails: "Об этой практике"/);
-  assert.match(learner, /<span className=\{styles\.programmeLesson\}>\{lesson\.title\[locale\]\}<\/span>/);
 });
 
-test("Cards are high-contrast, accessible and independently scrollable on phones", () => {
-  assert.match(styles, /REIKI PROGRAMME DISCOVERY/);
-  for (const selector of [".programmeSummary", ".programmeCard", ".programmeLesson", ".programmeBenefit", ".programmeNumber", ".programmeLink:focus-visible", ".programmeJump:focus-visible"]) {
-    assert.ok(styles.includes(selector), selector);
-  }
-  assert.match(styles, /\.programme\[open\]\s*\{[\s\S]*?overflow-y: auto/);
-  assert.match(styles, /\.programme \.programmeLesson\s*\{[\s\S]*?color: #123f51/);
-  assert.match(styles, /\.programme \.programmeJump:disabled\s*\{[\s\S]*?opacity: 1/);
-  assert.match(styles, /@media \(max-width: 760px\)/);
-  assert.match(styles, /prefers-reduced-motion: reduce/);
+test("One-line hint does not push lesson and navigation off the mobile screen", () => {
+  assert.ok(styles.includes("REIKI JOURNEY HINT"));
+  assert.ok(styles.includes("height: 36px"));
+  assert.ok(styles.includes("white-space: nowrap"));
+  assert.ok(styles.includes(".programme[open]"));
+  assert.ok(styles.includes(".programme .programmeBody {\n  position: absolute"));
+  assert.ok(styles.includes(".saveManager > .preview {\n  position: absolute"));
+  assert.ok(styles.includes("max-height: min(65dvh, 540px)"));
+  assert.ok(styles.includes("prefers-reduced-motion: reduce"));
 });
