@@ -226,12 +226,13 @@ async function verifyShortViewport(page,locale) {
         lastChoice:within('[class*="experienceChoice"]:last-child'),
         selectedGuidance:within('[class*="experienceGuidance"]'),
         reviewPortrait:within('[class*="art"]'),
+        milestoneBadge:within('[class*="milestoneCard"]'),
       };
     });
     // Welcome and introductory photo/video slides should fit by design.
     // Dense translated answers or timer+reflection may scroll naturally:
     // never make the type tiny or hide the five course stage names to force fit.
-    const allowedExtra = id === "welcome-02" ? 110 : id === "flight-03" ? 125 : 35;
+    const allowedExtra = id === "flight-done" ? 3 : id === "welcome-02" ? 110 : id === "flight-03" ? 125 : 35;
     assert.ok(dimensions.used <= dimensions.space + allowedExtra,
       locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
     assert.ok(dimensions.justify.includes("center"),
@@ -255,6 +256,13 @@ async function verifyShortViewport(page,locale) {
       assert.ok(dimensions.reviewPortrait && dimensions.reviewPortrait.height >= 98,
         locale+" review portrait must be a real recognizable photograph, not a tiny strip: "+JSON.stringify(dimensions));
     }
+    if (id === "flight-done") {
+      assert.ok(dimensions.reviewPortrait && dimensions.reviewPortrait.height >= 88 &&
+        dimensions.reviewPortrait.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" first lesson sunrise photo must fit without scrolling: "+JSON.stringify(dimensions));
+      assert.ok(dimensions.milestoneBadge && dimensions.milestoneBadge.bottom <= dimensions.panelBottom + bottomMargin,
+        locale+" compact achievement badge must fit without scrolling: "+JSON.stringify(dimensions));
+    }
   }
 
   await expectFits("welcome-01");
@@ -272,7 +280,22 @@ async function verifyShortViewport(page,locale) {
   await expectFits("flight-03");
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-voices");
-  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:6}));
+  await page.locator("button[data-energywork-next]").click();
+  await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id","flight-04");
+  await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
+    ? "Я заметил спокойное состояние и тёплый свет." : "I felt a quiet, peaceful moment.");
+  await page.locator("button[data-energywork-next]").click();
+  await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id","flight-05");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-done");
+  const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
+  await expect(photo).toHaveAttribute("src",/reiki-approved-sunrise-v3\.webp/);
+  await expect(photo).toHaveJSProperty("complete",true);
+  assert.ok(await photo.evaluate(node=>node.naturalWidth)>0,locale+": the sunrise portrait must load");
+  await expect(page.locator('[data-energywork-slide-id="flight-done"] [class*="milestoneCard"]'))
+    .not.toContainText(/Personal initiation and group membership|Инициация и вступление в сообщество/);
+  await page.screenshot({path:output+"/"+engineName+"-"+locale+"-375-short-flight-done.png",animations:"disabled",timeout:30000});
+  console.log("REIKI_SHORT_VIEWPORT_BALANCE",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:9}));
 }
 
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
