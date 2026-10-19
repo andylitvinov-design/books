@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs"
 import {
   ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete,
-  energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId, energyworkP2ResumeId,
+  energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId,
 } from "../data/academy/energywork-ai-schema.js"
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8")
@@ -27,10 +27,10 @@ const questions = [
 
 test("Flight lesson places the practice on slide 3 without dropping IDs", () => {
   const sequence = energyworkSequence()
-  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p3")
+  assert.equal(ENERGYWORK_VERSION, "2026-10-19.p4")
   assert.deepEqual(sequence.slice(2, 9), [
     "flight-01", "flight-02", "flight-03", "flight-voices",
-    "flight-04", "flight-05", "flight-done",
+    "flight-05", "flight-04", "flight-done",
   ])
 })
 
@@ -83,10 +83,12 @@ test("My Courses opens the exact last saved slide and the private API maps older
   assert.equal(energyworkPreviousResumeId("presence-02"), "tan-study-03")
   assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
   assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
-  assert.equal(energyworkPreviousResumeId("flight-05"), "flight-05")
+  assert.equal(energyworkPreviousResumeId("flight-05"), "flight-04")
   assert.equal(energyworkP2ResumeId("flight-05"), "flight-03")
-  assert.equal(energyworkP2ResumeId("flight-03"), "flight-05")
+  assert.equal(energyworkP2ResumeId("flight-03"), "flight-04")
   assert.equal(energyworkP2ResumeId("presence-01"), "tan-03")
+  assert.equal(energyworkP3ResumeId("flight-04"), "flight-05")
+  assert.equal(energyworkP3ResumeId("flight-05"), "flight-04")
   assert.equal(energyworkP2ResumeId("tan-03"), "presence-01")
 })
 

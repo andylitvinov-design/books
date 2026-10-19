@@ -15,8 +15,8 @@ test('Approved V3 retains the complete five-lesson, 57-screen real learning flow
   assert.match(learner,/energyworkLessons\.map\(\(lesson, number\) =>/);
   assert.match(learner,/const slides = useMemo\(\(\) => energyworkSlides\(\), \[\]\)/);
   assert.match(learner,/const total = slides\.length/);
-  assert.match(curriculum,/ENERGYWORK_COURSE_VERSION = "2026-10-19\.p3"/);
-  assert.match(schema,/ENERGYWORK_VERSION = '2026-10-19\.p3'/);
+  assert.match(curriculum,/ENERGYWORK_COURSE_VERSION = "2026-10-19\.p4"/);
+  assert.match(schema,/ENERGYWORK_VERSION = '2026-10-19\.p4'/);
   assert.match(learner,/<AcademyVideoPlayer/);
   assert.match(learner,/styles\.milestoneCard/);
   assert.match(learner,/styles\.voicesCard/);

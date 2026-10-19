@@ -5,7 +5,7 @@ import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p3";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p4";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -202,14 +202,14 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
-  { id: "flight-04", phase: "flight", kind: "reflection",
-    title: l("Your meditation feedback", "Ваш отзыв о медитации"),
-    body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
-    question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
   { id: "flight-05", phase: "flight", kind: "reflection",
     title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
     body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
     question: { type: "text", prompt: l("Your thought…", "Ваша мысль…") } },
+  { id: "flight-04", phase: "flight", kind: "reflection",
+    title: l("Your meditation feedback", "Ваш отзыв о медитации"),
+    body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
+    question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
