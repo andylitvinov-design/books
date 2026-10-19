@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, BookOpen, CheckCircle2, Compass, HeartHandshake, Sparkles } from "lucide-react";
@@ -380,7 +381,7 @@ export function PrinciplesOfEnergywork({ locale }: { locale: PublicLocale }) {
   const tantraPractice = englishGuidedMeditations.find((item) => item.key === "tantra-reiki");
   const yggdrasilMeditation = englishGuidedMeditations.find((item) => item.key === "reiki-yggdrasil");
   const kundaliniMeditation = englishGuidedMeditations.find((item) => item.key === "kundalini-reiki");
-  const learnPath = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
+  const learnPath = REIKI_FREE_COURSE_PATH;
   const personalSessionUrl = whatsappEnquiryUrl({
     locale,
     service: "Personal Reiki teaching & initiation",

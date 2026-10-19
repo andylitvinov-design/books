@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { AcademyVideoCourses } from "@/components/academy-video-courses";
@@ -155,7 +156,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
             : locale === "es"
               ? "Introducción al trabajo energético y acceso gratuito al Nivel 1 de Reiki Yggdrasil, Tantra Reiki y Kundalini Reiki."
               : "Meet the principles of energywork and begin a free first-level introduction to Reiki Yggdrasil, Tantra Reiki or Kundalini Reiki.",
-          href: "/" + locale + "/academy/principles-of-energywork",
+          href: REIKI_FREE_COURSE_PATH,
           image: "/academy/reiki-yggdrasil/source/program-overview.jpg",
           actionLabel: locale === "ru" ? "Начать бесплатный курс" : locale === "es" ? "Empezar gratis" : "Start the free course",
         },

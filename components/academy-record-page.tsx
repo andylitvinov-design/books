@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -160,7 +161,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                   <Link className="tantra-course-hero__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{locale === "ru" ? "Пройти бесплатные тантрические тесты ↗" : locale === "es" ? "Hacer los tests tántricos gratuitos ↗" : "Take free Tantra self-reflection tests ↗"}</Link>
                   <div className="tantra-course-hero__secondary-links">
                     <a href="#tantra-level-1">{locale === "ru" ? "Что изучим на 1-й ступени ↓" : locale === "es" ? "Qué aprenderás en Nivel 1 ↓" : "What you learn in Level 1 ↓"}</a>
-                    <Link href={"/" + locale + "/academy/reiki/free-practitioner-course"}>{locale === "ru" ? "Попробовать бесплатный курс из 5 уроков ↗" : locale === "es" ? "Probar el curso gratis de 5 lecciones ↗" : "Try the free 5-lesson course ↗"}</Link>
+                    <Link href={REIKI_FREE_COURSE_PATH}>{locale === "ru" ? "Попробовать бесплатный курс из 5 уроков ↗" : locale === "es" ? "Probar el curso gratis de 5 lecciones ↗" : "Try the free 5-lesson course ↗"}</Link>
                     <a href="#tantra-next-levels">{locale === "ru" ? "Остальные ступени (2–9) ↓" : locale === "es" ? "Otros niveles (2–9) ↓" : "Other levels (2–9) ↓"}</a>
                     <a className="tantra-course-hero__guide" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать PDF для телефона ↓" : locale === "es" ? "Descargar guía móvil ↓" : "Get the mobile PDF ↓"}</a>
                   </div>

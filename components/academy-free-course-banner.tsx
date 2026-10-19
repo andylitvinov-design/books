@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Image from "next/image";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import Link from "next/link";
@@ -167,7 +168,7 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
               const href = course.id === "stress"
                 ? `/${courseLocale}/${course.path}`
                 : course.id === "energywork"
-                  ? `/${courseLocale}/academy/${course.path}`
+                  ? REIKI_FREE_COURSE_PATH
                   : `/${locale}/academy/${course.path}`;
               return (
                 <article className={styles.course} key={course.id} data-free-course-id={course.id}>
