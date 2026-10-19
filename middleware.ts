@@ -96,6 +96,13 @@ export function middleware(request: NextRequest) {
   // A local MediaRecorder preview uses a blob: URL even if the optional
   // private Storage connection is temporarily unavailable. Scope this to
   // existing staff session editors, never public/client report readers.
+  // Only authorized private report readers can play local narration blobs.
+  const reportNarrationReader = /^\/(en|ru)\/client\/session\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/[^/]+\/sessions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/client\/[^/]+\/documents\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/prescriptions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/app\/sessions\/[^/]+\/?$/.test(pathname)
+    || /^\/(en|ru)\/app\/document-view\/[^/]+\/?$/.test(pathname)
   const ownerRecorderPage = deliveryPath && pathname.startsWith('/admin/')
   const deliveryOrigin = (() => {
     if((process.env.HH_CLIENT_DELIVERY_ENABLED !== 'true'&&!materialLibraryPage) || !deliveryPath) return ''
@@ -135,7 +142,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubePhoneUploader ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + listingImageOrigin,
     youtubePhoneUploader ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin) ? ' blob:' : '') + deliveryOrigin,
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader) ? ' blob:' : '') + deliveryOrigin,
     "font-src 'self'", "connect-src 'self'" + (youtubePhoneUploader ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + externalVideoUploadOrigin + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubePhoneUploader ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)

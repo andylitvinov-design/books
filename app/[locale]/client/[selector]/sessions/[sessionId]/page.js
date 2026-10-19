@@ -26,7 +26,7 @@ export default async function CabinetSession({params}) {
       const payment=record.kind==='payment'
       const projected=payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale)
       if(projected){if(payment)reportContent=<PaymentDocument document={projected} locale={locale} embedded/>
-        else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={locale} embedded/>}}
+        else {recommendation=projected;reportContent=<PrescriptionDocument document={projected} locale={locale} embedded narration={{scope:'cabinet-session',selector,sessionId}}/>}}
     }
   }
   return <ClientSessionPage locale={locale} session={session} selector={selector}

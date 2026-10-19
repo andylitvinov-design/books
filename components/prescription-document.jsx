@@ -6,13 +6,15 @@ import { recommendationCopy, recommendationGuidance, recommendationItemType, rem
 import { DocumentAutoPrint } from './document-auto-print'
 import { ReportAppendixPrintExpander } from './report-appendix-print-expander'
 import { PrescriptionActions } from './prescription-actions'
+import { ReportNarrationPlayer } from './report-narration-player'
+import { narrationEnabled } from '@/lib/clients/report-narration-service'
 import { DocumentLetterhead, DocumentSignature } from './document-letterhead'
 import { extractReportProgress } from '@/lib/documents/report-progress'
 import { resolveRecommendedTests } from '@/lib/consultations/recommended-tests'
 import { clientReportHeading } from '@/lib/documents/report-heading'
 import './consultation-report.css'
 
-export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false }) {
+export function PrescriptionDocument({ document, locale, selector, autoPrint = false, admin = false, cabinetAction = null, embedded = false, narration = null }) {
   const labels = recommendationCopy(locale, document.recommendationType)
   const guidance = document.additionalNotes ? undefined : recommendationGuidance(document, locale)
   const progress = extractReportProgress(document.analysis)
@@ -91,6 +93,7 @@ export function PrescriptionDocument({ document, locale, selector, autoPrint = f
       </div>
       {document.analysis && <section className="canonical-general canonical-report-analysis">
         <h2>{labels.analysis}</h2>
+        {narration && narrationEnabled() && <ReportNarrationPlayer locale={locale} access={narration} />}
         <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{document.analysis}</p>
       </section>}
 
