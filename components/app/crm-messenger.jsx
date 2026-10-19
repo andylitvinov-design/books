@@ -171,6 +171,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
   }
   async function action(name,payload){
     if(busy)return null
+    const requestThreadId=payload?.threadId||activeRef.current
     setBusy(true);setStatus('')
     try{
       const response=await fetch('/api/app/crm/messenger',{method:'POST',credentials:'same-origin',
@@ -183,25 +184,26 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
         onCrmChange?.()
       return value
     }catch(e){
-      setStatus(e.message==='CONFLICT'?w.conflict:
-        replyReason(e.message,lang)||w.failure)
+      if(activeRef.current===requestThreadId)
+        setStatus(e.message==='CONFLICT'?w.conflict:
+          replyReason(e.message,lang)||w.failure)
       return null
     }
     finally{setBusy(false)}
   }
   async function send(){
-    const body=text.trim()
-    if(!active||!body)return
+    const body=text.trim(),threadId=activeRef.current
+    if(!threadId||!body)return
     // Keep the same idempotency key after a lost HTTP reply, network failure
     // or an uncertain provider response. Repeated clicks must never create
     // another provider request for an unchanged draft.
     const old=pendingRequest.current
-    const pending=(old&&old.threadId===active&&old.text===body)
-      ?old:{threadId:active,text:body,id:crypto.randomUUID()}
+    const pending=(old&&old.threadId===threadId&&old.text===body)
+      ?old:{threadId,text:body,id:crypto.randomUUID()}
     pendingRequest.current=pending
-    const result=await action('send',{threadId:active,text:body,
+    const result=await action('send',{threadId,text:body,
       requestId:pending.id,purpose:'customer_reply'})
-    if(!result)return
+    if(!result||activeRef.current!==threadId)return
     if(result.status==='accepted'||result.status==='delivered'||result.status==='read'){
       setText('')
       pendingRequest.current=null
@@ -219,18 +221,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
       ?old:{threadId,text:body,id:crypto.randomUUID()}
     pendingNote.current=pending
     const result=await action('note',{threadId,noteId:pending.id,text:body})
-    if(!result)return
+    if(!result||activeRef.current!==threadId)return
     pendingNote.current=null
     setNoteText('')
     setStatus(w.noteSaved)
   }
   async function changeStage(nextValue){
     if(!selected||busy||nextValue===selected.lifecycle)return
+    const threadId=selected.id
     if(nextValue==='archived'&&!window.confirm(w.archiveConfirm))return
     const result=await action('set_stage',{
-      threadId:selected.id,lifecycle:nextValue,expectedRevision:selected.contactRevision,
+      threadId,lifecycle:nextValue,expectedRevision:selected.contactRevision,
     })
-    if(result)setStatus(w.stageSaved)
+    if(result&&activeRef.current===threadId)setStatus(w.stageSaved)
   }
   async function createFollowup(){
     if(!selected||!dueOn||busy)return
@@ -240,14 +243,15 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
       ?old:{...args,id:crypto.randomUUID()}
     pendingFollowup.current=pending
     const result=await action('create_followup',pending)
-    if(result){pendingFollowup.current=null;setStatus(w.added)}
+    if(result&&activeRef.current===args.threadId){pendingFollowup.current=null;setStatus(w.added)}
   }
   async function completeFollowup(item){
     if(!selected||busy)return
+    const threadId=selected.id
     const result=await action('complete_followup',{
-      threadId:selected.id,id:item.id,expectedRevision:item.revision,
+      threadId,id:item.id,expectedRevision:item.revision,
     })
-    if(result)setStatus(w.completed)
+    if(result&&activeRef.current===threadId)setStatus(w.completed)
   }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
