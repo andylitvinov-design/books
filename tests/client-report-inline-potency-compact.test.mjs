@@ -37,7 +37,7 @@ test('the saved regimen is formatted without modifying a practitioner prescripti
 
 test('HTML and both signed PDF layouts keep saved potency on the title line', () => {
   const pdf = read('lib/prescriptions/pdf.js')
-  assert.match(pdf, /const nameLines=wrapPdfText\(String\(itemNumber\)\+'\.'\+item\.displayName\+\(potency\?' '\+potency:''\)/)
+  assert.ok(pdf.includes("const nameLines=wrapPdfText(String(itemNumber)+'. '+item.displayName+(potency?' '+potency:''),titleWidth,15.1)"))
   assert.match(pdf, /const nameLines=wrapPdfText\(String\(item\.displayName\|\|''\)\+\(potency\?' '\+potency:''\)/)
   assert.equal((pdf.match(/const administration\s*=\s*potency \? schedule\.split\(' · '\)\.slice\(1\)\.join\(' · '\) : schedule/g) || []).length, 2)
   assert.match(pdf, /const scheduleLines=administration\?wrapPdfText\(administration,titleWidth,10\.7\):\[\]/)
