@@ -15,8 +15,8 @@ type Format = 'free' | 'express' | 'full' | 'mentoring'
 type Choice = { label: string; detail: string }
 
 const areas: Area[] = ['business', 'money', 'personal', 'project']
-const outcomes: Outcome[] = ['gentle', 'one-step', 'deeper', 'ongoing']
-const formats: Format[] = ['free', 'express', 'full', 'mentoring']
+const outcomes = BUSINESS_FINDER_OUTCOMES as readonly Outcome[]
+const formats = BUSINESS_FINDER_FORMATS as readonly Format[]
 
 const words: Record<Locale, {
   eyebrow: string; title: string; lead: string; steps: string; stepOne: string; stepTwo: string; stepThree: string;
