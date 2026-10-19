@@ -19,7 +19,7 @@ export default async function ConsultationResult({ params }) {
   const publication=await inspectSavedClientReportPublication(recommendation,store)
   const documents = [
     ...(payment ? [{ record: payment, kind: 'payment', paymentStatus: payment.paymentStatus, currency: payment.currency, amount: payment.amount, editHref: `/admin/payments/${payment.id}#edit-payment` }] : []),
-    { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/prescriptions/${recommendation.id}#edit-recommendation` },
+    { record: recommendation, kind: 'recommendation', recommendationType: recommendation.recommendationType, count: recommendation.items.length, editHref: `/admin/consultations/${recommendation.id}/edit#edit-recommendation` },
   ].map(({ record, ...display }) => ({ ...display, id: record.id, active: record.status === 'active', revoke: revokeConsultationDocumentAction.bind(null, id, record.id), reactivate: reactivateConsultationDocumentAction.bind(null, id, record.id) }))
   return <main className="prescription-admin-shell consultation-result">
     <ResultScreen clientId={recommendation.clientId} logout={logout}
