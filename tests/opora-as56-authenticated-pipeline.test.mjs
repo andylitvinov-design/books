@@ -34,6 +34,10 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       },
     })
     try {
+      // Real reply first; no clinical rating or forced change of mood.
+      await click(player, locale==='ru'?'Напряжённо':'Tense')
+      assert.match(textOf(player.tree),locale==='ru'
+        ?/не нужно заставлять себя расслабиться/:/do not have to make yourself relax/)
       await click(player, t.next)
       await click(player, t.tried)
       await click(player, t.next)
@@ -52,6 +56,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
       assert.equal(owner.cycle.content_version, COURSE_ANTISTRESS_SKILLS_V7)
       assert.equal(saved.signals.window, 'practice_v6')
+      assert.equal(payload.welcomeFeeling,'tense')
+      assert.equal(saved.signals.welcomeFeeling,'tense','Mood belongs to this authenticated lesson session')
       assert.equal(saved.signals.interactionSchema, 'as-5.6-five-moments-v1')
       assert.deepEqual(payload.visitedSlideKeys, [...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
       assert.equal(saved.signals.practiceAttempt, 'tried')
