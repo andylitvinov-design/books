@@ -76,7 +76,7 @@ export function ConsultationCartEntry({ locale, id }: { locale: ServiceLocale; i
           <p className={styles.eyebrow}><HeartHandshake size={17} aria-hidden="true" />{t.eyebrow}</p>
           <h2 id={headingId}>{t.title}</h2>
         </div>
-        <Link href={`/${locale}/cart`} className={styles.cartLink} data-consultation-cart-link>
+        <Link href={`/${locale}/cart${selected.length ? "?items=" + selected.join(",") : ""}`} className={styles.cartLink} data-consultation-cart-link>
           <ShoppingBasket size={19} aria-hidden="true" /> <span>{t.cart}</span>
           <b aria-live="polite" aria-atomic="true">{selected.length}</b>
         </Link>
