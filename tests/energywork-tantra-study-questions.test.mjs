@@ -3,7 +3,7 @@ import test from "node:test"
 import { readFileSync } from "node:fs"
 import {
   ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
-  ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete,
+  ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete, energyworkCombinedTantraAnswer,
   energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId,
   energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId,
 } from "../data/academy/energywork-ai-schema.js"
@@ -76,7 +76,7 @@ test("All seven questions retain their original EN/RU prompts and separate priva
   assert.match(repo, /answers\[secondaryId\] = body\.secondaryAnswer/)
 })
 
-test("The reading precedes the reordered quiz, and both final answers are mandatory", () => {
+test("The final two Tantra prompts use one textarea with the existing two private answer IDs", () => {
   const intro = curriculum.indexOf('id: "tan-05"')
   const first = curriculum.indexOf('id: "tan-study-04"')
   assert.ok(intro > 0 && first > intro)
@@ -85,16 +85,28 @@ test("The reading precedes the reordered quiz, and both final answers are mandat
   assert.equal(energyworkTantraStudyAnswerComplete("   "), false)
   assert.equal(energyworkTantraStudyAnswerComplete(undefined), false)
   assert.equal(energyworkTantraStudyAnswerComplete("My answer"), true)
-  assert.match(learner, /secondaryQuestion && !energyworkTantraStudyAnswerComplete/)
+  assert.equal(energyworkCombinedTantraAnswer("", ""), "")
+  assert.equal(energyworkCombinedTantraAnswer("The purpose", ""), "The purpose")
+  assert.equal(energyworkCombinedTantraAnswer("", "Applications"), "Applications")
+  assert.equal(energyworkCombinedTantraAnswer("A shared answer", "A shared answer"), "A shared answer")
+  assert.equal(energyworkCombinedTantraAnswer("Original purpose", "Original uses"), "Original purpose\n\nOriginal uses")
+  assert.match(learner, /!energyworkTantraStudyAnswerComplete\(unifiedStudyAnswer\)/)
+  assert.match(learner, /const mirrorId = answerId === slide.id \? slide.secondaryQuestion\?\.id : undefined/)
+  assert.match(learner, /if \(mirrorId\) dirtyRef.current.add\(mirrorId\)/)
   assert.match(learner, /data-tantra-study-combined/)
   assert.match(learner, /secondaryAnswer: secondary/)
+  const visibleQuestionUi = learner.slice(learner.indexOf('{slide.question.type === "text" ? ('), learner.indexOf('{isMeditationFeedback ? <p className={styles.feedbackCount}'))
+  assert.equal((visibleQuestionUi.match(/<textarea\b/g) || []).length, 1, "only one writing field on the final combined screen")
+  assert.doesNotMatch(visibleQuestionUi, /id=\{"answer-" \+ slide.secondaryQuestion.id\}/)
+  assert.match(learner, /const needsBackfill = Boolean/)
+  assert.match(learner, /answer.trim\(\) === secondary.trim\(\)/)
   assert.match(learner, /required=\{isReikiStudyQuestion\}/)
   assert.match(learner, /t\.tantraAnswerRequired/)
   assert.match(learner, /data-tantra-study-hint/)
   assert.match(learner, /data-tantra-study-link/)
   assert.match(repo, /body\.slideId === 'tan-study-02' && !energyworkTantraStudyAnswerComplete/)
   assert.match(repo, /TANTRA_STUDY_ANSWER_REQUIRED/)
-  assert.match(styles, /\.tantraSecondQuestion/)
+  assert.match(styles, /\.tantraSecondPrompt/)
   assert.match(styles, /\.tantraStudyLink:focus-visible/)
   assert.match(browserQa, /id === "tan-06" \|\| id\.startsWith\("tan-study-"\)/)
 })
