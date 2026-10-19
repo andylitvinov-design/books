@@ -34,7 +34,7 @@ test('the compact public finder links to tests, courses and assistance without l
   assert.match(css, /\.shell :global\(#hh-simple-topic-title\)\{scroll-margin-top:115px\}/)
   assert.match(picker, /TOPICS\.map/)
   assert.match(picker, /onToggleFocus\(key\)/)
-  assert.match(picker, /problemsForTopics\(focus\)/)
+  assert.match(picker, /problemsForTopics\(concernFocus\)/)
   assert.match(picker, /onToggleProblem\(problem\.key\)/)
   assert.ok(picker.includes('<details className={styles.advanced} id="hh-more-test-filters">'))
 })
