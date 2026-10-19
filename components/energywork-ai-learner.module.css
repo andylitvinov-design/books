@@ -3413,3 +3413,12 @@
     margin-top: 4px;
   }
 }
+
+/* Final 375×625 RU fit: save the remaining five pixels of benefit-card
+   overflow through whitespace only; do not shorten translations or text. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[lang="ru"][data-course-portrait="v3"] .welcomeSlide .benefits {
+    margin-top: 0;
+    padding-block: 3px;
+  }
+}
