@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
 import { useState } from 'react'
 
 // The thumbnail is decorative: the adjacent heading provides the remedy name.
@@ -7,11 +8,10 @@ import { useState } from 'react'
 export function RemedyReportThumbnail({ src, number }) {
   const source = typeof src === 'string' ? src.trim() : ''
   const [failedSource, setFailedSource] = useState(null)
-  const showImage = source && failedSource !== source
+  const showImage = Boolean(source && failedSource !== source)
 
   return <span className="canonical-remedy-unified-thumb" aria-hidden="true">
     {showImage
-      // eslint-disable-next-line @next/next/no-img-element
       ? <img src={source} alt="" loading="lazy" decoding="async" onError={() => setFailedSource(source)} />
       : <span className="canonical-remedy-unified-photo-fallback">✧</span>}
     <span className="canonical-remedy-number canonical-remedy-unified-index">{String(number).padStart(2, '0')}</span>
