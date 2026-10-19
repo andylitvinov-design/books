@@ -349,6 +349,20 @@
   .footer{padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom))}
   .primary,.back{min-height:49px;font-size:16px}
 }
+/* Compact scenic programme pages after a confirmed daily save. */
+.frame.weekOne{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.frame.weekTwo{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.frame.nextStep{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.weekList{display:grid;gap:6px;list-style:none;margin:0;padding:0}
+.weekList li{display:grid;grid-template-columns:65px minmax(0,1fr);align-items:center;gap:9px;padding:7px 11px;border:1px solid #b9dddc;border-radius:12px;background:#ffffffc4}
+.weekDay{color:#247b83;font-size:13px;font-weight:850;white-space:nowrap}
+.weekList strong{color:#1a4b5e;font-size:clamp(14px,3.65vw,16px);line-height:1.27;overflow-wrap:anywhere}
+.nextLesson{display:grid;gap:10px;padding:16px;border:1px solid #a2d9d7;border-radius:18px;background:#ddf7f2ed}
+.nextDay{color:#197d87;font-size:13px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.nextLesson strong{font:700 clamp(23px,6vw,30px)/1.2 Georgia,'Times New Roman',serif;color:#164a5a}
+.nextLesson p{margin:0;color:#235464;font-size:clamp(16px,4vw,18px);line-height:1.42}
+.nextLesson p span{font-weight:750}
+@media(max-height:680px){.weekList{gap:4px}.weekList li{padding:5px 9px}.weekList strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){
   .fill{transition:none}
   .frame::before{transform:none}
