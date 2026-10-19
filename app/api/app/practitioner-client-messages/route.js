@@ -41,7 +41,8 @@ async function handler(request){
       const id=data.id
       after(async()=>{try{await dispatchClientMessagePush(config,id)}catch{/* best effort; no private logs */}})
     }
-    const {notifyClient:internalFlag,...safeData}=data
+    const safeData={...data}
+    delete safeData.notifyClient
     return auth.apply(NextResponse.json(safeData,{headers:PRIVATE_HEADERS}))
   }catch(error){
     const safe=safeError(error)

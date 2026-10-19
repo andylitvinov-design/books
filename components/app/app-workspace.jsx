@@ -239,6 +239,18 @@ export default function AppWorkspace({ locale, path = [] }) {
           }
         } catch { /* Sign-out must still complete even if iOS is offline. */ }
       }
+      // An installed device must not remain subscribed to a previous account
+      // after sign-out or account switching. Keep failures non-blocking.
+      try {
+        const registration = 'serviceWorker' in navigator
+          ? await navigator.serviceWorker.getRegistration('/') : null
+        const subscription = await registration?.pushManager?.getSubscription()
+        if (subscription) {
+          await appFetch('notifications/unsubscribe', { endpoint: subscription.endpoint },
+            'POST', { accountId: data.account.id })
+          await subscription.unsubscribe()
+        }
+      } catch { /* Do not block sign-out for an unavailable push service. */ }
       await appFetch('auth/logout', { allDevices })
     } catch (e) {
       setError(e)
