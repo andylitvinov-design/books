@@ -128,7 +128,7 @@ test('owner route, privacy, pilot and signature controls are enforced in source'
  assert.doesNotMatch(webhook,/console\.log/)
 })
 test('SQL schema isolates owner records, STOP and provider callbacks',()=>{
- const schema=source('supabase/migrations/20261019180000_hh_crm_sms_delivery.sql')
+ const schema=source('supabase/migrations/20261019162351_hh_crm_sms_delivery_20261019.sql')
  assert.match(schema,/alter table app\.crm_consent_ledger add constraint/)
  assert.match(schema,/alter table app\.crm_sms_jobs force row level security/)
  assert.match(schema,/revoke all on app\.crm_sms_jobs from public,anon,authenticated/)
