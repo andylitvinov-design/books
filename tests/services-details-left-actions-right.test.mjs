@@ -46,7 +46,7 @@ test("matched and editorial service cards show Details first on all locales", ()
 test("personal offer cards show expandable Details to the left of the request action", () => {
   const src = read("components/services-studio-offers.tsx");
   const start = src.indexOf('<div className={styles.actions}>');
-  const end = src.indexOf('</div>', start + 10);
+  const end = src.indexOf('</article>', start + 10);
   assert.ok(start >= 0 && end > start);
   const actions = src.slice(start, end);
   assert.ok(actions.indexOf('<details className={styles.details}>') >= 0);
