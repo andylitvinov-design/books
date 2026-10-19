@@ -156,7 +156,7 @@ const practiceQuestion: EnergyworkQuestion = {
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
-    body: l("Five short lessons introduce Flight to the Sun and three Reiki systems.", "Пять коротких уроков познакомят вас с «Полётом к Солнцу» и тремя системами Рейки.") },
+    body: l("One course, five lessons in sequence: Flight to the Sun and three Reiki systems.", "Один курс из пяти последовательных уроков: «Полёт к Солнцу» и три системы Рейки.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
     body: l("Not a test — choose the option that matches your experience.",
@@ -176,7 +176,7 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
   { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
-    body: l("Pause and notice the support of your chair, or imagine the warmth of sunlight.", "Сделайте паузу и заметьте опору стула или представьте мягкий солнечный свет.") },
+    body: l("Pause, notice your chair, or imagine warmth or light.", "Сделайте паузу, ощутите опору стула или представьте тепло и свет.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
