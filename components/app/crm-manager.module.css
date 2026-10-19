@@ -84,3 +84,6 @@
 .sectionTabs .sectionTab:hover{border-color:#688f9c;color:#285967}
 .sectionTabs button:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(max-width:420px){.sectionTabs{gap:6px}.sectionTabs .sectionTab,.sectionTabs .sectionTabActive{padding-inline:13px;font-size:13px}}
+
+.searchInfo{margin:8px 0 10px;color:#326273;font:600 12px/1.5 system-ui,sans-serif}
+.searchError{margin:8px 0 10px;color:#963c3c;font:650 12px/1.5 system-ui,sans-serif}
