@@ -2532,3 +2532,44 @@
   .page[data-course-portrait="v3"] .back { min-height: 44px; }
   .page[data-course-portrait="v3"] .programme summary { min-height: 32px; }
 }
+
+
+/* Short mobile browser viewports: use the stage numerals as the visual rail.
+   The five full lesson names stay in accessible text and in each slide heading.
+   Compact the purely introductory benefits without hiding any teaching input. */
+@media (max-width: 760px) and (max-height: 730px) {
+  .page[data-course-portrait="v3"] .journey li {
+    position: relative;
+    gap: 0;
+  }
+  .page[data-course-portrait="v3"] .journeyLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .benefits {
+    margin-top: 5px;
+    padding: 4px 3px;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .benefits > div {
+    justify-content: center;
+    gap: 0;
+    padding: 3px 4px;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .benefitIcon,
+  .page[data-course-portrait="v3"] .welcomeSlide .benefits small {
+    display: none;
+  }
+  .page[data-course-portrait="v3"] .welcomeSlide .benefits strong {
+    font-size: clamp(10.5px, 2.9vw, 12px);
+    line-height: 1.18;
+    text-align: center;
+  }
+}

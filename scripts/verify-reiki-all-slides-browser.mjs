@@ -157,6 +157,39 @@ async function exerciseJourney(page, locale, width) {
   console.log("REIKI_JOURNEY_SUCCESS",JSON.stringify({engine:engineName,locale,width,slides:journey.length}));
 }
 
+/* Screenshot-equivalent short mobile viewport: first-view course instructions should
+   fit without scrolling the inner teaching panel. Videos and extensive lessons
+   remain scrollable, but these introductory controls must fit. */
+async function verifyShortViewport(page,locale) {
+  await page.setViewportSize({width:375,height:625});
+  await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn",{waitUntil:"domcontentloaded",timeout:90000});
+  await expect(page.locator("button[data-energywork-next]")).toBeEnabled({timeout:60000});
+
+  async function expectFits(id) {
+    await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute("data-energywork-slide-id",id);
+    const dimensions = await page.locator("[data-energywork-slide-id] [class*='slideMain']").evaluate(node=>({
+      used:node.scrollHeight,
+      space:node.clientHeight,
+      width:innerWidth,
+      height:innerHeight,
+    }));
+    assert.ok(dimensions.used <= dimensions.space + 5,
+      locale+" "+id+" should fit inside one 375×625 mobile viewport: "+JSON.stringify(dimensions));
+  }
+
+  await expectFits("welcome-01");
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("welcome-02");
+  await page.locator('input[name="welcome-02"][value="beginner"]').check();
+  await expectFits("welcome-02"); // guidance appears after an answer
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-01");
+  await page.locator("button[data-energywork-next]").click(); // source video; playback stays optional
+  await page.locator("button[data-energywork-next]").click();
+  await expectFits("flight-03");
+  console.log("REIKI_SHORT_VIEWPORT_FIT",JSON.stringify({engine:engineName,locale,width:375,height:625,slides:4}));
+}
+
 const context = await browser.newContext({ viewport:{width:390,height:844},deviceScaleFactor:1,reducedMotion:"reduce",hasTouch:true });
 const page = await context.newPage();
 page.on("pageerror", error => pageErrors.push(String(error.message).slice(0,300)));
@@ -172,6 +205,7 @@ try {
     await expect(page.locator('button[data-energywork-next]')).toBeEnabled({timeout:60000});
     await inspect(page,{locale,width,index:1,id:"welcome-01",screenshot:true});
   }
+  for (const locale of ["en","ru"]) await verifyShortViewport(page,locale);
   assert.deepEqual(pageErrors,[],"No unexpected browser JavaScript exceptions");
   console.log("REIKI_ALL_SLIDES_BROWSER_PASS", JSON.stringify({engine:engineName,count:53,locales:["en","ru"],mobileWidths:[320,375,390,430]}));
 } finally {
