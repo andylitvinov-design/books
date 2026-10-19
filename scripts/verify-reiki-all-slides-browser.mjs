@@ -364,7 +364,9 @@ async function verifyShortViewport(page,locale) {
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-04"); // slide 6: required meditation feedback
   await page.locator('textarea[id="answer-flight-04"]').fill(locale==="ru"
-    ? "Я заметил спокойное состояние и тёплый свет." : "I felt a quiet, peaceful moment.");
+    ? "Я заметил(а), что дыхание стало спокойнее и появилось тепло."
+    : "I noticed my breathing became calmer and I felt warmth and ease.");
+  await expect(page.locator("button[data-energywork-next]")).toBeEnabled();
   await page.locator("button[data-energywork-next]").click();
   await expectFits("flight-done");
   const photo = page.locator('[data-energywork-slide-id="flight-done"] img');
