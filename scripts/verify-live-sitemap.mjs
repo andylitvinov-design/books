@@ -143,8 +143,8 @@ for (const path of spotlight) {
       if (!html.includes('href="' + firstPartyTestUrl + '"')) logError("Public test CTA missing: " + path);
       if (!html.includes('href="' + writtenReviewUrl + '"')) logError("Free written review link missing: " + path);
       const robots = tags(html, "meta").filter(meta => ["robots", "googlebot"].includes(meta.name));
-      if (robots.some(meta => /\\bnoindex\\b/i.test(meta.content ?? "")) ||
-          /\\bnoindex\\b/i.test(response.headers.get("x-robots-tag") ?? "")) {
+      if (robots.some(meta => /\bnoindex\b/i.test(meta.content ?? "")) ||
+          /\bnoindex\b/i.test(response.headers.get("x-robots-tag") ?? "")) {
         logError("Public tests unexpectedly noindex: " + path);
       }
       const alternates = Object.fromEntries(
