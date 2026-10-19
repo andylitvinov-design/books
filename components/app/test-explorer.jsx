@@ -16,6 +16,7 @@ import { TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
 import { SimpleTestPicker } from './simple-test-picker'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
+import { ResearchDirectory } from './research-directory'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { compareTestSocialProof } from '@/lib/assessments/test-popularity'
 import styles from './test-explorer.module.css'
@@ -649,6 +650,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       </div>
     </section>
     {availability === 'full' && <PriorityMethodsReview locale={locale} runnableKeys={entries.filter((entry) => entry.selectable).map((entry) => entry.key)} onOpenCfpbShort={() => { setAvailability('available'); setQuery('CFPB'); document.getElementById('hh-test-list')?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }} />}
+    {availability === 'full' && <ResearchDirectory locale={locale} search={query} />}
     <div className={styles.workspace}><div className={styles.database}><div className={styles.databaseHeader}><div className={styles.countBlock}><strong role="status" aria-live="polite">{matchCount} {c.matching}</strong><small>{c.of} {availability === 'available' ? entries.filter((entry) => entry.selectable).length : availability === 'core' ? entries.filter((entry) => entry.psychotherapyCore).length : availability === 'pdf' ? pdfResourceCount : entries.length} · {c.totalAvailable}{selectedKeys.length > 0 && ` · ${selectedKeys.length} ${c.kept}`}</small></div><button type="button" onClick={chooseSuggested}>{c.suggested}</button></div>
       {viaStandaloneMatches > 0 && !query.trim() && <div className={styles.viaFamilyNote} data-via-family-collapsed={collapsedViaCount}>
         <span>{locale === 'ru' ? 'IPIP-VIA-R: полный профиль 24 сильных сторон доступен одним тестом на 96 вопросов. Отдельные шкалы сохранены.' : locale === 'es' ? 'IPIP-VIA-R: explora las 24 fortalezas con una prueba de 96 preguntas. Las escalas individuales siguen disponibles.' : 'IPIP-VIA-R: explore 24 strengths in one optional 96-question test. Individual scales remain available.'}</span>
