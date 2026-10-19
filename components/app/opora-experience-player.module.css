@@ -26,17 +26,91 @@
     rgba(223,244,244,.16) 58%,
     rgba(218,241,240,.56) 100%);
 }
-.welcome{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
+.welcome{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .baseline{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
 .checkin{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
 .recall{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
-.arrive{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .practice{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .feel{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.affirmation{--scene-photo:url('/images/holistic-house/course-start-heron.webp')}
+.affirmation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .save{--scene-photo:url('/images/holistic-house/course-focus-mountain-boy.webp')}
 .frame.receipt{--scene-photo:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
-.header,.stage,.footer,.error{position:relative;z-index:1}
+.header,.stage,.footer,/* Opening: a complete, locally hosted photo above the question, not a
+   magnified low-resolution bird behind instructional copy. */
+.welcome::before, .arrive::before{
+  filter:blur(14px) brightness(1.04) saturate(.84);
+  transform:scale(1.08);
+}
+.welcome::after, .arrive::after{
+  background:linear-gradient(180deg,rgba(238,251,248,.54),rgba(222,247,244,.73));
+}
+.welcome .stage, .arrive .stage{
+  flex-direction:column;align-items:center;justify-content:flex-end;
+  gap:clamp(8px,1.25vh,14px);
+}
+.arrivalPhoto{
+  flex:1 1 185px;min-height:55px;max-height:clamp(130px,28vh,245px);
+  width:min(100%,590px);overflow:hidden;display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.85);border-radius:23px;
+  background:rgba(235,250,246,.76);
+  box-shadow:0 8px 30px rgba(20,81,88,.11);
+}
+.arrivalPhoto img{
+  display:block;width:100%;height:100%;
+  object-fit:contain;object-position:center;
+}
+.arrivalPanel{
+  margin:0 auto;flex:0 1 auto;
+  gap:clamp(8px,1.15vh,12px);padding:clamp(15px,3.6vw,23px);
+}
+.arrivalPanel .title{
+  font-size:clamp(27px,6.9vw,36px);line-height:1.16;
+}
+.arrivalPanel .lead{
+  font-size:clamp(16px,4.2vw,19px);font-weight:550;line-height:1.34;
+}
+.moodChoices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+.moodChoices button{
+  display:flex;align-items:center;justify-content:flex-start;gap:9px;
+  min-width:0;min-height:50px;padding:9px 11px;
+  border:1.5px solid #a5ced1;border-radius:15px;
+  background:rgba(255,255,255,.94);color:#214f60;
+  font:750 clamp(14px,3.65vw,16px)/1.25 system-ui,-apple-system,sans-serif;
+  cursor:pointer;text-align:left;box-shadow:0 2px 8px rgba(33,100,107,.08);
+}
+.moodChoices button::before{content:attr(data-symbol);flex-shrink:0;font-size:19px;line-height:1}
+.moodChoices button[aria-pressed=true]{
+  border-color:#078b90;background:#d7f7ee;color:#125763;
+  box-shadow:0 0 0 1px rgba(6,139,144,.32),0 4px 12px rgba(17,129,133,.11);
+}
+.moodChoices button:disabled{opacity:.58;cursor:not-allowed}
+.moodChoices button:focus-visible{outline:3px solid #096d89;outline-offset:3px}
+.moodReply{
+  margin:0;padding:9px 12px;border-radius:12px;
+  border-left:3px solid #159e99;background:rgba(215,246,236,.90);
+  color:#205260;font-size:clamp(14px,3.55vw,16px);font-weight:590;line-height:1.36;
+}
+.moodOptional{
+  margin:0;color:#476c77;font-size:clamp(13px,3.25vw,14px);line-height:1.4;
+}
+@media(max-height:680px){
+  .arrivalPhoto{max-height:105px;min-height:30px;border-radius:17px}
+  .welcome .stage, .arrive .stage{gap:7px}
+  .arrivalPanel{padding:12px 15px;gap:7px}
+  .arrivalPanel .title{font-size:26px}
+  .arrivalPanel .lead{font-size:15.5px}
+  .moodChoices{gap:7px}
+  .moodChoices button{min-height:43px;padding:7px 9px;font-size:14px}
+  .moodReply{padding:7px 10px;font-size:13.5px}
+}
+@media(max-height:580px){
+  .arrivalPhoto{max-height:57px;min-height:24px}
+  .arrivalPanel .title{font-size:24px}
+}
+.error{position:relative;z-index:1}
 .header{
   display:flex;align-items:center;gap:12px;min-height:64px;
   padding:calc(8px + env(safe-area-inset-top)) clamp(12px,3.5vw,24px) 9px;
