@@ -1,0 +1,25 @@
+.wrap{color:#203852;padding:16px 0 56px;max-width:1110px;margin:0 auto}
+.back{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:0 0 12px;color:#116e86;font:700 13px/1.4 system-ui,sans-serif;text-decoration:none}
+.paper{display:grid;grid-template-columns:minmax(0,42%) minmax(0,58%);overflow:hidden;background:#fffefa;border:1px solid #c9dce5;border-radius:22px;box-shadow:0 12px 35px #11224013}
+.poster{position:relative;min-height:410px;background:linear-gradient(135deg,#d6e8e7,#e5edf0)}
+.poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.content{padding:clamp(20px,3.5vw,46px);min-width:0}
+.kicker{font:800 11px/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#137c8d;margin:0 0 15px}
+.content h1{font:500 clamp(28px,3.2vw,43px)/1.15 Georgia,serif;letter-spacing:-.02em;color:#213752;margin:0 0 18px}
+.facts{display:grid;gap:11px;margin-bottom:22px}
+.facts p{display:flex;align-items:flex-start;gap:9px;margin:0;font:650 13px/1.55 system-ui,sans-serif;color:#365c70}
+.facts svg{flex:none;margin-top:2px;color:#128294}
+.summary{font:400 15px/1.7 system-ui,sans-serif;color:#425e70;margin:0 0 22px}
+.program{padding:18px 19px;background:#f1f8f8;border:1px solid #d0e6e6;border-radius:15px}
+.program h2{font:650 22px/1.3 Georgia,serif;color:#203b56;margin:0 0 12px}
+.program ul{margin:0;padding-left:20px;color:#36596b;font:450 13px/1.65 system-ui,sans-serif}
+.program li+li{margin-top:7px}
+.organizer{font:650 12px/1.55 system-ui,sans-serif;color:#4f6275;margin:18px 0 0}
+.actions{margin-top:24px}
+.primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:12px 20px;border-radius:12px;background:#1f6f8a;color:white;text-decoration:none;font:750 14px/1.3 system-ui,sans-serif}
+.primary:hover{background:#165c78}
+.actions small,.note{display:block;color:#6f8390;font:450 12px/1.6 system-ui,sans-serif;margin:12px 0 0}
+.other{display:inline-flex;align-items:center;min-height:44px;margin-top:16px;color:#8b4263;font:700 13px/1.4 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.wrap :is(a,button):focus-visible{outline:3px solid #08879d;outline-offset:3px}
+@media(max-width:760px){.wrap{padding:9px 0 40px}.paper{grid-template-columns:1fr;border-radius:17px}.poster{min-height:220px;aspect-ratio:16/9}.content{padding:19px}.content h1{font-size:31px}.summary{font-size:14px}}
+@media(max-width:380px){.poster{min-height:190px}.content{padding:16px}.content h1{font-size:28px}.primary{width:100%}}
