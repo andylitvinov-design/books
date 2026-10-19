@@ -11,6 +11,7 @@ import { ANTISTRESS_ROUTER_VERSION, antistressModuleTitle } from "@/lib/inner-gr
 import { moduleDayMeta } from "@/lib/inner-growth/antistress-module-lessons";
 import { antiStressBlueprint } from "@/lib/inner-growth/anti-stress-blueprint";
 import { PublicAntistressEvidence } from "@/components/public-antistress-evidence";
+import CourseHomeScreenHabit from "@/components/pwa/course-home-screen-habit";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./public-antistress-landing.module.css";
 
@@ -701,6 +702,7 @@ export function PublicAntistressLanding({ locale }: { locale: PublicLocale }) {
           <span>{t.today}</span>
           <a href="#how">{t.howLink}<ArrowRight size={15} aria-hidden="true" /></a>
         </div>
+        <CourseHomeScreenHabit locale={locale} />
         <nav className={styles.chapterNav} aria-label={chapterLinks[locale].label} data-course-chapter-navigation>
           {chapterLinks[locale].links.map((item, index) => (
             <a key={item.id} href={"#" + item.id}>

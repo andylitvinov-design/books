@@ -17,10 +17,9 @@ export async function generateMetadata({ params }) {
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: locale === 'ru' ? '/course-ru.webmanifest' : '/course.webmanifest',
+  manifest: path[0] === 'course' ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : '/holistic-house.webmanifest',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
-  manifest: '/holistic-house.webmanifest',
   }
 }
 export default async function AppPage({ params }) {
