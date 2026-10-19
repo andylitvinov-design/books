@@ -48,7 +48,7 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
   const [markingViewed,setMarkingViewed]=useState(false)
   const [text,setText]=useState(''),[notice,setNotice]=useState('')
   const [visibility,setVisibility]=useState('participants')
-  const pending=useRef(null),requestRef=useRef(requestId)
+  const pending=useRef(null),requestRef=useRef(requestId),lastForegroundRefresh=useRef(0)
   useEffect(()=>{
     requestRef.current=requestId
     pending.current=null
@@ -111,6 +111,23 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       if(requestRef.current===id)setNotice(t.error)
     }finally{if(requestRef.current===id)setMarkingViewed(false)}
   }
+  // A push can refocus this PWA without remounting the conversation.
+  // Refresh on foreground return only; avoid automatic background polling.
+  useEffect(()=>{
+    const refreshOnReturn=()=>{
+      if(document.visibilityState!=='visible')return
+      const now=Date.now()
+      if(now-lastForegroundRefresh.current<1500)return
+      lastForegroundRefresh.current=now
+      void reload()
+    }
+    window.addEventListener('focus',refreshOnReturn)
+    document.addEventListener('visibilitychange',refreshOnReturn)
+    return ()=>{
+      window.removeEventListener('focus',refreshOnReturn)
+      document.removeEventListener('visibilitychange',refreshOnReturn)
+    }
+  },[requestId,accountId,lang])
   async function send(){
     const body=text.trim(),id=requestId
     if(!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return

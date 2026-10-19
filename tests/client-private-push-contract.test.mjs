@@ -35,6 +35,7 @@ test('one root worker routes generic course vs client message without private te
   })
   await work
   assert.equal(w.shown.length,1)
+  assert.equal('tag' in w.shown[0][1],false,'each new private message gets its own notice')
   assert.equal(w.shown[0][0],'Holistic House')
   assert.doesNotMatch(JSON.stringify(w.shown),/sensitive clinical report|Private\s*report|11111111.*body/i)
   assert.equal(w.shown[0][1].data.href,'/ru/app/consultations?request='+id)
@@ -45,6 +46,7 @@ test('one root worker routes generic course vs client message without private te
   w.handlers.get('push')({data:{json:()=>({locale:'en'})},waitUntil:pending=>work=pending})
   await work
   assert.equal(w.shown[1][1].data.href,'/en/app/course')
+  assert.equal(w.shown[1][1].tag,'hh-course-reminder')
   click({notification:{close(){},data:{href:'https://evil.example/message'}},waitUntil:pending=>work=pending})
   await work
   assert.equal(w.opened.at(-1),'https://holistichouse.example/en/app/course')
@@ -70,4 +72,11 @@ test('tap preserves a request through sign-in while read remains participant sco
   assert.match(api,/app\/consultations\?request=/)
   assert.match(cabinet,/autoOpen=\{requestedMessageId === request\.id\}/)
   assert.match(messages,/if\(!isRequester&&!isPractitioner\)throw new AppError\('NOT_FOUND',404\)/)
+})
+
+test('an already-open PWA conversation refreshes on focus after tapping an alert',()=>{
+ const c=source('components/app/practice-request-conversation.jsx')
+ assert.match(c,/window\.addEventListener\('focus',refreshOnReturn\)/)
+ assert.match(c,/document\.addEventListener\('visibilitychange',refreshOnReturn\)/)
+ assert.match(c,/now-lastForegroundRefresh\.current<1500/)
 })

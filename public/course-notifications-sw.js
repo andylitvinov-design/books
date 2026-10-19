@@ -23,7 +23,7 @@
           locale === 'es' ? 'Tienes un mensaje privado nuevo. Abre Holistic House para leerlo.' :
           'You have a new private message. Open your cabinet to read it.')
         : copy[locale], icon: '/icons/holistic-house-teal.svg', badge: '/icons/holistic-house-teal.svg',
-      renotify: false, tag: message ? 'hh-client-message-' + requestId.toLowerCase() : 'hh-course-reminder',
+      renotify: false, ...(message ? {} : {tag: 'hh-course-reminder'}),
       data: { href }, requireInteraction: false,
     }))
   })
