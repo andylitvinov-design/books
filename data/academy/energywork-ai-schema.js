@@ -39,7 +39,7 @@ export const ENERGYWORK_LESSON_ANSWER_IDS = Object.freeze(['flight-05','tan-06',
 export const ENERGYWORK_QUESTIONS = Object.freeze({
   'welcome-02': 'choice',
   'flight-04': 'text', 'flight-05': 'text',
-  'flight-03': 'choice',
+  'flight-03': 'text',
   'intention-03': 'text',
   'intention-04': 'choice',
   'boundaries-02': 'choice',
