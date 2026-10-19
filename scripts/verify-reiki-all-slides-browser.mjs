@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium, webkit, expect } from "@playwright/test";
-import { energyworkSequence } from "../data/academy/energywork-ai-schema.js";
+import { energyworkLessonRanges, energyworkSequence } from "../data/academy/energywork-ai-schema.js";
 
 const origin = process.env.HH_TEST_APP_ORIGIN || "http://127.0.0.1:3100";
 assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]+$/, "Never browse a real account or production site");
@@ -15,6 +15,7 @@ const browser = await (engineName === "webkit" ? webkit : chromium).launch();
 const output = "artifacts/reiki-all-slides";
 await mkdir(output, { recursive: true });
 const expectedSequence = energyworkSequence();
+const lessonRanges = energyworkLessonRanges(expectedSequence);
 assert.equal(expectedSequence.length, 53, "One consecutive course must have 53 screens");
 const milestones = new Set([1,2,4,6,8,13,20,25,26,33,34,40,44,45,53]);
 const pageErrors = [];
@@ -50,6 +51,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       titleColor: getComputedStyle(title).color,
       progressCurrent: Number(progress?.getAttribute("aria-valuenow")),
       progressMax: Number(progress?.getAttribute("aria-valuemax")),
+      progressLabel: element.querySelector('[class*="progressHeader"] span')?.textContent?.trim() || "",
       stageCount: journey?.children.length || 0,
       activeStage: journey?.querySelectorAll('[aria-current="step"]').length || 0,
       stageLabels,
@@ -70,6 +72,13 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
   assert.ok(data.title.length > 3, where + ": readable title");
   assert.equal(data.progressCurrent, index, where + ": actual slide progress");
   assert.equal(data.progressMax, expectedSequence.length, where + ": total");
+  const range = lessonRanges.find(item => index - 1 >= item.start && index - 1 < item.end);
+  const expectedLabel = range
+    ? (locale === "ru" ? "Урок " : "Lesson ") + range.lesson + " · " + (locale === "ru" ? "Слайд " : "Slide ") +
+      (index - range.start) + " " + (locale === "ru" ? "из" : "of") + " " + range.count
+    : (locale === "ru" ? "Введение · Слайд " : "Introduction · Slide ") + index +
+      " " + (locale === "ru" ? "из " : "of ") + lessonRanges[0].start;
+  assert.equal(data.progressLabel, expectedLabel, where + ": exact within-lesson slide counter");
   assert.equal(data.stageCount, 5, where + ": five true lesson circles");
   assert.equal(data.activeStage, 1, where + ": one highlighted current stage, including course welcome");
   assert.equal(data.stageLabels.length, 5, where + ": all five lesson names are rendered");
@@ -138,7 +147,12 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
     }
   }
-  if (data.kind === "milestone") await expect(page.locator("button[data-energywork-next]")).toHaveText(/I'm committed!/);
+  if (data.kind === "milestone") {
+    await expect(page.locator("button[data-energywork-next]")).toHaveText(locale === "ru" ? "Продолжить" : "Continue");
+    await expect(page.locator("button[data-energywork-save-progress]")).toHaveText(locale === "ru" ? "Войти и сохранить" : "Sign in to save");
+  } else {
+    await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
+  }
   if (screenshot) {
     await page.screenshot({ path: output+"/"+engineName+"-"+locale+"-"+width+"-"+String(index).padStart(2,"0")+"-"+id+".png", animations:"disabled", timeout:30000 });
   }
