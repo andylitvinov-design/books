@@ -5,7 +5,7 @@ import type { EnglishGuidedMeditation } from "./english-guided-meditations";
 import { yggdrasilTextTestimonials } from "./yggdrasil-testimonials";
 
 export const ENERGYWORK_COURSE_ID = "academy-energywork-principles";
-export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p2";
+export const ENERGYWORK_COURSE_VERSION = "2026-10-19.p3";
 
 export type EnergyworkLocale = "en" | "ru";
 export type Localized = { en: string; ru: string };
@@ -156,14 +156,22 @@ const practiceQuestion: EnergyworkQuestion = {
   ],
 };
 
-// Unlike the other short practice check-ins, the Sun exercise invites a
-// voluntary description in the learner's own words. No sensation is required.
+// Two optional check-ins without a required sensation or performance goal.
 const sunPracticeQuestion: EnergyworkQuestion = {
-  type: "text",
-  prompt: l(
-    "Without the meditation, could you tune in to the Sun and feel its warmth and light within and around you?",
-    "Удалось ли вам без медитации настроиться на Солнце и почувствовать его тепло и свет внутри себя и вокруг?"
-  ),
+  type: "choice",
+  prompt: l("What did you notice?", "Что вы почувствовали?"),
+  options: [
+    { id: "felt-light", label: l("I could feel the light and warmth", "Я почувствовал(а) свет и тепло") },
+    { id: "more-practice", label: l("I need more practice", "Мне нужно ещё попрактиковаться") },
+  ],
+};
+const tantraPracticeQuestion: EnergyworkQuestion = {
+  type: "choice",
+  prompt: l("How did it feel?", "Как прошла практика?"),
+  options: [
+    { id: "connected", label: l("I could feel connection", "Я почувствовал(а) связь") },
+    { id: "more-practice", label: l("I need more practice", "Мне нужно ещё попрактиковаться") },
+  ],
 };
 
 const commonSlides: EnergyworkSlide[] = [
@@ -187,10 +195,10 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
     title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
     body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
-  { id: "flight-05", phase: "flight", kind: "reflection",
-    title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
-    body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
-    question: { type: "text", prompt: l("Your thought…", "Ваша мысль…") } },
+  { id: "flight-03", phase: "flight", kind: "practice", question: sunPracticeQuestion,
+    title: l("A gentle pause", "Небольшая пауза"),
+    body: l("For one minute, notice the Sun’s light and warmth within and around you.",
+      "Одну минуту замечайте свет и тепло Солнца внутри себя и вокруг.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
@@ -198,10 +206,10 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Your meditation feedback", "Ваш отзыв о медитации"),
     body: l("Your experience matters. Share what stood out during the meditation in your own words.", "Ваш опыт важен. Расскажите своими словами, что особенно запомнилось во время медитации."),
     question: { type: "text", prompt: l("Tell us about your experience.", "Поделитесь своим опытом.") } },
-  { id: "flight-03", phase: "flight", kind: "practice", question: sunPracticeQuestion,
-    title: l("A gentle pause", "Небольшая пауза"),
-    body: l("Without replaying the meditation, take a moment to sense the Sun’s warmth and light within and around you.",
-      "Без медитации попробуйте почувствовать тепло и свет Солнца внутри себя и вокруг.") },
+  { id: "flight-05", phase: "flight", kind: "reflection",
+    title: l("What did the Sun mean to you?", "Что для вас означает Солнце?"),
+    body: l("Write one thought about the Sun as a symbol.", "Запишите одну мысль об образе Солнца."),
+    question: { type: "text", prompt: l("Your thought…", "Ваша мысль…") } },
   { id: "flight-done", phase: "flight", kind: "milestone", image: image.sun,
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
@@ -340,9 +348,9 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
       title: l("Question 7 of 7 · The master level", "Вопрос 7 из 7 · Ступень мастера"),
       body: l("Write one to three short sentences in your own words.", "Ответьте своими словами в одном–трёх предложениях."),
       question: { type: "text", prompt: l("After which level can someone become a Tantra Reiki Master and teach and initiate others?", "После какой ступени можно стать мастером Тантра Рейки, обучать и инициировать других?") } },
-    { id: "tan-03", phase: "tantra", kind: "practice", question: practiceQuestion,
+    { id: "tan-03", phase: "tantra", kind: "practice", question: tantraPracticeQuestion,
       title: l("Notice connection and space", "Заметьте связь и пространство"),
-      body: l("Notice where you feel comfortable sitting or standing. You can practise simple awareness without any touch or physical contact.", "Заметьте, где вам удобно сидеть или стоять. Можно просто наблюдать ощущения без прикосновений и физического контакта.") },
+      body: l("For one minute, notice your sense of connection and space, without touch.", "Одну минуту замечайте связь с собой и пространством без прикосновений.") },
   ],
   kundalini: [
     { id: "kun-01", phase: "kundalini", kind: "lesson", image: image.kundalini,
@@ -402,8 +410,9 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
     ...commonSlides.filter((slide) => slide.phase === "flight"),
     ...pathSlides.tantra.slice(0, 2),
+    pathSlides.tantra.find((slide) => slide.id === "tan-03")!,
+    ...pathSlides.tantra.slice(2).filter((slide) => slide.id !== "tan-03"),
     commonSlides.find((slide) => slide.id === "presence-01")!,
-    ...pathSlides.tantra.slice(2),
     ...commonSlides.filter((slide) => slide.phase === "tantra" && slide.id !== "presence-01"),
     ...pathSlides.kundalini,
     ...pathSlides.yggdrasil,
