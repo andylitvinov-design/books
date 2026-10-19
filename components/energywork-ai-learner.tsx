@@ -97,7 +97,6 @@ const copy = {
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
     milestoneLabel: "Lovely progress",
-    milestoneNote: "Personal initiation and group membership are arranged separately, never granted automatically.",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
@@ -212,7 +211,6 @@ const copy = {
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
     milestoneLabel: "Прекрасный прогресс",
-    milestoneNote: "Инициация и вступление в сообщество согласуются отдельно, а не происходят автоматически.",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
@@ -562,7 +560,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     ? `${t.lesson} ${currentLessonRange.lesson} · ${t.step} ${index - currentLessonRange.start + 1} ${t.of} ${currentLessonRange.count}`
     : `${t.intro} · ${t.step} ${index + 1} ${t.of} ${lessonRanges[0]!.start}`;
   const completed = slide.kind === "finish";
-  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01";
+  const portraitArt = slide.id === "welcome-01" || slide.id === "flight-01" || slide.id === "tan-01" || slide.id === "flight-done";
   const voicesArt = slide.kind === "voices";
   const artSource = portraitArt || voicesArt ? "/images/holistic-house/reiki-approved-sunrise-v3.webp" : slide.image;
   const experienceMissing = slide.id === "welcome-02" && !slide.question?.options?.some((option) => option.id === answers[slide.id]);
@@ -793,7 +791,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <div className={styles.milestoneCard}>
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <strong>{t.milestoneLabel}</strong>
-                  <p>{t.milestoneNote}</p>
                   {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                 </div>
               ) : null}
