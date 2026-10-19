@@ -24,6 +24,38 @@ import { welcomeFeelingChoices, welcomeFeelingSupport } from '@/lib/inner-growth
 import {traumaPhaseCheckpoints} from '@/lib/inner-growth/trauma-phase-catalog'
 import styles from './course-slide-player.module.css'
 
+// Gentle hints are optional, never scored and never required to advance.
+const GENTLE_TIPS={
+  en:{
+    recall:'If nothing comes to mind, simply notice one ordinary thing around you.',
+    guided:'Keep your eyes open and choose a shorter version if that feels better.',
+    ritual:'Try just one small part of the practice, or read it for now.',
+    transfer:'Imagine one possible next step; you do not have to do it today.',
+    symbol:'You can use one ordinary word instead of picturing an image.',
+    reflection:'If words are difficult, notice one simple detail or continue.',
+    fallback:'Look at one ordinary object nearby if the exercise feels difficult.',
+  },
+  ru:{
+    recall:'Если ничего не вспоминается, посмотрите на один обычный предмет вокруг.',
+    guided:'Можно оставить глаза открытыми и выбрать более короткий вариант.',
+    ritual:'Попробуйте только небольшую часть практики или просто прочитайте её.',
+    transfer:'Представьте один возможный шаг — делать его сегодня необязательно.',
+    symbol:'Можно выбрать одно простое слово вместо мысленного образа.',
+    reflection:'Если трудно подобрать слова, заметьте одну деталь или продолжите.',
+    fallback:'Если упражнение трудно, посмотрите на обычный предмет рядом.',
+  },
+  es:{
+    recall:'Si no recuerdas nada, mira un objeto normal a tu alrededor.',
+    guided:'Puedes mantener los ojos abiertos y elegir una versión más corta.',
+    ritual:'Prueba solo una parte pequeña o lee la práctica por ahora.',
+    transfer:'Imagina un paso posible; no tienes que hacerlo hoy.',
+    symbol:'Puedes usar una palabra sencilla en lugar de una imagen.',
+    reflection:'Si no encuentras palabras, observa un detalle o continúa.',
+    fallback:'Si es difícil, mira un objeto normal que tengas cerca.',
+  },
+}
+const GENTLE_EXERCISE_SLIDES=new Set(['recall','guided','ritual','transfer','symbol','reflection'])
+
 const WORDS = {
   en: {
     day: 'Day', step: 'Step', of: 'of', close: 'Return to my course',
@@ -1214,6 +1246,19 @@ export default function CourseSlidePlayer({
             </details>
           </>}
         </>}
+        {!finished&&(GENTLE_EXERCISE_SLIDES.has(slide.kind)||(isDayOne&&slide.kind.startsWith('day1-')))&&
+          <details className={styles.animalGuidance} key={'guidance-'+index}
+            data-gentle-guidance={slide.kind}>
+            <summary>
+              <img src="/images/holistic-house/gentle-owl.svg" alt="" aria-hidden="true"
+                width={43} height={43}/>
+              <span>{locale==='ru'?'Показать мягкую подсказку'
+                :locale==='es'?'Ver una pista suave':'Show gentle guidance'}</span>
+              <ChevronDown size={16} aria-hidden="true"/>
+            </summary>
+            <p>{(GENTLE_TIPS[locale]||GENTLE_TIPS.en)[slide.kind]||
+              (GENTLE_TIPS[locale]||GENTLE_TIPS.en).fallback}</p>
+          </details>}
         {error && <p className={styles.error} role="alert">{error}</p>}
       </main>
       <footer className={styles.footer}>

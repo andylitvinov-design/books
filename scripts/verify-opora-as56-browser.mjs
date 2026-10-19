@@ -30,6 +30,8 @@ const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-foc
   'reiki-practitioner-sunrise.webp', 'report-lighthouse-coast.webp'].map(async name => [
   '/images/holistic-house/' + name, await readFile(new URL('../public/images/holistic-house/' + name, import.meta.url)),
 ])))
+const owlPath = '/images/holistic-house/gentle-owl.svg'
+assets.set(owlPath,await readFile(new URL('../public/images/holistic-house/gentle-owl.svg',import.meta.url)))
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch()
 try {
   for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390]) for (const priorHelp of [false, true]) {
@@ -48,7 +50,7 @@ try {
       if (request.method() === 'GET' && url.origin === origin && !url.search) {
         if (url.pathname === oporaFixturePath(locale)) return route.fulfill({ status: 200, contentType: 'text/html', body: html })
         if (url.pathname === oporaFixtureBundlePath) return route.fulfill({ status: 200, contentType: 'text/javascript', body: fixture.bundle })
-        if (assets.has(url.pathname)) return route.fulfill({ status: 200, contentType: 'image/webp', body: assets.get(url.pathname) })
+        if (assets.has(url.pathname)) return route.fulfill({ status: 200, contentType: url.pathname === owlPath ? 'image/svg+xml' : 'image/webp', body: assets.get(url.pathname) })
       }
       // Never continue a request: no server, real account or API is reachable.
       unexpectedRequests.push({ method: request.method(), origin: url.origin, path: url.pathname })

@@ -146,6 +146,7 @@ WORDS.es = {
   ],
     arrivalWarmTitle:'Puedes llegar tal como estás',
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
+    arriveHint:'Mira un objeto estable a tu alrededor; no necesitas cambiar tu respiración.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
   stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
   coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
@@ -413,6 +414,23 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
+  // One optional helper across the experiential steps; ratings and completion never depend on opening it.
+  const guidanceForMoment=moment==='practice'
+    ?(lang==='es'?t.gentle:lesson.antiStress?.neutralText||t.gentle)
+    :moment==='arrive'?t.arriveHint
+    :moment==='recall'
+      ?(lang==='ru'?'Если ничего не вспоминается, посмотрите на один обычный предмет рядом.'
+        :lang==='es'?'Si no recuerdas nada, mira un objeto normal a tu lado.'
+        :'If nothing comes to mind, look at one ordinary object nearby.')
+    :moment==='feel'
+      ?(lang==='ru'?'Можно выбрать «Примерно так же» или продолжить без ответа.'
+        :lang==='es'?'Puedes elegir «Más o menos igual» o continuar sin responder.'
+        :'You may choose “About the same” or continue without answering.')
+    :moment==='save'
+      ?(lang==='ru'?'Выберите одно короткое напоминание или оставьте его на другой день.'
+        :lang==='es'?'Elige un recordatorio sencillo o déjalo para otro día.'
+        :'Choose one small reminder, or leave it for another day.')
+    :null
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
@@ -533,11 +551,6 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <button type="button" key={value} disabled={locked}
                   aria-pressed={practiceReport===value} onClick={()=>tryStatus(value)}>{label}</button>)}
             </div>
-            <button type="button" className={styles.linkHint} disabled={locked}
-              onClick={()=>setShowHelp(s=>!s)} aria-expanded={showHelp}>
-              {t.learnMore}<ChevronDown size={16}/></button>
-            {showHelp&&<p className={styles.soft} data-opora-optional-guidance="true">
-              {lang==='es'?t.gentle:lesson.antiStress?.neutralText||t.gentle}</p>}
           </>}
           {moment==='feel'&&<>
             {!neutralSupport&&<p className={styles.lead}>{t.feelText}</p>}
@@ -609,6 +622,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             onClick={onFinish||onClose}>{t.finish}</button>}
           {moment==='receipt'&&<button type="button" className={styles.linkHint} disabled={locked}
             onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>
+          {guidanceForMoment&&<div className={styles.guidanceGroup} data-gentle-guidance={moment}>
+            <div className={styles.guidanceRow}>
+              <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
+                alt="" aria-hidden="true" width={46} height={46}/>
+              <button type="button" className={styles.linkHint} disabled={locked}
+                onClick={()=>setShowHelp(value=>!value)} aria-expanded={showHelp}>
+                {t.learnMore}<ChevronDown size={17} aria-hidden="true"/>
+              </button>
+            </div>
+            {showHelp&&<p className={styles.soft} data-opora-optional-guidance="true">{guidanceForMoment}</p>}
+          </div>}
           {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
