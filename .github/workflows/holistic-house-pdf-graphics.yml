@@ -1,0 +1,37 @@
+name: Holistic House PDF graphics regressions
+
+on:
+  pull_request:
+    paths:
+      - "lib/prescriptions/pdf.js"
+      - "tests/report-photo-contain-exif.test.mjs"
+      - "tests/report-illustrations.test.mjs"
+      - "tests/report-editorial-grid.test.mjs"
+      - ".github/workflows/holistic-house-pdf-graphics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pdf-graphics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify A4 and mobile PDF photos, EXIF rotations, pagination and signatures
+        run: |
+          node --test \
+            tests/report-photo-contain-exif.test.mjs \
+            tests/report-illustrations.test.mjs \
+            tests/report-editorial-grid.test.mjs \
+            tests/mobile-readable-pdf.test.mjs \
+            tests/canonical-pdf.test.mjs \
+            tests/document-samples.test.mjs \
+            tests/signed-pdf.test.mjs
