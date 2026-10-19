@@ -17,7 +17,7 @@ const player = read('components/energywork-ai-learner.tsx')
 function sourceQuestions(locale) {
   const match = new RegExp('  ' + locale + ': \\[\\n([\\s\\S]*?)\\n  \\],').exec(approved)
   assert.ok(match, 'Source list missing for ' + locale)
-  return JSON.parse('[' + match[1].replace(/,\\s*$/, '') + ']')
+  return JSON.parse('[' + match[1].trim().replace(/,$/, '') + ']')
 }
 
 test('Approved seven questions match the teacher page in EN/RU/ES and share one source', () => {
@@ -38,7 +38,7 @@ test('Approved seven questions match the teacher page in EN/RU/ES and share one 
   assert.match(landing,/import \{ yggdrasilPreparationQuestions \}/)
   assert.match(curriculum,/import \{ yggdrasilPreparationQuestions \}/)
   assert.doesNotMatch(curriculum,/How can the World Tree support reflection without promising a medical result/)
-  assert.match(player,/yggdrasil\\/free-initiation/)
+  assert.ok(player.includes('yggdrasil/free-initiation'))
 })
 
 test('All seven interactive Yggdrasil screens use the matching approved question in order', () => {
