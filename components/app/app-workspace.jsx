@@ -440,7 +440,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
-    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course', icon: BookOpen },
+    { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
   ]
   const navIsActive = (id) => page === id ||
