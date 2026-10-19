@@ -939,7 +939,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   <div className={styles.reviewRows}>
                     {initiationItems.map((item) => (
                       <div className={styles.reviewRow} key={item.lesson}>
-                        <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                        <strong>{item.title}{item.lesson === "kundalini" ? ` · ${item.questionCount}/9` : ["tantra", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
                         <div>
                           <button type="button" onClick={() => jumpToSlide(item.reportId)}
                             className={item.reportDone ? styles.reviewRecorded : styles.reviewMissing}>
@@ -968,12 +968,25 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   {slide.question.type === "choice"
                     ? <p className={styles.prompt}>{slide.question.prompt[locale]}</p>
                     : <label className={styles.prompt} htmlFor={"answer-" + slide.id}>{slide.question.prompt[locale]}</label>}
+                  {isKundaliniStudyQuestion && slide.question.options?.length ? (
+                    <div className={styles.choices} role="group"
+                      aria-label={slide.question.prompt[locale]} data-kundalini-answer-options>
+                      {slide.question.options.map((option) => (
+                        <label key={option.id} className={styles.choice}>
+                          <input type="radio" name={slide.id + "-suggestion"} value={option.id}
+                            checked={[option.label.en, option.label.ru].includes(answers[slide.id] ?? "")}
+                            onChange={() => setAnswer(option.label[locale])} />
+                          <span>{option.label[locale]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
                   {slide.question.type === "text" ? (
                     <textarea id={"answer-" + slide.id} value={isMeditationFeedback ? meditationReview : (answers[slide.id] ?? "")}
                       onChange={(e) => setAnswer(isMeditationFeedback ? e.target.value : e.target.value.slice(0, 1600))}
                       className={styles.textarea + (isMeditationFeedback ? " " + styles.feedbackTextarea : "")}
-                      maxLength={isMeditationFeedback ? undefined : 1600} rows={4}
-                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
+                      maxLength={isMeditationFeedback ? undefined : 1600} rows={isKundaliniStudyQuestion ? 2 : 4}
+                      placeholder={isMeditationFeedback ? t.feelingPlaceholder : isKundaliniStudyQuestion ? (locale === "ru" ? "Или напишите свой ответ…" : "Or write your own answer…") : isReikiStudyQuestion ? t.tantraAnswerPlaceholder : slide.id === "flight-03" ? t.sunReflectionPlaceholder : t.placeholder}
                       required={isReikiStudyQuestion}
                       aria-describedby={isTantraStudyQuestion ? "tantra-study-help-" + slide.id : (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) ? "reiki-study-help-" + slide.id : undefined}
                       autoComplete="off" />
@@ -1019,6 +1032,9 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   ) : null}
                   {slide.id === "welcome-02" && !experienceMissing ? (
                     <p className={styles.experienceGuidance} role="status">{experienceGuidance[locale][answers[slide.id]]}</p>
+                  ) : null}
+                  {isKundaliniStudyQuestion && slide.question.help && (answers[slide.id] || "").trim() ? (
+                    <p className={styles.optional} data-kundalini-answer-explanation role="status">{slide.question.help[locale]}</p>
                   ) : null}
                   {isTantraStudyQuestion ? (
                     <div className={styles.tantraStudyHelp} id={"tantra-study-help-" + slide.id} data-tantra-study-required>
@@ -1098,7 +1114,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <div className={styles.reviewRows}>
                       {initiationItems.map((item) => (
                         <div className={styles.reviewRow} key={item.lesson}>
-                          <strong>{item.title}{["tantra", "kundalini", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
+                          <strong>{item.title}{item.lesson === "kundalini" ? ` · ${item.questionCount}/9` : ["tantra", "yggdrasil"].includes(item.lesson) ? ` · ${item.questionCount}/7` : ""}</strong>
                           <div>
                             {!item.reportDone ? <button type="button" onClick={() => jumpToSlide(item.reportId)} className={styles.reviewMissing}>{t.reportMissing}</button> : null}
                             {!item.questionDone ? <button type="button" onClick={() => jumpToSlide(item.nextQuestionId)} className={styles.reviewMissing}>{t.questionMissing}</button> : null}

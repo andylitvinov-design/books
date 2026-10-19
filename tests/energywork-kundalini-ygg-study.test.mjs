@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  ENERGYWORK_VERSION, ENERGYWORK_P5_VERSION, ENERGYWORK_BRANCH,
+  ENERGYWORK_VERSION, ENERGYWORK_P5_VERSION, ENERGYWORK_P6_VERSION, ENERGYWORK_BRANCH,
   ENERGYWORK_LESSON_ANSWER_IDS, ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,
   ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS, ENERGYWORK_QUESTIONS,
   energyworkReikiStudyAnswerComplete, energyworkSequence, energyworkLessonRanges,
@@ -15,23 +15,26 @@ const ui = read('components/energywork-ai-learner.tsx')
 const db = read('lib/academy/energywork-course-repository.js')
 const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 
-test('Seven questions in both later Reiki lessons preserve their original answer IDs', () => {
-  assert.equal(ENERGYWORK_VERSION,'2026-10-19.p6')
+test('Nine approved Kundalini questions and seven Yggdrasil questions preserve private answer IDs', () => {
+  assert.equal(ENERGYWORK_VERSION,'2026-10-19.p7')
+  assert.equal(ENERGYWORK_P6_VERSION,'2026-10-19.p6')
   assert.equal(ENERGYWORK_P5_VERSION,'2026-10-19.p5')
-  assert.equal(energyworkSequence().length,68)
-  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,15,14,22,8])
-  for(const [lesson,prefix,ids] of [
-    ['kundalini','kun',ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS],
-    ['yggdrasil','ygg',ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS]
-  ]) {
-    assert.equal(ids.length,7)
-    assert.equal(ids[0],prefix+'-06')
-    assert.deepEqual(ENERGYWORK_BRANCH[lesson].slice(6,13),[...ids])
-    for(const id of ids){
-      assert.equal(ENERGYWORK_QUESTIONS[id],'text',id)
-      assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id),id)
-      assert.ok(curriculum.includes('id: "'+id+'"'),id)
-    }
+  assert.equal(energyworkSequence().length,70)
+  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,15,16,22,8])
+  const kundalini = ["kun-study-v2-01","kun-study-v2-02","kun-study-v2-03","kun-study-v2-04","kun-study-v2-05","kun-study-v2-06","kun-study-v2-07","kun-study-v2-08","kun-study-v2-09"]
+  assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,kundalini)
+  assert.deepEqual(ENERGYWORK_BRANCH.kundalini.slice(6,15),kundalini)
+  assert.equal(ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.length,7)
+  assert.deepEqual(ENERGYWORK_BRANCH.yggdrasil.slice(6,13),[...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS])
+  for(const id of [...kundalini,...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS]){
+    assert.equal(ENERGYWORK_QUESTIONS[id],'text',id)
+    assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id),id)
+    assert.ok(curriculum.includes('id: "'+id+'"'),id)
+  }
+  for(const old of ['kun-06','kun-study-02','kun-study-03','kun-study-04','kun-study-05','kun-study-06','kun-study-07']) {
+    assert.equal(ENERGYWORK_QUESTIONS[old],'text')
+    assert.ok(!energyworkSequence().includes(old))
+    assert.ok(!ENERGYWORK_LESSON_ANSWER_IDS.includes(old))
   }
 })
 test('Source links and Next validation reuse the secure existing question mechanism', () => {
@@ -45,8 +48,8 @@ test('Source links and Next validation reuse the secure existing question mechan
   assert.match(ui,/data-reiki-study-hint/)
   assert.match(db,/REIKI_STUDY_ANSWER_REQUIRED/)
   assert.match(db,/MAX_RESPONSES = 64/)
-  assert.match(db,/ENERGYWORK_P5_VERSION/)
-  assert.match(browser,/id === "kun-06"/)
+  assert.match(db,/ENERGYWORK_P6_VERSION/)
+  assert.match(browser,/id === "kun-study-v2-01"/)
   assert.match(browser,/id === "ygg-06"/)
 })
 test('Initiation needs all answers, with existing private keys still present', () => {
