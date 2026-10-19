@@ -1,3 +1,4 @@
+import { installRatingsRequestDiagnostics } from './helpers/ratings-request-diagnostics.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
@@ -42,9 +43,10 @@ await context.addInitScript(installBillingStatusLifecycleDiagnostics)
 await context.addInitScript(() => {
   window.addEventListener('popstate', () => console.log('HH_HOME_PROBE '+JSON.stringify({kind:'early-popstate',path:location.pathname,pendingPath:window.__hhCspHardDestination ? new URL(window.__hhCspHardDestination).pathname : null})), {capture:true,passive:true})
 })
+await installRatingsRequestDiagnostics(context,origin,event=>console.log('SYNTHETIC_RATINGS_DIAGNOSTIC',JSON.stringify(event)))
 let page=await context.newPage()
-const capturePageError=error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);console.log('SYNTHETIC_PAGE_ERROR',new URL(page.url()).pathname,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
-page.on('pageerror',capturePageError)
+const capturePageError=sourcePage=>error=>{if(error.message.includes('/api/app/bootstrap due to access control checks.')||error.message.includes('/api/app/course due to access control checks.')||/\/api\/app\/results\/[^ ]+ due to access control checks\.$/.test(error.message)||error.message.includes('/__nextjs_original-stack-frames due to access control checks.'))return;errors.push(error.message);let sourcePath='[unavailable]';try{sourcePath=new URL(sourcePage.url()).pathname}catch{};console.log('SYNTHETIC_PAGE_ERROR',sourcePath,error.message);if(error.message.includes('/api/app/billing/status due to access control checks.'))console.log('SYNTHETIC_BILLING_STATUS_PAGEERROR_AT',Date.now())}
+page.on('pageerror',capturePageError(page))
 const testPlanDiagnostics=await installTestPlanNavigationDiagnostics(page,origin,event=>console.log('SYNTHETIC_TEST_PLAN_NAVIGATION',JSON.stringify(event)))
 const checks=[]
 let historyDiagnosticStage=null, historyDiagnosticStartedAt=null, primaryFailure=false, historyNavigationDiagnostics=null
@@ -1032,8 +1034,9 @@ try {
  historyNavigationDiagnostics=observeHistoryNavigation(page,browser,{origin,log:(name,evidence)=>console.log(name,JSON.stringify(evidence))})
  historyNavigationDiagnostics.mark('recovery-start')
  const recoveryContext=await browser.newContext({storageState:await context.storageState(),serviceWorkers:'block',viewport:{width:390,height:844}})
+ await installRatingsRequestDiagnostics(recoveryContext,origin,event=>console.log('SYNTHETIC_RECOVERY_RATINGS_DIAGNOSTIC',JSON.stringify(event)))
  const recoveryPage=await recoveryContext.newPage()
- recoveryPage.on('pageerror',capturePageError)
+ recoveryPage.on('pageerror',capturePageError(recoveryPage))
  try {
   for (const body of ['{"account":', '{"error":"SERVICE_UNAVAILABLE"}', '{"account":null}']) {
    let intercepted=0
@@ -1368,7 +1371,7 @@ try {
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
  await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
- await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
+ await page.close();page=await context.newPage();page.on('pageerror',capturePageError(page))
 
  await page.goto(origin+'/en/client')
  await assertPublicPickerEntrance(page,'en')

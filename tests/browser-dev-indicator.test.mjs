@@ -85,7 +85,9 @@ test('actual installed Next compile and runtime error components remain rendered
 test('browser acceptance keeps ordinary Profile clicks and uncaught-error checks', () => {
   const core = read('scripts/verify-app-r1.mjs')
   assert.ok(core.includes("getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile',exact:true}).click()"))
-  assert.ok(core.includes("page.on('pageerror',capturePageError)"))
+  assert.ok(core.includes("page.on('pageerror',capturePageError(page))"))
+  assert.ok(core.includes("const capturePageError=sourcePage=>error=>"))
+  assert.ok(core.includes("errors.push(error.message)"))
   assert.ok(core.includes("assert.deepEqual(errors,[]);passed('no uncaught browser errors')"))
   const workflow = read('.github/workflows/hh-app-browser.yml')
   for (const value of ["CI: 'true'", 'NODE_ENV: development', 'HH_APP_TEST_RUNTIME: isolated', 'npm run dev']) assert.ok(workflow.includes(value))
