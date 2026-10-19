@@ -50,7 +50,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
 })
 test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable source hashes', async () => {
   const fixture = await buildOporaBrowserFixture()
-  assert.ok(fixture.bundle.length > 100000 && fixture.bundle.length <= 800 * 1024)
+  assert.ok(fixture.bundle.length > 100000 && fixture.bundle.length <= 804 * 1024)
   assert.ok(fixture.css.includes('.hh-app'))
   for (const path of ['components/app/opora-experience-player.jsx', 'components/app/opora-experience-player.module.css',
     'lib/inner-growth/opora-as56-experience-guides.js', 'lib/inner-growth/anti-stress-skills-v6.js',

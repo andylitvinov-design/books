@@ -60,6 +60,16 @@ const WORDS={
     safetyNeutral:'Вернуться с нейтральной опорой',safetyBack:'Вернуться',safetyEnd:'Закончить без сохранения',
     ideaTitle:'Бережная мысль',reminderTitle:'Одно напоминание',feelTitle:'Как сейчас?',
     learnMore:'Показать мягкую подсказку',noMedical:'Самостоятельная практика, не диагностика и не лечение.',
+    preview:{
+      weekOneKicker:'ДНИ 1–7',weekOneTitle:'Первая неделя: найти опору',
+      weekTwoKicker:'ДНИ 8–14',weekTwoTitle:'Вторая неделя: свой опыт',
+      weekLead:'Один небольшой шаг каждый день.',
+      nextKicker:'ЧТО ДАЛЬШЕ',nextTitle:'Следующий маленький шаг',
+      nextLead:'Следующий урок откроется по расписанию.',
+      practice:'Практика',completeTitle:'Ваши 14 дней позади',
+      completeLead:'Ваши наблюдения сохранены в карте курса.',
+      completeNote:'Итоговые тесты можно повторить, когда откроется опрос.',
+    },seeProgram:'Посмотреть, что дальше',
   },
   en:{
     day:'Day',of:'of',pause:'Pause',close:'End lesson',back:'Back',next:'Continue',
@@ -106,6 +116,16 @@ const WORDS={
     safetyNeutral:'Return with a neutral anchor',safetyBack:'Go back',safetyEnd:'End without saving',
     ideaTitle:'A gentle idea',reminderTitle:'One reminder',feelTitle:'How do you feel now?',
     learnMore:'Show gentle guidance',noMedical:'Self-guided learning, not diagnosis or treatment.',
+    preview:{
+      weekOneKicker:'DAYS 1–7',weekOneTitle:'Week 1: Find your supports',
+      weekTwoKicker:'DAYS 8–14',weekTwoTitle:'Week 2: Make it your own',
+      weekLead:'One small step each day.',
+      nextKicker:"WHAT'S NEXT",nextTitle:'Your next small step',
+      nextLead:'The next lesson opens on schedule.',
+      practice:'Practice',completeTitle:'Your 14 days are complete',
+      completeLead:'Your observations are saved in the course map.',
+      completeNote:'Optional retesting opens when the final check-in is available.',
+    },seeProgram:"See what's next",
   },
 }
 WORDS.es = {
@@ -147,6 +167,16 @@ WORDS.es = {
   neutralSafety:'Puedes parar; no necesitas cambiar tu respiración.',
   safetyNeutral:'Volver con una referencia neutra',safetyBack:'Volver',safetyEnd:'Salir sin guardar',
   learnMore:'Ver una pista suave',noMedical:'Aprendizaje personal, no diagnóstico ni tratamiento.',
+  preview:{
+    weekOneKicker:'DÍAS 1–7',weekOneTitle:'Semana 1: Encuentra tus apoyos',
+    weekTwoKicker:'DÍAS 8–14',weekTwoTitle:'Semana 2: Hazlo a tu manera',
+    weekLead:'Un paso pequeño cada día.',
+    nextKicker:'QUÉ SIGUE',nextTitle:'Tu siguiente pequeño paso',
+    nextLead:'La próxima lección se abre según el calendario.',
+    practice:'Práctica',completeTitle:'Has completado los 14 días',
+    completeLead:'Tus observaciones siguen guardadas en el mapa.',
+    completeNote:'Puedes repetir las pruebas cuando se abra el control final.',
+  },seeProgram:'Ver qué viene después',
   ideaTitle:'Una idea amable',reminderTitle:'Un recordatorio',feelTitle:'¿Cómo estás ahora?',
 }
 // The five original lesson-one opening screens stay separate, and precede action.
@@ -224,6 +254,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const hasSaved=Boolean(data?.currentSession)
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   const [step,setStep]=useState(hasSaved?scenes.length:0)
+  const [previewIndex,setPreviewIndex]=useState(-1)
   const [saved,setSaved]=useState(hasSaved)
   const [outroOpen,setOutroOpen]=useState(false)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
@@ -246,8 +277,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving),receipt=step>=scenes.length
-  const moment=outroOpen?'ocean':receipt?'receipt':scenes[step]
+  const previewScreens=cycle.day===1?['weekOne','weekTwo','nextStep']:['nextStep']
+  const inPreview=receipt&&previewIndex>=0
+  const moment=inPreview?previewScreens[previewIndex]:outroOpen?'ocean':receipt?'receipt':scenes[step]
+  const nextDay=cycle.day<14?oporaExperienceDay(cycle.day+1,lang):null
   const progressStep=Math.min(step+1,scenes.length+1)+(outroOpen?1:0)
+  const previewStep=inPreview?scenes.length+2+previewIndex+1:progressStep
+  const previewTotal=inPreview?scenes.length+2+previewScreens.length:scenes.length+2
   const opening=OPENING[lang]
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
@@ -265,7 +301,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   useEffect(()=>{
     if(!receipt)visited.current.add(scenes[step])
     heading.current?.focus?.()
-  },[step,receipt])
+  },[step,receipt,previewIndex,outroOpen])
   useEffect(()=>{
     if(safety){wasPaused.current=true;safetyPrimary.current?.focus?.()}
     else if(wasPaused.current)safetyTrigger.current?.focus?.()
@@ -302,6 +338,20 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     setError('')
     setShowHelp(false)
     setStep(s=>Math.max(0,s-1))
+  }
+  function openPreview(){
+    if(locked||!receipt)return
+    setOutroOpen(false)
+    setPreviewIndex(0)
+  }
+  function advancePreview(){
+    if(locked||!inPreview)return
+    if(previewIndex===previewScreens.length-1)(onFinish||onClose)?.()
+    else setPreviewIndex(i=>i+1)
+  }
+  function backFromPreview(){
+    if(previewIndex<=0)setPreviewIndex(-1)
+    else setPreviewIndex(i=>i-1)
   }
   function changeFeeling(value){
     if(locked)return
@@ -351,7 +401,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     }catch{setError(t.noSave)}
     finally{setSaving(false)}
   }
-  const title=outroOpen?t.audioTitle:receipt?t.saved:
+  const title=moment==='weekOne'?t.preview.weekOneTitle:
+    moment==='weekTwo'?t.preview.weekTwoTitle:
+    moment==='nextStep'?(nextDay?t.preview.nextTitle:t.preview.completeTitle):
+    outroOpen?t.audioTitle:receipt?t.saved:
     moment==='welcome'?opening.welcome:
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
@@ -364,7 +417,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   return <div className={styles.overlay} role="dialog" aria-modal="true"
     aria-label={t.day+' '+cycle.day+': '+lesson.title}
     data-opora-experience-first="as-5.6" data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
-    data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}>
+    data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
+    data-opora-course-program-preview={inPreview?moment:undefined}>
     <div className={styles.frame+' '+(styles[moment]||styles.arrive)}
       inert={safety} aria-hidden={safety?'true':undefined}>
       <header className={styles.header}>
@@ -372,9 +426,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           disabled={locked} aria-label={t.close}><X size={21}/></button>
         <div className={styles.progress}>
           <div className={styles.progressCopy}><span>{t.day} {cycle.day}/14</span>
-            <span>{progressStep} / {scenes.length+2}</span></div>
+            <span>{previewStep} / {previewTotal}</span></div>
           <div className={styles.track}><div className={styles.fill}
-            style={{width:(progressStep/(scenes.length+2)*100)+'%'}}/></div>
+            style={{width:(previewStep/previewTotal*100)+'%'}}/></div>
         </div>
         <button type="button" className={styles.pause} ref={safetyTrigger}
           onClick={()=>setSafety(true)} disabled={locked}><Pause size={16}/>{t.pause}</button>
@@ -387,6 +441,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
         )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')} aria-live="off">
+          {inPreview&&<span className={styles.eyebrow}>
+            {moment==='weekOne'?t.preview.weekOneKicker:
+              moment==='weekTwo'?t.preview.weekTwoKicker:t.preview.nextKicker}
+            {' · '}{previewIndex+1}/{previewScreens.length}
+          </span>}
           {(!receipt||outroOpen)&&<span className={styles.eyebrow}>
             {moment==='ocean'?t.audioKicker:moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
@@ -510,7 +569,32 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
-          {receipt&&!outroOpen&&<>
+          {(moment==='weekOne'||moment==='weekTwo')&&<>
+            <p className={styles.soft}>{t.preview.weekLead}</p>
+            <ol className={styles.weekList} data-opora-program-week={moment==='weekOne'?'1':'2'}>
+              {Array.from({length:7},(_,index)=>{
+                const day=(moment==='weekOne'?1:8)+index
+                return <li key={day}>
+                  <span className={styles.weekDay}>{t.day} {day}</span>
+                  <strong>{oporaExperienceDay(day,lang)?.title}</strong>
+                </li>
+              })}
+            </ol>
+          </>}
+          {moment==='nextStep'&&<>
+            {nextDay?<>
+              <p className={styles.soft}>{t.preview.nextLead}</p>
+              <section className={styles.nextLesson} data-opora-program-next-day={cycle.day+1}>
+                <span className={styles.nextDay}>{t.day} {cycle.day+1} / 14</span>
+                <strong>{nextDay.title}</strong>
+                <p><span>{t.preview.practice}:</span> {nextDay.practice}</p>
+              </section>
+            </>:<>
+              <p className={styles.lead}>{t.preview.completeLead}</p>
+              <p className={styles.soft}>{t.preview.completeNote}</p>
+            </>}
+          </>}
+          {moment==='receipt'&&<>
             <p className={styles.lead}>{t.savedText}</p>
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
@@ -521,20 +605,24 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
           </>}
           {outroOpen&&<OporaOceanOutro locale={lang} paused={safety}/>}
+          {outroOpen&&<button type="button" className={styles.linkHint} disabled={locked}
+            onClick={onFinish||onClose}>{t.finish}</button>}
+          {moment==='receipt'&&<button type="button" className={styles.linkHint} disabled={locked}
+            onClick={()=>setOutroOpen(true)}>{t.audioNext}</button>
           {(moment==='welcome'||moment==='arrive'||receipt)&&<small className={styles.disclaimer}>{t.noMedical}</small>}
         </section>
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.footer}>
         {receipt?<button type="button" className={styles.back} disabled={locked}
-          onClick={outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
-          <ArrowLeft size={17}/>{outroOpen?t.back:t.finish}
+          onClick={inPreview?backFromPreview:outroOpen?()=>setOutroOpen(false):(onFinish||onClose)}>
+          <ArrowLeft size={17}/>{inPreview||outroOpen?t.back:t.finish}
         </button>:step>0&&<button type="button" className={styles.back}
           onClick={back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
-          onClick={outroOpen?(onFinish||onClose):receipt?()=>setOutroOpen(true):step===scenes.length-1?submit:next}>
-          {outroOpen?t.finish:receipt?t.audioNext:step===scenes.length-1?(saving?t.saving:t.save):t.next}
-          {outroOpen||step===scenes.length-1?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+          onClick={inPreview?advancePreview:receipt?openPreview:step===scenes.length-1?submit:next}>
+          {inPreview?(previewIndex===previewScreens.length-1?t.finish:t.next):receipt?t.seeProgram:step===scenes.length-1?(saving?t.saving:t.save):t.next}
+          {(inPreview&&previewIndex===previewScreens.length-1)||(!receipt&&step===scenes.length-1)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>
