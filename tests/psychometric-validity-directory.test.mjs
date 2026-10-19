@@ -30,6 +30,44 @@ test('lookup filters research scales and titles while keeping output within stri
   assert.equal(searchResearchCatalogue({pageSize:5000}).pageSize,24)
   assert.ok(searchResearchCatalogue({q:'CISS'}).total>0)
 })
+test('English Russian Spanish terms find the same actual research concepts without implying translated validation',()=>{
+  for (const [en,ru,es] of [
+    ['anxiety','тревога','ansiedad'],
+    ['stress','стресс','estrés'],
+    ['depression','депрессия','depresión'],
+    ['attachment','привязанность','apego'],
+    ['burnout','выгорание','agotamiento'],
+  ]) {
+    const baseline=searchResearchCatalogue({q:en,pageSize:24})
+    assert.ok(baseline.total>0, en+' needs actual indexed source entries')
+    for(const localized of [ru,es]){
+      const translated=searchResearchCatalogue({q:localized,pageSize:24})
+      assert.equal(translated.total,baseline.total,localized+' must match source language equivalent')
+      assert.deepEqual(translated.results.map(x=>x.key),baseline.results.map(x=>x.key))
+      assert.ok(translated.results.every(x=>x.access==='research_only'&&!x.commercialDigitalRightsCleared))
+    }
+  }
+  const combo=searchResearchCatalogue({q:'тревога дети'})
+  assert.equal(combo.total,searchResearchCatalogue({q:'anxiety child'}).total,
+    'translated query words should retain AND semantics')
+  assert.equal(searchResearchCatalogue({q:'неизвестнаяметодиканетакой'}).total,0,
+    'unknown terms must not resolve to unrestricted listings')
+})
+test('a DOI or publisher link is not independent psychometric validation and gives no ranking boost',()=>{
+  const phq={key:'phq-9',version:'v1',instrumentLocale:'en',testStyle:'professional',rightsStatus:'cleared'}
+  const entry=assessmentValidity(phq,{locale:'en'})
+  assert.equal(entry.status,'source_documented')
+  assert.equal(entry.grade,null)
+  assert.equal(entry.priority,0)
+  const linkOnly=assessmentValidity({key:'unreviewed-example',version:'v1',instrumentLocale:'en',testStyle:'professional'},{
+    locale:'en',sourceUrl:'https://example.org/journal-paper',
+  })
+  assert.equal(linkOnly.status,'source_documented')
+  assert.equal(linkOnly.priority,0)
+  assert.equal(linkOnly.languageVerified,false)
+  assert.equal(linkOnly.itemScoringVerified,false)
+})
+
 test('all runnable instruments receive evidence audit; unvalidated originals are never promoted to clinical grade',()=>{
   for(const locale of ['en','ru']){
     const audit=auditAssessmentCatalog(MONITORING_CATALOG,{locale})
