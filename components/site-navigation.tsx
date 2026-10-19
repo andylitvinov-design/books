@@ -99,7 +99,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses',
+    item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses' || item.id === 'events',
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
