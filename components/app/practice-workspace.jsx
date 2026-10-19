@@ -191,14 +191,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   async function act(fn,{rethrow=false}={}){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message);if(rethrow)throw e}finally{setBusy(false)}}
   const d=DASHBOARD_COPY[ru?'ru':'en']
   const isOwner=Boolean(ownerTools)
-  async function openOwner(destination) {
+  async function openOwner(destination,clientId) {
     if(busy||!isOwner)return
     setBusy(true);setError('')
     try {
       const response=await fetch('/api/app/practitioner/open',{
         method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({destination}),
+        body:JSON.stringify({destination,...(clientId?{clientId}:{})}),
       })
       if(!response.ok)throw new Error('OPEN_UNAVAILABLE')
       const result=await response.json()
@@ -465,7 +465,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel">
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={()=>setActivePanel(null)}>{d.close} ×</button>
         </div>
         {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} locale={locale} practitioner={p} services={services} busy={busy}
@@ -475,7 +475,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
-            locale={locale} accountId={accountId} busy={busy}
+            locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
+            onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
           <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 

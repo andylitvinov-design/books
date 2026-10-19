@@ -33,6 +33,7 @@ import {
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys, requireUUID } from '@/lib/assessments/contracts'
 import { getPrescriptionStore } from '@/lib/prescriptions/store'
+import { ownerClientSummary, ownerClientDirectory, ownerClientDocumentSummary } from '@/lib/clients/owner-client-directory'
 import { authorizeCabinetRequest } from '@/lib/clients/session'
 import { listLegacyClientIdsForAccount } from '@/lib/app/client-account-binding'
 import { authorizePrescription, prescriptionSessionCookieName } from '@/lib/prescriptions/session'
@@ -518,12 +519,44 @@ async function handle(request, { params }) {
       if (path[2] === 'cancel') return json(await repo.cancelTestPlan(actor, path[1], body))
       if (path[2] === 'remove') return json(await repo.removeTestPlanItem(actor, path[1], body))
     }
+    // Legacy clinical clients were created manually, often without email.
+    // Read the existing encrypted prescription directory; do not treat
+    // account-bound service enquiries or owner marketing CRM as its source.
+    if (joined === 'practitioner/legacy-clients' && method === 'GET') {
+      if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor))
+        throw new AppError('NOT_FOUND', 404)
+      const store = getPrescriptionStore()
+      if (!store) throw new AppError('CLIENT_STORAGE_UNAVAILABLE', 503)
+      const query = new URL(request.url).searchParams
+      const keys = [...query.keys()]
+      if (keys.length > 1 || (keys.length === 1 && keys[0] !== 'clientId'))
+        throw new AppError('INVALID_QUERY', 400)
+      const clientId = query.get('clientId')
+      if (clientId !== null) {
+        requireUUID(clientId)
+        const client = await store.findClientById(clientId)
+        if (!client) throw new AppError('NOT_FOUND', 404)
+        const documents = await store.listClientDocuments(clientId)
+        return json({ client: ownerClientSummary(client), ...ownerClientDocumentSummary(documents) })
+      }
+      return json({ clients: ownerClientDirectory(await store.listClients()) })
+    }
     if (joined === 'practitioner/open' && method === 'POST') {
       const body = await readBody(request)
-      onlyKeys(body, ['destination'])
-      const destination = practitionerDestination[body.destination]
-      if (!destination) throw new AppError('NOT_FOUND', 404)
+      onlyKeys(body, ['destination', 'clientId'])
       if (!practitionerEmailAllowed(actor) || !await repo.isPractitioner(actor)) throw new AppError('NOT_FOUND', 404)
+      const isClient = body.destination === 'client'
+      if (isClient) requireUUID(body.clientId)
+      else if (body.clientId !== undefined) throw new AppError('INVALID_INPUT', 400)
+      const destination = isClient
+        ? '/admin/clients/' + body.clientId
+        : practitionerDestination[body.destination]
+      if (!destination) throw new AppError('NOT_FOUND', 404)
+      if (isClient) {
+        const store = getPrescriptionStore()
+        if (!store) throw new AppError('CLIENT_STORAGE_UNAVAILABLE', 503)
+        if (!await store.findClientById(body.clientId)) throw new AppError('NOT_FOUND', 404)
+      }
       const response = json({ redirectUrl: destination })
       if (!issueTrustedAdminSession(response, { secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
