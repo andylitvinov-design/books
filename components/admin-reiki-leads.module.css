@@ -72,5 +72,6 @@
 .publicReviewActions button{border:0;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:800;color:#fff;background:#067e89;cursor:pointer}
 .publicReviewActions button:last-child{background:#f6e8ec;color:#94384a}
 .publicReviewActions button:disabled{opacity:.5;cursor:not-allowed}
+.unpublishButton{border:0;border-radius:9px;background:#f6e8ec;color:#94384a;padding:9px 12px;cursor:pointer;font-weight:800;font-size:12px}
 .publicReviewActions button:focus-visible{outline:3px solid #39c3c8;outline-offset:2px}
 @media(max-width:640px){.publicReviewSection{padding:12px}.publicReviewGrid{grid-template-columns:1fr}}
