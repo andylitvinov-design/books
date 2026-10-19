@@ -86,7 +86,7 @@ test('Five lessons have separate post-meditation reports and question answers', 
   assert.match(learner, /savedInitiationReady = initiationReady && sync === "ready"/)
   assert.match(learner, /data-initiation-readiness/)
   assert.match(learner, /jumpToSlide\(item\.reportId\)/)
-  assert.match(learner, /jumpToSlide\(item\.questionId\)/)
+  assert.match(learner, /jumpToSlide\(item\.nextQuestionId\)/)
   assert.match(learner, /initiationReady \? \(savedInitiationReady \? t\.reviewDone : t\.reviewSaveNeeded\) : t\.reviewNeeded/)
   assert.match(learner, /Nothing is sent to the teacher automatically/)
 })
