@@ -318,7 +318,7 @@ export function ProfileDomains({
         </div>
       </>}
     </section>}
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />
+    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
     {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
