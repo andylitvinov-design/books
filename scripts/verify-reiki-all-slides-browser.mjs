@@ -159,7 +159,12 @@ async function exerciseJourney(page, locale, width) {
       await expect(reviewButton).toBeDisabled();
       await expect(page.locator('[data-meditation-feeling]')).toHaveCount(0);
       await expect(reviewButton).toContainText(locale==="ru" ? "Сохранить отзыв" : "Save review");
-      await page.locator('textarea[id="answer-'+id+'"]').fill(locale==="ru"
+      const field = page.locator('textarea[id="answer-'+id+'"]');
+      await field.fill('12345678901234');
+      await expect(reviewButton).toBeDisabled();
+      await field.fill('123456789012345');
+      await expect(reviewButton).toBeEnabled();
+      await field.fill(locale==="ru"
         ? "Я заметил(а) своё спокойное дыхание." : "I noticed a quiet moment.");
       await expect(reviewButton).toBeEnabled();
     }
