@@ -75,10 +75,8 @@ const copy = {
     lessonLocked: "Opens as you progress",
     intro: "Introduction",
     slidesWord: "slides",
-    saveProgress: "Save progress",
-    saveAndContinue: "Save & continue",
-    signInToSave: "Sign in to save",
-    returnAnytime: "Your place is saved. You can return from My Courses at any time.",
+    saveAndContinue: "Save progress & continue",
+    returnAnytime: "Pick up here anytime from My Courses.",
     backCourse: "Course details",
     step: "Slide",
     of: "of",
@@ -118,7 +116,8 @@ const copy = {
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
     voicesNavigation: "Browse learner reviews",
-    milestoneLabel: "Lovely progress",
+    milestoneLabel: "Well done — keep going!",
+    firstMilestoneLabel: "Your Reiki journey is underway",
     committed: "I'm committed!",
     reviewTitle: "Personal initiation readiness",
     reviewNeeded: "For a personal initiation request, complete the five reports and five course answers. You can continue learning without them.",
@@ -194,10 +193,8 @@ const copy = {
     lessonLocked: "Откроется по мере прохождения",
     intro: "Введение",
     slidesWord: "слайдов",
-    saveProgress: "Сохранить прогресс",
-    saveAndContinue: "Сохранить и продолжить",
-    signInToSave: "Войти и сохранить",
-    returnAnytime: "Ваш прогресс сохраняется. Вы сможете вернуться из раздела «Курсы» в любой момент.",
+    saveAndContinue: "Сохранить прогресс и продолжить",
+    returnAnytime: "Вернуться к уроку можно через «Мои курсы».",
     backCourse: "Описание курса",
     step: "Слайд",
     of: "из",
@@ -237,7 +234,8 @@ const copy = {
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
     voicesNavigation: "Переключение отзывов",
-    milestoneLabel: "Прекрасный прогресс",
+    milestoneLabel: "Отличный результат!",
+    firstMilestoneLabel: "Ваш путь в Рейки начался",
     committed: "I'm committed!",
     reviewTitle: "Готовность к личной инициации",
     reviewNeeded: "Для заявки на личную инициацию заполните пять отчётов и пять ответов. Учёбу можно продолжать без них.",
@@ -660,27 +658,6 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     }
     setIndex((current) => Math.min(current + 1, slides.length - 1));
   }
-  async function saveAndLeave() {
-    if (busy || slide.kind !== "milestone") return;
-    // A guest cannot claim to have saved private progress.
-    if (sync === "guest") { await signIn(); return; }
-    if (sync === "consent") {
-      programmeRef.current?.setAttribute("open", "");
-      programmeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      return;
-    }
-    if (sync === "unavailable") { await reloadProgress(); return; }
-    if (sync !== "ready") return;
-    const nextId = slides[Math.min(index + 1, slides.length - 1)]?.id || slide.id;
-    setBusy(true);
-    try {
-      await store(nextId);
-      window.location.assign("/" + locale + "/app/course?view=courses");
-    } catch (error) {
-      setSaveError((error as { status?: number })?.status === 409 ? t.conflict : t.saveFailed);
-      setBusy(false);
-    }
-  }
   async function previous() {
     if (index === 0 || busy) return;
     if (sync === "ready" && slide.question && dirtyRef.current.has(slide.id)) {
@@ -819,7 +796,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                 <div className={styles.milestoneCard}>
                   <span className={styles.milestoneSymbol}><Award size={34} aria-hidden="true" /></span>
                   <div className={styles.milestoneCopy}>
-                    <strong>{t.milestoneLabel}</strong>
+                    <strong>{slide.id === "flight-done" ? t.firstMilestoneLabel : t.milestoneLabel}</strong>
                     {sync === "ready" ? <p className={styles.milestoneReturn}>{t.returnAnytime}</p> : null}
                   </div>
                 </div>
@@ -1124,23 +1101,19 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
         <footer className={styles.footer}>
           {!completed ? (
             <div className={styles.actions + (slide.kind === "milestone" ? " " + styles.milestoneActions : "")}>
-              {slide.kind === "milestone" ? <>
+              {slide.kind === "milestone" ? (
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.milestoneBack} aria-label={t.back} title={t.back}>
                   <ArrowLeft size={19} aria-hidden="true" />
                 </button>
-                <button type="button" onClick={saveAndLeave} disabled={busy || sync === "checking"}
-                  className={styles.saveProgress} data-energywork-save-progress>
-                  {sync === "guest" ? t.signInToSave : t.saveProgress}
-                </button>
-              </> : (
+              ) : (
                 <button type="button" onClick={previous} disabled={index === 0 || busy || sync === "checking"}
                   className={styles.back}><ArrowLeft size={18} aria-hidden="true" />{t.back}</button>
               )}
               <button type="button" onClick={next} disabled={busy || sync === "checking" || experienceMissing || feedbackMissing}
                 className={styles.next} data-energywork-next>
                 {isMeditationFeedback ? t.saveReview : slide.kind === "welcome" ? t.startFree :
-                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continue) : t.continue}
+                  slide.kind === "milestone" ? (sync === "ready" ? t.saveAndContinue : t.continuePath) : t.continue}
                 <ArrowRight size={19} aria-hidden="true" />
               </button>
             </div>
