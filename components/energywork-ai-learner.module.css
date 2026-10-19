@@ -2710,6 +2710,29 @@
     gap: 8px;
     padding: 10px 12px;
   }
+  /* The heading and short lead already ask about Reiki experience.
+     Keep the repeated sub-question accessible to assistive tech, but do not
+     spend a second full line on it on short phones. */
+  .page[data-course-portrait="v3"] .experienceSlide .prompt {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .question {
+    margin-top: 5px;
+    padding: 8px 10px;
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .choices {
+    gap: 5px;
+  }
+  .page[data-course-portrait="v3"] .experienceSlide .experienceGuidance {
+    padding: 5px 9px;
+    margin-top: 5px;
+  }
+
   .page[data-course-portrait="v3"] .experienceSlide .eyebrow {
     margin-bottom: 6px;
   }
