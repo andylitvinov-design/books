@@ -178,6 +178,6 @@ test("Live academy cards show only confirmed future events with real registratio
   assert.match(source, /event\.registrationHref/);
   assert.match(source, /href=\{event\.registrationHref\}/);
   assert.match(source, /setExpandedEvent\(expanded \? null : event\.id\)/);
-  assert.match(source, /href=\{"/" \+ locale \+ "\/events"\}/);
+  assert.ok(source.includes('href={"/" + locale + "/events"}'));
   assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
 });

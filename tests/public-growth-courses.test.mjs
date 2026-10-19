@@ -3,19 +3,19 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { activeNavigationId, getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-model.js';
 
-test('Tests, Events and My House retain their exact mobile positions and destinations', async () => {
+test('Tests, Business and My House retain their exact mobile positions and destinations', async () => {
   const mobile = await readFile('components/mobile-bottom-navigation.tsx', 'utf8');
   assert.match(mobile, /getCompactNavigation\(locale\)/);
   assert.match(mobile, /mobileItems\.map/);
   for (const locale of ['ru', 'en', 'es']) {
     const links = getCompactNavigation(locale);
-    assert.deepEqual(links.map(item => item.id), ['home','tests','services','academy','events','house']);
+    assert.deepEqual(links.map(item => item.id), ['home','tests','services','academy','business','house']);
     assert.equal(links[1].href, `/${locale}/client/tests`);
-    assert.equal(links[4].href, `/${locale}/events`);
+    assert.equal(links[4].href, `/${locale}/explore/business`);
     assert.equal(getSiteNavigation(locale).find(item => item.id === 'library').href, `/${locale}/library`);
     assert.equal(links[5].href, `/${locale==='es'?'en':locale}/app`);
     assert.equal(activeNavigationId(`/${locale}/academy/free-ai-courses`), 'academy');
-    assert.equal(activeNavigationId(`/${locale}/about`), 'services');
+    assert.equal(activeNavigationId(`/${locale}/about`), 'about');
   }
 });
 
