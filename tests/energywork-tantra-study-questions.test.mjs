@@ -3,6 +3,7 @@ import test from "node:test"
 import { readFileSync } from "node:fs"
 import {
   ENERGYWORK_VERSION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_ANSWER_IDS,
+  ENERGYWORK_TANTRA_STUDY_QUESTION_IDS, energyworkTantraStudyAnswerComplete,
   energyworkSequence, energyworkLessonRanges, energyworkPreviousResumeId,
 } from "../data/academy/energywork-ai-schema.js"
 
@@ -11,6 +12,8 @@ const curriculum = read("data/academy/energywork-ai-curriculum.ts")
 const learner = read("components/energywork-ai-learner.tsx")
 const cabinet = read("components/app/cabinet-free-course-banners.jsx")
 const repo = read("lib/academy/energywork-course-repository.js")
+const browserQa = read("scripts/verify-reiki-all-slides-browser.mjs")
+const styles = read("components/energywork-ai-learner.module.css")
 
 const questions = [
   ["tan-06", "Who created the Tantra Reiki system, and what is the source of its energy?"],
@@ -81,4 +84,33 @@ test("My Courses opens the exact last saved slide and the private API maps older
   assert.equal(energyworkPreviousResumeId("presence-03"), "tan-study-04")
   assert.equal(energyworkPreviousResumeId("kun-04"), "kun-04")
   assert.equal(energyworkPreviousResumeId("flight-05"), "flight-03")
+})
+
+test("All seven study questions require an answer for Next, with contextual source links in EN/RU", () => {
+  assert.deepEqual([...ENERGYWORK_TANTRA_STUDY_QUESTION_IDS], questions.map(([id]) => id))
+  for (const [id] of questions) {
+    assert.equal(ENERGYWORK_QUESTIONS[id], "text")
+    assert.match(learner, new RegExp('"' + id + '": "#tantra-'))
+  }
+  assert.equal(energyworkTantraStudyAnswerComplete(""), false)
+  assert.equal(energyworkTantraStudyAnswerComplete("   "), false)
+  assert.equal(energyworkTantraStudyAnswerComplete(undefined), false)
+  assert.equal(energyworkTantraStudyAnswerComplete("My answer"), true)
+  assert.equal(energyworkTantraStudyAnswerComplete("  Ответ  "), true)
+  assert.match(curriculum, /questions in Tantra Reiki require a brief written answer before advancing/)
+  assert.match(learner, /tantraStudyMissing = isTantraStudyQuestion && !energyworkTantraStudyAnswerComplete/)
+  assert.match(learner, /experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing/)
+  assert.match(learner, /required=\{isTantraStudyQuestion\}/)
+  assert.match(learner, /data-tantra-study-hint/)
+  assert.match(learner, /target="_blank" rel="noopener noreferrer" data-tantra-study-hint/)
+  assert.match(learner, /href=\{"/" \+ locale \+ "\/academy\/reiki\/tantra-reiki" \+ TANTRA_STUDY_HINT_ANCHORS\[slide.id\]\}/)
+  assert.match(learner, /t\.tantraAnswerRequired/)
+  assert.match(learner, /t\.tantraAnswerPlaceholder/)
+  assert.match(repo, /ENERGYWORK_TANTRA_STUDY_QUESTION_IDS\.includes\(body\.slideId\)/)
+  assert.match(repo, /TANTRA_STUDY_ANSWER_REQUIRED/)
+  assert.match(styles, /\.tantraStudyHelp/)
+  assert.match(styles, /\.tantraStudyLink:focus-visible/)
+  assert.match(browserQa, /id === "tan-06" \|\| id\.startsWith\("tan-study-"\)/)
+  assert.match(browserQa, /await expect\(nextButton\)\.toBeDisabled\(\)/)
+  assert.match(browserQa, /await answer\.fill\("   "\)/)
 })
