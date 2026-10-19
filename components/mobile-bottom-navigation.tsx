@@ -1,13 +1,11 @@
 "use client";
-import { CalendarDays, House, Sparkles, GraduationCap, ClipboardList, LayoutDashboard } from 'lucide-react';
+import { compactNavigationIcons } from './compact-navigation-icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
-
-const icons = { home: House, tests: ClipboardList, services: Sparkles, academy: GraduationCap, events: CalendarDays, house: LayoutDashboard };
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
@@ -34,7 +32,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     {/* Keep six high-priority destinations on the bottom bar. Events is here;
         Library lives beside the language picker and in the expanded menu. */}
     {mobileItems.map(item => {
-      const Icon = icons[item.id as keyof typeof icons];
+      const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
       const content = <><Icon aria-hidden="true" /><span>{item.label}</span></>;
       return item.external
         ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{content}</a>

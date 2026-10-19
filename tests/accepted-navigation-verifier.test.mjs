@@ -49,6 +49,7 @@ function mobile(locale, pathname) {
     'next/navigation': { usePathname: () => pathname },
     '@/lib/site-navigation-model': navigation,
     './use-navigation-locale': { useNavigationLocale: () => locale },
+    './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigation.compactNavigationIds.map(id => [id, 'svg'])) },
   }).MobileBottomNavigation({ initialLocale: locale })
 }
 function publicPage(tree, locale) {

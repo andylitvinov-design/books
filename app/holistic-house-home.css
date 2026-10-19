@@ -895,8 +895,8 @@ a.service-home-start-card:hover {
   z-index: 80;
   top: calc(100% + 10px);
   right: 0;
-  width: min(284px, calc(100vw - 24px));
-  max-height: min(68vh, 540px);
+  width: min(336px, calc(100vw - 20px));
+  max-height: min(70dvh, calc(100dvh - 220px), 550px);
   overflow-y: auto;
   border: 1px solid #d8c6b4;
   border-radius: 18px;
@@ -927,10 +927,79 @@ a.service-home-start-card:hover {
   text-decoration: none;
 }
 
-.site-navigation .site-main-menu-panel a:hover,
+/* Six large shortcuts match the mobile bar, without making the menu taller. */
+.site-navigation .site-main-menu-group-label {
+  margin: 12px 4px 7px;
+  color: #8a6854;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.site-navigation .site-main-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.site-navigation .site-main-menu-grid a {
+  display: grid;
+  min-width: 0;
+  min-height: 76px;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid #eadccc;
+  padding: 9px 3px;
+  background: #faf3eb;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.site-navigation .site-main-menu-grid a svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.5;
+}
+
+.site-navigation .site-main-menu-more a {
+  min-height: 40px;
+  padding-block: 7px;
+  font-size: 13px;
+}
+
+.site-navigation .site-main-menu-panel .site-main-menu-free {
+  min-height: 42px;
+  justify-content: center;
+  background: #782d46;
+  color: #fffaf4;
+  font-size: 13px;
+}
+
 .site-navigation .site-main-menu-panel a[aria-current="page"] {
   background: #f0e1d2;
   color: #5d3240;
+}
+
+.site-navigation .site-main-menu-grid a[aria-current="page"] {
+  border-color: #a77b5d;
+  background: #f0e1d2;
+}
+
+/* iOS Safari retains :hover after tapping; do not display two active items. */
+@media (hover: hover) and (pointer: fine) {
+  .site-navigation .site-main-menu-panel a:hover {
+    background: #f0e1d2;
+    color: #5d3240;
+  }
+  .site-navigation .site-main-menu-panel .site-main-menu-free:hover {
+    background: #622238;
+    color: #fffaf4;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1140px) {

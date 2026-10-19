@@ -20,6 +20,7 @@ function render(locale, pathname) {
     react: { useEffect() {}, useRef: () => ({ current: null }) },
     'lucide-react': new Proxy({}, { get: () => () => null }),
     '@/lib/site-navigation-model': model,
+    './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(model.compactNavigationIds.map(id => [id, () => null])) },
     './use-navigation-locale': { useNavigationLocale: () => locale },
   };
   const exports = {};

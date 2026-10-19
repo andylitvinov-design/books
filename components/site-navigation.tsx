@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { BookOpen, Menu } from 'lucide-react';
+import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
@@ -18,9 +19,9 @@ const libraryEntryCopy = {
 } as const;
 
 const siteMenuCopy = {
-  en: { open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu', start: 'Start free' },
-  ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню', start: 'Бесплатно' },
-  es: { open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú', start: 'Empezar gratis' },
+  en: { open: 'Open site menu', heading: 'Explore Holistic House', label: 'Menu', start: 'Start free', quick: 'Main sections', more: 'Explore more' },
+  ru: { open: 'Открыть меню сайта', heading: 'Разделы Holistic House', label: 'Меню', start: 'Начать бесплатно', quick: 'Основные разделы', more: 'Другие разделы' },
+  es: { open: 'Abrir menú del sitio', heading: 'Explorar Holistic House', label: 'Menú', start: 'Empezar gratis', quick: 'Secciones principales', more: 'Explorar más' },
 } as const;
 
 export function SiteNavigation({ locale, onLocaleChange }: Props) {
@@ -93,12 +94,12 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     return available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
   }
 
-  // Keep the first six expanded-menu entries in sync with the mobile bar.
-  // Preserve the additional editorial destinations afterwards.
-  const menuItems = [
-    ...getCompactNavigation(activeLocale),
-    ...getSiteNavigation(activeLocale).filter(item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses'),
-  ];
+  // One canonical six-item navigation, shared by the hamburger and bottom bar.
+  // Additional editorial pages are grouped separately, never mixed into the bar.
+  const mainMenuItems = getCompactNavigation(activeLocale);
+  const extraMenuItems = getSiteNavigation(activeLocale).filter(
+    item => item.id === 'library' || item.id === 'relationships' || item.id === 'courses',
+  );
 
   return <nav aria-label={text.navigation} className="site-navigation">
     <Link className="site-nav-free-entry" href={freeStartHref} prefetch={false}>{siteMenu.start}</Link>
@@ -130,22 +131,42 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       </summary>
       <div className="site-main-menu-panel">
         <p className="site-main-menu-heading">{siteMenu.heading}</p>
-        <Link href={freeStartHref} prefetch={false} onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>{siteMenu.start}</Link>
-        {menuItems.map(item => (
+        <Link className="site-main-menu-free" href={freeStartHref} prefetch={false} onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>{siteMenu.start}</Link>
+        <p className="site-main-menu-group-label">{siteMenu.quick}</p>
+        <div className="site-main-menu-grid" aria-label={siteMenu.quick}>
+          {mainMenuItems.map(item => {
+            const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
+            return <Link
+              key={item.id}
+              data-nav-item={item.id}
+              href={item.href}
+              aria-label={item.ariaLabel}
+              prefetch={false}
+              aria-current={menuCurrent === item.id ? 'page' : undefined}
+              onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
+            ><Icon aria-hidden="true" /><span>{item.label}</span></Link>;
+          })}
+        </div>
+        <p className="site-main-menu-group-label site-main-menu-group-label--more">{siteMenu.more}</p>
+        <div className="site-main-menu-more">
+          {extraMenuItems.map(item => (
+            <Link
+              key={item.id}
+              data-nav-item={item.id}
+              href={item.href}
+              prefetch={false}
+              aria-current={menuCurrent === item.id ? 'page' : undefined}
+              onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
+            >{item.label}</Link>
+          ))}
           <Link
-            key={item.id}
-            href={item.href}
+            data-nav-item="about"
+            href={`/${activeLocale}/about`}
             prefetch={false}
-            aria-current={menuCurrent === item.id ? 'page' : undefined}
+            aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}
             onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
-          >{item.label}</Link>
-        ))}
-        <Link
-          href={`/${activeLocale}/about`}
-          prefetch={false}
-          aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}
-          onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
-        >{text.about}</Link>
+          >{text.about}</Link>
+        </div>
       </div>
     </details>
   </nav>;
