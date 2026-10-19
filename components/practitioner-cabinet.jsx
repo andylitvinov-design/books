@@ -1,6 +1,6 @@
 'use client'
 
-import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Users} from 'lucide-react'
+import {Archive, BadgeCheck, FileText, Film, Images, Inbox, PlusCircle, ReceiptText, SearchCheck, Megaphone, Users} from 'lucide-react'
 import Link from 'next/link'
 import {useEffect, useState} from 'react'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
@@ -20,6 +20,7 @@ const copy = {
     reikiLeads:'Reiki CRM · ученики и инициация',reikiLeadsText:'Лид 1: начало обучения. Лид 2: письмо-заявка и согласованные материалы курса.',
     network:'Сеть практиков',networkText:'Проверять профили, credentials и услуги мастеров.',
     seo:'SEO-аналитика',seoText:'Показы, клики, индексация, ошибки сайта и скорость — проверенные данные Google.',
+    growth:'Продвижение',growthText:'Редактор публикаций, согласование и календарь для нескольких проектов. Пока без автопостинга.',
   },
   en: {
     title:'Practitioner Cabinet',description:'Clients, consultations, and documents in one calm workspace.',actions:'Main actions',
@@ -34,6 +35,7 @@ const copy = {
     reikiLeads:'Reiki CRM · students & initiation',reikiLeadsText:'Lead 1: course start. Lead 2: initiation letter and consented student materials.',
     network:'Practitioner network',networkText:'Review practitioner profiles, credentials, and services.',
     seo:'SEO Analytics',seoText:'Search impressions, clicks, indexing, site errors and speed with verified sources.',
+    growth:'Growth Studio',growthText:'Prepare and approve posts, plan your content across brands. No auto-publishing yet.',
   },
 }
 export function PractitionerCabinet({appRequestsEnabled=false}) {
@@ -47,6 +49,7 @@ export function PractitionerCabinet({appRequestsEnabled=false}) {
   },[])
   const actions=[
     {href:'/admin/seo',icon:SearchCheck,title:text.seo,body:text.seoText},
+    {href:'/admin/growth-studio',icon:Megaphone,title:text.growth,body:text.growthText},
     {href:'/admin/consultations/new',icon:PlusCircle,title:text.newConsultation,body:text.newConsultationText},
      {href:'/admin/reports',icon:FileText,title:text.reports,body:text.reportsText},
     {href:'/admin/clients',icon:Users,title:text.clients,body:text.clientsText},
