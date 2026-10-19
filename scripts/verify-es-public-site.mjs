@@ -33,7 +33,7 @@ async function assertSpanishNavigation(page, path) {
     ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
     ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
     ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
-    ['/en/app', 'Mi Casa'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
@@ -237,9 +237,9 @@ try {
         await click(page.locator('.site-main-menu-trigger'));
         await expect(accountMenu).toHaveJSProperty('open', true);
         const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
+        await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
         await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Mi Casa');
+        await expect(accountLink).toHaveAccessibleName('Gabinete');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
