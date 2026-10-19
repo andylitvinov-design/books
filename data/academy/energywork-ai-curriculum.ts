@@ -156,11 +156,11 @@ const practiceQuestion: EnergyworkQuestion = {
 const commonSlides: EnergyworkSlide[] = [
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Reiki Practitioner — your first step", "Практик Рейки — начало пути"),
-    body: l("One course, five lessons in sequence: Flight to the Sun, Tantra Reiki, Kundalini Reiki, Reiki Yggdrasil and preparing for a personal initiation.", "Один курс из пяти последовательных уроков: Полёт к Солнцу, Тантра Рейки, Кундалини Рейки, Рейки Иггдрасиль и подготовка к личной инициации.") },
+    body: l("Five short lessons introduce Flight to the Sun and three Reiki systems.", "Пять коротких уроков познакомят вас с «Полётом к Солнцу» и тремя системами Рейки.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
-    body: l("A quick introduction, not a test. Choose the experience that best describes you.",
-      "Это короткое знакомство, а не тест. Выберите вариант, который лучше всего описывает ваш опыт."),
+    body: l("Not a test — choose the option that matches your experience.",
+      "Это не тест — выберите вариант, который ближе вашему опыту."),
     question: { type: "choice", prompt: l("My experience so far", "Мой опыт"), options: [
       { id: "beginner", label: l("I'm new to Reiki", "Пока не знаком(а) с Рейки") },
       { id: "energywork", label: l("I have energy-work experience, but not Reiki", "Есть опыт энергетических практик, но не Рейки") },
@@ -176,7 +176,7 @@ const commonSlides: EnergyworkSlide[] = [
     body: l("Original English recording. You may listen, use the text alternative or move on. Never force an uncomfortable experience.", "Оригинальная английская запись. Можно прослушать, прочитать альтернативу или продолжить. Не нужно принуждать себя к неприятным ощущениям.") },
   { id: "flight-03", phase: "flight", kind: "practice", question: practiceQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
-    body: l("After the meditation, pause for a moment. Notice any imagined warmth or light, or simply the contact with your chair. No warmth needs to appear. You may stop at any time.", "После медитации сделайте мягкую паузу. Обратите внимание на образ тепла или света либо просто на опору стула. Тепло не обязательно должно ощущаться. Можно остановиться в любой момент.") },
+    body: l("Pause and notice the support of your chair, or imagine the warmth of sunlight.", "Сделайте паузу и заметьте опору стула или представьте мягкий солнечный свет.") },
   { id: "flight-voices", phase: "flight", kind: "voices", videoKey: "flight-to-sun", image: image.sun,
     title: l("What do other viewers say?", "Что пишут другие?"),
     body: l("Explore comments on the original video, then share your own experience.", "Посмотрите комментарии к видео и поделитесь своим опытом.") },
